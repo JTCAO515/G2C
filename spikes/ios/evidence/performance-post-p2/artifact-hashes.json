@@ -13,5 +13,20 @@
     "original": "process-diagnostic.log",
     "sha256": "820dff2ea5bda69c25e5e602afa1e353dafe7bde47efccaba0e522b439016ba7",
     "gzip": "process-diagnostic.log.gz"
+  },
+  {
+    "original": "old-archive-lookups-target-first.log",
+    "sha256": "7c3aab4a8cb5b61e4d9126f3c31d7c1857e574ecd18507c05406723f27dd4eb3",
+    "gzip": "old-archive-lookups-target-first.log.gz"
+  },
+  {
+    "original": "old-symbolsarchive-check.log",
+    "sha256": "5ca0967bba996972cfeb30e3512ba06cbef29dcce811b25af50364e5f7005a9c",
+    "gzip": "old-symbolsarchive-check.log.gz"
+  },
+  {
+    "original": "old-archive-lookups.log",
+    "sha256": "a92fff36c64bec7bf14f00badbfa4a38adf64d20158878091421b6849811fcec",
+    "gzip": "old-archive-lookups.log.gz"
   }
 ]

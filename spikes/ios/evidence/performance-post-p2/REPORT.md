@@ -8,7 +8,7 @@ Input fixed head `584163e59e1be7d8e4d4b09070841447504b8784`, clean at intake. Pr
 
 Old trace UUID: `6A29186A-B590-361F-8DB7-A9ED29D88D4F`. Its original installed binary path no longer exists; the available built binary and dSYM are both `DC77E156-7E16-38C4-88E6-1E683DD7BAD6`, so neither was applied to the old trace.
 
-The old trace retains a same-UUID `.symbolsarchive`. The local Apple `symbols` tool recognizes its UUID and reports 270 symbols / 2574 source-info entries, **0 dSYMs**. Checked all 24 distinct missing addresses accounting for 71 occurrences. Archive `__TEXT` is based at0; normalized each recorded address by the trace's actual load base `0x102204000`. Lookup results still lack function names (`old-unresolved-addresses.json`, `old-archive-lookups-target-first.log`). The initial command-argument ordering error is separately preserved, not hidden.
+The old trace retains a same-UUID `.symbolsarchive`. The local Apple `symbols` tool recognizes its UUID and reports 270 symbols / 2574 source-info entries, **0 dSYMs**. Checked all 24 distinct missing addresses accounting for 71 occurrences. Archive `__TEXT` is based at0; normalized each recorded address by the trace's actual load base `0x102204000`. Lookup results still lack function names (`old-unresolved-addresses.json`, `old-archive-lookups-target-first.log.gz`). The initial command-argument ordering error is separately preserved, not hidden.
 
 **Old71 remains unresolved.** Minimal recovery requires the original binary/dSYM or richer symbol data with UUID6A29186A; the current DC77E156 data cannot substitute. The original trace, export and old report were not changed. No old-source rebuild was attempted to manufacture a matching identity.
 

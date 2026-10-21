@@ -29,5 +29,5 @@
     "0x16397b"
   ],
   "initial_argument_order_exit_code": 1,
-  "corrected_lookup_log": "old-archive-lookups-target-first.log"
+  "corrected_lookup_log": "old-archive-lookups-target-first.log.gz"
 }
