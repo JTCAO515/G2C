@@ -8,7 +8,10 @@
     "self_signup",
     "email_confirmation",
     "password_recovery",
-    "JT_invitation_list"
+    "JT_invitation_list",
+    "google_sign_in",
+    "apple_sign_in",
+    "VP-V4_readonly_evaluation_first"
   ],
   "choice": {
     "https_plan": null,
@@ -28,8 +31,16 @@
     "candidate_region": "Singapore (suggested only)",
     "approved_region": null,
     "plan": null,
-    "incremental_quote": null,
-    "reuse_old_VP": false
+    "incremental_quote": {
+      "amount": 10,
+      "currency": "USD",
+      "period": "month",
+      "source": "Main forwarded official get_cost hypothetical new-project quote; original receipt not read by this owner",
+      "cost_confirmed": false,
+      "bill_total_verified": false
+    },
+    "reuse_old_VP": false,
+    "reuse_old_VP_note": "No reuse executed. Read-only feasibility assessment is first priority; any settings/data/permission action remains unapproved."
   },
   "smtp": {
     "provider": null,
@@ -76,5 +87,74 @@
     "SMTP setup and real recipient testing",
     "device and network verification"
   ],
-  "acceptance": "UNRUN; this file is not consumed by current runtime"
+  "acceptance": "UNRUN; this file is not consumed by current runtime",
+  "latest_preparation_base": "5ccc8043c8e9791f83775b06c60e56bbd7bf7d3e",
+  "legacy_evaluation": {
+    "priority": 1,
+    "expected_name": "VP - V4",
+    "expected_project_ref_from_dispatch": "dzqdzetcctkhbrhlxxgn",
+    "official_identity_verified_by_this_owner": true,
+    "inventory_owner": "support thread via Main",
+    "inventory_status": "read_only_metadata_reused; static classification prepared; runtime/backup unresolved",
+    "objects": "See object_assessment_file; all deletion approvals false",
+    "mutations_approved": false,
+    "destructive_actions_approved": false,
+    "backup_restore_evidence": "UNKNOWN; no verified restore point/drill",
+    "verification_method": "Reused support official inventory local JSON; no duplicate remote scan",
+    "inventory_source": {
+      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/task-6/vpv4-readonly-inventory.json",
+      "sha256": "8195bcc9821c97d287d4f336f0a6a8e8937f7b183cbd01ef477f897af9ecf57c",
+      "checked_at_utc": "2026-10-21T13:54:00Z",
+      "scope": "read-only metadata; no approved deletion"
+    },
+    "project_metadata": {
+      "name": "VP - V4",
+      "ref": "dzqdzetcctkhbrhlxxgn",
+      "organization": "Go2China",
+      "region": "ap-southeast-1",
+      "plan": "pro",
+      "status": "ACTIVE_HEALTHY"
+    },
+    "counts": {
+      "relations": 123,
+      "businessRelations": 80,
+      "functions": 263,
+      "applicationFunctionCleanupReviewCandidates": 160,
+      "triggers": 67,
+      "eventTriggers": 7,
+      "foreignKeys": 134,
+      "policies": 71,
+      "edgeFunctions": 0,
+      "storageBuckets": 0
+    },
+    "object_assessment_file": "vp-v4-object-assessment.json",
+    "proposed_schema": "cj_private (proposal, existence/conflicts and creation not authorized)",
+    "public_authenticated_execute_count": 61,
+    "current_go_no_go": "NO_GO for real CJ user activation pending old authenticated RPC/provider/session compatibility audit; local code preparation allowed",
+    "new_identity_direct_rpc_risk": "61 public functions executable by authenticated; CJ API membership gate cannot constrain direct PostgREST/RPC use of same-project JWT"
+  },
+  "new_project_fallback": {
+    "priority": 2,
+    "creation_approved": false,
+    "cost_confirmed": false
+  },
+  "providers": {
+    "google": {
+      "ios_client_id": null,
+      "web_server_client_id": null,
+      "oauth_callback": null,
+      "test_audience": null,
+      "configured": false
+    },
+    "apple": {
+      "team_id": null,
+      "app_id": null,
+      "native_capability": null,
+      "services_id_if_web": null,
+      "relay_source_domain": null,
+      "configured": false
+    },
+    "secrets_recorded": false
+  },
+  "human_steps": "SKIP-pending-human; user away, continue independent preparation/code planning within lease"
 }

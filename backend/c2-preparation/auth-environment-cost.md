@@ -1,10 +1,10 @@
 # 全新 Auth / 数据、角色、配置与报价缺口
 
-以下是 C2 准备提案，不是新增 AUTH@1.0 契约或已接受 SQL/权限。具体实现由 Main 给 CJ-007/领域 owner 明确 lease 后固定版本；本轮没有创建/更新项目、名单、会话、DNS或 secret。
+以下是 C2 准备提案，不是新增 AUTH@1.0 契约或已接受 SQL/权限。资源优先级现为旧VP-V4只读评估在先，见 `vp-v4-readonly-assessment.md`；以下全新项目部分为收费备选。Google/Apple增补见 `providers-and-human-steps.md`。具体实现由 Main 给 CJ-007/领域 owner 明确 lease 后固定版本；本轮没有创建/更新项目、名单、会话、DNS或 secret。
 
 ## 最小新资源与账号流程
 
-共用依赖是一个**全新** Supabase 项目，Auth + 标准 Postgres + JT 管理的私有邀请名单；不需要为 C2 先开 Realtime、对象 Storage、Edge Functions 或模型服务。新项目不能从 VP backup/branch/账号导入。数据库引擎也须在创建前明确，不能把新的 OrioleDB 选项无声替换标准 Postgres。`cj-dev` 仅候选标签，实际 ref / region / organization 由批准后平台读回。
+隔离更强的备选共用依赖是一个**全新** Supabase 项目，Auth + 标准 Postgres + JT 管理的私有邀请名单；不需要为 C2 先开 Realtime、对象 Storage、Edge Functions 或模型服务。新项目不能从 VP backup/branch/账号导入。数据库引擎也须在创建前明确，不能把新的 OrioleDB 选项无声替换标准 Postgres。`cj-dev` 仅候选标签，实际 ref / region / organization 由批准后平台读回。
 
 1. 邮箱密码自助注册：启用 email/password，保留邮箱确认；Swift 默认 PKCE 这一官方行为要与 CJ-004 已锁 SDK 核对后实现。用户验证完成前不得取得 CJ 数据权限。密码直接通过官方客户端→新 Supabase Auth，不进入 CJ API、日志或自建密码表。[密码登录说明](https://supabase.com/docs/guides/auth/passwords)。
 2. JT 名单是准入，不是 Supabase 团队邀请。建议在同一新 Postgres 私有域保存允许邮箱/绑定后的 Auth subject、状态、撤销代次及必要审计；规范化/绑定规则由 AUTH owner 冻结，不猜表名或把整域邮箱放行。真实邮箱名单不进 Git/聊天。自助注册可通过 Before User Created **Postgres hook**检验名单并 fail closed；此 hook 当前列为 Free/Pro 可用，无需为它先建单独 HTTP 服务。[hook 能力](https://supabase.com/docs/guides/auth/auth-hooks)、[创建前检查](https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook)。这是项目应用方案推导，不是 Supabase 内置“JT名单”功能。
@@ -65,8 +65,8 @@ Python应固定新项目 issuer、允许算法、JWKS origin及预期 audience�
 
 | 项目 | 官方公开依据 | 本项目尚缺 / 审批口径 |
 |---|---|---|
-| Supabase组织与计划 | Pro公开基价 $25/月；付费计划含组织每月$10 compute credit，可覆盖一个Micro，不能当每新增项目再给一次 | Go2China Pro组织未批准；已有credit消耗/账期/税币种未知，不承诺增量$0或总额$25。[计划价格](https://supabase.com/pricing) |
-| 新数据库compute | Micro公开约$10/月，小时价$0.01344；时长、disk、egress/MAU等额外用量另算 | 新项目若在现有付费组织，常见新增compute需计价，但实际折扣/额度/规格/最终增量须平台估算读回。先报价再创建。[compute计费](https://supabase.com/docs/guides/platform/manage-your-usage/compute) |
+| Supabase组织与计划 | Pro公开基价 $25/月；付费计划含组织每月$10 compute credit，可覆盖一个Micro，不能当每新增项目再给一次 | 新CJ项目归属该组织仍未批准；现有VP-V4只读metadata已确认organization Go2China、plan pro；已有credit消耗/账期/税币种未知，不承诺增量$0或总额$25。[计划价格](https://supabase.com/pricing) |
+| 新数据库compute | Micro公开约$10/月，小时价$0.01344；时长、disk、egress/MAU等额外用量另算 | 新项目若在现有付费组织，常见新增compute需计价，Main已转交get_cost假设报价monthly USD10（未确认费用、owner未读取原回执）；实际折扣/额度/规格/最终增量仍须连同原回执读回。先报价再创建。[compute计费](https://supabase.com/docs/guides/platform/manage-your-usage/compute) |
 | Supabase地域 | Singapore具体AWS region `ap-southeast-1`；general APAC与精确region选择口径不同 | 仅建议，不批准；记录实际选择及处理地域/备份/SMTP地域，不由域名推断中国可达。[地域文档](https://supabase.com/docs/guides/platform/regions) |
 | A本地TLS | 已有M5Pro，无新增托管compute这一项 | 不等于总费用0：新Auth/DB/SMTP、设备/证书工具/域及操作仍有成本/授权；用现有网络不承诺额外流量免费 |
 | B Cloud Run | 计算按资源/计费模式/region用量收费，免费额度按billing account汇总；镜像registry、secret/log和跨云流量等需另列 | 没有账户、用量、内存/CPU/并发/时长/egress数据，准确增量 UNKNOWN；拿官方calculator与账单账户实际额度做报价，不用free tier做承诺。[Cloud Run价格](https://cloud.google.com/run/pricing) |

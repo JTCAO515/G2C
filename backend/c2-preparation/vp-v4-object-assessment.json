@@ -1,0 +1,3823 @@
+{
+  "source": {
+    "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/task-6/vpv4-readonly-inventory.json",
+    "sha256": "8195bcc9821c97d287d4f336f0a6a8e8937f7b183cbd01ef477f897af9ecf57c",
+    "checked_at_utc": "2026-10-21T13:54:00Z",
+    "scope": "read-only metadata; no approved deletion"
+  },
+  "project": {
+    "name": "VP - V4",
+    "ref": "dzqdzetcctkhbrhlxxgn",
+    "organization": "Go2China",
+    "region": "ap-southeast-1",
+    "plan": "pro",
+    "status": "ACTIVE_HEALTHY"
+  },
+  "counts": {
+    "relations": 123,
+    "businessRelations": 80,
+    "functions": 263,
+    "applicationFunctionCleanupReviewCandidates": 160,
+    "triggers": 67,
+    "eventTriggers": 7,
+    "foreignKeys": 134,
+    "policies": 71,
+    "edgeFunctions": 0,
+    "storageBuckets": 0
+  },
+  "status": "read_only_assessment_not_deletion_authority",
+  "classification_semantics": {
+    "保留": [
+      "public.rls_auto_enable()",
+      "event trigger ensure_rls"
+    ],
+    "候删": [],
+    "系统不可动": {
+      "relations": [
+        "auth.audit_log_entries",
+        "auth.custom_oauth_providers",
+        "auth.flow_state",
+        "auth.identities",
+        "auth.instances",
+        "auth.mfa_amr_claims",
+        "auth.mfa_challenges",
+        "auth.mfa_factors",
+        "auth.mfa_recovery_code_sets",
+        "auth.mfa_recovery_codes",
+        "auth.oauth_authorizations",
+        "auth.oauth_client_states",
+        "auth.oauth_clients",
+        "auth.oauth_consents",
+        "auth.one_time_tokens",
+        "auth.refresh_tokens",
+        "auth.saml_providers",
+        "auth.saml_relay_states",
+        "auth.schema_migrations",
+        "auth.scim_tokens",
+        "auth.scim_users",
+        "auth.sessions",
+        "auth.sso_domains",
+        "auth.sso_providers",
+        "auth.users",
+        "auth.webauthn_challenges",
+        "auth.webauthn_credentials",
+        "extensions.pg_stat_statements",
+        "extensions.pg_stat_statements_info",
+        "realtime.messages",
+        "realtime.schema_migrations",
+        "realtime.subscription",
+        "storage.buckets",
+        "storage.buckets_analytics",
+        "storage.buckets_vectors",
+        "storage.migrations",
+        "storage.objects",
+        "storage.s3_multipart_uploads",
+        "storage.s3_multipart_uploads_parts",
+        "storage.vector_indexes",
+        "supabase_migrations.schema_migrations",
+        "vault.decrypted_secrets",
+        "vault.secrets"
+      ],
+      "event_triggers": [
+        "ensure_rls",
+        "issue_graphql_placeholder",
+        "issue_pg_cron_access",
+        "issue_pg_graphql_access",
+        "issue_pg_net_access",
+        "pgrst_ddl_watch",
+        "pgrst_drop_watch"
+      ],
+      "extensions": [
+        "pg_stat_statements",
+        "pgcrypto",
+        "plpgsql",
+        "supabase_vault",
+        "uuid-ossp"
+      ],
+      "preserve_scope": [
+        "auth/* and existing identities/sessions (contents not read)",
+        "storage/*, realtime/*, vault/*, extensions/*, pg_*, information_schema, supabase_migrations",
+        "public.rls_auto_enable and ensure_rls; managed platform event triggers"
+      ]
+    },
+    "仍连接旧服务": [
+      {
+        "configured_dependency": "auth.users.hide_text_on_user_delete -> turn_private.hide_text_content",
+        "enabled": "O",
+        "caller_runtime": "Auth user-delete trigger; no delete executed"
+      },
+      {
+        "connection": "PostgREST 14.5",
+        "business_caller": "UNKNOWN"
+      }
+    ],
+    "UNKNOWN": "All cleanup-review candidates below without resolved dependency/consumer/recovery evidence"
+  },
+  "backup_restore": "UNKNOWN: plan entitlement is not verified backup/recovery evidence",
+  "consumer_and_dynamic_blockers": {
+    "backupRecovery": "UNKNOWN: plan entitlement is not verified backup/recovery evidence",
+    "externalConsumers": "UNKNOWN: PostgREST and platform connections present; log counts do not identify business consumers",
+    "dynamicDependencies": "Not fully resolved; function bodies and secret/config contents deliberately not read",
+    "authCoupling": "auth.users.hide_text_on_user_delete -> turn_private.hide_text_content",
+    "approval": "No DROP/DELETE/TRUNCATE/Edge/Auth/Storage/provider/RLS mutation approved or executed"
+  },
+  "candidates": [
+    {
+      "type": "relation",
+      "object": "community_private.audit",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "audit_submission_id_fkey",
+            "source": "community_private.audit",
+            "target": "community_private.submissions"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "community_private.receipts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "receipts_actor_id_fkey",
+            "source": "community_private.receipts",
+            "target": "auth.users"
+          },
+          {
+            "conname": "receipts_submission_id_fkey",
+            "source": "community_private.receipts",
+            "target": "community_private.submissions"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "community_private.reviewers",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "reviewers_actor_id_fkey",
+            "source": "community_private.reviewers",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "community_private.settings",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "community_private.submissions",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "audit_submission_id_fkey",
+            "source": "community_private.audit",
+            "target": "community_private.submissions"
+          },
+          {
+            "conname": "receipts_submission_id_fkey",
+            "source": "community_private.receipts",
+            "target": "community_private.submissions"
+          },
+          {
+            "conname": "submissions_author_id_fkey",
+            "source": "community_private.submissions",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "identity_private.mobile_accounts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "mobile_accounts_owner_id_fkey",
+            "source": "identity_private.mobile_accounts",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "identity_private.mobile_attempts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "mobile_attempts_owner_id_fkey",
+            "source": "identity_private.mobile_attempts",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "identity_private.mobile_login_proofs",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "mobile_login_proofs_owner_id_fkey",
+            "source": "identity_private.mobile_login_proofs",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.audit",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "audit_candidate_id_fkey",
+            "source": "knowledge_review_private.audit",
+            "target": "knowledge_review_private.candidates"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.candidate_assertions",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "candidate_assertions_candidate_id_fkey",
+            "source": "knowledge_review_private.candidate_assertions",
+            "target": "knowledge_review_private.candidates"
+          },
+          {
+            "conname": "candidate_assertions_source_revision_id_fkey",
+            "source": "knowledge_review_private.candidate_assertions",
+            "target": "knowledge_review_private.source_revisions"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.candidates",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "audit_candidate_id_fkey",
+            "source": "knowledge_review_private.audit",
+            "target": "knowledge_review_private.candidates"
+          },
+          {
+            "conname": "candidate_assertions_candidate_id_fkey",
+            "source": "knowledge_review_private.candidate_assertions",
+            "target": "knowledge_review_private.candidates"
+          },
+          {
+            "conname": "statements_candidate_id_fkey",
+            "source": "knowledge_review_private.statements",
+            "target": "knowledge_review_private.candidates"
+          },
+          {
+            "conname": "wiki_statement_candidates_candidate_id_fkey",
+            "source": "knowledge_review_private.wiki_statement_candidates",
+            "target": "knowledge_review_private.candidates"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.members",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "members_actor_id_fkey",
+            "source": "knowledge_review_private.members",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.ontology_relations",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "ontology_relations_domain_type_fkey",
+            "source": "knowledge_review_private.ontology_relations",
+            "target": "knowledge_review_private.ontology_types"
+          },
+          {
+            "conname": "ontology_relations_range_type_fkey",
+            "source": "knowledge_review_private.ontology_relations",
+            "target": "knowledge_review_private.ontology_types"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.ontology_types",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "ontology_relations_domain_type_fkey",
+            "source": "knowledge_review_private.ontology_relations",
+            "target": "knowledge_review_private.ontology_types"
+          },
+          {
+            "conname": "ontology_relations_range_type_fkey",
+            "source": "knowledge_review_private.ontology_relations",
+            "target": "knowledge_review_private.ontology_types"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.publication_audit",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "publication_audit_candidate_id_fkey",
+            "source": "knowledge_review_private.publication_audit",
+            "target": "knowledge_review_private.publications"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.publication_settings",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.publications",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "publication_audit_candidate_id_fkey",
+            "source": "knowledge_review_private.publication_audit",
+            "target": "knowledge_review_private.publications"
+          },
+          {
+            "conname": "publications_candidate_id_fkey",
+            "source": "knowledge_review_private.publications",
+            "target": "knowledge_review_private.statements"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.receipts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.settings",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.source_revisions",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "candidate_assertions_source_revision_id_fkey",
+            "source": "knowledge_review_private.candidate_assertions",
+            "target": "knowledge_review_private.source_revisions"
+          },
+          {
+            "conname": "statement_sources_source_revision_id_fkey",
+            "source": "knowledge_review_private.statement_sources",
+            "target": "knowledge_review_private.source_revisions"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.statement_sources",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "statement_sources_candidate_id_fkey",
+            "source": "knowledge_review_private.statement_sources",
+            "target": "knowledge_review_private.statements"
+          },
+          {
+            "conname": "statement_sources_source_revision_id_fkey",
+            "source": "knowledge_review_private.statement_sources",
+            "target": "knowledge_review_private.source_revisions"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.statements",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "publications_candidate_id_fkey",
+            "source": "knowledge_review_private.publications",
+            "target": "knowledge_review_private.statements"
+          },
+          {
+            "conname": "statement_sources_candidate_id_fkey",
+            "source": "knowledge_review_private.statement_sources",
+            "target": "knowledge_review_private.statements"
+          },
+          {
+            "conname": "statements_candidate_id_fkey",
+            "source": "knowledge_review_private.statements",
+            "target": "knowledge_review_private.candidates"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.wiki_generation_jobs",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "wiki_page_revisions_job_id_fkey",
+            "source": "knowledge_review_private.wiki_page_revisions",
+            "target": "knowledge_review_private.wiki_generation_jobs"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.wiki_page_revisions",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "wiki_page_revisions_job_id_fkey",
+            "source": "knowledge_review_private.wiki_page_revisions",
+            "target": "knowledge_review_private.wiki_generation_jobs"
+          },
+          {
+            "conname": "wiki_page_revisions_page_id_fkey",
+            "source": "knowledge_review_private.wiki_page_revisions",
+            "target": "knowledge_review_private.wiki_pages"
+          },
+          {
+            "conname": "wiki_statement_candidates_wiki_revision_id_fkey",
+            "source": "knowledge_review_private.wiki_statement_candidates",
+            "target": "knowledge_review_private.wiki_page_revisions"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.wiki_pages",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "wiki_page_revisions_page_id_fkey",
+            "source": "knowledge_review_private.wiki_page_revisions",
+            "target": "knowledge_review_private.wiki_pages"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "knowledge_review_private.wiki_statement_candidates",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "wiki_statement_candidates_candidate_id_fkey",
+            "source": "knowledge_review_private.wiki_statement_candidates",
+            "target": "knowledge_review_private.candidates"
+          },
+          {
+            "conname": "wiki_statement_candidates_wiki_revision_id_fkey",
+            "source": "knowledge_review_private.wiki_statement_candidates",
+            "target": "knowledge_review_private.wiki_page_revisions"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "place_quota_private.usage",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "usage_actor_id_fkey",
+            "source": "place_quota_private.usage",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "privacy_private.trip_deletions",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "private.audit_events",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.canonical_pois",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.chat_threads",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "hide_text_on_thread_delete",
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "chat thread owner archives",
+          "chat thread owner inserts",
+          "chat thread owner selects",
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.chat_turn_events",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "chat event owner selects",
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.chat_turn_idempotency",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "chat idempotency owner selects",
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.connection_probe_resources",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "probe ops reads scoped rows",
+          "probe owner inserts own row",
+          "probe owner reads own row"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.fact_records",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.memory_consents",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "memory consent owner selects",
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.memory_consumer_receipts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "memory consumer receipt owner selects",
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.memory_profiles",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "memory profile owner selects",
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.memory_receipts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "memory receipt owner selects",
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.model_budget_attempts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.model_budget_provider_limits",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.model_budget_scopes",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.privacy_receipts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "privacy receipt owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.privacy_requests",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "privacy request owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.provider_poi_mappings",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.review_probe_changes",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "review probe author creates own",
+          "review probe author reads own",
+          "review probe independent reviewer approves",
+          "review probe reviewer reads other author"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.travel_reminders",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": [
+          "reminder_owner"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_action_references",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip action reference owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_archives",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip_archive_owner_read"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_audit_events",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "ai10_fault_after_audit_insert",
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip audit owner inserts",
+          "trip audit owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_days",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip day owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_events",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "ai10_fault_after_event_insert",
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip event owner inserts",
+          "trip event owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_idempotency",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "ai10_fault_after_idempotency_insert",
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "idempotency owner inserts",
+          "idempotency owner selects",
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_items",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip item owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_place_references",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip place reference owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_proposals",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "ai10_fault_after_proposal_update",
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "proposal owner inserts pending",
+          "proposal owner resolves own",
+          "proposal owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trip_version_snapshots",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip version snapshot owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.trips",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "ai10_fault_after_trip_update",
+          "capture_initial_trip_version",
+          "guard_archived_trip_content",
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "trip owner deletes",
+          "trip owner inserts",
+          "trip owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.turn_feedback",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "turn feedback owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.turns",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "hide_text_on_turn_delete",
+          "native_mobile_write_v2",
+          "privacy_trip_write"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "turn owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.user_profiles",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2",
+          "user profile owner selects"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "public.v4_migration_baseline",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "native_mobile_write_v2"
+        ],
+        "policies": [
+          "native_mobile_access_v2"
+        ]
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "research_intake_private.applications",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "events_application_id_fkey",
+            "source": "research_intake_private.events",
+            "target": "research_intake_private.applications"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "research_intake_private.events",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "events_application_id_fkey",
+            "source": "research_intake_private.events",
+            "target": "research_intake_private.applications"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "research_intake_private.receipts",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "research_intake_private.settings",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "service_cases_private.audit",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "audit_case_id_fkey",
+            "source": "service_cases_private.audit",
+            "target": "service_cases_private.cases"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "service_cases_private.cases",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "audit_case_id_fkey",
+            "source": "service_cases_private.audit",
+            "target": "service_cases_private.cases"
+          },
+          {
+            "conname": "cases_owner_id_fkey",
+            "source": "service_cases_private.cases",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "service_cases_private.staff",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "staff_actor_id_fkey",
+            "source": "service_cases_private.staff",
+            "target": "auth.users"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.grounded_ai_assist_jobs",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "grounded_ai_assist_jobs_turn_id_fkey",
+            "source": "turn_private.grounded_ai_assist_jobs",
+            "target": "turn_private.grounded_turns"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.grounded_turns",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "grounded_ai_assist_jobs_turn_id_fkey",
+            "source": "turn_private.grounded_ai_assist_jobs",
+            "target": "turn_private.grounded_turns"
+          },
+          {
+            "conname": "grounded_turns_task_id_fkey",
+            "source": "turn_private.grounded_turns",
+            "target": "turn_private.service_tasks"
+          },
+          {
+            "conname": "grounded_turns_turn_id_fkey",
+            "source": "turn_private.grounded_turns",
+            "target": "turn_private.text_content"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.hosted_worker_control",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.hosted_worker_heartbeats",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.service_task_turns",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "service_task_turns_parent_turn_id_fkey",
+            "source": "turn_private.service_task_turns",
+            "target": "turn_private.text_content"
+          },
+          {
+            "conname": "service_task_turns_task_id_fkey",
+            "source": "turn_private.service_task_turns",
+            "target": "turn_private.service_tasks"
+          },
+          {
+            "conname": "service_task_turns_turn_id_fkey",
+            "source": "turn_private.service_task_turns",
+            "target": "turn_private.text_content"
+          }
+        ],
+        "configured_triggers": [
+          "bound_task_history",
+          "qa_link_mode_v1"
+        ],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.service_tasks",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "grounded_turns_task_id_fkey",
+            "source": "turn_private.grounded_turns",
+            "target": "turn_private.service_tasks"
+          },
+          {
+            "conname": "service_task_turns_task_id_fkey",
+            "source": "turn_private.service_task_turns",
+            "target": "turn_private.service_tasks"
+          },
+          {
+            "conname": "service_tasks_goal_turn_id_fkey",
+            "source": "turn_private.service_tasks",
+            "target": "turn_private.text_content"
+          },
+          {
+            "conname": "service_tasks_last_turn_id_fkey",
+            "source": "turn_private.service_tasks",
+            "target": "turn_private.text_content"
+          },
+          {
+            "conname": "service_tasks_policy_id_fkey",
+            "source": "turn_private.service_tasks",
+            "target": "turn_private.text_policies"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.text_consents",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "text_consents_owner_id_fkey",
+            "source": "turn_private.text_consents",
+            "target": "auth.users"
+          },
+          {
+            "conname": "text_consents_policy_id_fkey",
+            "source": "turn_private.text_consents",
+            "target": "turn_private.text_policies"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.text_content",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "grounded_turns_turn_id_fkey",
+            "source": "turn_private.grounded_turns",
+            "target": "turn_private.text_content"
+          },
+          {
+            "conname": "service_task_turns_parent_turn_id_fkey",
+            "source": "turn_private.service_task_turns",
+            "target": "turn_private.text_content"
+          },
+          {
+            "conname": "service_task_turns_turn_id_fkey",
+            "source": "turn_private.service_task_turns",
+            "target": "turn_private.text_content"
+          },
+          {
+            "conname": "service_tasks_goal_turn_id_fkey",
+            "source": "turn_private.service_tasks",
+            "target": "turn_private.text_content"
+          },
+          {
+            "conname": "service_tasks_last_turn_id_fkey",
+            "source": "turn_private.service_tasks",
+            "target": "turn_private.text_content"
+          },
+          {
+            "conname": "text_content_policy_id_fkey",
+            "source": "turn_private.text_content",
+            "target": "turn_private.text_policies"
+          }
+        ],
+        "configured_triggers": [
+          "qa_bootstrap_generation_guard_v1",
+          "require_text_task"
+        ],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.text_dispatches",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [],
+        "configured_triggers": [
+          "qa_bootstrap_dispatch_guard_v1"
+        ],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.text_policies",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "service_tasks_policy_id_fkey",
+            "source": "turn_private.service_tasks",
+            "target": "turn_private.text_policies"
+          },
+          {
+            "conname": "text_consents_policy_id_fkey",
+            "source": "turn_private.text_consents",
+            "target": "turn_private.text_policies"
+          },
+          {
+            "conname": "text_content_policy_id_fkey",
+            "source": "turn_private.text_content",
+            "target": "turn_private.text_policies"
+          }
+        ],
+        "configured_triggers": [
+          "immutable_text_policy"
+        ],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "relation",
+      "object": "turn_private.work",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "dependencies": {
+        "foreign_keys": [
+          {
+            "conname": "work_owner_id_fkey",
+            "source": "turn_private.work",
+            "target": "auth.users"
+          },
+          {
+            "conname": "work_turn_id_fkey",
+            "source": "turn_private.work",
+            "target": "turns"
+          }
+        ],
+        "configured_triggers": [],
+        "policies": []
+      },
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "community_private.current_actor()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "community_private.submission_json(p_id uuid, p_internal boolean)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "identity_private.guard_mobile_rpc_v2()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "identity_private.guard_mobile_write_v2()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "public.canonical_pois.native_mobile_write_v2",
+        "public.chat_threads.native_mobile_write_v2",
+        "public.chat_turn_events.native_mobile_write_v2",
+        "public.chat_turn_idempotency.native_mobile_write_v2",
+        "public.connection_probe_resources.native_mobile_write_v2",
+        "public.fact_records.native_mobile_write_v2",
+        "public.memory_consents.native_mobile_write_v2",
+        "public.memory_consumer_receipts.native_mobile_write_v2",
+        "public.memory_profiles.native_mobile_write_v2",
+        "public.memory_receipts.native_mobile_write_v2",
+        "public.model_budget_attempts.native_mobile_write_v2",
+        "public.model_budget_provider_limits.native_mobile_write_v2",
+        "public.model_budget_scopes.native_mobile_write_v2",
+        "public.privacy_receipts.native_mobile_write_v2",
+        "public.privacy_requests.native_mobile_write_v2",
+        "public.review_probe_changes.native_mobile_write_v2",
+        "public.trip_action_references.native_mobile_write_v2",
+        "public.trip_archives.native_mobile_write_v2",
+        "public.trip_audit_events.native_mobile_write_v2",
+        "public.trip_days.native_mobile_write_v2",
+        "public.trip_events.native_mobile_write_v2",
+        "public.trip_idempotency.native_mobile_write_v2",
+        "public.trip_items.native_mobile_write_v2",
+        "public.trip_place_references.native_mobile_write_v2",
+        "public.trip_proposals.native_mobile_write_v2",
+        "public.trip_version_snapshots.native_mobile_write_v2",
+        "public.trips.native_mobile_write_v2",
+        "public.turn_feedback.native_mobile_write_v2",
+        "public.turns.native_mobile_write_v2",
+        "public.user_profiles.native_mobile_write_v2",
+        "public.v4_migration_baseline.native_mobile_write_v2"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "identity_private.mobile_access_v2()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "identity_private.mobile_session_v2(p_action text, p_attempt uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "identity_private.prepare_mobile_v2(p_owner uuid, p_session uuid, p_attempt uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.bounded_text(p_value jsonb, p_max integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.candidate_json(p_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.candidate_json_before_wiki_v1(p_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.closed_object(v jsonb, keys text[])",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.current_actor()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.identifier_list(v jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.ops_review_workspace(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.ops_review_workspace_before_wiki_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.ops_review_workspace_publication_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.ops_review_workspace_source_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.place_name(v text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.place_subject(p_name text, p_city text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.place_text(v jsonb, maximum integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.question_definition(p_id text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.question_definition_general_v1(p_id text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.resolve_question(p_input jsonb, p_basis jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.selected_question_input(p_id text, p_city text, p_locale text, p_subject text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.source_valid(s jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.statement_valid(v jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.statement_valid_v1(v jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.wiki_draft_valid(v jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.wiki_proposal_sources_valid(v jsonb, known_sources uuid[])",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "knowledge_review_private.wiki_text_valid(v jsonb, max_units integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "ops_budget_private.read_ops_budget_scope_for_member_v1(p_scope_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "privacy_private.guard_trip_write()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "public.chat_threads.privacy_trip_write",
+        "public.trip_action_references.privacy_trip_write",
+        "public.trip_archives.privacy_trip_write",
+        "public.trip_audit_events.privacy_trip_write",
+        "public.trip_days.privacy_trip_write",
+        "public.trip_events.privacy_trip_write",
+        "public.trip_items.privacy_trip_write",
+        "public.trip_place_references.privacy_trip_write",
+        "public.trip_proposals.privacy_trip_write",
+        "public.trip_version_snapshots.privacy_trip_write",
+        "public.trips.privacy_trip_write",
+        "public.turns.privacy_trip_write"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "privacy_private.trip_deletion_receipt(r privacy_private.trip_deletions)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "private.ai10_confirm_fault_trigger()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [
+        "public.trip_audit_events.ai10_fault_after_audit_insert",
+        "public.trip_events.ai10_fault_after_event_insert",
+        "public.trip_idempotency.ai10_fault_after_idempotency_insert",
+        "public.trip_proposals.ai10_fault_after_proposal_update",
+        "public.trips.ai10_fault_after_trip_update"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "private.ai14_fault_probe(p_owner_id uuid, p_fail boolean)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "private.connection_probe_worker_count()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "private.guard_archived_trip_content()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "public.trips.guard_archived_trip_content"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.accept_text_policy(p_policy_id uuid, p_notice_hash text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.append_chat_turn_event(p_turn_id uuid, p_event_id text, p_event_type text, p_state text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.apply_trip_content_patch(p_current jsonb, p_patch jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.archive_trip_v1(p_trip_id uuid, p_expected_version integer, p_idempotency_key uuid, p_confirmed boolean)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.authorize_grounded_dispatch(p_turn_id uuid, p_lease_token uuid, p_policy_id uuid, p_provider text, p_context_digest text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.authorize_text_dispatch(p_turn_id uuid, p_lease_token uuid, p_policy_id uuid, p_provider text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.authorize_text_task_dispatch(p_turn_id uuid, p_lease_token uuid, p_policy_id uuid, p_provider text, p_context_digest text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.cancel_chat_turn(p_turn_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.capture_initial_trip_version()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "public.trips.capture_initial_trip_version"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.claim_grounded_work(p_owner_id uuid, p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.claim_text_task_work(p_owner_id uuid, p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.claim_text_work(p_owner_id uuid, p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.claim_turn_work()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.community_workspace(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.complete_grounded_place_work(p_turn_id uuid, p_lease_token uuid, p_intent text, p_request_scope text, p_unanswered_needs text, p_place_name text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.complete_grounded_work(p_turn_id uuid, p_lease_token uuid, p_intent text, p_request_scope text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.complete_grounded_work_with_needs(p_turn_id uuid, p_lease_token uuid, p_intent text, p_request_scope text, p_unanswered_needs text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.complete_text_work(p_turn_id uuid, p_lease_token uuid, p_kind text, p_text text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.confirm_and_apply_trip_proposal(p_proposal_id uuid, p_idempotency_key text, p_digest text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.connection_probe_ops_visible_count()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.consume_place_quota_v1(p_bucket text, p_minute_limit integer, p_day_limit integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.create_explicit_memory_profile(p_memory_id uuid, p_receipt_id uuid, p_consent_id uuid, p_constraint_kind text, p_summary text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.create_memory_retrieval_consent()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.create_trip_proposal_patch(p_trip_id uuid, p_patch jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.create_trip_rollback_proposal(p_trip_id uuid, p_target_version integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.dispatch_model_budget(p_scope_id uuid, p_owner_id uuid, p_attempt_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.enqueue_turn_work(p_turn_id uuid, p_owner_id uuid, p_session_id uuid, p_lease_ms integer, p_max_attempts integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.execute_trip_deletion_v1(p_request_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.finish_model_budget(p_scope_id uuid, p_owner_id uuid, p_attempt_id uuid, p_action text, p_actual_micros bigint)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.finish_turn_work(p_turn_id uuid, p_lease_token uuid, p_outcome text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.grant_memory_retrieval_consent(p_consent_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.grounded_ai_assist_work_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.hosted_worker_heartbeat(p_worker_id uuid, p_build text, p_started_at timestamp with time zone, p_phase text, p_result text, p_polls bigint, p_finished bigint, p_unavailable bigint, p_skipped bigint, p_stop_reason text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.hosted_worker_ready_groups(p_limit integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.knowledge_answer_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.knowledge_read_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.list_grounded_turns(p_policy_id uuid, p_limit integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.list_service_task_turns(p_policy_id uuid, p_limit integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.list_text_turns(p_policy_id uuid, p_limit integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.native_prepare_v2(p_owner uuid, p_session uuid, p_attempt uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.native_session_v2(p_action text, p_attempt uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.ops_budget_scope_read_v1(p_scope_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.ops_knowledge_provenance_read_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.ops_review_workspace(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.ops_source_revision_withdraw_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.ops_wiki_generation_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.ops_wiki_read_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.ops_wiki_withdrawal_scan_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_accept_policy_v1(p_policy_id uuid, p_notice_hash text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_authorize_dispatch_v1(p_turn_id uuid, p_lease_token uuid, p_scope_id uuid, p_policy_id uuid, p_provider text, p_context_digest text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_authorize_dispatch_v2(p_turn_id uuid, p_lease_token uuid, p_scope_id uuid, p_policy_id uuid, p_provider text, p_context_digest text, p_owner_id uuid, p_notice_hash text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_cancellation_v1(p_action text, p_thread_id uuid, p_request_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_claim_work_v1(p_owner_id uuid, p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_complete_work_v1(p_turn_id uuid, p_lease_token uuid, p_kind text, p_text text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_list_sessions_v1(p_limit integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_native_session_v1(p_action text, p_mobile_epoch bigint, p_payload jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_read_policy_v1(p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_read_session_v1(p_thread_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_read_work_v1(p_turn_id uuid, p_lease_token uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_ready_groups_v3(p_limit integer, p_model text, p_price_version text, p_endpoint text, p_owner_id uuid, p_policy_id uuid, p_scope_id uuid, p_notice_hash text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_submit_message_v1(p_thread_id uuid, p_turn_id uuid, p_idempotency_key uuid, p_policy_id uuid, p_locale text, p_text text, p_task_id uuid, p_relationship text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.qa_submit_turn_v1(p_thread_id uuid, p_turn_id uuid, p_idempotency_key uuid, p_policy_id uuid, p_locale text, p_text text, p_task_id uuid, p_scope_version integer, p_relationship text, p_parent_turn_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_grounded_ai_assist_context_v1(p_turn_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_grounded_events(p_policy_id uuid, p_turn_id uuid, p_after_sequence bigint)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_grounded_policy(p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_grounded_turn(p_turn_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_grounded_work(p_turn_id uuid, p_lease_token uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_hosted_worker_status()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_ops_budget_scope_v1(p_scope_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_retrievable_memory_profiles()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_text_policy(p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_text_task_policy(p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_text_turn(p_turn_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_text_work(p_turn_id uuid, p_lease_token uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_trip_deletion_v1(p_request_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.read_trip_proposal_v2(p_proposal_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.record_turn_feedback(p_turn_id uuid, p_feedback_kind text, p_reason_code text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.reject_trip_proposal_v2(p_proposal_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.request_privacy_action(p_request_id uuid, p_action text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.request_trip_deletion_v1(p_request_id uuid, p_trip_id uuid, p_expected_version integer, p_confirmed boolean)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.research_intake_record_event_v1(p_id uuid, p_event text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.research_intake_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.reserve_model_budget(p_scope_id uuid, p_owner_id uuid, p_task_id uuid, p_attempt_id uuid, p_provider text, p_model text, p_price_version text, p_reserved_micros bigint)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.revise_trip_proposal(p_proposal_id uuid, p_title text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.revise_trip_proposal_patch(p_proposal_id uuid, p_patch jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.revoke_memory_retrieval_consent(p_consent_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.save_user_profile(p_display_name text, p_travel_pace text, p_locale text, p_currency text, p_distance_unit text, p_temperature_unit text, p_default_departure_time time without time zone)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.service_case_v1(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.set_hosted_worker_enabled(p_enabled boolean, p_reason text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.start_chat_turn(p_thread_id uuid, p_turn_id uuid, p_idempotency_key uuid, p_digest text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.start_text_turn(p_thread_id uuid, p_turn_id uuid, p_idempotency_key uuid, p_policy_id uuid, p_locale text, p_text text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.stop_model_budget(p_scope_id uuid, p_owner_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.submit_grounded_turn(p_thread_id uuid, p_turn_id uuid, p_idempotency_key uuid, p_policy_id uuid, p_locale text, p_text text, p_task_id uuid, p_scope_version integer, p_relationship text, p_parent_turn_id uuid, p_city text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.submit_service_task_turn(p_thread_id uuid, p_turn_id uuid, p_idempotency_key uuid, p_policy_id uuid, p_locale text, p_text text, p_task_id uuid, p_scope_version integer, p_relationship text, p_parent_turn_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.submit_text_turn(p_thread_id uuid, p_turn_id uuid, p_idempotency_key uuid, p_policy_id uuid, p_locale text, p_text text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.transition_memory_profile(p_memory_id uuid, p_next_state text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.travel_reminders_v1(p_trip uuid, p_action text, p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.trip_content_snapshot(p_trip_id uuid, p_title text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "public.withdraw_text_policy(p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "service_cases_private.actor()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "service_cases_private.execute(p_input jsonb)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "service_cases_private.owner_json(c service_cases_private.cases)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.bound_task_history()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "turn_private.service_task_turns.bound_task_history"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.claim_text_mode(p_owner_id uuid, p_policy_id uuid, p_context_mode text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.complete_selected_grounded_work(p_turn_id uuid, p_lease_token uuid, p_intent text, p_request_scope text, p_subject text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.hide_text_content()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "auth.users.hide_text_on_user_delete",
+        "public.chat_threads.hide_text_on_thread_delete",
+        "public.turns.hide_text_on_turn_delete"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.immutable_text_policy()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [
+        "turn_private.text_policies.immutable_text_policy"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.lock_text_work(p_turn uuid, p_token uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.lock_turn(p_turn uuid, p_owner uuid, p_session uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.qa_consumer_window_v1(p_history jsonb, p_text text)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.qa_history_v1(p_turn uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.qa_link_mode_v1()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "turn_private.service_task_turns.qa_link_mode_v1"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.qa_lock_work_v1(p_turn uuid, p_token uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.reject_qa_bootstrap_generation_v1()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "turn_private.text_content.qa_bootstrap_generation_guard_v1",
+        "turn_private.text_dispatches.qa_bootstrap_dispatch_guard_v1"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.require_qa_generation_purpose_v1(p_policy_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.require_text_task()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [
+        "turn_private.text_content.require_text_task"
+      ],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.reserve_model_budget_unbound(p_scope_id uuid, p_owner_id uuid, p_task_id uuid, p_attempt_id uuid, p_provider text, p_model text, p_price_version text, p_reserved_micros bigint)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.task_history(p_turn uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.terminal(p_turn uuid, p_state text, p_attempt integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.text_owner()",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.text_policy_current(p_id uuid)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": true,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.text_policy_eligible(p turn_private.text_policies, p_at timestamp with time zone)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    },
+    {
+      "type": "function",
+      "object": "turn_private.valid_text(p_text text, p_max integer)",
+      "classification": "UNKNOWN",
+      "cleanup_review_candidate": true,
+      "deletion_approved": false,
+      "backup_restore": "UNKNOWN",
+      "security_definer": false,
+      "configured_trigger_links": [],
+      "dynamic_body_dependencies": "UNKNOWN; function bodies deliberately not read",
+      "external_consumers": "UNKNOWN"
+    }
+  ]
+}
