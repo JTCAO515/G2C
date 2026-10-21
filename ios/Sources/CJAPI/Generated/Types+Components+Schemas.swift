@@ -238,15 +238,62 @@ extension Components {
         public struct MessageReceiptQueryResponse: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/MessageReceiptQueryResponse/request_id`.
             public var request_id: Components.Schemas.RequestId
+            /// Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageReceiptQueryResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MessageReceiptQueryResponse/receipt/case1`.
+                case MessageReceipt(Components.Schemas.MessageReceipt)
+                /// - Remark: Generated from `#/components/schemas/MessageReceiptQueryResponse/receipt/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MessageReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MessageReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageReceiptQueryResponse/receipt`.
+            public var receipt: Components.Schemas.MessageReceiptQueryResponse.receiptPayload
             /// Creates a new `MessageReceiptQueryResponse`.
             ///
             /// - Parameters:
             ///   - request_id:
-            public init(request_id: Components.Schemas.RequestId) {
+            ///   - receipt: Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MessageReceiptQueryResponse.receiptPayload
+            ) {
                 self.request_id = request_id
+                self.receipt = receipt
             }
             public enum CodingKeys: String, CodingKey {
                 case request_id
+                case receipt
             }
         }
     }

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum, StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
@@ -73,9 +73,13 @@ class MessageReceiveResponse(BaseModel):
     receipt: MessageReceipt
 
 
+class Receipt(Enum):
+    NoneType_None = None
+
+
 class MessageReceiptQueryResponse(BaseModel):
     request_id: RequestId
-    receipt: MessageReceipt | None = Field(
+    receipt: MessageReceipt | Receipt = Field(
         ...,
-        description='Null means not observed in this scoped ledger, never authoritative not_received or permission to resend.',
+        description='Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.',
     )

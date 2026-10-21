@@ -18,7 +18,9 @@ def main():
     parser.add_argument('--message-repository', type=Path, required=True)
     args = parser.parse_args()
     pins = json.loads((ROOT / 'backend/cj_api/composition_pins.json').read_text())
-    target = ROOT / '.local/composition-deps'
+    # Keep each exact source tuple separate; never overwrite earlier pinned evidence.
+    export_key = '-'.join(source['commit'] for source in pins['sources'])
+    target = ROOT / '.local/composition-deps' / export_key
     if target.is_symlink():
         raise ValueError('dependency export root must not be a symlink')
     target.mkdir(parents=True, exist_ok=True)
@@ -37,6 +39,7 @@ def main():
                 output.parent.mkdir(parents=True, exist_ok=True)
                 output.write_bytes(data)
         print(f"PASS fixed {source['name']} {source['commit']} ({len(source['files'])} runtime blobs)")
+    print('Export root: ' + str(target))
     print('Use only the printed fixed export via PYTHONPATH for owner tests; production integration must contain the original commits.')
 
 

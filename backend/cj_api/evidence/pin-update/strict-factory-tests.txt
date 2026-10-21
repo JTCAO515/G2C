@@ -1,0 +1,8 @@
+test_factory_consumes_new_pin_with_explicit_strict_and_current_gate (test_pin_update.PinUpdateTests.test_factory_consumes_new_pin_with_explicit_strict_and_current_gate) ... ok
+test_new_adapter_default_strict_keeps_nbf_and_scalar_audience (test_pin_update.PinUpdateTests.test_new_adapter_default_strict_keeps_nbf_and_scalar_audience) ... ok
+test_new_optional_profile_and_missing_config_are_not_automatic_enablement (test_pin_update.PinUpdateTests.test_new_optional_profile_and_missing_config_are_not_automatic_enablement) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.068s
+
+OK

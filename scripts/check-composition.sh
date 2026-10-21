@@ -8,5 +8,6 @@ if [ "$#" != 2 ]; then
 fi
 uv run --locked python scripts/prepare-composition-deps.py --auth-repository "$1" --message-repository "$2"
 # Only fixed Git exports are added for owner tests; no moving author tree imports.
-export PYTHONPATH="$PWD/backend:$PWD/.local/composition-deps/backend/auth:$PWD/.local/composition-deps/backend/message"
+export_key=$(uv run --locked python -c "import json; p=json.load(open('backend/cj_api/composition_pins.json')); print('-'.join(s['commit'] for s in p['sources']))")
+export PYTHONPATH="$PWD/backend:$PWD/.local/composition-deps/$export_key/backend/auth:$PWD/.local/composition-deps/$export_key/backend/message"
 PYTHONDONTWRITEBYTECODE=1 uv run --locked python -B -m unittest discover -s backend/cj_api/tests -v

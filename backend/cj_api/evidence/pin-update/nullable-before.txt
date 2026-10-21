@@ -1,0 +1,7 @@
+backend/cj_api/tests/generated_receipt_consumer.swift:10:23: error: value of type 'Components.Schemas.MessageReceiptQueryResponse' has no member 'receipt'
+ 8 |     static func read(_ data: Data) throws -> String {
+ 9 |         let result = try JSONDecoder().decode(Components.Schemas.MessageReceiptQueryResponse.self, from: data)
+10 |         switch result.receipt {
+   |                       `- error: value of type 'Components.Schemas.MessageReceiptQueryResponse' has no member 'receipt'
+11 |         case .MessageReceipt(let receipt):
+12 |             guard receipt.message_id == "original", receipt.generation == "generation-original" else {

@@ -323,15 +323,17 @@
             "$ref": "#/components/schemas/RequestId"
           },
           "receipt": {
-            "anyOf": [
+            "oneOf": [
               {
                 "$ref": "#/components/schemas/MessageReceipt"
               },
               {
-                "type": "null"
+                "enum": [
+                  null
+                ]
               }
             ],
-            "description": "Null means not observed in this scoped ledger, never authoritative not_received or permission to resend."
+            "description": "Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone."
           }
         }
       }

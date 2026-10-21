@@ -1,0 +1,7 @@
+Building for debugging...
+[1 / 5] CJAPI
+Build complete! (0.27秒)
+PASS actual generated typed receipt is readable
+PASS explicit null is distinct not-observed, never retry authority
+PASS missing receipt throws keyNotFound, never silently null
+PASS non-null fallback is explicitly invalid, never not-observed

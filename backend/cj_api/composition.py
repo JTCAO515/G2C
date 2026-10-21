@@ -61,6 +61,8 @@ def build_message_boundary(*, environment, jwt_configuration, verification_keys,
     auth = modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration, auth.JWTConfiguration):
         raise CompositionUnavailable('Fixed AUTH JWTConfiguration required')
+    if jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
+        raise CompositionUnavailable('This composition slice requires the strict JWT profile')
     verifier = auth.PyJWTVerifier(jwt_configuration, verification_keys)
     checker = modules['cj_auth.admission'].AdmissionChecker(verifier, access_provider)
     return modules['cj_message.auth_boundary'].Boundary(checker, resolve_repository, new_run_id)
