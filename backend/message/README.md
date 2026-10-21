@@ -117,3 +117,13 @@ If the logging handler itself fails, primary outcome preservation takes priority
 logging availability is a host concern. A failed rollback is not reported as completed,
 and no cleanup/commit automatic retry occurs. Targeted injected evidence is in
 `evidence/cleanup-after.txt`; this is not real PostgreSQL cleanup acceptance.
+
+## Isolated PostgreSQL evidence update
+
+A new task-private PostgreSQL16.15 cluster has now executed the unchanged candidate
+SQL and six repository transaction/concurrency/paging tests, followed by graceful
+restart recovery. It was safely stopped, with data/logs retained. See
+[evidence/PG-REPORT.md](evidence/PG-REPORT.md) for exact hash, driver/environment,
+fault injection attribution and limits. Earlier UNRUN/unapplied statements describe
+prior evidence or production targets; they do not negate this scoped local run.
+Production AUTH/RLS/provider/cleanup/cloud acceptance remains outstanding.
