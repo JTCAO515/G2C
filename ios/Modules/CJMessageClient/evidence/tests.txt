@@ -1,0 +1,37 @@
+Building for debugging...
+[Planning deferred tasks]
+[1 / 12]
+[2 / 13] CJMessageClient
+[7 / 17] CJMessageClient
+[12 / 18] CJMessageClientTests-product
+[16 / 21] CJMessageClientTests-product
+[20 / 23] CJMessageClientTests-product
+[22 / 23] CJMessageClientTests-product
+Build complete! (1.63秒)
+Test Suite 'All tests' started at 2026-10-21 23:38:10.583.
+Test Suite 'All tests' passed at 2026-10-21 23:38:10.584.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite RecoveryTests started.
+◇ Test encryptedReopenRetainsOriginalBytesDraftAndUnknown() started.
+◇ Test ambiguousSaveInvalidatesUntilReadback() started.
+◇ Test ciphertextCannotMoveBetweenScopesEvenWithSameKey() started.
+◇ Test unknownBodyCannotBeRekeyedAndMalformedUTF8Rejected() started.
+◇ Test nullNeverAuthorizesPostAndOriginalIDCannotChange() started.
+◇ Test missingKeyWrongKeyCorruptionNeverMeansEmpty() started.
+◇ Test unicodeOpaqueIDsDoNotAliasAndLanguageDoesNotRewrite() started.
+◇ Test accountEnvironmentAndSameAccountGenerationRejectOldResults() started.
+◇ Test latestQueryAndReceiptBindingOnly() started.
+✔ Test ambiguousSaveInvalidatesUntilReadback() passed after 0.007 seconds.
+✔ Test nullNeverAuthorizesPostAndOriginalIDCannotChange() passed after 0.007 seconds.
+✔ Test unknownBodyCannotBeRekeyedAndMalformedUTF8Rejected() passed after 0.007 seconds.
+✔ Test ciphertextCannotMoveBetweenScopesEvenWithSameKey() passed after 0.007 seconds.
+✔ Test unicodeOpaqueIDsDoNotAliasAndLanguageDoesNotRewrite() passed after 0.013 seconds.
+✔ Test latestQueryAndReceiptBindingOnly() passed after 0.013 seconds.
+✔ Test accountEnvironmentAndSameAccountGenerationRejectOldResults() passed after 0.013 seconds.
+✔ Test missingKeyWrongKeyCorruptionNeverMeansEmpty() passed after 0.013 seconds.
+✔ Test encryptedReopenRetainsOriginalBytesDraftAndUnknown() passed after 0.013 seconds.
+✔ Suite RecoveryTests passed after 0.013 seconds.
+✔ Test run with 9 tests in 1 suite passed after 0.013 seconds.
