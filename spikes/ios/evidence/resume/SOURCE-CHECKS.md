@@ -1,0 +1,8 @@
+# Supplemental source checks
+
+Read on 2026-10-21, Xcode27.1. These explain tool availability, not product support policy.
+
+- [Xcode27 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes): Device Hub includes a VoiceOver control and documents a fix to its effect on the selected device. The notes also introduce XCUIVoiceOverService. Its **installed** SDK header `XCUIAutomation.framework/Headers/XCUIVoiceOverService.h` and `XCUIDevice.h` require iOS27+; it cannot directly automate the current iOS17.5/26.5 runtimes. No new runtime downloaded.
+- [Apple accessibility testing guide](https://developer.apple.com/documentation/accessibility/performing-accessibility-testing-for-your-app): generic guidance recommends physical devices for VoiceOver. This did not justify assuming the current tool cannot enable it: the actual Xcode27.1 Device Hub on CJ004 iOS26.5 showed the VoiceOver gesture notice and focus rectangle, then local action feedback. This observation does not establish complete speech/gesture correctness.
+- Actual Xcode27 app path is `/Applications/Xcode.app/Contents/Applications/DeviceHub.app`. Attempts to select the old Simulator app name/path failed without altering device state. Used only the CJ004 simulator rows; did not select View Screen for the physical device or boot other owners' devices.
+- `ettrace` was not installed. No Homebrew or global package install occurred. Used built-in `xctrace` Time Profiler with explicit CJ004 UDID and PID; not an ETTrace capture. Local CLI help for `record`/`export` was consulted. No `--all-processes` or `--no-prompt` used.
