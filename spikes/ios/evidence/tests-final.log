@@ -1,0 +1,39 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[1 / 5]
+[1 / 5] _IssueReporting
+[2 / 6] SpikeClientTests-product
+[4 / 8] SpikeClientTests-product
+[10 / 12] SpikeClientTests-product
+[12 / 15] Textual
+[13 / 14] SpikeUI
+[15 / 16] SpikeUI
+Build complete! (3.37秒)
+Test Suite 'All tests' started at 2026-10-21 19:26:54.229.
+Test Suite 'All tests' passed at 2026-10-21 19:26:54.231.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Test malformedJSONFails() started.
+◇ Test completeStream() started.
+◇ Test silentStreamEOFFails() started.
+◇ Test emptyStreamFails() started.
+◇ Test normalReply() started.
+◇ Test cancellationDoesNotComplete() started.
+◇ Test unknownStatusFails() started.
+◇ Test bodyTransportFailureDoesNotComplete() started.
+◇ Test structuredRejection() started.
+◇ Test missingRequiredFieldFails() started.
+✔ Test cancellationDoesNotComplete() passed after 0.001 seconds.
+✔ Test unknownStatusFails() passed after 0.003 seconds.
+✔ Test normalReply() passed after 0.004 seconds.
+✔ Test silentStreamEOFFails() passed after 0.004 seconds.
+✔ Test structuredRejection() passed after 0.004 seconds.
+✔ Test completeStream() passed after 0.004 seconds.
+✔ Test emptyStreamFails() passed after 0.004 seconds.
+✔ Test bodyTransportFailureDoesNotComplete() passed after 0.004 seconds.
+✔ Test missingRequiredFieldFails() passed after 0.019 seconds.
+✔ Test malformedJSONFails() passed after 0.019 seconds.
+✔ Test run with 10 tests in 0 suites passed after 0.020 seconds.
