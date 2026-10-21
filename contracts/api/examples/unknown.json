@@ -1,0 +1,11 @@
+{
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "error": {
+    "code": "OUTCOME_UNKNOWN",
+    "category": "dependency",
+    "message_en": "unknown",
+    "message_zh": "结果未知",
+    "outcome": "unknown",
+    "recovery": "reconcile_original"
+  }
+}
