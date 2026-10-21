@@ -32,22 +32,22 @@
   {
     "path": "A/native-A-after_delete_restart.log",
     "bytes": 2586,
-    "sha256": "9bfcc12d2ef8645688b001049b437b74ca8cf95cd0f452af19eaeda7dd3c4cfb"
+    "sha256": "c9bd85b0bdadcbb1381e8da8b1b063f9a4c8711e1c2ddd87836dbc124220f6c5"
   },
   {
     "path": "A/native-A-interleave.log",
     "bytes": 5411,
-    "sha256": "d76d858efc6f43e42df1ac7061dac55f4d1231faec692ed53dffa6cf6ea12418"
+    "sha256": "34a504a9d436d768478782877f1e60108a30fbabfaedaeb78a42010ce88d118f"
   },
   {
     "path": "A/native-A-restart.log",
     "bytes": 3036,
-    "sha256": "4dd01c0580a9ca97ce6ce5dec316dc39833bda65807fbef6a6431233dd1ddd20"
+    "sha256": "b5e79114d83eb10a9b66bd69ec17f74270f97123e1308bfbce298ec05c91191c"
   },
   {
     "path": "A/native-A-seed.log",
     "bytes": 2783,
-    "sha256": "c9cfe7e9b7393c08018cd3bef96620d5d3f0ad3fac12fed193c958bc266536e3"
+    "sha256": "ff75e3945645228c9f33276f514839153e1034fe3454073146463c0ad800deba"
   },
   {
     "path": "B/digest/experience.md",
@@ -82,12 +82,12 @@
   {
     "path": "B/native-B-restart.log",
     "bytes": 3036,
-    "sha256": "9d8cd35a249084a2cb5ff83853acaba0cb4c1ef60361f06cbdba47387e0c7599"
+    "sha256": "f9feb1469df45e676aa334ccd408ce062663a11b221993f26fd5d8fedc4baf10"
   },
   {
     "path": "B/native-B-seed.log",
     "bytes": 2783,
-    "sha256": "70a44ced24cf923063c0a69c73ac7c4bb0f0799960f4adf2acb58fcd7f80dc22"
+    "sha256": "68bb3d5abb257ff339f6437656d46a988a88e8f7b35ece6671381c8882007d79"
   },
   {
     "path": "crash/metadata/file_graph/LocalFileGraph.jsonl.zst",
@@ -102,17 +102,17 @@
   {
     "path": "crash/native-A-after_crash.log",
     "bytes": 1854,
-    "sha256": "6f2bfd6577c550297394df28858d1a4145b05dfed103001a323bccb872f1fab8"
+    "sha256": "bc25d8830d27f183704b56b2df1a9d811112d045093e8660c9e457ab917c295f"
   },
   {
     "path": "crash/native-A-crash.log",
     "bytes": 1203,
-    "sha256": "d2042079f2b30d028ad90e28965fc5c67817550f87486f2aa3d59e73089e36e2"
+    "sha256": "fe55ffd1a3b4fd320cbfb5e9bc6b4ba0c5287fffbc7d5ac8f0a577743b26743b"
   },
   {
     "path": "guarded/authority.sqlite3",
-    "bytes": 24576,
-    "sha256": "c0be5a7160ff776ab60ef06004c83d76e52e1d822fbb3e083566cd1ab797872d"
+    "bytes": 32768,
+    "sha256": "491c5c8dbd3875b089134cd4d6a3e7274d358f248315e112b84427f95608bd3b"
   },
   {
     "path": "guarded/digest/fact.md",
@@ -122,12 +122,12 @@
   {
     "path": "guarded/guarded-A-exercise.log",
     "bytes": 8604,
-    "sha256": "5e77330a8bcdd8760b5a49f148f645cacae6422801c4f32080c8a592fe9c5947"
+    "sha256": "2391e896f207df682bf220e4ac784b51d52007dceed6dd31c8a33606ec25c3be"
   },
   {
     "path": "guarded/guarded-A-restart.log",
     "bytes": 5933,
-    "sha256": "c25501543d63039dfe5bf5381dd94f2beb5390f2dc2ae63f32f42e9ab2119c00"
+    "sha256": "6e911502931ba9e678832afe0a0ea3c766c5533f776847dd83f3fd5a26ab3d4a"
   },
   {
     "path": "guarded/metadata/file_graph/LocalFileGraph.jsonl.zst",
@@ -162,6 +162,6 @@
   {
     "path": "multi-instance/native-A-multi_instance.log",
     "bytes": 9543,
-    "sha256": "d8d0fdd2b31f53dee73dd9057512209211b33c61fb330a78a4ab191cae1e5110"
+    "sha256": "9dfa9ac2293d583cbae43b4bf09bf4fa85ae64ac4a0dbfeb78ce96bedeec8640"
   }
 ]

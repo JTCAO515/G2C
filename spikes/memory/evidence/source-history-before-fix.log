@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/source_history_probe.py", line 111, in <module>
+    main()
+    ~~~~^^
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/source_history_probe.py", line 100, in main
+    results += invoke(run, "guarded", "A", phase)
+               ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/probe.py", line 187, in invoke
+    raise RuntimeError(f"{args}: exit {result.returncode}; see {log}")
+RuntimeError: ('guarded', 'A', 'history_delete'): exit 1; see /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/source-history-c15f254922a541bbaf6bb80b34542bae/guarded-A-history_delete.log

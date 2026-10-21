@@ -20,11 +20,19 @@ class FenceExperiment:
         self.lock = asyncio.Lock()
         self.db = sqlite3.connect(path)
         self.db.execute("PRAGMA secure_delete=ON")
+        has_items = self.db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='items'").fetchone()
+        has_sources = self.db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='item_sources'").fetchone()
+        if has_items and not has_sources and self.db.execute("SELECT 1 FROM items LIMIT 1").fetchone():
+            self.db.close()
+            raise RuntimeError("legacy experiment lacks historical sources; use a fresh synthetic workspace")
         self.db.executescript("""
             CREATE TABLE IF NOT EXISTS items (
                 id TEXT PRIMARY KEY, revision INTEGER NOT NULL, enabled INTEGER NOT NULL,
                 deleted INTEGER NOT NULL, payload TEXT, cleanup TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS revoked_sources (source_id TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS item_sources (
+                item_id TEXT NOT NULL, source_id TEXT NOT NULL,
+                PRIMARY KEY (item_id, source_id));
             CREATE TABLE IF NOT EXISTS epoch (singleton INTEGER PRIMARY KEY CHECK(singleton=1), value INTEGER);
             INSERT OR IGNORE INTO epoch VALUES (1,0);
         """)
@@ -62,6 +70,8 @@ class FenceExperiment:
             with self.db:
                 self.db.execute("INSERT OR REPLACE INTO items VALUES (?,?,?,0,?,'not_requested')",
                                 (value["id"], value["revision"], int(value["enabled"]), json.dumps(value)))
+                self.db.execute("INSERT OR IGNORE INTO item_sources VALUES (?,?)",
+                                (value["id"], value["source_id"]))
                 self.bump()
             if value["enabled"]:
                 await self.project(value)
@@ -75,10 +85,12 @@ class FenceExperiment:
             current = self.item(item_id)
             if not current or current[0] != expected or current[2]:
                 raise Conflict("stale delete")
-            source = json.loads(current[3])["source_id"]
+            sources = self.db.execute("SELECT source_id FROM item_sources WHERE item_id=?", (item_id,)).fetchall()
+            if not sources:
+                raise Conflict("item has no source history")
             # Durable stop-use and cleanup status precede any derived storage IO.
             with self.db:
-                self.db.execute("INSERT OR IGNORE INTO revoked_sources VALUES (?)", (source,))
+                self.db.executemany("INSERT OR IGNORE INTO revoked_sources VALUES (?)", sources)
                 self.db.execute("UPDATE items SET revision=revision+1,enabled=0,deleted=1,payload=NULL,cleanup='pending' WHERE id=?", (item_id,))
                 self.bump()
 

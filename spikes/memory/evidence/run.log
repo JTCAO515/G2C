@@ -3,7 +3,7 @@
   "version": "0.4.1.13",
   "python": "3.14.7",
   "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
-  "data_path": ".data/run-94eaff07aec24f4291e4c6c1c3a34948",
+  "data_path": ".data/run-94bc5a33d24b4253a203e9c242a506a7",
   "network": "worker socket.connect denied",
   "model": "UNRUN",
   "auth": "UNRUN",

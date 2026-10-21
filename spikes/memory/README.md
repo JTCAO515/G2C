@@ -20,6 +20,7 @@
 UV_CACHE_DIR="$PWD/.uv-cache" uv venv --python /opt/homebrew/bin/python3.14 .venv
 UV_CACHE_DIR="$PWD/.uv-cache" uv pip sync --python .venv/bin/python --require-hashes requirements.lock
 .venv/bin/python probe.py
+.venv/bin/python source_history_probe.py
 UV_CACHE_DIR="$PWD/.uv-cache" uv pip check --python .venv/bin/python
 ```
 
@@ -52,9 +53,13 @@ UV_CACHE_DIR="$PWD/.uv-cache" uv pip check --python .venv/bin/python
 
 1. expected revision 阻止旧提取覆盖更正；缓存结果进入上下文前重读权威版本，返回权威新值而非信任旧 chunk 文本。
 2. 停用立即排除上下文，重新启用经版本校验；上下文/回答发布须核当前 epoch（本段只测试 epoch gate，不声称实际 LLM 发布）。
-3. 删除先持久化 tombstone、来源撤回和 pending，再做派生清理；旧任务、旧来源换新条目 ID 重放、旧快照重建都不能恢复有效偏好。单进程 `asyncio.gather` 交错实际旧源写入与重建，未声称分布式竞态覆盖。
+3. 每次成功保存将条目与来源的关联追加到独立 `item_sources`，更正不能覆盖历史来源；删除在同一事务撤回该条目的全部历史来源，并提交 tombstone 和 pending，再做派生清理。旧任务、旧来源换新条目 ID 重放、旧快照重建均受 fence 校验。单进程 `asyncio.gather` 交错实际旧源写入与重建，未声称分布式竞态覆盖。
 4. 清理故障保留 failed；新进程读取仍 failed，排除旧上下文；随后重试实际 delete、原始文件 unlink、optimize、dump，并从权威有效条目重建。另一条事实与另一工作区保持可检索。
 5. 检查清理后受控 SQLite、解压 chunks/graph 与 BM25 快照中没有被删样例文本标记；该检查不覆盖日志/备份/供应商/磁盘可恢复副本，不等于安全擦盘。
+
+定向 P2 回归另见 `source_history_probe.py`、`evidence/source-history/`：先以 S1 保存，用 S2 更正，在新进程删除，再以新条目 ID 重放 S1/S2；确认均被拒绝、不会进入上下文，且重启/重建后仍受撤回约束。相邻来源 `S1-neighbor` 和不同条目的 `S3` 仍能读写，新明确 `S4` 保存允许。修复前真实失败保留在 `evidence/source-history/before-fix-delete.log`（旧 S1 被接受并进入有效上下文），修复后结果单独记录。
+
+本实验的 `source_id` 是独立条目的原子来源标识，按精确相等匹配，不按前缀撤回；正式系统复用一整条消息生成多项记忆时仍须由 MEMORY owner 固定细粒度来源身份与撤回范围，不能把本实验直接当生产 schema。历史关联只保留 ID、不保留旧正文。旧版已保存 payload 的实验库无法补造被覆盖的 S1，启动时显式拒绝缺少历史关联表的非空旧库，须创建新的合成验证空间；不自动迁移或覆写旧 `.data/`。
 
 这些实验通过只说明最小本地 fence 设计可行，不会把缺失语义自动加到原生 ReMe。正式 MEMORY/CLEANUP owner 还必须实现：真实 principal/account generation、来源修订和授权范围、事务/回执/未知结果查询、候选推断确认、跨进程单 writer、防止其他原消息/摘要/cache/checkpoint 绕过 fence、在途模型结果失效、各域持久 cleanup hook 和失败恢复、备份恢复先重放撤回依据再开放读取。CJ 权威提交与派生 checkpoint 之间发生失败时应保留可重建状态，不能报全成；本实验尚未实现生产 outbox/派发恢复。
 

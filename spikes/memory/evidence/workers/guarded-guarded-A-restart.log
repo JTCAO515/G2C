@@ -1,30 +1,30 @@
-2026-10-21 19:22:24 | INFO | bm25_index.py:458 | load | Loaded 1 docs from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
-2026-10-21 19:22:24 | INFO | local_file_store.py:244 | load | Loaded 1 chunks from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
-2026-10-21 19:22:24 | INFO | local_file_store.py:247 | load | cj003: chunk store load complete: chunks=1, elapsed=0.000s
-2026-10-21 19:22:24 | INFO | local_file_store.py:254 | load | cj003: graph consistency check complete: repaired=False, elapsed=0.000s
-2026-10-21 19:22:24 | INFO | local_file_store.py:261 | load | cj003: tag index sync complete: enabled=False, healthy=True, elapsed=0.000s
-2026-10-21 19:22:24 | INFO | local_file_store.py:271 | load | cj003: BM25/keyword index sync complete: backend=BM25Index, docs=1, elapsed=0.000s
-2026-10-21 19:22:24 | INFO | local_file_store.py:275 | load | cj003: file store load phases complete: elapsed=0.002s
-2026-10-21 19:22:24 | INFO | local_file_store.py:105 | _start | cj003: file store load complete: chunks=1, elapsed=0.002s
-2026-10-21 19:22:24 | INFO | local_file_store.py:345 | _start_embedding_backfill | cj003: embedding backfill skipped: reason=embedding_disabled, elapsed=0.000s
-2026-10-21 19:22:24 | INFO | local_file_store.py:112 | _start | cj003: embedding backfill scheduling complete: scheduled=False, elapsed=0.000s
-2026-10-21 19:22:24 | INFO | local_file_store.py:117 | _start | cj003: file store startup complete: elapsed=0.003s
-2026-10-21 19:22:24 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
-2026-10-21 19:22:24 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
-2026-10-21 19:22:24 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_graph/LocalFileGraph.jsonl.zst
-2026-10-21 19:22:24 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
-2026-10-21 19:22:24 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
-2026-10-21 19:22:24 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_graph/LocalFileGraph.jsonl.zst
-2026-10-21 19:22:24 | INFO | local_file_store.py:622 | _rebuild_keyword_index | cj003: keyword index rebuild started: total=1, batch_size=200
-2026-10-21 19:22:24 | INFO | local_file_store.py:479 | _log_progress | cj003: keyword index rebuild progress: 1/1 (100%)
-2026-10-21 19:22:24 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
-2026-10-21 19:22:24 | INFO | local_file_store.py:646 | _rebuild_keyword_index | cj003: keyword index rebuild complete: total=1, elapsed=0.00s
-2026-10-21 19:22:24 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
-2026-10-21 19:22:24 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
-2026-10-21 19:22:24 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_graph/LocalFileGraph.jsonl.zst
-2026-10-21 19:22:24 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
-2026-10-21 19:22:24 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/file_graph/LocalFileGraph.jsonl.zst
-2026-10-21 19:22:24 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:34:12 | INFO | bm25_index.py:458 | load | Loaded 1 docs from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:34:12 | INFO | local_file_store.py:244 | load | Loaded 1 chunks from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 19:34:12 | INFO | local_file_store.py:247 | load | cj003: chunk store load complete: chunks=1, elapsed=0.000s
+2026-10-21 19:34:12 | INFO | local_file_store.py:254 | load | cj003: graph consistency check complete: repaired=False, elapsed=0.000s
+2026-10-21 19:34:12 | INFO | local_file_store.py:261 | load | cj003: tag index sync complete: enabled=False, healthy=True, elapsed=0.000s
+2026-10-21 19:34:12 | INFO | local_file_store.py:271 | load | cj003: BM25/keyword index sync complete: backend=BM25Index, docs=1, elapsed=0.000s
+2026-10-21 19:34:12 | INFO | local_file_store.py:275 | load | cj003: file store load phases complete: elapsed=0.001s
+2026-10-21 19:34:12 | INFO | local_file_store.py:105 | _start | cj003: file store load complete: chunks=1, elapsed=0.001s
+2026-10-21 19:34:12 | INFO | local_file_store.py:345 | _start_embedding_backfill | cj003: embedding backfill skipped: reason=embedding_disabled, elapsed=0.000s
+2026-10-21 19:34:12 | INFO | local_file_store.py:112 | _start | cj003: embedding backfill scheduling complete: scheduled=False, elapsed=0.000s
+2026-10-21 19:34:12 | INFO | local_file_store.py:117 | _start | cj003: file store startup complete: elapsed=0.002s
+2026-10-21 19:34:12 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 19:34:12 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:34:12 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_graph/LocalFileGraph.jsonl.zst
+2026-10-21 19:34:12 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 19:34:12 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:34:12 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_graph/LocalFileGraph.jsonl.zst
+2026-10-21 19:34:12 | INFO | local_file_store.py:622 | _rebuild_keyword_index | cj003: keyword index rebuild started: total=1, batch_size=200
+2026-10-21 19:34:12 | INFO | local_file_store.py:479 | _log_progress | cj003: keyword index rebuild progress: 1/1 (100%)
+2026-10-21 19:34:12 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:34:12 | INFO | local_file_store.py:646 | _rebuild_keyword_index | cj003: keyword index rebuild complete: total=1, elapsed=0.00s
+2026-10-21 19:34:12 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 19:34:12 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:34:12 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_graph/LocalFileGraph.jsonl.zst
+2026-10-21 19:34:12 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 19:34:12 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/file_graph/LocalFileGraph.jsonl.zst
+2026-10-21 19:34:12 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94bc5a33d24b4253a203e9c242a506a7/guarded/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
 CJ003_RESULT=[{"check": "CJ_restart_preserves_failed_cleanup_and_fence", "status": "PASS", "detail": "not falsely complete; persisted SQLite authority"}, {"check": "CJ_cleanup_retry_and_authority_rebuild", "status": "PASS", "detail": "actual ReMe delete/optimize/dump/reindex; source removed; unrelated fact preserved"}, {"check": "CJ_controlled_snapshot_content_removed", "status": "PASS", "detail": "checked SQLite and decompressed ReMe graph/chunks plus BM25 snapshot; no backup/disk erasure claim"}]
 
 STDERR

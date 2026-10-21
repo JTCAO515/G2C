@@ -1,0 +1,42 @@
+{
+  "data_path": ".data/source-history-e306a58ad71a4ce8bb8bc57ce1bf429a",
+  "scope": "CJ source-history regression only",
+  "network": "probe workers reject socket.connect",
+  "results": [
+    {
+      "check": "CJ_history_S1_to_S2_correction",
+      "status": "PASS",
+      "detail": "real component correction persisted before separate-process delete"
+    },
+    {
+      "check": "CJ_history_legacy_workspace_rejected",
+      "status": "PASS",
+      "detail": "populated old schema rejected without inventing historical associations or overwriting data"
+    },
+    {
+      "check": "CJ_history_delete_rejects_S1_and_S2_new_ids",
+      "status": "PASS",
+      "detail": "historical and current sources blocked before cleanup, not just old item id"
+    },
+    {
+      "check": "CJ_history_replay_rebuild_interleave",
+      "status": "PASS",
+      "detail": "historical source replay rejected while authoritative rebuild runs"
+    },
+    {
+      "check": "CJ_history_neighbor_and_other_item_unaffected",
+      "status": "PASS",
+      "detail": "S1-neighbor and distinct S3 item remain readable and editable after target deletion"
+    },
+    {
+      "check": "CJ_history_new_explicit_source_allowed",
+      "status": "PASS",
+      "detail": "new S4 save is allowed; deleted target cleanup completes independently"
+    },
+    {
+      "check": "CJ_history_revocations_survive_restart",
+      "status": "PASS",
+      "detail": "both source fences persist across cleanup/restart/rebuild; surviving entries retained"
+    }
+  ]
+}

@@ -165,6 +165,9 @@ async def guarded(phase):
     store = await new_store()
     fence = FenceExperiment(Path("authority.sqlite3"), store)
     try:
+        if phase.startswith("history_"):
+            from source_history_probe import exercise
+            return await exercise(fence, phase)
         return await fence.probe(phase, sample("A", "preference"), sample("A", "fact"))
     finally:
         fence.close()
