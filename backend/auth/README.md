@@ -92,3 +92,6 @@ UNRUN：真实 provider/JWKS/在线撤销、实际 CJ 成员与邀请绑定、�
 VALID 合法/非法构造及错误 status 类型。未观察或声称修复前有 gate 越权。
 CJ009 dc5352f 合法消费源码兼容；运行基线与真实分区/撤销/提交边界限制已明确写入
 SERVER-INTERFACE.md，仍待原 owner 更新其固定消费引用/运行说明。
+
+显式可选 JWKS provider/轮换候选见 [JWKS-PROVIDER](../../contracts/auth/JWKS-PROVIDER.md)。
+默认无 transport/config 时仍 UNKNOWN、不联网；原 strict/静态公钥路径不变。
