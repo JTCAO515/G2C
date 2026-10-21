@@ -20,6 +20,9 @@ UI@1.1 仍为候选；当前固定版本消费确认见 [UI-1.1-CONSUMPTION](UI-
 缺配置的入口明确不可用；官方 SDK 本地编译/拦截 transport 差额见
 [SDK-ADAPTER](../../ios/Modules/CJAuth/SDK-ADAPTER.md)，不代表真实 OAuth/账号已接通。
 
+服务端独立实现候选：[接口/准入](SERVER-INTERFACE.md)、[JWT adapter 与验证](../../backend/auth/README.md)。
+这不代表正式 API、真实权限提供者或实时撤销已经接通。
+
 ## 已确认的首版账号方式
 
 邮箱＋密码、自助注册、邮箱验证及找回密码；JT 管理受邀名单，未受邀不能使用模型。

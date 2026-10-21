@@ -4,9 +4,12 @@ import SwiftUI
 /// Host owns the state for the window lifetime. No language-based .id or recreation.
 public struct ShellView: View {
     @Bindable private var state: ShellState
+    @State private var accountHost: AccountHost
 
-    public init(state: ShellState) {
+    public init(state: ShellState, accountHost: AccountHost? = nil) {
+        if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
         self.state = state
+        self._accountHost = State(initialValue: accountHost ?? AccountHost(shell: state))
     }
 
     public var body: some View {
@@ -30,7 +33,7 @@ public struct ShellView: View {
             }
             .tabItem { Label(ShellTab.plugins.title(state.language), systemImage: "square.grid.2x2") }
             .tag(ShellTab.plugins)
-            MemoryShell(state: state)
+            MemoryShell(state: state, accountHost: accountHost)
                 .tabItem { Label(ShellTab.memory.title(state.language), systemImage: "tray") }
                 .tag(ShellTab.memory)
         }

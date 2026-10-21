@@ -1,0 +1,11 @@
+test_after_commit_denial_preserves_original_recovery (auth_consumption.AuthConsumption.test_after_commit_denial_preserves_original_recovery) ... ok
+test_allowed_real_gate_consumed_and_rechecked (auth_consumption.AuthConsumption.test_allowed_real_gate_consumed_and_rechecked) ... ok
+test_client_owner_rejected_and_revocation_blocks_pending (auth_consumption.AuthConsumption.test_client_owner_rejected_and_revocation_blocks_pending) ... ok
+test_commit_boundary_revocation_rolls_back (auth_consumption.AuthConsumption.test_commit_boundary_revocation_rolls_back) ... ok
+test_identity_changed_during_repository_resolution_rejected (auth_consumption.AuthConsumption.test_identity_changed_during_repository_resolution_rejected) ... ok
+test_unknown_invalid_not_invited_unverified_never_resolve (auth_consumption.AuthConsumption.test_unknown_invalid_not_invited_unverified_never_resolve) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.001s
+
+OK
