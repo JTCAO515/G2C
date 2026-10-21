@@ -16,6 +16,10 @@ class Conflict(Exception):
 
 class FenceExperiment:
     def __init__(self, path, store):
+        from writer import WorkspaceWriter
+        if not isinstance(store, WorkspaceWriter):
+            raise TypeError("CJ experiment requires an exclusive WorkspaceWriter")
+        store.require_active()
         self.store = store
         self.lock = asyncio.Lock()
         self.db = sqlite3.connect(path)
@@ -41,24 +45,28 @@ class FenceExperiment:
         self.db.close()
 
     def epoch(self):
+        self.store.require_active()
         return self.db.execute("SELECT value FROM epoch WHERE singleton=1").fetchone()[0]
 
     def item(self, item_id):
+        self.store.require_active()
         return self.db.execute("SELECT revision,enabled,deleted,payload,cleanup FROM items WHERE id=?", (item_id,)).fetchone()
 
     def bump(self):
+        self.store.require_active()
         self.db.execute("UPDATE epoch SET value=value+1 WHERE singleton=1")
 
     async def project(self, item):
         from probe import projection
-        path = Path("digest") / f"{item['id']}.md"
-        path.parent.mkdir(exist_ok=True)
-        path.write_text(json.dumps(item, ensure_ascii=False), encoding="utf-8")
-        await self.store.upsert([projection(item)])
-        await self.store.dump()
+        async with self.store.operation():
+            path = Path("digest") / f"{item['id']}.md"
+            path.parent.mkdir(exist_ok=True)
+            path.write_text(json.dumps(item, ensure_ascii=False), encoding="utf-8")
+            await self.store.upsert([projection(item)])
+            await self.store.dump()
 
     async def save(self, value, expected):
-        async with self.lock:
+        async with self.lock, self.store.operation():
             existing = self.item(value["id"])
             if self.db.execute("SELECT 1 FROM revoked_sources WHERE source_id=?", (value["source_id"],)).fetchone():
                 raise Conflict("revoked source")
@@ -81,7 +89,7 @@ class FenceExperiment:
             return value
 
     async def delete(self, item_id, expected):
-        async with self.lock:
+        async with self.lock, self.store.operation():
             current = self.item(item_id)
             if not current or current[0] != expected or current[2]:
                 raise Conflict("stale delete")
@@ -95,7 +103,7 @@ class FenceExperiment:
                 self.bump()
 
     async def cleanup(self, item_id, fail=False):
-        async with self.lock:
+        async with self.lock, self.store.operation():
             current = self.item(item_id)
             if not current or not current[2]:
                 raise Conflict("cleanup requires tombstone")
@@ -114,6 +122,7 @@ class FenceExperiment:
                 self.db.execute("UPDATE items SET cleanup='complete' WHERE id=?", (item_id,))
 
     def context(self, chunks):
+        self.store.require_active()
         # Actual result text must come from the current authoritative revision.
         result = []
         for chunk in chunks:
@@ -123,7 +132,7 @@ class FenceExperiment:
         return result
 
     async def rebuild(self, expected_epoch):
-        async with self.lock:
+        async with self.lock, self.store.operation():
             if self.epoch() != expected_epoch:
                 raise Conflict("stale rebuild snapshot")
             await self.store.clear()
