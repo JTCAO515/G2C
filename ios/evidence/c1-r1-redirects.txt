@@ -1,0 +1,12 @@
+PASS HTTP 301 Location=http://localhost:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 302 Location=http://localhost:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 303 Location=http://localhost:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 307 Location=http://localhost:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 308 Location=http://localhost:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 301 Location=http://127.0.0.1:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 302 Location=http://127.0.0.1:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 303 Location=http://127.0.0.1:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 307 Location=http://127.0.0.1:51706/forbidden: exit=1, rejected before follow
+PASS HTTP 308 Location=http://127.0.0.1:51706/forbidden: exit=1, rejected before follow
+PASS listener counts {"destination": 0, "source": 10}
+Local listeners stopped and threads joined
