@@ -1,0 +1,4 @@
+# Runtime and offline tests: Python 3.9+ standard library only.
+# No third-party distributions installed or resolved.
+# PostgreSQL driver choice/pin belongs to future authorized host composition;
+# this package accepts an injected DB-API connection factory and opens no sockets itself.
