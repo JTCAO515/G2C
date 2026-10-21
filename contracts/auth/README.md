@@ -4,7 +4,8 @@
 执行 owner：Main 指派的 CJ007 独立执行聊天（本候选作者）；不兼任 Main。
 输入：r3 Issue #8 本地已验证快照、固定 base
 `00769d7f793566887a8e192a6ca7b35d8c5fb46a` 的 BASE@1.0 与 docs/contracts.md。
-UI@1.0 未发布，消费确认 **PENDING**；无下游正式实现授权。
+UI@1.0 未发布；对固定 UI 候选的有界消费确认见 [UI-CONSUMPTION](UI-CONSUMPTION.md)。
+入口/语言/展示非授权语义兼容，身份清理与正式映射仍 **PENDING**；无下游正式实现授权。
 
 本目录只含协议无关语义、正负样例和内存合成检查。没有 endpoint、JWT
 声明、provider 配置、SDK adapter、凭据、数据库或 RLS；不得导入生产。
