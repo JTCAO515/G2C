@@ -1,6 +1,6 @@
 # CJShell — CJ006 local candidate
 
-Independent Swift package; no dependencies, root package/Xcode changes or production entry point. UI@1.1 contract is in `contracts/ui/README.md` at repository root. iOS 17 and macOS 14 are experiment targets, not the agreed product minimum. macOS runs state tests; SwiftUI shell is iOS-only.
+Independent Swift package with adjacent CJAuth core dependency; no root package/Xcode changes or production entry point. UI@1.1 contract is in `contracts/ui/README.md` at repository root. iOS 17 and macOS 14 are experiment targets, not the agreed product minimum. macOS runs state tests; SwiftUI shell is iOS-only.
 
 Host integration (future shared engineering owner): retain `@State private var shell = ShellState()` and present `ShellView(state: shell)`. Do not recreate the state or set `.id(language)` on the root. Optional `ShellPresentation.assistantBody` is plain native text applied with a captured UI generation; no Textual or CJ004 streaming experiment is linked.
 
@@ -25,3 +25,5 @@ Manual acceptance steps (runtime coverage and limits now in `evidence/RUNTIME-DE
 5. VoiceOver: inspect labels, disabled announcements, tab order, picker and back navigation. Repeat on allocated physical devices for final acceptance.
 
 Actual local checks and exclusions are recorded in `evidence/RESULTS.md`. Do not treat app compilation as any of the above visual/runtime checks.
+
+Account host wiring and transient-input boundaries: see `contracts/ui/ACCOUNT-HOST.md` at repository root. Default account actions remain unconfigured and offline.

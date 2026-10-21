@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MemoryShell: View {
     @Bindable var state: ShellState
+    let accountHost: AccountHost
     private var language: ShellLanguage { state.language }
 
     var body: some View {
@@ -48,7 +49,7 @@ struct MemoryShell: View {
                 Text(language.text("Memory details, sources, dates and editing controls will appear when the memory service is connected. No changes can be saved here yet.", "记忆服务接入后提供详情、来源、时间和编辑操作。目前无法在此保存更改。"))
             }.navigationTitle(group.title(language))
         case .account:
-            information(language.text("Account", "账号"), language.text("Account services are not connected. Sign-in status is unavailable. Sign-in, sign-out and account deletion are not available here yet.", "账号服务尚未接入，无法核实登录状态。目前不提供登录、退出或注销操作。"))
+            AccountView(host: accountHost, shell: state)
         case .help:
             information(language.text("Help", "帮助"), language.text("Use the four tabs to open Assistant, Trips, Plugins and Memory. Account and language settings are in Memory. You can type an unsent draft; sending and travel services are not connected yet. Translation tools are planned for a later version.", "通过四个标签进入助手、行程、插件和记忆。账号和语言设置位于记忆内。可以输入未发送草稿；发送和旅行服务尚未接入。翻译工具计划在后续版本提供。"))
         case .privacy:
