@@ -1,0 +1,96 @@
+"""PostgreSQL DB-API repository source. No connection creation, driver or auth."""
+from contextlib import contextmanager
+import logging
+from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable
+
+
+class Repository:
+    def __init__(self, connect, scope):
+        # Internal partition key, NOT a principal schema or client-supplied owner.
+        if not isinstance(scope, str) or not scope:
+            raise ValueError('explicit internal scope required')
+        self.connect, self.scope = connect, scope
+
+    @contextmanager
+    def transaction(self):
+        # Factory must yield a NEW non-autocommit DB-API connection at READ COMMITTED.
+        conn = self.connect()
+        cur = None
+        outcome = 'setup_failed'
+
+        def cleanup(action, stage):
+            try:
+                action()
+            except BaseException:
+                # Fixed diagnostics only: never exception text, SQL, scope or credentials.
+                # Even a failing logging handler cannot replace the primary outcome.
+                try:
+                    logging.getLogger(__name__).warning(
+                        'message_repository_cleanup_failed stage=%s outcome=%s', stage, outcome)
+                except BaseException:
+                    pass
+
+        try:
+            if conn.autocommit:
+                raise ValueError('autocommit forbidden')
+            cur = conn.cursor()
+            try:
+                cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                yield Transaction(cur, self.scope)
+            except BaseException:
+                outcome = 'body_failed'
+                cleanup(conn.rollback, 'rollback')
+                raise
+            else:
+                outcome = 'commit_unknown'
+                try:
+                    conn.commit()
+                except Exception as exc:
+                    # Do not retry commit or claim rollback after an uncertain commit ACK.
+                    raise CommitUnknown() from exc
+                outcome = 'committed'
+        finally:
+            if cur is not None:
+                cleanup(cur.close, 'cursor_close')
+            cleanup(conn.close, 'connection_close')
+
+
+class Transaction:
+    def __init__(self, cursor, scope):
+        self.cur, self.scope = cursor, scope
+
+    def lock_scope(self):
+        self.cur.execute('SELECT scope FROM cj_message_scope WHERE scope = %s FOR UPDATE', (self.scope,))
+        if self.cur.fetchone() is None:
+            raise Unavailable()
+
+    def chat(self, cid, generation=None):
+        self.cur.execute('SELECT generation, epoch, last_sequence FROM cj_message_chat WHERE scope = %s AND conversation_id = %s AND active FOR UPDATE', (self.scope, cid))
+        row = self.cur.fetchone()
+        if row is None or (generation is not None and row[0] != generation):
+            raise Unavailable()
+        return Chat(*row)
+
+    def find(self, mid):
+        self.cur.execute('SELECT raw_input, message_id, conversation_id, generation, sequence, run_id, input_sha256 FROM cj_message_receipt WHERE scope = %s AND message_id = %s', (self.scope, mid))
+        row = self.cur.fetchone()
+        return Stored(bytes(row[0]), Receipt(*row[1:])) if row else None
+
+    def insert(self, stored):
+        r = stored.receipt
+        self.cur.execute('INSERT INTO cj_message_receipt (scope, message_id, conversation_id, generation, sequence, run_id, input_sha256, raw_input) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',
+                         (self.scope, r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256, stored.raw))
+        self.cur.execute('UPDATE cj_message_chat SET last_sequence = %s WHERE scope = %s AND conversation_id = %s AND generation = %s AND active', (r.sequence, self.scope, r.conversation_id, r.generation))
+        if self.cur.rowcount != 1:
+            raise Unavailable()
+
+    def enqueue(self, receipt):
+        self.cur.execute('INSERT INTO cj_message_delivery (scope, message_id, run_id) VALUES (%s,%s,%s)', (self.scope, receipt.message_id, receipt.run_id))
+
+    def page(self, cid, generation, after, through, limit):
+        self.cur.execute('SELECT message_id, conversation_id, generation, sequence, run_id, input_sha256 FROM cj_message_receipt WHERE scope = %s AND conversation_id = %s AND generation = %s AND sequence > %s AND sequence <= %s ORDER BY sequence LIMIT %s', (self.scope, cid, generation, after, through, limit))
+        return [Receipt(*row) for row in self.cur.fetchall()]
+
+    def pending(self, limit):
+        self.cur.execute('SELECT r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256 FROM cj_message_delivery d JOIN cj_message_receipt r ON (r.scope, r.message_id, r.run_id) = (d.scope, d.message_id, d.run_id) JOIN cj_message_chat c ON (c.scope, c.conversation_id, c.generation) = (r.scope, r.conversation_id, r.generation) WHERE d.scope = %s AND c.active AND NOT d.acknowledged ORDER BY r.conversation_id, r.sequence LIMIT %s', (self.scope, limit))
+        return [Receipt(*row) for row in self.cur.fetchall()]
