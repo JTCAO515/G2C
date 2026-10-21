@@ -1,0 +1,35 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 507]
+[Planning deferred tasks]
+[1 / 1]
+[7 / 19] CJMessageHTTPTests-product
+[8 / 19] CJMessageClientTests-product
+[10 / 21] CJMessageClientTests-product
+[16 / 20] CJMessageClientTests-product
+Build complete! (1.96秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ActivationReentryTests started.
+◇ Test invalidationDuringLoadCannotReactivateOldAccount() started.
+◇ Test oldLoadCannotReplaceCallbackActivatedAccount() started.
+◇ Test normalActivationAndFailedLoadRemainExplicit() started.
+◇ Test oldLoadErrorDoesNotInvalidateCallbackActivatedAccount() started.
+✘ Test invalidationDuringLoadCannotReactivateOldAccount() recorded an issue at ActivationReentryTests.swift:35:9: Expectation failed: an error was expected but none was thrown and "Lease(instance: BC4F4455-6F14-4B69-9051-3B9E5680679F, generation: D04F895C-E960-4C41-9B31-A41354A3C6D0)" was returned
+↳ RecoveryError.self → <not evaluated>
+↳   RecoveryError → <not evaluated>
+↳   self → <not evaluated>
+✘ Test oldLoadCannotReplaceCallbackActivatedAccount() recorded an issue at ActivationReentryTests.swift:25:9: Expectation failed: an error was expected but none was thrown and "Lease(instance: C4DAA8F8-215D-4FEF-9EED-0D486092D98F, generation: C33AE298-9573-4AB3-89BC-0070C15747F6)" was returned
+↳ RecoveryError.self → <not evaluated>
+↳   RecoveryError → <not evaluated>
+↳   self → <not evaluated>
+✘ Test invalidationDuringLoadCannotReactivateOldAccount() failed after 0.001 seconds with 1 issue.
+✘ Test oldLoadCannotReplaceCallbackActivatedAccount() recorded an issue at ActivationReentryTests.swift:19:6: Caught error: .inactive
+✘ Test oldLoadCannotReplaceCallbackActivatedAccount() failed after 0.001 seconds with 2 issues.
+✔ Test normalActivationAndFailedLoadRemainExplicit() passed after 0.001 seconds.
+✔ Test oldLoadErrorDoesNotInvalidateCallbackActivatedAccount() passed after 0.001 seconds.
+✘ Suite ActivationReentryTests failed after 0.001 seconds with 3 issues.
+✘ Test run with 4 tests in 1 suite failed after 0.001 seconds with 3 issues.
+Note: Some test targets reported failures:
+  - CJMessageClientTests (Swift Testing)

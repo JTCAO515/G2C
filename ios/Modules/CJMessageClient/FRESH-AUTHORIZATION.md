@@ -68,3 +68,7 @@ Query null does not grant permission. No new key, cleared file, rewritten payloa
 new ID is used to erase uncertainty. Old valid encrypted records and all prior evidence
 are preserved. True host/Keychain/service/device/anti-rollback acceptance remains UNRUN;
 this is a locally testable fail-closed candidate, not a claim to solve rollback globally.
+
+Activation reentry correction: evidence/ACTIVATION-REENTRY.md documents an independent
+load-generation check so old activate cannot replace a callback-activated account or
+reactivate after invalidation. Four targeted cases pass; no new send authority is granted.

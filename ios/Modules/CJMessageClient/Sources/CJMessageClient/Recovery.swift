@@ -75,6 +75,7 @@ public struct Submission: Sendable {
 @MainActor public final class MessageRecovery {
     private let storage: any SecureMessageStorage
     private let instance = UUID()
+    private var activationGeneration = UUID()
     private var lease: Lease?
     private var scope: StorageScope?
     private var snapshot = Snapshot()
@@ -93,7 +94,11 @@ public struct Submission: Sendable {
 
     public func activate(_ scope: StorageScope) throws -> Lease {
         invalidate()
+        let requestedGeneration = activationGeneration
         var restored = try storage.load(scope: scope) ?? Snapshot()
+        // A synchronous dependency may activate another account or invalidate us.
+        // Check before touching restored data, observed IDs, scope or the new lease.
+        guard activationGeneration == requestedGeneration else { throw RecoveryError.inactive }
         guard restored.version == 1 else { throw RecoveryError.invalidSnapshot }
         for (key, record) in restored.actions {
             guard key == Self.key(record.messageID), !record.messageID.isEmpty,
@@ -117,6 +122,7 @@ public struct Submission: Sendable {
 
     /// Immediate local fence; does not claim remote logout/deletion or erase recovery data.
     public func invalidate() {
+        activationGeneration = UUID()
         lease = nil; scope = nil; snapshot = Snapshot(); operations = [:]; fresh = [:]
     }
 
