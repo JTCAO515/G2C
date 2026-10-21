@@ -1,0 +1,4 @@
+PASS generated Swift real HTTP receive/repeat preserves original receipt
+PASS generated Swift real HTTP object receipt and opaque query ID
+PASS generated Swift real HTTP explicit null; no resend authority
+PASS generated Swift real HTTP test-malformed missing receipt is keyNotFound, never null
