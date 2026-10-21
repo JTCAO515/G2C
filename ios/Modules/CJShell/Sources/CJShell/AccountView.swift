@@ -45,11 +45,13 @@ struct AccountView: View {
                 TextField(language.text("Email address", "邮箱地址"), text: $email)
                     .keyboardType(.emailAddress).textContentType(.emailAddress)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .focused($editing).accessibilityIdentifier("account.email")
+                    .focused($editing).accessibilityLabel(language.text("Email address", "邮箱地址"))
+                    .accessibilityIdentifier("account.email")
                 if mode != .recovery {
                     SecureField(language.text("Password", "密码"), text: $password)
                         .textContentType(mode == .register ? .newPassword : .password)
-                        .focused($editing).accessibilityIdentifier("account.password")
+                        .focused($editing).accessibilityLabel(language.text("Password", "密码"))
+                        .accessibilityIdentifier("account.password")
                 }
                 actionButton(mode.action, title: mode.title(language))
                 if let reason = host.unavailableReason(for: mode.action) { Text(reasonText(reason)).font(.footnote) }
