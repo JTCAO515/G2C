@@ -1,0 +1,32 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 13] CJSessionTests-product
+[7 / 13] CJSessionTests-product
+[9 / 13] CJSessionTests-product
+Build complete! (1.39秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite SessionStoreTests started.
+◇ Test lateDuplicateWrongPurposeAndOtherInstanceRejected() started.
+◇ Test automaticRestoreNeverTouchesStorageEvenAfterRecreation() started.
+◇ Test keychainLockedAndCorruptAreNotNotFoundAndNoBlindFallback() started.
+◇ Test networkUnknownPreservesBytesAndBinding() started.
+◇ Test saveLoadRedactionAndNoBusinessGrant() started.
+◇ Test keychainQueriesAreExactAndTombstoneSurvivesAdapterRecreation() started.
+◇ Test emptyOrBroadConfigurationRejected() started.
+◇ Test clearFailureBlocksLoadSaveAndRetryClearFencesOldWork() started.
+◇ Test loadAndSaveFailureAreExplicitNotMissing() started.
+✔ Test networkUnknownPreservesBytesAndBinding() passed after 0.001 seconds.
+✔ Test keychainLockedAndCorruptAreNotNotFoundAndNoBlindFallback() passed after 0.001 seconds.
+✔ Test saveLoadRedactionAndNoBusinessGrant() passed after 0.001 seconds.
+✔ Test keychainQueriesAreExactAndTombstoneSurvivesAdapterRecreation() passed after 0.001 seconds.
+✔ Test lateDuplicateWrongPurposeAndOtherInstanceRejected() passed after 0.001 seconds.
+✔ Test emptyOrBroadConfigurationRejected() passed after 0.001 seconds.
+✔ Test clearFailureBlocksLoadSaveAndRetryClearFencesOldWork() passed after 0.001 seconds.
+✔ Test loadAndSaveFailureAreExplicitNotMissing() passed after 0.001 seconds.
+✔ Test automaticRestoreNeverTouchesStorageEvenAfterRecreation() passed after 0.001 seconds.
+✔ Suite SessionStoreTests passed after 0.001 seconds.
+✔ Test run with 9 tests in 1 suite passed after 0.001 seconds.
