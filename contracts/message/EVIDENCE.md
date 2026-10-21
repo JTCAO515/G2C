@@ -19,3 +19,13 @@ AUTH-CONSUMPTION.md。原有 15 场景 + 2 AUTH 增补通过；新增默认邮�
 未 push/PR/merge；未修改共享 OpenAPI、根锁/工程、原文档或 HANDOFF。
 Issue #10 保持未完成。草案消费者确认、真实 AUTH/RUN/USAGE/清理接入、留存和
 正式事务实现待各 owner 补齐；非空 Trip 明确拒绝，未伪造其权威。
+
+## 文档差额：MESSAGE-semantics-draft.1
+
+差额基线 f43ad4d1ee8eec5126efa84a6f372ddcb66c0061。Main 本轮转交该候选
+Testing 17+5 风险 PASS、AUTH owner 消费确认；Review 进行中。上面的独立
+UNRUN 是原作者交付时状态，不覆盖此转交更新；本线程未代做独立验收。
+本差额仅 README/AUTH-CONSUMPTION/EVIDENCE/SEMANTIC-SCOPE 文档，明确
+normative、fixture、真实待实现与排除范围；未修改模型/schema/样例，不重跑17项。
+验证：文档相对链接存在、git diff --check、四个实现/样例文件相对基线字节一致。
+完整 MESSAGE@1.0、真实服务验收和冻结仍未完成。

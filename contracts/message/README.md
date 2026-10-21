@@ -4,6 +4,7 @@
 基线 `59ea8aa46fed3738063b8031250367370c628cf8`；输入为本地 CJ-DOC-36
 Issue #10/#5 r3 快照、docs/contracts.md、该基线 AUTH-draft.1。
 独立执行 owner 为 CJ009；Review/Testing/Publish 与作者分离。
+规范性语义、fixture 记法、排除项及发布条件见 [语义子范围](SEMANTIC-SCOPE.md)。
 
 本目录不是 API/数据库实现。`schema.json` 仅描述草案消息输入；`model.py`
 是标准库内存状态机，不能导入正式服务。唯一正式 wire 来源仍是
@@ -61,7 +62,8 @@ client generation；本模型只覆盖服务端语义，UI 晚到屏障需 CJ006
 最新任务包已确认邮箱密码、自助注册、邮箱验证找回及 JT 邀请名单；未经邀请
 不得调用模型。本草案不实现登录。基线 AUTH 对受限业务更保守的门禁仍沿用作
 合成前置，未邀请用户是否可读既有历史等精确产品范围待 AUTH owner/消费者确认。
-AUTH@1.0 尚未冻结，不以此宣称已完成消费确认或真实账号隔离。
+AUTH@1.0 尚未冻结；固定候选语义消费确认见 AUTH-CONSUMPTION.md，
+不以此宣称完整 wire 消费或真实账号隔离。
 
 ## 分页与结束摘要
 
@@ -96,7 +98,8 @@ CJ009 提供全域清理清单与 hook，CJ024 协调整体清理；删除/撤�
 
 待确认消费者：CJ005 唯一来源/事务机制/错误，CJ007 AUTH 身份与资格，CJ010
 原 run 去重及串行投递，CJ011/020 稳定来源和摘要 checkpoint，CJ016 Trip 上下文，
-CJ023 诊断引用，CJ024 清理。均为 PENDING；独立 Review/Testing 尚未进行。
+CJ023 诊断引用，CJ024 清理。除 Main 已转交 CJ007 语义确认外仍 PENDING；Main 已转交 f43ad4d
+Testing 17+5 风险 PASS，Review 进行中；精确子范围见 SEMANTIC-SCOPE.md。
 真实 API/数据库/账号、模型调用、真机、CI、部署均 UNRUN，Issue #10 不关闭。
 
 运行：`python3 -B contracts/message/check.py`。全部使用明确 fixture 身份，无网络/安装。
