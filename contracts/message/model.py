@@ -79,7 +79,9 @@ class Model:
         if cid in self.s['chats']:
             self.chat(a, cid)
             return cid
-        self.s['chats'][cid] = {'owner': a.principal, 'messages': [], 'draft': b'', 'epoch': 0}
+        self.s['clock'] += 1
+        self.s['chats'][cid] = {'owner': a.principal, 'messages': [], 'draft': b'',
+                                'epoch': 0, 'generation': self.s['clock']}
         return cid
 
     def draft(self, a, cid, raw=None):
@@ -220,17 +222,28 @@ class Model:
             raise Rejected('invalid_input')
         binding = (a.principal, a.revision, 'conversation-list')
         if cursor is None:
-            snapshot = [cid for cid, c in self.s['chats'].items() if c['owner'] == a.principal]
+            snapshot = [(cid, c['generation'], c['epoch'])
+                        for cid, c in self.s['chats'].items() if c['owner'] == a.principal]
             offset = 0
         else:
             token = self.s['cursors'].get(cursor)
             if token is None or token['binding'] != binding:
                 raise Rejected('resync_required')
             snapshot, offset = token['snapshot'], token['offset']
+        # Validate the whole captured snapshot before returning any ID. A removed or
+        # revoked item invalidates this snapshot; never silently skip it as success.
+        for entry in snapshot:
+            if not isinstance(entry, tuple) or len(entry) != 3:
+                raise Rejected('resync_required')
+            cid, generation, epoch = entry
+            c = self.s['chats'].get(cid)
+            if (c is None or c['owner'] != a.principal
+                    or c['generation'] != generation or c['epoch'] != epoch):
+                raise Rejected('resync_required')
         end = min(offset + limit, len(snapshot))
         nxt = None
         if end < len(snapshot):
             self.s['clock'] += 1
             nxt = 'fixture-cursor-' + str(self.s['clock'])
             self.s['cursors'][nxt] = {'binding': binding, 'snapshot': deepcopy(snapshot), 'offset': end}
-        return {'items': snapshot[offset:end], 'next_cursor': nxt}
+        return {'items': [cid for cid, _, _ in snapshot[offset:end]], 'next_cursor': nxt}

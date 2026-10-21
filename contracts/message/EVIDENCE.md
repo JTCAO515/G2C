@@ -29,3 +29,26 @@ UNRUN 是原作者交付时状态，不覆盖此转交更新；本线程未代�
 normative、fixture、真实待实现与排除范围；未修改模型/schema/样例，不重跑17项。
 验证：文档相对链接存在、git diff --check、四个实现/样例文件相对基线字节一致。
 完整 MESSAGE@1.0、真实服务验收和冻结仍未完成。
+
+## P2 列表快照失效返修
+
+差额 base：4705770530f8e634c651c1bbb306ef0d188655e0，保留该文档成果。
+Review 经 Main 转交：列表游标未绑定数据代次，删除未读聊天后仍返回其 ID。
+先对未修复模型运行定向检查，6 项中 4 FAIL / 2 PASS，原日志 p2-before.txt；
+失败覆盖删除、epoch 变化、同 ID 重建、归属变化。未抹去失败证据。
+
+修复：创建聊天分配内存单调 generation；列表快照保存每条聊天的 generation
+和 epoch；每次读页先重查完整快照的存在性、归属和两项代次，任一失效均显式
+resync_required，不返回部分旧页面、不静默漏项。另一账号变化不牵连此快照，
+普通追加保留旧快照；失效后新快照仍能读取相邻有效聊天。旧格式游标显式重同步。
+
+- PASS：python3 -B contracts/message/check_list_cursor.py，7/7；p2-after.txt。
+- PASS：原 check.py 中列表分页、草稿重建、消息游标失效、分页追加/重建四项
+  定向回归，4/4；p2-regression.txt。其余原测试证据复用，未重跑全套。
+- PASS：git diff --check。schema.json、check.py、check-output.txt 未修改。
+- 待独立 Review/Testing 差额复验；不自称 P2 已独立关闭。
+
+范围仍为单线程内存模型；generation 随 image 重建保存，但不是正式数据库
+generation/schema。故障注入直接改内存不是删除 API，不证明全域清理或真实隔离。
+旧完整 fixture image 不提供迁移保证；本次旧游标格式返回 resync_required，正式
+存储迁移/回退仍未实现。UNKNOWN/过期/外来游标均不伪装成空历史。
