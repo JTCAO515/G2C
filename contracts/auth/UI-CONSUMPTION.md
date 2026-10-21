@@ -1,4 +1,7 @@
-# CJ007 对 UI 候选的有界消费确认
+# CJ007 对 UI@1.0 候选的历史消费确认
+
+当前 UI@1.1 差额结论见 [UI-1.1-CONSUMPTION](UI-1.1-CONSUMPTION.md)。
+下文只对应 e722bef，不将其源码事实或缺口原样套用于新版本。
 
 只读源：`cj-006-ui`，固定 commit
 `e722befc9adf53e07dfb508198ff49710ab91b01`，不使用移动 HEAD。
