@@ -1,0 +1,132 @@
+{
+  "scope": "offline MockTransport with network guard; real provider UNRUN",
+  "checks": [
+    {
+      "case": "sdk-local-stream",
+      "status": "PASS",
+      "last_text": "你好 hello",
+      "wire_limit_field": "max_completion_tokens",
+      "real_qwen_accepts_field": "UNKNOWN"
+    },
+    {
+      "case": "both-retry-layers-disabled",
+      "status": "PASS",
+      "sends": 1
+    },
+    {
+      "case": "native-structured-failure-explicit-strategy",
+      "status": "PASS",
+      "sends": 1
+    }
+  ],
+  "requests": [
+    {
+      "mode": "stream",
+      "url": "https://model.invalid/compatible-mode/v1/chat/completions",
+      "json": {
+        "model": "qwen3.8-flash",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "name": "synthetic-user",
+            "content": [
+              {
+                "type": "text",
+                "text": "你好 / hello"
+              }
+            ]
+          }
+        ],
+        "max_completion_tokens": 64,
+        "stream_options": {
+          "include_usage": true
+        }
+      }
+    },
+    {
+      "mode": "timeout",
+      "url": "https://model.invalid/compatible-mode/v1/chat/completions",
+      "json": {
+        "model": "qwen3.8-flash",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "name": "synthetic-user",
+            "content": [
+              {
+                "type": "text",
+                "text": "你好 / hello"
+              }
+            ]
+          }
+        ],
+        "max_completion_tokens": 64,
+        "stream_options": {
+          "include_usage": true
+        }
+      }
+    },
+    {
+      "mode": "structure",
+      "url": "https://model.invalid/compatible-mode/v1/chat/completions",
+      "json": {
+        "model": "qwen3.8-flash",
+        "stream": false,
+        "messages": [
+          {
+            "role": "user",
+            "name": "synthetic-user",
+            "content": [
+              {
+                "type": "text",
+                "text": "你好 / hello"
+              },
+              {
+                "type": "text",
+                "text": "<system-reminder>Now you **MUST** call the tool named 'generate_structured_output' to generate the structured output required by the user. DON'T do anything else.</system-reminder>"
+              }
+            ]
+          }
+        ],
+        "max_completion_tokens": 64,
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "generate_structured_output"
+          }
+        },
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "generate_structured_output",
+              "description": "Call this function to generate structured output required by the user.",
+              "parameters": {
+                "properties": {
+                  "value": {
+                    "title": "Value",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "title": "Shape",
+                "type": "object"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "source_hashes": {
+    "agentscope.model._openai_chat._model": "c8a1205ff3fdab609a5ee7408e14effef4a70efbeabd303da9a2524f2f968b2b",
+    "agentscope.model._base": "6ebd45d3c909884a219a15a4d4b1ecf098d3f2a3e8fcde7f941ff84ef08b79c0",
+    "agentscope.agent._agent": "d91d264c21a0a925f69c9ae9d403fdeab8363ca6b57393c3e7a330c106cf4b81",
+    "dbos._dbos": "f338f73ca54ba6c7645c0db0959d479f7296287b9c43ee1d1abaae1824931640"
+  },
+  "script_sha256": "9f74c0b34e1793944e2b9fef080bf5150f91c3b52b9241ce6f6aa7880b9f1e78"
+}

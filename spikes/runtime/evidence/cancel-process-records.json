@@ -1,0 +1,157 @@
+{
+  "scope": "local synthetic provider / real AgentScope+DBOS packages / fresh SQLite",
+  "versions": {
+    "agentscope": "2.0.10",
+    "dbos": "3.3.0",
+    "pydantic": "2.14.1",
+    "openai": "3.35.1"
+  },
+  "python": "3.12.14",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "real_provider": "UNRUN",
+  "postgres": "UNRUN",
+  "production": "UNRUN",
+  "source_sha256": {
+    "runtime.py": "4634af5680e32c4046263e256fa67f2efacc6669dce3b23a796a62645cdd9419",
+    "ledger.py": "c4cd34acac0245089c55c234efe23480c61646201400eb8a55ed3f9b8f4351f2",
+    "validate.py": "e2c5bc54e702ab37c07f35f6ef08a07890023e543eebc76e07d3c57a0e30f2ed",
+    "pyproject.toml": "5c68b302e38cda7fbfd54cb6cfb46271faa171bc4714eb5c967804a61a9b82d7",
+    "uv.lock": "7ba93128e94591e66dee74ec16e1568697d493198707cc4cf2ed22b0eb5619ba"
+  },
+  "checks": [
+    {
+      "case": "cancel-inflight_model",
+      "status": "PASS",
+      "detail": {
+        "status": "CANCELLED",
+        "business_receipts": 0,
+        "model_dispatches": 1,
+        "after_restart": "CANCELLED"
+      }
+    },
+    {
+      "case": "cancel-after_business_step",
+      "status": "PASS",
+      "detail": {
+        "status": "CANCELLED",
+        "business_receipts": 1,
+        "model_dispatches": 1,
+        "after_restart": "CANCELLED"
+      }
+    }
+  ],
+  "records": [
+    {
+      "label": "cancel-inflight_model-ack",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "cancel",
+        "--root",
+        "<spike>/.runs/validation-1792581913764365000/cancel-inflight_model"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581913764365000/cancel-inflight_model-ack.log",
+      "stdout": "{\"workflow_status\": \"CANCELLED\", \"ledger\": {\"attempts\": [{\"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\", \"principal\": \"fresh-user-a\", \"request_hash\": \"3a37d09cf88d44d293d0df3748ec477035f67a217f22eab1ef205b69244b4f4a\", \"state\": \"INTENT\", \"response\": null, \"reason\": null}], \"provider_dispatches\": [{\"seq\": 1, \"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\"}], \"business\": [], \"probes\": [{\"label\": \"prepare\", \"count\": 1}]}}\n",
+      "stderr": ""
+    },
+    {
+      "label": "cancel-inflight_model-result",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581913764365000/cancel-inflight_model"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581913764365000/cancel-inflight_model-result.log",
+      "stdout": "{\"workflow_status\": \"CANCELLED\", \"result\": {\"outcome\": \"WORKFLOW_ERROR\", \"error_type\": \"DBOSAwaitedWorkflowCancelledError\"}, \"steps\": [{\"name\": \"prepare\", \"id\": 1}, {\"name\": \"boundary\", \"id\": 2}], \"ledger\": {\"attempts\": [{\"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\", \"principal\": \"fresh-user-a\", \"request_hash\": \"3a37d09cf88d44d293d0df3748ec477035f67a217f22eab1ef205b69244b4f4a\", \"state\": \"COMPLETE\", \"response\": \"{\\\"kind\\\":\\\"tool\\\",\\\"outcome\\\":\\\"COMPLETE\\\",\\\"tool_id\\\":\\\"fixture-tool-1\\\"}\", \"reason\": null}], \"provider_dispatches\": [{\"seq\": 1, \"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\"}], \"business\": [], \"probes\": [{\"label\": \"prepare\", \"count\": 1}]}}\n",
+      "stderr": "19:25:15 [   ERROR] (dbos:_core.py:1177) Exception encountered in asynchronous workflow:\nTraceback (most recent call last):\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_core.py\", line 1175, in _execute_workflow_async\n    return await result()\n           ^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_outcome.py\", line 359, in __call__\n    return await self._func()\n           ^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_outcome.py\", line 257, in _wrap\n    return cast(R, await result.resolve_async())\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_outcome.py\", line 63, in resolve_async\n    return await self._async_resolve()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_sys_db.py\", line 2223, in await_workflow_result_async\n    result = await asyncio.to_thread(\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/asyncio/threads.py\", line 25, in to_thread\n    return await loop.run_in_executor(None, func_call)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py\", line 59, in run\n    result = self.fn(*self.args, **self.kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_sys_db.py\", line 2195, in check_workflow_result\n    raise DBOSAwaitedWorkflowCancelledError(workflow_id)\ndbos._error.DBOSAwaitedWorkflowCancelledError: DBOS Error 13: Awaited workflow workflow-1 was cancelled\n"
+    },
+    {
+      "label": "cancel-inflight_model-readback",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "inspect",
+        "--root",
+        "<spike>/.runs/validation-1792581913764365000/cancel-inflight_model"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581913764365000/cancel-inflight_model-readback.log",
+      "stdout": "{\"workflow_status\": \"CANCELLED\", \"ledger\": {\"attempts\": [{\"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\", \"principal\": \"fresh-user-a\", \"request_hash\": \"3a37d09cf88d44d293d0df3748ec477035f67a217f22eab1ef205b69244b4f4a\", \"state\": \"COMPLETE\", \"response\": \"{\\\"kind\\\":\\\"tool\\\",\\\"outcome\\\":\\\"COMPLETE\\\",\\\"tool_id\\\":\\\"fixture-tool-1\\\"}\", \"reason\": null}], \"provider_dispatches\": [{\"seq\": 1, \"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\"}], \"business\": [], \"probes\": [{\"label\": \"prepare\", \"count\": 1}]}}\n",
+      "stderr": ""
+    },
+    {
+      "label": "cancel-inflight_model-restart",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581913764365000/cancel-inflight_model"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581913764365000/cancel-inflight_model-restart.log",
+      "stdout": "{\"workflow_status\": \"CANCELLED\", \"result\": {\"outcome\": \"WORKFLOW_ERROR\", \"error_type\": \"DBOSAwaitedWorkflowCancelledError\"}, \"steps\": [{\"name\": \"prepare\", \"id\": 1}, {\"name\": \"boundary\", \"id\": 2}], \"ledger\": {\"attempts\": [{\"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\", \"principal\": \"fresh-user-a\", \"request_hash\": \"3a37d09cf88d44d293d0df3748ec477035f67a217f22eab1ef205b69244b4f4a\", \"state\": \"COMPLETE\", \"response\": \"{\\\"kind\\\":\\\"tool\\\",\\\"outcome\\\":\\\"COMPLETE\\\",\\\"tool_id\\\":\\\"fixture-tool-1\\\"}\", \"reason\": null}], \"provider_dispatches\": [{\"seq\": 1, \"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\"}], \"business\": [], \"probes\": [{\"label\": \"prepare\", \"count\": 1}]}}\n",
+      "stderr": ""
+    },
+    {
+      "label": "cancel-after_business_step-ack",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "cancel",
+        "--root",
+        "<spike>/.runs/validation-1792581913764365000/cancel-after_business_step"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581913764365000/cancel-after_business_step-ack.log",
+      "stdout": "{\"workflow_status\": \"CANCELLED\", \"ledger\": {\"attempts\": [{\"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\", \"principal\": \"fresh-user-a\", \"request_hash\": \"3a37d09cf88d44d293d0df3748ec477035f67a217f22eab1ef205b69244b4f4a\", \"state\": \"COMPLETE\", \"response\": \"{\\\"kind\\\":\\\"tool\\\",\\\"outcome\\\":\\\"COMPLETE\\\",\\\"tool_id\\\":\\\"fixture-tool-1\\\"}\", \"reason\": null}], \"provider_dispatches\": [{\"seq\": 1, \"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\"}], \"business\": [{\"principal\": \"fresh-user-a\", \"operation\": \"synthetic_record\", \"action_id\": \"action-1\", \"input_hash\": \"7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451\", \"receipt\": \"{\\\"action_id\\\":\\\"action-1\\\",\\\"operation\\\":\\\"synthetic_record\\\",\\\"principal\\\":\\\"fresh-user-a\\\",\\\"result\\\":\\\"COMMITTED\\\",\\\"value\\\":7}\"}], \"probes\": [{\"label\": \"prepare\", \"count\": 1}]}}\n",
+      "stderr": ""
+    },
+    {
+      "label": "cancel-after_business_step-result",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581913764365000/cancel-after_business_step"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581913764365000/cancel-after_business_step-result.log",
+      "stdout": "{\"workflow_status\": \"CANCELLED\", \"result\": {\"outcome\": \"WORKFLOW_ERROR\", \"error_type\": \"DBOSAwaitedWorkflowCancelledError\"}, \"steps\": [{\"name\": \"prepare\", \"id\": 1}, {\"name\": \"boundary\", \"id\": 2}, {\"name\": \"model_step\", \"id\": 3}, {\"name\": \"boundary\", \"id\": 4}, {\"name\": \"business_step\", \"id\": 5}], \"ledger\": {\"attempts\": [{\"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\", \"principal\": \"fresh-user-a\", \"request_hash\": \"3a37d09cf88d44d293d0df3748ec477035f67a217f22eab1ef205b69244b4f4a\", \"state\": \"COMPLETE\", \"response\": \"{\\\"kind\\\":\\\"tool\\\",\\\"outcome\\\":\\\"COMPLETE\\\",\\\"tool_id\\\":\\\"fixture-tool-1\\\"}\", \"reason\": null}], \"provider_dispatches\": [{\"seq\": 1, \"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\"}], \"business\": [{\"principal\": \"fresh-user-a\", \"operation\": \"synthetic_record\", \"action_id\": \"action-1\", \"input_hash\": \"7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451\", \"receipt\": \"{\\\"action_id\\\":\\\"action-1\\\",\\\"operation\\\":\\\"synthetic_record\\\",\\\"principal\\\":\\\"fresh-user-a\\\",\\\"result\\\":\\\"COMMITTED\\\",\\\"value\\\":7}\"}], \"probes\": [{\"label\": \"prepare\", \"count\": 1}]}}\n",
+      "stderr": "19:25:20 [   ERROR] (dbos:_core.py:1177) Exception encountered in asynchronous workflow:\nTraceback (most recent call last):\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_core.py\", line 1175, in _execute_workflow_async\n    return await result()\n           ^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_outcome.py\", line 359, in __call__\n    return await self._func()\n           ^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_outcome.py\", line 257, in _wrap\n    return cast(R, await result.resolve_async())\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_outcome.py\", line 63, in resolve_async\n    return await self._async_resolve()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_sys_db.py\", line 2223, in await_workflow_result_async\n    result = await asyncio.to_thread(\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/asyncio/threads.py\", line 25, in to_thread\n    return await loop.run_in_executor(None, func_call)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py\", line 59, in run\n    result = self.fn(*self.args, **self.kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/.venv/lib/python3.12/site-packages/dbos/_sys_db.py\", line 2195, in check_workflow_result\n    raise DBOSAwaitedWorkflowCancelledError(workflow_id)\ndbos._error.DBOSAwaitedWorkflowCancelledError: DBOS Error 13: Awaited workflow workflow-1 was cancelled\n"
+    },
+    {
+      "label": "cancel-after_business_step-readback",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "inspect",
+        "--root",
+        "<spike>/.runs/validation-1792581913764365000/cancel-after_business_step"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581913764365000/cancel-after_business_step-readback.log",
+      "stdout": "{\"workflow_status\": \"CANCELLED\", \"ledger\": {\"attempts\": [{\"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\", \"principal\": \"fresh-user-a\", \"request_hash\": \"3a37d09cf88d44d293d0df3748ec477035f67a217f22eab1ef205b69244b4f4a\", \"state\": \"COMPLETE\", \"response\": \"{\\\"kind\\\":\\\"tool\\\",\\\"outcome\\\":\\\"COMPLETE\\\",\\\"tool_id\\\":\\\"fixture-tool-1\\\"}\", \"reason\": null}], \"provider_dispatches\": [{\"seq\": 1, \"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\"}], \"business\": [{\"principal\": \"fresh-user-a\", \"operation\": \"synthetic_record\", \"action_id\": \"action-1\", \"input_hash\": \"7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451\", \"receipt\": \"{\\\"action_id\\\":\\\"action-1\\\",\\\"operation\\\":\\\"synthetic_record\\\",\\\"principal\\\":\\\"fresh-user-a\\\",\\\"result\\\":\\\"COMMITTED\\\",\\\"value\\\":7}\"}], \"probes\": [{\"label\": \"prepare\", \"count\": 1}]}}\n",
+      "stderr": ""
+    },
+    {
+      "label": "cancel-after_business_step-restart",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581913764365000/cancel-after_business_step"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581913764365000/cancel-after_business_step-restart.log",
+      "stdout": "{\"workflow_status\": \"CANCELLED\", \"result\": {\"outcome\": \"WORKFLOW_ERROR\", \"error_type\": \"DBOSAwaitedWorkflowCancelledError\"}, \"steps\": [{\"name\": \"prepare\", \"id\": 1}, {\"name\": \"boundary\", \"id\": 2}, {\"name\": \"model_step\", \"id\": 3}, {\"name\": \"boundary\", \"id\": 4}, {\"name\": \"business_step\", \"id\": 5}], \"ledger\": {\"attempts\": [{\"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\", \"principal\": \"fresh-user-a\", \"request_hash\": \"3a37d09cf88d44d293d0df3748ec477035f67a217f22eab1ef205b69244b4f4a\", \"state\": \"COMPLETE\", \"response\": \"{\\\"kind\\\":\\\"tool\\\",\\\"outcome\\\":\\\"COMPLETE\\\",\\\"tool_id\\\":\\\"fixture-tool-1\\\"}\", \"reason\": null}], \"provider_dispatches\": [{\"seq\": 1, \"attempt_id\": \"a02285b9e47dfcdc61d2f93a7b876bedb45d1a2e3d16b6750a5721c4c6281702\"}], \"business\": [{\"principal\": \"fresh-user-a\", \"operation\": \"synthetic_record\", \"action_id\": \"action-1\", \"input_hash\": \"7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451\", \"receipt\": \"{\\\"action_id\\\":\\\"action-1\\\",\\\"operation\\\":\\\"synthetic_record\\\",\\\"principal\\\":\\\"fresh-user-a\\\",\\\"result\\\":\\\"COMMITTED\\\",\\\"value\\\":7}\"}], \"probes\": [{\"label\": \"prepare\", \"count\": 1}]}}\n",
+      "stderr": ""
+    }
+  ]
+}
