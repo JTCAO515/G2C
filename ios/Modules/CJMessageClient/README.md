@@ -106,3 +106,8 @@ exercise submission. Key-ID authentication is not freshness or production activa
 Query consumption update: fixed CJ005 `312a69ca` replaces the d886677 query blocker.
 [evidence/QUERY-CONSUMPTION.md](evidence/QUERY-CONSUMPTION.md) records exact generated
 branches and 10+2 checks. Only explicit null is notObserved; live POST remains disabled.
+
+Once-only local authority: [FRESH-AUTHORIZATION.md](FRESH-AUTHORIZATION.md) documents
+private nonserialized first-attempt permission and same-process rollback/reentry denial.
+27 affected checks plus one overlap check pass; no global rollback guarantee or live
+POST activation follows. Draft and original-action state remain separate.

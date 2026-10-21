@@ -79,6 +79,15 @@ public struct Submission: Sendable {
     private var scope: StorageScope?
     private var snapshot = Snapshot()
     private var operations: [String: Operation] = [:]
+    // Never Codable or stored in Snapshot. Consumed before any storage callback.
+    private struct FreshAuthorization {
+        let lease: Lease
+        let digest: String
+    }
+    private var fresh: [String: FreshAuthorization] = [:]
+    // Process-local denial memory only, not a durable authority or external ledger.
+    // Survives coordinator replacement/account switching; no API clears it.
+    private static var observed: [Data: Set<String>] = [:]
 
     public init(storage: any SecureMessageStorage) { self.storage = storage }
 
@@ -98,6 +107,9 @@ public struct Submission: Sendable {
         for key in restored.actions.keys {
             if restored.actions[key]?.phase == .staged { restored.actions[key]?.phase = .queryRequired }
         }
+        for record in restored.actions.values {
+            Self.remember(record.messageID, digest: record.inputSHA256, scope: scope)
+        }
         let next = Lease(instance: instance, generation: UUID())
         self.scope = scope; snapshot = restored; lease = next
         return next
@@ -105,7 +117,7 @@ public struct Submission: Sendable {
 
     /// Immediate local fence; does not claim remote logout/deletion or erase recovery data.
     public func invalidate() {
-        lease = nil; scope = nil; snapshot = Snapshot(); operations = [:]
+        lease = nil; scope = nil; snapshot = Snapshot(); operations = [:]; fresh = [:]
     }
 
     public func validateScope(_ expected: StorageScope, lease: Lease) throws {
@@ -139,9 +151,17 @@ public struct Submission: Sendable {
         guard !snapshot.actions.values.contains(where: { $0.originalUTF8 == originalUTF8 }) else {
             throw RecoveryError.inputConflict
         }
-        var next = snapshot
-        next.actions[key] = ActionRecord(messageID: messageID, originalUTF8: originalUTF8, phase: .staged)
+        guard let scope else { throw RecoveryError.inactive }
+        let record = ActionRecord(messageID: messageID, originalUTF8: originalUTF8, phase: .staged)
+        let seen = Self.observed[scope.binding] ?? []
+        guard !seen.contains("id:" + key), !seen.contains("body:" + record.inputSHA256) else {
+            throw RecoveryError.queryOnly
+        }
+        // Reserve before save: an unknown save or reentrant caller cannot mint again.
+        Self.remember(messageID, digest: record.inputSHA256, scope: scope)
+        var next = snapshot; next.actions[key] = record
         try persist(next)
+        fresh[key] = FreshAuthorization(lease: lease, digest: record.inputSHA256)
     }
 
     public func action(messageID: String, lease: Lease) throws -> ActionRecord? {
@@ -152,7 +172,11 @@ public struct Submission: Sendable {
         try check(lease)
         let key = Self.key(messageID)
         guard var record = snapshot.actions[key] else { throw RecoveryError.invalidInput }
-        guard record.phase == .staged else { throw RecoveryError.queryOnly }
+        guard record.phase == .staged, let authorization = fresh[key],
+              authorization.lease == lease, authorization.digest == record.inputSHA256 else {
+            throw RecoveryError.queryOnly
+        }
+        fresh.removeValue(forKey: key) // BEFORE persist can invoke an injected callback.
         // Persist uncertainty BEFORE handing any bytes to transport. A crash here must
         // recover by query even if the actual POST never started.
         record.phase = .queryRequired
@@ -190,6 +214,9 @@ public struct Submission: Sendable {
     }
 
     private static func key(_ id: String) -> String { Data(id.utf8).base64EncodedString() }
+    private static func remember(_ id: String, digest: String, scope: StorageScope) {
+        observed[scope.binding, default: []].formUnion(["id:" + key(id), "body:" + digest])
+    }
     private func check(_ expected: Lease) throws {
         guard lease == expected, scope != nil else { throw RecoveryError.inactive }
     }
@@ -210,13 +237,16 @@ public struct Submission: Sendable {
         operations.removeValue(forKey: operation.actionKey)
     }
     private func persist(_ next: Snapshot) throws {
-        guard let scope else { throw RecoveryError.inactive }
+        guard let scope, let originalLease = lease else { throw RecoveryError.inactive }
         do { try storage.save(next, scope: scope) }
         catch {
             // Atomic rename may have succeeded before an I/O error. Reopen/read before
             // doing anything else; do not retry or keep an in-memory success illusion.
-            invalidate(); throw RecoveryError.persistenceUnknown
+            if lease == originalLease { invalidate() }
+            throw RecoveryError.persistenceUnknown
         }
+        // Sync dependency callbacks can reenter; never overwrite a newly activated scope.
+        try check(originalLease)
         snapshot = next
     }
 }

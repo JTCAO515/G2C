@@ -31,7 +31,7 @@ import Testing
             .appendingPathComponent("cj009-synthetic-" + UUID().uuidString)
         keys = TestKeys()
         storage = try EncryptedFileStorage(directory: directory, keys: keys)
-        scope = try StorageScope(environment: "fixture-local", account: "fixture-a")
+        scope = try StorageScope(environment: "fixture-local-" + UUID().uuidString, account: "fixture-a")
     }
     var raw: Data { Data(" {\"message_id\":\"m1\",\"text\":\"合成 private text\"} \n".utf8) }
 }

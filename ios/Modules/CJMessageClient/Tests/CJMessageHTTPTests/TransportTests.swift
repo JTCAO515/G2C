@@ -58,7 +58,7 @@ private extension Optional where Wrapped == HTTPBody {
     }
     private func setup(_ transport: Interceptor, credentials: Credentials = Credentials()) throws -> (MessageRecovery, Lease, MessageHTTPClient) {
         let state = MessageRecovery(storage: Memory())
-        let scope = try StorageScope(environment:"synthetic",account:"a")
+        let scope = try StorageScope(environment:"synthetic-"+UUID().uuidString,account:"a")
         let lease = try state.activate(scope)
         try state.stage(messageID:"m1",originalUTF8:raw,lease:lease)
         let endpoint = try MessageEndpoint(url: #require(URL(string:"https://synthetic.invalid")), maximumRequestBytes:10000, maximumResponseBytes:10000)
@@ -101,7 +101,7 @@ private extension Optional where Wrapped == HTTPBody {
     }
     @Test func responseAfterSwitchCannotPersist() async throws {
         let state = MessageRecovery(storage:Memory())
-        let scope = try StorageScope(environment:"synthetic",account:"a")
+        let scope = try StorageScope(environment:"synthetic-"+UUID().uuidString,account:"a")
         let lease = try state.activate(scope)
         try state.stage(messageID:"m1",originalUTF8:raw,lease:lease)
         let transport = Interceptor(response:response(),data:try body(),beforeReturn:{ await state.invalidate() })
@@ -138,7 +138,7 @@ private extension Optional where Wrapped == HTTPBody {
 
     @Test func livePostDisabledEvenIfWholeSnapshotIsMissing() async throws {
         let state = MessageRecovery(storage:Memory())
-        let scope = try StorageScope(environment:"synthetic",account:"a")
+        let scope = try StorageScope(environment:"synthetic-"+UUID().uuidString,account:"a")
         let lease = try state.activate(scope)
         try state.stage(messageID:"m1",originalUTF8:raw,lease:lease)
         let credentials = Credentials()
@@ -152,6 +152,21 @@ private extension Optional where Wrapped == HTTPBody {
         await #expect(throws:MessageHTTPFailure.self) {
             try await live.send(HTTPRequest(method:.post,scheme:"https",authority:"synthetic.invalid",path:"/v1/messages"),body:HTTPBody(raw),baseURL:#require(URL(string:"https://synthetic.invalid")),operationID:"receiveMessage")
         }
+    }
+
+    @Test func overlappingSubmitConsumesOneFreshAuthorization() async throws {
+        let transport = Interceptor(response:response(),data:try body())
+        let (state,lease,client) = try setup(transport)
+        func attempt() async -> Bool {
+            do { _ = try await client.submit(messageID:"m1",lease:lease); return true }
+            catch { return false }
+        }
+        async let first = attempt()
+        async let second = attempt()
+        let results = await [first, second]
+        #expect(results.filter { $0 }.count == 1)
+        #expect(await transport.sent.count == 1)
+        #expect(try state.action(messageID:"m1",lease:lease)?.phase == .accepted)
     }
 
     @Test func queryOfficialReceiptAndExplicitNull() async throws {
@@ -197,7 +212,7 @@ private extension Optional where Wrapped == HTTPBody {
     @Test func queryOpaqueIDIsEncodedOnceWithoutNormalization() async throws {
         let id = "part/+%&e\u{301}"
         let state = MessageRecovery(storage:Memory())
-        let scope = try StorageScope(environment:"synthetic",account:"a")
+        let scope = try StorageScope(environment:"synthetic-"+UUID().uuidString,account:"a")
         let lease = try state.activate(scope)
         let bytes = try JSONSerialization.data(withJSONObject:["message_id":id,"conversation_id":"chat"])
         try state.stage(messageID:id,originalUTF8:bytes,lease:lease)
@@ -216,7 +231,7 @@ private extension Optional where Wrapped == HTTPBody {
 
     @Test func queryLateNullCannotWriteNewAccount() async throws {
         let state = MessageRecovery(storage:Memory())
-        let scope = try StorageScope(environment:"synthetic",account:"a")
+        let scope = try StorageScope(environment:"synthetic-"+UUID().uuidString,account:"a")
         let lease = try state.activate(scope)
         try state.stage(messageID:"m1",originalUTF8:raw,lease:lease)
         _ = try state.beginSubmission(messageID:"m1",lease:lease)

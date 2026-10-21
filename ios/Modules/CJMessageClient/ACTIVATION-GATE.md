@@ -52,3 +52,8 @@ on the known d886677 generated receipt omission until fixed CJ005 source arrives
 Query-only update: fixed CJ005 312a69ca resolves the generated receipt omission; its
 query decoder/transport is now wired with actual-null validation. The LIVE POST gate
 in this document is unchanged; neither a receipt query nor null is anti-rollback evidence.
+
+Process-local strengthening: FRESH-AUTHORIZATION.md adds a non-Codable once-only permit,
+pre-save reservation/consumption and denial memory across coordinator replacement. It
+blocks known-action restaging after same-process clearing/replay, but cannot detect a
+wholly absent action after process restart. Live gates above are unchanged and closed.
