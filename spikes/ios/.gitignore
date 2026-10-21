@@ -1,0 +1,7 @@
+.build/
+.swiftpm/
+.cache/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+DerivedDataNative/

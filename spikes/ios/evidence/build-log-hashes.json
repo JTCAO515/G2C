@@ -1,0 +1,57 @@
+[
+  {
+    "file": "build-host.log",
+    "sha256": "614d5568e2939b9dbdbdb1577b7abe2fdd2fabfd1526b5a56db890aa46b60e81",
+    "gzip": "build-host.log.gz"
+  },
+  {
+    "file": "build-native-delivery.log",
+    "sha256": "81bcfe1bd03d1c3dd1e82e5326866f7d25a08c1054948ec4ed48cb5714936623",
+    "gzip": "build-native-delivery.log.gz"
+  },
+  {
+    "file": "build-native17-final.log",
+    "sha256": "d6fe2ff5c8b4cd64453c86a2cc11ad7b0007051213899d801dc142f3e7bf009f",
+    "gzip": "build-native17-final.log.gz"
+  },
+  {
+    "file": "build-native17-final2.log",
+    "sha256": "d7b05eedbd98c8829c521d1b2a818a788a72089d068ece1abce92d1a2bece712",
+    "gzip": "build-native17-final2.log.gz"
+  },
+  {
+    "file": "build-native17.log",
+    "sha256": "f58ca4761edfa43672effddfc77e625a4b8430baef5263b7d6d86dcca90e27b9",
+    "gzip": "build-native17.log.gz"
+  },
+  {
+    "file": "build-simulator-delivery.log",
+    "sha256": "f3cceb03b04dfe21ce814bda7f5f643f90daf2771c16a035804764ae357d38c3",
+    "gzip": "build-simulator-delivery.log.gz"
+  },
+  {
+    "file": "build-simulator-final.log",
+    "sha256": "a23b30fd2da64ece47547e927c962e8bb338ef73c9978d4d2e1e85850768b18a",
+    "gzip": "build-simulator-final.log.gz"
+  },
+  {
+    "file": "build-simulator-final2.log",
+    "sha256": "563f606e3ebeac6db3cf99fc591d37643c95e37905a24fc1f12d8e4ac60f96be",
+    "gzip": "build-simulator-final2.log.gz"
+  },
+  {
+    "file": "build-simulator-final3.log",
+    "sha256": "8800ead2651cd1b7fe6b187a637be5b4b721afbb5ce23c04cf0568db119d3df3",
+    "gzip": "build-simulator-final3.log.gz"
+  },
+  {
+    "file": "build-simulator-verified.log",
+    "sha256": "4e5ada3112618f873c9257ad214e31e55b1ea8b6f4153851d517db7df69daa28",
+    "gzip": "build-simulator-verified.log.gz"
+  },
+  {
+    "file": "build-simulator.log",
+    "sha256": "43274d9484db7b085791c076431ec73ce2721aaa073a04793c53f27a63124995",
+    "gzip": "build-simulator.log.gz"
+  }
+]

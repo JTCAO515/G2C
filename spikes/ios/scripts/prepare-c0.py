@@ -17,6 +17,12 @@ for name in ['normal','failure','unknown','conflict']:
 (tests/'C0Tests.swift').write_bytes((root/'C0Tests/C0Tests.swift').read_bytes())
 # Consume official pinned runtime checkout already resolved by this spike.
 runtime=root/'.build/checkouts/swift-openapi-runtime'
+pins=json.loads((root/'Package.resolved').read_text())['pins']
+expected=next(p['state']['revision'] for p in pins if p['identity']=='swift-openapi-runtime')
+actual=subprocess.check_output(['git','-C',str(runtime),'rev-parse','HEAD'],text=True).strip()
+if actual != expected: raise SystemExit('Runtime checkout does not match committed Package.resolved')
+lock=root/'C0Tests/Package.resolved'
+if lock.exists(): (work/'Package.resolved').write_bytes(lock.read_bytes())
 (work/'Package.swift').write_text('''// swift-tools-version: 6.2
 import PackageDescription
 let package = Package(name: "C0Consumer", platforms: [.macOS(.v15), .iOS(.v18)], dependencies: [.package(path: "'''+str(runtime)+'''")], targets: [.target(name: "C0API", dependencies: [.product(name: "OpenAPIRuntime", package: "swift-openapi-runtime")]), .testTarget(name: "C0Tests", dependencies: ["C0API"], resources: [.copy("Fixtures")])])
