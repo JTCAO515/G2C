@@ -6,6 +6,10 @@
 本包不是草案模型：实际调用 PyJWT/cryptography 校验签名与声明，提供可调用的内部
 AdmissionChecker；但没有公开 API、实际身份/成员提供者、数据库或部署，不是生产验收。
 
+新增显式 Supabase access profile 与 CJ005 可执行 composition 见
+[API-COMPOSITION](../../contracts/auth/API-COMPOSITION.md)。原 strict 路径仍保留，
+只有显式 opt-in 才采用新候选规则，不把本文原严格约束静默改为生产兼容保证。
+
 ## 接入面
 
 - `cj_auth.interfaces`：TrustedPrincipal、VerificationResult、CJAccessProvider、

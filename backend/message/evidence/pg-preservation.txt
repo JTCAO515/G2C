@@ -1,0 +1,2 @@
+PASS no postmaster.pid and no task socket after safe stop; data directory retained.
+PASS domain.py/postgres.py/auth_boundary.py/candidate.sql byte-identical to cec92299.

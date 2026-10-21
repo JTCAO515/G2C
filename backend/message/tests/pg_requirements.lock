@@ -1,0 +1,2 @@
+# Local PostgreSQL acceptance runner only; installed exclusively in task-private venv.
+psycopg==3.2.10
