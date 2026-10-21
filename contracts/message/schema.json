@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MESSAGE-draft.1 synthetic ReceiveInput (not wire API)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "conversation_id",
+    "message_id",
+    "text",
+    "trip_id",
+    "creation_intent"
+  ],
+  "properties": {
+    "version": {
+      "const": "MESSAGE-draft.1"
+    },
+    "conversation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "message_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trip_id": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "creation_intent": {
+      "enum": [
+        "none",
+        "consider_trip"
+      ]
+    }
+  }
+}

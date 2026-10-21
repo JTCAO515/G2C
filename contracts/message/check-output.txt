@@ -1,0 +1,22 @@
+test_acceptance_is_not_dispatch_and_rechecks_email (__main__.Checks) ... ok
+test_commit_before_dispatch_recovery (__main__.Checks) ... ok
+test_conversation_paging_scope (__main__.Checks) ... ok
+test_draft_and_history_checkpoint (__main__.Checks) ... ok
+test_email_invitation_unknown_never_authorizes (__main__.Checks) ... ok
+test_end_summary_crash_redelivery_checkpoint (__main__.Checks) ... ok
+test_identity_and_eligibility_fences (__main__.Checks) ... ok
+test_input_negative_examples (__main__.Checks) ... ok
+test_invalid_expired_and_cross_scope_cursors (__main__.Checks) ... ok
+test_nullable_trip_and_no_fake_authority (__main__.Checks) ... ok
+test_original_receipt_and_bytes (__main__.Checks) ... ok
+test_recovery_expiry_never_means_not_received (__main__.Checks) ... ok
+test_run_accept_lost_ack_no_second_run (__main__.Checks) ... ok
+test_same_conversation_dispatch_order (__main__.Checks) ... ok
+test_snapshot_paging_append_restart_and_replay (__main__.Checks) ... ok
+test_summary_waits_for_original_run_and_empty_end (__main__.Checks) ... ok
+test_unknown_before_commit_queries_original (__main__.Checks) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.002s
+
+OK

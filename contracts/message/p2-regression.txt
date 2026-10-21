@@ -1,0 +1,9 @@
+test_conversation_paging_scope (__main__.Checks) ... ok
+test_draft_and_history_checkpoint (__main__.Checks) ... ok
+test_invalid_expired_and_cross_scope_cursors (__main__.Checks) ... ok
+test_snapshot_paging_append_restart_and_replay (__main__.Checks) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK

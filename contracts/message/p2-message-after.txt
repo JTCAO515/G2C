@@ -1,0 +1,9 @@
+test_append_and_other_account_recreation_do_not_invalidate (__main__.MessageCursorChecks) ... ok
+test_legacy_binding_requires_explicit_resync (__main__.MessageCursorChecks) ... ok
+test_recreated_chat_rejects_old_message_cursor (__main__.MessageCursorChecks) ... ok
+test_wrong_creation_generation_rejected (__main__.MessageCursorChecks) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK
