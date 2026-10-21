@@ -52,3 +52,30 @@ PASS: 2 affected tests on Python 3.14.7, auth-repair-delta.txt. Original six con
 checks reused with their original provenance, not rerun/relabelled as new execution.
 Runtime package declaration >=3.12,<3.15 read from fixed new AUTH head. Other runtime
 versions/JWT/DB remain UNRUN. Runner pin and compatibility record updated; no AUTH copy.
+
+## Repository cleanup P2 from f314a0aa79ddc9e95bbb1e7d47963726962a1540
+
+Input: Testing CJ-009-repository/REPORT.md (fixed early 3cd6b13 candidate). On current
+unchanged repository code, Python 3.14.7 reproduced 3 errors / 1 pass before repair;
+cleanup-before.txt preserves the failure. The apparent credential/SQL text there is
+an explicit synthetic test marker, not a real secret or query.
+
+Repair preserves the primary transaction result/exception. Body failure remains the
+primary exception even if rollback and both closes fail. CommitUnknown survives both
+close failures; commit is attempted once and rollback is not invented after unknown
+commit. Successful commit remains successful despite close failure. Both closes are
+attempted independently. Secondary failures emit only fixed stage/outcome labels via
+cj_message.postgres logger: no exception text, traceback, SQL, scope or credentials.
+A failing logging handler is suppressed to protect the primary result; such a handler
+cannot guarantee diagnostic delivery, so host logging health remains its responsibility.
+A rollback diagnostic does not assert successful rollback; connection discard is still
+attempted and no retry is performed by this adapter.
+
+PASS: 6 targeted tests, cleanup-after.txt; includes simultaneous commit/close faults,
+body/rollback/close faults, successful commit/rollback, safe diagnostics and logging
+handler failure. PASS: 4 related existing adapter lifecycle tests, cleanup-regression.txt.
+No full 14-test/contract/AUTH rerun; unchanged evidence reused. Python 3.14.7, DB-API
+doubles only; actual PG transaction/resource cleanup remains UNRUN. Diff check PASS.
+Current AUTH consumer pin 79f88b65 and prior runtime notes preserved. Independent delta
+Review/Testing pending; no claim that P2 is independently closed. No remote/config/URL
+changes made in response to repository rename; no push/DB/resource action.

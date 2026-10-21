@@ -1,5 +1,6 @@
 """PostgreSQL DB-API repository source. No connection creation, driver or auth."""
 from contextlib import contextmanager
+import logging
 from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable
 
 
@@ -14,6 +15,21 @@ class Repository:
     def transaction(self):
         # Factory must yield a NEW non-autocommit DB-API connection at READ COMMITTED.
         conn = self.connect()
+        cur = None
+        outcome = 'setup_failed'
+
+        def cleanup(action, stage):
+            try:
+                action()
+            except BaseException:
+                # Fixed diagnostics only: never exception text, SQL, scope or credentials.
+                # Even a failing logging handler cannot replace the primary outcome.
+                try:
+                    logging.getLogger(__name__).warning(
+                        'message_repository_cleanup_failed stage=%s outcome=%s', stage, outcome)
+                except BaseException:
+                    pass
+
         try:
             if conn.autocommit:
                 raise ValueError('autocommit forbidden')
@@ -22,18 +38,21 @@ class Repository:
                 cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
                 yield Transaction(cur, self.scope)
             except BaseException:
-                conn.rollback()
+                outcome = 'body_failed'
+                cleanup(conn.rollback, 'rollback')
                 raise
             else:
+                outcome = 'commit_unknown'
                 try:
                     conn.commit()
                 except Exception as exc:
                     # Do not retry commit or claim rollback after an uncertain commit ACK.
                     raise CommitUnknown() from exc
-            finally:
-                cur.close()
+                outcome = 'committed'
         finally:
-            conn.close()
+            if cur is not None:
+                cleanup(cur.close, 'cursor_close')
+            cleanup(conn.close, 'connection_close')
 
 
 class Transaction:

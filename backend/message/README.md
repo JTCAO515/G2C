@@ -107,3 +107,13 @@ The pending-interface statement above describes the original transaction slice.
 See [AUTH-CONSUMPTION](AUTH-CONSUMPTION.md) for the original six checks plus two repair-delta checks, exact runtime declarations and untested versions,
 server mapping and revocation/commit consistency gaps. It does not enable routes or
 turn test providers into production authorization. Domain/repository/SQL remain unchanged.
+
+## Transaction cleanup priority
+
+Rollback/cursor-close/connection-close failures cannot replace the primary body error,
+CommitUnknown, or successful commit. Both closes are attempted. Secondary failures are
+reported through fixed stage/outcome warning labels only, with no exception text or SQL.
+If the logging handler itself fails, primary outcome preservation takes priority;
+logging availability is a host concern. A failed rollback is not reported as completed,
+and no cleanup/commit automatic retry occurs. Targeted injected evidence is in
+`evidence/cleanup-after.txt`; this is not real PostgreSQL cleanup acceptance.
