@@ -1,0 +1,604 @@
+{
+  "scope": "local synthetic provider / real AgentScope+DBOS packages / fresh SQLite",
+  "versions": {
+    "agentscope": "2.0.10",
+    "dbos": "3.3.0",
+    "pydantic": "2.14.1",
+    "openai": "3.35.1"
+  },
+  "python": "3.12.14",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "real_provider": "UNRUN",
+  "postgres": "UNRUN",
+  "production": "UNRUN",
+  "source_sha256": {
+    "runtime.py": "8277b6301ee3d8507768f5e4ba375545fd398d619b90f239a428ee826eadf24a",
+    "ledger.py": "c4cd34acac0245089c55c234efe23480c61646201400eb8a55ed3f9b8f4351f2",
+    "validate.py": "0b1d152f1894489f0acdd658dd9a563f22bafe6ab04a457c1a7e2cba75d9c669",
+    "pyproject.toml": "5c68b302e38cda7fbfd54cb6cfb46271faa171bc4714eb5c967804a61a9b82d7",
+    "uv.lock": "7ba93128e94591e66dee74ec16e1568697d493198707cc4cf2ed22b0eb5619ba"
+  },
+  "checks": [
+    {
+      "case": "agentscope-dbos-en",
+      "status": "PASS",
+      "detail": {
+        "workflow_replays": 1,
+        "workflows": 2,
+        "model_dispatches": 2,
+        "business_receipts": 1,
+        "text": "The local test value was recorded."
+      }
+    },
+    {
+      "case": "agentscope-dbos-zh",
+      "status": "PASS",
+      "detail": {
+        "workflow_replays": 1,
+        "workflows": 2,
+        "model_dispatches": 2,
+        "business_receipts": 1,
+        "text": "已记录本地测试值。"
+      }
+    },
+    {
+      "case": "process-crash-before_model_step",
+      "status": "PASS",
+      "detail": {
+        "before_dispatches": 0,
+        "after_dispatches": 2,
+        "outcome": "SUCCESS",
+        "completed_prepare_executions": 1,
+        "business_receipts": 1
+      }
+    },
+    {
+      "case": "process-crash-after_model_step",
+      "status": "PASS",
+      "detail": {
+        "before_dispatches": 1,
+        "after_dispatches": 2,
+        "outcome": "SUCCESS",
+        "completed_prepare_executions": 1,
+        "business_receipts": 1
+      }
+    },
+    {
+      "case": "process-crash-intent_before_send",
+      "status": "PASS",
+      "detail": {
+        "before_dispatches": 0,
+        "after_dispatches": 0,
+        "outcome": "UNKNOWN",
+        "completed_prepare_executions": 1,
+        "business_receipts": 0
+      }
+    },
+    {
+      "case": "process-crash-during_call",
+      "status": "PASS",
+      "detail": {
+        "before_dispatches": 1,
+        "after_dispatches": 1,
+        "outcome": "UNKNOWN",
+        "completed_prepare_executions": 1,
+        "business_receipts": 0
+      }
+    },
+    {
+      "case": "process-crash-after_provider_response",
+      "status": "PASS",
+      "detail": {
+        "before_dispatches": 1,
+        "after_dispatches": 1,
+        "outcome": "UNKNOWN",
+        "completed_prepare_executions": 1,
+        "business_receipts": 0
+      }
+    },
+    {
+      "case": "process-crash-after_attempt_receipt",
+      "status": "PASS",
+      "detail": {
+        "before_dispatches": 1,
+        "after_dispatches": 2,
+        "outcome": "SUCCESS",
+        "completed_prepare_executions": 1,
+        "business_receipts": 1
+      }
+    },
+    {
+      "case": "process-crash-after_business_commit",
+      "status": "PASS",
+      "detail": {
+        "before_dispatches": 1,
+        "after_dispatches": 2,
+        "outcome": "SUCCESS",
+        "completed_prepare_executions": 1,
+        "business_receipts": 1
+      }
+    },
+    {
+      "case": "sigkill-between-steps",
+      "status": "PASS",
+      "detail": {
+        "kill_signal": 9,
+        "recovered": true,
+        "completed_prepare_executions": 1
+      }
+    },
+    {
+      "case": "cancel-inflight_model",
+      "status": "FAIL",
+      "error": "AssertionError(('cancel-inflight_model-ack', 1, 'Traceback (most recent call last):\\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 267, in <module>\\n    main()\\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 233, in main\\n    print(json.dumps({\\'workflow_status\\': client.get_workflow_status(args.workflow).status,\\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^\\nAttributeError: \\'DBOSClient\\' object has no attribute \\'get_workflow_status\\'. Did you mean: \\'list_workflow_steps\\'?\\n'))"
+    },
+    {
+      "case": "cancel-after_business_step",
+      "status": "FAIL",
+      "error": "AssertionError(('cancel-after_business_step-ack', 1, 'Traceback (most recent call last):\\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 267, in <module>\\n    main()\\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 233, in main\\n    print(json.dumps({\\'workflow_status\\': client.get_workflow_status(args.workflow).status,\\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^\\nAttributeError: \\'DBOSClient\\' object has no attribute \\'get_workflow_status\\'. Did you mean: \\'list_workflow_steps\\'?\\n'))"
+    },
+    {
+      "case": "timeout",
+      "status": "PASS",
+      "detail": {
+        "workflow_status": "SUCCESS",
+        "outcome": "UNKNOWN",
+        "reason": "model_timeout",
+        "business_receipts": 0
+      }
+    },
+    {
+      "case": "bad_structure",
+      "status": "PASS",
+      "detail": {
+        "workflow_status": "SUCCESS",
+        "outcome": "FAILED",
+        "reason": "invalid_structured_output",
+        "business_receipts": 1
+      }
+    },
+    {
+      "case": "tool_failure",
+      "status": "PASS",
+      "detail": {
+        "workflow_status": "SUCCESS",
+        "outcome": "FAILED",
+        "reason": "tool_not_committed",
+        "business_receipts": 0
+      }
+    },
+    {
+      "case": "business-and-attempt-distinction",
+      "status": "PASS",
+      "detail": {
+        "concurrent_same_business_actions": 8,
+        "user_a_receipts": 1,
+        "user_b_receipts": 1,
+        "changed_input": "CONFLICT",
+        "unresolved_attempt": "UNKNOWN",
+        "scope": "local serialization only; not authentication/RLS proof"
+      }
+    }
+  ],
+  "records": [
+    {
+      "label": "success-en",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/success-en",
+        "--locale",
+        "en"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/success-en.log",
+      "log_sha256": "67e443d1ab22a198b5eea5a6902fac9ad133423ce202005c6834a5e0604a0763"
+    },
+    {
+      "label": "same-workflow-en",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/success-en",
+        "--locale",
+        "en"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/same-workflow-en.log",
+      "log_sha256": "67e443d1ab22a198b5eea5a6902fac9ad133423ce202005c6834a5e0604a0763"
+    },
+    {
+      "label": "new-workflow-same-attempt-en",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/success-en",
+        "--locale",
+        "en",
+        "--workflow",
+        "workflow-2"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/new-workflow-same-attempt-en.log",
+      "log_sha256": "7d06e3adf674bf5d56cdfda5f0dd920d79bcdc0c79c78f538dc94f40786e8b5d"
+    },
+    {
+      "label": "success-zh",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/success-zh",
+        "--locale",
+        "zh"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/success-zh.log",
+      "log_sha256": "bb00a360aeae38584a34d070fd2f6abbbe06c044c544dd382a80cb1343fae795"
+    },
+    {
+      "label": "same-workflow-zh",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/success-zh",
+        "--locale",
+        "zh"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/same-workflow-zh.log",
+      "log_sha256": "bb00a360aeae38584a34d070fd2f6abbbe06c044c544dd382a80cb1343fae795"
+    },
+    {
+      "label": "new-workflow-same-attempt-zh",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/success-zh",
+        "--locale",
+        "zh",
+        "--workflow",
+        "workflow-2"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/new-workflow-same-attempt-zh.log",
+      "log_sha256": "715f6206e4b9acb581732647675483016f83b8619fe99f0ae576684815948333"
+    },
+    {
+      "label": "before_model_step-crash",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/before_model_step"
+      ],
+      "exit_code": 91,
+      "log": ".runs/validation-1792581790698796000/before_model_step-crash.log",
+      "log_sha256": "a3680b6601c39b586ea892ad2bbaa58a7f72b62a64f73917b09aa8c5f188110e"
+    },
+    {
+      "label": "before_model_step-recover",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/before_model_step"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/before_model_step-recover.log",
+      "log_sha256": "67e443d1ab22a198b5eea5a6902fac9ad133423ce202005c6834a5e0604a0763"
+    },
+    {
+      "label": "after_model_step-crash",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_model_step"
+      ],
+      "exit_code": 91,
+      "log": ".runs/validation-1792581790698796000/after_model_step-crash.log",
+      "log_sha256": "a3680b6601c39b586ea892ad2bbaa58a7f72b62a64f73917b09aa8c5f188110e"
+    },
+    {
+      "label": "after_model_step-recover",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_model_step"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/after_model_step-recover.log",
+      "log_sha256": "67e443d1ab22a198b5eea5a6902fac9ad133423ce202005c6834a5e0604a0763"
+    },
+    {
+      "label": "intent_before_send-crash",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/intent_before_send"
+      ],
+      "exit_code": 91,
+      "log": ".runs/validation-1792581790698796000/intent_before_send-crash.log",
+      "log_sha256": "a3680b6601c39b586ea892ad2bbaa58a7f72b62a64f73917b09aa8c5f188110e"
+    },
+    {
+      "label": "intent_before_send-recover",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/intent_before_send"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/intent_before_send-recover.log",
+      "log_sha256": "06042ab1784e85ccb72f6b9b2902777fc84ee58e632fc8fe02706005138a111c"
+    },
+    {
+      "label": "intent_before_send-new-workflow",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/intent_before_send",
+        "--workflow",
+        "workflow-2"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/intent_before_send-new-workflow.log",
+      "log_sha256": "e1eaad94e4dc83e86ca5bf65cfeccbb58cea4a47a7bddcf063605e87be6d8e4b"
+    },
+    {
+      "label": "during_call-crash",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/during_call"
+      ],
+      "exit_code": 91,
+      "log": ".runs/validation-1792581790698796000/during_call-crash.log",
+      "log_sha256": "a3680b6601c39b586ea892ad2bbaa58a7f72b62a64f73917b09aa8c5f188110e"
+    },
+    {
+      "label": "during_call-recover",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/during_call"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/during_call-recover.log",
+      "log_sha256": "c8f01355d66365613f44f7f236f2af04d81836f1a4abec51a80ba1b1a0b29eb6"
+    },
+    {
+      "label": "during_call-new-workflow",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/during_call",
+        "--workflow",
+        "workflow-2"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/during_call-new-workflow.log",
+      "log_sha256": "dff802e345cbbd0caa71302952dd168ecfd28625a2b8b76c20d983873436c3fb"
+    },
+    {
+      "label": "after_provider_response-crash",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_provider_response"
+      ],
+      "exit_code": 91,
+      "log": ".runs/validation-1792581790698796000/after_provider_response-crash.log",
+      "log_sha256": "a3680b6601c39b586ea892ad2bbaa58a7f72b62a64f73917b09aa8c5f188110e"
+    },
+    {
+      "label": "after_provider_response-recover",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_provider_response"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/after_provider_response-recover.log",
+      "log_sha256": "4fef6e39b6a2a551e0372e58c9e6e4072a1b8b24b6bcc87f8167d919d4fa26a5"
+    },
+    {
+      "label": "after_provider_response-new-workflow",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_provider_response",
+        "--workflow",
+        "workflow-2"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/after_provider_response-new-workflow.log",
+      "log_sha256": "83d7570f20ecbb7401fafa5cb370cfc1ef55b8170e4c5342df49c8c0908ca8c5"
+    },
+    {
+      "label": "after_attempt_receipt-crash",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_attempt_receipt"
+      ],
+      "exit_code": 91,
+      "log": ".runs/validation-1792581790698796000/after_attempt_receipt-crash.log",
+      "log_sha256": "a3680b6601c39b586ea892ad2bbaa58a7f72b62a64f73917b09aa8c5f188110e"
+    },
+    {
+      "label": "after_attempt_receipt-recover",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_attempt_receipt"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/after_attempt_receipt-recover.log",
+      "log_sha256": "67e443d1ab22a198b5eea5a6902fac9ad133423ce202005c6834a5e0604a0763"
+    },
+    {
+      "label": "after_business_commit-crash",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_business_commit"
+      ],
+      "exit_code": 91,
+      "log": ".runs/validation-1792581790698796000/after_business_commit-crash.log",
+      "log_sha256": "a3680b6601c39b586ea892ad2bbaa58a7f72b62a64f73917b09aa8c5f188110e"
+    },
+    {
+      "label": "after_business_commit-recover",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/after_business_commit"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/after_business_commit-recover.log",
+      "log_sha256": "931c9091f705d1f76097b40a1f8c5b1a9a09f5d3742ff1562abde2e8dfe318b5"
+    },
+    {
+      "label": "sigkill-killed",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/sigkill"
+      ],
+      "exit_code": -9,
+      "log": ".runs/validation-1792581790698796000/sigkill-killed.log",
+      "log_sha256": "a3680b6601c39b586ea892ad2bbaa58a7f72b62a64f73917b09aa8c5f188110e"
+    },
+    {
+      "label": "sigkill-recovered",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "recover",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/sigkill"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/sigkill-recovered.log",
+      "log_sha256": "67e443d1ab22a198b5eea5a6902fac9ad133423ce202005c6834a5e0604a0763"
+    },
+    {
+      "label": "cancel-inflight_model-ack",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "cancel",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/cancel-inflight_model"
+      ],
+      "exit_code": 1,
+      "log": ".runs/validation-1792581790698796000/cancel-inflight_model-ack.log",
+      "log_sha256": "a80a17b29bcab212d81f70d9d1e90041a277485b2875ab7f4a2288904633c19b"
+    },
+    {
+      "label": "cancel-after_business_step-ack",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "cancel",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/cancel-after_business_step"
+      ],
+      "exit_code": 1,
+      "log": ".runs/validation-1792581790698796000/cancel-after_business_step-ack.log",
+      "log_sha256": "a80a17b29bcab212d81f70d9d1e90041a277485b2875ab7f4a2288904633c19b"
+    },
+    {
+      "label": "timeout",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/timeout",
+        "--scenario",
+        "timeout"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/timeout.log",
+      "log_sha256": "5d23498fa136607889f977eb326245c5d676776f992005a14038b4e6b641ac7c"
+    },
+    {
+      "label": "bad_structure",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/bad_structure",
+        "--scenario",
+        "bad_structure"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/bad_structure.log",
+      "log_sha256": "37f4a70c413280b63e2e0f0d7d00560a48e3409c3cd1e976177d9c4c43aa530b"
+    },
+    {
+      "label": "tool_failure",
+      "argv": [
+        "<spike>/.venv/bin/python",
+        "<spike>/runtime.py",
+        "start",
+        "--root",
+        "<spike>/.runs/validation-1792581790698796000/tool_failure",
+        "--scenario",
+        "tool_failure"
+      ],
+      "exit_code": 0,
+      "log": ".runs/validation-1792581790698796000/tool_failure.log",
+      "log_sha256": "a68e8bafa71a8f162aff5f2e6f16f66b94fd5e106d7d1ce0fe626396185100bc"
+    }
+  ],
+  "raw_report": ".runs/validation-1792581790698796000/report.json"
+}
