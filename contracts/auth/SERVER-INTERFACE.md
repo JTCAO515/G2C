@@ -34,6 +34,11 @@ failed/do_not_retry；身份/资格验证无法判断为 unknown/retry_safe_read
 本次准入拒绝映射为 not_received。无响应不得伪造 request_id；不暴露原 token/
 内部异常/他人资源详情。注册、验证、找回不接此受限业务 gate。
 
+实现指针：`backend/auth/cj_auth/jwt_adapter.py` 使用固定 PyJWT 2.15.1，
+本地 RS256/ES256 profile、key provider 与测试边界见 [服务端 README](../../backend/auth/README.md)。
+接口首段 head e49ea1a2abcdd82c93a28aeba8b2d6a1248a0f3b，JWT 实现随后交固定差额；
+不改变上述接口版本或将它标为已发布。
+
 ## 当前排除
 
 无真实 issuer/audience/provider 默认值，无 JWKS 网络默认出口，无邀请库/新权限
