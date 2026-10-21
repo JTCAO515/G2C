@@ -11,7 +11,7 @@ def language_only(before, after):
 
 
 def private_projection_cleared(view):
-    # assistantBody is owned by the host, outside ShellState.
+    # Abstract body projection: external in UI@1.0, inside presentation in UI@1.1.
     return (view['draft'] == '' and view['context'] == (None, None)
             and view['assistantBody'] is None and view['memoryPath'] == []
             and view['pageStates'] == ('notConnected',) * 3)
@@ -74,6 +74,46 @@ class UISeams(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     c.complete(pending, 'page:' + page)
                 c.complete(pending, 'unknown')
+
+
+class UI11BindingSeams(unittest.TestCase):
+    """Two independent gates required of a future host, not a Swift implementation."""
+    def setUp(self):
+        self.auth = Client('synthetic-process')
+        self.auth.complete(self.auth.begin(new_login=True), 'valid', 'synthetic-A', 's1', 'allowed')
+        self.ui_token = object()  # synthetic opaque per-instance/reset token
+
+    def permits(self, auth_binding, ui_token):
+        return (auth_binding is not None and auth_binding == self.auth.capture()
+                and ui_token is self.ui_token)
+
+    def test_reset_rejects_old_token_even_with_current_auth(self):
+        binding, old_token = self.auth.capture(), self.ui_token
+        self.assertTrue(self.permits(binding, old_token))
+        self.ui_token = object()
+        self.assertFalse(self.permits(binding, old_token))
+        self.assertTrue(self.permits(binding, self.ui_token))
+
+    def test_other_instance_token_rejected(self):
+        self.assertFalse(self.permits(self.auth.capture(), object()))
+
+    def test_fresh_ui_token_cannot_relabel_old_account_result(self):
+        old_binding = self.auth.capture()
+        self.auth.logout()
+        self.ui_token = object()
+        self.auth.complete(self.auth.begin(new_login=True), 'valid', 'synthetic-B', 's1', 'allowed')
+        # Even passing the current UI token cannot turn an A result into B data.
+        self.assertFalse(self.permits(old_binding, self.ui_token))
+        self.assertTrue(self.permits(self.auth.capture(), self.ui_token))
+
+    def test_unchanged_ui_token_cannot_bypass_session_or_unknown(self):
+        old_binding = self.auth.capture()
+        self.auth.complete(self.auth.begin(), 'unknown')
+        self.assertFalse(self.permits(old_binding, self.ui_token))
+        self.assertTrue(self.auth.credentials_present)
+        self.auth.complete(self.auth.begin(), 'valid', 'synthetic-A', 's2', 'allowed')
+        self.assertFalse(self.permits(old_binding, self.ui_token))
+        self.assertTrue(self.permits(self.auth.capture(), self.ui_token))
 
 
 if __name__ == '__main__':
