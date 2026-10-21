@@ -19,7 +19,7 @@ public enum AuthAction: CaseIterable, Sendable {
 }
 
 public enum UnavailableReason: Equatable, Sendable {
-    case missingConfiguration, sdkAdapterNotInstalled, hostCapabilityRequired
+    case missingConfiguration, missingRuntimeMaterial, sdkAdapterNotInstalled, hostCapabilityRequired
 }
 
 /// Local correlation only. Never a nonce, OAuth state, credential or authorization.
@@ -33,13 +33,14 @@ public struct AuthAttempt: Equatable, Sendable {
 /// Events must come from an SDK-owning adapter, never parsed directly from an incoming URL.
 /// Identity discovery is deliberately NOT server verification or beta eligibility.
 public enum SDKEvent: Equatable, Sendable {
-    case identityNeedsServerCheck, verificationPending, recoveryRequestAcknowledged
+    case unavailable(UnavailableReason)
+    case identityNeedsServerCheck, emailVerificationRequired, verificationPending, recoveryRequestAcknowledged
     case passwordUpdatedRequiresSignIn, userCancelled, networkUnknown, rejected
 }
 
 public enum FlowState: Equatable, Sendable {
     case idle, unavailable(UnavailableReason), waiting(AuthAction)
-    case identityNeedsServerCheck, verificationPending, recoveryRequestAcknowledged
+    case identityNeedsServerCheck, emailVerificationRequired, verificationPending, recoveryRequestAcknowledged
     case passwordUpdatedRequiresSignIn, cancelledLocally, networkUnknown, rejected
     case callbackPurposeMismatch
 }
@@ -102,7 +103,9 @@ public enum FlowState: Equatable, Sendable {
         }
         pending = nil // duplicate callback cannot mutate state
         switch event {
+        case .unavailable(let reason): state = .unavailable(reason)
         case .identityNeedsServerCheck: state = .identityNeedsServerCheck
+        case .emailVerificationRequired: state = .emailVerificationRequired
         case .verificationPending: state = .verificationPending
         case .recoveryRequestAcknowledged: state = .recoveryRequestAcknowledged
         case .passwordUpdatedRequiresSignIn: state = .passwordUpdatedRequiresSignIn
@@ -131,8 +134,9 @@ public enum FlowState: Equatable, Sendable {
 
     private func compatible(_ event: SDKEvent, with purpose: AuthPurpose) -> Bool {
         switch event {
-        case .userCancelled, .networkUnknown, .rejected: true
+        case .unavailable, .userCancelled, .networkUnknown, .rejected: true
         case .identityNeedsServerCheck: purpose == .signIn || purpose == .verifyEmail
+        case .emailVerificationRequired: purpose == .signIn
         case .verificationPending: purpose == .register
         case .recoveryRequestAcknowledged: purpose == .requestRecovery
         case .passwordUpdatedRequiresSignIn: purpose == .resetPassword

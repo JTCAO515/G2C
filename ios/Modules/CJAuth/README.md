@@ -1,8 +1,8 @@
 # CJAuth — local flow candidate
 
 CJ007 独占独立包，base `d27c23c009b308c6083a93c0d0096b1162900233`。
-这是邮箱/Google/Apple 的协议无关流程核心，不是已接通的登录 UI 或 SDK。
-包内无外部依赖，因此没有 Package.resolved；Swift tools 6.0，本机 Swift 6.4 编译。
+核心候选 4836dff 的历史说明保留如下；当前另有 [官方 SDK adapter 候选](SDK-ADAPTER.md)。
+当前包自有锁固定 Supabase Swift 2.55.4，tools 6.1，本机 Swift 6.4 编译；真实登录仍未接通。
 iOS 17/macOS 14 只是本地编译目标，不定产品最低版本。
 
 ## 可用接口与边界
@@ -10,7 +10,7 @@ iOS 17/macOS 14 只是本地编译目标，不定产品最低版本。
 - AuthAction：邮箱登录/注册/验证/请求恢复/重置密码，以及 Google/Apple 登录。
 - AuthSDKAdapter：未来官方 SDK 实现的边界。adapter 自己管理安全输入、平台 UI、
   秘密、回调合法性、nonce/state/PKCE、凭据存储及脱敏错误；本包不接收密码/token/URL。
-- 唯一随库提供的 UnconfiguredSDKAdapter 对所有入口返回 missingConfiguration，
+- 核心 product 提供的 UnconfiguredSDKAdapter 对所有入口返回 missingConfiguration，
   run 不调用 perform。没有可设置为“已配置”的默认开关或生产假登录出口。
 - AuthFlow：MainActor 上捕获 per-instance/per-generation/per-operation attempt，
   await 后复核；取消/替换/失效后的回调与重复回调无效。purpose 不匹配显式失败，
@@ -26,8 +26,7 @@ iOS 17/macOS 14 只是本地编译目标，不定产品最低版本。
   删除凭据的指令；仍需真实 SDK adapter 证明此行为。
 
 未来官方 adapter 接入时，新增包依赖须固定版本与锁，并重验实际 SDK 事件/错误。
-本次固定基线 ios/Package.swift/Package.resolved 未发现 Supabase；未继承其他工作树
-SDK 版本，未安装或宣称验证任何 Supabase Swift 版本。
+4836dff 固定基线未使用 Supabase；后续官方 SDK 编译与锁的差额证据见 SDK-ADAPTER.md。
 
 ## 复现与证据
 
@@ -46,6 +45,6 @@ env CLANG_MODULE_CACHE_PATH=/private/tmp/cj007-clang-cache \
 回调用途、跨 provider 替换、跨实例、身份失效、独立邮箱结果及真实 async 挂起晚到。
 既有 Python 契约未改，证据复用。
 
-UNRUN：iOS simulator/device、实际页面/host 注册、SDK 编译与行为、浏览器 OAuth、
+4836dff 当时未验项（SDK 本地编译现由新差额补齐）：iOS simulator/device、实际页面/host 注册、浏览器 OAuth、
 Apple 能力、nonce/state/PKCE 校验、邮件、真实注册/恢复、服务端邀请、数据库隔离。
 没有发布完整 AUTH@1.0 或 AUTH-SEMANTICS 子版本；Issue #8 未关闭。
