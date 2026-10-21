@@ -10,6 +10,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/probe`.
     /// - Remark: Generated from `#/paths//v1/probe/get(getProbe)`.
     func getProbe(_ input: Operations.getProbe.Input) async throws -> Operations.getProbe.Output
+    /// - Remark: HTTP `POST /v1/messages`.
+    /// - Remark: Generated from `#/paths//v1/messages/post(receiveMessage)`.
+    func receiveMessage(_ input: Operations.receiveMessage.Input) async throws -> Operations.receiveMessage.Output
+    /// - Remark: HTTP `GET /v1/message-receipts`.
+    /// - Remark: Generated from `#/paths//v1/message-receipts/get(queryMessageReceipt)`.
+    func queryMessageReceipt(_ input: Operations.queryMessageReceipt.Input) async throws -> Operations.queryMessageReceipt.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -20,6 +26,28 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//v1/probe/get(getProbe)`.
     public func getProbe(headers: Operations.getProbe.Input.Headers = .init()) async throws -> Operations.getProbe.Output {
         try await getProbe(Operations.getProbe.Input(headers: headers))
+    }
+    /// - Remark: HTTP `POST /v1/messages`.
+    /// - Remark: Generated from `#/paths//v1/messages/post(receiveMessage)`.
+    public func receiveMessage(
+        headers: Operations.receiveMessage.Input.Headers = .init(),
+        body: Operations.receiveMessage.Input.Body
+    ) async throws -> Operations.receiveMessage.Output {
+        try await receiveMessage(Operations.receiveMessage.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/message-receipts`.
+    /// - Remark: Generated from `#/paths//v1/message-receipts/get(queryMessageReceipt)`.
+    public func queryMessageReceipt(
+        query: Operations.queryMessageReceipt.Input.Query,
+        headers: Operations.queryMessageReceipt.Input.Headers = .init()
+    ) async throws -> Operations.queryMessageReceipt.Output {
+        try await queryMessageReceipt(Operations.queryMessageReceipt.Input(
+            query: query,
+            headers: headers
+        ))
     }
 }
 

@@ -129,5 +129,125 @@ extension Components {
                 case error
             }
         }
+        /// - Remark: Generated from `#/components/schemas/MessageReceipt`.
+        public struct MessageReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageReceipt/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageReceipt/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageReceipt/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageReceipt/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageReceipt/sequence`.
+            public var sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MessageReceipt/input_sha256`.
+            public var input_sha256: Swift.String
+            /// Creates a new `MessageReceipt`.
+            ///
+            /// - Parameters:
+            ///   - message_id:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - run_id:
+            ///   - sequence:
+            ///   - input_sha256:
+            public init(
+                message_id: Swift.String,
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                run_id: Swift.String,
+                sequence: Swift.Int,
+                input_sha256: Swift.String
+            ) {
+                self.message_id = message_id
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.run_id = run_id
+                self.sequence = sequence
+                self.input_sha256 = input_sha256
+            }
+            public enum CodingKeys: String, CodingKey {
+                case message_id
+                case conversation_id
+                case generation
+                case run_id
+                case sequence
+                case input_sha256
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .sequence
+                )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "message_id",
+                    "conversation_id",
+                    "generation",
+                    "run_id",
+                    "sequence",
+                    "input_sha256"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageReceiveResponse`.
+        public struct MessageReceiveResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageReceiveResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MessageReceiveResponse/receipt`.
+            public var receipt: Components.Schemas.MessageReceipt
+            /// Creates a new `MessageReceiveResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MessageReceipt
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageReceiptQueryResponse`.
+        public struct MessageReceiptQueryResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageReceiptQueryResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// Creates a new `MessageReceiptQueryResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            public init(request_id: Components.Schemas.RequestId) {
+                self.request_id = request_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+            }
+        }
     }
 }

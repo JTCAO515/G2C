@@ -49,6 +49,126 @@
           }
         }
       }
+    },
+    "/v1/messages": {
+      "post": {
+        "operationId": "receiveMessage",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Original immutable UTF8 JSON bytes satisfying fixed MESSAGE Command.parse; preserve before first send, never reconstruct for retries. Domain IDs remain opaque. Body bound is mandatory explicit host configuration, product value not selected.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Committed receipt, including exact byte repeat only if current authorization and conversation generation still permit access.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageReceiveResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/message-receipts": {
+      "get": {
+        "operationId": "queryMessageReceipt",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Opaque ID percent-encoded once and decoded once; duplicate/extra query parameters rejected. No trim, case or Unicode normalization."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt only, no runtime state or dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageReceiptQueryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -138,7 +258,91 @@
             "$ref": "#/components/schemas/ErrorInfo"
           }
         }
+      },
+      "MessageReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "message_id",
+          "conversation_id",
+          "generation",
+          "sequence",
+          "run_id",
+          "input_sha256"
+        ],
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "MessageReceiveResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/MessageReceipt"
+          }
+        }
+      },
+      "MessageReceiptQueryResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessageReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null means not observed in this scoped ledger, never authoritative not_received or permission to resend."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "CJBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Only configured CJ JWT verifier and authoritative restricted-business gate; no caller owner or issuer fields."
       }
     }
-  }
+  },
+  "x-cj-message-wire": "receive-receipt-0.1.0-rc.1; partial internal composition, not MESSAGE@1.0"
 }

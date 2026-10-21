@@ -1,0 +1,18 @@
+{
+  "PyJWT": {
+    "version": "2.15.1",
+    "license": "MIT"
+  },
+  "cryptography": {
+    "version": "50.0.2",
+    "license": "Apache-2.0 OR BSD-3-Clause"
+  },
+  "cffi": {
+    "version": "2.1.1",
+    "license": "MIT-0"
+  },
+  "pycparser": {
+    "version": "3.11",
+    "license": "BSD-3-Clause"
+  }
+}
