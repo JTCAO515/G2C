@@ -3,7 +3,7 @@ import CryptoKit
 
 public enum RecoveryError: Error {
     case inactive, staleOperation, invalidInput, inputConflict, queryOnly
-    case receiptMismatch, persistenceUnknown, invalidSnapshot, keyUnavailable, unsafeDirectory
+    case receiptMismatch, persistenceUnknown, invalidSnapshot, keyUnavailable, unsafeDirectory, legacyStorageFormat, keyMismatch
 }
 
 /// Host-provided local partition, not an authentication or authorization assertion.

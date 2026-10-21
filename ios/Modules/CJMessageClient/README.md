@@ -91,3 +91,9 @@ Transport delta: see [TRANSPORT.md](TRANSPORT.md). CJMessageHTTP now consumes ex
 CJ005 d886677 CJAPI through an ignored fixed export (prepare script required). Receive
 interception checks pass; generated query lacks receipt and explicitly blocks query
 until CJ005 correction. This does not change the earlier core-only evidence attribution.
+
+Storage delta: [KEY-BINDING.md](KEY-BINDING.md) defines authenticated `CJMKEY02`/key-ID
+format and read-only fixed official key-interface bridge. Old headerless candidate files
+are explicitly refused and preserved, without migration or key guessing. Run both prepare
+scripts before a fresh build. 13 targeted checks and two separate v2 test processes pass;
+real Keychain and host lifecycle remain pending.

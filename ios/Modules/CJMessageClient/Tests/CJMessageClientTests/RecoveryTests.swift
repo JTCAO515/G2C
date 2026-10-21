@@ -5,8 +5,9 @@ import Testing
 
 @MainActor private final class TestKeys: MessageEncryptionKeyProvider {
     var available = true
+    var id = UUID()
     var secret = SymmetricKey(size: .bits256)
-    func key(for scope: StorageScope) throws -> SymmetricKey? { available ? secret : nil }
+    func existing(for scope: StorageScope, expectedID: UUID?) throws -> MessageStorageKey? { available ? MessageStorageKey(id: id, key: secret) : nil }
 }
 
 @MainActor private final class AmbiguousStorage: SecureMessageStorage {
