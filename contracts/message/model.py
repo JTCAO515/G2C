@@ -172,7 +172,7 @@ class Model:
             snapshot, offset = deepcopy(c['messages']), 0
         else:
             token = self.s['cursors'].get(cursor)
-            if token is None or token['binding'] != (a.principal, a.revision, cid, c['epoch']):
+            if token is None or token['binding'] != (a.principal, a.revision, cid, c['generation'], c['epoch']):
                 raise Rejected('resync_required')
             snapshot, offset = token['snapshot'], token['offset']
         end = min(offset + limit, len(snapshot))
@@ -182,7 +182,7 @@ class Model:
             self.s['clock'] += 1
             next_cursor = 'fixture-cursor-' + str(self.s['clock'])
             self.s['cursors'][next_cursor] = {
-                'binding': (a.principal, a.revision, cid, c['epoch']),
+                'binding': (a.principal, a.revision, cid, c['generation'], c['epoch']),
                 'snapshot': deepcopy(snapshot), 'offset': end}
         return {'items': items, 'next_cursor': next_cursor, 'snapshot_count': len(snapshot)}
 

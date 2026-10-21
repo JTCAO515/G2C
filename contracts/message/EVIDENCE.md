@@ -52,3 +52,26 @@ resync_required，不返回部分旧页面、不静默漏项。另一账号变�
 generation/schema。故障注入直接改内存不是删除 API，不证明全域清理或真实隔离。
 旧完整 fixture image 不提供迁移保证；本次旧游标格式返回 resync_required，正式
 存储迁移/回退仍未实现。UNKNOWN/过期/外来游标均不伪装成空历史。
+
+## P2 消息分页创建代次返修
+
+差额 base：51886def20f97f80924ff5bb834ab7aca3f23c96。输入为 Testing 的
+CJ-009-cursor/REPORT.md 与 repro_message_generation.py：原列表 P2 已独立
+通过，但 page() 在同 ID 聊天删除重建后仍返回旧消息回执；不能概括为全游标通过。
+本地新增定向检查先对原模型运行，4 项中 3 FAIL / 1 PASS，保留
+p2-message-before.txt（重建、错创建代次、legacy 绑定失败）。
+
+实现仅两处绑定变更：page() 保存/比较 principal、revision、cid、generation、
+epoch。旧四元绑定与错 generation 均 resync_required；不静默空页。新快照可
+显式返回重建聊天的空历史；普通追加、另一账号重建不使有效原快照失效。
+
+- PASS：python3 -B contracts/message/check_message_cursor.py，4/4，
+  p2-message-after.txt；覆盖同 ID 重建/deepcopy、错代次、legacy、追加/相邻账号。
+- PASS：原 check.py 的 test_invalid_expired_and_cross_scope_cursors 与
+  test_snapshot_paging_append_restart_and_replay 两项，p2-message-regression.txt。
+- PASS：git diff --check。列表实现未改，原列表 7+4 证据复用；未全量重跑17+5。
+- 待独立差额审验，不自行关闭新 P2。schema/正式 wire 版本未变，旧 fixture
+  消息游标须重新取快照；不提供正式持久存储迁移或兼容承诺。
+
+仍是内存故障注入，不是数据库删除、全域清理或真实隔离/崩溃恢复验收；旧失败
+日志与470577文档成果保留，未写共享API/backend/云资源。
