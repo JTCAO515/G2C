@@ -27,7 +27,10 @@ From repo root:
 
 ```sh
 python3 contracts/ui/check_contract.py
-swift test --package-path ios/Modules/CJShell --scratch-path /tmp/cj006-swift-build
+env CLANG_MODULE_CACHE_PATH=/tmp/cj006-clang-cache SWIFTPM_MODULECACHE_OVERRIDE=/tmp/cj006-swift-cache \
+  swift test --disable-sandbox --package-path ios/Modules/CJShell --scratch-path /tmp/cj006-swift-build
 ```
 
 Breaking UI changes need a new version and consumer impact review. Additions require old-consumer checks. No downstream consumer has confirmed UI@1.0 yet; Main routes the fixed candidate to CJ007 and Review/Testing. No secrets, account data, analytics or logs are stored by this module. Host identity-change cleanup is mandatory before future domain integration; this candidate does not implement auth or claim cleanup guarantees.
+
+`ShellView(state:assistantBody:)` also accepts optional plain native text for a domain-owned body slot. It does not parse messages, stream events, generate IDs or persist content. The demo labels synthetic long text explicitly.

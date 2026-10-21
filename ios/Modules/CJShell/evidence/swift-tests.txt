@@ -1,0 +1,31 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/Caches/org.swift.swiftpm is not accessible or not writable, disabling user-level cache features.
+warning: 'cjshell': failed storing manifest for 'cjshell' in cache: attempt to write a readonly database
+Building for debugging...
+[Planning deferred tasks]
+[4 / 8] CJShell
+[5 / 9] CJShell
+[17 / 19] CJShellTests-product
+[19 / 21] CJShellTests-product
+[23 / 24] CJShellTests-product
+Build complete! (1.33秒)
+Test Suite 'All tests' started at 2026-10-21 20:36:50.558.
+Test Suite 'All tests' passed at 2026-10-21 20:36:50.559.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ShellStateTests started.
+◇ Test tabSwitchPreservesDraftAndMemoryPath() started.
+◇ Test unavailableSendNeverClaimsSuccess() started.
+◇ Test languagePreservesNavigationDraftAndReferences() started.
+◇ Test unknownWireValuesAreRejected() started.
+◇ Test invalidPreferenceIsVisibleAndNotSilentlyRewritten() started.
+✔ Test tabSwitchPreservesDraftAndMemoryPath() passed after 0.003 seconds.
+✔ Test unknownWireValuesAreRejected() passed after 0.003 seconds.
+✔ Test unavailableSendNeverClaimsSuccess() passed after 0.005 seconds.
+✔ Test languagePreservesNavigationDraftAndReferences() passed after 0.005 seconds.
+✔ Test invalidPreferenceIsVisibleAndNotSilentlyRewritten() passed after 0.005 seconds.
+✔ Suite ShellStateTests passed after 0.005 seconds.
+✔ Test run with 5 tests in 1 suite passed after 0.005 seconds.
