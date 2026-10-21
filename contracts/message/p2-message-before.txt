@@ -1,0 +1,39 @@
+test_append_and_other_account_recreation_do_not_invalidate (__main__.MessageCursorChecks) ... ok
+test_legacy_binding_requires_explicit_resync (__main__.MessageCursorChecks) ... FAIL
+test_recreated_chat_rejects_old_message_cursor (__main__.MessageCursorChecks) ... FAIL
+test_wrong_creation_generation_rejected (__main__.MessageCursorChecks) ... FAIL
+
+======================================================================
+FAIL: test_legacy_binding_requires_explicit_resync (__main__.MessageCursorChecks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_message_cursor.py", line 39, in test_legacy_binding_requires_explicit_resync
+    self.resync()
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_message_cursor.py", line 22, in resync
+    self.m.page(self.a, 'a-chat', self.token)
+AssertionError: Rejected not raised
+
+======================================================================
+FAIL: test_recreated_chat_rejects_old_message_cursor (__main__.MessageCursorChecks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_message_cursor.py", line 28, in test_recreated_chat_rejects_old_message_cursor
+    self.resync()
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_message_cursor.py", line 22, in resync
+    self.m.page(self.a, 'a-chat', self.token)
+AssertionError: Rejected not raised
+
+======================================================================
+FAIL: test_wrong_creation_generation_rejected (__main__.MessageCursorChecks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_message_cursor.py", line 34, in test_wrong_creation_generation_rejected
+    self.resync()
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_message_cursor.py", line 22, in resync
+    self.m.page(self.a, 'a-chat', self.token)
+AssertionError: Rejected not raised
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+FAILED (failures=3)

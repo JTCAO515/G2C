@@ -1,0 +1,12 @@
+test_changed_ownership_does_not_leak_entry (__main__.ListCursorChecks) ... ok
+test_deleted_unread_entry_rejects_old_snapshot (__main__.ListCursorChecks) ... ok
+test_epoch_change_without_delete_rejects (__main__.ListCursorChecks) ... ok
+test_legacy_cursor_requires_explicit_resync (__main__.ListCursorChecks) ... ok
+test_other_account_and_append_do_not_invalidate (__main__.ListCursorChecks) ... ok
+test_recreated_id_does_not_revive_old_cursor (__main__.ListCursorChecks) ... ok
+test_unknown_expired_and_foreign_cursor_explicit_resync (__main__.ListCursorChecks) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.000s
+
+OK
