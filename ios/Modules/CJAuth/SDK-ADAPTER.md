@@ -1,5 +1,8 @@
 # CJAuthSupabase 本地 adapter 候选
 
+当前含 P2 同 attempt 重入返修，差额 base `d582c14f89e6c279e72eaceded71e51149b858b0`；
+该旧 head 不可合入。原编译证据保留，不作为已覆盖重入的证明。
+
 差额 base：`4836dff7f4c1185425b196206639acde44a8d52f`；旧核心候选保留可独立审阅。
 新增独立 product/target `CJAuthSupabase`；无 host/CJShell/根工程/API/数据库变更。
 
@@ -86,3 +89,35 @@ env CLANG_MODULE_CACHE_PATH=/private/tmp/cj007-clang-cache \
 UNRUN：SDK 真实成功会话/安全存储与重启、平台 OAuth/nonce/state/PKCE、回调路由、
 iOS host/Apple 能力、邮件/账号/API/数据库/真机。仍需 Main 分共享 host lease；
 用户操作、控制台、凭据、环境/费用步骤保持待办，不向离线用户索秘密。
+
+
+## P2：同 attempt 重入返修
+
+根因：d582c14 的 SingleRequestGate 在每次 perform 内新建，只能抑制一次方法调用
+内部的 SDK retry；相同 AuthAttempt 再调用 perform 会重新获取材料并再次出站。
+作者在旧源码上新增 5 项反例，全部 FAIL，原输出保留 evidence/p2-before.txt。
+
+最小修复：AuthAttempt 内增加 package-only 的 SDKAttemptExecution 引用，副本和
+不同 SupabaseSDKAdapter 收到**同一个原 attempt** 时共享它。该记录仅存运行 Task
+和最终 SDKEvent，不存凭据/URL/原请求内容。MainActor 同步登记 Task 后才 await，
+因此顺序/并发重入不会启动第二次 performOnce；完成后保存原结果并释放运行 Task。
+原 SingleRequestGate 保留，分别处理 SDK 内部 retry 与方法层重入这两个边界。
+
+- 仍是当前 attempt：在途重入等待同一结果；完成重入返回原 SDKEvent，无第二次
+  material/fetch。即使换 adapter/config/material，也不能把同一 attempt 重新执行。
+- 已取消/切号/失效：isCurrent 先拒绝，返回 userCancelled；原来已发出的副作用
+  不声称撤销。在途晚到结果即使被内部记录，也不能写入新的 AuthFlow 状态。
+- 原结果 networkUnknown：重入仅读取本地原 unknown，不再次出站。**这不是远端
+  对账，也不是重新验证**。必须等未来正式领域提供原操作查询；本实现不创建新
+  attempt 来自动重试。host 不能用 begin/run 新建 attempt 绕过未知结果边界。
+- 不同显式合法 attempt 各自独立，完成 A 不吞掉 B；一项已知完成操作后用户显式
+  发起另一项操作可以派发。此许可不涵盖将未决操作换 ID/attempt 盲重发。
+- 作用域是同进程内原 AuthAttempt 的共享记录，包括其值副本与跨 adapter 实例。
+  记录随原 attempt 引用存活；不序列化、无全局表/持久存储，不能对重启后重建的
+  attempt 或伪造新操作提供幂等保证。没有扩大到跨进程/服务端 exactly-once。
+
+验证：保持原 8+11 测试不改断言，新增 5 项先红后绿：顺序重入、并发重入、
+跨 adapter 重入、unknown 后重入、取消拒绝与不同合法 attempt 隔离。
+复用原“在途 SDK 响应后切号”反例核晚到。本次完整受影响小包 suite：编译 PASS，
+核心 8/8 + adapter 16/16 PASS，见 evidence/p2-after.txt。锁与 SDK 版本无变，
+evidence/sdk-tests.txt 保留旧 8+11 原输出；没有真实网络、账号、注册、邮件或 OAuth。

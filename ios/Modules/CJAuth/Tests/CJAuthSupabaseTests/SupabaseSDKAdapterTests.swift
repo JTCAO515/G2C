@@ -177,6 +177,62 @@ private actor Capture {
         #expect(flow.state == .networkUnknown && !flow.canUseRestrictedBusiness)
     }
 
+    @Test func sameAttemptSequentialReplayReturnsOriginalWithoutRedispatch() async throws {
+        let flow = AuthFlow(); let capture = Capture(); let a = adapter(flow, capture)
+        let attempt = try #require(flow.begin(.emailRecovery, using: a))
+        let original = await a.perform(attempt)
+        let repeated = await a.perform(attempt)
+        #expect(original == .recoveryRequestAcknowledged && repeated == original)
+        #expect(await capture.requests.count == 1)
+    }
+
+    @Test func sameAttemptConcurrentReplaySharesOneDispatch() async throws {
+        let flow = AuthFlow(); let capture = Capture(); let a = adapter(flow, capture)
+        let attempt = try #require(flow.begin(.emailRecovery, using: a))
+        async let first = a.perform(attempt)
+        async let second = a.perform(attempt)
+        let results = await (first, second)
+        #expect(results.0 == .recoveryRequestAcknowledged && results.1 == results.0)
+        #expect(await capture.requests.count == 1)
+    }
+
+    @Test func sameAttemptAcrossAdaptersCannotRedispatch() async throws {
+        let flow = AuthFlow(); let firstCapture = Capture(); let secondCapture = Capture()
+        let first = adapter(flow, firstCapture); let second = adapter(flow, secondCapture)
+        let attempt = try #require(flow.begin(.emailRecovery, using: first))
+        #expect(await first.perform(attempt) == .recoveryRequestAcknowledged)
+        #expect(await second.perform(attempt) == .recoveryRequestAcknowledged)
+        #expect(await firstCapture.requests.count == 1)
+        #expect(await secondCapture.requests.isEmpty)
+    }
+
+    @Test func sameAttemptUnknownReplayDoesNotRetryOriginalWrite() async throws {
+        let flow = AuthFlow(); let counter = RequestCounter()
+        let a = SupabaseSDKAdapter(configuration: config, fetch: { _ in
+            await counter.increment(); throw URLError(.timedOut)
+        }, isCurrent: { flow.pending == $0 }, material: {
+            .email(attempt: $0, address: "synthetic@example.invalid", password: nil)
+        })
+        let attempt = try #require(flow.begin(.emailRecovery, using: a))
+        #expect(await a.perform(attempt) == .networkUnknown)
+        #expect(await a.perform(attempt) == .networkUnknown)
+        #expect(await counter.count == 1)
+        #expect(flow.pending == attempt) // no new attempt was manufactured
+    }
+
+    @Test func sameAttemptCancelledReplayAndDifferentAttemptsAreIsolated() async throws {
+        let flow = AuthFlow(); let capture = Capture(); let a = adapter(flow, capture)
+        let first = try #require(flow.begin(.emailRecovery, using: a))
+        #expect(await a.perform(first) == .recoveryRequestAcknowledged)
+        #expect(flow.cancel(first))
+        #expect(await a.perform(first) == .userCancelled)
+        let next = try #require(flow.begin(.emailRecovery, using: a))
+        #expect(await a.perform(next) == .recoveryRequestAcknowledged)
+        #expect(await a.perform(next) == .recoveryRequestAcknowledged)
+        #expect(await capture.requests.count == 2)
+        #expect(flow.pending == next)
+    }
+
     @Test func badConfigurationDoesNotFallBack() async {
         let flow = AuthFlow(); let capture = Capture()
         let samples = [SupabaseAdapterConfiguration(authURL: URL(string: "http://synthetic.invalid"), publicKey: "public"),

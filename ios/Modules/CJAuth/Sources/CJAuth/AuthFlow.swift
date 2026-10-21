@@ -28,6 +28,18 @@ public struct AuthAttempt: Equatable, Sendable {
     fileprivate let generation: UUID
     fileprivate let operation = UUID()
     public let action: AuthAction
+    // Shared by value copies and every adapter receiving this exact attempt.
+    package let sdkExecution = SDKAttemptExecution()
+}
+
+/// Process-local execution record; no credentials, persistence or global registry.
+@MainActor package final class SDKAttemptExecution: Equatable, Sendable {
+    package var task: Task<SDKEvent, Never>?
+    package var result: SDKEvent?
+    nonisolated init() {}
+    nonisolated package static func == (lhs: SDKAttemptExecution, rhs: SDKAttemptExecution) -> Bool {
+        lhs === rhs
+    }
 }
 
 /// Events must come from an SDK-owning adapter, never parsed directly from an incoming URL.

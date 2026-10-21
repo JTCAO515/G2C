@@ -63,6 +63,25 @@ public typealias AuthFetch = @Sendable (URLRequest) async throws -> (Data, URLRe
     }
 
     public func perform(_ attempt: AuthAttempt) async -> SDKEvent {
+        guard isCurrent(attempt), !Task.isCancelled else { return .userCancelled }
+        let execution = attempt.sdkExecution
+        if let result = execution.result { return result }
+        let task: Task<SDKEvent, Never>
+        if let running = execution.task {
+            task = running
+        } else {
+            task = Task { await self.performOnce(attempt) }
+            // Publish before the first await: reentrancy cannot start another dispatch.
+            execution.task = task
+        }
+        let result = await task.value
+        execution.result = result
+        execution.task = nil
+        guard isCurrent(attempt), !Task.isCancelled else { return .userCancelled }
+        return result
+    }
+
+    private func performOnce(_ attempt: AuthAttempt) async -> SDKEvent {
         if let reason = unavailableReason(for: attempt.action) { return .unavailable(reason) }
         guard isCurrent(attempt), !Task.isCancelled else { return .userCancelled }
         let supplied = await material(attempt)
