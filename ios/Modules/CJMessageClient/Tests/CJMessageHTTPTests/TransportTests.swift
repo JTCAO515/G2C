@@ -4,6 +4,7 @@ import Testing
 import HTTPTypes
 import OpenAPIRuntime
 import CJMessageClient
+import CJAPI
 @testable import CJMessageHTTP
 
 @MainActor private final class Memory: SecureMessageStorage {
@@ -22,12 +23,15 @@ private actor Interceptor: ClientTransport {
     let beforeReturn: (@Sendable () async -> Void)?
     var sent: [Data] = []
     var contentTypes: [String?] = []
+    var paths: [String?] = []
+    var methods: [HTTPRequest.Method] = []
     init(response: HTTPResponse, data: Data, beforeReturn: (@Sendable () async -> Void)? = nil) {
         self.response = response; self.data = data; self.beforeReturn = beforeReturn
     }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         sent.append(try await body.mapAsync { try await Data(collecting: $0, upTo: 10000) } ?? Data())
         contentTypes.append(request.headerFields[.contentType])
+        paths.append(request.path); methods.append(request.method)
         await beforeReturn?()
         return (response, HTTPBody(data))
     }
@@ -150,10 +154,79 @@ private extension Optional where Wrapped == HTTPBody {
         }
     }
 
-    @Test func missingGeneratedQueryReceiptFailsExplicitlyWithoutRequest() async throws {
-        let transport = Interceptor(response:response(),data:try body())
-        let (_,lease,client) = try setup(transport)
-        await #expect(throws: MessageHTTPFailure.self) { try await client.query(messageID:"m1",lease:lease) }
-        #expect(await transport.sent.isEmpty)
+    @Test func queryOfficialReceiptAndExplicitNull() async throws {
+        let cases = [try body(), try JSONSerialization.data(withJSONObject:["request_id":trace,"receipt":NSNull()])]
+        for (index, data) in cases.enumerated() {
+            let transport = Interceptor(response:response(),data:data)
+            let (state,lease,client) = try setup(transport)
+            _ = try state.beginSubmission(messageID:"m1",lease:lease) // Synthetic prior POST, no request.
+            let result = try await client.query(messageID:"m1",lease:lease)
+            if index == 0 {
+                if case .accepted = result { } else { Issue.record("expected original receipt") }
+                #expect(try state.action(messageID:"m1",lease:lease)?.phase == .accepted)
+            } else {
+                if case .notObserved = result { } else { Issue.record("expected actual null") }
+                #expect(try state.action(messageID:"m1",lease:lease)?.phase == .notObserved)
+            }
+            await #expect(throws:(any Error).self) { try await client.submit(messageID:"m1",lease:lease) }
+            #expect(await transport.methods == [.get])
+            #expect(await transport.paths == ["/v1/message-receipts?message_id=m1"])
+        }
+    }
+    @Test func queryMissingFieldAndNonNullFallbackRemainUnknown() async throws {
+        let data: [Data] = [try JSONSerialization.data(withJSONObject:["request_id":trace]),
+            try JSONSerialization.data(withJSONObject:["request_id":trace,"receipt":false]),
+            try JSONSerialization.data(withJSONObject:["request_id":trace,"receipt":["unexpected":1]]),
+            try body(sequence:0)]
+        for bytes in data {
+            let transport = Interceptor(response:response(),data:bytes)
+            let (state,lease,client) = try setup(transport)
+            _ = try state.beginSubmission(messageID:"m1",lease:lease)
+            await #expect(throws:(any Error).self) { try await client.query(messageID:"m1",lease:lease) }
+            #expect(try state.action(messageID:"m1",lease:lease)?.phase == .queryRequired)
+            #expect(await transport.methods == [.get])
+        }
+    }
+    @Test func missingReceiptIsGeneratedKeyNotFound() throws {
+        let bytes = try JSONSerialization.data(withJSONObject:["request_id":trace])
+        do {
+            _ = try JSONDecoder().decode(Components.Schemas.MessageReceiptQueryResponse.self,from:bytes)
+            Issue.record("missing required receipt decoded")
+        } catch DecodingError.keyNotFound(let key, _) { #expect(key.stringValue == "receipt") }
+    }
+    @Test func queryOpaqueIDIsEncodedOnceWithoutNormalization() async throws {
+        let id = "part/+%&e\u{301}"
+        let state = MessageRecovery(storage:Memory())
+        let scope = try StorageScope(environment:"synthetic",account:"a")
+        let lease = try state.activate(scope)
+        let bytes = try JSONSerialization.data(withJSONObject:["message_id":id,"conversation_id":"chat"])
+        try state.stage(messageID:id,originalUTF8:bytes,lease:lease)
+        _ = try state.beginSubmission(messageID:id,lease:lease)
+        let transport = Interceptor(response:response(),data:try JSONSerialization.data(withJSONObject:["request_id":trace,"receipt":NSNull()]))
+        let client = MessageHTTPClient(recovery:state,scope:scope,
+            endpoint:try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:10000,maximumResponseBytes:10000),
+            credentials:Credentials(),interceptedTestTransport:transport)
+        _ = try await client.query(messageID:id,lease:lease)
+        let paths = await transport.paths
+        let path = try #require(paths.first ?? nil)
+        let items = try #require(URLComponents(string:"https://synthetic.invalid"+path)?.queryItems)
+        #expect(items.count == 1); #expect(items[0].name == "message_id")
+        #expect(Data((items[0].value ?? "").utf8) == Data(id.utf8))
+    }
+
+    @Test func queryLateNullCannotWriteNewAccount() async throws {
+        let state = MessageRecovery(storage:Memory())
+        let scope = try StorageScope(environment:"synthetic",account:"a")
+        let lease = try state.activate(scope)
+        try state.stage(messageID:"m1",originalUTF8:raw,lease:lease)
+        _ = try state.beginSubmission(messageID:"m1",lease:lease)
+        let data = try JSONSerialization.data(withJSONObject:["request_id":trace,"receipt":NSNull()])
+        let transport = Interceptor(response:response(),data:data,beforeReturn:{ await state.invalidate() })
+        let client = MessageHTTPClient(recovery:state,scope:scope,
+            endpoint:try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:10000,maximumResponseBytes:10000),
+            credentials:Credentials(),interceptedTestTransport:transport)
+        await #expect(throws:(any Error).self) { try await client.query(messageID:"m1",lease:lease) }
+        let next = try state.activate(scope)
+        #expect(try state.action(messageID:"m1",lease:next)?.phase == .queryRequired)
     }
 }

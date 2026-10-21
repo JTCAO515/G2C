@@ -102,3 +102,7 @@ Activation gate: [ACTIVATION-GATE.md](ACTIVATION-GATE.md) now treats every reloa
 staged action as query-only. Since entire-snapshot rollback cannot be detected locally,
 live POST is explicitly unavailable; only named synthetic interceptor composition can
 exercise submission. Key-ID authentication is not freshness or production activation.
+
+Query consumption update: fixed CJ005 `312a69ca` replaces the d886677 query blocker.
+[evidence/QUERY-CONSUMPTION.md](evidence/QUERY-CONSUMPTION.md) records exact generated
+branches and 10+2 checks. Only explicit null is notObserved; live POST remains disabled.

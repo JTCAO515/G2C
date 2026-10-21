@@ -48,3 +48,7 @@ Existing key/PG/AUTH evidence reused; no full old suite rerun. No data deletion,
 rotation or new backend authority. Independent acceptance and actual anti-rollback
 storage/production POST remain outstanding. Read-only query is still separately blocked
 on the known d886677 generated receipt omission until fixed CJ005 source arrives.
+
+Query-only update: fixed CJ005 312a69ca resolves the generated receipt omission; its
+query decoder/transport is now wired with actual-null validation. The LIVE POST gate
+in this document is unchanged; neither a receipt query nor null is anti-rollback evidence.

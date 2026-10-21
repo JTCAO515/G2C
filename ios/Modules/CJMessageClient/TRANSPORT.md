@@ -62,3 +62,11 @@ Subsequent activation delta: liveReadTransport composition and concrete NoRedire
 both reject POST before outflow until authoritative anti-rollback input exists. The old
 `transport:` test seam is now explicitly `interceptedTestTransport:`. See ACTIVATION-GATE.md;
 this supersedes any implication that the compiled receive path may be activated live.
+
+## Query blocker resolved in fixed consumer delta
+
+Current official generated pin is 312a69caf0bd97ed65679cfd8ff049972c212cef, exported
+under a versioned ignored directory. query now consumes its REQUIRED receiptPayload;
+only case2.value == nil means notObserved, all non-null fallback/missing invalid.
+The earlier d886677 blocker above is historical, retained as failure provenance.
+See evidence/QUERY-CONSUMPTION.md for 10+2 actual checks. No live POST activation changed.

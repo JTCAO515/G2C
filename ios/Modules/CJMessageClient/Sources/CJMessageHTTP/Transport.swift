@@ -5,7 +5,7 @@ import OpenAPIRuntime
 import OpenAPIURLSession
 import HTTPTypes
 
-public enum MessageHTTPFailure: Error { case invalidConfiguration, credentialsUnavailable, invalidResponse, redirectRejected, queryGeneratedFieldMissing, exchangeUnknown, productionActivationUnavailable }
+public enum MessageHTTPFailure: Error { case invalidConfiguration, credentialsUnavailable, invalidResponse, redirectRejected, exchangeUnknown, productionActivationUnavailable }
 
 public struct MessageEndpoint: Sendable {
     public let url: URL
@@ -78,6 +78,7 @@ private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable 
 
 public enum MessageHTTPOutcome: Sendable {
     case accepted
+    case notObserved
     case rejected(status: Int, error: Components.Schemas.ErrorResponse)
 }
 
@@ -146,10 +147,45 @@ public enum MessageHTTPOutcome: Sendable {
             return .rejected(status: status, error: try response.body.json)
         }
     }
-    public func query(messageID: String, lease: Lease) async throws {
-        try recovery.validateScope(scope, lease: lease)
-        // d886677's generated MessageReceiptQueryResponse omits receipt entirely.
-        // Never parse a substitute wire model or turn that absence into notObserved.
-        throw MessageHTTPFailure.queryGeneratedFieldMissing
+    public func query(messageID: String, lease: Lease) async throws -> MessageHTTPOutcome {
+        let client = try await client(lease)
+        guard let record = try recovery.action(messageID: messageID, lease: lease) else { throw RecoveryError.invalidInput }
+        var original = StrictJSON(bytes: Array(record.originalUTF8)); try original.check()
+        guard let envelope = try JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any],
+              let originalID = envelope["message_id"] as? String, Data(originalID.utf8) == Data(messageID.utf8),
+              let conversationID = envelope["conversation_id"] as? String, !conversationID.isEmpty else {
+            throw RecoveryError.invalidInput
+        }
+        let operation = try recovery.beginQuery(messageID: messageID, lease: lease)
+        let output: Operations.queryMessageReceipt.Output
+        do { output = try await client.queryMessageReceipt(.init(query: .init(message_id: messageID))) }
+        catch {
+            try recovery.observeUnknown(operation)
+            throw MessageHTTPFailure.exchangeUnknown
+        }
+        switch output {
+        case .ok(let response):
+            let body = try response.body.json
+            switch body.receipt {
+            case .MessageReceipt(let receipt):
+                guard Data(receipt.conversation_id.utf8) == Data(conversationID.utf8),
+                      !receipt.generation.isEmpty, !receipt.run_id.isEmpty, receipt.sequence > 0 else {
+                    try recovery.observeUnknown(operation); throw MessageHTTPFailure.invalidResponse
+                }
+                try recovery.observeReceipt(operation, messageID: receipt.message_id,
+                                            inputSHA256: receipt.input_sha256, receipt: JSONEncoder().encode(receipt))
+                return .accepted
+            case .case2(let container):
+                // The generated fallback accepts arbitrary JSON. Only actual null is absence.
+                guard container.value == nil else {
+                    try recovery.observeUnknown(operation); throw MessageHTTPFailure.invalidResponse
+                }
+                try recovery.observeNotObserved(operation)
+                return .notObserved
+            }
+        case .default(let status, let response):
+            try recovery.observeUnknown(operation)
+            return .rejected(status: status, error: try response.body.json)
+        }
     }
 }
