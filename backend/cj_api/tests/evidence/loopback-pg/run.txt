@@ -1,0 +1,12 @@
+PASS first real PG connection and candidate SQL only in verified empty private cluster
+FIRST_CONNECTION {"version": "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit", "listen_addresses": "", "socket": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-pg/s", "user": "cj005", "candidate_sql_sha256": "44707ea75b7c48ebe8c6f7e51a29099a34bf66ea7ac79d0808de451ee5dd3790"}
+PASS missing configuration refuses API composition before HTTP bind
+HTTP_READY http://127.0.0.1:49864
+PASS real HTTP exact bytes duplicate returns original; altered bytes conflict; one receipt/delivery
+PASS server-owned synthetic subject scopes keep receipt queries separate; not production RLS proof
+PASS actual PG COMMIT then injected ACK failure returns unknown; independent HTTP query recovers original
+PASS synthetic precommit withdrawal actual PG rollback; conservative API unknown remains, null not resend permission
+PASS synthetic postcommit withdrawal preserves actual committed receipt and original query
+PASS real HTTP API separates 400/401/403/409/413/415/503 without fake identity or acceptance
+PASS actual generated Swift HTTP receive/repeat/object/null/missing-after-real-query checks
+STOPPED {"http_stopped": true, "pg_stopped": true, "data_preserved": true}
