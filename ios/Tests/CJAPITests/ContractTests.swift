@@ -47,3 +47,14 @@ private var examples: URL {
     let decoded = try JSONDecoder().decode(Components.Schemas.ProbeResponse.self, from: additive)
     #expect(decoded.status == .ok)
 }
+
+@Test func explicitConfigurationRejectsExternalOrMissingTargets() throws {
+    for environment in [[:], ["CJ_ENV": "local"],
+                        ["CJ_ENV": "production", "CJ_API_BASE_URL": "http://127.0.0.1:18765"],
+                        ["CJ_ENV": "local", "CJ_API_BASE_URL": "https://example.com"],
+                        ["CJ_ENV": "local", "CJ_API_BASE_URL": "http://user:password@127.0.0.1:18765"],
+                        ["CJ_ENV": "local", "CJ_API_BASE_URL": "http://127.0.0.1:18765?secret=value"]] {
+        #expect(throws: ProbeFailure.self) { try ProbeConnection(environment: environment) }
+    }
+    _ = try ProbeConnection(environment: ["CJ_ENV": "local", "CJ_API_BASE_URL": "http://127.0.0.1:18765"])
+}

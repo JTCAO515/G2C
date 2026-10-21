@@ -1,0 +1,22 @@
+Building for debugging...
+[Using on-disk description]
+[3 / 11] CJProbe-product
+[7 / 15] CJProbe-product
+[14 / 19] CJProbe-product
+[18 / 20] CJAPITests-product
+Build complete! (1.20秒)
+Test Suite 'All tests' started at 2026-10-21 19:24:43.233.
+Test Suite 'All tests' passed at 2026-10-21 19:24:43.234.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Test explicitConfigurationRejectsExternalOrMissingTargets() started.
+◇ Test missingRequiredAndFutureEnumFailVisibly() started.
+◇ Test decodesPublishedExamples() started.
+◇ Test oldClientAcceptsAdditionalOptionalField() started.
+✔ Test explicitConfigurationRejectsExternalOrMissingTargets() passed after 0.001 seconds.
+✔ Test oldClientAcceptsAdditionalOptionalField() passed after 0.001 seconds.
+✔ Test decodesPublishedExamples() passed after 0.001 seconds.
+✔ Test missingRequiredAndFutureEnumFailVisibly() passed after 0.001 seconds.
+✔ Test run with 4 tests in 0 suites passed after 0.002 seconds.
