@@ -1,0 +1,80 @@
+{
+  "task_id": "CJ-005 C2 preparation",
+  "source_base": "ec05c2727dd40c7ed130d7214d367207a000c9f2",
+  "status": "proposal_only_not_authorized_for_execution",
+  "executed_external_mutations": false,
+  "confirmed_product_inputs": [
+    "email_password",
+    "self_signup",
+    "email_confirmation",
+    "password_recovery",
+    "JT_invitation_list"
+  ],
+  "choice": {
+    "https_plan": null,
+    "device": null,
+    "network_scope": null,
+    "monthly_budget": null,
+    "currency": null,
+    "stop_owner": null
+  },
+  "supabase": {
+    "candidate_label": "cj-dev",
+    "candidate_organization": "Go2China Pro (suggested only)",
+    "organization_id": null,
+    "project_ref": null,
+    "project_url": null,
+    "database_engine": null,
+    "candidate_region": "Singapore (suggested only)",
+    "approved_region": null,
+    "plan": null,
+    "incremental_quote": null,
+    "reuse_old_VP": false
+  },
+  "smtp": {
+    "provider": null,
+    "sending_domain": null,
+    "from_address": null,
+    "dns_changes_approved": false,
+    "test_recipient_scope": null,
+    "budget": null,
+    "credentials_recorded": false
+  },
+  "auth": {
+    "callback_uri": null,
+    "issuer": null,
+    "audience": null,
+    "jwks_url": null,
+    "invitation_list_secure_source": null,
+    "revocation_owner": null,
+    "retention_policy": null
+  },
+  "local_tls": {
+    "approved_lan_ip": null,
+    "approved_port": null,
+    "certificate_fingerprint": null,
+    "device_trust_approved": false,
+    "private_key_recorded": false
+  },
+  "hosting": {
+    "reference_product": "Google Cloud Run (proposal, not architecture selection)",
+    "account_or_project_id": null,
+    "service_name": null,
+    "region": null,
+    "actual_https_url": null,
+    "image_digest": null,
+    "runtime_identity": null,
+    "ingress_access_approved": false,
+    "billing_approved": false,
+    "secret_resources_approved": false
+  },
+  "required_future_implementation": [
+    "C2 environment validation and HTTPS origin policy",
+    "AUTH owner contract and native callbacks",
+    "Python JWT and live invitation/session revocation",
+    "new PostgreSQL migration/runtime identities and owner isolation",
+    "SMTP setup and real recipient testing",
+    "device and network verification"
+  ],
+  "acceptance": "UNRUN; this file is not consumed by current runtime"
+}
