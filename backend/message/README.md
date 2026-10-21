@@ -96,3 +96,12 @@ and migration registration; actual PostgreSQL transactions/concurrency/commit-lo
 permissions tests; RUN/USAGE dispatch contract; retained-action recovery and cleanup
 policy; deployment authorization and real end-to-end evidence. None are waived by
 these local tests. No server, database, socket, cloud resource or model was started.
+
+## Fixed AUTH candidate consumption (additive)
+
+The pending-interface statement above describes the original transaction slice.
+`auth_boundary.py` now provides an internal candidate consumer of fixed CJ007
+`e49ea1a2abcdd82c93a28aeba8b2d6a1248a0f3b`, without importing the moving JWT tree.
+See [AUTH-CONSUMPTION](AUTH-CONSUMPTION.md) for six checks, Python 3.10+ requirement,
+server mapping and revocation/commit consistency gaps. It does not enable routes or
+turn test providers into production authorization. Domain/repository/SQL remain unchanged.

@@ -23,3 +23,12 @@ concurrent processes, storage/commit durability, permissions/RLS, full AUTH inte
 RUN worker, external provider, cleanup/TTL, true service/device/CI/deployment.
 Pending fixed AUTH gate interface: no production adapter constructed from caller owner.
 No independent Review/Testing claimed. Issue #10 remains open; no push/PR/merge.
+
+## AUTH consumer delta from 3cd6b136ef66a517e8eb29fd9c2fc81fc5a6a068
+
+PASS: 6 targeted tests against actual fixed e49ea1a2 AUTH interface/gate using existing
+Python 3.14; output auth-consumption-tests.txt. Runner extracts immutable git blobs into
+an ephemeral directory; no moving-tree import or copied AUTH types committed. Existing
+14 tests reused; domain/postgres/SQL unchanged. Source syntax and diff checks PASS.
+Consumer confirmation and concrete runtime/revocation/mapping limitations documented in
+../AUTH-CONSUMPTION.md. AUTH RC not frozen; genuine JWT/DB/API/dispatch still UNRUN.
