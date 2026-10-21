@@ -157,6 +157,84 @@ class Service:
                           cursor.through, after) if after < cursor.through else None)
         return rows, nxt
 
+    def conversations(self, cursor=None, limit=20):
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise InvalidInput('invalid limit')
+        with self.repository.transaction() as tx:
+            tx.lock_scope()
+            generation, epoch, highwater = tx.list_boundary()
+            if cursor is None:
+                cursor = ChatListCursor(self.repository.scope, generation, epoch, highwater, 0)
+            if (type(cursor) is not ChatListCursor or
+                (cursor.scope, cursor.scope_generation, cursor.epoch) !=
+                (self.repository.scope, generation, epoch) or
+                not 0 <= cursor.after <= cursor.through <= highwater):
+                raise ResyncRequired()
+            rows = tx.conversations(cursor.after, cursor.through, limit + 1)
+            more = len(rows) > limit
+            rows = rows[:limit]
+            nxt = (ChatListCursor(cursor.scope, generation, epoch, cursor.through,
+                                  rows[-1].list_sequence) if more else None)
+        return rows, nxt
+
+    def message_history(self, conversation_id, cursor=None, limit=20):
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise InvalidInput('invalid limit')
+        with self.repository.transaction() as tx:
+            tx.lock_scope()
+            chat = tx.chat(conversation_id)
+            if cursor is None:
+                cursor = Cursor(self.repository.scope, conversation_id, chat.generation,
+                                chat.epoch, chat.last_sequence, 0)
+            if (type(cursor) is not Cursor or
+                (cursor.scope, cursor.conversation_id, cursor.generation, cursor.epoch) !=
+                (self.repository.scope, conversation_id, chat.generation, chat.epoch) or
+                not 0 <= cursor.after <= cursor.through <= chat.last_sequence):
+                raise ResyncRequired()
+            stored = tx.history(conversation_id, chat.generation, cursor.after, cursor.through, limit)
+            if len(stored) != min(limit, cursor.through - cursor.after):
+                raise ResyncRequired()
+            rows = []
+            for index, item in enumerate(stored):
+                command = Command.parse(item.raw)
+                if (item.receipt.sequence != cursor.after + index + 1 or
+                    command.message_id != item.receipt.message_id or
+                    command.conversation_id != conversation_id or
+                    hashlib.sha256(item.raw).hexdigest() != item.receipt.input_sha256):
+                    raise ResyncRequired()
+                rows.append(HistoryMessage(item.receipt, item.raw, json.loads(item.raw)['text']))
+            after = rows[-1].receipt.sequence if rows else cursor.after
+            nxt = Cursor(cursor.scope, conversation_id, chat.generation, chat.epoch, cursor.through, after) if after < cursor.through else None
+        return rows, nxt
+
+    def read_draft(self, conversation_id, generation):
+        if not isinstance(generation, str) or not generation:
+            raise InvalidInput('explicit generation required')
+        with self.repository.transaction() as tx:
+            tx.lock_scope()
+            tx.chat(conversation_id, generation)
+            result = tx.draft(conversation_id, generation)
+        return result
+
+    def save_draft(self, conversation_id, generation, original_utf8, expected_revision):
+        if (not isinstance(generation, str) or not generation or type(original_utf8) is not bytes
+                or type(expected_revision) is not int or expected_revision < 0):
+            raise InvalidInput('invalid draft')
+        try:
+            original_utf8.decode('utf-8')
+        except UnicodeError:
+            raise InvalidInput('invalid draft') from None
+        with self.repository.transaction() as tx:
+            tx.lock_scope()
+            tx.chat(conversation_id, generation)
+            old = tx.draft(conversation_id, generation)
+            revision = old.revision if old else 0
+            if expected_revision != revision:
+                raise InputConflict()
+            result = Draft(conversation_id, generation, revision + 1, original_utf8)
+            tx.save_draft(result)
+        return result
+
     def pending(self, limit=20):
         if type(limit) is not int or not 1 <= limit <= 100:
             raise InvalidInput('invalid limit')
@@ -164,3 +242,36 @@ class Service:
             tx.lock_scope()
             return tx.pending(limit)
         # Returns stored run IDs only; RUN/AUTH/USAGE adapters must authorize actual dispatch.
+
+
+@dataclass(frozen=True)
+class ChatSummary:
+    conversation_id: str
+    generation: str
+    epoch: int
+    list_sequence: int
+
+
+@dataclass(frozen=True)
+class ChatListCursor:
+    # Internal value, never deserialize caller-provided scope/generations as authority.
+    scope: str
+    scope_generation: str
+    epoch: int
+    through: int
+    after: int
+
+
+@dataclass(frozen=True)
+class HistoryMessage:
+    receipt: Receipt
+    original_utf8: bytes
+    text: str
+
+
+@dataclass(frozen=True)
+class Draft:
+    conversation_id: str
+    generation: str
+    revision: int
+    original_utf8: bytes

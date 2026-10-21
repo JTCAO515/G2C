@@ -127,3 +127,8 @@ restart recovery. It was safely stopped, with data/logs retained. See
 fault injection attribution and limits. Earlier UNRUN/unapplied statements describe
 prior evidence or production targets; they do not negate this scoped local run.
 Production AUTH/RLS/provider/cleanup/cloud acceptance remains outstanding.
+
+History/draft candidate: [HISTORY-DRAFT.md](HISTORY-DRAFT.md) adds internally gated chat
+list, exact message-body pagination and optimistic-version draft storage. New SQL was
+applied only in new task-private .local-pg-02, tested and safely stopped. No shared API or
+migration is introduced; earlier schema remains historical, not an upgrade path.

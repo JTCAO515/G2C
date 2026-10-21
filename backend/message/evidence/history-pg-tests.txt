@@ -1,0 +1,11 @@
+test_body_history_exact_bytes_highwater_and_epoch (__main__.HistoryTests.test_body_history_exact_bytes_highwater_and_epoch) ... ok
+test_deleted_recreated_list_cursor_rejects_other_scope_unaffected (__main__.HistoryTests.test_deleted_recreated_list_cursor_rejects_other_scope_unaffected) ... ok
+test_draft_reopen_revision_conflict_and_no_message_side_effect (__main__.HistoryTests.test_draft_reopen_revision_conflict_and_no_message_side_effect) ... ok
+test_empty_history_and_inactive_private_rejection (__main__.HistoryTests.test_empty_history_and_inactive_private_rejection) ... ok
+test_list_snapshot_append_and_scope_fence (__main__.HistoryTests.test_list_snapshot_append_and_scope_fence) ... ok
+test_message_and_draft_old_generation_rejected (__main__.HistoryTests.test_message_and_draft_old_generation_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.161s
+
+OK

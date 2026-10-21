@@ -1,7 +1,7 @@
 """PostgreSQL DB-API repository source. No connection creation, driver or auth."""
 from contextlib import contextmanager
 import logging
-from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable
+from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable, ChatSummary, Draft
 
 
 class Repository:
@@ -94,3 +94,26 @@ class Transaction:
     def pending(self, limit):
         self.cur.execute('SELECT r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256 FROM cj_message_delivery d JOIN cj_message_receipt r ON (r.scope, r.message_id, r.run_id) = (d.scope, d.message_id, d.run_id) JOIN cj_message_chat c ON (c.scope, c.conversation_id, c.generation) = (r.scope, r.conversation_id, r.generation) WHERE d.scope = %s AND c.active AND NOT d.acknowledged ORDER BY r.conversation_id, r.sequence LIMIT %s', (self.scope, limit))
         return [Receipt(*row) for row in self.cur.fetchall()]
+
+    def list_boundary(self):
+        self.cur.execute('SELECT history_generation::text, history_epoch, (SELECT COALESCE(MAX(list_sequence),0) FROM cj_message_chat WHERE scope=%s AND active) FROM cj_message_scope WHERE scope=%s', (self.scope, self.scope))
+        row = self.cur.fetchone()
+        if row is None:
+            raise Unavailable()
+        return row
+
+    def conversations(self, after, through, limit):
+        self.cur.execute('SELECT conversation_id,generation,epoch,list_sequence FROM cj_message_chat WHERE scope=%s AND active AND list_sequence>%s AND list_sequence<=%s ORDER BY list_sequence LIMIT %s', (self.scope,after,through,limit))
+        return [ChatSummary(*row) for row in self.cur.fetchall()]
+
+    def history(self, cid, generation, after, through, limit):
+        self.cur.execute('SELECT raw_input,message_id,conversation_id,generation,sequence,run_id,input_sha256 FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s AND generation=%s AND sequence>%s AND sequence<=%s ORDER BY sequence LIMIT %s', (self.scope,cid,generation,after,through,limit))
+        return [Stored(bytes(row[0]), Receipt(*row[1:])) for row in self.cur.fetchall()]
+
+    def draft(self, cid, generation):
+        self.cur.execute('SELECT conversation_id,generation,revision,original_utf8 FROM cj_message_draft WHERE scope=%s AND conversation_id=%s AND generation=%s', (self.scope,cid,generation))
+        row = self.cur.fetchone()
+        return Draft(row[0],row[1],row[2],bytes(row[3])) if row else None
+
+    def save_draft(self, draft):
+        self.cur.execute('INSERT INTO cj_message_draft(scope,conversation_id,generation,revision,original_utf8) VALUES (%s,%s,%s,%s,%s) ON CONFLICT(scope,conversation_id,generation) DO UPDATE SET revision=EXCLUDED.revision, original_utf8=EXCLUDED.original_utf8', (self.scope,draft.conversation_id,draft.generation,draft.revision,draft.original_utf8))
