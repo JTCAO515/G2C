@@ -21,6 +21,7 @@ UV_CACHE_DIR="$PWD/.uv-cache" uv venv --python /opt/homebrew/bin/python3.14 .ven
 UV_CACHE_DIR="$PWD/.uv-cache" uv pip sync --python .venv/bin/python --require-hashes requirements.lock
 .venv/bin/python probe.py
 .venv/bin/python source_history_probe.py
+.venv/bin/python single_writer_probe.py
 UV_CACHE_DIR="$PWD/.uv-cache" uv pip check --python .venv/bin/python
 ```
 
@@ -45,7 +46,17 @@ UV_CACHE_DIR="$PWD/.uv-cache" uv pip check --python .venv/bin/python
 
 固定发布源码位置：`reme/components/file_store/{base_file_store,local_file_store}.py`、`components/keyword_index/bm25_index.py`、`components/file_graph/local_file_graph.py`。`upsert/delete/clear/dump/reindex` 由实例内维护锁串行化；`dump()`、`close()`、`delete(path)`、`optimize_index()`、`clear()`、`reindex("bm25")` 为本次实际调用的生命周期/清理入口。BM25 有 lazy deletion，物理整理和 checkpoint 另行调用。组件 pickle 快照只允许来自受控可信存储，不读用户上传 pickle。
 
-本配置存储为原始合成文件、压缩 JSONL chunks/graph、BM25 pickle；无向量或外部数据库。各工作区必须有持久盘和单 writer owner。不得用进程级 `chdir` 在一个并发服务里切用户：本探针按子进程 cwd 分区，生产接入需由已验证 principal 确定 ApplicationContext/workspace，并限制内部入口。跨进程锁、分布式事务、崩溃到多文件 checkpoint 中间、磁盘故障和性能容量均未验收。
+本配置存储为原始合成文件、压缩 JSONL chunks/graph、BM25 pickle；无向量或外部数据库。各工作区必须有持久盘和单 writer owner。不得用进程级 `chdir` 在一个并发服务里切用户：本探针按子进程 cwd 分区，生产接入需由已验证 principal 确定 ApplicationContext/workspace，并限制内部入口。本地受控入口的跨进程独占实验见下；分布式事务、崩溃到多文件 checkpoint 中间、磁盘故障和性能容量均未验收。
+
+## 受控入口的进程间 writer 独占差额
+
+从 `56b85ebd93f9a4d48a057757a5305704a25fec11` 继续本地实验，`writer.py` 使用真实 POSIX `flock(LOCK_EX | LOCK_NB)`。取得工作区持久 `.cj003-writer.lock` 的独占锁后才构造和启动真实 ReMe；第二 writer 立即显式失败，不读取/覆盖旧快照。CJ `FenceExperiment` 拒绝裸 ReMe store，`probe.py` 的 guarded 路径统一通过 `WorkspaceWriter`；原生路径仍直接测 ReMe，六项原生 FAIL 不变。
+
+锁覆盖 ReMe 启动、整个 CJ 权威/派生写操作、checkpoint 和所有依赖的 close；关闭完组件才关闭锁 fd。锁文件从不 unlink，不用删除 PID 文件猜测接管。关闭的 writer 永久失效，不从新 owner 借锁来复用旧内存；PID/cwd/锁 inode 变化亦拒绝。`FenceExperiment.project` 的来源文件写入和 SQLite 变更也在 owner operation 范围内，防止只保护索引但漏掉原始文件。这里的锁不是认证或恶意同 UID 代码的沙箱：原生裸 store、直接磁盘访问、主动 unlink/替换锁文件、不同主机/网络文件系统不在受控范围；不能据此承诺生产级物理清理。
+
+`single_writer_probe.py` 启动真实子进程，验证同一工作区第二 PID 被拒绝且文件哈希不变、其他工作区独立、正常关闭后新 PID 接手、持锁子进程被 SIGKILL 后 OS 释放锁并允许重启。旧 owner 释放后仍保持进程和原始条目对象存活；在新 owner 已读到 `cleanup=complete` 时，依次尝试 11 个物理/权威写入口和晚到 close，均拒绝或无操作。对比整个工作区文件哈希，并让新 owner 重读 SQLite、解压 ReMe chunks/graph、BM25 快照及源文件，确认被删样例文本没有复活，另一条事实仍可检索。
+
+差额产物在 `evidence/single-writer/`（结果、PID/锁 inode 事件、日志、当前源码哈希与证据复用清单）；`evidence/single-writer-run.log` 为运行输出。先前来源 P2 的七项双审 PASS 和原生 FAIL 证据按 `56b85eb` 复用，不重复执行；旧 `evidence/verification.json` 是该基线的作者记录，当前差额以 `evidence/single-writer/verification.json` 为准。此实验新增本机单 writer 条件下的清理防复活证据，不补足备份、分布式、外部 provider、账户权限或完整记忆产品验收。
 
 ## CJ 必须补充的语义与已做实验
 

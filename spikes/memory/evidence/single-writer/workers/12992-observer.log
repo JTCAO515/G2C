@@ -1,0 +1,16 @@
+2026-10-21 20:09:05 | INFO | bm25_index.py:458 | load | Loaded 1 docs from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 20:09:05 | INFO | local_file_store.py:244 | load | Loaded 1 chunks from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 20:09:05 | INFO | local_file_store.py:247 | load | cj003: chunk store load complete: chunks=1, elapsed=0.001s
+2026-10-21 20:09:05 | INFO | local_file_store.py:254 | load | cj003: graph consistency check complete: repaired=False, elapsed=0.000s
+2026-10-21 20:09:05 | INFO | local_file_store.py:261 | load | cj003: tag index sync complete: enabled=False, healthy=True, elapsed=0.000s
+2026-10-21 20:09:05 | INFO | local_file_store.py:271 | load | cj003: BM25/keyword index sync complete: backend=BM25Index, docs=1, elapsed=0.000s
+2026-10-21 20:09:05 | INFO | local_file_store.py:275 | load | cj003: file store load phases complete: elapsed=0.002s
+2026-10-21 20:09:05 | INFO | local_file_store.py:105 | _start | cj003: file store load complete: chunks=1, elapsed=0.002s
+2026-10-21 20:09:05 | INFO | local_file_store.py:345 | _start_embedding_backfill | cj003: embedding backfill skipped: reason=embedding_disabled, elapsed=0.000s
+2026-10-21 20:09:05 | INFO | local_file_store.py:112 | _start | cj003: embedding backfill scheduling complete: scheduled=False, elapsed=0.000s
+2026-10-21 20:09:05 | INFO | local_file_store.py:117 | _start | cj003: file store startup complete: elapsed=0.003s
+CJ003_WRITER={"event": "opened", "pid": 12992, "role": "observer", "lock_inode": 55411333, "same_pid_duplicate_rejected": false}
+CJ003_WRITER={"event": "clean_observed", "pid": 12992}
+2026-10-21 20:09:05 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 1 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 20:09:05 | INFO | local_file_graph.py:45 | dump | Saved 1 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/file_graph/LocalFileGraph.jsonl.zst
+2026-10-21 20:09:05 | INFO | bm25_index.py:436 | dump | Saved 1 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl

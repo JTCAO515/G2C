@@ -162,15 +162,18 @@ async def guarded(phase):
     One process/one writer owns the component. Guards do not prove distributed safety.
     """
     from fence import FenceExperiment
-    store = await new_store()
-    fence = FenceExperiment(Path("authority.sqlite3"), store)
+    from writer import WorkspaceWriter
+    store = await WorkspaceWriter.open()
+    fence = None
     try:
+        fence = FenceExperiment(Path("authority.sqlite3"), store)
         if phase.startswith("history_"):
             from source_history_probe import exercise
             return await exercise(fence, phase)
         return await fence.probe(phase, sample("A", "preference"), sample("A", "fact"))
     finally:
-        fence.close()
+        if fence is not None:
+            fence.close()
         await store.close()
 
 
