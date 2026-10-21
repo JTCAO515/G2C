@@ -1,0 +1,3 @@
+clang: warning: using sysroot for 'macOS 27.0' but targeting 'arm64-apple-ios17.0.0-simulator' [-Wincompatible-sysroot]
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/ios/Modules/CJAuth/Probe/.build/CJ007SessionProbe.app: replacing existing signature
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/ios/Modules/CJAuth/Probe/.build/CJ007SessionProbe.app

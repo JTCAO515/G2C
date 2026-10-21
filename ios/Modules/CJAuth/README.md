@@ -48,3 +48,6 @@ env CLANG_MODULE_CACHE_PATH=/private/tmp/cj007-clang-cache \
 4836dff 当时未验项（SDK 本地编译现由新差额补齐）：iOS simulator/device、实际页面/host 注册、浏览器 OAuth、
 Apple 能力、nonce/state/PKCE 校验、邮件、真实注册/恢复、服务端邀请、数据库隔离。
 没有发布完整 AUTH@1.0 或 AUTH-SEMANTICS 子版本；Issue #8 未关闭。
+
+独立 SessionStore/生命周期候选与真实 Keychain 未验项见 [SESSION-STORE](SESSION-STORE.md)。
+它尚未接入 SDK host；自动恢复未启用，不能据本地读写授予业务权限。
