@@ -79,3 +79,12 @@ doubles only; actual PG transaction/resource cleanup remains UNRUN. Diff check P
 Current AUTH consumer pin 79f88b65 and prior runtime notes preserved. Independent delta
 Review/Testing pending; no claim that P2 is independently closed. No remote/config/URL
 changes made in response to repository rename; no push/DB/resource action.
+
+## Real isolated PostgreSQL delta from cec92299
+
+See PG-REPORT.md: actual PostgreSQL16.15 + psycopg3.2.10 in new private Unix-only
+cluster; candidate SQL applied only there. Six real transaction/concurrency/paging
+checks and post-graceful-restart original-action readback PASS. Final safe stop and
+data/log preservation verified. Previous UNRUN entries describe prior candidates;
+only this precise local PG scope is newly validated. AUTH/RLS/provider/cloud still
+UNRUN. Production source/SQL unchanged; no old unit suites repeated.
