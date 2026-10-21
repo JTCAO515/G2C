@@ -1,8 +1,8 @@
 # CJShell — CJ006 local candidate
 
-Independent Swift package; no dependencies, root package/Xcode changes or production entry point. UI@1.0 contract is in `contracts/ui/README.md` at repository root. iOS 17 and macOS 14 are experiment targets, not the agreed product minimum. macOS runs state tests; SwiftUI shell is iOS-only.
+Independent Swift package; no dependencies, root package/Xcode changes or production entry point. UI@1.1 contract is in `contracts/ui/README.md` at repository root. iOS 17 and macOS 14 are experiment targets, not the agreed product minimum. macOS runs state tests; SwiftUI shell is iOS-only.
 
-Host integration (future shared engineering owner): retain `@State private var shell = ShellState()` and present `ShellView(state: shell)`. Do not recreate the state or set `.id(language)` on the root. Optional `assistantBody` is plain native text; no Textual or CJ004 streaming experiment is linked.
+Host integration (future shared engineering owner): retain `@State private var shell = ShellState()` and present `ShellView(state: shell)`. Do not recreate the state or set `.id(language)` on the root. Optional `ShellPresentation.assistantBody` is plain native text applied with a captured UI generation; no Textual or CJ004 streaming experiment is linked.
 
 ## Local checks and display app
 
@@ -16,7 +16,7 @@ Output is `/tmp/cj006-demo/CJShellDemo.app`, signed locally for simulator use. R
 
 On a separately allocated simulator, install the bundle and launch `local.cj006.shell.demo`. Normal launch is the real disconnected shell. Launch with `--gallery` for explicitly synthetic bilingual state, large-font and long native body examples. Gallery is demo-only, outside package targets; it never starts service calls. It uses its own `cj006.demo.gallery` preference suite. The gallery's close button is a demo control, not part of product layout.
 
-Manual acceptance steps (UNRUN this candidate):
+Manual acceptance steps (runtime coverage and limits now in `evidence/RUNTIME-DELTA.md`):
 
 1. Normal launch: only Assistant / Trips / Plugins / Memory; switch all four. Confirm plugin text says unavailable and contains no tool action.
 2. Enter bilingual draft. Open Memory → Language; switch language and return. Draft and selected route must remain. Relaunch and confirm language survives; draft restoration is intentionally not offered.

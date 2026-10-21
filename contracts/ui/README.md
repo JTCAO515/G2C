@@ -1,4 +1,4 @@
-# UI@1.0 candidate — CJ006 / Issue #7
+# UI@1.1 candidate — CJ006 / Issue #7
 
 Owner: CJ006 execution chat 01a15e71-9e73-7a02-85f5-de1081673c6d.
 Base: 00769d7f793566887a8e192a6ca7b35d8c5fb46a. Candidate, not independent acceptance or production release.
@@ -31,6 +31,18 @@ env CLANG_MODULE_CACHE_PATH=/tmp/cj006-clang-cache SWIFTPM_MODULECACHE_OVERRIDE=
   swift test --disable-sandbox --package-path ios/Modules/CJShell --scratch-path /tmp/cj006-swift-build
 ```
 
-Breaking UI changes need a new version and consumer impact review. Additions require old-consumer checks. No downstream consumer has confirmed UI@1.0 yet; Main routes the fixed candidate to CJ007 and Review/Testing. No secrets, account data, analytics or logs are stored by this module. Host identity-change cleanup is mandatory before future domain integration; this candidate does not implement auth or claim cleanup guarantees.
+Breaking UI changes need a new version and consumer impact review. Additions require old-consumer checks. No downstream consumer has confirmed UI@1.1 yet; Main routes the fixed candidate to CJ007 and Review/Testing. No secrets, account data, analytics or logs are stored by this module. Host identity-change invalidation is mandatory before future domain integration; the local reset boundary is defined below. This candidate does not implement auth or remote cleanup guarantees.
 
-`ShellView(state:assistantBody:)` also accepts optional plain native text for a domain-owned body slot. It does not parse messages, stream events, generate IDs or persist content. The demo labels synthetic long text explicitly.
+`ShellPresentation.assistantBody` accepts optional plain native text. It is retained inside ShellState and rendered only after a generation-checked apply. It does not parse messages, stream events, generate business IDs or persist content. The demo labels synthetic long text explicitly.
+
+## UI@1.1 migration from e722bef / UI@1.0
+
+The old candidate remains reproducible at e722bef. This is a source-breaking candidate revision, not an in-place compatibility claim. CJ007 64f48cf confirmed only the old entry/language/presentation semantics; renewed consumer confirmation is PENDING.
+
+- Replace direct context/page writes and `ShellView(state:assistantBody:)` with `state.apply(ShellPresentation(...), for: capturedGeneration)` and `ShellView(state:)`. The package Demo is the only implementation consumer in this clone and has migrated; no root host integration exists.
+- `generation` is an opaque UI-local token created per ShellState instance/reset; not a principal, backend session/revision, request_id, authorization or durable identifier.
+- The future host adapter is the sole identity lifecycle owner. Before logout/account switch/session invalidation, synchronously call `invalidateIdentity()` on MainActor before new verification/work. This rotates the local generation first, clears draft/context/private routes/body/all page states atomically, preserves language and selected tab, and closes the shell history sheet/input focus on observation.
+- Host captures `state.generation` BEFORE starting domain work, retains that exact token across every await, verifies its real AUTH binding independently, and then calls `apply`. False means discard the stale projection; do not fetch a fresh token to relabel the old result. Cross-instance tokens also fail.
+- Domain projection is read-only from outside ShellState. Draft and navigation bindings remain synchronous local UI edits, not late network delivery APIs. Future hosts must not route async private updates through those bindings or retain a second external body renderer.
+- `invalidateIdentity()` does not authenticate, invalidate credentials, cancel remote execution, delete records or clear external host caches. The host must separately fence/cancel those owners. Unknown/offline presentation alone MUST NOT trigger identity invalidation.
+- Direct Swift negative test covers all private fields, late A after reset, late A after B is visible, token from another instance, and language not changing generation. This is local state proof only; real AUTH mapping/adapter remains UNRUN.

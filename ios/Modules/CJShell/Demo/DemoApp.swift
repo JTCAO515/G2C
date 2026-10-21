@@ -46,9 +46,9 @@ private struct Gallery: View {
                     let state = ShellState(preferences: defaults)
                     state.selectLanguage(language)
                     state.selectedTab = tab
-                    state.assistantState = phase
-                    state.tripsState = phase
-                    state.memoryState = phase
+                    state.apply(ShellPresentation(assistantBody: longText ? Self.longBody : nil,
+                                                  assistant: phase, trips: phase, memory: phase),
+                                for: state.generation)
                     sample = state
                 }
             }.navigationTitle("CJ006 samples")
@@ -58,7 +58,7 @@ private struct Gallery: View {
                 VStack(spacing: 0) {
                     Button("Close synthetic sample / 关闭合成样例") { self.sample = nil }
                         .padding(8)
-                    ShellView(state: sample, assistantBody: longText ? Self.longBody : nil)
+                    ShellView(state: sample)
                 }.dynamicTypeSize(largeText ? .accessibility3 : .large)
             }
         }

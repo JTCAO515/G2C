@@ -4,16 +4,14 @@ import SwiftUI
 /// Host owns the state for the window lifetime. No language-based .id or recreation.
 public struct ShellView: View {
     @Bindable private var state: ShellState
-    private let assistantBody: String?
 
-    public init(state: ShellState, assistantBody: String? = nil) {
+    public init(state: ShellState) {
         self.state = state
-        self.assistantBody = assistantBody
     }
 
     public var body: some View {
         TabView(selection: $state.selectedTab) {
-            AssistantShell(state: state, bodyText: assistantBody)
+            NavigationStack { AssistantShell(state: state, bodyText: state.assistantBody) }
                 .tabItem { Label(ShellTab.assistant.title(state.language), systemImage: "bubble.left.and.bubble.right") }
                 .tag(ShellTab.assistant)
             NavigationStack {

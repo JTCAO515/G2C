@@ -8,7 +8,7 @@ assert set(base["paths"]) == {"/v1/probe"}
 assert set(base["paths"]["/v1/probe"]) == {"get"}
 assert "never an idempotency or authorization token" in base["components"]["schemas"]["RequestId"]["description"]
 examples = json.loads(Path(__file__).with_name("examples.json").read_text())
-assert examples["contract"] == "UI@1.0" and examples["synthetic"] is True
+assert examples["contract"] == "UI@1.1" and examples["synthetic"] is True
 
 def valid(item):
     return (set(item) == {"tab", "language", "state"}

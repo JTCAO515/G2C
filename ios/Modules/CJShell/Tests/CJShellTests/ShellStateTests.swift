@@ -14,7 +14,7 @@ import Testing
         state.selectedTab = .memory
         state.memoryPath = [.group(.facts), .language]
         state.draft = "去北京 / Beijing 🧳"
-        state.context = ShellContext(conversationReference: "fixture-conversation", tripReference: "fixture-trip")
+        state.apply(ShellPresentation(context: ShellContext(conversationReference: "fixture-conversation", tripReference: "fixture-trip")), for: state.generation)
         let context = state.context
         for language in [ShellLanguage.chinese, .english, .chinese] {
             state.selectLanguage(language)
@@ -72,4 +72,34 @@ import Testing
         #expect(ShellTab(rawValue: "account") == nil)
         #expect(ShellLanguage(rawValue: "fr") == nil)
     }
+    @Test func identityInvalidationClearsAllPrivatePresentationAndRejectsLateWork() throws {
+        let defaults = try preferences()
+        defer { defaults.removeObject(forKey: ShellState.languageKey) }
+        let state = ShellState(preferences: defaults)
+        state.selectLanguage(.chinese)
+        state.selectedTab = .memory
+        state.draft = "private A draft"
+        state.memoryPath = [.group(.preferences), .account]
+        let old = state.generation
+        let privateA = ShellPresentation(context: ShellContext(conversationReference: "A-chat", tripReference: "A-trip"),
+                                         assistantBody: "private A body", assistant: .loading, trips: .offline, memory: .unknown)
+        #expect(state.apply(privateA, for: old))
+        state.invalidateIdentity()
+        #expect(state.generation != old)
+        #expect(state.draft.isEmpty && state.memoryPath.isEmpty)
+        #expect(state.presentation == ShellPresentation())
+        #expect(state.language == .chinese && state.selectedTab == .memory)
+        #expect(!state.apply(privateA, for: old))
+        #expect(state.presentation == ShellPresentation())
+        let current = state.generation
+        let privateB = ShellPresentation(assistantBody: "new B body")
+        #expect(state.apply(privateB, for: current))
+        #expect(!state.apply(privateA, for: old))
+        #expect(state.presentation == privateB)
+        let other = ShellState(preferences: defaults)
+        #expect(!other.apply(privateB, for: current))
+        state.selectLanguage(.english)
+        #expect(state.generation == current && state.presentation == privateB)
+    }
+
 }

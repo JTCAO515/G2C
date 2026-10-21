@@ -5,6 +5,7 @@ struct AssistantShell: View {
     @Bindable var state: ShellState
     let bodyText: String?
     @State private var showingHistory = false
+    @FocusState private var draftFocused: Bool
     @ScaledMetric(relativeTo: .body) private var headerClearance = 112.0
 
     var body: some View {
@@ -23,6 +24,16 @@ struct AssistantShell: View {
         .scrollDismissesKeyboard(.interactively)
         .overlay(alignment: .top) { floatingControls }
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(state.language.text("Done", "完成")) { draftFocused = false }
+            }
+        }
+        .onChange(of: state.generation) { _, _ in
+            draftFocused = false
+            showingHistory = false
+        }
         .sheet(isPresented: $showingHistory) {
             NavigationStack {
                 ScrollView {
@@ -42,7 +53,12 @@ struct AssistantShell: View {
     private var floatingControls: some View {
         HStack(alignment: .top) {
             Button { showingHistory = true } label: {
-                Image(systemName: "line.2.horizontal").frame(minWidth: 44, minHeight: 44)
+                VStack(spacing: 5) {
+                    Capsule().frame(width: 20, height: 2)
+                    Capsule().frame(width: 20, height: 2)
+                }
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Circle())
             }
             .background(.thinMaterial, in: Circle())
             .accessibilityLabel(state.language.text("Chat history", "聊天历史"))
@@ -67,6 +83,7 @@ struct AssistantShell: View {
                 unavailableIcon("plus", english: "Attachments — not available", chinese: "附件——尚未开放")
                 TextField(state.language.text("Start chatting", "开始聊天"), text: $state.draft, axis: .vertical)
                     .lineLimit(1...5)
+                    .focused($draftFocused)
                     .padding(.vertical, 12)
                     .accessibilityLabel(state.language.text("Message draft", "消息草稿"))
                     .accessibilityIdentifier("assistant.draft")

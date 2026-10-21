@@ -56,17 +56,43 @@ public struct ShellContext: Equatable, Sendable {
     }
 }
 
+/// UI-local opaque generation, not a principal, session ID or authentication proof.
+public struct ShellGeneration: Equatable, Sendable {
+    fileprivate let value = UUID()
+    fileprivate init() {}
+}
+
+public struct ShellPresentation: Equatable, Sendable {
+    public var context: ShellContext
+    public var assistantBody: String?
+    public var assistant: ShellPageState
+    public var trips: ShellPageState
+    public var memory: ShellPageState
+    public init(context: ShellContext = ShellContext(), assistantBody: String? = nil,
+                assistant: ShellPageState = .notConnected, trips: ShellPageState = .notConnected,
+                memory: ShellPageState = .notConnected) {
+        self.context = context
+        self.assistantBody = assistantBody
+        self.assistant = assistant
+        self.trips = trips
+        self.memory = memory
+    }
+}
+
 @MainActor @Observable
 public final class ShellState {
-    public static let contractVersion = "UI@1.0"
+    public static let contractVersion = "UI@1.1"
     public static let languageKey = "cj.ui.language.v1"
     public var selectedTab: ShellTab = .assistant
     public var memoryPath: [MemoryRoute] = []
     public var draft = ""
-    public var context = ShellContext()
-    public var assistantState: ShellPageState = .notConnected
-    public var tripsState: ShellPageState = .notConnected
-    public var memoryState: ShellPageState = .notConnected
+    public private(set) var generation = ShellGeneration()
+    public private(set) var presentation = ShellPresentation()
+    public var context: ShellContext { presentation.context }
+    public var assistantBody: String? { presentation.assistantBody }
+    public var assistantState: ShellPageState { presentation.assistant }
+    public var tripsState: ShellPageState { presentation.trips }
+    public var memoryState: ShellPageState { presentation.memory }
     public private(set) var language: ShellLanguage
     public private(set) var invalidStoredLanguage = false
     @ObservationIgnored private let preferences: UserDefaults
@@ -82,6 +108,28 @@ public final class ShellState {
         preferences.set(value.rawValue, forKey: Self.languageKey)
         language = value
         invalidStoredLanguage = false
+    }
+
+    /// Host calls synchronously before changing identity or accepting new account work.
+    /// This only clears local UI; it does not revoke credentials or cancel remote work.
+    public func invalidateIdentity() {
+        generation = ShellGeneration()
+        draft = ""
+        contextReset()
+    }
+
+    private func contextReset() {
+        memoryPath = []
+        presentation = ShellPresentation()
+    }
+
+    /// Capture generation before work, retain it across awaits, and apply only here.
+    /// An old instance's generation is also rejected. Caller remains responsible for auth.
+    @discardableResult
+    public func apply(_ value: ShellPresentation, for capturedGeneration: ShellGeneration) -> Bool {
+        guard generation == capturedGeneration else { return false }
+        presentation = value
+        return true
     }
 
     public var hasDraft: Bool { !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
