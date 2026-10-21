@@ -23,6 +23,9 @@ UI@1.1 仍为候选；当前固定版本消费确认见 [UI-1.1-CONSUMPTION](UI-
 服务端独立实现候选：[接口/准入](SERVER-INTERFACE.md)、[JWT adapter 与验证](../../backend/auth/README.md)。
 这不代表正式 API、真实权限提供者或实时撤销已经接通。
 
+CJ005 的 Bearer 输入/注入契约、候选 HTTP/BASE 映射及显式 Supabase profile 见
+[API-COMPOSITION](API-COMPOSITION.md)；仍无公开路由或自动权限提供者。
+
 ## 已确认的首版账号方式
 
 邮箱＋密码、自助注册、邮箱验证及找回密码；JT 管理受邀名单，未受邀不能使用模型。
