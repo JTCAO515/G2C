@@ -32,3 +32,13 @@ an ephemeral directory; no moving-tree import or copied AUTH types committed. Ex
 14 tests reused; domain/postgres/SQL unchanged. Source syntax and diff checks PASS.
 Consumer confirmation and concrete runtime/revocation/mapping limitations documented in
 ../AUTH-CONSUMPTION.md. AUTH RC not frozen; genuine JWT/DB/API/dispatch still UNRUN.
+
+## Runtime documentation correction from dc5352f
+
+Root pyproject requires >=3.12; fixed CJ007 3ffe0559b990dd99b98c1f8a0e2a2751b33bc52a
+root requires >=3.12 and backend/auth/pyproject requires >=3.12,<3.15. Read-only metadata
+inspection only, not adoption/testing of that AUTH implementation. Current interpreter
+readback is Python 3.14.7. Integrated range documented as >=3.12,<3.15; 3.12/3.13 UNRUN.
+Prior 3.10+ was a syntax inference, not a support claim; 3.9.6 core results remain
+historical evidence. Documentation/requirements comments only; source/tests unchanged,
+prior evidence reused, no package install or configuration mutation. Diff check PASS.

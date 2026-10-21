@@ -1,4 +1,6 @@
-# Runtime and offline tests: Python 3.9+ standard library only.
+# Integrated runtime: Python >=3.12,<3.15 (root/AUTH declarations).
+# Standard-library core; historical 3.9.6 checks do not expand supported range.
+# AUTH consumer tested on 3.14.7 only; 3.12/3.13 UNRUN.
 # No third-party distributions installed or resolved.
 # PostgreSQL driver choice/pin belongs to future authorized host composition;
 # this package accepts an injected DB-API connection factory and opens no sockets itself.

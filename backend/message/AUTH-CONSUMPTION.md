@@ -24,10 +24,17 @@ reading pending obligations is not a permanent authorization grant for RUN to ex
 
 ## Concrete remaining gaps for Main / CJ007 / CJ005
 
-- Runtime: AUTH uses PEP 604 unions without postponed annotations, requiring Python
-  3.10+. Earlier standalone message core tested on Python 3.9.6; AUTH consumption was
-  tested using existing Python 3.14. No global runtime/configuration changed. Integrated
-  host minimum/runtime must be fixed by owners; no compatibility shim was invented.
+- Runtime declarations read back: this message checkout's root `pyproject.toml`
+  at dc5352f requires `>=3.12`; CJ007 root and `backend/auth/pyproject.toml` at
+  `3ffe0559b990dd99b98c1f8a0e2a2751b33bc52a` require `>=3.12` and
+  `>=3.12,<3.15`, respectively. Thus this integrated consumer follows
+  `>=3.12,<3.15`. This metadata read does not adopt that newer AUTH implementation:
+  the tested consumer source remains fixed e49ea1a2 pending Main's repaired input.
+  Python 3.10+ was only an inferred syntax floor, NOT a supported runtime declaration.
+  Earlier standalone core checks on 3.9.6 are historical local evidence outside the
+  declared integrated range. AUTH consumer checks ran on Python 3.14.7; Python 3.12
+  and 3.13 are UNRUN. No broad runtime certification or global configuration change
+  is claimed; real JWT/host integration remains UNRUN.
 - TrustedPrincipal has issuer/subject/audience and token times, but no session revision
   or authoritative revocation fence. Rechecking the gate detects changes reported by
   current providers, not an atomic DB-linked revocation guarantee. Fixed principal
@@ -51,7 +58,8 @@ with committed original recovery; identity replacement; client-owner rejection a
 pending-read withdrawal. Real JWT cryptography, provider/database, concurrent revocation,
 server/client API, deployment and device remain UNRUN. Independent Review/Testing pending.
 
-Reproduce with Python 3.10+ (tested 3.14), pointing at the local CJ007 Git repository:
+Reproduce within the declared Python >=3.12,<3.15 range (tested 3.14.7 only),
+pointing at the local CJ007 Git repository:
 
 ```sh
 /opt/homebrew/bin/python3.14 -B backend/message/tests/run_auth_consumption.py /Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth

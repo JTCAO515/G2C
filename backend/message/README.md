@@ -1,6 +1,8 @@
 # CJ009 internal message transaction slice
 
-Candidate `message-domain.1`; Python 3.9+ standard library. Ownership is exclusively
+Candidate `message-domain.1`; standard-library core. Integrated runtime declaration
+is Python `>=3.12,<3.15` (repository/AUTH intersection; consumer tested on 3.14.7 only).
+Ownership is exclusively
 `backend/message/**` (and pre-existing `contracts/message/**`). No shared route,
 OpenAPI, root lock, migration registry, auth module or old VP resource is modified.
 
@@ -102,6 +104,6 @@ these local tests. No server, database, socket, cloud resource or model was star
 The pending-interface statement above describes the original transaction slice.
 `auth_boundary.py` now provides an internal candidate consumer of fixed CJ007
 `e49ea1a2abcdd82c93a28aeba8b2d6a1248a0f3b`, without importing the moving JWT tree.
-See [AUTH-CONSUMPTION](AUTH-CONSUMPTION.md) for six checks, Python 3.10+ requirement,
+See [AUTH-CONSUMPTION](AUTH-CONSUMPTION.md) for six checks, exact runtime declarations and untested versions,
 server mapping and revocation/commit consistency gaps. It does not enable routes or
 turn test providers into production authorization. Domain/repository/SQL remain unchanged.
