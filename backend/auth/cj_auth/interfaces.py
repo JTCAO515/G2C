@@ -30,8 +30,11 @@ class VerificationResult:
     def __post_init__(self):
         if not isinstance(self.status, VerificationStatus):
             raise ValueError("invalid verification status")
-        if (self.status is VerificationStatus.VALID) != isinstance(self.principal, TrustedPrincipal):
-            raise ValueError("principal must exist only for valid verification")
+        if self.status is VerificationStatus.VALID:
+            if not isinstance(self.principal, TrustedPrincipal):
+                raise ValueError("valid verification requires a trusted principal")
+        elif self.principal is not None:
+            raise ValueError("non-valid verification must not carry a principal")
 
 
 class JWTVerifier(Protocol):

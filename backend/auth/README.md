@@ -76,3 +76,15 @@ none/HMAC、过期/未来/缺失/非法类型、重复 JSON、远端 key header�
 UNRUN：真实 provider/JWKS/在线撤销、实际 CJ 成员与邀请绑定、公开 API、数据库/RLS、
 跨进程权限原子性、Google/Apple/C2、真机与部署。此切片不改原 AUTH/Swift 候选，
 新接口消费者确认 PENDING；由 Main 路由 CJ009/独立 Review/Testing，不自行冻结或关票。
+
+## VerificationResult P2 定向修复
+
+差额 base `3f374214fefc820398f101f2ecbc086f83543eb5`：非 VALID 的 principal 严格
+为 None；VALID 仍须 TrustedPrincipal。接口版本与 gate/JWT 逻辑不变。先在旧代码
+执行新增 4 项回归，22 个错误类型子例 FAIL，日志 evidence/result-p2-before.txt（仅移除行尾空白，失败内容保留）。
+修复后新增 4/4 与原准入 6/6 PASS，日志 evidence/result-p2-after.txt。原 18 项
+证据保留；JWT adapter 未改，原 12 项密码学检查复用，未重复全量测试。
+覆盖空/非空字符串、数值、bool、空/非空容器、任意对象、TrustedPrincipal、None、
+VALID 合法/非法构造及错误 status 类型。未观察或声称修复前有 gate 越权。
+CJ009 dc5352f 合法消费源码兼容；运行基线与真实分区/撤销/提交边界限制已明确写入
+SERVER-INTERFACE.md，仍待原 owner 更新其固定消费引用/运行说明。
