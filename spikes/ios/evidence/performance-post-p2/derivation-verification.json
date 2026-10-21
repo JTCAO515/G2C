@@ -1,0 +1,19 @@
+{
+  "derived_changes_only_unresolved_frame_names": "PASS",
+  "changed_frame_definitions": 225,
+  "sample_rows_unchanged": 1370,
+  "binary_dwarf_source_hashes_still_match": "PASS",
+  "uuid": "DC77E156-7E16-38C4-88E6-1E683DD7BAD6",
+  "remaining": [
+    {
+      "address": "0x1047c5f47",
+      "atos_output": "0x00000001003e9f47 (in CJIOSSpike)",
+      "binary_atos_output": "0x00000001003e9f47 (in CJIOSSpike) + 275"
+    },
+    {
+      "address": "0x1048ac0d3",
+      "atos_output": "0x00000001004d00d3 (in CJIOSSpike)",
+      "binary_atos_output": "0x00000001004d00d3 (in CJIOSSpike) + 31"
+    }
+  ]
+}
