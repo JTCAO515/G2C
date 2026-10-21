@@ -1,5 +1,9 @@
 # 邮箱 / Google / Apple 本地接入准备
 
+后续官方 Supabase Swift 2.55.4 本地 adapter 编译/transport 候选见
+[SDK-ADAPTER](../../ios/Modules/CJAuth/SDK-ADAPTER.md)。下文保留 4836dff 的初始准备记录；
+其中“未安装 SDK”已由后续固定锁/源码差额更新，真实服务/host/控制台仍待办。
+
 用户新增范围由 Main 转交，来源 `Sentinel_071cce814e488191a43ec291abbcc680`：
 可新建 Supabase 或使用 VP-V4，最好加入 Google/Apple；用户不在电脑，需要其操作
 的步骤先跳过。本轮优先新独立环境，不采用旧凭据/用户/安全设置，不创建收费资源。
