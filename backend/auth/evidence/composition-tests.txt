@@ -1,0 +1,35 @@
+test_each_negative_fact_blocks_even_with_valid_identity (test_admission.AdmissionTests.test_each_negative_fact_blocks_even_with_valid_identity) ... ok
+test_expires_during_lookup (test_admission.AdmissionTests.test_expires_during_lookup) ... ok
+test_invalid_unknown_skip_policy_and_are_distinct (test_admission.AdmissionTests.test_invalid_unknown_skip_policy_and_are_distinct) ... ok
+test_mismatched_binding_exception_or_bool_cannot_authorize (test_admission.AdmissionTests.test_mismatched_binding_exception_or_bool_cannot_authorize) ... ok
+test_missing_provider_and_every_unknown_deny_permission (test_admission.AdmissionTests.test_missing_provider_and_every_unknown_deny_permission) ... ok
+test_rechecks_provider_at_each_boundary (test_admission.AdmissionTests.test_rechecks_provider_at_each_boundary) ... ok
+test_array_audience_requires_expected_recipient (test_composition.CompositionTests.test_array_audience_requires_expected_recipient) ... ok
+test_bearer_and_base_semantics_no_fabricated_receipt (test_composition.CompositionTests.test_bearer_and_base_semantics_no_fabricated_receipt) ... ok
+test_explicit_configuration_and_no_fallback (test_composition.CompositionTests.test_explicit_configuration_and_no_fallback) ... ok
+test_missing_membership_cannot_use_signed_email_or_role_as_grant (test_composition.CompositionTests.test_missing_membership_cannot_use_signed_email_or_role_as_grant) ... ok
+test_optional_nbf_new_profile_only (test_composition.CompositionTests.test_optional_nbf_new_profile_only) ... ok
+test_optional_nbf_present_stays_strict_and_other_time_checks_remain (test_composition.CompositionTests.test_optional_nbf_present_stays_strict_and_other_time_checks_remain) ... ok
+test_unknown_key_differs_from_invalid_signature (test_composition.CompositionTests.test_unknown_key_differs_from_invalid_signature) ... ok
+test_user_shape_excludes_anonymous_service_and_malformed_fields (test_composition.CompositionTests.test_user_shape_excludes_anonymous_service_and_malformed_fields) ... ok
+test_bad_configuration_and_key_material_are_not_accepted (test_jwt_adapter.JWTTests.test_bad_configuration_and_key_material_are_not_accepted) ... ok
+test_exact_issuer_audience_and_subject (test_jwt_adapter.JWTTests.test_exact_issuer_audience_and_subject) ... ok
+test_expired_future_times_and_exact_types (test_jwt_adapter.JWTTests.test_expired_future_times_and_exact_types) ... ok
+test_malformed_size_and_duplicate_members (test_jwt_adapter.JWTTests.test_malformed_size_and_duplicate_members) ... ok
+test_missing_key_provider_unavailable_and_unknown_kid_stay_unknown (test_jwt_adapter.JWTTests.test_missing_key_provider_unavailable_and_unknown_kid_stay_unknown) ... ok
+test_none_hmac_and_remote_key_headers_rejected_without_network (test_jwt_adapter.JWTTests.test_none_hmac_and_remote_key_headers_rejected_without_network) ... ok
+test_real_crypto_composes_with_separate_authoritative_facts (test_jwt_adapter.JWTTests.test_real_crypto_composes_with_separate_authoritative_facts) ... ok
+test_required_claims (test_jwt_adapter.JWTTests.test_required_claims) ... ok
+test_same_project_old_user_and_forged_email_invitation_not_cj_access (test_jwt_adapter.JWTTests.test_same_project_old_user_and_forged_email_invitation_not_cj_access) ... ok
+test_valid_es256_and_algorithm_configuration_is_not_token_controlled (test_jwt_adapter.JWTTests.test_valid_es256_and_algorithm_configuration_is_not_token_controlled) ... ok
+test_valid_rsa_has_only_verified_identity_fields (test_jwt_adapter.JWTTests.test_valid_rsa_has_only_verified_identity_fields) ... ok
+test_wrong_signature_and_modified_payload (test_jwt_adapter.JWTTests.test_wrong_signature_and_modified_payload) ... ok
+test_invalid_status_type_still_rejected (test_verification_result.VerificationResultTests.test_invalid_status_type_still_rejected) ... ok
+test_nonvalid_accepts_none_only (test_verification_result.VerificationResultTests.test_nonvalid_accepts_none_only) ... ok
+test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) ... ok
+test_valid_requires_trusted_principal (test_verification_result.VerificationResultTests.test_valid_requires_trusted_principal) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 0.100s
+
+OK

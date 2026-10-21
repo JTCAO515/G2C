@@ -2,6 +2,9 @@
 import base64
 import json
 from dataclasses import dataclass
+from enum import Enum
+from urllib.parse import urlsplit
+from uuid import UUID
 from types import MappingProxyType
 from typing import Protocol
 
@@ -12,6 +15,11 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from .interfaces import TrustedPrincipal, VerificationResult, VerificationStatus as V
 
 
+class JWTProfile(Enum):
+    STRICT_V1 = "CJ-JWT-STRICT@0.1.0"
+    SUPABASE_ACCESS_RC1 = "CJ-JWT-SUPABASE-ACCESS@0.1.0-rc.1"
+
+
 @dataclass(frozen=True)
 class JWTConfiguration:
     issuer: str
@@ -19,6 +27,7 @@ class JWTConfiguration:
     algorithm: str
     clock_skew_seconds: int
     max_token_bytes: int = 16384  # local input bound, not a provider limit
+    profile: JWTProfile = JWTProfile.STRICT_V1  # keep the previously tested path unchanged
 
     def __post_init__(self):
         if (not isinstance(self.issuer, str) or not self.issuer.strip()
@@ -27,6 +36,14 @@ class JWTConfiguration:
                 or type(self.clock_skew_seconds) is not int or self.clock_skew_seconds < 0
                 or type(self.max_token_bytes) is not int or self.max_token_bytes <= 0):
             raise ValueError('invalid explicit JWT configuration')
+        if not isinstance(self.profile, JWTProfile):
+            raise ValueError('explicit supported JWT profile required')
+        if self.profile is JWTProfile.SUPABASE_ACCESS_RC1:
+            issuer = urlsplit(self.issuer)
+            if (issuer.scheme != 'https' or not issuer.hostname or issuer.username or issuer.password
+                    or issuer.query or issuer.fragment or self.issuer != self.issuer.strip()
+                    or self.audience != self.audience.strip()):
+                raise ValueError('invalid explicit Supabase access configuration')
 
 
 @dataclass(frozen=True, repr=False)
@@ -97,10 +114,26 @@ class PyJWTVerifier:
                     or header.get('typ') != 'JWT' or not isinstance(header.get('kid'), str)
                     or not header['kid'].strip()):
                 return VerificationResult(V.INVALID)
-            if (any(type(payload.get(k)) is not int for k in ('exp', 'iat', 'nbf'))
-                    or payload['exp'] <= max(payload['iat'], payload['nbf'])
+            required_times = ('exp', 'iat', 'nbf') if config.profile is JWTProfile.STRICT_V1 else ('exp', 'iat')
+            if (any(type(payload.get(k)) is not int for k in required_times)
+                    or ('nbf' in payload and type(payload['nbf']) is not int)
+                    or payload['exp'] <= max(payload['iat'], payload.get('nbf', payload['iat']))
                     or not isinstance(payload.get('sub'), str) or not payload['sub'].strip()):
                 return VerificationResult(V.INVALID)
+            if config.profile is JWTProfile.SUPABASE_ACCESS_RC1:
+                # User access-token shape, not a grant from role/email/metadata.
+                if (payload.get('role') != 'authenticated' or payload.get('is_anonymous') is not False
+                        or payload.get('aal') not in ('aal1', 'aal2')
+                        or any(not isinstance(payload.get(k), str) for k in ('email', 'phone'))
+                        or any(not isinstance(payload.get(k), str) or str(UUID(payload[k])) != payload[k]
+                               for k in ('sub', 'session_id'))):
+                    return VerificationResult(V.INVALID)
+                audience = payload.get('aud')
+                if not (isinstance(audience, str) and audience.strip()
+                        or isinstance(audience, list) and audience
+                        and all(isinstance(item, str) and item.strip() for item in audience)
+                        and len(set(audience)) == len(audience)):
+                    return VerificationResult(V.INVALID)
         except (ValueError, TypeError, UnicodeError, RecursionError):
             return VerificationResult(V.INVALID)
         try:
@@ -115,14 +148,17 @@ class PyJWTVerifier:
             claims = jwt.decode(
                 token, key, algorithms=[config.algorithm], issuer=config.issuer,
                 audience=config.audience, leeway=config.clock_skew_seconds,
-                options={'require': ['iss', 'aud', 'sub', 'exp', 'iat', 'nbf'],
+                options={'require': ['iss', 'aud', 'sub', 'exp', 'iat']
+                         + (['nbf'] if config.profile is JWTProfile.STRICT_V1 else []),
                          'verify_signature': True, 'verify_exp': True, 'verify_iat': True,
                          'verify_nbf': True, 'verify_iss': True, 'verify_aud': True,
-                         'verify_sub': True, 'strict_aud': True, 'enforce_minimum_key_length': True},
+                         'verify_sub': True, 'strict_aud': config.profile is JWTProfile.STRICT_V1,
+                         'enforce_minimum_key_length': True},
             )
         except jwt.InvalidTokenError:
             return VerificationResult(V.INVALID)
         except Exception:
             return VerificationResult(V.UNKNOWN)
         return VerificationResult(V.VALID, TrustedPrincipal(
-            claims['iss'], claims['sub'], claims['aud'], claims['iat'], claims['nbf'], claims['exp']))
+            claims['iss'], claims['sub'], config.audience, claims['iat'],
+            claims.get('nbf', claims['iat']), claims['exp']))
