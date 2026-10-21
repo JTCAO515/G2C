@@ -31,3 +31,11 @@ Screenshots are unedited XcodeBuildMCP JPEG captures; runtime/snapshots.json pre
 ## Remaining
 
 UI@1.1 consumer reconfirmation by CJ007, fixed-delta Review/Testing and full host AUTH mapping are pending. Local token is not an authorization credential and cannot fence external host caches or server work; host must validate real identity after awaits independently. Large-text+keyboard composition above remains open. True VoiceOver, physical devices, performance, iOS 17 runtime, memory CRUD and all real services remain UNRUN. CJ004/CJ005 I gates unchanged; Issue #7 stays open. No push/remote PR/merge/deploy.
+
+## Focused layout follow-up — source e85fc0625ced073cd8a627709701353aec1bdea3
+
+The large-keyboard issue above was not left untouched: while editing, the neutral avatar uses a compact icon with the same AX name, its clearance contracts to 80 points, and unavailable-send caption becomes a shorter localized phrase. The three controls remain separate; the full visible name returns after editing. Demo-only close button stays at ordinary caption size so it no longer consumes product viewport at accessibility3. No state/contract logic changed; the six-test identity/state evidence above remains applicable without rerunning it.
+
+Rebuilt simulator bundle PASS (`runtime/compact-build.txt`). Reused the same CJ006 device and observed gallery switches at 1/1 before opening. At accessibility3 with keyboard open, actual input read back `Large draft`; screenshot `large-keyboard-compact.jpg` shows the synthetic heading in usable body space, the draft and Done. Done was operated; keyboard target disappeared and `Large draft` remained (`compact-keyboard-snapshots.json`). Device again read back Shutdown. An earlier toggle attempt was found to have left the large-text switch off and was corrected; its ordinary-font screenshot is not included as large-font evidence.
+
+This supersedes the earlier large-keyboard FAIL/OPEN for initial body visibility and input/dismissal on this device. Full long-answer navigation while typing at every accessibility size, spoken VoiceOver and other device sizes remain UNRUN; do not generalize this bounded check into full accessibility acceptance. Other captured a9d0a9d runtime evidence is reused for unchanged state/navigation behavior; images explicitly belong to their source revision.
