@@ -1,0 +1,47 @@
+{
+  "release_url": "https://pypi.org/project/reme-ai/0.4.1.13/",
+  "metadata_url": "https://pypi.org/pypi/reme-ai/0.4.1.13/json",
+  "requires_python": ">=3.11",
+  "project_urls": {
+    "Documentation": "https://reme.agentscope.io",
+    "Homepage": "https://github.com/agentscope-ai/ReMe",
+    "Repository": "https://github.com/agentscope-ai/ReMe"
+  },
+  "artifacts": [
+    {
+      "filename": "reme_ai-0.4.1.13-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/06/69/2af9cb363d096cb699b2de5048cc8f9e48a18bd67054698c1f45f9b50683/reme_ai-0.4.1.13-py3-none-any.whl",
+      "digests": {
+        "blake2b_256": "06692af9cb363d096cb699b2de5048cc8f9e48a18bd67054698c1f45f9b50683",
+        "md5": "043e88715c6b1d304e9c1444b9f2415e",
+        "sha256": "82fbf5a53674348afb9054387227ee948e1ca677663b14741b95564a5c756ca8"
+      },
+      "upload_time_iso_8601": "2026-10-04T09:47:42.220978Z"
+    },
+    {
+      "filename": "reme_ai-0.4.1.13.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/52/ba/63e8756e5d5d86edb1766918b904ca5237d480b6fd6d9b4e70ac6923507f/reme_ai-0.4.1.13.tar.gz",
+      "digests": {
+        "blake2b_256": "52ba63e8756e5d5d86edb1766918b904ca5237d480b6fd6d9b4e70ac6923507f",
+        "md5": "3712237ff5c85aebb4ea355241e6125c",
+        "sha256": "58cb1eced28737b3218a206624d6f8a86612bca0ea966632a1a3b37d9bc46dcc"
+      },
+      "upload_time_iso_8601": "2026-10-04T09:47:44.183167Z"
+    }
+  ],
+  "installed_source_sha256": {
+    "reme/components/file_store/local_file_store.py": "7616714a3bd40122772027e86ef789396faf23fce9f8fa2efa38deebc974596a",
+    "reme/components/file_store/base_file_store.py": "405a88e8710313c3a7a01aeb3d132dbcd037a59c1f123bf5b2df050e8c943807",
+    "reme/components/base_component.py": "178048175e5b4d16d32d9037b2214744d37cf2a5277fb949a8d4098c63282ec9",
+    "reme/components/keyword_index/bm25_index.py": "0932db63515975a31847519cb2503ae5c39f54dde4433bc1995481b4dad07b60",
+    "reme/components/file_graph/local_file_graph.py": "2fdd5c19d3a6a88244381eca2d726afa49c92ec06980e097d731f9b673a77dc9",
+    "reme/schema/file_front_matter.py": "c9780464efae9eb8ddfc264fa209591666dcd0c63fa5fec695ddc2fd5835bd49",
+    "reme/schema/emb_node.py": "196d830c60e30d597b0ec08ee19b5bf45943ceaefccfa0da22474c458a579ec1"
+  },
+  "license_files": [
+    "reme_ai-0.4.1.13.dist-info/licenses/LICENSE"
+  ],
+  "official_wheel_sha256_verified": true,
+  "listed_installed_sources_match_official_wheel": true,
+  "license_expression": "Apache-2.0"
+}
