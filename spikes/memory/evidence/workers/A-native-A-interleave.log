@@ -1,0 +1,28 @@
+2026-10-21 19:22:15 | INFO | bm25_index.py:458 | load | Loaded 3 docs from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:22:15 | INFO | local_file_store.py:244 | load | Loaded 3 chunks from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 19:22:15 | INFO | local_file_store.py:247 | load | cj003: chunk store load complete: chunks=3, elapsed=0.000s
+2026-10-21 19:22:15 | INFO | local_file_store.py:254 | load | cj003: graph consistency check complete: repaired=False, elapsed=0.000s
+2026-10-21 19:22:15 | INFO | local_file_store.py:261 | load | cj003: tag index sync complete: enabled=False, healthy=True, elapsed=0.000s
+2026-10-21 19:22:15 | INFO | local_file_store.py:271 | load | cj003: BM25/keyword index sync complete: backend=BM25Index, docs=3, elapsed=0.000s
+2026-10-21 19:22:15 | INFO | local_file_store.py:275 | load | cj003: file store load phases complete: elapsed=0.002s
+2026-10-21 19:22:15 | INFO | local_file_store.py:105 | _start | cj003: file store load complete: chunks=3, elapsed=0.002s
+2026-10-21 19:22:15 | INFO | local_file_store.py:345 | _start_embedding_backfill | cj003: embedding backfill skipped: reason=embedding_disabled, elapsed=0.000s
+2026-10-21 19:22:15 | INFO | local_file_store.py:112 | _start | cj003: embedding backfill scheduling complete: scheduled=False, elapsed=0.000s
+2026-10-21 19:22:15 | INFO | local_file_store.py:117 | _start | cj003: file store startup complete: elapsed=0.002s
+2026-10-21 19:22:15 | INFO | local_file_store.py:622 | _rebuild_keyword_index | cj003: keyword index rebuild started: total=2, batch_size=200
+2026-10-21 19:22:15 | INFO | local_file_store.py:479 | _log_progress | cj003: keyword index rebuild progress: 2/2 (100%)
+2026-10-21 19:22:15 | INFO | bm25_index.py:436 | dump | Saved 2 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:22:15 | INFO | local_file_store.py:646 | _rebuild_keyword_index | cj003: keyword index rebuild complete: total=2, elapsed=0.00s
+2026-10-21 19:22:15 | INFO | local_file_store.py:622 | _rebuild_keyword_index | cj003: keyword index rebuild started: total=3, batch_size=200
+2026-10-21 19:22:15 | INFO | local_file_store.py:479 | _log_progress | cj003: keyword index rebuild progress: 3/3 (100%)
+2026-10-21 19:22:15 | INFO | bm25_index.py:436 | dump | Saved 3 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:22:15 | INFO | local_file_store.py:646 | _rebuild_keyword_index | cj003: keyword index rebuild complete: total=3, elapsed=0.00s
+2026-10-21 19:22:15 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 2 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 19:22:15 | INFO | bm25_index.py:436 | dump | Saved 2 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 19:22:15 | INFO | local_file_graph.py:45 | dump | Saved 2 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/file_graph/LocalFileGraph.jsonl.zst
+2026-10-21 19:22:15 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 2 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 19:22:15 | INFO | local_file_graph.py:45 | dump | Saved 2 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/file_graph/LocalFileGraph.jsonl.zst
+2026-10-21 19:22:15 | INFO | bm25_index.py:436 | dump | Saved 2 docs to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-94eaff07aec24f4291e4c6c1c3a34948/A/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+CJ003_RESULT=[{"check": "native_correction_replaces_chunks", "status": "PASS", "detail": "upsert same path removes old chunks"}, {"check": "native_late_write_revision_fence", "status": "FAIL", "detail": "v1 overwrote v2; caller must enforce versions"}, {"check": "native_disable_enforced", "status": "FAIL", "detail": "enabled metadata alone does not suppress search"}, {"check": "native_delete_then_reindex", "status": "PASS", "detail": "current chunks do not resurrect on keyword rebuild"}, {"check": "native_delete_removes_source_file", "status": "FAIL", "detail": "LocalFileStore.delete only deletes derived records"}, {"check": "native_delete_late_source_reimport_fence", "status": "FAIL", "detail": "captured source may recreate deleted path"}, {"check": "native_delete_optimize_checkpoint", "status": "PASS", "detail": "component cleanup hooks ran; source intentionally retained as counterexample"}]
+
+STDERR

@@ -1,0 +1,27 @@
+{
+  "taskID": "CJ-003-local",
+  "base": "13905e4587feb8611ebde5e3621024f3338532ae",
+  "status": "local candidate ready, issue incomplete",
+  "source_sha256": {
+    "probe.py": "3f77d64e3df968cd1faa85c7090100901b8871e9d725523b3f9914009b44839e",
+    "fence.py": "76034462462853052b41e7d6d0ad901b6c8c13649a9efda4d8543d055f1977e4",
+    "requirements.in": "6cbe3fd486607936580e851b8a4bf452f70af707a51821954f4a9283a25f07a3",
+    "requirements.lock": "7266a76be6b126ad67fa948ef126cadd94cc54970cae0591288dd332155d7c98"
+  },
+  "results_sha256": "13272833072d0df3a1b16d2de1e64e3ca09da21167c5f8f0dbc0ad1eca7432dd",
+  "observations": {
+    "PASS": 22,
+    "FAIL": 6
+  },
+  "probe_exit_code": 0,
+  "syntax": "PASS",
+  "all_136_installed_versions_match_lock": "PASS",
+  "uv_pip_check": "PASS",
+  "snapshot_manifest": "PASS",
+  "official_wheel_and_installed_source_match": "PASS",
+  "independent_review": "UNRUN",
+  "independent_testing": "UNRUN",
+  "real_models_auth_product_e2e_deployment": "UNRUN",
+  "model_requested": "gpt-6.1-sol/high",
+  "model_effective": "UNKNOWN"
+}

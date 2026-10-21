@@ -1,0 +1,153 @@
+{
+  "component": "reme-ai",
+  "version": "0.4.1.13",
+  "python": "3.14.7",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "data_path": ".data/run-94eaff07aec24f4291e4c6c1c3a34948",
+  "network": "worker socket.connect denied",
+  "model": "UNRUN",
+  "auth": "UNRUN",
+  "scope": "component plus CJ fence experiment",
+  "results": [
+    {
+      "check": "seed_three_independent_items",
+      "status": "PASS",
+      "detail": "A"
+    },
+    {
+      "check": "A_fact_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    },
+    {
+      "check": "A_experience_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    },
+    {
+      "check": "A_preference_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    },
+    {
+      "check": "seed_three_independent_items",
+      "status": "PASS",
+      "detail": "B"
+    },
+    {
+      "check": "B_fact_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    },
+    {
+      "check": "B_experience_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    },
+    {
+      "check": "B_preference_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    },
+    {
+      "check": "native_correction_replaces_chunks",
+      "status": "PASS",
+      "detail": "upsert same path removes old chunks"
+    },
+    {
+      "check": "native_late_write_revision_fence",
+      "status": "FAIL",
+      "detail": "v1 overwrote v2; caller must enforce versions"
+    },
+    {
+      "check": "native_disable_enforced",
+      "status": "FAIL",
+      "detail": "enabled metadata alone does not suppress search"
+    },
+    {
+      "check": "native_delete_then_reindex",
+      "status": "PASS",
+      "detail": "current chunks do not resurrect on keyword rebuild"
+    },
+    {
+      "check": "native_delete_removes_source_file",
+      "status": "FAIL",
+      "detail": "LocalFileStore.delete only deletes derived records"
+    },
+    {
+      "check": "native_delete_late_source_reimport_fence",
+      "status": "FAIL",
+      "detail": "captured source may recreate deleted path"
+    },
+    {
+      "check": "native_delete_optimize_checkpoint",
+      "status": "PASS",
+      "detail": "component cleanup hooks ran; source intentionally retained as counterexample"
+    },
+    {
+      "check": "native_deleted_projection_stays_absent_after_restart",
+      "status": "PASS",
+      "detail": "unrelated fact preserved"
+    },
+    {
+      "check": "native_upsert_ack_is_crash_durable",
+      "status": "FAIL",
+      "detail": "uncheckpointed upsert lost across abrupt process exit"
+    },
+    {
+      "check": "native_multi_instance_snapshot_fence",
+      "status": "FAIL",
+      "detail": "second stale instance checkpoint restored deleted projection; one writer per workspace required"
+    },
+    {
+      "check": "CJ_correction_late_write_cache_and_publish_fence",
+      "status": "PASS",
+      "detail": "expected revision rejects late v1; stale context/epoch rejected"
+    },
+    {
+      "check": "CJ_disable_excludes_context",
+      "status": "PASS",
+      "detail": "authority checked after retrieval; derived removal secondary"
+    },
+    {
+      "check": "CJ_delete_late_source_and_rebuild_interleave",
+      "status": "PASS",
+      "detail": "source tombstone blocks new-id replay; stale rebuild refused; fresh rebuild omits deleted item"
+    },
+    {
+      "check": "CJ_cleanup_failure_remains_explicit",
+      "status": "PASS",
+      "detail": "fence stays active; failure persists for separate-process retry"
+    },
+    {
+      "check": "CJ_restart_preserves_failed_cleanup_and_fence",
+      "status": "PASS",
+      "detail": "not falsely complete; persisted SQLite authority"
+    },
+    {
+      "check": "CJ_cleanup_retry_and_authority_rebuild",
+      "status": "PASS",
+      "detail": "actual ReMe delete/optimize/dump/reindex; source removed; unrelated fact preserved"
+    },
+    {
+      "check": "CJ_controlled_snapshot_content_removed",
+      "status": "PASS",
+      "detail": "checked SQLite and decompressed ReMe graph/chunks plus BM25 snapshot; no backup/disk erasure claim"
+    },
+    {
+      "check": "B_fact_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    },
+    {
+      "check": "B_experience_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    },
+    {
+      "check": "B_preference_restart_and_partition",
+      "status": "PASS",
+      "detail": "separate workspace; source metadata roundtrips; English/Chinese lexical lookup same item; no auth/semantic claim"
+    }
+  ]
+}
