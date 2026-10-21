@@ -86,3 +86,8 @@ provider. All data are synthetic, with no real credentials and no network calls.
 Core PASS does not prove generated transport, actual AUTH/Keychain host integration,
 iOS device file protection, CJShell behavior, real service or independent acceptance.
 No existing PG suite rerun. Issue10 remains open; early core is ready for fixed-head review.
+
+Transport delta: see [TRANSPORT.md](TRANSPORT.md). CJMessageHTTP now consumes exact
+CJ005 d886677 CJAPI through an ignored fixed export (prepare script required). Receive
+interception checks pass; generated query lacks receipt and explicitly blocks query
+until CJ005 correction. This does not change the earlier core-only evidence attribution.

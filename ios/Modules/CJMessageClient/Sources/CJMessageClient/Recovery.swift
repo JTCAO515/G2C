@@ -103,6 +103,11 @@ public struct Submission: Sendable {
         lease = nil; scope = nil; snapshot = Snapshot(); operations = [:]
     }
 
+    public func validateScope(_ expected: StorageScope, lease: Lease) throws {
+        try check(lease)
+        guard scope?.binding == expected.binding else { throw RecoveryError.inactive }
+    }
+
     public func saveDraft(_ bytes: Data, conversationID: String, lease: Lease) throws {
         try check(lease)
         guard !conversationID.isEmpty, String(data: bytes, encoding: .utf8) != nil else { throw RecoveryError.invalidInput }
