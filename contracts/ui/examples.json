@@ -1,0 +1,20 @@
+{
+  "contract": "UI@1.1",
+  "synthetic": true,
+  "positive": [
+    {"tab":"assistant","language":"en","state":"notConnected"},
+    {"tab":"trips","language":"zh-Hans","state":"empty"},
+    {"tab":"memory","language":"en","state":"loading"},
+    {"tab":"memory","language":"zh-Hans","state":"failed"},
+    {"tab":"trips","language":"en","state":"offline"},
+    {"tab":"assistant","language":"zh-Hans","state":"unknown"},
+    {"tab":"plugins","language":"en","state":"notConnected"}
+  ],
+  "negative": [
+    {"tab":"account","language":"en","state":"empty"},
+    {"tab":"memory","language":"fr","state":"empty"},
+    {"tab":"assistant","language":"en","state":"signedIn"},
+    {"tab":"memory","language":"en","state":"saved"},
+    {"tab":"plugins","language":"en","state":"empty"}
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "taskID": "CJ-003-local",
+  "base": "13905e4587feb8611ebde5e3621024f3338532ae",
+  "status": "local candidate ready, issue incomplete",
+  "source_sha256": {
+    "probe.py": "988c5a94e51cf4a3ebba3bff2a2e596304022e552951229ccb4b8dfbf968dcba",
+    "fence.py": "8031b2500622762afbeae52cf45d34e08d1c38861e2546d1942f0b7d719fe4c7",
+    "source_history_probe.py": "d4210f248554bad3c4a0fb17e66269e83e1c12f26034e4fb04d84e01cf54db27",
+    "requirements.in": "6cbe3fd486607936580e851b8a4bf452f70af707a51821954f4a9283a25f07a3",
+    "requirements.lock": "7266a76be6b126ad67fa948ef126cadd94cc54970cae0591288dd332155d7c98"
+  },
+  "results_sha256": "5c74937c44a3e0f796098559412b210d1b864330b99d2b2cee2241cd366fb890",
+  "observations": {
+    "PASS": 22,
+    "FAIL": 6
+  },
+  "probe_exit_code": 0,
+  "syntax": "PASS",
+  "all_136_installed_versions_match_lock": "PASS",
+  "uv_pip_check": "PASS reused: dependency lock and environment unchanged",
+  "snapshot_manifest": "PASS",
+  "official_wheel_and_installed_source_match": "PASS",
+  "independent_review": "PENDING new head; prior head Spec FAIL P2 source-history finding",
+  "independent_testing": "PENDING new head",
+  "real_models_auth_product_e2e_deployment": "UNRUN",
+  "model_requested": "gpt-6.1-sol/high",
+  "model_effective": "UNKNOWN",
+  "revision_of": "d4ef9d635cadd6e38a24352ecbecfe9cd3fb1a99",
+  "source_history_regression": {
+    "status": "PASS",
+    "checks": 7,
+    "results_sha256": "f64cbcbf385f0cd7f924c03ecf015902b06578badc7d6ac06768c3fd74bdcb08",
+    "before_fix": "evidence/source-history/before-fix-delete.log",
+    "after_fix": "evidence/source-history/results.json",
+    "regression_exit_code": 0
+  }
+}

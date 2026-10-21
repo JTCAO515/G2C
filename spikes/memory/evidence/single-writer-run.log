@@ -1,0 +1,151 @@
+{
+  "delta_base": "56b85ebd93f9a4d48a057757a5305704a25fec11",
+  "data_path": ".data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd",
+  "network": "workers reject socket.connect",
+  "scope": "managed local single-writer entrypoints only; native unwrapped FAILs retained",
+  "results": [
+    {
+      "check": "CJ_writer_same_process_second_instance_rejected",
+      "status": "PASS",
+      "detail": "same PID cannot open a second managed ReMe instance for its workspace"
+    },
+    {
+      "check": "CJ_writer_second_process_rejected",
+      "status": "PASS",
+      "detail": "actual second PID refused before ReMe startup/authority IO; physical bytes unchanged"
+    },
+    {
+      "check": "CJ_writer_other_workspace_independent",
+      "status": "PASS",
+      "detail": "another workspace can own its writer concurrently"
+    },
+    {
+      "check": "CJ_writer_cleanup_complete_keeps_exclusivity",
+      "status": "PASS",
+      "detail": "second PID still refused after cleanup complete and before owner close; cleaned bytes unchanged"
+    },
+    {
+      "check": "CJ_writer_graceful_restart_releases_lock",
+      "status": "PASS",
+      "detail": "new process opens same persistent lock inode and sees cleanup complete with deleted bytes absent"
+    },
+    {
+      "check": "CJ_writer_stale_instance_cannot_restore_physical_storage",
+      "status": "PASS",
+      "detail": "old live PID rejected at 11 mutation entrypoints and late close; source/SQLite/ReMe snapshot hashes unchanged"
+    },
+    {
+      "check": "CJ_writer_abrupt_exit_releases_lock",
+      "status": "PASS",
+      "detail": "holder SIGKILL exit -9 without finally; new PID owns same inode and sees cleaned state"
+    },
+    {
+      "check": "CJ_writer_stale_instance_stays_invalid_after_crash_recovery",
+      "status": "PASS",
+      "detail": "original released writer remains rejected across later ownership generations; cleaned bytes stay absent"
+    }
+  ],
+  "events": [
+    {
+      "event": "opened",
+      "pid": 12985,
+      "role": "seed",
+      "lock_inode": 55411333,
+      "same_pid_duplicate_rejected": true
+    },
+    {
+      "event": "busy",
+      "pid": 12989
+    },
+    {
+      "event": "opened",
+      "pid": 12990,
+      "role": "empty",
+      "lock_inode": 55411394,
+      "same_pid_duplicate_rejected": false
+    },
+    {
+      "event": "cleanup_complete",
+      "pid": 12985
+    },
+    {
+      "event": "busy",
+      "pid": 12991
+    },
+    {
+      "event": "released",
+      "pid": 12985
+    },
+    {
+      "event": "opened",
+      "pid": 12992,
+      "role": "observer",
+      "lock_inode": 55411333,
+      "same_pid_duplicate_rejected": false
+    },
+    {
+      "event": "stale_rejected",
+      "pid": 12985,
+      "attempts": [
+        "upsert",
+        "dump",
+        "reindex",
+        "delete",
+        "clear",
+        "optimize",
+        "project_source",
+        "save_authority",
+        "delete_authority",
+        "cleanup",
+        "rebuild"
+      ]
+    },
+    {
+      "event": "clean_observed",
+      "pid": 12992
+    },
+    {
+      "event": "opened",
+      "pid": 12997,
+      "role": "observer",
+      "lock_inode": 55411333,
+      "same_pid_duplicate_rejected": false
+    },
+    {
+      "event": "opened",
+      "pid": 13001,
+      "role": "observer",
+      "lock_inode": 55411333,
+      "same_pid_duplicate_rejected": false
+    },
+    {
+      "event": "stale_rejected",
+      "pid": 12985,
+      "attempts": [
+        "upsert",
+        "dump",
+        "reindex",
+        "delete",
+        "clear",
+        "optimize",
+        "project_source",
+        "save_authority",
+        "delete_authority",
+        "cleanup",
+        "rebuild"
+      ]
+    },
+    {
+      "event": "clean_observed",
+      "pid": 13001
+    }
+  ],
+  "final_workspace_sha256": {
+    ".cj003-writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "authority.sqlite3": "577e94d5d817defd3ecb29663b91f47040a096cd157c093ccc505869c9dae1eb",
+    "digest/fact.md": "e640304c925f6c2e78571472c89a1844a306b0c99ab97684fc18f1c4c170234c",
+    "metadata/file_graph/LocalFileGraph.jsonl.zst": "c321d29a74a1c6fc6c32239991c1e239454f954ea3de565e9d3f0b711e0aa928",
+    "metadata/file_store/file_chunks_cj003_v1.jsonl.zst": "bfeb281326c14b9a0d006ff1b174d1e2a2609ea97b846600fe0fd22244eac492",
+    "metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl": "e86ba00576eb1f67db0ba8d7a4d42fe36f5e683b9047a6164b9047845b25d4c1"
+  }
+}

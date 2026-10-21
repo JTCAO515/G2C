@@ -1,0 +1,37 @@
+Building for debugging...
+[Computing dependencies]
+[Constructing description]
+[Pre-planning 1 / 1103]
+[Planning deferred tasks]
+[17 / 125]
+[24 / 44] SpikeUI
+[27 / 47] SpikeUI
+[33 / 51]
+[37 / 51] SpikeUI
+[45 / 51] SpikeUI-product
+[45 / 51] SpikeClientTests-product
+[47 / 51] SpikeClientTests-product
+Build complete! (3.17秒)
+Test Suite 'All tests' started at 2026-10-21 19:20:09.013.
+Test Suite 'All tests' passed at 2026-10-21 19:20:09.014.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Test unknownStatusFails() started.
+◇ Test emptyStreamFails() started.
+◇ Test normalReply() started.
+◇ Test completeStream() started.
+◇ Test structuredRejection() started.
+◇ Test silentStreamEOFFails() started.
+◇ Test malformedJSONFails() started.
+◇ Test missingRequiredFieldFails() started.
+✔ Test unknownStatusFails() passed after 0.003 seconds.
+✔ Test normalReply() passed after 0.003 seconds.
+✔ Test structuredRejection() passed after 0.003 seconds.
+✔ Test silentStreamEOFFails() passed after 0.003 seconds.
+✔ Test completeStream() passed after 0.003 seconds.
+✔ Test emptyStreamFails() passed after 0.003 seconds.
+✔ Test missingRequiredFieldFails() passed after 0.016 seconds.
+✔ Test malformedJSONFails() passed after 0.016 seconds.
+✔ Test run with 8 tests in 0 suites passed after 0.016 seconds.

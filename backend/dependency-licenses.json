@@ -1,0 +1,14 @@
+{
+  "source": "Installed distribution metadata in isolated .venv, 2026-10-21; versions pinned in uv.lock",
+  "direct": {
+    "fastapi": {"version": "0.156.8", "license": "MIT"},
+    "pydantic": {"version": "2.14.1", "license": "MIT"},
+    "uvicorn": {"version": "0.54.0", "license": "BSD-3-Clause"},
+    "datamodel-code-generator": {"version": "0.86.0", "license": "MIT"},
+    "jsonschema": {"version": "4.26.0", "license": "MIT"},
+    "openapi-spec-validator": {"version": "0.9.0", "license": "Apache-2.0"},
+    "httpx": {"version": "0.28.1", "license": "BSD-3-Clause"},
+    "pytest": {"version": "9.1.1", "license": "MIT"}
+  },
+  "scope": "Direct development/runtime dependencies only; upstream license files remain authoritative. No CJ source license or legal acceptance is implied."
+}

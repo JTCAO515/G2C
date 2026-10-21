@@ -1,0 +1,11 @@
+{
+  "dialect": "postgresql",
+  "migrations": [
+    {
+      "version": 1,
+      "file": "0001_foundation.sql",
+      "sha256": "d4a30e7d14dac428a9c09c3a16c9543427330085f5d066d278d9e7a0bdda58d7",
+      "rollback": "Before any subsequent migration: DROP SCHEMA cj CASCADE only in an approved empty disposable database; never automatic."
+    }
+  ]
+}

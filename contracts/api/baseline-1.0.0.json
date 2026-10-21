@@ -1,0 +1,144 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CJ Foundation API",
+    "version": "1.0.0",
+    "description": "BASE@1.0. No business, authentication or RUN/SSE resources are frozen here."
+  },
+  "paths": {
+    "/v1/probe": {
+      "get": {
+        "operationId": "getProbe",
+        "summary": "Read-only API connectivity, not dependency readiness",
+        "responses": {
+          "200": {
+            "description": "API process responds",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbeResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured failure",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RequestId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Server-generated per HTTP attempt; never an idempotency or authorization token."
+      },
+      "ProbeResponse": {
+        "type": "object",
+        "required": [
+          "contract_version",
+          "status",
+          "request_id"
+        ],
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "enum": [
+              "1.0.0"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          }
+        }
+      },
+      "ErrorInfo": {
+        "type": "object",
+        "required": [
+          "code",
+          "category",
+          "message_en",
+          "message_zh",
+          "outcome",
+          "recovery"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "message_en": {
+            "type": "string"
+          },
+          "message_zh": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "failed",
+              "unknown",
+              "partial"
+            ]
+          },
+          "recovery": {
+            "type": "string",
+            "enum": [
+              "do_not_retry",
+              "retry_safe_read",
+              "reconcile_original"
+            ]
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "error"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ErrorInfo"
+          }
+        }
+      }
+    }
+  }
+}

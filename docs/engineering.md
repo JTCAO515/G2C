@@ -1,10 +1,12 @@
 # 工程协作、验证与环境准备
 
-当前仅文档。以下是 JT 确认开工后的执行约定；没有研发线程、实际模型配置或已就绪环境。
+JT 已授权正式开发；以下协作约定已启用。PR #36 文档基线已合并，技术、契约与环境仍按对应任务验证，不因授权或合并推定完成。本次 CJ-DOC-36 返修仅更新文档状态。
 
 ## 角色与写权
 
 职责链：**JT → Dots → 唯一 Main → 常驻 Testing / Review / Publish + 独立执行子线程**。所有新线程必须归 Codex **CJ Agent** 项目，不能在旧 VP 项目研发。
+
+唯一 Main 为 `01a15e24-928b-7540-97a4-14b52e6ee995`；本机唯一 HANDOFF 为 `/Users/jtsm5p/Documents/Codex/2026-10-21/task-5/HANDOFF.md`，仅该 Main 维护。原 Main `01a15e22-5fca-729b-9db0-045c4eef70f4` 已中断，不恢复、不派工。现有常驻 Review `01a15e23-aac4-7c81-9a9d-1f0bc02aa775`、Testing `01a15e23-c4ac-7131-b216-be0ecef5bb72`、Publish `01a15e23-dd2c-7050-b519-19f57a469a63`；后续运行状态读 HANDOFF，不在此复制队列。
 
 | 角色 | 职责 |
 |---|---|
@@ -15,15 +17,15 @@
 | Publish | 共享集成线单 writer，串行集成、适用 CI、按保护规则合并/读回；只有另行授权才部署/发布 |
 | 执行子线程 | 明确任务、独占分支/工作树与责任文件，完成实现/诊断/自测；不成为第二 Main |
 
-独立任务新建执行子线程；同任务返修、恢复与重试回原线程。常驻职责按候选/变化/失败事件处理队列，无工作等待；不靠循环轮询维持“活跃”。本次不创建这些线程，也不把此文档作者自称独立 Review。
+独立任务由 Main 在授权范围新建执行子线程；同任务返修、恢复与重试回原线程。常驻职责按候选/变化/失败事件处理队列，无工作等待；不靠循环轮询维持“活跃”。本次不创建线程，也不把此文档作者自称独立 Review。
 
-最小任务包只需：目标/排除、Issue/规格、唯一 owner 与线程、精确 base、输出/候选 head、文件/资源写权、所需契约版本、验收、允许动作/停止条件。Main 开工后维护唯一 HANDOFF；当前不创建一份假运行状态库。共享文件单 writer，既有 dirty 和失败证据保留；换人先保全、核在途动作并释放写权。
+最小任务包只需：目标/排除、Issue/规格、唯一 owner 与线程、精确 base、输出/候选 head、文件/资源写权、所需契约版本、验收、允许动作/停止条件。Main 维护上述唯一 HANDOFF，不另建镜像运行状态库。共享文件单 writer，既有 dirty 和失败证据保留；换人先保全、核在途动作并释放写权。
 
-模型是**项目偏好**：Dots/Main `gpt-6-astra` medium；Testing/Publish/常驻默认 `gpt-6.1-sol` medium；Review `gpt-6.1-sol` high；执行默认 `gpt-6.1-sol` medium，按内容选 `gpt-6-luna` medium、`gpt-6.1-sol` high 或 Astra。2026-10-21 官方工具目录暴露这些模型及 medium/high 档；尚未创建角色或配置有效模型。实际启用前核目的 host 目录，requested/回执/current effective 分开记录，不用显示名或 prompt 冒配置成功。
+模型是**项目偏好**：Dots/Main `gpt-6-astra` medium；Testing/Publish/常驻默认 `gpt-6.1-sol` medium；Review `gpt-6.1-sol` high；执行默认 `gpt-6.1-sol` medium，按内容选 `gpt-6-luna` medium、`gpt-6.1-sol` high 或 Astra。当前 Main requested Astra/medium，Review requested Sol6.1/high，Testing/Publish requested Sol6.1/medium；Main 与三角色的 effective 均为 **UNKNOWN**。官方目录存在相应组合不代表配置生效；目的 host 的 requested/接受回执/current effective 分开记录，不用显示名或 prompt 冒配置成功。
 
 ## 后续开工顺序
 
-1. JT 明确确认；核 CJ Agent 项目归属、仓库/权限与现有成果，创建唯一 Main 及职责指针。批准开发不自动授权购买资源、付费调用、对外发送或公开发布。
+1. JT 正式开发授权与唯一 Main/三常驻职责已明确；各任务核 CJ Agent 项目归属、仓库/权限、既有成果和具体写权后接续。当前仍不授权付费调用、云资源、权限/凭据变更、外联、公开发布或删除旧数据，先交具体需求再按范围取得授权。
 2. 按 [CJ-005](https://github.com/JTCAO515/Go2China/issues/5) 的 H/C/I 图组织前沿。先建立 C0 最小统一契约、owner/共享写权；消费所需固定版本/正负样例后并行，不等待无关上游整票关闭。未决字段只阻使用它的部分。
 3. CJ-002/003/004 在各自获准边界验证 Agent/记忆/iOS 候选；基础工程不提前绑定未验证组件。CJ-005 分清 C0 契约、C1 干净最小 iOS→API、C2 获准隔离 Auth/数据/HTTPS 真实联通；mock 不等于 C1/C2。
 4. 模块实现与测试、最早真实闭环、完整记忆、真实集成与真机增量推进。验证/发布准备可提前准备；最终关闭按 I 图与全部适用验收，不只数原生 blocker。无原生 blocker 不等于 ready 或获准开发。
@@ -62,7 +64,7 @@ H 是整票起工/完整验证的原生硬门槛；C 是固定契约后可并行
 
 不为未采用供应商创建凭据，不假定需要高权 service-role key。初始化后确认每一变量 owner、必需性、单位、环境、缺失行为和脱敏策略；实际秘密通过官方安全入口交接，不在聊天/文档/样例中填写。
 
-| 准备项 | 当前状态 / 未来 owner |
+| 准备项 | PR #36 文档基线状态 / 后续 owner（进展见 HANDOFF） |
 |---|---|
 | Swift/Xcode、Python、依赖管理与锁定、最低系统矩阵 | 待 CJ-004/005 初始化；本轮未安装/构建/检查兼容性 |
 | iOS/API 启动、构建、测试、lint、生成客户端命令 | **待初始化**；仅在真实工程产生并验证后写入 README |
