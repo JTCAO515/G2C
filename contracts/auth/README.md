@@ -16,6 +16,9 @@ UI@1.1 仍为候选；当前固定版本消费确认见 [UI-1.1-CONSUMPTION](UI-
 领域语义经 owner/消费者确认后，由 CJ-005 共享契约 owner 纳入唯一来源，
 再生成消费者；届时本目录的合成记法不得作为并行 wire schema 长期维护。
 
+新增本地 Swift 流程候选与 Google/Apple 接入准备见 [SDK-BOUNDARY](SDK-BOUNDARY.md)。
+缺配置的入口明确不可用，不代表 SDK/OAuth 已接通。
+
 ## 已确认的首版账号方式
 
 邮箱＋密码、自助注册、邮箱验证及找回密码；JT 管理受邀名单，未受邀不能使用模型。
