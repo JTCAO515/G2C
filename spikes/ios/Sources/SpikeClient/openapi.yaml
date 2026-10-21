@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: CJ-004 disposable transport probe - NOT CJ API
+  version: 0.0.1-spike
+servers:
+  - url: https://cj004.invalid
+paths:
+  /events:
+    get:
+      operationId: events
+      responses:
+        '200':
+          description: Disposable SSE framing; no product run semantics
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary

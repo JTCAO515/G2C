@@ -1,0 +1,48 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/Caches/org.swift.swiftpm is not accessible or not writable, disabling user-level cache features.
+warning: 'cjauth': failed storing manifest for 'cjauth' in cache: attempt to write a readonly database
+Building for debugging...
+[Planning deferred tasks]
+[28 / 52]
+[29 / 53] CJAuth
+[41 / 89]
+[46 / 89]
+[48 / 89]
+[53 / 89]
+[57 / 89]
+[60 / 89]
+[62 / 89]
+[63 / 89]
+[73 / 89] CJAuth
+[79 / 90] CJAuthTests-product
+[80 / 94]
+[83 / 94] CJAuthTests-product
+[88 / 94] CJAuthTests-product
+[90 / 94] CJAuthTests-product
+Build complete! (6.31秒)
+Test Suite 'All tests' started at 2026-10-21 21:52:53.052.
+Test Suite 'All tests' passed at 2026-10-21 21:52:53.053.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite AuthFlowTests started.
+◇ Test supersededProviderAndOtherInstanceCannotWrite() started.
+◇ Test actualSuspensionThenSwitchDropsLateCompletion() started.
+◇ Test purposeConfusionCannotSignInThroughRecovery() started.
+◇ Test identityInvalidationRejectsPriorLifetime() started.
+◇ Test emailOutcomesRemainDistinctAndNeverAuthorize() started.
+◇ Test everyEntryFailsExplicitlyWithoutConfiguration() started.
+◇ Test unavailableNeverInvokesAdapter() started.
+◇ Test cancelledLateAndDuplicateCallbacksCannotMutate() started.
+✔ Test unavailableNeverInvokesAdapter() passed after 0.001 seconds.
+✔ Test supersededProviderAndOtherInstanceCannotWrite() passed after 0.001 seconds.
+✔ Test everyEntryFailsExplicitlyWithoutConfiguration() passed after 0.001 seconds.
+✔ Test emailOutcomesRemainDistinctAndNeverAuthorize() passed after 0.001 seconds.
+✔ Test cancelledLateAndDuplicateCallbacksCannotMutate() passed after 0.001 seconds.
+✔ Test purposeConfusionCannotSignInThroughRecovery() passed after 0.001 seconds.
+✔ Test identityInvalidationRejectsPriorLifetime() passed after 0.001 seconds.
+✔ Test actualSuspensionThenSwitchDropsLateCompletion() passed after 0.001 seconds.
+✔ Suite AuthFlowTests passed after 0.001 seconds.
+✔ Test run with 8 tests in 1 suite passed after 0.001 seconds.

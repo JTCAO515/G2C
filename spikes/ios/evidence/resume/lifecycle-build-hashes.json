@@ -1,0 +1,12 @@
+[
+  {
+    "original": "build-lifecycle17.log",
+    "sha256": "0579748afae93f94ad5a1c3e6ea891c0a8a4c34c1355804ffde115dbb0ce6e91",
+    "gzip": "build-lifecycle17.log.gz"
+  },
+  {
+    "original": "build-lifecycle26.log",
+    "sha256": "44d4da0b86ca33c38d749f5252abb4dfe6a501b06537d5d73725d6fb01d6c62b",
+    "gzip": "build-lifecycle26.log.gz"
+  }
+]

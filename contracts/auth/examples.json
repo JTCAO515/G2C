@@ -1,0 +1,212 @@
+{
+  "scope": "synthetic-only-not-wire-format",
+  "cases": [
+    {
+      "name": "own resource",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": null,
+      "expected": "allow"
+    },
+    {
+      "name": "caller owner cannot redirect principal",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": "synthetic-B",
+      "expected": "allow"
+    },
+    {
+      "name": "forged owner cannot grant cross-user access",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-B"
+      ],
+      "caller_owner": "synthetic-B",
+      "expected": "resource_denied"
+    },
+    {
+      "name": "nested foreign reference",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A",
+        "synthetic-B"
+      ],
+      "caller_owner": null,
+      "expected": "resource_denied"
+    },
+    {
+      "name": "absent resource indistinguishable denial",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        null
+      ],
+      "caller_owner": null,
+      "expected": "resource_denied"
+    },
+    {
+      "name": "no identity",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "invalid",
+        "principal": null,
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": null,
+      "expected": "identity_denied"
+    },
+    {
+      "name": "missing principal",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": null,
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": null,
+      "expected": "identity_denied"
+    },
+    {
+      "name": "network unknown not invalid",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "unknown",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": null,
+      "expected": "identity_unknown"
+    },
+    {
+      "name": "expired session",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "expired",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": null,
+      "expected": "session_denied"
+    },
+    {
+      "name": "revoked session",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "revoked",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": null,
+      "expected": "session_denied"
+    },
+    {
+      "name": "uninvited valid identity",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "denied"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": null,
+      "expected": "eligibility_denied"
+    },
+    {
+      "name": "unknown eligibility blocks run",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "unknown"
+      },
+      "owners": [],
+      "caller_owner": null,
+      "expected": "eligibility_unknown"
+    },
+    {
+      "name": "old product rejected",
+      "authority": {
+        "environment": "synthetic-old-product",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [
+        "synthetic-A"
+      ],
+      "caller_owner": null,
+      "expected": "identity_denied"
+    },
+    {
+      "name": "eligible new work without resource",
+      "authority": {
+        "environment": "synthetic-new-cj",
+        "identity": "valid",
+        "principal": "synthetic-A",
+        "session": "current",
+        "eligibility": "allowed"
+      },
+      "owners": [],
+      "caller_owner": null,
+      "expected": "allow"
+    }
+  ]
+}

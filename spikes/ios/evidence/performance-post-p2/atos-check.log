@@ -1,0 +1,8 @@
+main (in CJIOSSpike) (CJIOSSpikeApp.swift:0)
+Collection.map<A, B>(_:) (in CJIOSSpike) (/<compiler-generated>:0)
+partial apply for closure #1 in StructuredText.BlockVStackLayout.makeCache(subviews:) (in CJIOSSpike) (/<compiler-generated>:0)
+StructuredText.BlockVStackLayout.sizeThatFits(proposal:subviews:cache:) (in CJIOSSpike) (BlockVStack.swift:95)
+closure #2 in StructuredText.body.getter (in CJIOSSpike) (StructuredText.swift:126)
+protocol witness for MarkupParser.attributedString(for:) in conformance AttributedStringMarkdownParser (in CJIOSSpike) (/<compiler-generated>:0)
+closure #1 in StructuredText.BlockVStackLayout.makeCache(subviews:) (in CJIOSSpike) (BlockVStack.swift:79)
+key path getter for EnvironmentValues.textEnvironment : EnvironmentValues (in CJIOSSpike) (/<compiler-generated>:0)
