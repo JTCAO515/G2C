@@ -57,3 +57,8 @@ existing(expectedID:) can support a separate adapter. Current local encrypted fo
 no key ID and cannot yet provide expectedID; next isolated delta will add authenticated
 key-ID binding, explicit old-format rejection and read-only existing-key adaptation.
 No session token/AES conversion or production cross-account shared key is accepted.
+
+Subsequent activation delta: liveReadTransport composition and concrete NoRedirectTransport
+both reject POST before outflow until authoritative anti-rollback input exists. The old
+`transport:` test seam is now explicitly `interceptedTestTransport:`. See ACTIVATION-GATE.md;
+this supersedes any implication that the compiled receive path may be activated live.

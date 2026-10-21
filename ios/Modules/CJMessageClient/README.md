@@ -97,3 +97,8 @@ format and read-only fixed official key-interface bridge. Old headerless candida
 are explicitly refused and preserved, without migration or key guessing. Run both prepare
 scripts before a fresh build. 13 targeted checks and two separate v2 test processes pass;
 real Keychain and host lifecycle remain pending.
+
+Activation gate: [ACTIVATION-GATE.md](ACTIVATION-GATE.md) now treats every reloaded
+staged action as query-only. Since entire-snapshot rollback cannot be detected locally,
+live POST is explicitly unavailable; only named synthetic interceptor composition can
+exercise submission. Key-ID authentication is not freshness or production activation.

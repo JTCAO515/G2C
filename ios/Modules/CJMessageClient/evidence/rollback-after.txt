@@ -1,0 +1,40 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 23] CJMessageClient
+[8 / 27] CJMessageHTTP
+[21 / 31] CJMessageRecoveryProbe-product
+[24 / 33] CJMessageHTTP
+[30 / 35] CJMessageHTTPTests-product
+[36 / 39] CJMessageHTTPTests-product
+[38 / 39] CJMessageHTTPTests-product
+Build complete! (1.68秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite TransportTests started.
+◇ Test explicitEndpointAndMissingCredentialsRejectBeforeSend() started.
+◇ Test invalidReceiptTraceAndRedirectRemainQueryOnly() started.
+◇ Test responseAfterSwitchCannotPersist() started.
+◇ Test livePostDisabledEvenIfWholeSnapshotIsMissing() started.
+◇ Test officialClientSendsOriginalOctetsOnce() started.
+◇ Test safeReadErrorNeverRetriesPost() started.
+◇ Test credentialsAwaitCannotSendAfterSwitch() started.
+◇ Test missingGeneratedQueryReceiptFailsExplicitlyWithoutRequest() started.
+✔ Test explicitEndpointAndMissingCredentialsRejectBeforeSend() passed after 0.008 seconds.
+✔ Test credentialsAwaitCannotSendAfterSwitch() passed after 0.008 seconds.
+✔ Test missingGeneratedQueryReceiptFailsExplicitlyWithoutRequest() passed after 0.008 seconds.
+✔ Test livePostDisabledEvenIfWholeSnapshotIsMissing() passed after 0.008 seconds.
+✔ Test responseAfterSwitchCannotPersist() passed after 0.008 seconds.
+✔ Test safeReadErrorNeverRetriesPost() passed after 0.008 seconds.
+✔ Test officialClientSendsOriginalOctetsOnce() passed after 0.008 seconds.
+✔ Test invalidReceiptTraceAndRedirectRemainQueryOnly() passed after 0.009 seconds.
+✔ Suite TransportTests passed after 0.009 seconds.
+✔ Test run with 8 tests in 1 suite passed after 0.009 seconds.
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite RollbackTests started.
+◇ Test restoredLegitimateStagedSnapshotCannotSubmitAgain() started.
+✔ Test restoredLegitimateStagedSnapshotCannotSubmitAgain() passed after 0.004 seconds.
+✔ Suite RollbackTests passed after 0.004 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.005 seconds.

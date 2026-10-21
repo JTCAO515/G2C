@@ -58,7 +58,7 @@ private extension Optional where Wrapped == HTTPBody {
         let lease = try state.activate(scope)
         try state.stage(messageID:"m1",originalUTF8:raw,lease:lease)
         let endpoint = try MessageEndpoint(url: #require(URL(string:"https://synthetic.invalid")), maximumRequestBytes:10000, maximumResponseBytes:10000)
-        return (state, lease, MessageHTTPClient(recovery:state,scope:scope,endpoint:endpoint,credentials:credentials,transport:transport))
+        return (state, lease, MessageHTTPClient(recovery:state,scope:scope,endpoint:endpoint,credentials:credentials,interceptedTestTransport:transport))
     }
     @Test func officialClientSendsOriginalOctetsOnce() async throws {
         let interceptor = Interceptor(response:response(),data:try body())
@@ -101,7 +101,7 @@ private extension Optional where Wrapped == HTTPBody {
         let lease = try state.activate(scope)
         try state.stage(messageID:"m1",originalUTF8:raw,lease:lease)
         let transport = Interceptor(response:response(),data:try body(),beforeReturn:{ await state.invalidate() })
-        let client = MessageHTTPClient(recovery:state,scope:scope,endpoint:try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:10000, maximumResponseBytes:10000),credentials:Credentials(),transport:transport)
+        let client = MessageHTTPClient(recovery:state,scope:scope,endpoint:try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:10000, maximumResponseBytes:10000),credentials:Credentials(),interceptedTestTransport:transport)
         await #expect(throws: (any Error).self) { try await client.submit(messageID:"m1",lease:lease) }
         let next = try state.activate(scope)
         #expect(try state.action(messageID:"m1",lease:next)?.phase == .queryRequired)
@@ -130,6 +130,24 @@ private extension Optional where Wrapped == HTTPBody {
         await #expect(throws: MessageHTTPFailure.self) { try await client.submit(messageID:"m1",lease:lease) }
         #expect(await transport.sent.isEmpty)
         #expect(try state.action(messageID:"m1",lease:lease)?.phase == .staged)
+    }
+
+    @Test func livePostDisabledEvenIfWholeSnapshotIsMissing() async throws {
+        let state = MessageRecovery(storage:Memory())
+        let scope = try StorageScope(environment:"synthetic",account:"a")
+        let lease = try state.activate(scope)
+        try state.stage(messageID:"m1",originalUTF8:raw,lease:lease)
+        let credentials = Credentials()
+        credentials.beforeReturn = { Issue.record("live POST must reject before fetching credentials") }
+        let live = try NoRedirectTransport(requestTimeout:1,resourceTimeout:1)
+        let client = MessageHTTPClient(recovery:state,scope:scope,
+            endpoint:try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:10000,maximumResponseBytes:10000),
+            credentials:credentials,liveReadTransport:live)
+        await #expect(throws:MessageHTTPFailure.self) { try await client.submit(messageID:"m1",lease:lease) }
+        #expect(try state.action(messageID:"m1",lease:lease)?.phase == .staged)
+        await #expect(throws:MessageHTTPFailure.self) {
+            try await live.send(HTTPRequest(method:.post,scheme:"https",authority:"synthetic.invalid",path:"/v1/messages"),body:HTTPBody(raw),baseURL:#require(URL(string:"https://synthetic.invalid")),operationID:"receiveMessage")
+        }
     }
 
     @Test func missingGeneratedQueryReceiptFailsExplicitlyWithoutRequest() async throws {

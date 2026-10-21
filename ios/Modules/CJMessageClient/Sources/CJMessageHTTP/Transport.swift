@@ -5,7 +5,7 @@ import OpenAPIRuntime
 import OpenAPIURLSession
 import HTTPTypes
 
-public enum MessageHTTPFailure: Error { case invalidConfiguration, credentialsUnavailable, invalidResponse, redirectRejected, queryGeneratedFieldMissing, exchangeUnknown }
+public enum MessageHTTPFailure: Error { case invalidConfiguration, credentialsUnavailable, invalidResponse, redirectRejected, queryGeneratedFieldMissing, exchangeUnknown, productionActivationUnavailable }
 
 public struct MessageEndpoint: Sendable {
     public let url: URL
@@ -66,7 +66,10 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     }
     deinit { session.invalidateAndCancel() }
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        try await transport.send(request, body: body, baseURL: baseURL, operationID: operationID)
+        // Until an independently non-rollbackable action ledger/epoch is integrated,
+        // no live POST can be activated, including after a wholly missing old snapshot.
+        guard request.method != .post else { throw MessageHTTPFailure.productionActivationUnavailable }
+        return try await transport.send(request, body: body, baseURL: baseURL, operationID: operationID)
     }
 }
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
@@ -84,10 +87,21 @@ public enum MessageHTTPOutcome: Sendable {
     private let endpoint: MessageEndpoint
     private let credentials: any MessageCredentialsProvider
     private let transport: any ClientTransport
+    private let submissionEnabledForTest: Bool
+    /// Test seam only: caller must supply a non-network interceptor, never a live transport.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
-                credentials: any MessageCredentialsProvider, transport: any ClientTransport) {
+                credentials: any MessageCredentialsProvider, interceptedTestTransport: any ClientTransport) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
-        self.credentials = credentials; self.transport = transport
+        self.credentials = credentials; self.transport = interceptedTestTransport
+        submissionEnabledForTest = true
+    }
+    /// Read-only production composition. Live POST remains unavailable until externally
+    /// authoritative anti-rollback activation exists; there is no allow flag/default.
+    public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
+                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport) {
+        self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
+        self.credentials = credentials; self.transport = liveReadTransport
+        submissionEnabledForTest = false
     }
     private func client(_ lease: Lease) async throws -> Client {
         try recovery.validateScope(scope, lease: lease)
@@ -97,6 +111,7 @@ public enum MessageHTTPOutcome: Sendable {
         return Client(serverURL: endpoint.url, transport: CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value))
     }
     public func submit(messageID: String, lease: Lease) async throws -> MessageHTTPOutcome {
+        guard submissionEnabledForTest else { throw MessageHTTPFailure.productionActivationUnavailable }
         let client = try await client(lease)
         guard let record = try recovery.action(messageID: messageID, lease: lease),
               record.originalUTF8.count <= endpoint.maximumRequestBytes else { throw RecoveryError.invalidInput }

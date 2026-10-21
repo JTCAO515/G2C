@@ -84,7 +84,7 @@ public struct Submission: Sendable {
 
     public func activate(_ scope: StorageScope) throws -> Lease {
         invalidate()
-        let restored = try storage.load(scope: scope) ?? Snapshot()
+        var restored = try storage.load(scope: scope) ?? Snapshot()
         guard restored.version == 1 else { throw RecoveryError.invalidSnapshot }
         for (key, record) in restored.actions {
             guard key == Self.key(record.messageID), !record.messageID.isEmpty,
@@ -92,6 +92,11 @@ public struct Submission: Sendable {
                   (record.phase == .accepted) == (record.receipt != nil) else {
                 throw RecoveryError.invalidSnapshot
             }
+        }
+        // Authentic ciphertext does not prove freshness. Every loaded staged action
+        // is ambiguous (including one that never left the device): query only.
+        for key in restored.actions.keys {
+            if restored.actions[key]?.phase == .staged { restored.actions[key]?.phase = .queryRequired }
         }
         let next = Lease(instance: instance, generation: UUID())
         self.scope = scope; snapshot = restored; lease = next
