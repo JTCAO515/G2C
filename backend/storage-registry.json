@@ -1,0 +1,55 @@
+{
+  "version": "1.0.0",
+  "stores": [
+    {
+      "id": "business",
+      "owner": "CJ-005 / domain owners",
+      "status": "not_provisioned",
+      "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
+      "sensitive_fields": "Domain owner must enumerate before activation",
+      "retention": "UNDECIDED; activation blocked",
+      "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+    },
+    {
+      "id": "checkpoints",
+      "owner": "CJ-002 / CJ-010",
+      "status": "not_provisioned",
+      "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
+      "sensitive_fields": "Domain owner must enumerate before activation",
+      "retention": "UNDECIDED; activation blocked",
+      "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+    },
+    {
+      "id": "memory-derived",
+      "owner": "CJ-003 / CJ-020 / CJ-021",
+      "status": "not_provisioned",
+      "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
+      "sensitive_fields": "Domain owner must enumerate before activation",
+      "retention": "UNDECIDED; activation blocked",
+      "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+    },
+    {
+      "id": "device-cache",
+      "owner": "CJ-022",
+      "status": "not_provisioned",
+      "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
+      "sensitive_fields": "Domain owner must enumerate before activation",
+      "retention": "UNDECIDED; activation blocked",
+      "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+    },
+    {
+      "id": "external-processing",
+      "owner": "CJ-008 / provider owners",
+      "status": "not_provisioned",
+      "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
+      "sensitive_fields": "Domain owner must enumerate before activation",
+      "retention": "UNDECIDED; activation blocked",
+      "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+    }
+  ]
+}

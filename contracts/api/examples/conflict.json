@@ -1,0 +1,11 @@
+{
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "error": {
+    "code": "VERSION_CONFLICT",
+    "category": "conflict",
+    "message_en": "conflict",
+    "message_zh": "版本冲突",
+    "outcome": "failed",
+    "recovery": "reconcile_original"
+  }
+}

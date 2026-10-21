@@ -1,0 +1,11 @@
+{
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "error": {
+    "code": "NOT_FOUND",
+    "category": "routing",
+    "message_en": "failure",
+    "message_zh": "失败",
+    "outcome": "failed",
+    "recovery": "do_not_retry"
+  }
+}
