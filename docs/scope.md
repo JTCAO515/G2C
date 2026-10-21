@@ -26,7 +26,7 @@ v1 不承诺多城市联程优化、实时机酒库存、自动预订付款、�
 
 | 决定组 | 需要确定的最少内容 | 阻塞范围 / owner |
 |---|---|---|
-| 开工授权 | 对这套准备结果明确确认后才开始开发 | 全部产品开发；本轮尚未获得 |
+| 开工授权（已确认） | JT 已授权正式开发，由[唯一 Main/HANDOFF](engineering.md#角色与写权)组织 | 不再是统一前置门禁；具体任务仍核契约、写权与所需字段，资金/资源/发布等另按授权边界 |
 | 首批使用边界 | 城市/行程范围、最低 iOS/设备、登录方式/受邀准入 | 只阻依赖该字段的实现和放行；CJ-001 [#1](https://github.com/JTCAO515/Go2China/issues/1) |
 | 数据与验收口径 | 历史整理/敏感信息范围、离线可读时限、留存/清理说明、质量/延迟/成本指标与预算 | 对应数据处理、真实验证与公开首发；CJ-001/028 [#1](https://github.com/JTCAO515/Go2China/issues/1)、[#32](https://github.com/JTCAO515/Go2China/issues/32) |
 | 商业与法律 | 免费/收费及档位；许可证、条款、隐私责任方/处理方 | CJ-030 [#6](https://github.com/JTCAO515/Go2China/issues/6)、CJ-031 [#34](https://github.com/JTCAO515/Go2China/issues/34)；收费明确后才启用 CJ-032 [#31](https://github.com/JTCAO515/Go2China/issues/31) |
