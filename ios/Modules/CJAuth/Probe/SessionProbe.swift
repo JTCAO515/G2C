@@ -23,6 +23,7 @@ import Security
         return "SKIP: simulator only"
         #else
         let args = ProcessInfo.processInfo.arguments
+        if args.contains("--message-key-phase") { return MessageKeyProbe.run(arguments: args) }
         guard let index = args.firstIndex(of: "--phase"), args.count > index+1 else { return "SKIP: explicit phase required" }
         let phase = args[index+1]
         let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]

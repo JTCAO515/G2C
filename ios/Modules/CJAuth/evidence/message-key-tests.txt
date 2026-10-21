@@ -1,0 +1,38 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 6] CJMessageKeysTests-product
+[4 / 8] CJMessageKeysTests-product
+[10 / 12] CJMessageKeysTests-product
+Build complete! (1.64秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite MessageKeyTests started.
+◇ Test expectedOldKeyIDNeverDeletesReplacement() started.
+◇ Test committedClearWithLostAcknowledgementDoesNotCreateOrDeleteAgain() started.
+◇ Test existingKeyCannotRotateAndCiphertextPreventsClear() started.
+◇ Test staleCrossInstanceAndInvalidatedOperationsCannotClear() started.
+◇ Test unknownClearIsReadOnlyUntilOriginalOutcomeObserved() started.
+◇ Test unknownCreateReconcilesOriginalWithoutGeneratingAgain() started.
+◇ Test nativeAdapterUsesExactScopeAndExpectedIDPredicateWithNoRetry() started.
+◇ Test platformRandomKeyRoundTripAndRedaction() started.
+◇ Test namespacesSeparateAccountsEnvironmentsAndSessionStorage() started.
+◇ Test randomFailureOrWrongLengthNeverPersists() started.
+◇ Test unknownCreateMissingOrDifferentBytesCannotBeSettled() started.
+◇ Test missingOrUnknownDoesNotAutomaticallyGenerate() started.
+✔ Test unknownCreateReconcilesOriginalWithoutGeneratingAgain() passed after 0.001 seconds.
+✔ Test committedClearWithLostAcknowledgementDoesNotCreateOrDeleteAgain() passed after 0.001 seconds.
+✔ Test expectedOldKeyIDNeverDeletesReplacement() passed after 0.001 seconds.
+✔ Test unknownClearIsReadOnlyUntilOriginalOutcomeObserved() passed after 0.001 seconds.
+✔ Test existingKeyCannotRotateAndCiphertextPreventsClear() passed after 0.001 seconds.
+✔ Test platformRandomKeyRoundTripAndRedaction() passed after 0.001 seconds.
+✔ Test namespacesSeparateAccountsEnvironmentsAndSessionStorage() passed after 0.001 seconds.
+✔ Test nativeAdapterUsesExactScopeAndExpectedIDPredicateWithNoRetry() passed after 0.001 seconds.
+✔ Test staleCrossInstanceAndInvalidatedOperationsCannotClear() passed after 0.001 seconds.
+✔ Test unknownCreateMissingOrDifferentBytesCannotBeSettled() passed after 0.001 seconds.
+✔ Test missingOrUnknownDoesNotAutomaticallyGenerate() passed after 0.001 seconds.
+✔ Test randomFailureOrWrongLengthNeverPersists() passed after 0.001 seconds.
+✔ Suite MessageKeyTests passed after 0.001 seconds.
+✔ Test run with 12 tests in 1 suite passed after 0.001 seconds.
