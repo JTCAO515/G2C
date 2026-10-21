@@ -12,7 +12,7 @@ struct AssistantShell: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Keeps meaningful content reachable below the separate floating controls.
-                Color.clear.frame(height: headerClearance).accessibilityHidden(true)
+                Color.clear.frame(height: draftFocused ? 80 : headerClearance).accessibilityHidden(true)
                 if let bodyText {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -65,12 +65,16 @@ struct AssistantShell: View {
             .accessibilityIdentifier("assistant.history")
             Spacer(minLength: 8)
             VStack(spacing: 4) {
-                Image(systemName: "person.crop.circle").font(.largeTitle).accessibilityHidden(true)
-                Text(state.language.text("Assistant", "助手")).font(.headline)
+                Image(systemName: "person.crop.circle")
+                    .font(draftFocused ? .title3 : .largeTitle).accessibilityHidden(true)
+                if !draftFocused {
+                    Text(state.language.text("Assistant", "助手")).font(.headline)
+                }
             }
             .padding(8)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
             .accessibilityElement(children: .combine)
+            .accessibilityLabel(state.language.text("Assistant", "助手"))
             Spacer(minLength: 8)
             unavailableIcon("gift", english: "Gifts — not available", chinese: "礼物——尚未开放")
                 .background(.thinMaterial, in: Circle())
@@ -95,7 +99,9 @@ struct AssistantShell: View {
             }
             .padding(.horizontal, 4)
             .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 28))
-            Text(state.language.text("Sending, attachments, voice and gifts are not available yet.", "发送、附件、语音和礼物尚未开放。"))
+            Text(draftFocused
+                 ? state.language.text("Sending unavailable", "发送尚未开放")
+                 : state.language.text("Sending, attachments, voice and gifts are not available yet.", "发送、附件、语音和礼物尚未开放。"))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal).padding(.vertical, 8)

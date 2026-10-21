@@ -57,7 +57,7 @@ private struct Gallery: View {
             if let sample {
                 VStack(spacing: 0) {
                     Button("Close synthetic sample / 关闭合成样例") { self.sample = nil }
-                        .padding(8)
+                        .font(.caption).dynamicTypeSize(.large).padding(8)
                     ShellView(state: sample)
                 }.dynamicTypeSize(largeText ? .accessibility3 : .large)
             }
