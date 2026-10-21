@@ -6,9 +6,9 @@
 
 隔离更强的备选共用依赖是一个**全新** Supabase 项目，Auth + 标准 Postgres + JT 管理的私有邀请名单；不需要为 C2 先开 Realtime、对象 Storage、Edge Functions 或模型服务。新项目不能从 VP backup/branch/账号导入。数据库引擎也须在创建前明确，不能把新的 OrioleDB 选项无声替换标准 Postgres。`cj-dev` 仅候选标签，实际 ref / region / organization 由批准后平台读回。
 
-1. 邮箱密码自助注册：启用 email/password，保留邮箱确认；Swift 默认 PKCE 这一官方行为要与 CJ-004 已锁 SDK 核对后实现。用户验证完成前不得取得 CJ 数据权限。密码直接通过官方客户端→新 Supabase Auth，不进入 CJ API、日志或自建密码表。[密码登录说明](https://supabase.com/docs/guides/auth/passwords)。
-2. JT 名单是准入，不是 Supabase 团队邀请。建议在同一新 Postgres 私有域保存允许邮箱/绑定后的 Auth subject、状态、撤销代次及必要审计；规范化/绑定规则由 AUTH owner 冻结，不猜表名或把整域邮箱放行。真实邮箱名单不进 Git/聊天。自助注册可通过 Before User Created **Postgres hook**检验名单并 fail closed；此 hook 当前列为 Free/Pro 可用，无需为它先建单独 HTTP 服务。[hook 能力](https://supabase.com/docs/guides/auth/auth-hooks)、[创建前检查](https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook)。这是项目应用方案推导，不是 Supabase 内置“JT名单”功能。
-3. 名单检查必须在 CJ 每次访问/提交时重核，注册 hook 只阻新建账号，不能撤销已有账号。用户可编辑 metadata、客户端 email/user_id、旧 JWT 中的资格快照不作权限权威。名单读取不可用则拒绝，不退化成“所有已认证用户”。本轮不写 hook SQL 或权限函数。
+1. 邮箱密码自助注册：用户无需邀请即可注册、验证邮箱、登录与找回；这些账号流程不受MESSAGE/模型资格门禁阻断。启用 email/password，保留邮箱确认；Swift 默认 PKCE 这一官方行为要与 CJ-004 已锁 SDK 核对后实现。用户验证完成前不得取得需要已验证身份的业务数据权限；验证完成也不自动获得受限业务/模型资格。密码直接通过官方客户端→新 Supabase Auth，不进入 CJ API、日志或自建密码表。[密码登录说明](https://supabase.com/docs/guides/auth/passwords)。
+2. JT名单只控制受限业务/模型，不是注册白名单，也不是Supabase团队邀请。建议在同一新Postgres私有域保存受限资格对应的邮箱/已验证Auth subject、状态、撤销代次及必要审计；规范化/绑定规则由AUTH owner冻结，不猜表名或把整域邮箱放行。真实名单不进Git/聊天。**不建议、也不配置基于邀请资格拒绝注册的Before User Created hook**；名单外用户的注册、验证、登录、找回必须可正常完成。
+3. 服务端在受限业务访问及MESSAGE/模型派发前核当前资格/撤销与归属；用户可编辑metadata、客户端email/user_id或旧JWT资格快照不作权限权威。资格依赖不可用时只对受限动作fail closed，不能因此封住账号流程，也不能先派发模型再补资格检查。非受限访问按该领域自身认证/归属规则处理，不把邀请检查扩为所有CJ API的统一前置。本轮不写hook SQL或权限函数。
 4. 独立事务邮件：选定 SMTP 供应商后，批准该发信子域/From 及 SPF/DKIM/DMARC 等精确 DNS 记录、发送范围与额度。SMTP host/port/user/password仅由安全入口交到新 Supabase SMTP 配置，不放 iOS、CJ runtime 或仓库。不开默认自动确认绕过邮件，不加游客进团队，不改已确认的邮箱密码登录为其他产品模式。[SMTP 规则及发信域建议](https://supabase.com/docs/guides/auth/auth-smtp)。
 5. 确认/找回只发用户发起的事务消息，测试前批准真实收件人；计费/发信试验单独授权。交付必须演示确认、找回后设置新密码、旧链接/过期/重放/错设备无法完成当前 PKCE 等明确失败；不因一次 send 回执把邮件投递/回跳报 PASS。
 
@@ -31,14 +31,14 @@ Auth 邮件中的合法回跳与 CJ API redirect 策略分开：原生 SDK/URL h
 | JT / 指定名单管理员 | 安全提交/撤销邀请；批准费用与资源 | 不把 App 游客变为云/Supabase组织管理员 |
 | Supabase组织/项目操作人 | 仅批准的新项目设置、迁移操作；临时权限按实核 | 本轮不扩大权限，不拿默认Owner身份当runtime |
 | iOS游客 | 新项目 publishable key + 自己的 Auth 会话 | 无 DB密码、SMTP密码、服务端 secret/service-role、云身份私钥 |
-| CJ API运行身份 | 验新Auth签名、当前资格/撤销、业务归属；只读必要身份状态及领域所需最小DML | 不持migration role，不任意读所有 auth.users/auth.sessions，不用 service-role 绕 RLS |
+| CJ API运行身份 | 验新Auth签名/会话、业务归属；受限访问/派发另核当前资格/撤销；只读必要身份状态及领域所需最小DML | 不持migration role，不任意读所有 auth.users/auth.sessions，不用 service-role 绕 RLS |
 | 新 DB迁移身份 | 审过的版本化 schema/角色/策略变更；批准操作后收回 | 不留在运行镜像/App，不向模型开放 |
 | 新 DB运行角色 | 仅新CJ schema/必要受控接口；非owner、非superuser、无BYPASSRLS/DDL | 不假定Postgres连接自动带 auth.uid() |
 | 托管部署者与runtime服务身份 | B 分开；runtime仅可读指定secret版本 | 不给游客 Google IAM，不使用项目编辑者作为服务身份 |
 
-Python应固定新项目 issuer、允许算法、JWKS origin及预期 audience，校验签名/exp/sub/会话和邀请状态；不得按未经验证 token 的 `iss`/`jku` 动态请求任意 key URL。新项目若选非对称签名，使用该项目官方 JWKS；HS256项目不能假定JWKS含key，应按官方 Auth服务验证方式或先批准签名模式，不能搬旧共享JWT秘密。[JWT 文档](https://supabase.com/docs/guides/auth/jwts)。
+Python应固定新项目 issuer、允许算法、JWKS origin及预期 audience，校验签名/exp/sub/会话；受限访问/派发另校验邀请状态；不得按未经验证 token 的 `iss`/`jku` 动态请求任意 key URL。新项目若选非对称签名，使用该项目官方 JWKS；HS256项目不能假定JWKS含key，应按官方 Auth服务验证方式或先批准签名模式，不能搬旧共享JWT秘密。[JWT 文档](https://supabase.com/docs/guides/auth/jwts)。
 
-退出/删除用户不保证已发行 access token立即失效。对要求即时撤销的 CJ 访问，校验当前名单/账号代次，且通过最小受控 lookup 核 `session_id` 仍有效；具体 lookup 权限由 AUTH/DB owner设计，不能直接给runtime全表高权。撤销服务暂不可达则fail closed。设备移除/退出清掉本账号会话和可用缓存，晚到请求再验旧代次。注销/物理删除及备份防复活另由 CLEANUP 原验收处理，本方案不声称做完。[会话与 session_id](https://supabase.com/docs/guides/auth/sessions)。
+退出/删除用户不保证已发行 access token立即失效。邀请资格撤销只使受限业务/模型不可用，不自动注销账号或阻断验证/找回。对受限访问即时核当前名单/资格代次；对会话撤销，通过最小受控 lookup 核 `session_id` 仍有效；具体 lookup 权限由 AUTH/DB owner设计，不能直接给runtime全表高权。会话验证依赖不可达时对需要有效会话的业务请求fail closed；资格验证依赖不可达时对受限动作fail closed，二者不以邀请名单封锁账号流程。设备移除/退出清掉本账号会话和可用缓存，晚到请求再验旧代次。注销/物理删除及备份防复活另由 CLEANUP 原验收处理，本方案不声称做完。[会话与 session_id](https://supabase.com/docs/guides/auth/sessions)。
 
 正式业务写入仍只经 CJ API。领域表不直接暴露移动端 Data API；任何暴露 schema 必须显式审 RLS/列权/最小 grants，`authenticated`不是owner隔离。若受控DB调用依赖JWT principal，须由验签后的服务端在事务内安全绑定/重核，禁止接收caller owner；连接池归还不得残留上个用户身份。正式schema/策略及迁移前向/兼容回退须独立审验，不在这里新造通用授权层。[RLS 官方说明](https://supabase.com/docs/guides/database/postgres/row-level-security)、[Postgres角色](https://supabase.com/docs/guides/database/postgres/roles)。
 

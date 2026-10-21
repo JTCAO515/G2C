@@ -16,8 +16,8 @@
 
 - **现在可做**：原CJ隔离克隆中的本地Auth/iOS/API代码、synthetic契约/错误、迁移提案；不接旧真实用户/数据。当前基础工程C1无鉴权且loopback-only，不得公网开放。
 - **获精确后续授权才可做**：在经核VP项目内新增独立非暴露CJ schema、专用非owner runtime/migration角色和逐表权限；默认不访问旧schema/旧账号，不修改旧对象。旧项目里该schema/角色是否已存在/冲突先由盘点确认，不能直接create。
-- **不能用schema隔开**：同一个Supabase项目的Auth用户池、issuer/JWKS/签名轮换、provider设置、SMTP/模板/redirect Site URL、注册/会话策略/创建前hook、DB实例资源/恢复与部分网关配置。CJ邀请逻辑只应授权CJ业务，不应把旧VP用户全认作CJ，也不能让项目级signup hook拒绝旧VP原本合法的新用户。
-- **当前明确阻断**：同项目CJ新用户通常也获得Supabase `authenticated`会话；已见61个public函数对该role可执行。CJ Python API的邀请/私有schema门禁不会阻止用户拿同一JWT直调旧PostgREST/RPC。函数正文、旧策略和动态消费者未审，无法证明这些新用户不会触达旧能力；隐藏publishable key也不是权限隔离。当前不能向真实CJ游客开放共享Auth。若需要改旧grants/RLS/token hook或provider消除风险，必须另列影响、owner及旧服务回归后批准，不能本轮执行。
+- **不能用schema隔开**：同一个Supabase项目的Auth用户池、issuer/JWKS/签名轮换、provider设置、SMTP/模板/redirect Site URL、注册/会话策略/创建前hook、DB实例资源/恢复与部分网关配置。CJ邀请逻辑只授权受限业务/模型，不能拒绝CJ或旧VP用户的正常注册、验证、登录、找回；项目级signup hook不得新增CJ邀请注册白名单。旧VP已有hook若影响CJ账号流程，须先评估兼容性，不能本轮修改。
+- **当前明确阻断**：同项目CJ新用户通常也获得Supabase `authenticated`会话；已见61个public函数对该role可执行。CJ Python API的邀请/私有schema门禁不会阻止用户拿同一JWT直调旧PostgREST/RPC。函数正文、旧策略和动态消费者未审，无法证明这些新用户不会触达旧能力；隐藏publishable key也不是权限隔离。共享Auth实际接入仍因旧能力隔离未获放行；这是共享环境的安全/授权缺口，不能转换为以邀请资格拒绝注册的产品策略。若需要改旧grants/RLS/token hook或provider消除风险，必须另列影响、owner及旧服务回归后批准，不能本轮执行。
 - **拟命名空间**：`cj_private`仅提案，metadata没有已验可写lease或权限；先核存在/空schema冲突、命名和新角色授权，再review迁移。它能限定CJ自身表的访问，不能修补上述旧RPC、共享Auth/provider或资源竞争。
 - **可接受门槛**：确认哪些旧服务仍在用、现有Auth行为与配置的兼容范围；实现按CJ应用/主体资格隔离且不损伤旧业务的验证；权限与资源配额可满足；恢复范围可接受。若需全局改变Auth/provider/SMTP/JWT或旧客户端不能区分，不“为了省钱”强行共用，明确旧项目不适合该C2部分，再审收费新项目。
 - Google/Apple旧provider即便已启用，也不代表CJ bundle/audience/callback可用；不能复制旧secret到代码，不能替换第一client ID或旧callback。旧账号不自动迁移/继承，新增CJ账号及provider绑定也须确认不会触发旧消费端或清理任务。
@@ -53,9 +53,9 @@ Supabase分支官方描述为独立实例/凭据、默认不带业务数据，�
 
 ## 具体待决（交 Main / JT，不等待时继续独立代码准备）
 
-1. 是否接受先保留全部旧对象，只评估 `cj_private` 与显式CJ成员/邀请门禁；当前本lease仅准备，新增schema/角色/迁移仍未获应用权限。
+1. 是否接受先保留全部旧对象，只评估 `cj_private` 与受限业务/模型的显式CJ成员/邀请门禁；当前本lease仅准备，新增schema/角色/迁移仍未获应用权限。
 2. 谁负责61个public authenticated函数及相关策略/旧消费者的定向语义审计，是否能在不改坏旧服务的前提证明CJ新身份无旧能力；未证明前不开放游客账号。
-3. Google/Apple/SMTP/redirect/创建前hook若需全局配置，是否可与旧VP现行行为共存；若不可共存，旧项目不能满足这部分C2。用户不在电脑的登录/2FA/签名/域控制台步骤保持跳过。
+3. Google/Apple/SMTP/redirect或旧有创建前hook若需全局配置，是否可与旧VP现行行为共存；若不可共存，旧项目不能满足这部分C2。用户不在电脑的登录/2FA/签名/域控制台步骤保持跳过。
 4. 真实备份/恢复范围、恢复点及隔离演练由谁取得；无证据不删。以后任何删除另交精确对象/影响/恢复记录审批。
 5. 若旧项目隔离门槛无法满足，是否批准新CJ项目的具体monthly USD10报价回执/组织/地域及额外SMTP/API托管费用；目前没有费用确认或资源创建权。
 

@@ -58,7 +58,14 @@
     "jwks_url": null,
     "invitation_list_secure_source": null,
     "revocation_owner": null,
-    "retention_policy": null
+    "retention_policy": null,
+    "invitation_policy": {
+      "self_signup_email_confirmation_login_recovery": "allowed_without_invitation",
+      "account_flows_blocked_by_message_or_model_gate": false,
+      "enforcement": "server checks current eligibility before restricted business access and MESSAGE/model dispatch",
+      "signup_invitation_hook": "not proposed; do not reject registration based on invitation",
+      "invitation_revocation": "restricted access only; not account/session revocation"
+    }
   },
   "local_tls": {
     "approved_lan_ip": null,
