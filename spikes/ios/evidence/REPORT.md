@@ -1,5 +1,7 @@
 # CJ-004 本地选型段交付
 
+最新定向差额见 [P2-LIFECYCLE.md](resume/P2-LIFECYCLE.md)；下文保留1dd735e候选的原始结论，不能覆盖新差额。
+
 状态：**LOCAL CANDIDATE / code-ready，保留验收缺口；不关闭 Issue #4**。2026-10-21，北京时间。作者自测，不冒充独立 Review/Testing。
 
 - base：`13905e4587feb8611ebde5e3621024f3338532ae`

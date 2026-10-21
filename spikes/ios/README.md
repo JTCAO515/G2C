@@ -35,3 +35,5 @@ swift test --package-path .cache/c0-consumer --cache-path "$PWD/.cache/spm" --jo
 ```
 
 The script always reads C0 commit `db9c040f262032acaf5375db43d7169b3217e504`, verifies the runtime checkout matches this spike's committed lock, and uses the C0 consumer's committed transitive lock. It never writes the upstream repository.
+
+Local fixture lifecycle: leaving Assistant stops and retains the partial text. Explicit Start clears it and starts a fresh generation; an old cancelled task cannot mutate the new one. See `evidence/resume/P2-LIFECYCLE.md` for the dynamic Tab-switch regression.

@@ -10,6 +10,7 @@ public struct ProbeView: View {
     @State private var shown = 1
     @State private var partial = ""
     @State private var streaming = false
+    @State private var streamID = UUID()
     @State private var following = true
     @State private var useTextual = true
     @State private var largeType = false
@@ -62,10 +63,7 @@ public struct ProbeView: View {
                         #endif
                         Toggle("大字 Large", isOn: $largeType)
                     }
-                    Button(streaming ? "停止 Stop" : "增量文本 Stream fixture") {
-                        if !streaming { partial = "" }
-                        streaming.toggle()
-                    }
+                    Button(streaming ? "停止 Stop" : "增量文本 Stream fixture", action: toggleStream)
                     ForEach(0..<shown, id: \.self) { index in
                         VStack(alignment: .leading, spacing: 8) {
                             Text("样例段落 Fixture \(index + 1)").font(.caption).foregroundStyle(.secondary)
@@ -99,7 +97,7 @@ public struct ProbeView: View {
             .overlay(alignment: .top) { floatingControls }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 8) {
-                    if streaming { Button("停止 Stop") { streaming = false } }
+                    if streaming { Button("停止 Stop", action: stopStream) }
                     if !following {
                         Button("回到底部 Follow latest") {
                             following = true
@@ -114,19 +112,27 @@ public struct ProbeView: View {
             .onChange(of: partial) { _, _ in
                 if following { proxy.scrollTo("end", anchor: .bottom) }
             }
-            .task(id: streaming) {
+            .onDisappear(perform: stopStream)
+            .task(id: streamID) {
                 guard streaming else { return }
+                let generation = streamID
                 shown = 2
                 streamMetrics = nil
                 let started = ContinuousClock.now
                 var updates = 0
-                defer { streamMetrics = "Local insertion: \(partial.count) characters / \(updates) updates / \(started.duration(to: .now)). Not frame latency." }
+                defer {
+                    // An older cancelled task cannot settle a newer fixture.
+                    if streamID == generation {
+                        streaming = false
+                        streamMetrics = "Local insertion: \(partial.count) characters / \(updates) updates / \(started.duration(to: .now)). Not frame latency."
+                    }
+                }
                 let characters = Array(String(repeating: Self.sample + "\n\n", count: 6))
                 var cursor = 0
                 while cursor < characters.count {
                     do { try await Task.sleep(for: .milliseconds(100)) }
                     catch { return }
-                    guard !Task.isCancelled else { return }
+                    guard !Task.isCancelled, streamID == generation, streaming else { return }
                     let end = min(cursor + 80, characters.count)
                     partial += String(characters[cursor..<end])
                     cursor = end
@@ -135,6 +141,25 @@ public struct ProbeView: View {
                 streaming = false
             }
         }
+    }
+
+    private func toggleStream() {
+        if streaming {
+            stopStream()
+        } else {
+            // Every explicit start is a new local fixture, never a replay into retained text.
+            partial = ""
+            streamMetrics = nil
+            streamID = UUID()
+            streaming = true
+        }
+    }
+
+    private func stopStream() {
+        guard streaming else { return }
+        streaming = false
+        streamID = UUID()
+        streamMetrics = "Stopped locally at \(partial.count) characters. Start begins a new fixture."
     }
 
     private var floatingControls: some View {
