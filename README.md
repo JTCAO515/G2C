@@ -1,6 +1,6 @@
-# go2china
+# G2C
 
-面向外国来中国旅游的游客：记住已授权的事实、经历与偏好，提供有来源的旅行建议，并在持续修改中保护已经确认的安排。App 名为 **go2china**，Web 品牌为 **go2china.space**，后端为 **CJ Agent 系统**。
+面向外国来中国旅游的游客：记住已授权的事实、经历与偏好，提供有来源的旅行建议，并在持续修改中保护已经确认的安排。App 名为 **G2C**，Web 品牌为 **go2china.space**，后端为 **CJ Agent 系统**。
 
 **当前状态：JT 已授权正式开发，由唯一 CJ Main 协调。** PR #36 已合并为文档基线；该基线尚无产品工程、可运行 API、数据库 schema、已冻结契约或已验证技术组合。授权、文档合并与 Issue 规划均不代表产品实现、验收或上线；当前任务与证据以[唯一 Main/HANDOFF](docs/engineering.md#角色与写权)为准。
 
@@ -25,7 +25,7 @@
 | 协作、测试、环境与后续初始化 | [工程说明](docs/engineering.md) |
 | 本轮证据、开工与后续放行清单 | [Readiness](docs/readiness.md) |
 
-工作清单及 H/C/I 依赖的唯一入口为 [CJ-005 / GitHub #5](https://github.com/JTCAO515/Go2China/issues/5)。35 项 CJ 编号与 GitHub Issue 号不同，本文不复制全量依赖图。Issue 管范围和任务依赖，ADR 管决策理由，规格管行为；变更时共同核对，冲突显式报告，不悄悄以旧讨论覆盖新确认。
+工作清单及 H/C/I 依赖的唯一入口为 [CJ-005 / GitHub #5](https://github.com/JTCAO515/G2C/issues/5)。35 项 CJ 编号与 GitHub Issue 号不同，本文不复制全量依赖图。Issue 管范围和任务依赖，ADR 管决策理由，规格管行为；变更时共同核对，冲突显式报告，不悄悄以旧讨论覆盖新确认。
 
 ## 模块与开工方式
 
