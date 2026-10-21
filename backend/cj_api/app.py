@@ -17,7 +17,7 @@ def error_body(request_id, code, category, en, zh, recovery="do_not_retry"):
         "outcome": "failed", "recovery": recovery
     }}).model_dump(mode="json")
 
-def create_app():
+def create_app(*, _message_boundary=None, _max_body_bytes=None):
     if os.environ.get("CJ_ENV") != "local":
         raise RuntimeError("CJ_ENV must explicitly be local; other environments are not configured")
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -51,4 +51,6 @@ def create_app():
     async def probe(request: Request):
         return ProbeResponse.model_validate({"contract_version": "1.0.0", "status": "ok",
                                              "request_id": request.state.request_id})
+    from .message_routes import register_message_routes
+    register_message_routes(app, _message_boundary, _max_body_bytes)
     return app

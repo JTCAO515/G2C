@@ -1,0 +1,2 @@
+PASS OpenAPI; old/new wire validity parity for receipt/null/missing/wrong-type; Python generated model reads object and emits explicit null, rejects missing/wrong-type
+PASS BASE and existing probe unchanged: True

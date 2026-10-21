@@ -1,0 +1,47 @@
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+test_missing_dependencies_or_environment_refuse_composition (test_composition.CompositionTests.test_missing_dependencies_or_environment_refuse_composition) ... ok
+test_real_verifier_gate_and_boundary_query (test_composition.CompositionTests.test_real_verifier_gate_and_boundary_query) ... ok
+test_token_metadata_does_not_grant_invitation (test_composition.CompositionTests.test_token_metadata_does_not_grant_invitation) ... ok
+test_unknown_policy_never_resolves_repository (test_composition.CompositionTests.test_unknown_policy_never_resolves_repository) ... ok
+test_missing_dependencies_or_environment_refuse_composition (test_composition.CompositionTests.test_missing_dependencies_or_environment_refuse_composition) ... ok
+test_real_verifier_gate_and_boundary_query (test_composition.CompositionTests.test_real_verifier_gate_and_boundary_query) ... ok
+test_token_metadata_does_not_grant_invitation (test_composition.CompositionTests.test_token_metadata_does_not_grant_invitation) ... ok
+test_unknown_policy_never_resolves_repository (test_composition.CompositionTests.test_unknown_policy_never_resolves_repository) ... ok
+test_body_limit_is_enforced_during_stream_not_claimed_length (test_message_wire.WireTests.test_body_limit_is_enforced_during_stream_not_claimed_length) ... ok
+test_commit_unknown_and_after_commit_denial_keep_original_recovery (test_message_wire.WireTests.test_commit_unknown_and_after_commit_denial_keep_original_recovery) ... ok
+test_content_type_duplicate_owner_fields_and_exact_bytes_conflict (test_message_wire.WireTests.test_content_type_duplicate_owner_fields_and_exact_bytes_conflict) ... ok
+test_duplicate_and_combined_auth_headers_never_resolve (test_message_wire.WireTests.test_duplicate_and_combined_auth_headers_never_resolve) ... ok
+test_invalid_receipt_projection_and_run_factory_never_fill_fake_values (test_message_wire.WireTests.test_invalid_receipt_projection_and_run_factory_never_fill_fake_values) ... ok
+test_missing_config_explicit_unavailable_and_invalid_body_limit_refuses (test_message_wire.WireTests.test_missing_config_explicit_unavailable_and_invalid_body_limit_refuses) ... ok
+test_missing_dependencies_or_environment_refuse_composition (test_message_wire.WireTests.test_missing_dependencies_or_environment_refuse_composition) ... ok
+test_opaque_query_single_decode_and_duplicate_or_invalid_query_rejection (test_message_wire.WireTests.test_opaque_query_single_decode_and_duplicate_or_invalid_query_rejection) ... ok
+test_precommit_denial_and_generation_failure_never_become_null (test_message_wire.WireTests.test_precommit_denial_and_generation_failure_never_become_null) ... ok
+test_preserves_bytes_receipt_and_idempotence_without_raw_projection (test_message_wire.WireTests.test_preserves_bytes_receipt_and_idempotence_without_raw_projection) ... ok
+test_real_verifier_gate_and_boundary_query (test_message_wire.WireTests.test_real_verifier_gate_and_boundary_query) ... ERROR
+test_token_metadata_does_not_grant_invitation (test_message_wire.WireTests.test_token_metadata_does_not_grant_invitation) ... ERROR
+test_unknown_denied_invalid_and_sensitive_error_redaction (test_message_wire.WireTests.test_unknown_denied_invalid_and_sensitive_error_redaction) ... ok
+test_unknown_policy_never_resolves_repository (test_message_wire.WireTests.test_unknown_policy_never_resolves_repository) ... ok
+
+======================================================================
+ERROR: test_real_verifier_gate_and_boundary_query (test_message_wire.WireTests.test_real_verifier_gate_and_boundary_query)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/backend/cj_api/tests/test_composition.py", line 60, in test_real_verifier_gate_and_boundary_query
+    self.assertEqual(self.repo.reads, 1)
+                     ^^^^^^^^^^^^^^^
+AttributeError: 'TransactionDouble' object has no attribute 'reads'
+
+======================================================================
+ERROR: test_token_metadata_does_not_grant_invitation (test_message_wire.WireTests.test_token_metadata_does_not_grant_invitation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/backend/cj_api/tests/test_composition.py", line 69, in test_token_metadata_does_not_grant_invitation
+    self.assertEqual(self.repo.reads, 0)
+                     ^^^^^^^^^^^^^^^
+AttributeError: 'TransactionDouble' object has no attribute 'reads'
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.681s
+
+FAILED (errors=2)
