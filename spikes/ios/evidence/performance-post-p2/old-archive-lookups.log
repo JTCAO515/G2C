@@ -1,0 +1,80 @@
+You must specify at least one file, pid, or task.
+
+symbols  [-help]
+         [-arch (all | any | $arch_name)]
+         [-cpuType #] [-cpuSubtype #]
+         [-originalBinary path]...
+         [-saveSignature path]
+         [-symbolsPackageDir path]
+         [-lookup (0x1234 | "symname")...] symname may use wildcards
+         [-iterations #]
+         files... file-signatures... signatures... pids... tasks...
+
+If no arch is specified, symbols defaults to the current architecture.
+The search order is file, file-signature, signature, pid, task.
+A file-signature is a file name ending in ".signature" and containing a
+single ascii signature.
+
+	-help               print this message
+	-uuid               print uuids
+	-noHeaders          do not print the headers
+	-noRegions          do not print the regions
+	-noSymbols          do not print the symbols
+	-noSources          do not print source line info
+	-noDemangling       do not print symbol names readably
+	-printDemangling    print interesting mangled --> demangled symbol names
+	-lazy               allow symbolicators to be lazy
+	-printSignature     print each symbolicator's signature
+	-deepSignature      created signatures will be "deep"
+	-fullSourcePath     print source line info with full path
+	-w                  force output to wide format
+	-v                  print version info
+	-arch               set the preferred architecture symbolically
+	-cpuType            set the preferred architecture cpu type
+	-cpuSubtype         set the preferred architecture cpu subtype
+	-lookup             a list of addrs or symbols to lookup in each target
+	-printCache         print cache data at exit
+	-asyncCacheCleanup  cache cleans on a separate thread
+	-syncCacheCleanup   cache cleans on deallocating thread
+	-iterations         iterate # times for each file, pid, or task
+	-trackDyld          track dyld load/unload activity in target
+	-hangOnDyldLoad     hang when receiving dyld load notice
+	-hangOnDyldUnload   hang when receiving dyld unload notice
+	-waitUntilExit      wait for target task exit notification
+	-noNotifications    do not print notifications for each target
+	-printNotifications print notifications for each target
+	-printDsymPaths     print each symbol owner's dsym path
+	-printMergedSymbols print info on each symbol before it is merged
+	-printSummary       print summary of each targets contents
+	-filterSegment      print only specific segment of each targets contents
+	-filterSection      print only specific section of each targets contents
+	-printHexContents   print the HEX content of each segment content
+	-printVtables       print only vtable symbols, and their contents
+	-noNListData        do not use nlist data for symbols/source infos
+	-noDwarfData        do not use dwarf data for symbols/source infos
+	-noDebugMapData     do not use debug map data for symbols/source infos
+	-noDsymData         do not use dsym data for symbols/source infos
+	-noFuncStartsData   do not use LC_FUNCTION_STARTS data for symbols
+	-onlyNListData      only use nlist data for symbols/source infos
+	-onlyDwarfData      only use dwarf data for symbols/source infos
+	-onlyDebugMapData   only use debug map data for symbols/source infos
+	-onlyDsymData       only use dsym data for symbols/source infos
+	-onlyFuncStartsData only use LC_FUNCTION_STARTS data for symbols
+	-originalBinary     path to the original kernel for a corefile, repeat for kexts
+	-noDiskFaults       do not fault in symbol owners from disk
+	-noTaskFaults       do not fault in symbol owners from tasks
+	-noSelfDSCFaults    do not fault in from our dyld shared cache
+	-noDiskDSCFaults    do not fault from the on disk dyld shared cache
+	-safeMachVMReads    catch errors caused by missing backing pages
+	-noPathRewriting    do not update B&I dsym source info paths
+	-privateData        symbolicators do not share data in the SOD cache
+	-noTRawSOD          do not allow TRaw style SOD when faulting
+	-noMMapSOD          do not allow MMap style SOD when faulting
+	-noDaemon           do not read/write from the storage daemon
+	-noSourceInfoInSOD  do not include file name and line number data in SOD
+	-noTextInSOD        do not include instruction data in SOD
+	-failIfMissingDsym  exit with error code if any target does not have a dSYM
+	-inlineFrames       print inlined functions instances 
+	-fbs                store signatures as flatbuffers 
+	-deferredDemangling do not perform eager symbol name demangling when faulting 
+	-dedup              print all variants for <deduplicated_symbol> 

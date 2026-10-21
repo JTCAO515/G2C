@@ -1,0 +1,17 @@
+[
+  {
+    "original": "profile.xml",
+    "sha256": "3f0cf621186ac7741428ec32390d89b5ba9a2bc7a821fea6e5573f15f139f184",
+    "gzip": "profile.xml.gz"
+  },
+  {
+    "original": "profile-atos-derived.xml",
+    "sha256": "882f7953c008f65fcdf38274084379f0b1ad911d22b99b687827c1ca98d46a8f",
+    "gzip": "profile-atos-derived.xml.gz"
+  },
+  {
+    "original": "process-diagnostic.log",
+    "sha256": "820dff2ea5bda69c25e5e602afa1e353dafe7bde47efccaba0e522b439016ba7",
+    "gzip": "process-diagnostic.log.gz"
+  }
+]

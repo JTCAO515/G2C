@@ -1,0 +1,10 @@
+0x00000001003e9f47 (in CJIOSSpike) + 275
+0x00000001004d00d3 (in CJIOSSpike) + 31
+DYLD-STUB$$type metadata accessor for AttributedString.Runs (in CJIOSSpike) + 1
+DYLD-STUB$$type metadata accessor for ColorSchemeContrast (in CJIOSSpike) + 5
+DYLD-STUB$$Text.LayoutKey.AnchoredLayout.layout.getter (in CJIOSSpike) + 5
+DYLD-STUB$$LazyState.wrappedValue.getter (in CJIOSSpike) + 5
+DYLD-STUB$$swift_bridgeObjectRelease (in CJIOSSpike) + 5
+DYLD-STUB$$swift_bridgeObjectRetain (in CJIOSSpike) + 5
+DYLD-STUB$$swift_retain (in CJIOSSpike) + 1
+DYLD-STUB$$swift_retain (in CJIOSSpike) + 5
