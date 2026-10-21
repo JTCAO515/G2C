@@ -1,0 +1,514 @@
+[
+  {
+    "step": "account-default-zh",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0nanw1i",
+      "seq": 125,
+      "count": 132,
+      "targets": [
+        "e55|typeText|text-field||邮箱地址|account.email",
+        "e60|typeText|text-field||密码|account.password",
+        "e15|tap|button|记忆||BackButton",
+        "e50|tap|button|操作、登录||",
+        "e108|tap|tab|助手|0|bubble.left.and.bubble.right",
+        "e110|tap|tab|行程|0|map",
+        "e112|tap|tab|插件|0|square.grid.2x2",
+        "e114|tap|tab|记忆|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e35|text|text|账号准入尚未验证。登录不代表获得受邀内测资格。||",
+        "e39|text|text|尚无已验证的账号会话。||account.status",
+        "e49|text|text|操作||",
+        "e51|text|text|登录||",
+        "e70|text|text|尚未开放：账号服务未配置。||",
+        "e84|text|text|尚未开放：账号服务未配置。||",
+        "e94|text|text|尚未开放：账号服务未配置。||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "register-zh",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0yl6obi",
+      "seq": 129,
+      "count": 153,
+      "targets": [
+        "e76|typeText|text-field||邮箱地址|account.email",
+        "e81|typeText|text-field||密码|account.password",
+        "e36|tap|button|记忆||BackButton",
+        "e71|tap|button|操作、注册||",
+        "e129|tap|tab|助手|0|bubble.left.and.bubble.right",
+        "e131|tap|tab|行程|0|map",
+        "e133|tap|tab|插件|0|square.grid.2x2",
+        "e135|tap|tab|记忆|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e56|text|text|账号准入尚未验证。登录不代表获得受邀内测资格。||",
+        "e60|text|text|尚无已验证的账号会话。||account.status",
+        "e70|text|text|操作||",
+        "e72|text|text|注册||",
+        "e91|text|text|尚未开放：账号服务未配置。||",
+        "e105|text|text|尚未开放：账号服务未配置。||",
+        "e115|text|text|尚未开放：账号服务未配置。||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "recovery-zh",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "1nng76c",
+      "seq": 133,
+      "count": 148,
+      "targets": [
+        "e76|typeText|text-field||邮箱地址|account.email",
+        "e36|tap|button|记忆||BackButton",
+        "e71|tap|button|操作、找回密码||",
+        "e124|tap|tab|助手|0|bubble.left.and.bubble.right",
+        "e126|tap|tab|行程|0|map",
+        "e128|tap|tab|插件|0|square.grid.2x2",
+        "e130|tap|tab|记忆|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e56|text|text|账号准入尚未验证。登录不代表获得受邀内测资格。||",
+        "e60|text|text|尚无已验证的账号会话。||account.status",
+        "e70|text|text|操作||",
+        "e72|text|text|找回密码||",
+        "e86|text|text|尚未开放：账号服务未配置。||",
+        "e100|text|text|尚未开放：账号服务未配置。||",
+        "e110|text|text|尚未开放：账号服务未配置。||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "large-account-en-top",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "15uputr",
+      "seq": 144,
+      "count": 158,
+      "targets": [
+        "e26|tap|button|Language / 语言, English||",
+        "e33|tap|button|Tab / 标签, Memory||",
+        "e40|tap|button|Presentation state / 展示状态, notConnected||",
+        "e46|tap|switch|Accessibility text / 无障碍大字体|1|",
+        "e53|tap|switch|Long native body / 原生长正文|0|",
+        "e71|tap|button|Close synthetic sample / 关闭合成样例||",
+        "e115|tap|button|Action, Sign in||",
+        "e48|tap|switch||1|",
+        "e55|tap|switch||0|",
+        "e60|tap|button|Open sample / 打开样例||",
+        "e80|tap|button|Memory||BackButton",
+        "e134|tap|tab|Assistant|0|bubble.left.and.bubble.right",
+        "e136|tap|tab|Trips|0|map",
+        "e138|tap|tab|Plugins|0|square.grid.2x2",
+        "e140|tap|tab|Memory|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e21|text|text|SYNTHETIC UI SAMPLES / 合成界面样例 — no service or saved records.||",
+        "e100|text|text|Account access is not yet verified. Signing in does not grant invited-beta access.||",
+        "e25|text|text|Language / 语言||",
+        "e27|text|text|English||",
+        "e32|text|text|Tab / 标签||",
+        "e34|text|text|Memory||",
+        "e39|text|text|Presentation state / 展示状态||",
+        "e41|text|text|notConnected||",
+        "e47|text|text|Accessibility text / 无障碍大字体||",
+        "e104|text|text|No verified account session.||account.status",
+        "e54|text|text|Long native body / 原生长正文||",
+        "e114|text|text|Action||",
+        "e116|text|text|Sign in||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "large-account-en-inputs",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "15uputr",
+      "seq": 145,
+      "count": 158,
+      "targets": [
+        "e26|tap|button|Language / 语言, English||",
+        "e33|tap|button|Tab / 标签, Memory||",
+        "e40|tap|button|Presentation state / 展示状态, notConnected||",
+        "e46|tap|switch|Accessibility text / 无障碍大字体|1|",
+        "e53|tap|switch|Long native body / 原生长正文|0|",
+        "e71|tap|button|Close synthetic sample / 关闭合成样例||",
+        "e115|tap|button|Action, Sign in||",
+        "e48|tap|switch||1|",
+        "e55|tap|switch||0|",
+        "e60|tap|button|Open sample / 打开样例||",
+        "e80|tap|button|Memory||BackButton",
+        "e134|tap|tab|Assistant|0|bubble.left.and.bubble.right",
+        "e136|tap|tab|Trips|0|map",
+        "e138|tap|tab|Plugins|0|square.grid.2x2",
+        "e140|tap|tab|Memory|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e21|text|text|SYNTHETIC UI SAMPLES / 合成界面样例 — no service or saved records.||",
+        "e100|text|text|Account access is not yet verified. Signing in does not grant invited-beta access.||",
+        "e25|text|text|Language / 语言||",
+        "e27|text|text|English||",
+        "e32|text|text|Tab / 标签||",
+        "e34|text|text|Memory||",
+        "e39|text|text|Presentation state / 展示状态||",
+        "e41|text|text|notConnected||",
+        "e47|text|text|Accessibility text / 无障碍大字体||",
+        "e104|text|text|No verified account session.||account.status",
+        "e54|text|text|Long native body / 原生长正文||",
+        "e114|text|text|Action||",
+        "e116|text|text|Sign in||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "large-account-en-scrolled",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "05rc6db",
+      "seq": 149,
+      "count": 160,
+      "targets": [
+        "e26|tap|button|Language / 语言, English||",
+        "e33|tap|button|Tab / 标签, Memory||",
+        "e40|tap|button|Presentation state / 展示状态, notConnected||",
+        "e46|tap|switch|Accessibility text / 无障碍大字体|1|",
+        "e53|tap|switch|Long native body / 原生长正文|0|",
+        "e71|tap|button|Close synthetic sample / 关闭合成样例||",
+        "e48|tap|switch||1|",
+        "e55|tap|switch||0|",
+        "e60|tap|button|Open sample / 打开样例||",
+        "e80|tap|button|Memory||BackButton",
+        "e136|tap|tab|Assistant|0|bubble.left.and.bubble.right",
+        "e138|tap|tab|Trips|0|map",
+        "e140|tap|tab|Plugins|0|square.grid.2x2",
+        "e142|tap|tab|Memory|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e21|text|text|SYNTHETIC UI SAMPLES / 合成界面样例 — no service or saved records.||",
+        "e25|text|text|Language / 语言||",
+        "e27|text|text|English||",
+        "e32|text|text|Tab / 标签||",
+        "e34|text|text|Memory||",
+        "e112|text|text|Not available — account services are not configured.||",
+        "e39|text|text|Presentation state / 展示状态||",
+        "e41|text|text|notConnected||",
+        "e47|text|text|Accessibility text / 无障碍大字体||",
+        "e54|text|text|Long native body / 原生长正文||",
+        "e122|text|text|Not available — account services are not configured.||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "large-inputs-labelled",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0rwm0ix",
+      "seq": 152,
+      "count": 158,
+      "targets": [
+        "e26|tap|button|Language / 语言, English||",
+        "e33|tap|button|Tab / 标签, Memory||",
+        "e40|tap|button|Presentation state / 展示状态, notConnected||",
+        "e46|tap|switch|Accessibility text / 无障碍大字体|1|",
+        "e53|tap|switch|Long native body / 原生长正文|0|",
+        "e71|tap|button|Close synthetic sample / 关闭合成样例||",
+        "e115|tap|button|Action, Sign in||",
+        "e48|tap|switch||1|",
+        "e55|tap|switch||0|",
+        "e60|tap|button|Open sample / 打开样例||",
+        "e80|tap|button|Memory||BackButton",
+        "e134|tap|tab|Assistant|0|bubble.left.and.bubble.right",
+        "e136|tap|tab|Trips|0|map",
+        "e138|tap|tab|Plugins|0|square.grid.2x2",
+        "e140|tap|tab|Memory|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e21|text|text|SYNTHETIC UI SAMPLES / 合成界面样例 — no service or saved records.||",
+        "e100|text|text|Account access is not yet verified. Signing in does not grant invited-beta access.||",
+        "e25|text|text|Language / 语言||",
+        "e27|text|text|English||",
+        "e32|text|text|Tab / 标签||",
+        "e34|text|text|Memory||",
+        "e39|text|text|Presentation state / 展示状态||",
+        "e41|text|text|notConnected||",
+        "e47|text|text|Accessibility text / 无障碍大字体||",
+        "e104|text|text|No verified account session.||account.status",
+        "e54|text|text|Long native body / 原生长正文||",
+        "e114|text|text|Action||",
+        "e116|text|text|Sign in||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "large-email-fields",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "03rf4j2",
+      "seq": 154,
+      "count": 183,
+      "targets": [
+        "e26|tap|button|Language / 语言, English||",
+        "e33|tap|button|Tab / 标签, Memory||",
+        "e40|tap|button|Presentation state / 展示状态, notConnected||",
+        "e46|tap|switch|Accessibility text / 无障碍大字体|1|",
+        "e53|tap|switch|Long native body / 原生长正文|0|",
+        "e71|tap|button|Close synthetic sample / 关闭合成样例||",
+        "e125|tap|button|Action, Sign in||",
+        "e130|typeText|text-field|Email address|Email address|account.email",
+        "e135|typeText|text-field|Password|Password|account.password",
+        "e48|tap|switch||1|",
+        "e55|tap|switch||0|",
+        "e60|tap|button|Open sample / 打开样例||",
+        "e80|tap|button|Memory||BackButton",
+        "e159|tap|tab|Assistant|0|bubble.left.and.bubble.right",
+        "e161|tap|tab|Trips|0|map",
+        "e163|tap|tab|Plugins|0|square.grid.2x2",
+        "e165|tap|tab|Memory|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e91|text|text|Account access is not yet verified. Signing in does not grant invited-beta access.||",
+        "e21|text|text|SYNTHETIC UI SAMPLES / 合成界面样例 — no service or saved records.||",
+        "e114|text|text|No verified account session.||account.status",
+        "e25|text|text|Language / 语言||",
+        "e27|text|text|English||",
+        "e32|text|text|Tab / 标签||",
+        "e34|text|text|Memory||",
+        "e39|text|text|Presentation state / 展示状态||",
+        "e41|text|text|notConnected||",
+        "e124|text|text|Action||",
+        "e47|text|text|Accessibility text / 无障碍大字体||",
+        "e54|text|text|Long native body / 原生长正文||",
+        "e126|text|text|Sign in||",
+        "e145|text|text|Not available — account services are not configured.||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "large-email-keyboard",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0khy160",
+      "seq": 156,
+      "count": 271,
+      "targets": [
+        "e26|tap|button|Language / 语言, English||",
+        "e33|tap|button|Tab / 标签, Memory||",
+        "e40|tap|button|Presentation state / 展示状态, notConnected||",
+        "e46|tap|switch|Accessibility text / 无障碍大字体|1|",
+        "e53|tap|switch|Long native body / 原生长正文|0|",
+        "e71|tap|button|Close synthetic sample / 关闭合成样例||",
+        "e120|tap|button|Action, Sign in||",
+        "e125|typeText|text-field|Email address|Email address|account.email",
+        "e130|typeText|text-field|Password|Password|account.password",
+        "e48|tap|switch||1|",
+        "e55|tap|switch||0|",
+        "e60|tap|button|Open sample / 打开样例||",
+        "e80|tap|button|Memory||BackButton",
+        "e159|tap|tab|Assistant|0|bubble.left.and.bubble.right",
+        "e161|tap|tab|Trips|0|map",
+        "e163|tap|tab|Plugins|0|square.grid.2x2",
+        "e165|tap|tab|Memory|1|tray",
+        "e202|tap|button|Done||",
+        "e216|tap|button|Passwords||",
+        "e226|tap|button|q||",
+        "e227|tap|button|w||",
+        "e228|tap|button|e||",
+        "e229|tap|button|r||",
+        "e230|tap|button|t||",
+        "e231|tap|button|y||",
+        "e232|tap|button|u||",
+        "e233|tap|button|i||",
+        "e234|tap|button|o||",
+        "e235|tap|button|p||",
+        "e238|tap|button|a||",
+        "e239|tap|button|s||",
+        "e240|tap|button|d||",
+        "e241|tap|button|f||",
+        "e242|tap|button|g||",
+        "e243|tap|button|h||",
+        "e244|tap|button|j||",
+        "e245|tap|button|k||",
+        "e246|tap|button|l||",
+        "e248|tap|button|shift||shift",
+        "e250|tap|button|z||",
+        "e251|tap|button|x||",
+        "e253|tap|button|v||",
+        "e254|tap|button|b||",
+        "e255|tap|button|n||",
+        "e256|tap|button|m||",
+        "e259|tap|button|numbers||more",
+        "e260|tap|button|Emoji||emoji",
+        "e261|tap|button|||space",
+        "e262|tap|button|@||",
+        "e263|tap|button|.||",
+        "e264|tap|button|return||Return",
+        "e266|tap|button|Next keyboard|简体拼音|",
+        "e268|tap|button|Dictate||dictation",
+        "e270|tap|button|Dictate||dictation",
+        "e252|tap|button|c||",
+        "e258|tap|button|delete||delete"
+      ],
+      "scroll": [
+        "e211|swipe|scroll-view|||"
+      ],
+      "text": [
+        "e91|text|text|No verified account session.||account.status",
+        "e21|text|text|SYNTHETIC UI SAMPLES / 合成界面样例 — no service or saved records.||",
+        "e25|text|text|Language / 语言||",
+        "e27|text|text|English||",
+        "e119|text|text|Action||",
+        "e32|text|text|Tab / 标签||",
+        "e34|text|text|Memory||",
+        "e121|text|text|Sign in||",
+        "e39|text|text|Presentation state / 展示状态||",
+        "e41|text|text|notConnected||",
+        "e47|text|text|Accessibility text / 无障碍大字体||",
+        "e54|text|text|Long native body / 原生长正文||",
+        "e140|text|text|Not available — account services are not configured.||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "large-keyboard-dismissed",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "117rgov",
+      "seq": 158,
+      "count": 186,
+      "targets": [
+        "e26|tap|button|Language / 语言, English||",
+        "e33|tap|button|Tab / 标签, Memory||",
+        "e40|tap|button|Presentation state / 展示状态, notConnected||",
+        "e46|tap|switch|Accessibility text / 无障碍大字体|1|",
+        "e53|tap|switch|Long native body / 原生长正文|0|",
+        "e71|tap|button|Close synthetic sample / 关闭合成样例||",
+        "e120|tap|button|Action, Sign in||",
+        "e125|typeText|text-field|Email address|Email address|account.email",
+        "e130|typeText|text-field|Password|Password|account.password",
+        "e48|tap|switch||1|",
+        "e55|tap|switch||0|",
+        "e60|tap|button|Open sample / 打开样例||",
+        "e80|tap|button|Memory||BackButton",
+        "e159|tap|tab|Assistant|0|bubble.left.and.bubble.right",
+        "e161|tap|tab|Trips|0|map",
+        "e163|tap|tab|Plugins|0|square.grid.2x2",
+        "e165|tap|tab|Memory|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e91|text|text|No verified account session.||account.status",
+        "e21|text|text|SYNTHETIC UI SAMPLES / 合成界面样例 — no service or saved records.||",
+        "e25|text|text|Language / 语言||",
+        "e27|text|text|English||",
+        "e119|text|text|Action||",
+        "e32|text|text|Tab / 标签||",
+        "e34|text|text|Memory||",
+        "e121|text|text|Sign in||",
+        "e39|text|text|Presentation state / 展示状态||",
+        "e41|text|text|notConnected||",
+        "e47|text|text|Accessibility text / 无障碍大字体||",
+        "e54|text|text|Long native body / 原生长正文||",
+        "e140|text|text|Not available — account services are not configured.||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "large-back-to-memory",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "1b9vlhe",
+      "seq": 160,
+      "count": 175,
+      "targets": [
+        "e26|tap|button|Language / 语言, English||",
+        "e33|tap|button|Tab / 标签, Memory||",
+        "e40|tap|button|Presentation state / 展示状态, notConnected||",
+        "e46|tap|switch|Accessibility text / 无障碍大字体|1|",
+        "e53|tap|switch|Long native body / 原生长正文|0|",
+        "e71|tap|button|Close synthetic sample / 关闭合成样例||",
+        "e48|tap|switch||1|",
+        "e55|tap|switch||0|",
+        "e60|tap|button|Open sample / 打开样例||",
+        "e107|tap|button|Facts||",
+        "e114|tap|button|Experiences||",
+        "e121|tap|button|Preferences||",
+        "e133|tap|button|Account||",
+        "e148|tap|tab|Assistant|0|bubble.left.and.bubble.right",
+        "e150|tap|tab|Trips|0|map",
+        "e152|tap|tab|Plugins|0|square.grid.2x2",
+        "e154|tap|tab|Memory|1|tray"
+      ],
+      "scroll": [
+        "e1|swipe|application|CJShellDemo||"
+      ],
+      "text": [
+        "e21|text|text|SYNTHETIC UI SAMPLES / 合成界面样例 — no service or saved records.||",
+        "e25|text|text|Language / 语言||",
+        "e27|text|text|English||",
+        "e103|text|text|This service is not connected yet. No records have been loaded.||",
+        "e32|text|text|Tab / 标签||",
+        "e34|text|text|Memory||",
+        "e39|text|text|Presentation state / 展示状态||",
+        "e41|text|text|notConnected||",
+        "e47|text|text|Accessibility text / 无障碍大字体||",
+        "e54|text|text|Long native body / 原生长正文||",
+        "e108|text|text|Facts||",
+        "e115|text|text|Experiences||",
+        "e122|text|text|Preferences||",
+        "e134|text|text|Account||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  }
+]
