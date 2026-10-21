@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum, StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
 
 
 class RequestId(RootModel[UUID]):
@@ -54,3 +54,32 @@ class ErrorInfo(BaseModel):
 class ErrorResponse(BaseModel):
     request_id: RequestId
     error: ErrorInfo
+
+
+class MessageReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    message_id: constr(min_length=1)
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    run_id: constr(min_length=1)
+    sequence: conint(ge=1)
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+
+
+class MessageReceiveResponse(BaseModel):
+    request_id: RequestId
+    receipt: MessageReceipt
+
+
+class Receipt(Enum):
+    NoneType_None = None
+
+
+class MessageReceiptQueryResponse(BaseModel):
+    request_id: RequestId
+    receipt: MessageReceipt | Receipt = Field(
+        ...,
+        description='Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.',
+    )
