@@ -42,3 +42,13 @@ readback is Python 3.14.7. Integrated range documented as >=3.12,<3.15; 3.12/3.1
 Prior 3.10+ was a syntax inference, not a support claim; 3.9.6 core results remain
 historical evidence. Documentation/requirements comments only; source/tests unchanged,
 prior evidence reused, no package install or configuration mutation. Diff check PASS.
+
+## Fixed AUTH repair delta from ba6051a
+
+Current AUTH pin 79f88b6552da1bd3d4b27e22f64a158bddf2853b. Read-only git diff against
+e49ea1a2 finds only non-VALID principal validation tightened in imported files;
+admission.py/__init__.py unchanged. Message boundary implementation unchanged.
+PASS: 2 affected tests on Python 3.14.7, auth-repair-delta.txt. Original six consumer
+checks reused with their original provenance, not rerun/relabelled as new execution.
+Runtime package declaration >=3.12,<3.15 read from fixed new AUTH head. Other runtime
+versions/JWT/DB remain UNRUN. Runner pin and compatibility record updated; no AUTH copy.

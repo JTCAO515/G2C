@@ -5,7 +5,7 @@ import subprocess
 import sys
 import tempfile
 
-REVISION = 'e49ea1a2abcdd82c93a28aeba8b2d6a1248a0f3b'
+REVISION = '79f88b6552da1bd3d4b27e22f64a158bddf2853b'
 source = sys.argv[1]
 root = Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory(prefix='cj009-auth-fixed-') as tmp:
@@ -16,5 +16,5 @@ with tempfile.TemporaryDirectory(prefix='cj009-auth-fixed-') as tmp:
                                        REVISION + ':backend/auth/cj_auth/' + name])
         (package / name).write_bytes(blob)
     env = dict(os.environ, PYTHONPATH=os.pathsep.join((tmp, str(root), str(root/'tests'))))
-    result = subprocess.run([sys.executable, '-B', '-m', 'unittest', 'auth_consumption', '-v'], env=env)
+    result = subprocess.run([sys.executable, '-B', '-m', 'unittest', *(sys.argv[2:] or ['auth_consumption']), '-v'], env=env)
     sys.exit(result.returncode)

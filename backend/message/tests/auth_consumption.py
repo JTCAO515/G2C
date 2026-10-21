@@ -40,6 +40,15 @@ class AuthConsumption(unittest.TestCase):
             return self.repo
         self.boundary = Boundary(AdmissionChecker(self.verifier, self.policy, clock=lambda:50), resolve, lambda:'run-original')
 
+    def test_fixed_nonvalid_principal_invariant(self):
+        for status in (VerificationStatus.INVALID, VerificationStatus.UNKNOWN):
+            for bad in (False, 0, '', {}, object(), self.p):
+                with self.subTest(status=status, principal_type=type(bad).__name__):
+                    with self.assertRaises(ValueError): VerificationResult(status, bad)
+            self.assertIsNone(VerificationResult(status).principal)
+        self.assertEqual(VerificationResult(VerificationStatus.VALID, self.p).principal, self.p)
+        with self.assertRaises(ValueError): VerificationResult(VerificationStatus.VALID)
+
     def test_allowed_real_gate_consumed_and_rechecked(self):
         r = self.boundary.receive('synthetic-token', wire())
         self.assertEqual(r.run_id, 'run-original')

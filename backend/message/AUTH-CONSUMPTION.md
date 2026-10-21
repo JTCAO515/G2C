@@ -1,6 +1,6 @@
 # CJ009 consumes CJ-AUTH-SERVER@0.1.0-rc.1
 
-Fixed source: CJ007 commit `e49ea1a2abcdd82c93a28aeba8b2d6a1248a0f3b`,
+Current fixed source: CJ007 commit `79f88b6552da1bd3d4b27e22f64a158bddf2853b`,
 `backend/auth/cj_auth/interfaces.py`, `admission.py`, `__init__.py`.
 Only git-show blobs at that revision were read/executed; the moving JWT worktree was
 not imported. The three temporary files are removed after testing; no second AUTH
@@ -24,17 +24,14 @@ reading pending obligations is not a permanent authorization grant for RUN to ex
 
 ## Concrete remaining gaps for Main / CJ007 / CJ005
 
-- Runtime declarations read back: this message checkout's root `pyproject.toml`
-  at dc5352f requires `>=3.12`; CJ007 root and `backend/auth/pyproject.toml` at
-  `3ffe0559b990dd99b98c1f8a0e2a2751b33bc52a` require `>=3.12` and
-  `>=3.12,<3.15`, respectively. Thus this integrated consumer follows
-  `>=3.12,<3.15`. This metadata read does not adopt that newer AUTH implementation:
-  the tested consumer source remains fixed e49ea1a2 pending Main's repaired input.
-  Python 3.10+ was only an inferred syntax floor, NOT a supported runtime declaration.
-  Earlier standalone core checks on 3.9.6 are historical local evidence outside the
-  declared integrated range. AUTH consumer checks ran on Python 3.14.7; Python 3.12
-  and 3.13 are UNRUN. No broad runtime certification or global configuration change
-  is claimed; real JWT/host integration remains UNRUN.
+- Runtime declarations read back: message root `pyproject.toml` at ba6051a requires
+  `>=3.12`; fixed CJ007 `79f88b6552da1bd3d4b27e22f64a158bddf2853b` package
+  requires `>=3.12,<3.15`. The integrated declaration remains `>=3.12,<3.15`.
+  Python 3.10+ was only an inferred syntax floor, NOT a support declaration.
+  Earlier core checks on 3.9.6 remain historical local evidence outside that range.
+  Consumer and repair-delta checks used Python 3.14.7; Python 3.12/3.13 UNRUN.
+  JWT implementation from AUTH parent 3f374214 was not imported or executed by
+  these interface checks; real JWT/host integration remains UNRUN here.
 - TrustedPrincipal has issuer/subject/audience and token times, but no session revision
   or authoritative revocation fence. Rechecking the gate detects changes reported by
   current providers, not an atomic DB-linked revocation guarantee. Fixed principal
@@ -68,3 +65,19 @@ pointing at the local CJ007 Git repository:
 The runner pins the revision internally and reads git objects, never source working files.
 Original 14 pure-domain/repository tests remain valid and were not rerun for this additive
 boundary. No changes to domain.py/postgres.py/SQL or shared API/AUTH source in this delta.
+
+## Fixed AUTH repair consumption
+
+Current pin 79f88b6552da1bd3d4b27e22f64a158bddf2853b supersedes e49ea1a2 for
+future reproduction. Exact diff of the three imported files shows only the
+VerificationResult constructor tightening: non-VALID must carry None, VALID must
+carry TrustedPrincipal. AdmissionChecker and package init are byte-unchanged.
+CJ009 legal results already satisfy this rule; auth_boundary.py is unchanged.
+
+Original six checks remain evidence against e49ea1a2, not a claim of six new runs.
+Only two affected tests ran against 79f88b65: malformed non-VALID principal rejection
+(including false/zero/empty/dict/object/TrustedPrincipal), legal VALID/None cases,
+and original unknown/invalid/uninvited/unverified denial before repository resolution.
+Both PASS; output evidence/auth-repair-delta.txt. The runner permits targeted unittest
+names after the repository argument. No AUTH type copy, real DB, JWT crypto or provider
+integration occurred. Independent double review remains pending; interface not frozen.
