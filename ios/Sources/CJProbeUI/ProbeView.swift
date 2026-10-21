@@ -9,6 +9,7 @@ public struct ProbeView: View {
         case loading
         case connected(String)
         case rejected(Int, String, String)
+        case redirectRejected(Int)
         case configurationMissing
         case unavailable
     }
@@ -30,6 +31,9 @@ public struct ProbeView: View {
                 Text("HTTP \(status) · \(code)")
                 Text("Request rejected · 请求被拒绝")
                 Text(requestID).font(.caption.monospaced()).textSelection(.enabled)
+            case .redirectRejected(let status):
+                Text("HTTP \(status) · Redirect rejected · 已拒绝重定向")
+                Text("Destination not requested · 未请求跳转目标")
             case .configurationMissing:
                 Text("Local configuration missing · 缺少本地配置")
             case .unavailable:
@@ -57,6 +61,9 @@ public struct ProbeView: View {
             case .connected(let body): state = .connected(body.request_id)
             case .rejected(let status, let body): state = .rejected(status, body.error.code, body.request_id)
             }
+        } catch ProbeFailure.redirectRejected(let status) {
+            guard !Task.isCancelled else { return }
+            state = .redirectRejected(status)
         } catch {
             guard !Task.isCancelled else { return }
             state = .unavailable

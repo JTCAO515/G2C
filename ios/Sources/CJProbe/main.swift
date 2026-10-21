@@ -14,6 +14,9 @@ struct ProbeCommand {
                 print(String(decoding: try JSONEncoder().encode(body), as: UTF8.self))
                 exit(1)
             }
+        } catch ProbeFailure.redirectRejected(let status) {
+            print("FAIL HTTP \(status) redirect rejected; destination not requested")
+            exit(1)
         } catch ProbeFailure.missingLocalConfiguration {
             print("FAIL missing or invalid local configuration")
             exit(1)

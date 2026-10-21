@@ -9,6 +9,7 @@ public enum ProbeResult: Sendable {
 public enum ProbeFailure: Error {
     case missingLocalConfiguration
     case invalidResponseTrace
+    case redirectRejected(status: Int)
 }
 
 public struct ProbeConnection: Sendable {
@@ -30,10 +31,22 @@ public struct ProbeConnection: Sendable {
         config.timeoutIntervalForResource = 15
         config.httpCookieStorage = nil
         config.urlCache = nil
-        let session = URLSession(configuration: config)
+        let redirectDelegate = RejectRedirects()
+        let session = URLSession(configuration: config, delegate: redirectDelegate, delegateQueue: nil)
         defer { session.invalidateAndCancel() }
         let client = Client(serverURL: baseURL, transport: URLSessionTransport(configuration: .init(session: session)))
-        let output = try await client.getProbe()
+        let output: Operations.getProbe.Output
+        do {
+            output = try await client.getProbe()
+        } catch {
+            if let status = await redirectDelegate.rejection.status {
+                throw ProbeFailure.redirectRejected(status: status)
+            }
+            throw error
+        }
+        if let status = await redirectDelegate.rejection.status {
+            throw ProbeFailure.redirectRejected(status: status)
+        }
         try Task.checkCancellation()
         switch output {
         case .ok(let response):
@@ -52,4 +65,21 @@ public struct ProbeConnection: Sendable {
             return .rejected(status: status, body)
         }
     }
+}
+
+// Refuse the redirect before URLSession can dispatch to its destination, even on loopback.
+private final class RejectRedirects: NSObject, URLSessionTaskDelegate {
+    let rejection = RedirectRejection()
+
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest) async -> URLRequest? {
+        await rejection.record(response.statusCode)
+        return nil
+    }
+}
+
+private actor RedirectRejection {
+    private(set) var status: Int?
+    func record(_ status: Int) { self.status = status }
 }
