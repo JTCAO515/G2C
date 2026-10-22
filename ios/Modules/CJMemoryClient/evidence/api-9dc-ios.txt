@@ -1,0 +1,2 @@
+Command: xcodebuild -scheme CJMemoryClient -destination generic/platform=iOS Simulator -derivedDataPath .build/ios-validation CODE_SIGNING_ALLOWED=NO build
+** BUILD SUCCEEDED **

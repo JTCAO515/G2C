@@ -138,3 +138,9 @@ including required non-Generated MemoryClientConfiguration.swift. The ONE shared
 .generated/57336d501e5691302a3d5e9770f07666d1c57d4a/CJFoundation for all consumers.
 Formal CJAuth key dependency and SDK versions remain. Standalone31 checks pass; full
 CJShell graph awaits CJ006's same-pin update. See evidence/MEMORY-API-PIN.md.
+
+Next shared API candidate: official9dc67ced adds five generated Trip operations at the
+single .generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation path. Prior d0/573
+commit and exports stay intact for current delivery. Old interfaces/SDK versions remain;
+standalone32 checks pass, while Trip activation/full App same-pin integration remain
+pending. See evidence/TRIP-API-PIN.md; no other consumer should create a private CJFoundation.
