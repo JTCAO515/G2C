@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "stores": [
     {
       "id": "business",
@@ -94,6 +94,26 @@
           "retention": "UNDECIDED; candidate deadline is not physical retention; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no deletion of proposal/action receipts or formal records; dedupe only while retained; generation cancellation is not candidate rejection",
           "restore_fence": "UNIMPLEMENTED; scope/confirmation/candidate/version revocations and deletion replay must precede reads; no backup restoration acceptance"
+        },
+        {
+          "id": "needs-current-planning",
+          "owner": "CJ-013; cleanup CJ-024",
+          "objects": [
+            "cj_needs_scope",
+            "cj_needs_record",
+            "cj_needs_revision"
+          ],
+          "source": "backend/needs/sql/candidate.sql@c821b34d607016c6dbc1020c203621841f1a60e8",
+          "status": "candidate/local_only; production_not_provisioned",
+          "principal_binding": "Existing fresh AUTH and explicit host environment/issuer/subject scope; manual user-provided input only, no caller owner/source authority",
+          "sensitive_fields": [
+            "exact original manual UTF8/source text and retained action/revision identifiers",
+            "full current and historical planning snapshots including budget, dates/zones, party/companion labels, fixed intent and temporary conditions",
+            "scope/version/record times and action receipts"
+          ],
+          "retention": "UNDECIDED; revisions/receipts retained by candidate, not an infinite dedupe promise; activation blocked",
+          "cleanup_hook": "UNIMPLEMENTED; no cleanup/deletion API for current records, revisions or original source bytes; no automatic Memory/Trip promotion",
+          "restore_fence": "UNIMPLEMENTED; source/scope/account revocations and deletion replay required before restored reads"
         }
       ]
     },
@@ -217,6 +237,7 @@
   "production_activation": "BLOCKED; source/local acceptance does not provision production",
   "candidate_sources": {
     "memory": "426d337b0647d7770f1716fad83f2e5e724d28e4",
-    "trip": "5fd115fc97e542bc8776a445d8245fd272000e56"
+    "trip": "5fd115fc97e542bc8776a445d8245fd272000e56",
+    "needs": "c821b34d607016c6dbc1020c203621841f1a60e8"
   }
 }

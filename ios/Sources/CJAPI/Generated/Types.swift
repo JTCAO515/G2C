@@ -58,6 +58,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/trip-proposals`.
     /// - Remark: Generated from `#/paths//v1/trip-proposals/get(getTripProposal)`.
     func getTripProposal(_ input: Operations.getTripProposal.Input) async throws -> Operations.getTripProposal.Output
+    /// - Remark: HTTP `POST /v1/needs-actions`.
+    /// - Remark: Generated from `#/paths//v1/needs-actions/post(actOnNeeds)`.
+    func actOnNeeds(_ input: Operations.actOnNeeds.Input) async throws -> Operations.actOnNeeds.Output
+    /// - Remark: HTTP `GET /v1/needs-action-receipts`.
+    /// - Remark: Generated from `#/paths//v1/needs-action-receipts/get(queryNeedsAction)`.
+    func queryNeedsAction(_ input: Operations.queryNeedsAction.Input) async throws -> Operations.queryNeedsAction.Output
+    /// - Remark: HTTP `GET /v1/needs`.
+    /// - Remark: Generated from `#/paths//v1/needs/get(getNeeds)`.
+    func getNeeds(_ input: Operations.getNeeds.Input) async throws -> Operations.getNeeds.Output
+    /// - Remark: HTTP `GET /v1/needs-revisions`.
+    /// - Remark: Generated from `#/paths//v1/needs-revisions/get(getNeedsRevision)`.
+    func getNeedsRevision(_ input: Operations.getNeedsRevision.Input) async throws -> Operations.getNeedsRevision.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -237,6 +249,50 @@ extension APIProtocol {
         headers: Operations.getTripProposal.Input.Headers = .init()
     ) async throws -> Operations.getTripProposal.Output {
         try await getTripProposal(Operations.getTripProposal.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/needs-actions`.
+    /// - Remark: Generated from `#/paths//v1/needs-actions/post(actOnNeeds)`.
+    public func actOnNeeds(
+        headers: Operations.actOnNeeds.Input.Headers = .init(),
+        body: Operations.actOnNeeds.Input.Body
+    ) async throws -> Operations.actOnNeeds.Output {
+        try await actOnNeeds(Operations.actOnNeeds.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/needs-action-receipts`.
+    /// - Remark: Generated from `#/paths//v1/needs-action-receipts/get(queryNeedsAction)`.
+    public func queryNeedsAction(
+        query: Operations.queryNeedsAction.Input.Query,
+        headers: Operations.queryNeedsAction.Input.Headers = .init()
+    ) async throws -> Operations.queryNeedsAction.Output {
+        try await queryNeedsAction(Operations.queryNeedsAction.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/needs`.
+    /// - Remark: Generated from `#/paths//v1/needs/get(getNeeds)`.
+    public func getNeeds(
+        query: Operations.getNeeds.Input.Query,
+        headers: Operations.getNeeds.Input.Headers = .init()
+    ) async throws -> Operations.getNeeds.Output {
+        try await getNeeds(Operations.getNeeds.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/needs-revisions`.
+    /// - Remark: Generated from `#/paths//v1/needs-revisions/get(getNeedsRevision)`.
+    public func getNeedsRevision(
+        query: Operations.getNeedsRevision.Input.Query,
+        headers: Operations.getNeedsRevision.Input.Headers = .init()
+    ) async throws -> Operations.getNeedsRevision.Output {
+        try await getNeedsRevision(Operations.getNeedsRevision.Input(
             query: query,
             headers: headers
         ))

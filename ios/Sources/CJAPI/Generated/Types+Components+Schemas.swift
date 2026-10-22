@@ -2341,5 +2341,2445 @@ extension Components {
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/NeedsMissingObservation`.
+        public struct NeedsMissingObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsMissingObservation/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case missing = "missing"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsMissingObservation/state`.
+            public var state: Components.Schemas.NeedsMissingObservation.statePayload
+            /// Creates a new `NeedsMissingObservation`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            public init(state: Components.Schemas.NeedsMissingObservation.statePayload) {
+                self.state = state
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsMissingObservation.statePayload.self,
+                    forKey: .state
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsUnknownObservation`.
+        public struct NeedsUnknownObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsUnknownObservation/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case unknown = "unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsUnknownObservation/state`.
+            public var state: Components.Schemas.NeedsUnknownObservation.statePayload
+            /// Creates a new `NeedsUnknownObservation`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            public init(state: Components.Schemas.NeedsUnknownObservation.statePayload) {
+                self.state = state
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsUnknownObservation.statePayload.self,
+                    forKey: .state
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsUncertainObservation`.
+        public struct NeedsUncertainObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsUncertainObservation/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case uncertain = "uncertain"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsUncertainObservation/state`.
+            public var state: Components.Schemas.NeedsUncertainObservation.statePayload
+            /// - Remark: Generated from `#/components/schemas/NeedsUncertainObservation/note`.
+            public var note: Swift.String
+            /// Creates a new `NeedsUncertainObservation`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - note:
+            public init(
+                state: Components.Schemas.NeedsUncertainObservation.statePayload,
+                note: Swift.String
+            ) {
+                self.state = state
+                self.note = note
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case note
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsUncertainObservation.statePayload.self,
+                    forKey: .state
+                )
+                self.note = try container.decode(
+                    Swift.String.self,
+                    forKey: .note
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "note"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservationKnown`.
+        public struct NeedsPartySizeObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservationKnown/state`.
+            public var state: Components.Schemas.NeedsPartySizeObservationKnown.statePayload
+            /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservationKnown/value`.
+            public var value: Swift.Int
+            /// Creates a new `NeedsPartySizeObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value:
+            public init(
+                state: Components.Schemas.NeedsPartySizeObservationKnown.statePayload,
+                value: Swift.Int
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsPartySizeObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Swift.Int.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservation`.
+        @frozen public enum NeedsPartySizeObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsPartySizeObservation/case4`.
+            case NeedsPartySizeObservationKnown(Components.Schemas.NeedsPartySizeObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsPartySizeObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsPartySizeObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservationKnown`.
+        public struct NeedsTimezoneObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservationKnown/state`.
+            public var state: Components.Schemas.NeedsTimezoneObservationKnown.statePayload
+            /// Explicit IANA timezone, checked by producer. No device/destination/overseas default or cross-field copy.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservationKnown/value`.
+            public var value: Swift.String
+            /// Creates a new `NeedsTimezoneObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value: Explicit IANA timezone, checked by producer. No device/destination/overseas default or cross-field copy.
+            public init(
+                state: Components.Schemas.NeedsTimezoneObservationKnown.statePayload,
+                value: Swift.String
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsTimezoneObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Swift.String.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservation`.
+        @frozen public enum NeedsTimezoneObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsTimezoneObservation/case4`.
+            case NeedsTimezoneObservationKnown(Components.Schemas.NeedsTimezoneObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsTimezoneObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsTimezoneObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservationKnown`.
+        public struct NeedsCurrencyObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservationKnown/state`.
+            public var state: Components.Schemas.NeedsCurrencyObservationKnown.statePayload
+            /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservationKnown/value`.
+            public var value: Swift.String
+            /// Creates a new `NeedsCurrencyObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value:
+            public init(
+                state: Components.Schemas.NeedsCurrencyObservationKnown.statePayload,
+                value: Swift.String
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsCurrencyObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Swift.String.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservation`.
+        @frozen public enum NeedsCurrencyObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsCurrencyObservation/case4`.
+            case NeedsCurrencyObservationKnown(Components.Schemas.NeedsCurrencyObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsCurrencyObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsCurrencyObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservationKnown`.
+        public struct NeedsMoneyObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservationKnown/state`.
+            public var state: Components.Schemas.NeedsMoneyObservationKnown.statePayload
+            /// Exact nonnegative decimal text, retained without division/conversion/implicit zero.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservationKnown/value`.
+            public var value: Swift.String
+            /// Creates a new `NeedsMoneyObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value: Exact nonnegative decimal text, retained without division/conversion/implicit zero.
+            public init(
+                state: Components.Schemas.NeedsMoneyObservationKnown.statePayload,
+                value: Swift.String
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsMoneyObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Swift.String.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservation`.
+        @frozen public enum NeedsMoneyObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsMoneyObservation/case4`.
+            case NeedsMoneyObservationKnown(Components.Schemas.NeedsMoneyObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsMoneyObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsMoneyObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservationKnown`.
+        public struct NeedsBudgetBasisObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservationKnown/state`.
+            public var state: Components.Schemas.NeedsBudgetBasisObservationKnown.statePayload
+            /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservationKnown/value`.
+            @frozen public enum valuePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case total = "total"
+                case per_person = "per_person"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservationKnown/value`.
+            public var value: Components.Schemas.NeedsBudgetBasisObservationKnown.valuePayload
+            /// Creates a new `NeedsBudgetBasisObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value:
+            public init(
+                state: Components.Schemas.NeedsBudgetBasisObservationKnown.statePayload,
+                value: Components.Schemas.NeedsBudgetBasisObservationKnown.valuePayload
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsBudgetBasisObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Components.Schemas.NeedsBudgetBasisObservationKnown.valuePayload.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservation`.
+        @frozen public enum NeedsBudgetBasisObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsBudgetBasisObservation/case4`.
+            case NeedsBudgetBasisObservationKnown(Components.Schemas.NeedsBudgetBasisObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsBudgetBasisObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsBudgetBasisObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservationKnown`.
+        public struct NeedsCoverageObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservationKnown/state`.
+            public var state: Components.Schemas.NeedsCoverageObservationKnown.statePayload
+            /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservationKnown/value`.
+            public var value: [Swift.String]
+            /// Creates a new `NeedsCoverageObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value:
+            public init(
+                state: Components.Schemas.NeedsCoverageObservationKnown.statePayload,
+                value: [Swift.String]
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsCoverageObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    [Swift.String].self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservation`.
+        @frozen public enum NeedsCoverageObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsCoverageObservation/case4`.
+            case NeedsCoverageObservationKnown(Components.Schemas.NeedsCoverageObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsCoverageObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsCoverageObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsTextObservationKnown`.
+        public struct NeedsTextObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsTextObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsTextObservationKnown/state`.
+            public var state: Components.Schemas.NeedsTextObservationKnown.statePayload
+            /// - Remark: Generated from `#/components/schemas/NeedsTextObservationKnown/value`.
+            public var value: Swift.String
+            /// Creates a new `NeedsTextObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value:
+            public init(
+                state: Components.Schemas.NeedsTextObservationKnown.statePayload,
+                value: Swift.String
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsTextObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Swift.String.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsTextObservation`.
+        @frozen public enum NeedsTextObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsTextObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsTextObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsTextObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsTextObservation/case4`.
+            case NeedsTextObservationKnown(Components.Schemas.NeedsTextObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsTextObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsTextObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservationKnown`.
+        public struct NeedsLocalDateObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservationKnown/state`.
+            public var state: Components.Schemas.NeedsLocalDateObservationKnown.statePayload
+            /// Valid calendar date as original local YYYY-MM-DD string; intentionally not a Date/instant.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservationKnown/value`.
+            public var value: Swift.String
+            /// Creates a new `NeedsLocalDateObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value: Valid calendar date as original local YYYY-MM-DD string; intentionally not a Date/instant.
+            public init(
+                state: Components.Schemas.NeedsLocalDateObservationKnown.statePayload,
+                value: Swift.String
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsLocalDateObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Swift.String.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservation`.
+        @frozen public enum NeedsLocalDateObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalDateObservation/case4`.
+            case NeedsLocalDateObservationKnown(Components.Schemas.NeedsLocalDateObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsLocalDateObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsLocalDateObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservationKnown`.
+        public struct NeedsLocalTimeObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservationKnown/state`.
+            public var state: Components.Schemas.NeedsLocalTimeObservationKnown.statePayload
+            /// Local wall time HH:MM or HH:MM:SS. No UTC/device conversion or DST resolution.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservationKnown/value`.
+            public var value: Swift.String
+            /// Creates a new `NeedsLocalTimeObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value: Local wall time HH:MM or HH:MM:SS. No UTC/device conversion or DST resolution.
+            public init(
+                state: Components.Schemas.NeedsLocalTimeObservationKnown.statePayload,
+                value: Swift.String
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsLocalTimeObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Swift.String.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservation`.
+        @frozen public enum NeedsLocalTimeObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLocalTimeObservation/case4`.
+            case NeedsLocalTimeObservationKnown(Components.Schemas.NeedsLocalTimeObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsLocalTimeObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsLocalTimeObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsLockedObservationKnown`.
+        public struct NeedsLockedObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsLockedObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsLockedObservationKnown/state`.
+            public var state: Components.Schemas.NeedsLockedObservationKnown.statePayload
+            /// - Remark: Generated from `#/components/schemas/NeedsLockedObservationKnown/value`.
+            public var value: Swift.Bool
+            /// Creates a new `NeedsLockedObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value:
+            public init(
+                state: Components.Schemas.NeedsLockedObservationKnown.statePayload,
+                value: Swift.Bool
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsLockedObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Swift.Bool.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsLockedObservation`.
+        @frozen public enum NeedsLockedObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsLockedObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLockedObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLockedObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsLockedObservation/case4`.
+            case NeedsLockedObservationKnown(Components.Schemas.NeedsLockedObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsLockedObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsLockedObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsBookingObservationKnown`.
+        public struct NeedsBookingObservationKnown: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsBookingObservationKnown/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case known = "known"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsBookingObservationKnown/state`.
+            public var state: Components.Schemas.NeedsBookingObservationKnown.statePayload
+            /// - Remark: Generated from `#/components/schemas/NeedsBookingObservationKnown/value`.
+            @frozen public enum valuePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case booked = "booked"
+                case intended = "intended"
+                case cancelled = "cancelled"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsBookingObservationKnown/value`.
+            public var value: Components.Schemas.NeedsBookingObservationKnown.valuePayload
+            /// Creates a new `NeedsBookingObservationKnown`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - value:
+            public init(
+                state: Components.Schemas.NeedsBookingObservationKnown.statePayload,
+                value: Components.Schemas.NeedsBookingObservationKnown.valuePayload
+            ) {
+                self.state = state
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case value
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.state = try container.decode(
+                    Components.Schemas.NeedsBookingObservationKnown.statePayload.self,
+                    forKey: .state
+                )
+                self.value = try container.decode(
+                    Components.Schemas.NeedsBookingObservationKnown.valuePayload.self,
+                    forKey: .value
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "state",
+                    "value"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsBookingObservation`.
+        @frozen public enum NeedsBookingObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsBookingObservation/case1`.
+            case NeedsMissingObservation(Components.Schemas.NeedsMissingObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsBookingObservation/case2`.
+            case NeedsUnknownObservation(Components.Schemas.NeedsUnknownObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsBookingObservation/case3`.
+            case NeedsUncertainObservation(Components.Schemas.NeedsUncertainObservation)
+            /// - Remark: Generated from `#/components/schemas/NeedsBookingObservation/case4`.
+            case NeedsBookingObservationKnown(Components.Schemas.NeedsBookingObservationKnown)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .NeedsMissingObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUnknownObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsUncertainObservation(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .NeedsBookingObservationKnown(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .NeedsMissingObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUnknownObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsUncertainObservation(value):
+                    try value.encode(to: encoder)
+                case let .NeedsBookingObservationKnown(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsEvent`.
+        public struct NeedsEvent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsEvent/date`.
+            public var date: Components.Schemas.NeedsLocalDateObservation
+            /// - Remark: Generated from `#/components/schemas/NeedsEvent/time`.
+            public var time: Components.Schemas.NeedsLocalTimeObservation
+            /// - Remark: Generated from `#/components/schemas/NeedsEvent/timezone`.
+            public var timezone: Components.Schemas.NeedsTimezoneObservation
+            /// - Remark: Generated from `#/components/schemas/NeedsEvent/place`.
+            public var place: Components.Schemas.NeedsTextObservation
+            /// Creates a new `NeedsEvent`.
+            ///
+            /// - Parameters:
+            ///   - date:
+            ///   - time:
+            ///   - timezone:
+            ///   - place:
+            public init(
+                date: Components.Schemas.NeedsLocalDateObservation,
+                time: Components.Schemas.NeedsLocalTimeObservation,
+                timezone: Components.Schemas.NeedsTimezoneObservation,
+                place: Components.Schemas.NeedsTextObservation
+            ) {
+                self.date = date
+                self.time = time
+                self.timezone = timezone
+                self.place = place
+            }
+            public enum CodingKeys: String, CodingKey {
+                case date
+                case time
+                case timezone
+                case place
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.date = try container.decode(
+                    Components.Schemas.NeedsLocalDateObservation.self,
+                    forKey: .date
+                )
+                self.time = try container.decode(
+                    Components.Schemas.NeedsLocalTimeObservation.self,
+                    forKey: .time
+                )
+                self.timezone = try container.decode(
+                    Components.Schemas.NeedsTimezoneObservation.self,
+                    forKey: .timezone
+                )
+                self.place = try container.decode(
+                    Components.Schemas.NeedsTextObservation.self,
+                    forKey: .place
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "date",
+                    "time",
+                    "timezone",
+                    "place"
+                ])
+            }
+        }
+        /// Manual user claim, not supplier verification. Explicit lock is never auto-relaxed. Companion IDs must exist in resultant record.
+        ///
+        /// - Remark: Generated from `#/components/schemas/NeedsFixedItem`.
+        public struct NeedsFixedItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case hotel = "hotel"
+                case transport = "transport"
+                case appointment = "appointment"
+                case intent = "intent"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/kind`.
+            public var kind: Components.Schemas.NeedsFixedItem.kindPayload
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/description`.
+            public var description: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/applies_to`.
+            public var applies_to: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/locked`.
+            public var locked: Components.Schemas.NeedsLockedObservation
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/start`.
+            public var start: Components.Schemas.NeedsEvent
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/end`.
+            public var end: Components.Schemas.NeedsEvent
+            /// - Remark: Generated from `#/components/schemas/NeedsFixedItem/booking_status`.
+            public var booking_status: Components.Schemas.NeedsBookingObservation
+            /// Creates a new `NeedsFixedItem`.
+            ///
+            /// - Parameters:
+            ///   - item_id:
+            ///   - kind:
+            ///   - description:
+            ///   - applies_to:
+            ///   - locked:
+            ///   - start:
+            ///   - end:
+            ///   - booking_status:
+            public init(
+                item_id: Swift.String,
+                kind: Components.Schemas.NeedsFixedItem.kindPayload,
+                description: Swift.String,
+                applies_to: [Swift.String],
+                locked: Components.Schemas.NeedsLockedObservation,
+                start: Components.Schemas.NeedsEvent,
+                end: Components.Schemas.NeedsEvent,
+                booking_status: Components.Schemas.NeedsBookingObservation
+            ) {
+                self.item_id = item_id
+                self.kind = kind
+                self.description = description
+                self.applies_to = applies_to
+                self.locked = locked
+                self.start = start
+                self.end = end
+                self.booking_status = booking_status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case item_id
+                case kind
+                case description
+                case applies_to
+                case locked
+                case start
+                case end
+                case booking_status
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.kind = try container.decode(
+                    Components.Schemas.NeedsFixedItem.kindPayload.self,
+                    forKey: .kind
+                )
+                self.description = try container.decode(
+                    Swift.String.self,
+                    forKey: .description
+                )
+                self.applies_to = try container.decode(
+                    [Swift.String].self,
+                    forKey: .applies_to
+                )
+                self.locked = try container.decode(
+                    Components.Schemas.NeedsLockedObservation.self,
+                    forKey: .locked
+                )
+                self.start = try container.decode(
+                    Components.Schemas.NeedsEvent.self,
+                    forKey: .start
+                )
+                self.end = try container.decode(
+                    Components.Schemas.NeedsEvent.self,
+                    forKey: .end
+                )
+                self.booking_status = try container.decode(
+                    Components.Schemas.NeedsBookingObservation.self,
+                    forKey: .booking_status
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "item_id",
+                    "kind",
+                    "description",
+                    "applies_to",
+                    "locked",
+                    "start",
+                    "end",
+                    "booking_status"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsTemporaryCondition`.
+        public struct NeedsTemporaryCondition: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsTemporaryCondition/condition_id`.
+            public var condition_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsTemporaryCondition/applies_to`.
+            public var applies_to: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/NeedsTemporaryCondition/description`.
+            public var description: Swift.String
+            /// Creates a new `NeedsTemporaryCondition`.
+            ///
+            /// - Parameters:
+            ///   - condition_id:
+            ///   - applies_to:
+            ///   - description:
+            public init(
+                condition_id: Swift.String,
+                applies_to: [Swift.String],
+                description: Swift.String
+            ) {
+                self.condition_id = condition_id
+                self.applies_to = applies_to
+                self.description = description
+            }
+            public enum CodingKeys: String, CodingKey {
+                case condition_id
+                case applies_to
+                case description
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.condition_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .condition_id
+                )
+                self.applies_to = try container.decode(
+                    [Swift.String].self,
+                    forKey: .applies_to
+                )
+                self.description = try container.decode(
+                    Swift.String.self,
+                    forKey: .description
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "condition_id",
+                    "applies_to",
+                    "description"
+                ])
+            }
+        }
+        /// Only present fields are recorded. Omission differs from explicit missing/unknown/uncertain; never emit absent fields as null or zero. Arrays/maps may be explicitly empty. No long-term Memory or formal Trip writes.
+        ///
+        /// - Remark: Generated from `#/components/schemas/NeedsFields`.
+        public struct NeedsFields: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/party_size`.
+            public var party_size: Components.Schemas.NeedsPartySizeObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/destination_timezone`.
+            public var destination_timezone: Components.Schemas.NeedsTimezoneObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/overseas_timezone`.
+            public var overseas_timezone: Components.Schemas.NeedsTimezoneObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/budget_currency`.
+            public var budget_currency: Components.Schemas.NeedsCurrencyObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/budget_total`.
+            public var budget_total: Components.Schemas.NeedsMoneyObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/budget_per_person`.
+            public var budget_per_person: Components.Schemas.NeedsMoneyObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/budget_paid`.
+            public var budget_paid: Components.Schemas.NeedsMoneyObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/budget_basis`.
+            public var budget_basis: Components.Schemas.NeedsBudgetBasisObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/budget_includes`.
+            public var budget_includes: Components.Schemas.NeedsCoverageObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/pace`.
+            public var pace: Components.Schemas.NeedsTextObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/overseas_departure`.
+            public var overseas_departure: Components.Schemas.NeedsEvent?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/arrival`.
+            public var arrival: Components.Schemas.NeedsEvent?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/departure`.
+            public var departure: Components.Schemas.NeedsEvent?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/companions`.
+            public struct companionsPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.String]
+                /// Creates a new `companionsPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.String] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/companions`.
+            public var companions: Components.Schemas.NeedsFields.companionsPayload?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/fixed_items`.
+            public var fixed_items: [Components.Schemas.NeedsFixedItem]?
+            /// - Remark: Generated from `#/components/schemas/NeedsFields/temporary_conditions`.
+            public var temporary_conditions: [Components.Schemas.NeedsTemporaryCondition]?
+            /// Creates a new `NeedsFields`.
+            ///
+            /// - Parameters:
+            ///   - party_size:
+            ///   - destination_timezone:
+            ///   - overseas_timezone:
+            ///   - budget_currency:
+            ///   - budget_total:
+            ///   - budget_per_person:
+            ///   - budget_paid:
+            ///   - budget_basis:
+            ///   - budget_includes:
+            ///   - pace:
+            ///   - overseas_departure:
+            ///   - arrival:
+            ///   - departure:
+            ///   - companions:
+            ///   - fixed_items:
+            ///   - temporary_conditions:
+            public init(
+                party_size: Components.Schemas.NeedsPartySizeObservation? = nil,
+                destination_timezone: Components.Schemas.NeedsTimezoneObservation? = nil,
+                overseas_timezone: Components.Schemas.NeedsTimezoneObservation? = nil,
+                budget_currency: Components.Schemas.NeedsCurrencyObservation? = nil,
+                budget_total: Components.Schemas.NeedsMoneyObservation? = nil,
+                budget_per_person: Components.Schemas.NeedsMoneyObservation? = nil,
+                budget_paid: Components.Schemas.NeedsMoneyObservation? = nil,
+                budget_basis: Components.Schemas.NeedsBudgetBasisObservation? = nil,
+                budget_includes: Components.Schemas.NeedsCoverageObservation? = nil,
+                pace: Components.Schemas.NeedsTextObservation? = nil,
+                overseas_departure: Components.Schemas.NeedsEvent? = nil,
+                arrival: Components.Schemas.NeedsEvent? = nil,
+                departure: Components.Schemas.NeedsEvent? = nil,
+                companions: Components.Schemas.NeedsFields.companionsPayload? = nil,
+                fixed_items: [Components.Schemas.NeedsFixedItem]? = nil,
+                temporary_conditions: [Components.Schemas.NeedsTemporaryCondition]? = nil
+            ) {
+                self.party_size = party_size
+                self.destination_timezone = destination_timezone
+                self.overseas_timezone = overseas_timezone
+                self.budget_currency = budget_currency
+                self.budget_total = budget_total
+                self.budget_per_person = budget_per_person
+                self.budget_paid = budget_paid
+                self.budget_basis = budget_basis
+                self.budget_includes = budget_includes
+                self.pace = pace
+                self.overseas_departure = overseas_departure
+                self.arrival = arrival
+                self.departure = departure
+                self.companions = companions
+                self.fixed_items = fixed_items
+                self.temporary_conditions = temporary_conditions
+            }
+            public enum CodingKeys: String, CodingKey {
+                case party_size
+                case destination_timezone
+                case overseas_timezone
+                case budget_currency
+                case budget_total
+                case budget_per_person
+                case budget_paid
+                case budget_basis
+                case budget_includes
+                case pace
+                case overseas_departure
+                case arrival
+                case departure
+                case companions
+                case fixed_items
+                case temporary_conditions
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.party_size = try container.decodeIfPresent(
+                    Components.Schemas.NeedsPartySizeObservation.self,
+                    forKey: .party_size
+                )
+                self.destination_timezone = try container.decodeIfPresent(
+                    Components.Schemas.NeedsTimezoneObservation.self,
+                    forKey: .destination_timezone
+                )
+                self.overseas_timezone = try container.decodeIfPresent(
+                    Components.Schemas.NeedsTimezoneObservation.self,
+                    forKey: .overseas_timezone
+                )
+                self.budget_currency = try container.decodeIfPresent(
+                    Components.Schemas.NeedsCurrencyObservation.self,
+                    forKey: .budget_currency
+                )
+                self.budget_total = try container.decodeIfPresent(
+                    Components.Schemas.NeedsMoneyObservation.self,
+                    forKey: .budget_total
+                )
+                self.budget_per_person = try container.decodeIfPresent(
+                    Components.Schemas.NeedsMoneyObservation.self,
+                    forKey: .budget_per_person
+                )
+                self.budget_paid = try container.decodeIfPresent(
+                    Components.Schemas.NeedsMoneyObservation.self,
+                    forKey: .budget_paid
+                )
+                self.budget_basis = try container.decodeIfPresent(
+                    Components.Schemas.NeedsBudgetBasisObservation.self,
+                    forKey: .budget_basis
+                )
+                self.budget_includes = try container.decodeIfPresent(
+                    Components.Schemas.NeedsCoverageObservation.self,
+                    forKey: .budget_includes
+                )
+                self.pace = try container.decodeIfPresent(
+                    Components.Schemas.NeedsTextObservation.self,
+                    forKey: .pace
+                )
+                self.overseas_departure = try container.decodeIfPresent(
+                    Components.Schemas.NeedsEvent.self,
+                    forKey: .overseas_departure
+                )
+                self.arrival = try container.decodeIfPresent(
+                    Components.Schemas.NeedsEvent.self,
+                    forKey: .arrival
+                )
+                self.departure = try container.decodeIfPresent(
+                    Components.Schemas.NeedsEvent.self,
+                    forKey: .departure
+                )
+                self.companions = try container.decodeIfPresent(
+                    Components.Schemas.NeedsFields.companionsPayload.self,
+                    forKey: .companions
+                )
+                self.fixed_items = try container.decodeIfPresent(
+                    [Components.Schemas.NeedsFixedItem].self,
+                    forKey: .fixed_items
+                )
+                self.temporary_conditions = try container.decodeIfPresent(
+                    [Components.Schemas.NeedsTemporaryCondition].self,
+                    forKey: .temporary_conditions
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "party_size",
+                    "destination_timezone",
+                    "overseas_timezone",
+                    "budget_currency",
+                    "budget_total",
+                    "budget_per_person",
+                    "budget_paid",
+                    "budget_basis",
+                    "budget_includes",
+                    "pace",
+                    "overseas_departure",
+                    "arrival",
+                    "departure",
+                    "companions",
+                    "fixed_items",
+                    "temporary_conditions"
+                ])
+            }
+        }
+        /// Nonempty patch; omitted fields retain prior values. Present nested objects/lists replace entire field; explicit empty collection clears. Resultant companion references validated atomically.
+        ///
+        /// - Remark: Generated from `#/components/schemas/NeedsChanges`.
+        public struct NeedsChanges: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/party_size`.
+            public var party_size: Components.Schemas.NeedsPartySizeObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/destination_timezone`.
+            public var destination_timezone: Components.Schemas.NeedsTimezoneObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/overseas_timezone`.
+            public var overseas_timezone: Components.Schemas.NeedsTimezoneObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/budget_currency`.
+            public var budget_currency: Components.Schemas.NeedsCurrencyObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/budget_total`.
+            public var budget_total: Components.Schemas.NeedsMoneyObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/budget_per_person`.
+            public var budget_per_person: Components.Schemas.NeedsMoneyObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/budget_paid`.
+            public var budget_paid: Components.Schemas.NeedsMoneyObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/budget_basis`.
+            public var budget_basis: Components.Schemas.NeedsBudgetBasisObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/budget_includes`.
+            public var budget_includes: Components.Schemas.NeedsCoverageObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/pace`.
+            public var pace: Components.Schemas.NeedsTextObservation?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/overseas_departure`.
+            public var overseas_departure: Components.Schemas.NeedsEvent?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/arrival`.
+            public var arrival: Components.Schemas.NeedsEvent?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/departure`.
+            public var departure: Components.Schemas.NeedsEvent?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/companions`.
+            public struct companionsPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.String]
+                /// Creates a new `companionsPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.String] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/companions`.
+            public var companions: Components.Schemas.NeedsChanges.companionsPayload?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/fixed_items`.
+            public var fixed_items: [Components.Schemas.NeedsFixedItem]?
+            /// - Remark: Generated from `#/components/schemas/NeedsChanges/temporary_conditions`.
+            public var temporary_conditions: [Components.Schemas.NeedsTemporaryCondition]?
+            /// Creates a new `NeedsChanges`.
+            ///
+            /// - Parameters:
+            ///   - party_size:
+            ///   - destination_timezone:
+            ///   - overseas_timezone:
+            ///   - budget_currency:
+            ///   - budget_total:
+            ///   - budget_per_person:
+            ///   - budget_paid:
+            ///   - budget_basis:
+            ///   - budget_includes:
+            ///   - pace:
+            ///   - overseas_departure:
+            ///   - arrival:
+            ///   - departure:
+            ///   - companions:
+            ///   - fixed_items:
+            ///   - temporary_conditions:
+            public init(
+                party_size: Components.Schemas.NeedsPartySizeObservation? = nil,
+                destination_timezone: Components.Schemas.NeedsTimezoneObservation? = nil,
+                overseas_timezone: Components.Schemas.NeedsTimezoneObservation? = nil,
+                budget_currency: Components.Schemas.NeedsCurrencyObservation? = nil,
+                budget_total: Components.Schemas.NeedsMoneyObservation? = nil,
+                budget_per_person: Components.Schemas.NeedsMoneyObservation? = nil,
+                budget_paid: Components.Schemas.NeedsMoneyObservation? = nil,
+                budget_basis: Components.Schemas.NeedsBudgetBasisObservation? = nil,
+                budget_includes: Components.Schemas.NeedsCoverageObservation? = nil,
+                pace: Components.Schemas.NeedsTextObservation? = nil,
+                overseas_departure: Components.Schemas.NeedsEvent? = nil,
+                arrival: Components.Schemas.NeedsEvent? = nil,
+                departure: Components.Schemas.NeedsEvent? = nil,
+                companions: Components.Schemas.NeedsChanges.companionsPayload? = nil,
+                fixed_items: [Components.Schemas.NeedsFixedItem]? = nil,
+                temporary_conditions: [Components.Schemas.NeedsTemporaryCondition]? = nil
+            ) {
+                self.party_size = party_size
+                self.destination_timezone = destination_timezone
+                self.overseas_timezone = overseas_timezone
+                self.budget_currency = budget_currency
+                self.budget_total = budget_total
+                self.budget_per_person = budget_per_person
+                self.budget_paid = budget_paid
+                self.budget_basis = budget_basis
+                self.budget_includes = budget_includes
+                self.pace = pace
+                self.overseas_departure = overseas_departure
+                self.arrival = arrival
+                self.departure = departure
+                self.companions = companions
+                self.fixed_items = fixed_items
+                self.temporary_conditions = temporary_conditions
+            }
+            public enum CodingKeys: String, CodingKey {
+                case party_size
+                case destination_timezone
+                case overseas_timezone
+                case budget_currency
+                case budget_total
+                case budget_per_person
+                case budget_paid
+                case budget_basis
+                case budget_includes
+                case pace
+                case overseas_departure
+                case arrival
+                case departure
+                case companions
+                case fixed_items
+                case temporary_conditions
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.party_size = try container.decodeIfPresent(
+                    Components.Schemas.NeedsPartySizeObservation.self,
+                    forKey: .party_size
+                )
+                self.destination_timezone = try container.decodeIfPresent(
+                    Components.Schemas.NeedsTimezoneObservation.self,
+                    forKey: .destination_timezone
+                )
+                self.overseas_timezone = try container.decodeIfPresent(
+                    Components.Schemas.NeedsTimezoneObservation.self,
+                    forKey: .overseas_timezone
+                )
+                self.budget_currency = try container.decodeIfPresent(
+                    Components.Schemas.NeedsCurrencyObservation.self,
+                    forKey: .budget_currency
+                )
+                self.budget_total = try container.decodeIfPresent(
+                    Components.Schemas.NeedsMoneyObservation.self,
+                    forKey: .budget_total
+                )
+                self.budget_per_person = try container.decodeIfPresent(
+                    Components.Schemas.NeedsMoneyObservation.self,
+                    forKey: .budget_per_person
+                )
+                self.budget_paid = try container.decodeIfPresent(
+                    Components.Schemas.NeedsMoneyObservation.self,
+                    forKey: .budget_paid
+                )
+                self.budget_basis = try container.decodeIfPresent(
+                    Components.Schemas.NeedsBudgetBasisObservation.self,
+                    forKey: .budget_basis
+                )
+                self.budget_includes = try container.decodeIfPresent(
+                    Components.Schemas.NeedsCoverageObservation.self,
+                    forKey: .budget_includes
+                )
+                self.pace = try container.decodeIfPresent(
+                    Components.Schemas.NeedsTextObservation.self,
+                    forKey: .pace
+                )
+                self.overseas_departure = try container.decodeIfPresent(
+                    Components.Schemas.NeedsEvent.self,
+                    forKey: .overseas_departure
+                )
+                self.arrival = try container.decodeIfPresent(
+                    Components.Schemas.NeedsEvent.self,
+                    forKey: .arrival
+                )
+                self.departure = try container.decodeIfPresent(
+                    Components.Schemas.NeedsEvent.self,
+                    forKey: .departure
+                )
+                self.companions = try container.decodeIfPresent(
+                    Components.Schemas.NeedsChanges.companionsPayload.self,
+                    forKey: .companions
+                )
+                self.fixed_items = try container.decodeIfPresent(
+                    [Components.Schemas.NeedsFixedItem].self,
+                    forKey: .fixed_items
+                )
+                self.temporary_conditions = try container.decodeIfPresent(
+                    [Components.Schemas.NeedsTemporaryCondition].self,
+                    forKey: .temporary_conditions
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "party_size",
+                    "destination_timezone",
+                    "overseas_timezone",
+                    "budget_currency",
+                    "budget_total",
+                    "budget_per_person",
+                    "budget_paid",
+                    "budget_basis",
+                    "budget_includes",
+                    "pace",
+                    "overseas_departure",
+                    "arrival",
+                    "departure",
+                    "companions",
+                    "fixed_items",
+                    "temporary_conditions"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsManualSource`.
+        public struct NeedsManualSource: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsManualSource/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case manual = "manual"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsManualSource/kind`.
+            public var kind: Components.Schemas.NeedsManualSource.kindPayload
+            /// - Remark: Generated from `#/components/schemas/NeedsManualSource/text`.
+            public var text: Swift.String
+            /// Creates a new `NeedsManualSource`.
+            ///
+            /// - Parameters:
+            ///   - kind:
+            ///   - text:
+            public init(
+                kind: Components.Schemas.NeedsManualSource.kindPayload,
+                text: Swift.String
+            ) {
+                self.kind = kind
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case kind
+                case text
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.kind = try container.decode(
+                    Components.Schemas.NeedsManualSource.kindPayload.self,
+                    forKey: .kind
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "kind",
+                    "text"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsCommand`.
+        public struct NeedsCommand: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsCommand/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsCommand/needs_id`.
+            public var needs_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsCommand/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/NeedsCommand/source`.
+            public var source: Components.Schemas.NeedsManualSource
+            /// - Remark: Generated from `#/components/schemas/NeedsCommand/changes`.
+            public var changes: Components.Schemas.NeedsChanges
+            /// Creates a new `NeedsCommand`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - needs_id:
+            ///   - expected_version:
+            ///   - source:
+            ///   - changes:
+            public init(
+                action_id: Swift.String,
+                needs_id: Swift.String,
+                expected_version: Swift.Int,
+                source: Components.Schemas.NeedsManualSource,
+                changes: Components.Schemas.NeedsChanges
+            ) {
+                self.action_id = action_id
+                self.needs_id = needs_id
+                self.expected_version = expected_version
+                self.source = source
+                self.changes = changes
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case needs_id
+                case expected_version
+                case source
+                case changes
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.needs_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .needs_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.source = try container.decode(
+                    Components.Schemas.NeedsManualSource.self,
+                    forKey: .source
+                )
+                self.changes = try container.decode(
+                    Components.Schemas.NeedsChanges.self,
+                    forKey: .changes
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "needs_id",
+                    "expected_version",
+                    "source",
+                    "changes"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsReceipt`.
+        public struct NeedsReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsReceipt/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsReceipt/needs_id`.
+            public var needs_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsReceipt/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/NeedsReceipt/operation`.
+            @frozen public enum operationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case manual_patch = "manual_patch"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsReceipt/operation`.
+            public var operation: Components.Schemas.NeedsReceipt.operationPayload
+            /// Creates a new `NeedsReceipt`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - needs_id:
+            ///   - version:
+            ///   - operation:
+            public init(
+                action_id: Swift.String,
+                needs_id: Swift.String,
+                version: Swift.Int,
+                operation: Components.Schemas.NeedsReceipt.operationPayload
+            ) {
+                self.action_id = action_id
+                self.needs_id = needs_id
+                self.version = version
+                self.operation = operation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case needs_id
+                case version
+                case operation
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.needs_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .needs_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.operation = try container.decode(
+                    Components.Schemas.NeedsReceipt.operationPayload.self,
+                    forKey: .operation
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "needs_id",
+                    "version",
+                    "operation"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsSnapshot`.
+        public struct NeedsSnapshot: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsSnapshot/needs_id`.
+            public var needs_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsSnapshot/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/NeedsSnapshot/source_kind`.
+            @frozen public enum source_kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case user_provided = "user_provided"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsSnapshot/source_kind`.
+            public var source_kind: Components.Schemas.NeedsSnapshot.source_kindPayload
+            /// - Remark: Generated from `#/components/schemas/NeedsSnapshot/content_utf8_base64`.
+            public var content_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsSnapshot/fields`.
+            public var fields: Components.Schemas.NeedsFields
+            /// Creates a new `NeedsSnapshot`.
+            ///
+            /// - Parameters:
+            ///   - needs_id:
+            ///   - version:
+            ///   - source_kind:
+            ///   - content_utf8_base64:
+            ///   - fields:
+            public init(
+                needs_id: Swift.String,
+                version: Swift.Int,
+                source_kind: Components.Schemas.NeedsSnapshot.source_kindPayload,
+                content_utf8_base64: Swift.String,
+                fields: Components.Schemas.NeedsFields
+            ) {
+                self.needs_id = needs_id
+                self.version = version
+                self.source_kind = source_kind
+                self.content_utf8_base64 = content_utf8_base64
+                self.fields = fields
+            }
+            public enum CodingKeys: String, CodingKey {
+                case needs_id
+                case version
+                case source_kind
+                case content_utf8_base64
+                case fields
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.needs_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .needs_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.source_kind = try container.decode(
+                    Components.Schemas.NeedsSnapshot.source_kindPayload.self,
+                    forKey: .source_kind
+                )
+                self.content_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .content_utf8_base64
+                )
+                self.fields = try container.decode(
+                    Components.Schemas.NeedsFields.self,
+                    forKey: .fields
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "needs_id",
+                    "version",
+                    "source_kind",
+                    "content_utf8_base64",
+                    "fields"
+                ])
+            }
+        }
+        /// Exact historical original command and full result snapshot, not latest detail. Compare action_id and original_input bytes against preserved original action. No per-field source or historical hash is invented.
+        ///
+        /// - Remark: Generated from `#/components/schemas/NeedsRevision`.
+        public struct NeedsRevision: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsRevision/needs_id`.
+            public var needs_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsRevision/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/NeedsRevision/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsRevision/source_kind`.
+            @frozen public enum source_kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case user_provided = "user_provided"
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsRevision/source_kind`.
+            public var source_kind: Components.Schemas.NeedsRevision.source_kindPayload
+            /// - Remark: Generated from `#/components/schemas/NeedsRevision/original_input_utf8_base64`.
+            public var original_input_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsRevision/content_utf8_base64`.
+            public var content_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/NeedsRevision/fields`.
+            public var fields: Components.Schemas.NeedsFields
+            /// Creates a new `NeedsRevision`.
+            ///
+            /// - Parameters:
+            ///   - needs_id:
+            ///   - version:
+            ///   - action_id:
+            ///   - source_kind:
+            ///   - original_input_utf8_base64:
+            ///   - content_utf8_base64:
+            ///   - fields:
+            public init(
+                needs_id: Swift.String,
+                version: Swift.Int,
+                action_id: Swift.String,
+                source_kind: Components.Schemas.NeedsRevision.source_kindPayload,
+                original_input_utf8_base64: Swift.String,
+                content_utf8_base64: Swift.String,
+                fields: Components.Schemas.NeedsFields
+            ) {
+                self.needs_id = needs_id
+                self.version = version
+                self.action_id = action_id
+                self.source_kind = source_kind
+                self.original_input_utf8_base64 = original_input_utf8_base64
+                self.content_utf8_base64 = content_utf8_base64
+                self.fields = fields
+            }
+            public enum CodingKeys: String, CodingKey {
+                case needs_id
+                case version
+                case action_id
+                case source_kind
+                case original_input_utf8_base64
+                case content_utf8_base64
+                case fields
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.needs_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .needs_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.source_kind = try container.decode(
+                    Components.Schemas.NeedsRevision.source_kindPayload.self,
+                    forKey: .source_kind
+                )
+                self.original_input_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .original_input_utf8_base64
+                )
+                self.content_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .content_utf8_base64
+                )
+                self.fields = try container.decode(
+                    Components.Schemas.NeedsFields.self,
+                    forKey: .fields
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "needs_id",
+                    "version",
+                    "action_id",
+                    "source_kind",
+                    "original_input_utf8_base64",
+                    "content_utf8_base64",
+                    "fields"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsActionResponse`.
+        public struct NeedsActionResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsActionResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/NeedsActionResponse/receipt`.
+            public var receipt: Components.Schemas.NeedsReceipt
+            /// Creates a new `NeedsActionResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.NeedsReceipt
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.NeedsReceipt.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsActionQueryResponse`.
+        public struct NeedsActionQueryResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsActionQueryResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/NeedsActionQueryResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/NeedsActionQueryResponse/receipt/case1`.
+                case NeedsReceipt(Components.Schemas.NeedsReceipt)
+                /// - Remark: Generated from `#/components/schemas/NeedsActionQueryResponse/receipt/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .NeedsReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .NeedsReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsActionQueryResponse/receipt`.
+            public var receipt: Components.Schemas.NeedsActionQueryResponse.receiptPayload
+            /// Creates a new `NeedsActionQueryResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.NeedsActionQueryResponse.receiptPayload
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.NeedsActionQueryResponse.receiptPayload.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsDetailResponse`.
+        public struct NeedsDetailResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsDetailResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/NeedsDetailResponse/needs`.
+            @frozen public enum needsPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/NeedsDetailResponse/needs/case1`.
+                case NeedsSnapshot(Components.Schemas.NeedsSnapshot)
+                /// - Remark: Generated from `#/components/schemas/NeedsDetailResponse/needs/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .NeedsSnapshot(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .NeedsSnapshot(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsDetailResponse/needs`.
+            public var needs: Components.Schemas.NeedsDetailResponse.needsPayload
+            /// Creates a new `NeedsDetailResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - needs:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                needs: Components.Schemas.NeedsDetailResponse.needsPayload
+            ) {
+                self.request_id = request_id
+                self.needs = needs
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case needs
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.needs = try container.decode(
+                    Components.Schemas.NeedsDetailResponse.needsPayload.self,
+                    forKey: .needs
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "needs"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NeedsRevisionResponse`.
+        public struct NeedsRevisionResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NeedsRevisionResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/NeedsRevisionResponse/revision`.
+            @frozen public enum revisionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/NeedsRevisionResponse/revision/case1`.
+                case NeedsRevision(Components.Schemas.NeedsRevision)
+                /// - Remark: Generated from `#/components/schemas/NeedsRevisionResponse/revision/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .NeedsRevision(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .NeedsRevision(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/NeedsRevisionResponse/revision`.
+            public var revision: Components.Schemas.NeedsRevisionResponse.revisionPayload
+            /// Creates a new `NeedsRevisionResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - revision:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                revision: Components.Schemas.NeedsRevisionResponse.revisionPayload
+            ) {
+                self.request_id = request_id
+                self.revision = revision
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case revision
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.revision = try container.decode(
+                    Components.Schemas.NeedsRevisionResponse.revisionPayload.self,
+                    forKey: .revision
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "revision"
+                ])
+            }
+        }
     }
 }
