@@ -1,0 +1,18 @@
+test_fall_and_spring_unique_local_endpoints_have_real_elapsed_gap (test_route_offsets.OffsetAuditTests.test_fall_and_spring_unique_local_endpoints_have_real_elapsed_gap) ... ok
+test_original_source_age_across_fold_uses_elapsed_utc (test_route_offsets.OffsetAuditTests.test_original_source_age_across_fold_uses_elapsed_utc) ... ok
+test_receipt_order_across_fold_uses_elapsed_utc (test_route_offsets.OffsetAuditTests.test_receipt_order_across_fold_uses_elapsed_utc) ... ok
+test_source_start_different_fold_must_not_match_original_request (test_route_offsets.OffsetAuditTests.test_source_start_different_fold_must_not_match_original_request) ... FAIL
+
+======================================================================
+FAIL: test_source_start_different_fold_must_not_match_original_request (test_route_offsets.OffsetAuditTests.test_source_start_different_fold_must_not_match_original_request)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/tests/test_route_offsets.py", line 67, in test_source_start_different_fold_must_not_match_original_request
+    self.assertIn('ROUTE_SOURCE_BINDING_UNKNOWN',codes(r))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ROUTE_SOURCE_BINDING_UNKNOWN' not found in {'ROUTE_ENDPOINT_MAPPING_DECLARED', 'ROUTE_FUTURE_APPLICABILITY_UNKNOWN', 'PROTECTED_SCOPE_UNCHANGED', 'ROUTE_QUERY_AGE_CHECKED', 'ROUTE_EVIDENCE_UNVERIFIED'}
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+FAILED (failures=1)

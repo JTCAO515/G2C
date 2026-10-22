@@ -1,0 +1,9 @@
+test_fall_and_spring_unique_local_endpoints_have_real_elapsed_gap (test_route_offsets.OffsetAuditTests.test_fall_and_spring_unique_local_endpoints_have_real_elapsed_gap) ... ok
+test_original_source_age_across_fold_uses_elapsed_utc (test_route_offsets.OffsetAuditTests.test_original_source_age_across_fold_uses_elapsed_utc) ... ok
+test_receipt_order_across_fold_uses_elapsed_utc (test_route_offsets.OffsetAuditTests.test_receipt_order_across_fold_uses_elapsed_utc) ... ok
+test_source_start_different_fold_must_not_match_original_request (test_route_offsets.OffsetAuditTests.test_source_start_different_fold_must_not_match_original_request) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+OK
