@@ -296,5 +296,457 @@ extension Components {
                 case receipt
             }
         }
+        /// - Remark: Generated from `#/components/schemas/ConversationSummary`.
+        public struct ConversationSummary: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConversationSummary/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ConversationSummary/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ConversationSummary/epoch`.
+            public var epoch: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/ConversationSummary/list_sequence`.
+            public var list_sequence: Swift.Int64
+            /// Creates a new `ConversationSummary`.
+            ///
+            /// - Parameters:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - epoch:
+            ///   - list_sequence:
+            public init(
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                epoch: Swift.Int64,
+                list_sequence: Swift.Int64
+            ) {
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.epoch = epoch
+                self.list_sequence = list_sequence
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversation_id
+                case generation
+                case epoch
+                case list_sequence
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.epoch = try container.decode(
+                    Swift.Int64.self,
+                    forKey: .epoch
+                )
+                self.list_sequence = try container.decode(
+                    Swift.Int64.self,
+                    forKey: .list_sequence
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "conversation_id",
+                    "generation",
+                    "epoch",
+                    "list_sequence"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageHistoryItem`.
+        public struct MessageHistoryItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageHistoryItem/receipt`.
+            public var receipt: Components.Schemas.MessageReceipt
+            /// RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageHistoryItem/original_utf8_base64`.
+            public var original_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageHistoryItem/text`.
+            public var text: Swift.String
+            /// Creates a new `MessageHistoryItem`.
+            ///
+            /// - Parameters:
+            ///   - receipt:
+            ///   - original_utf8_base64: RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string.
+            ///   - text:
+            public init(
+                receipt: Components.Schemas.MessageReceipt,
+                original_utf8_base64: Swift.String,
+                text: Swift.String
+            ) {
+                self.receipt = receipt
+                self.original_utf8_base64 = original_utf8_base64
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case receipt
+                case original_utf8_base64
+                case text
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.receipt = try container.decode(
+                    Components.Schemas.MessageReceipt.self,
+                    forKey: .receipt
+                )
+                self.original_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .original_utf8_base64
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "receipt",
+                    "original_utf8_base64",
+                    "text"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageDraftSnapshot`.
+        public struct MessageDraftSnapshot: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageDraftSnapshot/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageDraftSnapshot/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageDraftSnapshot/revision`.
+            public var revision: Swift.Int64
+            /// RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageDraftSnapshot/original_utf8_base64`.
+            public var original_utf8_base64: Swift.String
+            /// Creates a new `MessageDraftSnapshot`.
+            ///
+            /// - Parameters:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - revision:
+            ///   - original_utf8_base64: RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string.
+            public init(
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                revision: Swift.Int64,
+                original_utf8_base64: Swift.String
+            ) {
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.revision = revision
+                self.original_utf8_base64 = original_utf8_base64
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversation_id
+                case generation
+                case revision
+                case original_utf8_base64
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.revision = try container.decode(
+                    Swift.Int64.self,
+                    forKey: .revision
+                )
+                self.original_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .original_utf8_base64
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "conversation_id",
+                    "generation",
+                    "revision",
+                    "original_utf8_base64"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ConversationPageResponse`.
+        public struct ConversationPageResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConversationPageResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/ConversationPageResponse/conversations`.
+            public var conversations: [Components.Schemas.ConversationSummary]
+            /// - Remark: Generated from `#/components/schemas/ConversationPageResponse/next_cursor`.
+            @frozen public enum next_cursorPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ConversationPageResponse/next_cursor/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/ConversationPageResponse/next_cursor/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ConversationPageResponse/next_cursor`.
+            public var next_cursor: Components.Schemas.ConversationPageResponse.next_cursorPayload
+            /// Creates a new `ConversationPageResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - conversations:
+            ///   - next_cursor:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                conversations: [Components.Schemas.ConversationSummary],
+                next_cursor: Components.Schemas.ConversationPageResponse.next_cursorPayload
+            ) {
+                self.request_id = request_id
+                self.conversations = conversations
+                self.next_cursor = next_cursor
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case conversations
+                case next_cursor
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.conversations = try container.decode(
+                    [Components.Schemas.ConversationSummary].self,
+                    forKey: .conversations
+                )
+                self.next_cursor = try container.decode(
+                    Components.Schemas.ConversationPageResponse.next_cursorPayload.self,
+                    forKey: .next_cursor
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "conversations",
+                    "next_cursor"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageHistoryResponse`.
+        public struct MessageHistoryResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageHistoryResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MessageHistoryResponse/messages`.
+            public var messages: [Components.Schemas.MessageHistoryItem]
+            /// - Remark: Generated from `#/components/schemas/MessageHistoryResponse/next_cursor`.
+            @frozen public enum next_cursorPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MessageHistoryResponse/next_cursor/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/MessageHistoryResponse/next_cursor/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageHistoryResponse/next_cursor`.
+            public var next_cursor: Components.Schemas.MessageHistoryResponse.next_cursorPayload
+            /// Creates a new `MessageHistoryResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - messages:
+            ///   - next_cursor:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                messages: [Components.Schemas.MessageHistoryItem],
+                next_cursor: Components.Schemas.MessageHistoryResponse.next_cursorPayload
+            ) {
+                self.request_id = request_id
+                self.messages = messages
+                self.next_cursor = next_cursor
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case messages
+                case next_cursor
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.messages = try container.decode(
+                    [Components.Schemas.MessageHistoryItem].self,
+                    forKey: .messages
+                )
+                self.next_cursor = try container.decode(
+                    Components.Schemas.MessageHistoryResponse.next_cursorPayload.self,
+                    forKey: .next_cursor
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "messages",
+                    "next_cursor"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageDraftReadResponse`.
+        public struct MessageDraftReadResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageDraftReadResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MessageDraftReadResponse/draft`.
+            @frozen public enum draftPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MessageDraftReadResponse/draft/case1`.
+                case MessageDraftSnapshot(Components.Schemas.MessageDraftSnapshot)
+                /// - Remark: Generated from `#/components/schemas/MessageDraftReadResponse/draft/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MessageDraftSnapshot(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MessageDraftSnapshot(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageDraftReadResponse/draft`.
+            public var draft: Components.Schemas.MessageDraftReadResponse.draftPayload
+            /// Creates a new `MessageDraftReadResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - draft:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                draft: Components.Schemas.MessageDraftReadResponse.draftPayload
+            ) {
+                self.request_id = request_id
+                self.draft = draft
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case draft
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.draft = try container.decode(
+                    Components.Schemas.MessageDraftReadResponse.draftPayload.self,
+                    forKey: .draft
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "draft"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageDraftSaveResponse`.
+        public struct MessageDraftSaveResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageDraftSaveResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MessageDraftSaveResponse/draft`.
+            public var draft: Components.Schemas.MessageDraftSnapshot
+            /// Creates a new `MessageDraftSaveResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - draft:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                draft: Components.Schemas.MessageDraftSnapshot
+            ) {
+                self.request_id = request_id
+                self.draft = draft
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case draft
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.draft = try container.decode(
+                    Components.Schemas.MessageDraftSnapshot.self,
+                    forKey: .draft
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "draft"
+                ])
+            }
+        }
     }
 }
