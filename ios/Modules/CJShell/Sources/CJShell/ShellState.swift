@@ -85,7 +85,8 @@ public final class ShellState {
     public static let languageKey = "cj.ui.language.v1"
     public var selectedTab: ShellTab = .assistant
     public var memoryPath: [MemoryRoute] = []
-    public var draft = ""
+    public private(set) var draftRevision = UUID()
+    public var draft = "" { didSet { draftRevision = UUID() } }
     var messageBindingBlocked = false
     @ObservationIgnored weak var serverHistoryHost: ServerHistoryHost?
     @ObservationIgnored weak var messageHost: AssistantMessageHost?
@@ -123,7 +124,8 @@ public final class ShellState {
         contextReset()
         // Publish the fence and clear private UI before a resource callback can reenter.
         // No outer-lifetime mutation is allowed after this callback.
-        serverHistoryHost?.invalidate() // local projection cleanup has no injected resource callback
+        serverHistoryHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
         messageHost?.invalidate()
         return invalidatedGeneration
     }
