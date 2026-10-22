@@ -1,5 +1,5 @@
 {
-  "version": "1.8.0",
+  "version": "1.9.0",
   "stores": [
     {
       "id": "business",
@@ -189,6 +189,12 @@
               "producer": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f",
               "output": "Original-message refs/status/highwater/persisted display text/text_state only; no raw user message/events/effects/usage/outbound bytes",
               "persistence": "NONE; no new cache/queue/table; existing cleanup/restore limitations remain"
+            },
+            {
+              "contract": "ORIGINAL-USAGE-WIRE@0.1.0-rc.1",
+              "producer": "0685dbf8ad9622ad56c4435cb2fc47c3096046d1",
+              "persistence": "NONE; original stored RUN usage association only, no backfill/attempt mint/USAGE read or write",
+              "output": "Original message/run/attempt/operation references only; not reservation/status/execution/fee/dispatch proof; no command/input bytes/digest/reserve"
             }
           ]
         }
@@ -286,6 +292,7 @@
     "feedback": "cf48196e5eb5012630603172951d5c75a46adec4",
     "run_display": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f",
     "manual_preview": "6944a66186800ecd26246ce7028d9c9a8767f810",
-    "usage_status": "8cf6a85b56651cab9f20d056fcec2831b31f543d"
+    "usage_status": "8cf6a85b56651cab9f20d056fcec2831b31f543d",
+    "original_usage_association": "0685dbf8ad9622ad56c4435cb2fc47c3096046d1"
   }
 }

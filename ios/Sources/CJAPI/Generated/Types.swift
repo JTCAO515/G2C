@@ -85,6 +85,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/usage-attempt-status`.
     /// - Remark: Generated from `#/paths//v1/usage-attempt-status/get(getUsageAttemptStatus)`.
     func getUsageAttemptStatus(_ input: Operations.getUsageAttemptStatus.Input) async throws -> Operations.getUsageAttemptStatus.Output
+    /// - Remark: HTTP `GET /v1/message-usage-association`.
+    /// - Remark: Generated from `#/paths//v1/message-usage-association/get(getOriginalUsageAssociation)`.
+    func getOriginalUsageAssociation(_ input: Operations.getOriginalUsageAssociation.Input) async throws -> Operations.getOriginalUsageAssociation.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -363,6 +366,17 @@ extension APIProtocol {
         headers: Operations.getUsageAttemptStatus.Input.Headers = .init()
     ) async throws -> Operations.getUsageAttemptStatus.Output {
         try await getUsageAttemptStatus(Operations.getUsageAttemptStatus.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/message-usage-association`.
+    /// - Remark: Generated from `#/paths//v1/message-usage-association/get(getOriginalUsageAssociation)`.
+    public func getOriginalUsageAssociation(
+        query: Operations.getOriginalUsageAssociation.Input.Query,
+        headers: Operations.getOriginalUsageAssociation.Input.Headers = .init()
+    ) async throws -> Operations.getOriginalUsageAssociation.Output {
+        try await getOriginalUsageAssociation(Operations.getOriginalUsageAssociation.Input(
             query: query,
             headers: headers
         ))

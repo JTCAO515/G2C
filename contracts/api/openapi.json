@@ -1634,6 +1634,66 @@
           }
         }
       }
+    },
+    "/v1/message-usage-association": {
+      "get": {
+        "operationId": "getOriginalUsageAssociation",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exact original opaque message ID, explicit host UTF8 bound. No caller attempt/period/unit/owner/run/scope."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original stored references discovered under canonical MESSAGE/strict RUN read; not USAGE status or dispatch proof.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OriginalUsageAssociationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE unavailable/changed/size failure, never guessed attempt or successful null; no retry/start/claim/cancel action.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4309,6 +4369,70 @@
             "$ref": "#/components/schemas/UsageAttemptStatus"
           }
         }
+      },
+      "OriginalUsageAssociation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversation_id",
+          "generation",
+          "message_id",
+          "run_id",
+          "message_sequence",
+          "attempt_id",
+          "operation_id"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "description": "Read-time persisted original message-to-usage references only. Not login attempt, ledger row/reservation/status/dispatch/execution/fee evidence or permission. No scope/command/input bytes/digest/reserve/period/unit/text/private metadata. Missing association is unavailable, never synthesized."
+      },
+      "OriginalUsageAssociationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "association"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "association": {
+            "$ref": "#/components/schemas/OriginalUsageAssociation"
+          }
+        },
+        "description": "Complete BASE encoding within original producer read_projected lifetime; exact bytes returned after strict close and final binding. No successful null association."
       }
     },
     "securitySchemes": {
@@ -4327,5 +4451,6 @@
   "x-feedback-wire-version": "FEEDBACK-WIRE@0.1.0-rc.1",
   "x-run-display-wire-version": "RUN-DISPLAY-WIRE@0.1.0-rc.1",
   "x-manual-preview-wire-version": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1",
-  "x-usage-status-wire-version": "USAGE-STATUS-WIRE@0.1.0-rc.1"
+  "x-usage-status-wire-version": "USAGE-STATUS-WIRE@0.1.0-rc.1",
+  "x-original-usage-wire-version": "ORIGINAL-USAGE-WIRE@0.1.0-rc.1"
 }

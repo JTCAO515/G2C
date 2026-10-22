@@ -1,0 +1,25 @@
+{
+  "unchanged_identity": "33cec5ba71d74820cb0acd3c89ecbe39ba125590",
+  "unchanged_files_sha256": {
+    "contracts/api/openapi.json": "0fe238328f82ee65ec111f27b02e1e472502cc68479a0cbeb55fddc35f51d653",
+    "backend/cj_api/generated.py": "34be72028f82a2cf75a0b429a3510263246b9bc23e3c5ad20a7ff0045864b9e4",
+    "backend/cj_api/original_usage_routes.py": "8e3292dbafda248f80883c7364da6005c71691956961df9d9529913f2f68ed25",
+    "backend/cj_api/original_usage_projection.py": "b19a89e168df1e871af51adc8b9d1de21d0078a95ad6071c4b5e24957d59926d",
+    "backend/cj_api/original_usage_composition.py": "9c66aa490c8528d87dc117f39a715a184b4a321da352695f194df6accd820d7f",
+    "backend/cj_api/original_usage_pins.json": "6c5e24f74bb2c52eecf8b8e0e87ca3a73211762e9ff99679f3534f83da886992",
+    "ios/Sources/CJAPI/Generated/Client.swift": "c411eadc36d564d29ed213b604e633a82d24ba8faf42ed4f8f0adac6eaaffcc0",
+    "ios/Sources/CJAPI/Generated/Types+Components+Headers.swift": "b920e1a8ad3af618f10823dfd9ead2ac7a2833dcd9e06f84973789d7b578e1e2",
+    "ios/Sources/CJAPI/Generated/Types+Components+Parameters.swift": "06b05f078460bb0cc022223f7e6bf5d8509978b81486f2c191e241c08f38664b",
+    "ios/Sources/CJAPI/Generated/Types+Components+RequestBodies.swift": "3a79bacb276382b5f534e3a02a5a50297f67c53832e30b31e7afd9afbc6275bd",
+    "ios/Sources/CJAPI/Generated/Types+Components+Responses.swift": "8b243eb7012a5949f3818188cd64cc40021b87061be2b9de50a611f2ab9ab776",
+    "ios/Sources/CJAPI/Generated/Types+Components+Schemas.swift": "6973a94a941db38cfeffdbdebcf99c07b19e1613f4bc90d751ead05f526307e2",
+    "ios/Sources/CJAPI/Generated/Types+Components.swift": "6ea69a3694541e5a67e2e3fe774048b7e0e3706ba7957ddefedd4e9e136b04e7",
+    "ios/Sources/CJAPI/Generated/Types+Operations.swift": "987f2637f0d9e8e56e4c91d9156101b0228cce60892312dfd33738ba2a55d8f6",
+    "ios/Sources/CJAPI/Generated/Types.swift": "032a1975cfae637c49ef7af025b1776117fa72927c39ff7e707b3f19fa6708d6"
+  },
+  "original_author_failure_log_unchanged_sha256": "bee6503e890247635abb2056a22728d160c6dc3748a06e3fc3fae721e35cf344",
+  "targeted_methods_rerun": 1,
+  "new_pg": false,
+  "sdk_regenerated": false,
+  "independent_gate": "HOLD pending repaired fixture recheck"
+}

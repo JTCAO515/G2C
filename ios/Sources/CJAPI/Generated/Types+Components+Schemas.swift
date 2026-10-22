@@ -6184,5 +6184,140 @@ extension Components {
                 ])
             }
         }
+        /// Read-time persisted original message-to-usage references only. Not login attempt, ledger row/reservation/status/dispatch/execution/fee evidence or permission. No scope/command/input bytes/digest/reserve/period/unit/text/private metadata. Missing association is unavailable, never synthesized.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociation`.
+        public struct OriginalUsageAssociation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociation/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociation/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociation/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociation/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociation/message_sequence`.
+            public var message_sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociation/attempt_id`.
+            public var attempt_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociation/operation_id`.
+            public var operation_id: Swift.String
+            /// Creates a new `OriginalUsageAssociation`.
+            ///
+            /// - Parameters:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - message_sequence:
+            ///   - attempt_id:
+            ///   - operation_id:
+            public init(
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                message_sequence: Swift.Int,
+                attempt_id: Swift.String,
+                operation_id: Swift.String
+            ) {
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.message_id = message_id
+                self.run_id = run_id
+                self.message_sequence = message_sequence
+                self.attempt_id = attempt_id
+                self.operation_id = operation_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversation_id
+                case generation
+                case message_id
+                case run_id
+                case message_sequence
+                case attempt_id
+                case operation_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.message_sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .message_sequence
+                )
+                self.attempt_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .attempt_id
+                )
+                self.operation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .operation_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "conversation_id",
+                    "generation",
+                    "message_id",
+                    "run_id",
+                    "message_sequence",
+                    "attempt_id",
+                    "operation_id"
+                ])
+            }
+        }
+        /// Complete BASE encoding within original producer read_projected lifetime; exact bytes returned after strict close and final binding. No successful null association.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociationResponse`.
+        public struct OriginalUsageAssociationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociationResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/OriginalUsageAssociationResponse/association`.
+            public var association: Components.Schemas.OriginalUsageAssociation
+            /// Creates a new `OriginalUsageAssociationResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - association:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                association: Components.Schemas.OriginalUsageAssociation
+            ) {
+                self.request_id = request_id
+                self.association = association
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case association
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.association = try container.decode(
+                    Components.Schemas.OriginalUsageAssociation.self,
+                    forKey: .association
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "association"
+                ])
+            }
+        }
     }
 }

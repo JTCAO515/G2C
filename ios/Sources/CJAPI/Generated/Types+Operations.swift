@@ -5509,4 +5509,217 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /v1/message-usage-association`.
+    /// - Remark: Generated from `#/paths//v1/message-usage-association/get(getOriginalUsageAssociation)`.
+    public enum getOriginalUsageAssociation {
+        public static let id: Swift.String = "getOriginalUsageAssociation"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Exact original opaque message ID, explicit host UTF8 bound. No caller attempt/period/unit/owner/run/scope.
+                ///
+                /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/query/message_id`.
+                public var message_id: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - message_id: Exact original opaque message ID, explicit host UTF8 bound. No caller attempt/period/unit/owner/run/scope.
+                public init(message_id: Swift.String) {
+                    self.message_id = message_id
+                }
+            }
+            public var query: Operations.getOriginalUsageAssociation.Input.Query
+            /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getOriginalUsageAssociation.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getOriginalUsageAssociation.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getOriginalUsageAssociation.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getOriginalUsageAssociation.Input.Query,
+                headers: Operations.getOriginalUsageAssociation.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/responses/200/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.getOriginalUsageAssociation.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.OriginalUsageAssociationResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.OriginalUsageAssociationResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getOriginalUsageAssociation.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.getOriginalUsageAssociation.Output.Ok.Headers,
+                    body: Operations.getOriginalUsageAssociation.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Original stored references discovered under canonical MESSAGE/strict RUN read; not USAGE status or dispatch proof.
+            ///
+            /// - Remark: Generated from `#/paths//v1/message-usage-association/get(getOriginalUsageAssociation)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getOriginalUsageAssociation.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getOriginalUsageAssociation.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Default: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/responses/default/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/responses/default/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.getOriginalUsageAssociation.Output.Default.Headers
+                /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/responses/default/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/message-usage-association/GET/responses/default/content/application\/json`.
+                    case json(Components.Schemas.ErrorResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ErrorResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getOriginalUsageAssociation.Output.Default.Body
+                /// Creates a new `Default`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.getOriginalUsageAssociation.Output.Default.Headers,
+                    body: Operations.getOriginalUsageAssociation.Output.Default.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// BASE unavailable/changed/size failure, never guessed attempt or successful null; no retry/start/claim/cancel action.
+            ///
+            /// - Remark: Generated from `#/paths//v1/message-usage-association/get(getOriginalUsageAssociation)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Operations.getOriginalUsageAssociation.Output.Default)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Operations.getOriginalUsageAssociation.Output.Default {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
 }
