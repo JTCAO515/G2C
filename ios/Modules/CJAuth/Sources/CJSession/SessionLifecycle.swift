@@ -6,6 +6,13 @@ public enum SessionFailure: Error, Equatable, Sendable {
     case keychain(Int32)
 }
 
+/// Settlement of this clear call only; never adopts or authorizes a replacement session.
+public enum SessionClearSettlement: Equatable, Sendable {
+    case cleared
+    case failed(SessionFailure)
+    case replaced
+}
+
 /// Host must allocate a new environment UUID for G2C. No default/legacy namespace.
 public struct SessionNamespace: Equatable, Sendable {
     public let environment: UUID
@@ -133,15 +140,26 @@ public struct SessionOperation: Equatable, Sendable {
     /// Logout/account switch/authoritative invalidation: fence first, then clear storage.
     /// A new trusted SDK save is allowed only after clearAndBlock succeeds.
     public func clear() throws {
+        switch clearWithSettlement() {
+        case .cleared: return
+        case .failed(let failure): throw failure
+        case .replaced: throw SessionFailure.staleOperation
+        }
+    }
+    /// Canonical ownership classification around the actual persistence callback.
+    /// A genuine original failure named staleOperation remains .failed, not .replaced.
+    @discardableResult
+    public func clearWithSettlement() -> SessionClearSettlement {
         generation = UUID(); current = nil; consumed = true; blocked = true
         let clearingGeneration = generation
         do {
             try persistence.clearAndBlock()
-            guard generation == clearingGeneration, current == nil else { throw SessionFailure.staleOperation }
+            guard generation == clearingGeneration, current == nil else { return .replaced }
             blocked = false; state = .cleared
+            return .cleared
         } catch {
-            guard generation == clearingGeneration, current == nil else { throw SessionFailure.staleOperation }
-            throw block(error)
+            guard generation == clearingGeneration, current == nil else { return .replaced }
+            return .failed(block(error))
         }
     }
     /// Network uncertainty is not logout and does not touch the store or generation.
