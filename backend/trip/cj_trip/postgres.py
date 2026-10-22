@@ -20,6 +20,8 @@ class Repository:
     def transaction(self, before_commit=None):
         conn = self.connect()
         accepted = False
+        commit_started = False
+        primary_error = None
         try:
             # psycopg PostgreSQL status: IDLE=0. Missing/unknown state fails closed.
             # Inspect before cursor creation or any SQL; never take over caller work.
@@ -37,24 +39,34 @@ class Repository:
             yield cur
             self.guard('commit')
             if before_commit is not None: before_commit(cur)
+            commit_started = True
             try: conn.commit()
-            except Exception as exc: raise CommitUnknown('query original action; do not replace ID') from exc
+            except BaseException as exc: raise CommitUnknown('query original action; do not replace ID') from exc
             self.guard('return')
-        except BaseException:
+        except BaseException as exc:
+            primary_error = exc
+            if commit_started:
+                exc.commit_possible = True
             if accepted:
                 try: conn.rollback()
-                except Exception: self._cleanup_warning('rollback')
+                except BaseException: self._cleanup_warning('rollback')
             raise
         finally:
             try: conn.close()
-            except Exception: self._cleanup_warning('close')
+            except BaseException as exc:
+                self._cleanup_warning('close')
+                if primary_error is None and not isinstance(exc, Exception):
+                    # A new cancellation/interrupt is not successful delivery. Keep
+                    # it visible, with original-action reconciliation if commit ran.
+                    exc.commit_possible = commit_started
+                    raise
 
     @staticmethod
     def _cleanup_warning(operation):
         # No exception text, token, identifiers, content or connection details.
         # Even a broken log handler must not replace the original business result.
         try: logger.warning('TRIP connection cleanup failed: %s', operation)
-        except Exception: pass
+        except BaseException: pass
 
     def _proposal(self, cur, pid):
         cur.execute('SELECT proposal_id,trip_id,expected_version,basis_version,expires_at,content,candidate_hash,status FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,pid))

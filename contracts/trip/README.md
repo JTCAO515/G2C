@@ -81,3 +81,16 @@ under the same scope lock immediately before COMMIT. Original receipt replay rem
 independent of later expiry. Cleanup errors emit generic logger warnings without
 exception text or private data; they cannot replace a receipt, original CommitUnknown,
 or a post-commit denial's commit_possible marker. No new retry/write authority follows.
+
+## Cancellation/interruption settlement (6afa repair)
+
+The COMMIT boundary also catches BaseException (including CancelledError and
+KeyboardInterrupt) as CommitUnknown with its original cause; it never treats an
+attempted rollback as proof of noncommit. Propagated postcommit guard failures retain
+their identity and commit_possible=True. Secondary rollback/close/logging interruptions
+cannot overwrite a primary unknown/denial/cancellation. When cleanup is the only
+interruption after an otherwise known commit, cancellation still propagates with
+commit_possible=True rather than returning success; the durable original receipt
+is recovered by the normal admitted original-action query. Ordinary Exception cleanup
+retains the prior known-receipt behavior. Host must preserve original action identifiers
+on either path; no replacement ID or automatic write retry is authorized.

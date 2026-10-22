@@ -3,3 +3,4 @@ __pycache__/
 .pytest_cache/
 private-pg/
 evidence/repair-de4e/private-pg-*/
+evidence/repair-6afa/private-pg-*/

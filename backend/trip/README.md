@@ -64,3 +64,9 @@ any implication that the original 14 positives alone establish the transaction
 boundary. [Repair evidence](evidence/repair-de4e/REPORT.md): minimal repository fix,
 25 distinct real-PG tests plus original fault probes and actual restart PASS;
 new private clusters stopped. Original evidence retained. New independent gates pending.
+
+The follow-up [BaseException repair](evidence/repair-6afa/REPORT.md) extends outcome
+preservation to cancellation/interruption. 30 targeted real-PG controls PASS;
+known-success cleanup cancellation propagates with commit_possible and original
+receipt recovery, never a fabricated success. New private PG stopped and preserved;
+independent gates pending. Earlier evidence remains unchanged.
