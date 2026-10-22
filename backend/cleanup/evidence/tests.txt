@@ -1,0 +1,19 @@
+test_concurrent_cas (test_cleanup.CleanupTests.test_concurrent_cas) ... ok
+test_crash_intent_unknown_rebuild (test_cleanup.CleanupTests.test_crash_intent_unknown_rebuild) ... ok
+test_duplicate_and_conflicting_bytes (test_cleanup.CleanupTests.test_duplicate_and_conflicting_bytes) ... ok
+test_missing_manifest_or_inventory (test_cleanup.CleanupTests.test_missing_manifest_or_inventory) ... ok
+test_new_or_changed_registry_latches_gap (test_cleanup.CleanupTests.test_new_or_changed_registry_latches_gap) ... ok
+test_other_user_and_disabled_entries (test_cleanup.CleanupTests.test_other_user_and_disabled_entries) ... ok
+test_partial_failure_restart_never_resurrects (test_cleanup.CleanupTests.test_partial_failure_restart_never_resurrects) ... ok
+test_prerequisites (test_cleanup.CleanupTests.test_prerequisites) ... ok
+test_real_registry_never_empty_complete (test_cleanup.CleanupTests.test_real_registry_never_empty_complete) ... ok
+test_retention_gaps_prevent_complete (test_cleanup.CleanupTests.test_retention_gaps_prevent_complete) ... ok
+test_sensitive_body_rejected_not_journaled (test_cleanup.CleanupTests.test_sensitive_body_rejected_not_journaled) ... ok
+test_unknown_revocation_no_retry (test_cleanup.CleanupTests.test_unknown_revocation_no_retry) ... ok
+test_unregistered_domain (test_cleanup.CleanupTests.test_unregistered_domain) ... ok
+test_wrong_original_receipt_bindings (test_cleanup.CleanupTests.test_wrong_original_receipt_bindings) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.006s
+
+OK
