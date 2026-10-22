@@ -4,17 +4,13 @@ package_dir="$(cd "$(dirname "$0")/.." && pwd)"
 output_dir="${1:-/tmp/cj006-demo}"
 mkdir -p "$output_dir/CJShellDemo.app" "$output_dir/module-cache"
 sdk_path="$(xcrun --sdk iphonesimulator --show-sdk-path)"
-# Adjacent accepted CJAuth core, separate static module; no runtime SDK/network.
-auth_module="$output_dir/auth-module"
-mkdir -p "$auth_module"
-SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -package-name CJAuth -module-name CJAuth -emit-module -emit-library -static -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" "$package_dir"/../CJAuth/Sources/CJAuth/*.swift -emit-module-path "$auth_module/CJAuth.swiftmodule" -o "$auth_module/libCJAuth.a"
-SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -package-name CJAuth -module-name CJSession -emit-module -emit-library -static -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" "$package_dir"/../CJAuth/Sources/CJSession/*.swift -emit-module-path "$auth_module/CJSession.swiftmodule" -o "$auth_module/libCJSession.a"
-SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -module-name CJMessageClient -emit-module -emit-library -static -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" "$package_dir"/../CJMessageClient/Sources/CJMessageClient/*.swift -emit-module-path "$auth_module/CJMessageClient.swiftmodule" -o "$auth_module/libCJMessageClient.a"
-SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 \
-  -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" \
-  -module-cache-path "$output_dir/module-cache" \
-  -I "$auth_module" -L "$auth_module" -lCJAuth -lCJSession -lCJMessageClient "$package_dir"/Sources/CJShell/*.swift "$package_dir/Demo/DemoApp.swift" \
-  -o "$output_dir/CJShellDemo.app/CJShellDemo"
+# Build the real package graph, including canonical CJAPI/CJMessageHTTP modules.
+# Uses only previously prepared exact generated exports; no source generation here.
+swift_args=(--disable-sandbox --package-path "$package_dir" --scratch-path "$output_dir/package-build" --cache-path "${CJ_SPM_CACHE:-/tmp/cj006-spm-cache}" --triple arm64-apple-ios17.0-simulator --sdk "$sdk_path")
+env -u SDKROOT CLANG_MODULE_CACHE_PATH="$output_dir/module-cache" SWIFTPM_MODULECACHE_OVERRIDE="$output_dir/module-cache" swift build "${swift_args[@]}" --target CJShell
+products="$(env -u SDKROOT CLANG_MODULE_CACHE_PATH="$output_dir/module-cache" SWIFTPM_MODULECACHE_OVERRIDE="$output_dir/module-cache" swift build "${swift_args[@]}" --show-bin-path)"
+test -f "$products/CJShell.o"
+SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" -I "$products" "$package_dir/Demo/DemoApp.swift" "$products"/*.o -o "$output_dir/CJShellDemo.app/CJShellDemo"
 cat > "$output_dir/CJShellDemo.app/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

@@ -1,0 +1,39 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Provisioning 2 / 24]
+[Pre-planning 1 / 423]
+[Planning deferred tasks]
+[6 / 15] CJShellTests-product
+[8 / 17] CJShellTests-product
+[12 / 16] CJShellTests-product
+[14 / 16] CJShellTests-product
+Build complete! (1.36秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentHistoryActionTests started.
+◇ Test oldSelectedConversationActionMustNotReadNewSelection() started.
+◇ Test oldAccountListActionMustNotReadReplacementBinding() started.
+✘ Test oldAccountListActionMustNotReadReplacementBinding() recorded an issue at IndependentHistoryActionTests.swift:66:3: Expectation failed: await replacement.paths.isEmpty
+↳ old account control must not issue a replacement-account GET
+↳ await replacement.paths.isEmpty → <not evaluated>
+✘ Test oldAccountListActionMustNotReadReplacementBinding() recorded an issue at IndependentHistoryActionTests.swift:67:3: Expectation failed: host.conversations.isEmpty && host.conversationsStatus == .idle
+↳ new binding must stay unread until its own explicit action
+↳ host.conversations.isEmpty && host.conversationsStatus == .idle → false
+↳   host.conversations.isEmpty → false
+↳   host.conversationsStatus == .idle → <not evaluated>
+✘ Test oldAccountListActionMustNotReadReplacementBinding() failed after 0.005 seconds with 2 issues.
+✘ Test oldSelectedConversationActionMustNotReadNewSelection() recorded an issue at IndependentHistoryActionTests.swift:53:3: Expectation failed: await transport.paths.count==1
+↳ old A action must not issue a new B history GET
+↳ await transport.paths.count==1 → <not evaluated>
+✘ Test oldSelectedConversationActionMustNotReadNewSelection() recorded an issue at IndependentHistoryActionTests.swift:54:3: Expectation failed: host.messages.isEmpty && host.historyStatus == .idle
+↳ new B selection must remain explicitly unread
+↳ host.messages.isEmpty && host.historyStatus == .idle → false
+↳   host.messages.isEmpty → false
+↳   host.historyStatus == .idle → <not evaluated>
+✘ Test oldSelectedConversationActionMustNotReadNewSelection() failed after 0.005 seconds with 2 issues.
+✘ Suite IndependentHistoryActionTests failed after 0.006 seconds with 4 issues.
+✘ Test run with 2 tests in 1 suite failed after 0.006 seconds with 4 issues.
+Note: Some test targets reported failures:
+  - CJShellTests (Swift Testing)

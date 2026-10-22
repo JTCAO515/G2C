@@ -4,8 +4,10 @@ import SwiftUI
 struct AssistantShell: View {
     @Bindable var state: ShellState
     let messageHost: AssistantMessageHost
+    let serverHistoryHost: ServerHistoryHost
     let bodyText: String?
-    @State private var showingHistory = false
+    private enum Panel: String, Identifiable { case local, server; var id: String { rawValue } }
+    @State private var panel: Panel?
     @FocusState private var draftFocused: Bool
     @ScaledMetric(relativeTo: .body) private var headerClearance = 112.0
 
@@ -17,6 +19,7 @@ struct AssistantShell: View {
                 if let bodyText {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                 }
+                Button(state.language.text("Server history (read-only)", "服务器历史（只读）")) { panel = .server }
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if !messageHost.isConfigured {
                     ShellStatusView(state: state.assistantState, language: state.language)
@@ -36,24 +39,29 @@ struct AssistantShell: View {
         }
         .onChange(of: state.generation) { _, _ in
             draftFocused = false
-            showingHistory = false
+            panel = nil
         }
-        .sheet(isPresented: $showingHistory) {
+        .sheet(item: $panel) { selectedPanel in
             NavigationStack {
-                LocalRecoveryList(host: messageHost, language: state.language)
-                .navigationTitle(state.language.text("Local recovery", "本地恢复"))
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(state.language.text("Done", "完成")) { showingHistory = false }
+                Group {
+                    if selectedPanel == .server {
+                        ServerHistoryView(host: serverHistoryHost, language: state.language)
+                    } else {
+                        LocalRecoveryList(host: messageHost, language: state.language)
+                            .navigationTitle(state.language.text("Local recovery", "本地恢复"))
                     }
                 }
+                .toolbar { ToolbarItem(placement: .confirmationAction) {
+                    Button(state.language.text("Done", "完成")) { panel = nil }
+                }}
             }
         }
+
     }
 
     private var floatingControls: some View {
         HStack(alignment: .top) {
-            Button { showingHistory = true } label: {
+            Button { panel = .local } label: {
                 VStack(spacing: 5) {
                     Capsule().frame(width: 20, height: 2)
                     Capsule().frame(width: 20, height: 2)

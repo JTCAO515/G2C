@@ -1,0 +1,8 @@
+Building for debugging...
+[Using on-disk description]
+[2 / 4] CJShell
+[5 / 7] CJShell
+[10 / 12] CJShell
+Build complete! (1.10秒)
+/tmp/cj006-server-read-demo/CJShellDemo.app: replacing existing signature
+/tmp/cj006-server-read-demo/CJShellDemo.app

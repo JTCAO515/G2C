@@ -1,4 +1,5 @@
 import SwiftUI
+import CJShell
 import CJAuth
 import CJSession
 import CJMessageClient

@@ -6,18 +6,21 @@ public struct ShellView: View {
     @Bindable private var state: ShellState
     @State private var accountHost: AccountHost
     @State private var messageHost: AssistantMessageHost
+    @State private var serverHistoryHost: ServerHistoryHost
 
-    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil) {
+    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil) {
         if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
         if let messageHost { precondition(messageHost.belongs(to: state), "Message host must own the same ShellState") }
+        if let serverHistoryHost { precondition(serverHistoryHost.belongs(to: state)) }
         self.state = state
         self._accountHost = State(initialValue: accountHost ?? AccountHost(shell: state))
         self._messageHost = State(initialValue: messageHost ?? state.messageHost ?? AssistantMessageHost(shell: state))
+        self._serverHistoryHost = State(initialValue: serverHistoryHost ?? state.serverHistoryHost ?? ServerHistoryHost(shell: state))
     }
 
     public var body: some View {
         TabView(selection: $state.selectedTab) {
-            NavigationStack { AssistantShell(state: state, messageHost: messageHost, bodyText: state.assistantBody) }
+            NavigationStack { AssistantShell(state: state, messageHost: messageHost, serverHistoryHost: serverHistoryHost, bodyText: state.assistantBody) }
                 .tabItem { Label(ShellTab.assistant.title(state.language), systemImage: "bubble.left.and.bubble.right") }
                 .tag(ShellTab.assistant)
             NavigationStack {

@@ -1,0 +1,56 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[1 / 10]
+[2 / 11] CJShell
+[4 / 13] CJShell
+[7 / 13] CJShell
+[10 / 13] CJShellTests-product
+[12 / 15] CJShellTests-product
+[18 / 20] CJShellTests-product
+Build complete! (3.77秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IdentityCallbackReentryTests started.
+◇ Suite IndependentHistoryActionTests started.
+◇ Suite ServerHistoryHostTests started.
+◇ Test normalInvalidationClearsBeforeResourceCallback() started.
+◇ Test oldSelectedConversationActionMustNotReadNewSelection() started.
+◇ Test outerCleanupCannotOverwriteCallbackInstalledB() started.
+◇ Test allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test oldAccountListActionMustNotReadReplacementBinding() started.
+◇ Test defaultUnavailableAndValidEmptyAreDifferent() started.
+◇ Test completedReadRetiresOldRetryContextWithoutTouchingNewPage() started.
+◇ Test invalidReadFailsRatherThanEmptySuccess() started.
+◇ Test historyGenerationDifferentFromSelectionRequiresResync() started.
+◇ Test lateHistoryAIsNotDisplayedInSelectedB() started.
+◇ Test identityFenceHidesLateResultsAndLanguagePreservesLifetime() started.
+◇ Test nullAndSavedEmptyDraftNeverReplaceLocalEditor() started.
+◇ Test pagesAppendOnceAndRepeatedCursorRequiresResync() started.
+◇ Test historyPagesKeepOneSelectedConversationAndOrderedServerSequence() started.
+◇ Test case passing 1 argument entry → "listMore" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test case passing 1 argument entry → "historyMore" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test case passing 1 argument entry → "listFirst" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test distinctCanonicalUnicodeCursorsKeepTheirOriginalUTF8Pages() started.
+◇ Test case passing 1 argument entry → "historyFirst" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test case passing 1 argument entry → "draft" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+✔ Test invalidReadFailsRatherThanEmptySuccess() passed after 0.010 seconds.
+✔ Test normalInvalidationClearsBeforeResourceCallback() passed after 0.010 seconds.
+✔ Test outerCleanupCannotOverwriteCallbackInstalledB() passed after 0.011 seconds.
+✔ Test defaultUnavailableAndValidEmptyAreDifferent() passed after 0.011 seconds.
+✔ Suite IdentityCallbackReentryTests passed after 0.012 seconds.
+✔ Test oldSelectedConversationActionMustNotReadNewSelection() passed after 0.011 seconds.
+✔ Test completedReadRetiresOldRetryContextWithoutTouchingNewPage() passed after 0.011 seconds.
+✔ Test historyGenerationDifferentFromSelectionRequiresResync() passed after 0.012 seconds.
+✔ Test oldAccountListActionMustNotReadReplacementBinding() passed after 0.012 seconds.
+✔ Test pagesAppendOnceAndRepeatedCursorRequiresResync() passed after 0.013 seconds.
+✔ Test nullAndSavedEmptyDraftNeverReplaceLocalEditor() passed after 0.013 seconds.
+✔ Test allDeferredReadEntriesRejectChangedSelection(entry:) with 5 test cases passed after 0.014 seconds.
+✔ Suite IndependentHistoryActionTests passed after 0.014 seconds.
+✔ Test historyPagesKeepOneSelectedConversationAndOrderedServerSequence() passed after 0.014 seconds.
+✔ Test identityFenceHidesLateResultsAndLanguagePreservesLifetime() passed after 0.014 seconds.
+✔ Test distinctCanonicalUnicodeCursorsKeepTheirOriginalUTF8Pages() passed after 0.014 seconds.
+✔ Test lateHistoryAIsNotDisplayedInSelectedB() passed after 0.014 seconds.
+✔ Suite ServerHistoryHostTests passed after 0.014 seconds.
+✔ Test run with 15 tests in 3 suites passed after 0.014 seconds.
