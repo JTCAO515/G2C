@@ -84,3 +84,9 @@ scripts/check-generated-feedback.sh; scripts/build-feedback-loopback-client.sh;
 scripts/generate.sh --check. Positive scoped wire cases are explicit public-seam
 fixtures; actual AUTH entry refusal and same-checker assembly are separately checked.
 New private PG/numeric HTTP/Swift combination evidence is separate from these.
+
+Author combination201156 passed8 groups on fresh private PostgreSQL/numeric HTTP,
+including concrete public MESSAGE/RUN source reads and official Swift general/
+linked submit/query. The missing-Sources control is real DB+in-process ASGI, labeled
+separately. All local services stopped; see tests/evidence/feedback-wire/REPORT.md.
+This does not strengthen read-time observations into atomic cross-domain validity.
