@@ -1,0 +1,28 @@
+Building for debugging...
+[Provisioning 3 / 24]
+[Pre-planning 1 / 507]
+[Planning deferred tasks]
+[5 / 36] CJMessageClient
+[15 / 48] CJMessageRecoveryProbe-product
+[31 / 57] CJMessageRecoveryProbe-product
+[32 / 57] CJMessageClient
+[39 / 56] CJMessageClientTests-product
+[47 / 64] CJMessageClientTests-product
+[54 / 66] CJMessageHTTPTests-product
+[58 / 70] CJMessageHTTPTests-product
+[66 / 74] CJMessageClientTests-product
+[68 / 74] CJMessageHTTPTests-product
+[70 / 74] CJMessageHTTPTests-product
+Build complete! (2.33秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite HistoryReadTests started.
+◇ Test canonicallyEquivalentCursorStringsRemainDistinctBytes() started.
+◇ Test repeatedOpaqueCursorRequiresResync() started.
+◇ Test generatedConversationPagesAndBoundContinuation() started.
+✔ Test repeatedOpaqueCursorRequiresResync() passed after 0.003 seconds.
+✔ Test generatedConversationPagesAndBoundContinuation() passed after 0.003 seconds.
+✔ Test canonicallyEquivalentCursorStringsRemainDistinctBytes() passed after 0.003 seconds.
+✔ Suite HistoryReadTests passed after 0.003 seconds.
+✔ Test run with 3 tests in 1 suite passed after 0.003 seconds.
