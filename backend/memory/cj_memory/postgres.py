@@ -60,7 +60,7 @@ class Transaction:
         self.cur.execute('SELECT subject,status,count(*) FROM cj_memory_item WHERE scope=%s GROUP BY subject,status ORDER BY subject,status', (self.scope,))
         return self.cur.fetchall()
     def list_items(self, after, limit):
-        self.cur.execute("SELECT original_input,version,status,recorded_at FROM cj_memory_item WHERE scope=%s AND (%s::text IS NULL OR item_id>%s) ORDER BY item_id LIMIT %s", (self.scope,after,after,limit))
+        self.cur.execute('SELECT original_input,version,status,recorded_at FROM cj_memory_item WHERE scope=%s AND (%s::text IS NULL OR item_id COLLATE "C">%s COLLATE "C") ORDER BY item_id COLLATE "C" ASC LIMIT %s', (self.scope,after,after,limit))
         return [Item(Command.parse(bytes(r[0])),*r[1:]) for r in self.cur.fetchall()]
 
     def require_current(self, context, subject, context_id=None):

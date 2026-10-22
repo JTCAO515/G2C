@@ -70,6 +70,11 @@ class Context:
 class Service:
     def __init__(self, repository): self.repository = repository
 
+    def with_operation(self, guard, operation):
+        """Trusted request entry: guard and JSON projection stay in one lifetime."""
+        from .operation import with_operation
+        return with_operation(self, guard, operation)
+
     def save(self, raw):
         c = Command.parse(raw)
         with self.repository.transaction() as tx:
