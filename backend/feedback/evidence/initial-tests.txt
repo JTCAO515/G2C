@@ -1,0 +1,33 @@
+test_limits_and_private_repr (test_domain.DomainTests.test_limits_and_private_repr) ... ok
+test_malformed_and_duplicate_keys (test_domain.DomainTests.test_malformed_and_duplicate_keys) ... ok
+test_only_minimal_known_reference_shapes (test_domain.DomainTests.test_only_minimal_known_reference_shapes) ... ok
+test_original_bytes_not_normalized (test_domain.DomainTests.test_original_bytes_not_normalized) ... ok
+test_reject_unimplemented_reference_types (test_domain.DomainTests.test_reject_unimplemented_reference_types) ... ok
+test_reject_untrusted_diagnostics_owner_and_content (test_domain.DomainTests.test_reject_untrusted_diagnostics_owner_and_content) ... ok
+test_async_callback_forbidden (test_postgres.PostgresTests.test_async_callback_forbidden) ... ok
+test_auth_rechecked_inside_transaction (test_postgres.PostgresTests.test_auth_rechecked_inside_transaction) ... ok
+test_cancel_after_commit_retains_receipt (test_postgres.PostgresTests.test_cancel_after_commit_retains_receipt) ... ok
+test_cancel_before_commit_is_unknown_until_query (test_postgres.PostgresTests.test_cancel_before_commit_is_unknown_until_query) ... ok
+test_cannot_claim_user_diagnostics (test_postgres.PostgresTests.test_cannot_claim_user_diagnostics) ... ok
+test_close_interrupt_is_not_success (test_postgres.PostgresTests.test_close_interrupt_is_not_success) ... ok
+test_concurrent_different_bytes_conflict (test_postgres.PostgresTests.test_concurrent_different_bytes_conflict) ... ok
+test_concurrent_same_bytes_single_receipt (test_postgres.PostgresTests.test_concurrent_same_bytes_single_receipt) ... ok
+test_cross_account_isolation_and_same_action (test_postgres.PostgresTests.test_cross_account_isolation_and_same_action) ... ok
+test_cross_environment_scope_isolation (test_postgres.PostgresTests.test_cross_environment_scope_isolation) ... ok
+test_exact_replay_conflict_and_one_record (test_postgres.PostgresTests.test_exact_replay_conflict_and_one_record) ... ok
+test_foreign_thread_context_rejected (test_postgres.PostgresTests.test_foreign_thread_context_rejected) ... ok
+test_fresh_connection_required_preserves_foreign_work (test_postgres.PostgresTests.test_fresh_connection_required_preserves_foreign_work) ... ok
+test_guard_failure_before_commit_rolls_back (test_postgres.PostgresTests.test_guard_failure_before_commit_rolls_back) ... ok
+test_identity_change_during_query_projection (test_postgres.PostgresTests.test_identity_change_during_query_projection) ... ok
+test_lifetime_and_second_write (test_postgres.PostgresTests.test_lifetime_and_second_write) ... ok
+test_lost_commit_ack_original_query (test_postgres.PostgresTests.test_lost_commit_ack_original_query) ... ok
+test_private_content_minimized_and_no_exception_logging (test_postgres.PostgresTests.test_private_content_minimized_and_no_exception_logging) ... ok
+test_references_foreign_missing_and_unconfirmed_same_rejection (test_postgres.PostgresTests.test_references_foreign_missing_and_unconfirmed_same_rejection) ... ok
+test_resolver_mutation_withholds (test_postgres.PostgresTests.test_resolver_mutation_withholds) ... ok
+test_revoke_during_projection_withholds_but_preserves_commit (test_postgres.PostgresTests.test_revoke_during_projection_withholds_but_preserves_commit) ... ok
+test_swallowed_failure_poisoned_operation (test_postgres.PostgresTests.test_swallowed_failure_poisoned_operation) ... ok
+
+----------------------------------------------------------------------
+Ran 28 tests in 0.194s
+
+OK

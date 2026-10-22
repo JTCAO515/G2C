@@ -1,0 +1,6 @@
+FAIL (preserved): first domain-test invocation used system python3 (Xcode Python 3.9).
+Command: PYTHONPATH=backend/auth:backend/feedback python3 -B -m unittest discover -s backend/feedback/tests -p test_domain.py -v
+Import failed in canonical backend/auth/cj_auth/interfaces.py:28, TrustedPrincipal | None.
+TypeError: unsupported operand type(s) for |: type and NoneType
+Ran 1 test; FAILED (errors=1). This was an unsupported local interpreter, not an AUTH defect.
+Repair: select cached supported Python 3.14.7 with uv --offline --no-project --python 3.14; no source or lock workaround.
