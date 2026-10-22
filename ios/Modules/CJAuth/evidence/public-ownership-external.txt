@@ -1,0 +1,6 @@
+PASS: standalone external-consumer typecheck, exit 0, no diagnostics.
+Source: Tests/CJSessionTests/ExternalOwnershipConsumer.swift
+Import: ordinary import CJSession; no @testable.
+Command:
+xcrun swiftc -typecheck -swift-version 6 -target arm64-apple-macos14.0 -package-name CJ007ExternalOwnershipConsumer -I /private/tmp/cj007-sdk-build/out/Products/Debug -module-cache-path /private/tmp/cj007-external-ownership-cache ios/Modules/CJAuth/Tests/CJSessionTests/ExternalOwnershipConsumer.swift
+No runtime, network, Keychain or credentials accessed.

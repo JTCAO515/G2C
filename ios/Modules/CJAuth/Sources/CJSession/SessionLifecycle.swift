@@ -98,8 +98,9 @@ public struct SessionOperation: Equatable, Sendable {
     public func isCurrent(_ operation: SessionOperation) -> Bool {
         !blocked && ownsOperation(operation)
     }
-    /// Ownership remains inspectable after a genuine failure blocks this same operation.
-    package func ownsOperation(_ operation: SessionOperation) -> Bool {
+    /// Read-only ownership for this lifecycle instance and generation, even when blocked.
+    /// Does not imply usability, credential validity, namespace authority or business permission.
+    public func ownsOperation(_ operation: SessionOperation) -> Bool {
         current == operation && operation.instance == instance && operation.generation == generation
     }
     private func consume(_ operation: SessionOperation, purpose: SessionOperation.Purpose) throws {

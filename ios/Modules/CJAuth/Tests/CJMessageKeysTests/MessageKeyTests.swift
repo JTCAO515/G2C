@@ -179,3 +179,87 @@ import Testing
         #expect(record == nil && deletes == 2)
     }
 }
+
+@MainActor private final class ScopedKeychainFixture {
+    private var records: [[String]: [String: Any]] = [:]
+    private func scope(_ query: [String: Any]) -> [String]? {
+        guard let service = query[kSecAttrService as String] as? String,
+              let account = query[kSecAttrAccount as String] as? String,
+              let group = query[kSecAttrAccessGroup as String] as? String else { return nil }
+        return [service, account, group]
+    }
+    var operations: MessageKeychainOperations {
+        MessageKeychainOperations(read: { query in
+            guard let scope = self.scope(query) else { return (errSecParam, nil) }
+            return self.records[scope].map { (errSecSuccess, $0) } ?? (errSecItemNotFound, nil)
+        }, add: { query in
+            guard let scope = self.scope(query) else { return errSecParam }
+            guard self.records[scope] == nil else { return errSecDuplicateItem }
+            self.records[scope] = query
+            return errSecSuccess
+        }, delete: { query in
+            guard let scope = self.scope(query),
+                  self.records[scope]?[kSecAttrGeneric as String] as? Data == query[kSecAttrGeneric as String] as? Data else { return errSecItemNotFound }
+            self.records.removeValue(forKey: scope)
+            return errSecSuccess
+        })
+    }
+}
+
+extension MessageKeyTests {
+    @Test func memoryPurposeHasDedicatedSlotWithoutChangingMessageBytes() throws {
+        let environment = try #require(UUID(uuidString: "11111111-1111-4111-8111-111111111111"))
+        let account = try #require(UUID(uuidString: "22222222-2222-4222-8222-222222222222"))
+        let message = MessageKeyNamespace(environment: environment, account: account, purpose: .localMessageStorageV1)
+        let memory = MessageKeyNamespace(environment: environment, account: account, purpose: .localMemoryPendingV1)
+        #expect(message.service == "G2C.CJAuth.message-key.11111111-1111-4111-8111-111111111111")
+        #expect(message.slot == "22222222-2222-4222-8222-222222222222.local-message-storage-v1")
+        #expect(memory.service == message.service)
+        #expect(memory.slot == "22222222-2222-4222-8222-222222222222.local-memory-pending-v1")
+        #expect(memory.slot != message.slot)
+    }
+    @Test func memoryPurposeAccountEnvironmentAndExpectedIDCannotCrossKeys() throws {
+        let environment = UUID(), account = UUID(), fixture = ScopedKeychainFixture()
+        let namespaces = [
+            MessageKeyNamespace(environment: environment, account: account, purpose: .localMessageStorageV1),
+            MessageKeyNamespace(environment: environment, account: account, purpose: .localMemoryPendingV1),
+            MessageKeyNamespace(environment: environment, account: UUID(), purpose: .localMemoryPendingV1),
+            MessageKeyNamespace(environment: UUID(), account: account, purpose: .localMemoryPendingV1)]
+        let providers = try namespaces.map { namespace in
+            ScopedMessageKeyProvider(namespace: namespace, persistence: try KeychainMessageKeys(namespace: namespace,
+                applicationIdentifier: "SYNTHETIC.local.memory-test", protection: .whenUnlockedThisDeviceOnly, operations: fixture.operations))
+        }
+        let keys = try providers.map { try $0.create(storageState: .confirmedEmpty, for: $0.begin(.create)) }
+        #expect(Set(keys.map(\.id)).count == 4)
+        let memoryKey = keys[1], memoryProvider = providers[1]
+        let sealed = try memoryKey.withSymmetricKey { try AES.GCM.seal(Data("synthetic-memory-pending".utf8), using: $0) }
+        for index in [0, 2, 3] {
+            #expect(throws: (any Error).self) { try keys[index].withSymmetricKey { try AES.GCM.open(sealed, using: $0) } }
+            #expect(throws: MessageKeyFailure.keyMismatch) {
+                try providers[index].existing(expectedID: memoryKey.id, for: providers[index].begin(.lookup))
+            }
+            #expect(throws: MessageKeyFailure.keyMismatch) {
+                try providers[index].clear(expectedID: memoryKey.id, storageState: .confirmedEmpty, for: providers[index].begin(.clear))
+            }
+            let foreignOperation = try providers[index].begin(.lookup)
+            #expect(throws: MessageKeyFailure.staleOperation) { try memoryProvider.existing(expectedID: memoryKey.id, for: foreignOperation) }
+        }
+        let recovered = try memoryProvider.existing(expectedID: memoryKey.id, for: memoryProvider.begin(.lookup))
+        let ownKey = try #require(recovered)
+        #expect(ownKey.namespace == namespaces[1])
+        #expect(try ownKey.withSymmetricKey { try AES.GCM.open(sealed, using: $0) } == Data("synthetic-memory-pending".utf8))
+        try memoryProvider.clear(expectedID: memoryKey.id, storageState: .confirmedEmpty, for: memoryProvider.begin(.clear))
+        #expect(try memoryProvider.existing(expectedID: memoryKey.id, for: memoryProvider.begin(.lookup)) == nil)
+        #expect(try providers[0].existing(expectedID: keys[0].id, for: providers[0].begin(.lookup))?.id == keys[0].id)
+    }
+    @Test func memoryPendingUnknownCreationReusesOriginalReconciliation() throws {
+        let storage = Storage(); storage.failAdd = true; storage.commitBeforeAddError = true
+        let namespace = MessageKeyNamespace(environment: UUID(), account: UUID(), purpose: .localMemoryPendingV1)
+        let provider = ScopedMessageKeyProvider(namespace: namespace, persistence: storage)
+        #expect(throws: MessageKeyFailure.storageUnavailable) { try provider.create(storageState: .confirmedEmpty, for: provider.begin(.create)) }
+        let original = try #require(storage.value)
+        #expect(throws: MessageKeyFailure.creationUnconfirmed) { try provider.create(storageState: .confirmedEmpty, for: provider.begin(.create)) }
+        let recovered = try provider.reconcileCreation(for: provider.begin(.reconcileCreation))
+        #expect(recovered.id == original.id && recovered.namespace == namespace && storage.adds == 1)
+    }
+}
