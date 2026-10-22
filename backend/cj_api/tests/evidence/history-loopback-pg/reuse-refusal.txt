@@ -1,0 +1,1 @@
+Refusing existing history PG directory; preserve data, never auto-reuse.
