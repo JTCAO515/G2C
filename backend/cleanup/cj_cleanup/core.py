@@ -272,11 +272,13 @@ class Repository:
             return encode({'protocol':VERSION, 'events':self._journal})
 
     @classmethod
-    def rebuild(cls, raw):
+    def rebuild(cls, raw, *, recover_inflight=True):
         """Replay exact original metadata/receipt bytes. Truncated journal fails closed.
 
         Integrity/durability/ownership of the journal is the trusted host's duty.
         This is NOT an untrusted upload format or a signed capability.
+        Durable adapters replay with recover_inflight=False, then journal explicit
+        recover() under CAS after a lost writer, rather than silently rewriting history.
         """
         try:
             data = json.loads(raw)
@@ -299,7 +301,7 @@ class Repository:
                 else: raise Invalid('unknown journal event')
             # Persisted dispatch intent without a result is uncertain after process loss.
             for op in tuple(repo._operations.values()):
-                if any(s.state == 'in_progress' for s in op.steps):
+                if recover_inflight and any(s.state == 'in_progress' for s in op.steps):
                     repo.recover(op.scope,op.operation_id,op.revision)
             return repo
         except (KeyError, TypeError, ValueError, UnicodeError):

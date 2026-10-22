@@ -12,7 +12,7 @@
 - `Repository.intent(scope, operation_id, expected_revision, target, invocation)`：CAS 记录原调用意图；**不执行或调度**。只有 host 已登记能力且 registry 明确 `cleanup_protocol` 同版才允许 store intent。默认全部缺失。
 - `Repository.receipt(scope, operation_id, expected_revision, target, raw: bytes)`：仅可信原结果 importer 调用。没有签名验证能力，不接受客户端/provider 任意 JSON 作为权威结果。
 - `Repository.audit(..., current_manifest)`：任意 registry/version/内容变动锁存缺口；不可悄悄扩大原确认范围，不能改回旧 manifest 消除缺口。host 每次报告限定完成之前必须与当前获准 registry/独立 inventory 复核。
-- `Repository.journal() -> bytes / Repository.rebuild(bytes)`：私有 metadata 的原序列化 journal，逐事件重放；原 receipt bytes 以 hex 原样保留。scope/operation IDs 仍是私有元数据，不进日志或公开错误。原 journal 的完整性、原子持久化、隔离、留存与清理必须由 host 存储适配负责。
+- `Repository.journal() -> bytes / Repository.rebuild(bytes, recover_inflight=True)`：私有 metadata 的原序列化 journal，逐事件重放；原 receipt bytes 以 hex 原样保留。scope/operation IDs 仍是私有元数据，不进日志或公开错误。原 journal 的完整性、原子持久化、隔离、留存与清理必须由 host 存储适配负责。
 
 Python dataclass/对象与 `capabilities` 只是 trusted host 组合输入；不是安全边界、不是新权限来源，不能根据可构造性自授撤销/删除权限。这里只消费 `cj_auth.interfaces.TrustedPrincipal`，不写 access provider。现有 AUTH 没有真实撤销能力；当前默认 blocked。
 
@@ -47,3 +47,11 @@ complete 只表示**该冻结清单全部已证实**，不是现实全域或无�
 CJ007：真实普通访问撤销/旧 token 和在途边界、原操作结果；CJ010：任务停止和 checkpoint；各 storage-registry 域：原 scope + frozen version 的实际物理清理和防晚到重建原结果；CJ021/022：记忆/设备与离线界限；CJ027：备份恢复先重放 fence；provider owner：外部留存。CJ005：唯一 API 外壳及注销后受限查询凭证方案。以上必须先固定原 public 能力，本模块不代建。
 
 真正删除、真实撤销、全域 hook、备份重放、设备、真实账号及 Issue I 验收全部 UNRUN。本候选不关闭 Issue27，不降低原 I 要求。
+
+## 后置 PostgreSQL repository 候选
+
+`cj_cleanup.postgres.Repository(connect, scope, guard)` 不改变本契约或另立状态机。内部签名与原内存版等价，但 scope 由构造固定，后续方法不接 scope；只持久化 Cleanup 原操作的元数据。行锁/CAS + 原journal/state/revision 原子事务；重放使用原 reducer 的 `recover_inflight=False` 保留数据库原状态，显式 `recover(operation_id, expected_revision)` 才提交失去writer后的 unknown。默认 `rebuild` 旧行为不变。所有 receipt 仍经同一 strictUTF8/拒重复key入口。
+
+写入的 COMMIT/返回/close 结果不明确抛 `CommitUnknown`；只能用原 ID 只读 query/journal 核对，不自动调用、重试或换 ID。已落盘 intent 未有原结果时不能推 confirmed；显式恢复也不会把 unknown 变 complete。query 不授予普通业务权限，没有公开注销后路由。
+
+表候选 `cj_cleanup_journal_candidate` 自身是新增私有元数据存储，尚未被正式 registry 接纳，也未有留存/物理清理/备份防复活正式接口；生产激活必须经原owner登记与验证，原冻清单不能忽略它而宣称全域完成。此段仅在全新私有空cluster用合成身份验证，不触碰其他域表/权限/真实账号。生产 durable 服务、权限策略、I验收仍未完成。
