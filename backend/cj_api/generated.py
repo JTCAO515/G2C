@@ -442,3 +442,545 @@ class TripProposalResponse(BaseModel):
     )
     request_id: RequestId
     proposal: TripProposalSnapshot
+
+
+class State(StrEnum):
+    missing = 'missing'
+
+
+class NeedsMissingObservation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State
+
+
+class State1(StrEnum):
+    unknown = 'unknown'
+
+
+class NeedsUnknownObservation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State1
+
+
+class State2(StrEnum):
+    uncertain = 'uncertain'
+
+
+class NeedsUncertainObservation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State2
+    note: constr(min_length=1, max_length=4096)
+
+
+class State3(StrEnum):
+    known = 'known'
+
+
+class NeedsPartySizeObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: conint(ge=1, le=100000)
+
+
+class NeedsPartySizeObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsPartySizeObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsPartySizeObservationKnown
+    )
+
+
+class NeedsTimezoneObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: constr(min_length=1) = Field(
+        ...,
+        description='Explicit IANA timezone, checked by producer. No device/destination/overseas default or cross-field copy.',
+    )
+
+
+class NeedsTimezoneObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsTimezoneObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsTimezoneObservationKnown
+    )
+
+
+class NeedsCurrencyObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: constr(pattern=r'^[A-Z]{3}$')
+
+
+class NeedsCurrencyObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsCurrencyObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsCurrencyObservationKnown
+    )
+
+
+class NeedsMoneyObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: constr(pattern=r'^(0|[1-9][0-9]{0,14})(\.[0-9]{1,6})?$') = Field(
+        ...,
+        description='Exact nonnegative decimal text, retained without division/conversion/implicit zero.',
+    )
+
+
+class NeedsMoneyObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsMoneyObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsMoneyObservationKnown
+    )
+
+
+class Value(StrEnum):
+    total = 'total'
+    per_person = 'per_person'
+
+
+class NeedsBudgetBasisObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: Value
+
+
+class NeedsBudgetBasisObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsBudgetBasisObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsBudgetBasisObservationKnown
+    )
+
+
+class ValueItem(RootModel[constr(min_length=1, max_length=4096)]):
+    root: constr(min_length=1, max_length=4096)
+
+
+class NeedsCoverageObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: list[ValueItem] = Field(..., max_length=32, min_length=1)
+
+
+class NeedsCoverageObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsCoverageObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsCoverageObservationKnown
+    )
+
+
+class NeedsTextObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: constr(min_length=1, max_length=4096)
+
+
+class NeedsTextObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsTextObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsTextObservationKnown
+    )
+
+
+class NeedsLocalDateObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: constr(pattern=r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$') = Field(
+        ...,
+        description='Valid calendar date as original local YYYY-MM-DD string; intentionally not a Date/instant.',
+    )
+
+
+class NeedsLocalDateObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsLocalDateObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsLocalDateObservationKnown
+    )
+
+
+class NeedsLocalTimeObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: constr(pattern=r'^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$') = Field(
+        ...,
+        description='Local wall time HH:MM or HH:MM:SS. No UTC/device conversion or DST resolution.',
+    )
+
+
+class NeedsLocalTimeObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsLocalTimeObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsLocalTimeObservationKnown
+    )
+
+
+class NeedsLockedObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: bool
+
+
+class NeedsLockedObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsLockedObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsLockedObservationKnown
+    )
+
+
+class Value1(StrEnum):
+    booked = 'booked'
+    intended = 'intended'
+    cancelled = 'cancelled'
+
+
+class NeedsBookingObservationKnown(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State3
+    value: Value1
+
+
+class NeedsBookingObservation(
+    RootModel[
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsBookingObservationKnown
+    ]
+):
+    root: (
+        NeedsMissingObservation
+        | NeedsUnknownObservation
+        | NeedsUncertainObservation
+        | NeedsBookingObservationKnown
+    )
+
+
+class NeedsEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    date: NeedsLocalDateObservation
+    time: NeedsLocalTimeObservation
+    timezone: NeedsTimezoneObservation
+    place: NeedsTextObservation
+
+
+class Kind3(StrEnum):
+    hotel = 'hotel'
+    transport = 'transport'
+    appointment = 'appointment'
+    intent = 'intent'
+
+
+class AppliesToItem(
+    RootModel[
+        constr(pattern=r'^(self|party|companion:[A-Za-z0-9][A-Za-z0-9_.:-]{0,95})$')
+    ]
+):
+    root: constr(pattern=r'^(self|party|companion:[A-Za-z0-9][A-Za-z0-9_.:-]{0,95})$')
+
+
+class NeedsFixedItem(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    item_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    kind: Kind3
+    description: constr(min_length=1, max_length=4096)
+    applies_to: list[AppliesToItem] = Field(..., max_length=32, min_length=1)
+    locked: NeedsLockedObservation
+    start: NeedsEvent
+    end: NeedsEvent
+    booking_status: NeedsBookingObservation
+
+
+class NeedsTemporaryCondition(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    condition_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    applies_to: list[AppliesToItem] = Field(..., max_length=32, min_length=1)
+    description: constr(min_length=1, max_length=4096)
+
+
+class NeedsFields(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    party_size: NeedsPartySizeObservation | None = None
+    destination_timezone: NeedsTimezoneObservation | None = None
+    overseas_timezone: NeedsTimezoneObservation | None = None
+    budget_currency: NeedsCurrencyObservation | None = None
+    budget_total: NeedsMoneyObservation | None = None
+    budget_per_person: NeedsMoneyObservation | None = None
+    budget_paid: NeedsMoneyObservation | None = None
+    budget_basis: NeedsBudgetBasisObservation | None = None
+    budget_includes: NeedsCoverageObservation | None = None
+    pace: NeedsTextObservation | None = None
+    overseas_departure: NeedsEvent | None = None
+    arrival: NeedsEvent | None = None
+    departure: NeedsEvent | None = None
+    companions: (
+        dict[
+            constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$'),
+            constr(min_length=1, max_length=4096),
+        ]
+        | None
+    ) = Field(None, max_length=100)
+    fixed_items: list[NeedsFixedItem] | None = Field(None, max_length=100)
+    temporary_conditions: list[NeedsTemporaryCondition] | None = Field(
+        None, max_length=100
+    )
+
+
+class NeedsChanges(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    party_size: NeedsPartySizeObservation | None = None
+    destination_timezone: NeedsTimezoneObservation | None = None
+    overseas_timezone: NeedsTimezoneObservation | None = None
+    budget_currency: NeedsCurrencyObservation | None = None
+    budget_total: NeedsMoneyObservation | None = None
+    budget_per_person: NeedsMoneyObservation | None = None
+    budget_paid: NeedsMoneyObservation | None = None
+    budget_basis: NeedsBudgetBasisObservation | None = None
+    budget_includes: NeedsCoverageObservation | None = None
+    pace: NeedsTextObservation | None = None
+    overseas_departure: NeedsEvent | None = None
+    arrival: NeedsEvent | None = None
+    departure: NeedsEvent | None = None
+    companions: (
+        dict[
+            constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$'),
+            constr(min_length=1, max_length=4096),
+        ]
+        | None
+    ) = Field(None, max_length=100)
+    fixed_items: list[NeedsFixedItem] | None = Field(None, max_length=100)
+    temporary_conditions: list[NeedsTemporaryCondition] | None = Field(
+        None, max_length=100
+    )
+
+
+class Kind4(StrEnum):
+    manual = 'manual'
+
+
+class NeedsManualSource(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind4
+    text: constr(min_length=1, max_length=4096)
+
+
+class NeedsCommand(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    needs_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    expected_version: conint(ge=0, le=9223372036854775806)
+    source: NeedsManualSource
+    changes: NeedsChanges
+
+
+class Operation(StrEnum):
+    manual_patch = 'manual_patch'
+
+
+class NeedsReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    needs_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    version: conint(ge=1, le=9223372036854775807)
+    operation: Operation
+
+
+class SourceKind(StrEnum):
+    user_provided = 'user_provided'
+
+
+class NeedsSnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    needs_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    version: conint(ge=1, le=9223372036854775807)
+    source_kind: SourceKind
+    content_utf8_base64: str
+    fields: NeedsFields
+
+
+class NeedsRevision(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    needs_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    version: conint(ge=1, le=9223372036854775807)
+    action_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    source_kind: SourceKind
+    original_input_utf8_base64: str
+    content_utf8_base64: str
+    fields: NeedsFields
+
+
+class NeedsActionResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: NeedsReceipt
+
+
+class NeedsActionQueryResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: NeedsReceipt | Receipt
+
+
+class Needs(Enum):
+    NoneType_None = None
+
+
+class NeedsDetailResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    needs: NeedsSnapshot | Needs
+
+
+class Revision(Enum):
+    NoneType_None = None
+
+
+class NeedsRevisionResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    revision: NeedsRevision | Revision

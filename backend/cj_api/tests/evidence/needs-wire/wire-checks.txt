@@ -1,0 +1,13 @@
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+test_actual_auth_unknown_denied_and_missing_config (needs_wire_checks.NeedsWireChecks.test_actual_auth_unknown_denied_and_missing_config) ... ok
+test_conflict_invalid_resultant_reference_and_unknown_never_return_receipt (needs_wire_checks.NeedsWireChecks.test_conflict_invalid_resultant_reference_and_unknown_never_return_receipt) ... ok
+test_invalid_inputs_authority_and_nonfinite_fail_before_connection (needs_wire_checks.NeedsWireChecks.test_invalid_inputs_authority_and_nonfinite_fail_before_connection) ... ok
+test_observations_money_local_time_and_fixed_user_claim_preserved (needs_wire_checks.NeedsWireChecks.test_observations_money_local_time_and_fixed_user_claim_preserved) ... ok
+test_original_action_revision_and_missing_fields_no_defaults (needs_wire_checks.NeedsWireChecks.test_original_action_revision_and_missing_fields_no_defaults) ... ok
+test_required_null_missing_and_mismatched_historical_binding (needs_wire_checks.NeedsWireChecks.test_required_null_missing_and_mismatched_historical_binding) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.238s
+
+OK

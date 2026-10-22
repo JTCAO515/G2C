@@ -1757,4 +1757,405 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// - Remark: HTTP `POST /v1/needs-actions`.
+    /// - Remark: Generated from `#/paths//v1/needs-actions/post(actOnNeeds)`.
+    public func actOnNeeds(_ input: Operations.actOnNeeds.Input) async throws -> Operations.actOnNeeds.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.actOnNeeds.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/v1/needs-actions",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .binary(value):
+                    body = try converter.setRequiredRequestBodyAsBinary(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/octet-stream"
+                    )
+                }
+                return (request, body)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let headers: Operations.actOnNeeds.Output.Ok.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.actOnNeeds.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.NeedsActionResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(
+                        headers: headers,
+                        body: body
+                    ))
+                default:
+                    let headers: Operations.actOnNeeds.Output.Default.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.actOnNeeds.Output.Default.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .`default`(
+                        statusCode: response.status.code,
+                        .init(
+                            headers: headers,
+                            body: body
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// - Remark: HTTP `GET /v1/needs-action-receipts`.
+    /// - Remark: Generated from `#/paths//v1/needs-action-receipts/get(queryNeedsAction)`.
+    public func queryNeedsAction(_ input: Operations.queryNeedsAction.Input) async throws -> Operations.queryNeedsAction.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.queryNeedsAction.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/v1/needs-action-receipts",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "action_id",
+                    value: input.query.action_id
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let headers: Operations.queryNeedsAction.Output.Ok.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.queryNeedsAction.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.NeedsActionQueryResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(
+                        headers: headers,
+                        body: body
+                    ))
+                default:
+                    let headers: Operations.queryNeedsAction.Output.Default.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.queryNeedsAction.Output.Default.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .`default`(
+                        statusCode: response.status.code,
+                        .init(
+                            headers: headers,
+                            body: body
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// - Remark: HTTP `GET /v1/needs`.
+    /// - Remark: Generated from `#/paths//v1/needs/get(getNeeds)`.
+    public func getNeeds(_ input: Operations.getNeeds.Input) async throws -> Operations.getNeeds.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getNeeds.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/v1/needs",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "needs_id",
+                    value: input.query.needs_id
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let headers: Operations.getNeeds.Output.Ok.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getNeeds.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.NeedsDetailResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(
+                        headers: headers,
+                        body: body
+                    ))
+                default:
+                    let headers: Operations.getNeeds.Output.Default.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getNeeds.Output.Default.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .`default`(
+                        statusCode: response.status.code,
+                        .init(
+                            headers: headers,
+                            body: body
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// - Remark: HTTP `GET /v1/needs-revisions`.
+    /// - Remark: Generated from `#/paths//v1/needs-revisions/get(getNeedsRevision)`.
+    public func getNeedsRevision(_ input: Operations.getNeedsRevision.Input) async throws -> Operations.getNeedsRevision.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getNeedsRevision.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/v1/needs-revisions",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "needs_id",
+                    value: input.query.needs_id
+                )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "version",
+                    value: input.query.version
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let headers: Operations.getNeedsRevision.Output.Ok.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getNeedsRevision.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.NeedsRevisionResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(
+                        headers: headers,
+                        body: body
+                    ))
+                default:
+                    let headers: Operations.getNeedsRevision.Output.Default.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getNeedsRevision.Output.Default.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .`default`(
+                        statusCode: response.status.code,
+                        .init(
+                            headers: headers,
+                            body: body
+                        )
+                    )
+                }
+            }
+        )
+    }
 }

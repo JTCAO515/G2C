@@ -1088,6 +1088,253 @@
           }
         ]
       }
+    },
+    "/v1/needs-actions": {
+      "post": {
+        "operationId": "actOnNeeds",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guarded manual NEEDS response; null is not observed, never noncommit proof.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeedsActionResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Existing BASE errors; no private result on denied/unknown. Original action recovery only.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact original UTF8 JSON bytes matching NeedsCommand, <=131072 bytes and explicit host bound. Duplicate/extra/source authority/nonfinite keys invalid. Preserve bytes and action_id; same-ID different bytes conflict. No regeneration, new ID or latest-state guess after unknown.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/needs-action-receipts": {
+      "get": {
+        "operationId": "queryNeedsAction",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guarded manual NEEDS response; null is not observed, never noncommit proof.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeedsActionQueryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Existing BASE errors; no private result on denied/unknown. Original action recovery only.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/needs": {
+      "get": {
+        "operationId": "getNeeds",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guarded manual NEEDS response; null is not observed, never noncommit proof.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeedsDetailResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Existing BASE errors; no private result on denied/unknown. Original action recovery only.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "needs_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/needs-revisions": {
+      "get": {
+        "operationId": "getNeedsRevision",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guarded manual NEEDS response; null is not observed, never noncommit proof.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeedsRevisionResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Existing BASE errors; no private result on denied/unknown. Original action recovery only.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "needs_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -2157,6 +2404,985 @@
           }
         },
         "description": "Missing and wrong-scope candidates both fail generically; no nullable candidate or confirmation evidence is fabricated."
+      },
+      "NeedsMissingObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "missing"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "NeedsUnknownObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "unknown"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "NeedsUncertainObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "uncertain"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "state",
+          "note"
+        ]
+      },
+      "NeedsPartySizeObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsPartySizeObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsPartySizeObservationKnown"
+          }
+        ]
+      },
+      "NeedsTimezoneObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Explicit IANA timezone, checked by producer. No device/destination/overseas default or cross-field copy."
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsTimezoneObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsTimezoneObservationKnown"
+          }
+        ]
+      },
+      "NeedsCurrencyObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsCurrencyObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsCurrencyObservationKnown"
+          }
+        ]
+      },
+      "NeedsMoneyObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,6})?$",
+            "description": "Exact nonnegative decimal text, retained without division/conversion/implicit zero."
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsMoneyObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsMoneyObservationKnown"
+          }
+        ]
+      },
+      "NeedsBudgetBasisObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "enum": [
+              "total",
+              "per_person"
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsBudgetBasisObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsBudgetBasisObservationKnown"
+          }
+        ]
+      },
+      "NeedsCoverageObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsCoverageObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsCoverageObservationKnown"
+          }
+        ]
+      },
+      "NeedsTextObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsTextObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsTextObservationKnown"
+          }
+        ]
+      },
+      "NeedsLocalDateObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "description": "Valid calendar date as original local YYYY-MM-DD string; intentionally not a Date/instant."
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsLocalDateObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsLocalDateObservationKnown"
+          }
+        ]
+      },
+      "NeedsLocalTimeObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$",
+            "description": "Local wall time HH:MM or HH:MM:SS. No UTC/device conversion or DST resolution."
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsLocalTimeObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsLocalTimeObservationKnown"
+          }
+        ]
+      },
+      "NeedsLockedObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsLockedObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsLockedObservationKnown"
+          }
+        ]
+      },
+      "NeedsBookingObservationKnown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "known"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "enum": [
+              "booked",
+              "intended",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "value"
+        ]
+      },
+      "NeedsBookingObservation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NeedsMissingObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUnknownObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsUncertainObservation"
+          },
+          {
+            "$ref": "#/components/schemas/NeedsBookingObservationKnown"
+          }
+        ]
+      },
+      "NeedsEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/NeedsLocalDateObservation"
+          },
+          "time": {
+            "$ref": "#/components/schemas/NeedsLocalTimeObservation"
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/NeedsTimezoneObservation"
+          },
+          "place": {
+            "$ref": "#/components/schemas/NeedsTextObservation"
+          }
+        },
+        "required": [
+          "date",
+          "time",
+          "timezone",
+          "place"
+        ]
+      },
+      "NeedsFixedItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "hotel",
+              "transport",
+              "appointment",
+              "intent"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "applies_to": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^(self|party|companion:[A-Za-z0-9][A-Za-z0-9_.:-]{0,95})$"
+            }
+          },
+          "locked": {
+            "$ref": "#/components/schemas/NeedsLockedObservation"
+          },
+          "start": {
+            "$ref": "#/components/schemas/NeedsEvent"
+          },
+          "end": {
+            "$ref": "#/components/schemas/NeedsEvent"
+          },
+          "booking_status": {
+            "$ref": "#/components/schemas/NeedsBookingObservation"
+          }
+        },
+        "required": [
+          "item_id",
+          "kind",
+          "description",
+          "applies_to",
+          "locked",
+          "start",
+          "end",
+          "booking_status"
+        ],
+        "description": "Manual user claim, not supplier verification. Explicit lock is never auto-relaxed. Companion IDs must exist in resultant record."
+      },
+      "NeedsTemporaryCondition": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "condition_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "applies_to": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^(self|party|companion:[A-Za-z0-9][A-Za-z0-9_.:-]{0,95})$"
+            }
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "condition_id",
+          "applies_to",
+          "description"
+        ]
+      },
+      "NeedsFields": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "party_size": {
+            "$ref": "#/components/schemas/NeedsPartySizeObservation"
+          },
+          "destination_timezone": {
+            "$ref": "#/components/schemas/NeedsTimezoneObservation"
+          },
+          "overseas_timezone": {
+            "$ref": "#/components/schemas/NeedsTimezoneObservation"
+          },
+          "budget_currency": {
+            "$ref": "#/components/schemas/NeedsCurrencyObservation"
+          },
+          "budget_total": {
+            "$ref": "#/components/schemas/NeedsMoneyObservation"
+          },
+          "budget_per_person": {
+            "$ref": "#/components/schemas/NeedsMoneyObservation"
+          },
+          "budget_paid": {
+            "$ref": "#/components/schemas/NeedsMoneyObservation"
+          },
+          "budget_basis": {
+            "$ref": "#/components/schemas/NeedsBudgetBasisObservation"
+          },
+          "budget_includes": {
+            "$ref": "#/components/schemas/NeedsCoverageObservation"
+          },
+          "pace": {
+            "$ref": "#/components/schemas/NeedsTextObservation"
+          },
+          "overseas_departure": {
+            "$ref": "#/components/schemas/NeedsEvent"
+          },
+          "arrival": {
+            "$ref": "#/components/schemas/NeedsEvent"
+          },
+          "departure": {
+            "$ref": "#/components/schemas/NeedsEvent"
+          },
+          "companions": {
+            "type": "object",
+            "maxProperties": 100,
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "fixed_items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/NeedsFixedItem"
+            }
+          },
+          "temporary_conditions": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/NeedsTemporaryCondition"
+            }
+          }
+        },
+        "required": [],
+        "description": "Only present fields are recorded. Omission differs from explicit missing/unknown/uncertain; never emit absent fields as null or zero. Arrays/maps may be explicitly empty. No long-term Memory or formal Trip writes."
+      },
+      "NeedsChanges": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "party_size": {
+            "$ref": "#/components/schemas/NeedsPartySizeObservation"
+          },
+          "destination_timezone": {
+            "$ref": "#/components/schemas/NeedsTimezoneObservation"
+          },
+          "overseas_timezone": {
+            "$ref": "#/components/schemas/NeedsTimezoneObservation"
+          },
+          "budget_currency": {
+            "$ref": "#/components/schemas/NeedsCurrencyObservation"
+          },
+          "budget_total": {
+            "$ref": "#/components/schemas/NeedsMoneyObservation"
+          },
+          "budget_per_person": {
+            "$ref": "#/components/schemas/NeedsMoneyObservation"
+          },
+          "budget_paid": {
+            "$ref": "#/components/schemas/NeedsMoneyObservation"
+          },
+          "budget_basis": {
+            "$ref": "#/components/schemas/NeedsBudgetBasisObservation"
+          },
+          "budget_includes": {
+            "$ref": "#/components/schemas/NeedsCoverageObservation"
+          },
+          "pace": {
+            "$ref": "#/components/schemas/NeedsTextObservation"
+          },
+          "overseas_departure": {
+            "$ref": "#/components/schemas/NeedsEvent"
+          },
+          "arrival": {
+            "$ref": "#/components/schemas/NeedsEvent"
+          },
+          "departure": {
+            "$ref": "#/components/schemas/NeedsEvent"
+          },
+          "companions": {
+            "type": "object",
+            "maxProperties": 100,
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "fixed_items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/NeedsFixedItem"
+            }
+          },
+          "temporary_conditions": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/NeedsTemporaryCondition"
+            }
+          }
+        },
+        "required": [],
+        "description": "Nonempty patch; omitted fields retain prior values. Present nested objects/lists replace entire field; explicit empty collection clears. Resultant companion references validated atomically.",
+        "minProperties": 1
+      },
+      "NeedsManualSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "manual"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ]
+      },
+      "NeedsCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "needs_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775806
+          },
+          "source": {
+            "$ref": "#/components/schemas/NeedsManualSource"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/NeedsChanges"
+          }
+        },
+        "required": [
+          "action_id",
+          "needs_id",
+          "expected_version",
+          "source",
+          "changes"
+        ]
+      },
+      "NeedsReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "needs_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "manual_patch"
+            ]
+          }
+        },
+        "required": [
+          "action_id",
+          "needs_id",
+          "version",
+          "operation"
+        ]
+      },
+      "NeedsSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "needs_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "user_provided"
+            ]
+          },
+          "content_utf8_base64": {
+            "type": "string"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/NeedsFields"
+          }
+        },
+        "required": [
+          "needs_id",
+          "version",
+          "source_kind",
+          "content_utf8_base64",
+          "fields"
+        ]
+      },
+      "NeedsRevision": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "needs_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "action_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "user_provided"
+            ]
+          },
+          "original_input_utf8_base64": {
+            "type": "string"
+          },
+          "content_utf8_base64": {
+            "type": "string"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/NeedsFields"
+          }
+        },
+        "required": [
+          "needs_id",
+          "version",
+          "action_id",
+          "source_kind",
+          "original_input_utf8_base64",
+          "content_utf8_base64",
+          "fields"
+        ],
+        "description": "Exact historical original command and full result snapshot, not latest detail. Compare action_id and original_input bytes against preserved original action. No per-field source or historical hash is invented."
+      },
+      "NeedsActionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/NeedsReceipt"
+          }
+        },
+        "required": [
+          "request_id",
+          "receipt"
+        ]
+      },
+      "NeedsActionQueryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NeedsReceipt"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "receipt"
+        ]
+      },
+      "NeedsDetailResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "needs": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NeedsSnapshot"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "needs"
+        ]
+      },
+      "NeedsRevisionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "revision": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NeedsRevision"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "revision"
+        ]
       }
     },
     "securitySchemes": {
@@ -2170,5 +3396,6 @@
   "x-cj-message-wire": "receive-receipt-0.1.0-rc.1; partial internal composition, not MESSAGE@1.0",
   "x-cj-history-draft-wire": "history-draft-0.1.0-rc.1; owner-confirmed narrow wire, context review pending, not MESSAGE@1.0",
   "x-memory-wire-version": "MEMORY-WIRE@0.1.0-rc.1",
-  "x-trip-wire-version": "TRIP-WIRE@0.1.0-rc.1"
+  "x-trip-wire-version": "TRIP-WIRE@0.1.0-rc.1",
+  "x-needs-wire-version": "NEEDS-WIRE@0.1.0-rc.1"
 }
