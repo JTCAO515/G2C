@@ -1,0 +1,28 @@
+IDENTITY_BEFORE_SQL ["cj008_admin", "postgres", "/tmp/cj008-pg-tcrp_vfe/data", "", "/tmp/cj008-pg-tcrp_vfe/socket", "55438", "PostgreSQL 17.11 (Homebrew) on aarch64-apple-darwin27.0.0, compiled by Apple clang version 21.0.0 (clang-2100.3.34.2), 64-bit"]
+PASS runtime non-superuser non-bypassrls
+PASS cross scope RLS denies
+PASS missing scope never auto creates
+PASS concurrent independent connections budget <=10
+PASS concurrent claim exactly once
+PASS cancel unknown retains six
+PASS server restart preserves unknown cancelled attempt
+PASS restart cannot reclaim original attempt
+PASS late synthetic receipt settles once
+PASS different late receipt conflicts
+PASS late receipt actual exposure is three
+PASS cancel before claim releases reservation
+PASS released attempt never claims
+PASS cancel claim serialized no ambiguous release
+PASS body failure rolls back
+PASS before commit reported unknown
+PASS before commit original readback
+PASS after commit reported unknown
+PASS after commit original readback
+PASS claim ACK loss prevents executor
+PASS claim ACK loss retains durable unknown
+usage_repository_cleanup_failed
+PASS cleanup error does not replace success
+PASS corruption denied never reset
+PASS corrupt row preserved
+RESULT {"checks": 24, "root": "/tmp/cj008-pg-tcrp_vfe", "driver": "3.2.10", "real_cost": "UNRUN", "product_RLS": "UNRUN"}
+STOP_READBACK 3 root /tmp/cj008-pg-tcrp_vfe

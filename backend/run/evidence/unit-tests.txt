@@ -1,0 +1,25 @@
+test_binding_replay_and_conflict (test_core.RunTests) ... ok
+test_cancel_preserves_committed (test_core.RunTests) ... ok
+test_context_checked_each_publish (test_core.RunTests) ... ok
+test_cursor_fixed_highwater_and_expiry (test_core.RunTests) ... ok
+test_disabled_dispatch (test_core.RunTests) ... ok
+test_exact_duplicate (test_core.RunTests) ... ok
+test_gap_out_of_order (test_core.RunTests) ... ok
+test_missing_context_default_denied (test_core.RunTests) ... ok
+test_payload_validation (test_core.RunTests) ... ok
+test_rebuilt_service_replay (test_core.RunTests) ... ok
+test_same_chat_order_and_missing_predecessor (test_core.RunTests) ... ok
+test_single_terminal_race (test_core.RunTests) ... ok
+test_transaction_rollback (test_core.RunTests) ... ok
+test_unknown_not_success (test_core.RunTests) ... ok
+test_autocommit_forbidden (test_postgres_transaction.LifecycleTests) ... ok
+test_body_error_preserved_when_cleanup_fails (test_postgres_transaction.LifecycleTests) ... ok
+test_commit_unknown_does_not_rollback_or_retry (test_postgres_transaction.LifecycleTests) ... ok
+test_configuration_explicit (test_postgres_transaction.LifecycleTests) ... ok
+test_inactive_scope_rollback (test_postgres_transaction.LifecycleTests) ... ok
+test_success_close_error_not_commit_unknown (test_postgres_transaction.LifecycleTests) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.002s
+
+OK
