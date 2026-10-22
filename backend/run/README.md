@@ -24,3 +24,7 @@ Synthetic RUN→USAGE first-step checks and explicit production blockers are in
 missing-durable-binding counterexample remains as historical FAIL evidence;
 [the association repair](../../contracts/run/USAGE-BINDING.md) now rejects the
 replacement attempt. No real dispatcher is enabled.
+
+[Internal diagnostic whitelist](../../contracts/run/DIAGNOSTIC-READ.md) exposes
+only original Binding, read-time status and event highwater. It requires the
+MESSAGE-owned protected server composition; it is not an authenticated API.

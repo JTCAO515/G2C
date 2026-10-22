@@ -1,12 +1,16 @@
 """Internal consumer of CJ007's fixed interface. No JWT implementation or routes."""
 from contextlib import contextmanager
 import inspect
+import hashlib
+import threading
+from contextvars import ContextVar
 from cj_auth.admission import AdmissionChecker
 from cj_auth.interfaces import INTERFACE_VERSION, AdmissionStatus, TrustedPrincipal
-from .domain import Service
+from .domain import Service, Stored, Receipt, Command, InvalidInput, Unavailable
 
 EXPECTED_AUTH = 'CJ-AUTH-SERVER@0.1.0-rc.1'
 _HISTORY_CONTEXT_FACTORY = object()
+_ACTIVE_HISTORY_CONTEXT = ContextVar("cj_message_history_context", default=None)
 
 
 class AccessBlocked(Exception):
@@ -37,9 +41,11 @@ class HistoryReadContext:
             raise TypeError('history context must be issued by Boundary')
         self._principal, self._scope, self._service = principal, scope, service
         self._active = True
+        self._thread = threading.current_thread()
 
     def _check(self):
-        if not self._active:
+        if (not self._active or threading.current_thread() is not self._thread
+                or _ACTIVE_HISTORY_CONTEXT.get() is not self):
             raise RuntimeError('history context expired')
 
     @property
@@ -51,6 +57,31 @@ class HistoryReadContext:
     def scope(self):
         self._check()
         return self._scope
+
+    def query_message(self, message_id: str) -> Stored | None:
+        """Current scoped receipt + original input; never a RUN completion assertion."""
+        self._check()
+        if type(message_id) is not str or not message_id.strip():
+            raise InvalidInput('message ID required')
+        stored = self._service.query(message_id)
+        self._check()
+        if stored is None:
+            return None
+        if type(stored) is not Stored or type(stored.receipt) is not Receipt:
+            raise Unavailable()
+        try:
+            command = Command.parse(stored.raw)
+        except InvalidInput:
+            raise Unavailable() from None
+        receipt = stored.receipt
+        if (command.message_id != message_id or receipt.message_id != message_id
+                or command.conversation_id != receipt.conversation_id
+                or hashlib.sha256(stored.raw).hexdigest() != receipt.input_sha256
+                or type(receipt.sequence) is not int or receipt.sequence < 1
+                or type(receipt.generation) is not str or not receipt.generation.strip()
+                or type(receipt.run_id) is not str or not receipt.run_id.strip()):
+            raise Unavailable()
+        return stored
 
     def conversations(self, cursor=None, limit=20):
         self._check()
@@ -119,9 +150,15 @@ class Boundary:
         context. Caller supplies trusted environment/codec policy separately; no new
         principal claims are invented here. Draft writes use save_draft, outside this seam.
         """
-        service, principal, scope, guard = self._bind(token)
-        context = HistoryReadContext(principal, scope, service, _factory=_HISTORY_CONTEXT_FACTORY)
+        if _ACTIVE_HISTORY_CONTEXT.get() is not None:
+            raise RuntimeError('nested history context unavailable')
+        # Reserve entry before invoking injected checker/resolver callbacks as well.
+        active_token = _ACTIVE_HISTORY_CONTEXT.set(_HISTORY_CONTEXT_FACTORY)
+        context = None
         try:
+            service, principal, scope, guard = self._bind(token)
+            context = HistoryReadContext(principal, scope, service, _factory=_HISTORY_CONTEXT_FACTORY)
+            _ACTIVE_HISTORY_CONTEXT.set(context)
             guard('transaction')  # resolver/codec boundary; same captured principal
             result = operation(context)
             if result is context or inspect.isawaitable(result) or inspect.isgenerator(result) or inspect.isasyncgen(result):
@@ -131,7 +168,9 @@ class Boundary:
             guard('return')  # after cursor encoding/projection, before publication
             return result
         finally:
-            context._active = False
+            if context is not None:
+                context._active = False
+            _ACTIVE_HISTORY_CONTEXT.reset(active_token)
 
     def receive(self, token, raw):
         return self._service(token).receive(raw)

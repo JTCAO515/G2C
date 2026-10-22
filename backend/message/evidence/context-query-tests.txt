@@ -1,0 +1,12 @@
+test_changed_hash_input_message_or_conversation_rejected (context_query_tests.QueryContextTests.test_changed_hash_input_message_or_conversation_rejected) ... ok
+test_exact_original_receipt_and_same_context_metadata (context_query_tests.QueryContextTests.test_exact_original_receipt_and_same_context_metadata) ... ok
+test_expired_and_cross_thread_even_with_copied_context_rejected (context_query_tests.QueryContextTests.test_expired_and_cross_thread_even_with_copied_context_rejected) ... ok
+test_identity_and_final_gate_changes_withhold_source (context_query_tests.QueryContextTests.test_identity_and_final_gate_changes_withhold_source) ... ok
+test_missing_is_none_but_dependency_and_generation_errors_are_not (context_query_tests.QueryContextTests.test_missing_is_none_but_dependency_and_generation_errors_are_not) ... ok
+test_nested_context_refused_without_replacing_outer_binding (context_query_tests.QueryContextTests.test_nested_context_refused_without_replacing_outer_binding) ... ok
+test_resolver_reentry_is_refused_before_second_auth_binding (context_query_tests.QueryContextTests.test_resolver_reentry_is_refused_before_second_auth_binding) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.001s
+
+OK
