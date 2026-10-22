@@ -1,0 +1,18 @@
+test_different_timezone_representations_use_same_instants (test_time_controls.InstantControls.test_different_timezone_representations_use_same_instants) ... ok
+test_fold_source_and_binding_are_not_rewritten_to_utc (test_time_controls.InstantControls.test_fold_source_and_binding_are_not_rewritten_to_utc) ... ok
+test_limits_are_inclusive_across_spring_transition (test_time_controls.InstantControls.test_limits_are_inclusive_across_spring_transition) ... ok
+test_receipt_before_start_is_invalid_despite_later_wall_time (test_time_controls.InstantControls.test_receipt_before_start_is_invalid_despite_later_wall_time) ... ok
+test_unrepresentable_utc_instant_is_invalid_not_exception (test_time_controls.InstantControls.test_unrepresentable_utc_instant_is_invalid_not_exception) ... ok
+test_equivalent_utc_instants_enforce_existing_outcomes (test_time_review.IndependentTimeTests.test_equivalent_utc_instants_enforce_existing_outcomes) ... ok
+test_fold_age_must_be_stale (test_time_review.IndependentTimeTests.test_fold_age_must_be_stale) ... ok
+test_fold_elapsed_must_be_unknown (test_time_review.IndependentTimeTests.test_fold_elapsed_must_be_unknown) ... ok
+test_fold_future_receive_must_be_invalid (test_time_review.IndependentTimeTests.test_fold_future_receive_must_be_invalid) ... ok
+test_fresh_non_utc_keeps_original_source_timestamps (test_time_review.IndependentTimeTests.test_fresh_non_utc_keeps_original_source_timestamps) ... ok
+test_fold_does_not_hide_one_hour_deadline_and_age (test_time_testing.IndependentElapsedTimeChecks.test_fold_does_not_hide_one_hour_deadline_and_age) ... ok
+test_fold_does_not_hide_one_hour_query_age (test_time_testing.IndependentElapsedTimeChecks.test_fold_does_not_hide_one_hour_query_age) ... ok
+test_spring_forward_one_second_is_not_a_one_hour_timeout (test_time_testing.IndependentElapsedTimeChecks.test_spring_forward_one_second_is_not_a_one_hour_timeout) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.002s
+
+OK

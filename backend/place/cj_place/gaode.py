@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, DecimalException
 from hashlib import sha256
 import json
@@ -223,7 +223,12 @@ def parse_response(config: Config, request: PreparedRequest, response: Response,
     try:
         aware(now)
         aware(response.received_at)
-    except (ValueError, TypeError):
+        # Same-tzinfo datetime arithmetic uses wall time across DST/fold.
+        # Compare actual instants while retaining originals in binding/Source.
+        started_instant = request.started_at.astimezone(timezone.utc)
+        received_instant = response.received_at.astimezone(timezone.utc)
+        now_instant = now.astimezone(timezone.utc)
+    except (ValueError, TypeError, OverflowError):
         return Result(Outcome.INVALID_RESPONSE, request.query, "response_time")
     source = Source(request.origin + request.path, request.started_at, response.received_at,
                     request.request_ref, request.binding_digest, evidence)
@@ -231,9 +236,9 @@ def parse_response(config: Config, request: PreparedRequest, response: Response,
     def result(outcome, reason, **kwargs):
         return Result(outcome, request.query, reason, source, **kwargs)
 
-    elapsed = (response.received_at - request.started_at).total_seconds()
-    age = (now - request.started_at).total_seconds()
-    if elapsed < 0 or now < response.received_at:
+    elapsed = (received_instant - started_instant).total_seconds()
+    age = (now_instant - started_instant).total_seconds()
+    if elapsed < 0 or now_instant < received_instant:
         return result(Outcome.INVALID_RESPONSE, "response_time")
     if elapsed > config.timeout_seconds:
         return result(Outcome.UNKNOWN, "response_deadline_exceeded")

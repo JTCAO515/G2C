@@ -74,6 +74,12 @@ route responses do not echo POI IDs/mode. Their binding comes from the **trusted
 transport's association with the exact request**, not proof in provider JSON.
 An arbitrary supplied body plus matching metadata is still unverified_bytes.
 
+Elapsed time, query age and receipt/observation ordering compare actual UTC
+instants after aware-time validation. Original timezone offsets/fold and datetime
+objects remain unchanged in Source and request binding. DST clock transitions do
+not extend deadlines or expire a fresh response. An instant outside Python's
+representable UTC datetime range is invalid_response/response_time.
+
 | Outcome | Consumer behavior |
 |---|---|
 | ok | Provider success with parsed entries; inspect every needed Observed field and source before use. It is not a complete-feasibility or truth claim. |
