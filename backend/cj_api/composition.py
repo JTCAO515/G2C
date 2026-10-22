@@ -70,7 +70,8 @@ def build_message_boundary(*, environment, jwt_configuration, verification_keys,
 
 def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         access_provider, resolve_repository, new_run_id, max_body_bytes, history_configuration=None,
-                        memory_configuration=None, resolve_memory_binding=None, memory_source_policy=None):
+                        memory_configuration=None, resolve_memory_binding=None, memory_source_policy=None,
+                        trip_configuration=None, resolve_trip=None, trip_confirmation_validator=None):
     """No zero-argument/public production configuration exists."""
     if type(max_body_bytes) is not int or max_body_bytes <= 0:
         raise CompositionUnavailable('Explicit positive body byte limit required')
@@ -97,7 +98,16 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
         memory_boundary = build_memory_boundary(environment=environment,jwt_configuration=jwt_configuration,
             verification_keys=verification_keys,access_provider=access_provider,
             resolve_binding=resolve_memory_binding,source_policy=memory_source_policy)
+    trip_boundary = trip_modules = None
+    if any(value is not None for value in (trip_configuration,resolve_trip,trip_confirmation_validator)):
+        from .trip_composition import TripWireConfiguration, build_trip_boundary
+        if type(trip_configuration) is not TripWireConfiguration:
+            raise CompositionUnavailable('Explicit TRIP configuration/resolver required')
+        trip_boundary,trip_modules = build_trip_boundary(environment=environment,jwt_configuration=jwt_configuration,
+            verification_keys=verification_keys,access_provider=access_provider,
+            resolve=resolve_trip,confirmation_validator=trip_confirmation_validator)
     from .app import create_app
     return create_app(_message_boundary=boundary, _max_body_bytes=max_body_bytes,
                       _history_configuration=history_configuration, _history_environment=environment,
-                      _memory_boundary=memory_boundary, _memory_configuration=memory_configuration)
+                      _memory_boundary=memory_boundary, _memory_configuration=memory_configuration,
+                      _trip_boundary=trip_boundary, _trip_configuration=trip_configuration, _trip_modules=trip_modules)

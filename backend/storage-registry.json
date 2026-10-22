@@ -83,7 +83,7 @@
             "cj_trip_record",
             "cj_trip_receipt"
           ],
-          "source": "backend/trip/sql/candidate.sql@0e2c3241825d81b89cc7bdb2f2c6daa967038068",
+          "source": "backend/trip/sql/candidate.sql@5fd115fc97e542bc8776a445d8245fd272000e56",
           "status": "candidate/local_only; production_not_provisioned",
           "principal_binding": "Fresh existing AUTH plus explicit environment/profile and issuer/subject scope mapping; server-held review/confirmation validator required, default absent denies",
           "sensitive_fields": [
@@ -217,6 +217,6 @@
   "production_activation": "BLOCKED; source/local acceptance does not provision production",
   "candidate_sources": {
     "memory": "426d337b0647d7770f1716fad83f2e5e724d28e4",
-    "trip": "0e2c3241825d81b89cc7bdb2f2c6daa967038068"
+    "trip": "5fd115fc97e542bc8776a445d8245fd272000e56"
   }
 }

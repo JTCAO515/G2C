@@ -37,3 +37,11 @@ def build_trip_boundary(*,environment,jwt_configuration,verification_keys,access
     checker=modules['cj_auth.admission'].AdmissionChecker(verifier,access_provider)
     boundary=modules['cj_trip.auth_boundary'].Boundary(checker,resolve,confirmation_validator)
     return boundary,modules
+
+
+def create_trip_composed_app(*,configuration,**dependencies):
+    if type(configuration) is not TripWireConfiguration:
+        raise CompositionUnavailable('Explicit TRIP wire configuration required')
+    boundary,modules=build_trip_boundary(**dependencies)
+    from .app import create_app
+    return create_app(_trip_boundary=boundary,_trip_configuration=configuration,_trip_modules=modules)
