@@ -4781,5 +4781,483 @@ extension Components {
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/FeedbackReference`.
+        public struct FeedbackReference: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeedbackReference/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case message = "message"
+                case run = "run"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeedbackReference/kind`.
+            public var kind: Components.Schemas.FeedbackReference.kindPayload
+            /// Exact nonblank Unicode ID, maximum1024 UTF8 bytes, no NUL or normalization.
+            ///
+            /// - Remark: Generated from `#/components/schemas/FeedbackReference/id`.
+            public var id: Swift.String
+            /// Creates a new `FeedbackReference`.
+            ///
+            /// - Parameters:
+            ///   - kind:
+            ///   - id: Exact nonblank Unicode ID, maximum1024 UTF8 bytes, no NUL or normalization.
+            public init(
+                kind: Components.Schemas.FeedbackReference.kindPayload,
+                id: Swift.String
+            ) {
+                self.kind = kind
+                self.id = id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case kind
+                case id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.kind = try container.decode(
+                    Components.Schemas.FeedbackReference.kindPayload.self,
+                    forKey: .kind
+                )
+                self.id = try container.decode(
+                    Swift.String.self,
+                    forKey: .id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "kind",
+                    "id"
+                ])
+            }
+        }
+        /// Exact original UTF8 JSON <=16384 bytes. problem nonblank; expectation may be empty. Each text <=6000 UTF8 bytes and no NUL. Voluntary text is not diagnostics. Do not prefill private transcript or credentials. No automatic redaction claim.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FeedbackAction`.
+        public struct FeedbackAction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeedbackAction/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeedbackAction/problem`.
+            public var problem: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeedbackAction/expectation`.
+            public var expectation: Swift.String
+            /// Empty for general; otherwise exactly one message plus optional one run, kinds unique. No run-only/Trip/Memory/proposal/owner/source diagnostics.
+            ///
+            /// - Remark: Generated from `#/components/schemas/FeedbackAction/references`.
+            public var references: [Components.Schemas.FeedbackReference]
+            /// Creates a new `FeedbackAction`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - problem:
+            ///   - expectation:
+            ///   - references: Empty for general; otherwise exactly one message plus optional one run, kinds unique. No run-only/Trip/Memory/proposal/owner/source diagnostics.
+            public init(
+                action_id: Swift.String,
+                problem: Swift.String,
+                expectation: Swift.String,
+                references: [Components.Schemas.FeedbackReference]
+            ) {
+                self.action_id = action_id
+                self.problem = problem
+                self.expectation = expectation
+                self.references = references
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case problem
+                case expectation
+                case references
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.problem = try container.decode(
+                    Swift.String.self,
+                    forKey: .problem
+                )
+                self.expectation = try container.decode(
+                    Swift.String.self,
+                    forKey: .expectation
+                )
+                self.references = try container.decode(
+                    [Components.Schemas.FeedbackReference].self,
+                    forKey: .references
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "problem",
+                    "expectation",
+                    "references"
+                ])
+            }
+        }
+        /// Minimal historical read-time observation only. message_input_sha256 hashes original message input, not receipt bytes. No transcript/tool payload or model/rule/usage/duration/failure-stage data is available; absence means unavailable, not zero. Separate source/read/feedback transactions are not atomic across domains; no guarantee of current validity or user-decision-time status.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation`.
+        public struct FeedbackSourceObservation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/message_sequence`.
+            public var message_sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/message_input_sha256`.
+            public var message_input_sha256: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/run_status_at_read`.
+            @frozen public enum run_status_at_readPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case queued = "queued"
+                case running = "running"
+                case completed = "completed"
+                case failed = "failed"
+                case cancelled = "cancelled"
+                case context_invalid = "context_invalid"
+                case unknown = "unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/run_status_at_read`.
+            public var run_status_at_read: Components.Schemas.FeedbackSourceObservation.run_status_at_readPayload
+            /// - Remark: Generated from `#/components/schemas/FeedbackSourceObservation/event_highwater_at_read`.
+            public var event_highwater_at_read: Swift.Int
+            /// Creates a new `FeedbackSourceObservation`.
+            ///
+            /// - Parameters:
+            ///   - message_id:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - message_sequence:
+            ///   - run_id:
+            ///   - message_input_sha256:
+            ///   - run_status_at_read:
+            ///   - event_highwater_at_read:
+            public init(
+                message_id: Swift.String,
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                message_sequence: Swift.Int,
+                run_id: Swift.String,
+                message_input_sha256: Swift.String,
+                run_status_at_read: Components.Schemas.FeedbackSourceObservation.run_status_at_readPayload,
+                event_highwater_at_read: Swift.Int
+            ) {
+                self.message_id = message_id
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.message_sequence = message_sequence
+                self.run_id = run_id
+                self.message_input_sha256 = message_input_sha256
+                self.run_status_at_read = run_status_at_read
+                self.event_highwater_at_read = event_highwater_at_read
+            }
+            public enum CodingKeys: String, CodingKey {
+                case message_id
+                case conversation_id
+                case generation
+                case message_sequence
+                case run_id
+                case message_input_sha256
+                case run_status_at_read
+                case event_highwater_at_read
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.message_sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .message_sequence
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.message_input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_input_sha256
+                )
+                self.run_status_at_read = try container.decode(
+                    Components.Schemas.FeedbackSourceObservation.run_status_at_readPayload.self,
+                    forKey: .run_status_at_read
+                )
+                self.event_highwater_at_read = try container.decode(
+                    Swift.Int.self,
+                    forKey: .event_highwater_at_read
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "message_id",
+                    "conversation_id",
+                    "generation",
+                    "message_sequence",
+                    "run_id",
+                    "message_input_sha256",
+                    "run_status_at_read",
+                    "event_highwater_at_read"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/FeedbackReceipt`.
+        public struct FeedbackReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/input_sha256`.
+            public var input_sha256: Swift.String
+            /// Actual stored database UTC submission time; historical replay/query value.
+            ///
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/submitted_at`.
+            public var submitted_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case submitted = "submitted"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/status`.
+            public var status: Components.Schemas.FeedbackReceipt.statusPayload
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/message_en`.
+            @frozen public enum message_enPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case Feedback_space_submitted_period_ = "Feedback submitted."
+            }
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/message_en`.
+            public var message_en: Components.Schemas.FeedbackReceipt.message_enPayload
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/message_zh`.
+            @frozen public enum message_zhPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case 反馈已提交_x3002_ = "反馈已提交。"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/message_zh`.
+            public var message_zh: Components.Schemas.FeedbackReceipt.message_zhPayload
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/source`.
+            @frozen public enum sourcePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/source/case1`.
+                case FeedbackSourceObservation(Components.Schemas.FeedbackSourceObservation)
+                /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/source/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .FeedbackSourceObservation(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .FeedbackSourceObservation(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/FeedbackReceipt/source`.
+            public var source: Components.Schemas.FeedbackReceipt.sourcePayload
+            /// Creates a new `FeedbackReceipt`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - input_sha256:
+            ///   - submitted_at: Actual stored database UTC submission time; historical replay/query value.
+            ///   - status:
+            ///   - message_en:
+            ///   - message_zh:
+            ///   - source:
+            public init(
+                action_id: Swift.String,
+                input_sha256: Swift.String,
+                submitted_at: Foundation.Date,
+                status: Components.Schemas.FeedbackReceipt.statusPayload,
+                message_en: Components.Schemas.FeedbackReceipt.message_enPayload,
+                message_zh: Components.Schemas.FeedbackReceipt.message_zhPayload,
+                source: Components.Schemas.FeedbackReceipt.sourcePayload
+            ) {
+                self.action_id = action_id
+                self.input_sha256 = input_sha256
+                self.submitted_at = submitted_at
+                self.status = status
+                self.message_en = message_en
+                self.message_zh = message_zh
+                self.source = source
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case input_sha256
+                case submitted_at
+                case status
+                case message_en
+                case message_zh
+                case source
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
+                self.submitted_at = try container.decode(
+                    Foundation.Date.self,
+                    forKey: .submitted_at
+                )
+                self.status = try container.decode(
+                    Components.Schemas.FeedbackReceipt.statusPayload.self,
+                    forKey: .status
+                )
+                self.message_en = try container.decode(
+                    Components.Schemas.FeedbackReceipt.message_enPayload.self,
+                    forKey: .message_en
+                )
+                self.message_zh = try container.decode(
+                    Components.Schemas.FeedbackReceipt.message_zhPayload.self,
+                    forKey: .message_zh
+                )
+                self.source = try container.decode(
+                    Components.Schemas.FeedbackReceipt.sourcePayload.self,
+                    forKey: .source
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "input_sha256",
+                    "submitted_at",
+                    "status",
+                    "message_en",
+                    "message_zh",
+                    "source"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/FeedbackSubmitResponse`.
+        public struct FeedbackSubmitResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeedbackSubmitResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/FeedbackSubmitResponse/receipt`.
+            public var receipt: Components.Schemas.FeedbackReceipt
+            /// Creates a new `FeedbackSubmitResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.FeedbackReceipt
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.FeedbackReceipt.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/FeedbackQueryResponse`.
+        public struct FeedbackQueryResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeedbackQueryResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/FeedbackQueryResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/FeedbackQueryResponse/receipt/case1`.
+                case FeedbackReceipt(Components.Schemas.FeedbackReceipt)
+                /// - Remark: Generated from `#/components/schemas/FeedbackQueryResponse/receipt/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .FeedbackReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .FeedbackReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/FeedbackQueryResponse/receipt`.
+            public var receipt: Components.Schemas.FeedbackQueryResponse.receiptPayload
+            /// Creates a new `FeedbackQueryResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.FeedbackQueryResponse.receiptPayload
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.FeedbackQueryResponse.receiptPayload.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
     }
 }
