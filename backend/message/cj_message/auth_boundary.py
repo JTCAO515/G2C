@@ -79,3 +79,15 @@ class Boundary:
     def pending(self, token, limit=20):
         # Internal read only, never a model-dispatch authorization receipt.
         return self._service(token).pending(limit)
+
+    def conversations(self, token, cursor=None, limit=20):
+        return self._service(token).conversations(cursor, limit)
+
+    def message_history(self, token, conversation_id, cursor=None, limit=20):
+        return self._service(token).message_history(conversation_id, cursor, limit)
+
+    def read_draft(self, token, conversation_id, generation):
+        return self._service(token).read_draft(conversation_id, generation)
+
+    def save_draft(self, token, conversation_id, generation, original_utf8, expected_revision):
+        return self._service(token).save_draft(conversation_id, generation, original_utf8, expected_revision)

@@ -1,0 +1,15 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 7] CJMessageHTTPTests-product
+[4 / 9] CJMessageHTTPTests-product
+[8 / 11] CJMessageHTTPTests-product
+[10 / 11] CJMessageHTTPTests-product
+Build complete! (1.30秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite TransportTests started.
+◇ Test overlappingSubmitConsumesOneFreshAuthorization() started.
+✔ Test overlappingSubmitConsumesOneFreshAuthorization() passed after 0.002 seconds.
+✔ Suite TransportTests passed after 0.002 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.002 seconds.

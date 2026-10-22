@@ -86,3 +86,33 @@ provider. All data are synthetic, with no real credentials and no network calls.
 Core PASS does not prove generated transport, actual AUTH/Keychain host integration,
 iOS device file protection, CJShell behavior, real service or independent acceptance.
 No existing PG suite rerun. Issue10 remains open; early core is ready for fixed-head review.
+
+Transport delta: see [TRANSPORT.md](TRANSPORT.md). CJMessageHTTP now consumes exact
+CJ005 d886677 CJAPI through an ignored fixed export (prepare script required). Receive
+interception checks pass; generated query lacks receipt and explicitly blocks query
+until CJ005 correction. This does not change the earlier core-only evidence attribution.
+
+Storage delta: [KEY-BINDING.md](KEY-BINDING.md) defines authenticated `CJMKEY02`/key-ID
+format and read-only fixed official key-interface bridge. Old headerless candidate files
+are explicitly refused and preserved, without migration or key guessing. Run both prepare
+scripts before a fresh build. 13 targeted checks and two separate v2 test processes pass;
+real Keychain and host lifecycle remain pending.
+
+Activation gate: [ACTIVATION-GATE.md](ACTIVATION-GATE.md) now treats every reloaded
+staged action as query-only. Since entire-snapshot rollback cannot be detected locally,
+live POST is explicitly unavailable; only named synthetic interceptor composition can
+exercise submission. Key-ID authentication is not freshness or production activation.
+
+Query consumption update: fixed CJ005 `312a69ca` replaces the d886677 query blocker.
+[evidence/QUERY-CONSUMPTION.md](evidence/QUERY-CONSUMPTION.md) records exact generated
+branches and 10+2 checks. Only explicit null is notObserved; live POST remains disabled.
+
+Once-only local authority: [FRESH-AUTHORIZATION.md](FRESH-AUTHORIZATION.md) documents
+private nonserialized first-attempt permission and same-process rollback/reentry denial.
+27 affected checks plus one overlap check pass; no global rollback guarantee or live
+POST activation follows. Draft and original-action state remain separate.
+
+Local recovery enumeration: [LOCAL-PROJECTION.md](LOCAL-PROJECTION.md) exposes current
+scope/Lease-bound action ID/phase and draft references only. Complete unordered local
+projection, no payload or invented server sequence; six targeted checks pass. Revalidate
+after await before display. It grants no new sending or server-history authority.

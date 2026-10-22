@@ -37,3 +37,11 @@ second AUTH authority, or expose production account state through the test provi
 Conclusion: local core compatible with the fixed lifecycle semantics; direct integration
 PENDING the above actual host/key interfaces. No source dependency added, no guessed fields.
 Independent CJ007/CJ009 acceptance, real Keychain, true SDK/service and device remain UNRUN.
+
+## Independent message-key interface delta
+
+Fixed f1ce075e4b3f26e6c65bfe4b2fa8bcec8291a552 now supplies CJ-MESSAGE-KEYS interface,
+separate from session credentials. See KEY-BINDING.md for exact read-only adapter,
+authenticated key-ID v2 format, explicit legacy refusal and host lifecycle gaps. This
+supersedes the earlier absence of an interface, not the pending real implementation or
+host mapping/entitlement acceptance. No session token becomes an AES key.

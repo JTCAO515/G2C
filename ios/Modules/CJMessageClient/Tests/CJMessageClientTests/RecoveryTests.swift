@@ -5,8 +5,9 @@ import Testing
 
 @MainActor private final class TestKeys: MessageEncryptionKeyProvider {
     var available = true
+    var id = UUID()
     var secret = SymmetricKey(size: .bits256)
-    func key(for scope: StorageScope) throws -> SymmetricKey? { available ? secret : nil }
+    func existing(for scope: StorageScope, expectedID: UUID?) throws -> MessageStorageKey? { available ? MessageStorageKey(id: id, key: secret) : nil }
 }
 
 @MainActor private final class AmbiguousStorage: SecureMessageStorage {
@@ -30,7 +31,7 @@ import Testing
             .appendingPathComponent("cj009-synthetic-" + UUID().uuidString)
         keys = TestKeys()
         storage = try EncryptedFileStorage(directory: directory, keys: keys)
-        scope = try StorageScope(environment: "fixture-local", account: "fixture-a")
+        scope = try StorageScope(environment: "fixture-local-" + UUID().uuidString, account: "fixture-a")
     }
     var raw: Data { Data(" {\"message_id\":\"m1\",\"text\":\"合成 private text\"} \n".utf8) }
 }
