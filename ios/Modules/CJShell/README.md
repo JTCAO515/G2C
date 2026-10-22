@@ -31,3 +31,5 @@ Account host wiring and transient-input boundaries: see `contracts/ui/ACCOUNT-HO
 Explicit local-session UI and synthetic `--session-demo` flags are documented in `contracts/ui/SESSION-HOST.md`. Default launch never creates a session store.
 
 Assistant recovery host and fixed generated dependency preparation: `contracts/ui/MESSAGE-HOST.md`. `--message-demo` is memory-only, visibly synthetic and never enables POST.
+
+Server history is a separate read-only sheet using canonical CJAPI/CJMessageHTTP. Prepare the fixed 2f8 generated package before building; `build-demo.sh` compiles the actual iOS package graph and does not run a device. See `contracts/ui/SERVER-HISTORY-HOST.md` for lifecycle and dependency pins.

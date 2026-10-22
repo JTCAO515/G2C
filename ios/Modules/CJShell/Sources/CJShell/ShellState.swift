@@ -87,6 +87,7 @@ public final class ShellState {
     public var memoryPath: [MemoryRoute] = []
     public var draft = ""
     var messageBindingBlocked = false
+    @ObservationIgnored weak var serverHistoryHost: ServerHistoryHost?
     @ObservationIgnored weak var messageHost: AssistantMessageHost?
     public private(set) var generation = ShellGeneration()
     public private(set) var presentation = ShellPresentation()
@@ -122,6 +123,7 @@ public final class ShellState {
         contextReset()
         // Publish the fence and clear private UI before a resource callback can reenter.
         // No outer-lifetime mutation is allowed after this callback.
+        serverHistoryHost?.invalidate() // local projection cleanup has no injected resource callback
         messageHost?.invalidate()
         return invalidatedGeneration
     }

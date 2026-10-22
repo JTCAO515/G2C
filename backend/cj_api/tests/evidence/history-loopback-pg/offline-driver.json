@@ -1,0 +1,12 @@
+{
+  "source": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-pg/driver",
+  "version": "3.2.10",
+  "mode": "read-only exact package/dist-info whitelist; no old data/socket/pgpass/config/log",
+  "manifest_sha256": "b41f66bb951e2efd9fef7fec66935a90c9db7f895d4d57ae18d93f45b9631e40",
+  "whitelist": [
+    "psycopg",
+    "psycopg-3.2.10.dist-info"
+  ],
+  "file_count": 91,
+  "full_manifest": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-history-pg/driver-source.json"
+}
