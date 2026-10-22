@@ -68,3 +68,16 @@ TRIP's responsibility. Recheck transaction/commit/private-return, preserve origi
 action reconciliation after possible commit. This implementation follows that seam.
 No live AUTH or atomic session revocation evidence is implied. Formal TRIP/API,
 CJ014/CJ017 and UI-confirmation consumer confirmation remain PENDING.
+
+## Transaction preconditions and cleanup (de4e repair)
+
+Connection factories must supply a fresh, open, non-autocommit PostgreSQL connection
+with psycopg-compatible `autocommit`, `closed`, and `info.transaction_status` metadata
+(IDLE=0). Missing/unknown/active state is rejected before any cursor/SQL; an adapter
+without this metadata is unsupported until its transaction state is explicitly
+provided and verified. Repository does not switch autocommit or adopt existing work.
+After the last commit admission guard, fresh actions recheck database-clock expiry
+under the same scope lock immediately before COMMIT. Original receipt replay remains
+independent of later expiry. Cleanup errors emit generic logger warnings without
+exception text or private data; they cannot replace a receipt, original CommitUnknown,
+or a post-commit denial's commit_possible marker. No new retry/write authority follows.

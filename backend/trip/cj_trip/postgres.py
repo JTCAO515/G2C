@@ -4,6 +4,9 @@ Per-scope locking deliberately serializes the first slice, including competing
 new-trip inserts. No network/provider work belongs in the confirmation callback.
 """
 from contextlib import contextmanager
+import logging
+
+logger = logging.getLogger(__name__)
 from .domain import Action, Proposal, Receipt, Trip, Conflict, Denied, CommitUnknown, identifier
 
 
@@ -14,9 +17,17 @@ class Repository:
         self.guard = guard or (lambda stage: None)
 
     @contextmanager
-    def transaction(self):
+    def transaction(self, before_commit=None):
         conn = self.connect()
+        accepted = False
         try:
+            # psycopg PostgreSQL status: IDLE=0. Missing/unknown state fails closed.
+            # Inspect before cursor creation or any SQL; never take over caller work.
+            if (getattr(conn, 'autocommit', None) is not False
+                    or getattr(getattr(conn, 'info', None), 'transaction_status', None) != 0
+                    or getattr(conn, 'closed', None) is not False):
+                raise Denied('fresh non-autocommit PostgreSQL connection required')
+            accepted = True
             cur = conn.cursor()
             cur.execute("SET LOCAL lock_timeout = '5s'")
             cur.execute("SET LOCAL statement_timeout = '10s'")
@@ -25,15 +36,25 @@ class Repository:
             self.guard('transaction')
             yield cur
             self.guard('commit')
+            if before_commit is not None: before_commit(cur)
             try: conn.commit()
             except Exception as exc: raise CommitUnknown('query original action; do not replace ID') from exc
             self.guard('return')
         except BaseException:
-            try: conn.rollback()
-            except Exception: pass  # Preserve original unknown outcome / denial.
+            if accepted:
+                try: conn.rollback()
+                except Exception: self._cleanup_warning('rollback')
             raise
         finally:
-            conn.close()
+            try: conn.close()
+            except Exception: self._cleanup_warning('close')
+
+    @staticmethod
+    def _cleanup_warning(operation):
+        # No exception text, token, identifiers, content or connection details.
+        # Even a broken log handler must not replace the original business result.
+        try: logger.warning('TRIP connection cleanup failed: %s', operation)
+        except Exception: pass
 
     def _proposal(self, cur, pid):
         cur.execute('SELECT proposal_id,trip_id,expected_version,basis_version,expires_at,content,candidate_hash,status FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,pid))
@@ -64,7 +85,15 @@ class Repository:
 
     def act(self, action):
         if not isinstance(action, Action): raise ValueError('validated action required')
-        with self.transaction() as cur:
+        p = None
+        def final_eligibility(cur):
+            if p is not None:
+                # Last potentially slow admission check has finished. The scope lock
+                # still protects the candidate/content/version checked in this txn.
+                cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
+                if p.expires_at <= cur.fetchone()[0]:
+                    raise Conflict('candidate expired before commit')
+        with self.transaction(before_commit=final_eligibility) as cur:
             previous = self._receipt(cur, action.action_id)
             if previous:
                 if previous[1] != action.raw(): raise Conflict('action ID input conflict')
@@ -86,9 +115,6 @@ class Repository:
             receipt = Receipt(action.action_id,action.kind,p.proposal_id,digest,p.trip_id,version)
             cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', ('accepted' if action.kind == 'accept' else 'rejected',self.scope,p.proposal_id))
             cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
-            # Time may advance while trusted validation runs. Roll back everything.
-            cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
-            if p.expires_at <= cur.fetchone()[0]: raise Conflict('candidate expired before commit')
             return receipt
 
     def retire(self, proposal_id, state, replacement_id=None):

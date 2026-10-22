@@ -55,3 +55,12 @@ claim. Stored latest Trip has no historical content lookup; original receipt alw
 retains the committed version and candidate hash and immutable proposal content.
 
 Raw initial failure/initdb logs are losslessly gzip-compressed; no evidence lines rewritten.
+
+## de4e transaction-boundary repair
+
+Independent Review/Testing found autocommit partial writes, expiry after a slow
+commit guard, and close errors masking primary outcomes. These findings supersede
+any implication that the original 14 positives alone establish the transaction
+boundary. [Repair evidence](evidence/repair-de4e/REPORT.md): minimal repository fix,
+25 distinct real-PG tests plus original fault probes and actual restart PASS;
+new private clusters stopped. Original evidence retained. New independent gates pending.
