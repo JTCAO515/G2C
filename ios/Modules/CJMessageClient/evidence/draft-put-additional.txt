@@ -1,0 +1,30 @@
+Building for debugging...
+[Computing dependencies]
+[1 / 1]
+[2 / 24] CJMessageClient
+[7 / 26] CJMessageClient
+[15 / 22] CJMessageHTTPTests-product
+[21 / 26] CJMessageHTTPTests-product
+[25 / 31] CJMessageHTTPTests-product
+[27 / 31] CJMessageHTTPTests-product
+Build complete! (1.70秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite DraftPutTests started.
+◇ Test encryptedReopenRetainsUnknownDraftWrite() started.
+◇ Test emptyDraftSuccessAndLateIdentityRemainDistinct() started.
+◇ Test matchingReadbackDoesNotSettleUnknownPut() started.
+✔ Test encryptedReopenRetainsUnknownDraftWrite() passed after 0.005 seconds.
+✔ Test matchingReadbackDoesNotSettleUnknownPut() passed after 0.006 seconds.
+✔ Test emptyDraftSuccessAndLateIdentityRemainDistinct() passed after 0.006 seconds.
+✔ Suite DraftPutTests passed after 0.006 seconds.
+✔ Test run with 3 tests in 1 suite passed after 0.006 seconds.
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ProjectionTests started.
+◇ Test reopenEnumeratesOnlyReferencesWithoutGrantingSend() started.
+✔ Test reopenEnumeratesOnlyReferencesWithoutGrantingSend() passed after 0.001 seconds.
+✔ Suite ProjectionTests passed after 0.001 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.001 seconds.

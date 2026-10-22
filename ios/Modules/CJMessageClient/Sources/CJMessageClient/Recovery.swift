@@ -62,10 +62,37 @@ public struct LocalRecoveryProjection: Sendable {
     fileprivate let lease: Lease
 }
 
+public struct DraftSaveRecord: Codable, Sendable {
+    public let conversationID: String
+    public let generation: String
+    public let expectedRevision: Int64
+    public let originalUTF8: Data
+    fileprivate let editorRevision: UUID?
+    public fileprivate(set) var confirmedRevision: Int64?
+}
+public struct DraftSaveOperation: Sendable {
+    fileprivate let lease: Lease
+    fileprivate let key: String
+    fileprivate let nonce: UUID
+}
+
 public struct Snapshot: Codable, Sendable {
     var version = 1
     var actions: [String: ActionRecord] = [:]
     var drafts: [String: Data] = [:]
+    var draftEdits: [String: UUID] = [:]
+    var draftSaves: [String: DraftSaveRecord] = [:]
+    enum CodingKeys: String, CodingKey { case version, actions, drafts, draftEdits, draftSaves }
+    init() { }
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = try c.decode(Int.self, forKey: .version)
+        actions = try c.decode([String:ActionRecord].self, forKey: .actions)
+        drafts = try c.decode([String:Data].self, forKey: .drafts)
+        // Older local snapshots predate any PUT capability; no pending PUT can be lost.
+        draftEdits = try c.decodeIfPresent([String:UUID].self, forKey: .draftEdits) ?? [:]
+        draftSaves = try c.decodeIfPresent([String:DraftSaveRecord].self, forKey: .draftSaves) ?? [:]
+    }
 }
 
 /// A save must replace the encrypted snapshot atomically; failure is an unknown write.
@@ -98,6 +125,7 @@ public struct Submission: Sendable {
     private var scope: StorageScope?
     private var snapshot = Snapshot()
     private var operations: [String: Operation] = [:]
+    private var draftOperations: [String: UUID] = [:]
     // Never Codable or stored in Snapshot. Consumed before any storage callback.
     private struct FreshAuthorization {
         let lease: Lease
@@ -125,6 +153,12 @@ public struct Submission: Sendable {
                 throw RecoveryError.invalidSnapshot
             }
         }
+        for (key, record) in restored.draftSaves {
+            guard key == Self.key(record.conversationID), !record.conversationID.isEmpty, !record.generation.isEmpty,
+                  record.expectedRevision >= 0, record.expectedRevision < Int64.max,
+                  String(data:record.originalUTF8,encoding:.utf8) != nil,
+                  record.confirmedRevision == nil || record.confirmedRevision == record.expectedRevision + 1 else { throw RecoveryError.invalidSnapshot }
+        }
         // Authentic ciphertext does not prove freshness. Every loaded staged action
         // is ambiguous (including one that never left the device): query only.
         for key in restored.actions.keys {
@@ -141,7 +175,7 @@ public struct Submission: Sendable {
     /// Immediate local fence; does not claim remote logout/deletion or erase recovery data.
     public func invalidate() {
         activationGeneration = UUID()
-        lease = nil; scope = nil; snapshot = Snapshot(); operations = [:]; fresh = [:]
+        lease = nil; scope = nil; snapshot = Snapshot(); operations = [:]; draftOperations = [:]; fresh = [:]
     }
 
     public func validateScope(_ expected: StorageScope, lease: Lease) throws {
@@ -153,7 +187,7 @@ public struct Submission: Sendable {
         try validateScope(scope, lease: lease)
         // No storage calls/awaits or mutations: enumeration cannot refresh identity,
         // mint fresh authorization, acknowledge a message or rewrite a snapshot.
-        let drafts = try snapshot.drafts.keys.map { encoded -> LocalDraftReference in
+        let drafts = try Set(snapshot.drafts.keys).union(snapshot.draftSaves.keys).map { encoded -> LocalDraftReference in
             guard let bytes = Data(base64Encoded: encoded),
                   let id = String(data: bytes, encoding: .utf8), !id.isEmpty,
                   Self.key(id) == encoded else { throw RecoveryError.invalidSnapshot }
@@ -174,6 +208,7 @@ public struct Submission: Sendable {
         try check(lease)
         guard !conversationID.isEmpty, String(data: bytes, encoding: .utf8) != nil else { throw RecoveryError.invalidInput }
         var next = snapshot; next.drafts[Self.key(conversationID)] = bytes
+        next.draftEdits[Self.key(conversationID)] = UUID()
         try persist(next)
     }
 
@@ -207,6 +242,49 @@ public struct Submission: Sendable {
         var next = snapshot; next.actions[key] = record
         try persist(next)
         fresh[key] = FreshAuthorization(lease: lease, digest: record.inputSHA256)
+    }
+
+    public func draftSave(conversationID: String, lease: Lease) throws -> DraftSaveRecord? {
+        try check(lease); return snapshot.draftSaves[Self.key(conversationID)]
+    }
+
+    public func beginDraftSave(conversationID: String, generation: String, expectedRevision: Int64, originalUTF8: Data, lease: Lease) throws -> DraftSaveOperation {
+        try check(lease)
+        guard !conversationID.isEmpty, !generation.isEmpty, expectedRevision >= 0, expectedRevision < Int64.max,
+              String(data: originalUTF8, encoding: .utf8) != nil else { throw RecoveryError.invalidInput }
+        let key = Self.key(conversationID)
+        guard draftOperations[key] == nil else { throw RecoveryError.queryOnly }
+        if let old = snapshot.draftSaves[key] {
+            guard old.confirmedRevision == expectedRevision, Data(old.generation.utf8) == Data(generation.utf8) else { throw RecoveryError.queryOnly }
+        }
+        var next = snapshot
+        next.draftSaves[key] = DraftSaveRecord(conversationID:conversationID,generation:generation,
+            expectedRevision:expectedRevision,originalUTF8:originalUTF8,editorRevision:snapshot.draftEdits[key])
+        let nonce = UUID(); draftOperations[key] = nonce
+        try persist(next)
+        return DraftSaveOperation(lease:lease,key:key,nonce:nonce)
+    }
+
+    public func draftConfirmationMatchesEditor(conversationID: String, revision: Int64, lease: Lease) throws -> Bool {
+        try check(lease)
+        let key = Self.key(conversationID)
+        guard let record = snapshot.draftSaves[key], record.confirmedRevision == revision else { return false }
+        return record.editorRevision == snapshot.draftEdits[key] && record.originalUTF8 == snapshot.drafts[key]
+    }
+
+    /// Confirms only this PUT's original CAS response; never changes editor contents.
+    public func confirmDraftSave(_ operation: DraftSaveOperation, conversationID: String, generation: String,
+                                 revision: Int64, originalUTF8: Data) throws -> Bool {
+        try check(operation.lease)
+        guard draftOperations[operation.key] == operation.nonce,
+              var record = snapshot.draftSaves[operation.key] else { throw RecoveryError.staleOperation }
+        guard Self.key(conversationID) == operation.key, Data(generation.utf8) == Data(record.generation.utf8),
+              revision == record.expectedRevision + 1, originalUTF8 == record.originalUTF8 else { throw RecoveryError.receiptMismatch }
+        let matchesEditor = snapshot.draftEdits[operation.key] == record.editorRevision && snapshot.drafts[operation.key] == originalUTF8
+        record.confirmedRevision = revision
+        var next = snapshot; next.draftSaves[operation.key] = record
+        try persist(next); draftOperations.removeValue(forKey:operation.key)
+        return matchesEditor
     }
 
     public func action(messageID: String, lease: Lease) throws -> ActionRecord? {

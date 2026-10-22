@@ -121,3 +121,8 @@ Read-only server projections: [HISTORY-READ-CLIENT.md](HISTORY-READ-CLIENT.md) e
 fixed official 2f8 CJAPI conversations/history/draft GET consumption with lease-bound
 results/opaque continuation. Seven new +three affected prior checks pass; no draft PUT,
 no live POST activation, no actual network or host integration is claimed.
+
+Draft PUT candidate: [DRAFT-PUT-CLIENT.md](DRAFT-PUT-CLIENT.md) provides intercepted-only
+original-byte CAS saves with encrypted pending records, query-only uncertainty and
+editor-revision confirmation. Nine new +three affected checks pass. Live PUT/POST remain
+disabled; equal GET content or null never grants replacement PUT authority.

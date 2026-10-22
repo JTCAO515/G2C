@@ -39,7 +39,8 @@ struct CheckedTransport: ClientTransport {
               (operationID == "queryMessageReceipt" && request.method == .get && request.path?.hasPrefix("/v1/message-receipts?") == true) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == "readMessageHistory" && request.method == .get && request.path?.hasPrefix("/v1/message-history?") == true) ||
-              (operationID == "readMessageDraft" && request.method == .get && request.path?.hasPrefix("/v1/message-drafts?") == true) else {
+              (operationID == "readMessageDraft" && request.method == .get && request.path?.hasPrefix("/v1/message-drafts?") == true) ||
+              (operationID == "saveMessageDraft" && request.method == .put && request.path?.hasPrefix("/v1/message-drafts?") == true) else {
             throw MessageHTTPFailure.invalidConfiguration
         }
         var request = request
@@ -72,7 +73,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         // Until an independently non-rollbackable action ledger/epoch is integrated,
         // no live POST can be activated, including after a wholly missing old snapshot.
-        guard request.method != .post else { throw MessageHTTPFailure.productionActivationUnavailable }
+        guard request.method != .post && request.method != .put else { throw MessageHTTPFailure.productionActivationUnavailable }
         return try await transport.send(request, body: body, baseURL: baseURL, operationID: operationID)
     }
 }
@@ -350,5 +351,56 @@ extension MessageHTTPClient {
             return MessageReadResult(value:value,next:nil,requestID:body.request_id,owner:readOwner,lease:lease)
         case .default(let status, let response): try readError(status, response.body.json)
         }
+    }
+}
+
+
+public struct DraftSaveConfirmation: Sendable {
+    public let snapshot: Components.Schemas.MessageDraftSnapshot
+    public let matchesCurrentEditor: Bool
+    fileprivate let owner: UUID
+    fileprivate let lease: Lease
+}
+extension MessageHTTPClient {
+    public func validateDraftConfirmation(_ result: DraftSaveConfirmation, lease: Lease) throws -> Bool {
+        try recovery.validateScope(scope,lease:lease)
+        guard result.owner == readOwner, result.lease == lease else { throw RecoveryError.inactive }
+        guard result.matchesCurrentEditor else { return false }
+        return try recovery.draftConfirmationMatchesEditor(
+            conversationID:result.snapshot.conversation_id,revision:result.snapshot.revision,lease:lease)
+    }
+    public func saveDraft(conversationID: String, generation: String, expectedRevision: Int64, originalUTF8: Data,
+                          limits: MessageReadLimits, lease: Lease) async throws -> DraftSaveConfirmation {
+        guard submissionEnabledForTest else { throw MessageHTTPFailure.productionActivationUnavailable }
+        guard originalUTF8.count <= endpoint.maximumRequestBytes else { throw RecoveryError.invalidInput }
+        let client = try await client(lease)
+        try Task.checkCancellation()
+        let operation = try recovery.beginDraftSave(conversationID:conversationID,generation:generation,
+            expectedRevision:expectedRevision,originalUTF8:originalUTF8,lease:lease)
+        let output: Operations.saveMessageDraft.Output
+        do {
+            output = try await client.saveMessageDraft(.init(query:.init(conversation_id:conversationID,generation:generation,expected_revision:expectedRevision),body:.binary(HTTPBody(originalUTF8))))
+            try Task.checkCancellation()
+        } catch {
+            try recovery.validateScope(scope,lease:lease)
+            // The immutable pending CAS record already exists; never infer rollback/retry.
+            throw MessageHTTPFailure.exchangeUnknown
+        }
+        try recovery.validateScope(scope,lease:lease)
+        switch output {
+        case .ok(let response):
+            let saved = try response.body.json.draft
+            let bytes = try decoded(saved.original_utf8_base64,maximum:limits.maximumDecodedBytes)
+            let matches = try recovery.confirmDraftSave(operation,conversationID:saved.conversation_id,
+                generation:saved.generation,revision:saved.revision,originalUTF8:bytes)
+            return DraftSaveConfirmation(snapshot:saved,matchesCurrentEditor:matches,owner:readOwner,lease:lease)
+        case .default(let status, let response): try readError(status,response.body.json)
+        }
+    }
+    /// Read original CAS target only. Equal bytes/revision or null never settle its write.
+    public func reconcileDraft(conversationID: String, limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<Components.Schemas.MessageDraftSnapshot?> {
+        try recovery.validateScope(scope,lease:lease)
+        guard let pending = try recovery.draftSave(conversationID:conversationID,lease:lease) else { throw RecoveryError.invalidInput }
+        return try await draft(conversationID:pending.conversationID,generation:pending.generation,limits:limits,lease:lease)
     }
 }
