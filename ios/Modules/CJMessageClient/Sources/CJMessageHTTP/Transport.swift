@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import CJMessageClient
 import CJAPI
 import OpenAPIRuntime
@@ -35,7 +36,10 @@ struct CheckedTransport: ClientTransport {
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard baseURL == endpoint.url,
               (operationID == "receiveMessage" && request.method == .post && request.path == "/v1/messages") ||
-              (operationID == "queryMessageReceipt" && request.method == .get && request.path?.hasPrefix("/v1/message-receipts?") == true) else {
+              (operationID == "queryMessageReceipt" && request.method == .get && request.path?.hasPrefix("/v1/message-receipts?") == true) ||
+              (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
+              (operationID == "readMessageHistory" && request.method == .get && request.path?.hasPrefix("/v1/message-history?") == true) ||
+              (operationID == "readMessageDraft" && request.method == .get && request.path?.hasPrefix("/v1/message-drafts?") == true) else {
             throw MessageHTTPFailure.invalidConfiguration
         }
         var request = request
@@ -89,6 +93,7 @@ public enum MessageHTTPOutcome: Sendable {
     private let credentials: any MessageCredentialsProvider
     private let transport: any ClientTransport
     private let submissionEnabledForTest: Bool
+    private let readOwner = UUID()
     /// Test seam only: caller must supply a non-network interceptor, never a live transport.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
                 credentials: any MessageCredentialsProvider, interceptedTestTransport: any ClientTransport) {
@@ -186,6 +191,164 @@ public enum MessageHTTPOutcome: Sendable {
         case .default(let status, let response):
             try recovery.observeUnknown(operation)
             return .rejected(status: status, error: try response.body.json)
+        }
+    }
+}
+
+
+public struct MessageReadLimits: Sendable {
+    public let maximumPageItems: Int
+    public let maximumCursorBytes: Int
+    public let maximumDecodedBytes: Int
+    public let maximumPages: Int
+    public init(maximumPageItems: Int, maximumCursorBytes: Int, maximumDecodedBytes: Int, maximumPages: Int) throws {
+        guard (1...100).contains(maximumPageItems), maximumCursorBytes > 0,
+              maximumDecodedBytes > 0, maximumPages > 0 else { throw MessageHTTPFailure.invalidConfiguration }
+        self.maximumPageItems = maximumPageItems; self.maximumCursorBytes = maximumCursorBytes
+        self.maximumDecodedBytes = maximumDecodedBytes; self.maximumPages = maximumPages
+    }
+}
+/// Local, non-Codable continuation; server cursor remains opaque, never an authority.
+public struct MessageReadCursor: Sendable {
+    fileprivate let owner: UUID
+    fileprivate let lease: Lease
+    fileprivate let purpose: Data
+    fileprivate let opaque: String
+    fileprivate let last: Int64
+    fileprivate let generation: String?
+    fileprivate let seenCursors: Set<String>
+    fileprivate let seenIDs: Set<Data>
+}
+/// Wrapper around official generated values, not a second wire schema.
+public struct MessageReadResult<Value: Sendable>: Sendable {
+    public let value: Value
+    public let next: MessageReadCursor?
+    public let requestID: String
+    fileprivate let owner: UUID
+    fileprivate let lease: Lease
+}
+public enum MessageReadFailure: Error {
+    case resyncRequired
+    case rejected(status: Int, error: Components.Schemas.ErrorResponse)
+}
+
+extension MessageHTTPClient {
+    public func validateRead<Value>(_ result: MessageReadResult<Value>, lease: Lease) throws {
+        try recovery.validateScope(scope, lease: lease)
+        guard result.owner == readOwner, result.lease == lease else { throw RecoveryError.inactive }
+    }
+    private func readCursor(_ cursor: MessageReadCursor?, purpose: Data, limit: Int, limits: MessageReadLimits, lease: Lease) throws {
+        try recovery.validateScope(scope, lease: lease)
+        guard (1...limits.maximumPageItems).contains(limit) else { throw MessageHTTPFailure.invalidConfiguration }
+        if let cursor {
+            guard cursor.owner == readOwner, cursor.lease == lease, cursor.purpose == purpose,
+                  cursor.opaque.utf8.count <= limits.maximumCursorBytes else { throw MessageReadFailure.resyncRequired }
+        }
+    }
+    private func nextRead(_ text: String?, previous: MessageReadCursor?, purpose: Data, last: Int64,
+                          generation: String?, ids: Set<Data>, limits: MessageReadLimits, lease: Lease) throws -> MessageReadCursor? {
+        guard let text else { return nil }
+        var seen = previous?.seenCursors ?? []
+        guard !text.isEmpty, text.utf8.count <= limits.maximumCursorBytes,
+              seen.count + 1 < limits.maximumPages, seen.insert(text).inserted else { throw MessageReadFailure.resyncRequired }
+        return MessageReadCursor(owner: readOwner, lease: lease, purpose: purpose, opaque: text,
+                                 last: last, generation: generation, seenCursors: seen, seenIDs: ids)
+    }
+    private func readError(_ status: Int, _ body: Components.Schemas.ErrorResponse) throws -> Never {
+        if status == 409 && body.error.code == "HISTORY_RESYNC_REQUIRED" { throw MessageReadFailure.resyncRequired }
+        throw MessageReadFailure.rejected(status: status, error: body)
+    }
+    private func decoded(_ base64: String, maximum: Int) throws -> Data {
+        guard let data = Data(base64Encoded: base64), data.count <= maximum,
+              data.base64EncodedString() == base64, String(data: data, encoding: .utf8) != nil else { throw MessageHTTPFailure.invalidResponse }
+        return data
+    }
+    public func conversations(limit: Int, after: MessageReadCursor? = nil, limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<[Components.Schemas.ConversationSummary]> {
+        let purpose = Data("conversations".utf8)
+        try readCursor(after, purpose: purpose, limit: limit, limits: limits, lease: lease)
+        let client = try await client(lease)
+        let output: Operations.listConversations.Output
+        do { output = try await client.listConversations(.init(query: .init(limit: limit, cursor: after?.opaque))) }
+        catch { try recovery.validateScope(scope, lease: lease); throw MessageHTTPFailure.exchangeUnknown }
+        try recovery.validateScope(scope, lease: lease)
+        switch output {
+        case .ok(let response):
+            let body = try response.body.json
+            let cursor: String?
+            switch body.next_cursor {
+            case .case1(let text): cursor = text
+            case .case2(let container): guard container.value == nil else { throw MessageHTTPFailure.invalidResponse }; cursor = nil
+            }
+            guard body.conversations.count <= limit, !body.conversations.isEmpty || (after == nil && cursor == nil) else { throw MessageHTTPFailure.invalidResponse }
+            var last = after?.last ?? 0; var ids = after?.seenIDs ?? []
+            for row in body.conversations {
+                guard !row.conversation_id.isEmpty, !row.generation.isEmpty, row.epoch >= 0,
+                      row.list_sequence > last, ids.insert(Data(row.conversation_id.utf8)).inserted else { throw MessageReadFailure.resyncRequired }
+                last = row.list_sequence
+            }
+            let next = try nextRead(cursor, previous: after, purpose: purpose, last: last, generation: nil, ids: ids, limits: limits, lease: lease)
+            return MessageReadResult(value: body.conversations, next: next, requestID: body.request_id, owner: readOwner, lease: lease)
+        case .default(let status, let response): try readError(status, response.body.json)
+        }
+    }
+    public func history(conversationID: String, limit: Int, after: MessageReadCursor? = nil, limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<[Components.Schemas.MessageHistoryItem]> {
+        guard !conversationID.isEmpty else { throw MessageHTTPFailure.invalidConfiguration }
+        let purpose = Data("history:".utf8) + Data(conversationID.utf8)
+        try readCursor(after, purpose: purpose, limit: limit, limits: limits, lease: lease)
+        let client = try await client(lease)
+        let output: Operations.readMessageHistory.Output
+        do { output = try await client.readMessageHistory(.init(query: .init(conversation_id: conversationID, limit: limit, cursor: after?.opaque))) }
+        catch { try recovery.validateScope(scope, lease: lease); throw MessageHTTPFailure.exchangeUnknown }
+        try recovery.validateScope(scope, lease: lease)
+        switch output {
+        case .ok(let response):
+            let body = try response.body.json
+            let cursor: String?
+            switch body.next_cursor {
+            case .case1(let text): cursor = text
+            case .case2(let container): guard container.value == nil else { throw MessageHTTPFailure.invalidResponse }; cursor = nil
+            }
+            guard body.messages.count <= limit, !body.messages.isEmpty || (after == nil && cursor == nil) else { throw MessageHTTPFailure.invalidResponse }
+            var last = after?.last ?? 0; var generation = after?.generation; var ids = after?.seenIDs ?? []; var remaining = limits.maximumDecodedBytes
+            for row in body.messages {
+                let r = row.receipt
+                guard Data(r.conversation_id.utf8) == Data(conversationID.utf8), !r.message_id.isEmpty,
+                      !r.generation.isEmpty, !r.run_id.isEmpty, last < Int64.max,
+                      Int64(exactly:r.sequence) == last + 1, ids.insert(Data(r.message_id.utf8)).inserted,
+                      generation.map({ Data($0.utf8) == Data(r.generation.utf8) }) ?? true else { throw MessageReadFailure.resyncRequired }
+                let raw = try decoded(row.original_utf8_base64, maximum: remaining); remaining -= raw.count
+                var parser = StrictJSON(bytes: Array(raw)); try parser.check()
+                guard let original = try JSONSerialization.jsonObject(with: raw) as? [String:Any],
+                      let mid = original["message_id"] as? String, Data(mid.utf8) == Data(r.message_id.utf8),
+                      let cid = original["conversation_id"] as? String, Data(cid.utf8) == Data(conversationID.utf8),
+                      let text = original["text"] as? String, Data(text.utf8) == Data(row.text.utf8),
+                      SHA256.hash(data:raw).map({String(format:"%02x",$0)}).joined() == r.input_sha256 else { throw MessageHTTPFailure.invalidResponse }
+                generation = r.generation; last = Int64(r.sequence)
+            }
+            let next = try nextRead(cursor, previous: after, purpose: purpose, last: last, generation: generation, ids: ids, limits: limits, lease: lease)
+            return MessageReadResult(value:body.messages,next:next,requestID:body.request_id,owner:readOwner,lease:lease)
+        case .default(let status, let response): try readError(status, response.body.json)
+        }
+    }
+    public func draft(conversationID: String, generation: String, limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<Components.Schemas.MessageDraftSnapshot?> {
+        guard !conversationID.isEmpty, !generation.isEmpty else { throw MessageHTTPFailure.invalidConfiguration }
+        let client = try await client(lease)
+        let output: Operations.readMessageDraft.Output
+        do { output = try await client.readMessageDraft(.init(query:.init(conversation_id:conversationID,generation:generation))) }
+        catch { try recovery.validateScope(scope, lease: lease); throw MessageHTTPFailure.exchangeUnknown }
+        try recovery.validateScope(scope, lease: lease)
+        switch output {
+        case .ok(let response):
+            let body = try response.body.json
+            let value: Components.Schemas.MessageDraftSnapshot?
+            switch body.draft {
+            case .MessageDraftSnapshot(let snapshot):
+                guard Data(snapshot.conversation_id.utf8) == Data(conversationID.utf8), Data(snapshot.generation.utf8) == Data(generation.utf8), snapshot.revision > 0 else { throw MessageHTTPFailure.invalidResponse }
+                _ = try decoded(snapshot.original_utf8_base64, maximum:limits.maximumDecodedBytes); value = snapshot
+            case .case2(let container): guard container.value == nil else { throw MessageHTTPFailure.invalidResponse }; value = nil
+            }
+            return MessageReadResult(value:value,next:nil,requestID:body.request_id,owner:readOwner,lease:lease)
+        case .default(let status, let response): try readError(status, response.body.json)
         }
     }
 }
