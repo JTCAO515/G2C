@@ -263,3 +263,65 @@ extension MessageKeyTests {
         #expect(recovered.id == original.id && recovered.namespace == namespace && storage.adds == 1)
     }
 }
+
+extension MessageKeyTests {
+    @Test func tripPurposeKeepsMessageAndMemoryNamespaceBytesUnchanged() throws {
+        let environment = try #require(UUID(uuidString: "11111111-1111-4111-8111-111111111111"))
+        let account = try #require(UUID(uuidString: "22222222-2222-4222-8222-222222222222"))
+        let purposes: [MessageKeyPurpose] = [.localMessageStorageV1, .localMemoryPendingV1, .localTripPendingV1]
+        let expected = ["local-message-storage-v1", "local-memory-pending-v1", "local-trip-pending-v1"]
+        for (purpose, suffix) in zip(purposes, expected) {
+            let namespace = MessageKeyNamespace(environment: environment, account: account, purpose: purpose)
+            #expect(namespace.service == "G2C.CJAuth.message-key.11111111-1111-4111-8111-111111111111")
+            #expect(namespace.slot == "22222222-2222-4222-8222-222222222222." + suffix)
+        }
+    }
+    @Test func tripPurposeAccountEnvironmentAndCleanupRemainIsolated() throws {
+        let environment = UUID(), account = UUID(), fixture = ScopedKeychainFixture()
+        let namespaces = [
+            MessageKeyNamespace(environment: environment, account: account, purpose: .localMessageStorageV1),
+            MessageKeyNamespace(environment: environment, account: account, purpose: .localMemoryPendingV1),
+            MessageKeyNamespace(environment: environment, account: account, purpose: .localTripPendingV1),
+            MessageKeyNamespace(environment: environment, account: UUID(), purpose: .localTripPendingV1),
+            MessageKeyNamespace(environment: UUID(), account: account, purpose: .localTripPendingV1)]
+        let providers = try namespaces.map { namespace in
+            ScopedMessageKeyProvider(namespace: namespace, persistence: try KeychainMessageKeys(namespace: namespace,
+                applicationIdentifier: "SYNTHETIC.local.trip-test", protection: .whenUnlockedThisDeviceOnly, operations: fixture.operations))
+        }
+        let keys = try providers.map { try $0.create(storageState: .confirmedEmpty, for: $0.begin(.create)) }
+        #expect(Set(keys.map(\.id)).count == 5)
+        let original = Data("synthetic-original-trip-action-bytes".utf8)
+        let sealed = try keys[2].withSymmetricKey { try AES.GCM.seal(original, using: $0) }
+        for index in [0, 1, 3, 4] {
+            #expect(throws: (any Error).self) { try keys[index].withSymmetricKey { try AES.GCM.open(sealed, using: $0) } }
+            #expect(throws: MessageKeyFailure.keyMismatch) { try providers[index].existing(expectedID: keys[2].id, for: providers[index].begin(.lookup)) }
+            #expect(throws: MessageKeyFailure.keyMismatch) { try providers[index].clear(expectedID: keys[2].id, storageState: .confirmedEmpty, for: providers[index].begin(.clear)) }
+            let wrongOperation = try providers[index].begin(.lookup)
+            #expect(throws: MessageKeyFailure.staleOperation) { try providers[2].existing(expectedID: keys[2].id, for: wrongOperation) }
+        }
+        // Cleaning another purpose does not remove Trip's original key.
+        try providers[1].clear(expectedID: keys[1].id, storageState: .confirmedEmpty, for: providers[1].begin(.clear))
+        let restored = try providers[2].existing(expectedID: keys[2].id, for: providers[2].begin(.lookup))
+        let tripKey = try #require(restored)
+        #expect(tripKey.namespace == namespaces[2])
+        #expect(try tripKey.withSymmetricKey { try AES.GCM.open(sealed, using: $0) } == original)
+        let newMemoryKey = try providers[1].create(storageState: .confirmedEmpty, for: providers[1].begin(.create))
+        try providers[2].clear(expectedID: keys[2].id, storageState: .confirmedEmpty, for: providers[2].begin(.clear))
+        #expect(try providers[2].existing(expectedID: keys[2].id, for: providers[2].begin(.lookup)) == nil)
+        #expect(try providers[1].existing(expectedID: newMemoryKey.id, for: providers[1].begin(.lookup))?.id == newMemoryKey.id)
+        for index in [0, 3, 4] {
+            #expect(try providers[index].existing(expectedID: keys[index].id, for: providers[index].begin(.lookup))?.id == keys[index].id)
+        }
+    }
+    @Test func tripPendingUnknownCreationReconcilesOnlyOriginalKey() throws {
+        let storage = Storage(); storage.failAdd = true; storage.commitBeforeAddError = true
+        let namespace = MessageKeyNamespace(environment: UUID(), account: UUID(), purpose: .localTripPendingV1)
+        let provider = ScopedMessageKeyProvider(namespace: namespace, persistence: storage)
+        #expect(throws: MessageKeyFailure.storageUnavailable) { try provider.create(storageState: .confirmedEmpty, for: provider.begin(.create)) }
+        let original = try #require(storage.value)
+        #expect(throws: MessageKeyFailure.creationUnconfirmed) { try provider.create(storageState: .confirmedEmpty, for: provider.begin(.create)) }
+        let reconciled = try provider.reconcileCreation(for: provider.begin(.reconcileCreation))
+        #expect(reconciled.id == original.id && reconciled.namespace == namespace && storage.adds == 1)
+        #expect(!provider.canUseRestrictedBusiness)
+    }
+}
