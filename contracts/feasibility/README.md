@@ -138,7 +138,7 @@ selection is a new explicit review, never authorization to unlock or write.
 From repository root, using existing Python 3.12–3.14 (no new dependencies):
 
 ```sh
-PYTHONPATH=backend/feasibility:backend/needs:backend/auth python3.14 -m unittest discover -s backend/feasibility/tests -v
+PYTHONPATH=backend/feasibility:backend/needs:backend/auth python3.14 -m unittest discover -s backend/feasibility/tests -p test_validator.py -v
 PYTHONPATH=backend/feasibility:backend/needs:backend/auth python3.14 backend/feasibility/demo.py
 ```
 
@@ -147,7 +147,10 @@ NEEDS Command / Snapshot / Revision objects and prints both explanations from th
 same check. This is a reproducible read-only consumer, not a server or UI adapter.
 
 CJ-035 confirms consumption of the fixed NEEDS public candidate for this slice.
-CJ-014/017/018 consumer confirmation: PENDING. PLACE types/routes, bounded solver,
+CJ-014/017/018 consumer confirmation: PENDING. Real PLACE route integration, bounded solver,
 rest/cost-source integration, root API wiring, auth response-lifetime integration,
 real provider, PG, App/device, Review/Testing and Issue I gates: **UNRUN**. Nothing
 in this candidate closes Issue 18 or permits domain writes.
+
+Fixed PLACE estimate consumption is documented in [ROUTES](ROUTES.md); its
+optional dependency and tests are separate from NEEDS-only.
