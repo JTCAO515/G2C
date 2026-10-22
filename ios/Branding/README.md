@@ -15,3 +15,7 @@ Current actual build entrances:
 Integration pending Main's exact path ACK: CJShell AssistantShell.swift, Package.swift, scripts/build-demo.sh, new BrandAvatar.swift/resource; scripts/build-ios.sh and ios/App/Info.plist. Additionally request ios/CJProbeApp.xcodeproj/project.pbxproj resource reference/build-phase scope so ordinary Xcode builds include icons, not just wrapper-script builds. No signing, identity, entitlements or ATS change is proposed. No simulator boot/install/launch before Main coordinates an exact safe device and application lease.
 
 Author verification: generator PASS; Git original-byte comparisons PASS; derived image inspection PASS; diff whitespace PASS. Actual App build/package/display, independent Review/Testing, device and store UNRUN. Only ios/Branding/** changed in this candidate.
+
+## Foundation path ACK delta
+
+Main explicitly released scripts/build-ios.sh and ios/App/Info.plist. The existing build command is unchanged except removing shell exec to allow the successful-build icon copy step. Plist comparison after removing only the two new icon dictionaries equals the original parsed plist. Shell syntax and plist lint PASS. Xcode project / CJShell remain untouched. All discovered simulators were Shutdown; no device was booted, installed or launched. Build/package/display remain UNRUN pending the coordinated target and Xcode resource-path ACK.
