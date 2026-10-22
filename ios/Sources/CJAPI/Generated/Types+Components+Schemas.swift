@@ -5259,5 +5259,183 @@ extension Components {
                 ])
             }
         }
+        /// Read-time original-message-linked persisted display projection. No scope/raw message/events/effects/usage/outbound bytes/model/failure-stage fields. message_sequence differs from event_highwater. Not SSE, a cursor, dispatch or provider-success proof.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot`.
+        public struct RunDisplaySnapshot: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/message_sequence`.
+            public var message_sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case queued = "queued"
+                case running = "running"
+                case completed = "completed"
+                case failed = "failed"
+                case cancelled = "cancelled"
+                case context_invalid = "context_invalid"
+                case unknown = "unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/status`.
+            public var status: Components.Schemas.RunDisplaySnapshot.statusPayload
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/event_highwater`.
+            public var event_highwater: Swift.Int
+            /// Exact persisted display text; empty queued text is allowed. Explicit host UTF8 byte bound, never truncation or generated fallback.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/text`.
+            public var text: Swift.String
+            /// complete only for completed status; every other status is partial, including failed/cancelled/unknown.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/text_state`.
+            @frozen public enum text_statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case complete = "complete"
+                case partial = "partial"
+            }
+            /// complete only for completed status; every other status is partial, including failed/cancelled/unknown.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RunDisplaySnapshot/text_state`.
+            public var text_state: Components.Schemas.RunDisplaySnapshot.text_statePayload
+            /// Creates a new `RunDisplaySnapshot`.
+            ///
+            /// - Parameters:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - message_sequence:
+            ///   - status:
+            ///   - event_highwater:
+            ///   - text: Exact persisted display text; empty queued text is allowed. Explicit host UTF8 byte bound, never truncation or generated fallback.
+            ///   - text_state: complete only for completed status; every other status is partial, including failed/cancelled/unknown.
+            public init(
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                message_sequence: Swift.Int,
+                status: Components.Schemas.RunDisplaySnapshot.statusPayload,
+                event_highwater: Swift.Int,
+                text: Swift.String,
+                text_state: Components.Schemas.RunDisplaySnapshot.text_statePayload
+            ) {
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.message_id = message_id
+                self.run_id = run_id
+                self.message_sequence = message_sequence
+                self.status = status
+                self.event_highwater = event_highwater
+                self.text = text
+                self.text_state = text_state
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversation_id
+                case generation
+                case message_id
+                case run_id
+                case message_sequence
+                case status
+                case event_highwater
+                case text
+                case text_state
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.message_sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .message_sequence
+                )
+                self.status = try container.decode(
+                    Components.Schemas.RunDisplaySnapshot.statusPayload.self,
+                    forKey: .status
+                )
+                self.event_highwater = try container.decode(
+                    Swift.Int.self,
+                    forKey: .event_highwater
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                self.text_state = try container.decode(
+                    Components.Schemas.RunDisplaySnapshot.text_statePayload.self,
+                    forKey: .text_state
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "conversation_id",
+                    "generation",
+                    "message_id",
+                    "run_id",
+                    "message_sequence",
+                    "status",
+                    "event_highwater",
+                    "text",
+                    "text_state"
+                ])
+            }
+        }
+        /// BASE envelope must be fully materialized and bounded inside producer protected callback. No nullable or synthetic snapshot on error.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunDisplayResponse`.
+        public struct RunDisplayResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunDisplayResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/RunDisplayResponse/snapshot`.
+            public var snapshot: Components.Schemas.RunDisplaySnapshot
+            /// Creates a new `RunDisplayResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - snapshot:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                snapshot: Components.Schemas.RunDisplaySnapshot
+            ) {
+                self.request_id = request_id
+                self.snapshot = snapshot
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case snapshot
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.snapshot = try container.decode(
+                    Components.Schemas.RunDisplaySnapshot.self,
+                    forKey: .snapshot
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "snapshot"
+                ])
+            }
+        }
     }
 }
