@@ -161,3 +161,15 @@ Next RUN display shared candidate: officialc02cf08e at the single
 checks pass with exact old-interface/SDK compatibility; prior exports remain. No real
 RUN request or App pin switch, and no69d/b868 HOLD resolution is implied. See
 evidence/RUN-DISPLAY-API-PIN.md for limited GET/codec evidence and remaining gates.
+
+Next readonly manual-preview export: fixedc5ffafb at the ONE
+.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation path. Three new plus
+three targeted old checks pass; prior full business evidence reused. Preview remains
+LOCAL/UNKNOWN/not-save and generated can_save Bool needs explicit consumer rejection
+of true. No POST execution or App pin switch. See evidence/MANUAL-PREVIEW-API-PIN.md.
+
+Readonly preview transport opt-in: READONLY-PREVIEW-TRANSPORT.md defines the narrow
+readOnlyManualPreview factory for the official c5 operation/path, with explicit endpoint,
+timeouts and current-lifetime validator. Generic live POST/PUT remain closed; this is a
+readonly computation capability, not a Trip save permission. Eight local checks pass;
+CJ017 adoption and actual service remain separate.

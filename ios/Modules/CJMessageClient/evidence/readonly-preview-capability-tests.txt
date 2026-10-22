@@ -1,0 +1,36 @@
+Building for debugging...
+[Computing dependencies]
+[1 / 5]
+[2 / 19] CJMessageHTTP
+[7 / 20] CJMessageHTTP
+[10 / 19] CJMessageHTTPTests-product
+[14 / 23] CJMessageHTTPTests-product
+[18 / 22] CJMessageHTTPTests-product
+[20 / 22] CJMessageHTTPTests-product
+Build complete! (2.08秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ReadonlyPreviewCapabilityTests started.
+◇ Suite DraftPutTests started.
+◇ Suite TransportTests started.
+◇ Test productionFactoryRequiresExplicitFiniteTimeouts() started.
+◇ Test defaultAndEveryOtherWriteOrClaimAreClosed() started.
+◇ Test hostAuthorityAndByteLimitsCannotEscape() started.
+◇ Test retiredIdentityRedirectAndOversizedResponseDoNotReturn() started.
+◇ Test invalidLeaseAndLivePutNeverSend() started.
+◇ Test exactCapabilityForwardsReadonlyBytesAndRevalidates() started.
+◇ Test actualOfficialPreviewOperationPassesOnlyTheNarrowEntry() started.
+◇ Test livePostDisabledEvenIfWholeSnapshotIsMissing() started.
+✔ Test productionFactoryRequiresExplicitFiniteTimeouts() passed after 0.007 seconds.
+✔ Test livePostDisabledEvenIfWholeSnapshotIsMissing() passed after 0.008 seconds.
+✔ Suite TransportTests passed after 0.008 seconds.
+✔ Test invalidLeaseAndLivePutNeverSend() passed after 0.008 seconds.
+✔ Test exactCapabilityForwardsReadonlyBytesAndRevalidates() passed after 0.008 seconds.
+✔ Test hostAuthorityAndByteLimitsCannotEscape() passed after 0.008 seconds.
+✔ Suite DraftPutTests passed after 0.008 seconds.
+✔ Test defaultAndEveryOtherWriteOrClaimAreClosed() passed after 0.008 seconds.
+✔ Test retiredIdentityRedirectAndOversizedResponseDoNotReturn() passed after 0.008 seconds.
+✔ Test actualOfficialPreviewOperationPassesOnlyTheNarrowEntry() passed after 0.008 seconds.
+✔ Suite ReadonlyPreviewCapabilityTests passed after 0.008 seconds.
+✔ Test run with 8 tests in 3 suites passed after 0.009 seconds.

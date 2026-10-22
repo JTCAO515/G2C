@@ -1,0 +1,21 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Constructing description]
+[Pre-planning 1 / 960]
+[Planning deferred tasks]
+[1 / 67] CJMessageKeys
+[8 / 19] CJShellTests-product
+[10 / 21] CJShellTests-product
+[16 / 20] CJShellTests-product
+[18 / 20] CJShellTests-product
+Build complete! (2.83秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentPreviewHostTests started.
+◇ Test ordinaryHostHeaderCannotOverrideNarrowPreviewAuthority() started.
+✔ Test ordinaryHostHeaderCannotOverrideNarrowPreviewAuthority() passed after 0.001 seconds.
+✔ Suite IndependentPreviewHostTests passed after 0.001 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.001 seconds.

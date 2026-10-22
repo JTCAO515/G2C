@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-23 Asia/Shanghai",
+  "product_base": "84f41e1d5c76db789565e46fb05377f27fedea45",
+  "dependency_prep": "19064196e7cbeb847d5c61b20b8a157afef2c76b",
+  "shared_fixed_input": "f4c17b59213828543cef042d127c56d8467963d8",
+  "official_pin": "c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a",
+  "prep_paths_exact_shared_bytes": [
+    "ios/Modules/CJMessageClient/Package.swift",
+    "ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift",
+    "ios/Modules/CJMessageClient/evidence/generated-pin.json",
+    "ios/Modules/CJMessageClient/scripts/prepare_generated.py"
+  ],
+  "official_export_files_verified": 16,
+  "old_c02_export_files_unchanged": 16,
+  "unique_cjfoundation_paths": [
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation"
+  ],
+  "business_sources_tests_lock_unchanged_sha256": {
+    "ios/Modules/CJRunClient/Package.resolved": "7e6dd3b7c965cb7444c96f9c4ee09d09b73ee12713d5a1cded28700982f3564c",
+    "ios/Modules/CJRunClient/Sources/CJRunClient/RunDisplay.swift": "67f2f8de5d696f2d80a33383e93205340c0f80e0c8ad880c1dd6ba473164ab8a",
+    "ios/Modules/CJRunClient/Sources/CJRunClient/RunDisplayView.swift": "eb47f8b5b1e4dd5c15d4778a944b26a65e6198d0f94a14117a6c96934b79fc72",
+    "ios/Modules/CJRunClient/Sources/CJRunClient/RunReadTransport.swift": "daf27e985ccb560bdba6fe7fe2ab14cd2f4800210cf12c2489c0338e36842140",
+    "ios/Modules/CJRunClient/Sources/CJRunClient/StrictRunJSON.swift": "daaa7443479bb5841175307a7461139cfd01fe016b6596988923ea333bd3f575",
+    "ios/Modules/CJRunClient/Tests/CJRunClientTests/RunDisplayTests.swift": "95eba5d714e582bdb7397629a3c110e1c31c1b0305aae02e6ca3180c1e576e9a"
+  },
+  "raw_evidence": {
+    ".build/c5-pin-evidence/build.log": {
+      "sha256": "5529ef9b51ff9b8b51765b68f53ae88de41e36de4f83f3167d4fc34e73736e5f",
+      "bytes": 19744
+    },
+    ".build/c5-pin-evidence/graph.json": {
+      "sha256": "6b2cc4a1e250bc41d16d914a6f3f73334ac183cccb1a5702b2d5ff026b714953",
+      "bytes": 25174
+    },
+    ".build/c5-pin-evidence/graph.stderr": {
+      "sha256": "0ee832500c29ac51013fa44722972295c4052d5c64d9f6ef016ddf81abe9afaf",
+      "bytes": 86
+    },
+    ".build/c5-pin-evidence/tests.log": {
+      "sha256": "136ac297fa93586bf0abbf2f3f5d517a80593f4146bbc4c9f1a92df9bf08c81a",
+      "bytes": 2224
+    }
+  }
+}

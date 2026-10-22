@@ -1,0 +1,7 @@
+{
+  "Sources/CJManualPreviewClient/PreviewEditor.swift": "30b16649e276ccfe385330501cba277d28be8507bb0fe799917618a0965f220f",
+  "Package.swift": "bc255f4863b3ed4bef92a2b1cd535191a1071b6c3073777d1acff8b3ed06623a",
+  "Package.resolved": "6b41305c3cd2a4172116e1f23c19bdd9d351bd332b829c5def93f8483f3b11ea",
+  "evidence/host-fixed-combination/HostConsumerCombinationTests.swift": "db4b3895addbe8fb43e2a798c7356a4f8040c86b2668e737c7667b39efbc51a6",
+  "evidence/host-fixed-combination/combination-tests.txt": "8975dfe34e9f4fec8244cce8f5e0257bb724587b09823e4b94f014953a0f22e1"
+}

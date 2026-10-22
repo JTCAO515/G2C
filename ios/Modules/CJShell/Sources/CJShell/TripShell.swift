@@ -9,6 +9,8 @@ private extension ShellLanguage {
 struct TripShell: View {
     @Bindable var state: ShellState
     let host: TripContainerHost
+    @State private var manualEntry: ManualPreviewEntry?
+    @Environment(\.scenePhase) private var scenePhase
     private var language: ShellLanguage { state.language }
     var body: some View {
         let action = host.captureAction()
@@ -79,9 +81,23 @@ struct TripShell: View {
                 }
             }
             .navigationTitle(ShellTab.trips.title(language))
+            .sheet(item: $manualEntry) { entry in
+                ManualPreviewContainerView(host: host, entry: entry, language: language)
+            }
+            .onAppear { host.setManualForeground(scenePhase == .active) }
+            .onChange(of: scenePhase) { _, phase in host.setManualForeground(phase == .active) }
+            .onChange(of: host.manualPreviewIdentity) { _, id in
+                if id == nil, host.manualPreviewIdentity == nil { manualEntry = nil }
+            }
+            .onDisappear { host.setManualForeground(false) }
             .navigationDestination(for: TripRoute.self) { route in
                 switch route {
-                case .detail: TripContainerDetail(host: host, language: language)
+                case .detail: TripContainerDetail(host: host, language: language, openManual: { entry in
+                    guard host.manualEditor(for: entry) != nil, state.tripPath.last == .detail else {
+                        host.retireManualPreview(entry); return
+                    }
+                    manualEntry = entry
+                })
                 case .proposal: TripContainerProposal(host: host, language: language, original: false)
                 case .originalAction: TripContainerProposal(host: host, language: language, original: true)
                 }
@@ -93,6 +109,7 @@ struct TripShell: View {
 private struct TripContainerDetail: View {
     let host: TripContainerHost
     let language: ShellLanguage
+    let openManual: (ManualPreviewEntry) -> Void
     var body: some View {
         let action = host.captureAction()
         ScrollView {
@@ -100,6 +117,20 @@ private struct TripContainerDetail: View {
                 if let presentation = host.presentation, host.canLoadDetail {
                     if host.showsSelectedDetail { TripDetailView(state: presentation, language: language.tripLanguage) }
                     else { Text(language.text("Read the selected trip to view its current version.", "读取选中行程以查看当前版本。")) }
+                    Button(language.text("Edit a local draft", "编辑本地草稿")) {
+                        guard let work = host.prepareManualEditor(context: action) else { return }
+                        Task {
+                            guard let entry = await host.performManualEditor(work), host.manualEditor(for: entry) != nil else { return }
+                            openManual(entry)
+                        }
+                    }.disabled(action == nil || !host.canPrepareManualEditor)
+                    if !host.hasManualResources {
+                        Text(language.text("Local editing resources are unavailable.", "本地编辑资源尚不可用。"))
+                    } else if host.manualEditorState == .loading {
+                        ProgressView(language.text("Reading original formal Trip", "正在读取原正式行程"))
+                    } else if host.manualEditorState == .missing || host.manualEditorState == .failed {
+                        Text(language.text("The original formal source could not be read. No editor was created.", "无法读取原正式来源，未创建编辑器。"))
+                    }
                     Button(language.text("Read current detail", "读取当前详情")) {
                         guard let work = host.prepareTrip(context: action) else { return }
                         Task { await host.perform(work) }
@@ -107,6 +138,7 @@ private struct TripContainerDetail: View {
                 } else { Text(language.text("Trip selection is unavailable.", "行程选择已不可用。")) }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }.navigationTitle(language.text("Trip details", "行程详情"))
+            .onDisappear { host.cancelManualSourceRead() }
     }
 }
 

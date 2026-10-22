@@ -1,0 +1,93 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 4] CJManualPreviewClientTests-product
+[4 / 6] CJManualPreviewClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-017-manual-preview-client/ios/Modules/CJManualPreviewClient/Tests/CJManualPreviewClientTests/LifetimeTests.swift:18:16: warning: 'editor' mutated after capture by sendable closure
+ 15 |     @Test func credentialCallbackEditCannotDispatchOrEraseNewDraft() async throws {
+ 16 |         let h = try Harness(); try await h.load(); let wire = Wire(try response(preview(h.original)))
+ 17 |         var editor: PreviewEditor!
+    |             `- note: variable defined here
+ 18 |         editor = try h.editor(wire, credentials: { _ in
+    |                |                                 `- note: variable captured by sendable closure
+    |                `- warning: 'editor' mutated after capture by sendable closure
+ 19 |             try editor.selectTitle(true); try editor.setTitle("new during credentials"); return "synthetic"
+    |                 |                             `- note: capturing use
+    |                 `- note: capturing use
+ 20 |         })
+ 21 |         let work = try editor.preparePreview(); await editor.perform(work)
+[10 / 11] CJManualPreviewClientTests-product
+Build complete! (1.51秒)
+Test Suite 'All tests' started at 2026-10-23 00:46:29.339.
+Test Suite 'All tests' passed at 2026-10-23 00:46:29.340.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite PreviewTests started.
+◇ Suite LifetimeTests started.
+◇ Test rejectsMalformedBodiesAndHeaders(_:) started.
+◇ Test selectionAndScopeRejectInvalidEdits() started.
+◇ Test rejectsInconsistentSuccess(_:) started.
+◇ Test existingLiveTransportGateIsVisibleAndRetainsDraft() started.
+◇ Test noOpUsesFormalOriginalAndExactFrozenRequest() started.
+◇ Test individualEdits(_:) started.
+◇ Test cancelOriginalTaskSettlesOwnWorkAndPreservesInput() started.
+◇ Test conflictsAndUnknownRetainDraftAndExactRetry(_:) started.
+◇ Test awaitAndBodyCollectionRetirementRejectOldResult(_:) started.
+◇ Test finalHostCallbackRetiresSourceBeforeDisplay() started.
+◇ Test explicitRequestLimitRetainsOversizedInput() started.
+◇ Test finalHostCallbackEditsABABeforeSettlement(_:) started.
+◇ Test titleTextOrderAndNFDUseServerDiff() started.
+◇ Test explicitCancellationAndReentryRemainOneUse() started.
+◇ Test credentialCallbackEditCannotDispatchOrEraseNewDraft() started.
+◇ Test queuedOldWorkCannotBecomeFreshAfterEditABA() started.
+◇ Test oldErrorCannotClearNewWork() started.
+◇ Test originalSessionRetirementAndNewSelectionHidePrivateState() started.
+◇ Test case passing 1 argument fault → "null" to rejectsMalformedBodiesAndHeaders(_:) started.
+◇ Test case passing 1 argument fault → "can-save" to rejectsInconsistentSuccess(_:) started.
+◇ Test case passing 1 argument kind → "title" to individualEdits(_:) started.
+◇ Test case passing 1 argument fault → "enum" to rejectsMalformedBodiesAndHeaders(_:) started.
+◇ Test case passing 1 argument fault → "cache" to rejectsMalformedBodiesAndHeaders(_:) started.
+◇ Test case passing 1 argument fault → "overlimit" to rejectsMalformedBodiesAndHeaders(_:) started.
+◇ Test case passing 1 argument kind → "item" to individualEdits(_:) started.
+◇ Test case passing 1 argument fault → "wrong-version" to rejectsInconsistentSuccess(_:) started.
+◇ Test case passing 1 argument kind → "order" to individualEdits(_:) started.
+◇ Test case passing 1 argument fault → "unselected" to rejectsInconsistentSuccess(_:) started.
+◇ Test case passing 1 argument fault → "scope" to rejectsInconsistentSuccess(_:) started.
+◇ Test case passing 1 argument code → 503 to conflictsAndUnknownRetainDraftAndExactRetry(_:) started.
+◇ Test case passing 1 argument fault → "wrong-original" to rejectsInconsistentSuccess(_:) started.
+◇ Test case passing 1 argument code → 409 to conflictsAndUnknownRetainDraftAndExactRetry(_:) started.
+◇ Test case passing 1 argument body → true to awaitAndBodyCollectionRetirementRejectOldResult(_:) started.
+◇ Test case passing 1 argument fault → "projection" to rejectsInconsistentSuccess(_:) started.
+◇ Test case passing 1 argument fault → "missing" to rejectsMalformedBodiesAndHeaders(_:) started.
+◇ Test case passing 1 argument body → false to awaitAndBodyCollectionRetirementRejectOldResult(_:) started.
+◇ Test case passing 1 argument callbackIndex → 2 to finalHostCallbackEditsABABeforeSettlement(_:) started.
+◇ Test case passing 1 argument callbackIndex → 1 to finalHostCallbackEditsABABeforeSettlement(_:) started.
+◇ Test case passing 1 argument fault → "diff-value" to rejectsInconsistentSuccess(_:) started.
+◇ Test case passing 1 argument fault → "duplicate" to rejectsMalformedBodiesAndHeaders(_:) started.
+◇ Test case passing 1 argument callbackIndex → 5 to finalHostCallbackEditsABABeforeSettlement(_:) started.
+◇ Test case passing 1 argument fault → "trace" to rejectsMalformedBodiesAndHeaders(_:) started.
+◇ Test case passing 1 argument callbackIndex → 4 to finalHostCallbackEditsABABeforeSettlement(_:) started.
+◇ Test case passing 1 argument callbackIndex → 3 to finalHostCallbackEditsABABeforeSettlement(_:) started.
+◇ Test case passing 1 argument fault → "missing-diff" to rejectsInconsistentSuccess(_:) started.
+✔ Test selectionAndScopeRejectInvalidEdits() passed after 0.017 seconds.
+✔ Test explicitRequestLimitRetainsOversizedInput() passed after 0.025 seconds.
+✔ Test credentialCallbackEditCannotDispatchOrEraseNewDraft() passed after 0.035 seconds.
+✔ Test queuedOldWorkCannotBecomeFreshAfterEditABA() passed after 0.042 seconds.
+✔ Test existingLiveTransportGateIsVisibleAndRetainsDraft() passed after 0.044 seconds.
+✔ Test oldErrorCannotClearNewWork() passed after 0.045 seconds.
+✔ Test titleTextOrderAndNFDUseServerDiff() passed after 0.047 seconds.
+✔ Test individualEdits(_:) with 3 test cases passed after 0.048 seconds.
+✔ Test finalHostCallbackRetiresSourceBeforeDisplay() passed after 0.048 seconds.
+✔ Test originalSessionRetirementAndNewSelectionHidePrivateState() passed after 0.048 seconds.
+✔ Test rejectsInconsistentSuccess(_:) with 8 test cases passed after 0.048 seconds.
+✔ Test rejectsMalformedBodiesAndHeaders(_:) with 7 test cases passed after 0.048 seconds.
+✔ Test awaitAndBodyCollectionRetirementRejectOldResult(_:) with 2 test cases passed after 0.048 seconds.
+✔ Test explicitCancellationAndReentryRemainOneUse() passed after 0.048 seconds.
+✔ Test cancelOriginalTaskSettlesOwnWorkAndPreservesInput() passed after 0.049 seconds.
+✔ Test finalHostCallbackEditsABABeforeSettlement(_:) with 5 test cases passed after 0.049 seconds.
+✔ Suite LifetimeTests passed after 0.049 seconds.
+✔ Test noOpUsesFormalOriginalAndExactFrozenRequest() passed after 0.049 seconds.
+✔ Test conflictsAndUnknownRetainDraftAndExactRetry(_:) with 2 test cases passed after 0.049 seconds.
+✔ Suite PreviewTests passed after 0.049 seconds.
+✔ Test run with 18 tests in 2 suites passed after 0.049 seconds.

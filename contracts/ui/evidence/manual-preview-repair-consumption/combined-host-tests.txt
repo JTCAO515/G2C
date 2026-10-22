@@ -1,0 +1,39 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[1 / 85] _IssueReporting
+[2 / 25] CJMessageHTTP
+[4 / 27] CJMessageHTTP
+[7 / 23] CJMessageHTTP
+[11 / 12] CJShellTests-product
+Build complete! (1.86秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ManualPreviewHostTests started.
+◇ Test closedFormalGetOpensDraftAndUsesServerDiffOnly() started.
+◇ Test ordinaryHostIsRejectedByActualSharedCapabilityAndKeepsDraft(hostValue:) started.
+◇ Test currentEditorRevisionABARejectsQueuedPreviewWithoutLosingNewIntent() started.
+◇ Test lastSharedValidationRejectsRetiredForegroundOrRevision(change:) started.
+◇ Test sourceSelectionABAAndOldCloseDoNotRetireNewEditor() started.
+◇ Test case passing 1 argument hostValue → "synthetic.invalid" to ordinaryHostIsRejectedByActualSharedCapabilityAndKeepsDraft(hostValue:) started.
+◇ Test nestedPreparationThroughHostDoesNotNeedOlderCaller(trigger:) started.
+◇ Test nestedWorkCancelAndOldCloseCannotRetireRenewedEntry() started.
+◇ Test legacyPublicTransportGateRetainsDraft() started.
+◇ Test case passing 1 argument change → "edit-aba" to lastSharedValidationRejectsRetiredForegroundOrRevision(change:) started.
+◇ Test case passing 1 argument change → "background" to lastSharedValidationRejectsRetiredForegroundOrRevision(change:) started.
+◇ Test case passing 1 argument hostValue → "other.invalid" to ordinaryHostIsRejectedByActualSharedCapabilityAndKeepsDraft(hostValue:) started.
+◇ Test case passing 1 argument trigger → 1 to nestedPreparationThroughHostDoesNotNeedOlderCaller(trigger:) started.
+◇ Test case passing 1 argument trigger → 2 to nestedPreparationThroughHostDoesNotNeedOlderCaller(trigger:) started.
+✔ Test currentEditorRevisionABARejectsQueuedPreviewWithoutLosingNewIntent() passed after 0.018 seconds.
+✔ Test legacyPublicTransportGateRetainsDraft() passed after 0.018 seconds.
+✔ Test lastSharedValidationRejectsRetiredForegroundOrRevision(change:) with 2 test cases passed after 0.018 seconds.
+✔ Test ordinaryHostIsRejectedByActualSharedCapabilityAndKeepsDraft(hostValue:) with 2 test cases passed after 0.018 seconds.
+✔ Test sourceSelectionABAAndOldCloseDoNotRetireNewEditor() passed after 0.019 seconds.
+✔ Test closedFormalGetOpensDraftAndUsesServerDiffOnly() passed after 0.019 seconds.
+✔ Test nestedPreparationThroughHostDoesNotNeedOlderCaller(trigger:) with 2 test cases passed after 0.019 seconds.
+✔ Test nestedWorkCancelAndOldCloseCannotRetireRenewedEntry() passed after 0.020 seconds.
+✔ Suite ManualPreviewHostTests passed after 0.020 seconds.
+✔ Test run with 8 tests in 1 suite passed after 0.020 seconds.

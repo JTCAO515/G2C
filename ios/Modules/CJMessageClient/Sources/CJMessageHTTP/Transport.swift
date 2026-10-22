@@ -59,22 +59,79 @@ struct CheckedTransport: ClientTransport {
 }
 
 public final class NoRedirectTransport: ClientTransport, Sendable {
-    private let session: URLSession
-    private let transport: URLSessionTransport
-    public init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        guard requestTimeout > 0, resourceTimeout > 0 else { throw MessageHTTPFailure.invalidConfiguration }
+    private struct ManualPreviewCapability: Sendable {
+        let endpoint: MessageEndpoint
+        let validate: @MainActor @Sendable () throws -> Void
+    }
+    private let session: URLSession?
+    private let transport: any ClientTransport
+    private let preview: ManualPreviewCapability?
+
+    public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
+        try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
+    }
+
+    /// Explicit capability for ONE producer-defined readonly computation, never a caller
+    /// boolean/label. Host validator must capture the actual current Trip/session binding.
+    public static func readOnlyManualPreview(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
+            preview:ManualPreviewCapability(endpoint:endpoint,validate:validate))
+    }
+
+    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: ManualPreviewCapability?) throws {
+        guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
+            throw MessageHTTPFailure.invalidConfiguration
+        }
         let config = URLSessionConfiguration.ephemeral
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         let session = URLSession(configuration: config, delegate: RedirectBlocker(), delegateQueue: nil)
-        self.session = session; transport = URLSessionTransport(configuration: .init(session: session))
+        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview
     }
-    deinit { session.invalidateAndCancel() }
+
+    /// Internal non-network seam for module tests; never used by live callers.
+    init(interceptedTransport: any ClientTransport, previewEndpoint: MessageEndpoint?,
+         validatePreview: (@MainActor @Sendable () throws -> Void)?) throws {
+        if let endpoint=previewEndpoint, let validate=validatePreview {
+            preview=ManualPreviewCapability(endpoint:endpoint,validate:validate)
+        } else {
+            guard previewEndpoint == nil && validatePreview == nil else {throw MessageHTTPFailure.invalidConfiguration}
+            preview=nil
+        }
+        session=nil;transport=interceptedTransport
+    }
+
+    deinit { session?.invalidateAndCancel() }
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        // Until an independently non-rollbackable action ledger/epoch is integrated,
-        // no live POST can be activated, including after a wholly missing old snapshot.
-        guard request.method != .post && request.method != .put else { throw MessageHTTPFailure.productionActivationUnavailable }
-        return try await transport.send(request, body: body, baseURL: baseURL, operationID: operationID)
+        if request.method == .get || request.method == .head {
+            return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
+        }
+        // No other write-shaped request is enabled. Exact official operation/path are
+        // fixed here; calling an arbitrary request "readonly" cannot grant capability.
+        guard let preview, request.method == .post, operationID == Operations.previewManualTripEdit.id,
+              request.path == "/v1/trip-manual-previews", request.scheme == nil, request.authority == nil,
+              baseURL == preview.endpoint.url,
+              !request.headerFields.contains(where: { $0.name.canonicalName == "host" }),
+              let body else {throw MessageHTTPFailure.productionActivationUnavailable}
+        let media=request.headerFields.filter{$0.name == .contentType}
+        guard media.count == 1, let value=media.first?.value,
+              value == "application/json" || value.lowercased() == "application/json; charset=utf-8" else {
+            throw MessageHTTPFailure.invalidConfiguration
+        }
+        try Task.checkCancellation()
+        let bytes=try await Data(collecting:body,upTo:preview.endpoint.maximumRequestBytes)
+        try await preview.validate()
+        try Task.checkCancellation()
+        let (response,responseBody)=try await transport.send(request,body:HTTPBody(bytes),baseURL:baseURL,operationID:operationID)
+        try await preview.validate()
+        try Task.checkCancellation()
+        guard !(300..<400).contains(response.status.code) else {throw MessageHTTPFailure.redirectRejected}
+        guard let responseBody else {throw MessageHTTPFailure.invalidResponse}
+        let result=try await Data(collecting:responseBody,upTo:preview.endpoint.maximumResponseBytes)
+        try await preview.validate()
+        try Task.checkCancellation()
+        return (response,HTTPBody(result))
     }
 }
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {

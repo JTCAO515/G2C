@@ -1,0 +1,15 @@
+diff --git a/ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift b/ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift
+index 0eddc86..00b9adc 100644
+--- a/ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift
++++ b/ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift
+@@ -111,7 +111,9 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
+         // fixed here; calling an arbitrary request "readonly" cannot grant capability.
+         guard let preview, request.method == .post, operationID == Operations.previewManualTripEdit.id,
+               request.path == "/v1/trip-manual-previews", request.scheme == nil, request.authority == nil,
+-              baseURL == preview.endpoint.url, let body else {throw MessageHTTPFailure.productionActivationUnavailable}
++              baseURL == preview.endpoint.url,
++              !request.headerFields.contains(where: { $0.name.canonicalName == "host" }),
++              let body else {throw MessageHTTPFailure.productionActivationUnavailable}
+         let media=request.headerFields.filter{$0.name == .contentType}
+         guard media.count == 1, let value=media.first?.value,
+               value == "application/json" || value.lowercased() == "application/json; charset=utf-8" else {

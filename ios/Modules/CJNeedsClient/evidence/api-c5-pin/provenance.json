@@ -1,0 +1,40 @@
+{
+  "previous_consumer_head": "25e50dbc25cc5aa9443b2d6da50c514528b2b3c6",
+  "prep_commit": "6649a732d31a90209cee60bc0041e610eb99b8ca",
+  "shared_owner_head": "f4c17b59213828543cef042d127c56d8467963d8",
+  "api_input": "c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a",
+  "previous_api": "c02cf08e52a0d8ffc2fefac99226654a7e01539c",
+  "unchanged_paths": 22,
+  "unchanged_schemas": 81,
+  "unchanged_sdk_sha256": {
+    "ios/Package.swift": "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0",
+    "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
+    "ios/Sources/CJAPI/MemoryClientConfiguration.swift": "3088bab954be24d7fdda0c5815822feb846b772e6d4dc299889cdfd29e4f6d82"
+  },
+  "exact_official_exports": {
+    "d688c01dc0fb18488a1e9c49414a039ce0126204": 16,
+    "201156c9bf9850f9b8e87dc1f986452ce1ae789f": 16,
+    "c02cf08e52a0d8ffc2fefac99226654a7e01539c": 16,
+    "c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a": 16
+  },
+  "unchanged_business_test_lock_sha256": {
+    "Sources/CJNeedsClient/NeedsClient.swift": "8b7a7eeec772104e964af035463654591eaad2e7f92d6d40f6b7b6542574bf32",
+    "Sources/CJNeedsClient/NeedsViews.swift": "003832e012996b1ba517c92fd2b2f5d3130de5c3b3748b87879faae8733fbb2b",
+    "Sources/CJNeedsClient/NeedsTypes.swift": "aad88927fdc94b02ac5c29a26e48ddfc4bb6e9572003062e74569e91ef5ac36d",
+    "Sources/CJNeedsClient/NeedsPendingStore.swift": "17a199ae596fd9b826051645bf2a834876ca5cae036ff35b7b0da1b6b50a00f5",
+    "Sources/CJNeedsClient/NeedsDraft.swift": "27fee810ce022bbfa05b1c9da565c8fc6fe77d57b6f51a47bf39ce2c6220ed4d",
+    "Sources/CJNeedsClient/NeedsPresentation.swift": "eb26087aaf73a95d0e4caf6b19cfc760cf8be878d53f5596b24e66aeb3861abd",
+    "Sources/CJNeedsClient/NeedsValidation.swift": "807c219fc36f804ffabd6d76d39f965ef3e84360b6653d8a0b14f78a38a66cb9",
+    "Tests/CJNeedsClientTests/BoundaryTests.swift": "fd65acbf43a8e496ec6e32c9bdcd111aed25d8dbdaf52d7ea167b39e55016757",
+    "Tests/CJNeedsClientTests/ClientTests.swift": "4dbef8d820c10a0462c64fecf1d3fff61ac8489e81d02bb08d0f262c0c28443d",
+    "Tests/CJNeedsClientTests/TimezoneAliasTests.swift": "34809812b915b5c1c800dab4603a6ad3a924893699d43f9cf34869d149850cc4",
+    "Tests/CJNeedsClientTests/KeyProviderTests.swift": "74d8bff46aa7ab4b567854a4a5b5c83945dd2a1fd90e6826f15c45643c6cf92b",
+    "Tests/CJNeedsClientTests/ContractTests.swift": "1f4381a87a5d5295c67495ca891179f4dacba844f61a203963036a8eabb8ebeb",
+    "Tests/CJNeedsClientTests/Support.swift": "2c9781d450f7fe6fd5f14445f83102fea9f33c01421976e4fc04c7b8c31f1e8a",
+    "Tests/CJNeedsClientTests/PendingDirectoryTests.swift": "cf2065ef20470ebcd41e1a61c8777d9a9440622a287ca16346d10e04e8613f4e",
+    "Package.resolved": "5a9f37e37a12ca4b8eb9f59fa036d66e9cc1a646efe5fe63c438b1bc609296aa"
+  },
+  "CJFoundation_paths": [
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation"
+  ]
+}

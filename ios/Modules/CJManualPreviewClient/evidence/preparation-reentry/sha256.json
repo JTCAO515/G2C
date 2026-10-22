@@ -1,0 +1,8 @@
+{
+  "Sources/CJManualPreviewClient/PreviewEditor.swift": "30b16649e276ccfe385330501cba277d28be8507bb0fe799917618a0965f220f",
+  "Tests/CJManualPreviewClientTests/IndependentPreparationTests.swift": "05979c5364b0f9cd0c0816c4e5b83108cc870f75579c7c3dd296ce08b4e480c2",
+  "Tests/CJManualPreviewClientTests/PreparationOwnershipTests.swift": "7520b0392531ce53478f7b0345938daf60c2b09c75774c11361d5853c06a7393",
+  "evidence/preparation-reentry/testing-original-fail.log": "f958c24bde914688809b13acf4cdb33583f6b431f518005b22e9c51771f9d527",
+  "evidence/preparation-reentry/replay-before.txt": "deacdd15bfe74c49dedd7e8d91bcf4a105afcf7580735632889700d4988121b0",
+  "evidence/preparation-reentry/replay-after-controls.txt": "357248729d784cc356e7485c1abe4501b50d759909f4c9a66faf81e51a40cdaf"
+}

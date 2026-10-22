@@ -1,0 +1,31 @@
+Command: swift test --package-path ios/Modules/CJMemoryClient --force-resolved-versions --filter officialDateDecoderAndKeysetPage|nonNullMalformedReceiptIsNotAbsence|groupsAndEmptyListUseOfficialClient|serverOpaqueIDsAreReadableWithoutUUIDNarrowing|opaqueDetailRequiresExactBytes|acceptedOpaqueRowsHaveUniqueCurrentViewIDs|originalQuerySettlesPersistedHashOnly|expiredCredentialsAreNotEmptyGroups|liveWriteIsUnavailableBeforeStorageAndCredentials
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentOpaqueViewIdentityTests started.
+◇ Suite MemoryClientTests started.
+◇ Suite IndependentContractAndStoreTests started.
+◇ Test expiredCredentialsAreNotEmptyGroups() started.
+◇ Test nonNullMalformedReceiptIsNotAbsence() started.
+◇ Test liveWriteIsUnavailableBeforeStorageAndCredentials() started.
+◇ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() started.
+◇ Test originalQuerySettlesPersistedHashOnly() started.
+◇ Test groupsAndEmptyListUseOfficialClient() started.
+◇ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() started.
+◇ Test officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test opaqueDetailRequiresExactBytes() started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00.123456Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+✔ Test liveWriteIsUnavailableBeforeStorageAndCredentials() passed after 0.016 seconds.
+✔ Test nonNullMalformedReceiptIsNotAbsence() passed after 0.018 seconds.
+✔ Test originalQuerySettlesPersistedHashOnly() passed after 0.018 seconds.
+✔ Test expiredCredentialsAreNotEmptyGroups() passed after 0.019 seconds.
+✔ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() passed after 0.019 seconds.
+✔ Suite IndependentOpaqueViewIdentityTests passed after 0.019 seconds.
+✔ Test opaqueDetailRequiresExactBytes() passed after 0.019 seconds.
+✔ Test groupsAndEmptyListUseOfficialClient() passed after 0.019 seconds.
+✔ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() passed after 0.019 seconds.
+✔ Suite IndependentContractAndStoreTests passed after 0.020 seconds.
+✔ Test officialDateDecoderAndKeysetPage(timestamp:) with 2 test cases passed after 0.021 seconds.
+✔ Suite MemoryClientTests passed after 0.021 seconds.
+✔ Test run with 9 tests in 3 suites passed after 0.021 seconds.

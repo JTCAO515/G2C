@@ -1,7 +1,7 @@
 """Export exact official CJAPI package inputs; no generated-file rewriting."""
 from pathlib import Path
 import hashlib, json, subprocess, sys
-PIN='c02cf08e52a0d8ffc2fefac99226654a7e01539c'
+PIN='c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a'
 root=Path(__file__).resolve().parents[1]
 source=sys.argv[1]
 paths=subprocess.check_output(['git','-C',source,'ls-tree','-r','--name-only',PIN,'ios']).decode().splitlines()
