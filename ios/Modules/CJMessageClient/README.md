@@ -116,3 +116,8 @@ Local recovery enumeration: [LOCAL-PROJECTION.md](LOCAL-PROJECTION.md) exposes c
 scope/Lease-bound action ID/phase and draft references only. Complete unordered local
 projection, no payload or invented server sequence; six targeted checks pass. Revalidate
 after await before display. It grants no new sending or server-history authority.
+
+Read-only server projections: [HISTORY-READ-CLIENT.md](HISTORY-READ-CLIENT.md) exposes
+fixed official 2f8 CJAPI conversations/history/draft GET consumption with lease-bound
+results/opaque continuation. Seven new +three affected prior checks pass; no draft PUT,
+no live POST activation, no actual network or host integration is claimed.
