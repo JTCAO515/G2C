@@ -32,3 +32,7 @@ MESSAGE-owned protected server composition; it is not an authenticated API.
 [Protected display snapshot](../../contracts/run/DISPLAY-SNAPSHOT.md) reads by
 original message ID inside the actual MESSAGE context and returns bounded
 allowlisted JSON bytes. It does not activate an HTTP route or dispatcher.
+
+[Protected original usage reference read](../../contracts/run/ORIGINAL-USAGE-READ.md)
+resolves only an original message ID to persisted attempt/operation/run references,
+without exposing inputs, querying usage status, or granting dispatch.

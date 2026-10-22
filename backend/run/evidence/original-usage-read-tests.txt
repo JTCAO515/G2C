@@ -1,0 +1,17 @@
+test_canonical_repository_required_and_legacy_recovery_unchanged (__main__.OriginalUsageTests.test_canonical_repository_required_and_legacy_recovery_unchanged) ... ok
+test_exact_original_whitelist_only_and_no_mutation (__main__.OriginalUsageTests.test_exact_original_whitelist_only_and_no_mutation) ... ok
+test_final_auth_callback_cannot_rebind_domain_before_publication (__main__.OriginalUsageTests.test_final_auth_callback_cannot_rebind_domain_before_publication) ... ok
+test_final_same_principal_denial_withholds (__main__.OriginalUsageTests.test_final_same_principal_denial_withholds) ... ok
+test_full_binding_wrong_user_missing_or_expired (__main__.OriginalUsageTests.test_full_binding_wrong_user_missing_or_expired) ... ok
+test_original_association_absent_incomplete_or_corrupt_is_unavailable (__main__.OriginalUsageTests.test_original_association_absent_incomplete_or_corrupt_is_unavailable) ... ok
+test_projected_envelope_and_explicit_final_limit (__main__.OriginalUsageTests.test_projected_envelope_and_explicit_final_limit) ... ok
+test_projection_changed_source_association_epoch_or_identity (__main__.OriginalUsageTests.test_projection_changed_source_association_epoch_or_identity) ... ok
+test_projection_reentry_deferred_exception_and_cancel (__main__.OriginalUsageTests.test_projection_reentry_deferred_exception_and_cancel) ... ok
+test_query_never_mints_attempt_for_claim_or_execution_unknown (__main__.OriginalUsageTests.test_query_never_mints_attempt_for_claim_or_execution_unknown) ... ok
+test_storage_callbacks_scope_connect_and_config_rebinding (__main__.OriginalUsageTests.test_storage_callbacks_scope_connect_and_config_rebinding) ... ok
+test_storage_commit_close_and_cancel_failures_withhold (__main__.OriginalUsageTests.test_storage_commit_close_and_cancel_failures_withhold) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.010s
+
+OK

@@ -1265,3 +1265,24 @@ class UsageAttemptStatusResponse(BaseModel):
     )
     request_id: RequestId
     attempt: UsageAttemptStatus
+
+
+class OriginalUsageAssociation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    message_sequence: conint(ge=1, le=9223372036854775807)
+    attempt_id: constr(min_length=1, max_length=200)
+    operation_id: constr(min_length=1, max_length=200)
+
+
+class OriginalUsageAssociationResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    association: OriginalUsageAssociation

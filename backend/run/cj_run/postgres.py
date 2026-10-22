@@ -7,6 +7,10 @@ from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequire
 from .usage_binding import UsageBinding
 
 
+class RecoveryReadUnavailable(Exception):
+    """Strict read cleanup failed; no recovered value may be published."""
+
+
 class CommitUnknown(Exception):
     """Commit may have happened. Query original binding; never blind retry."""
 
@@ -31,15 +35,19 @@ class Repository:
         self.statement_timeout_ms, self.lock_timeout_ms = statement_timeout_ms, lock_timeout_ms
 
     @contextmanager
-    def transaction(self):
+    def transaction(self, *, require_clean_close=False):
         conn = self.connect()
         cur = None
         outcome = 'setup_failed'
+        cleanup_error = None
 
         def cleanup(action, stage):
+            nonlocal cleanup_error
             try:
                 action()
-            except BaseException:
+            except BaseException as exc:
+                if cleanup_error is None:
+                    cleanup_error = exc
                 try:
                     logging.getLogger(__name__).warning('run_cleanup_failed stage=%s outcome=%s', stage, outcome)
                 except BaseException:
@@ -73,10 +81,15 @@ class Repository:
             if cur is not None:
                 cleanup(cur.close, 'cursor_close')
             cleanup(conn.close, 'connection_close')
+        if require_clean_close and cleanup_error is not None:
+            if not isinstance(cleanup_error, Exception):
+                raise cleanup_error
+            raise RecoveryReadUnavailable('RUN read cleanup failed') from None
 
-    def recover(self, binding):
+    def recover(self, binding, *, require_clean_close=False):
         """Deterministic original-run read, never a worker execution authorization."""
-        with self.transaction() as tx:
+        transaction = (self.transaction(require_clean_close=True) if require_clean_close else self.transaction())
+        with transaction as tx:
             state = tx.get(binding)
             result = Recovery(state, Cursor(binding, tx.epoch, state.sequence, 0),
                               'query_only' if state.status in {'running', 'unknown'} else
