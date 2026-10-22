@@ -1086,3 +1086,47 @@ class FeedbackQueryResponse(BaseModel):
     )
     request_id: RequestId
     receipt: FeedbackReceipt | Receipt
+
+
+class Status6(StrEnum):
+    queued = 'queued'
+    running = 'running'
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+    context_invalid = 'context_invalid'
+    unknown = 'unknown'
+
+
+class TextState(StrEnum):
+    complete = 'complete'
+    partial = 'partial'
+
+
+class RunDisplaySnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    message_sequence: conint(ge=1, le=9223372036854775807)
+    status: Status6
+    event_highwater: conint(ge=0, le=9223372036854775807)
+    text: str = Field(
+        ...,
+        description='Exact persisted display text; empty queued text is allowed. Explicit host UTF8 byte bound, never truncation or generated fallback.',
+    )
+    text_state: TextState = Field(
+        ...,
+        description='complete only for completed status; every other status is partial, including failed/cancelled/unknown.',
+    )
+
+
+class RunDisplayResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    snapshot: RunDisplaySnapshot

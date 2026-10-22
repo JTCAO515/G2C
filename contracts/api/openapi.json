@@ -1454,6 +1454,66 @@
           }
         ]
       }
+    },
+    "/v1/run-display": {
+      "get": {
+        "operationId": "getRunDisplaySnapshot",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exact original opaque message ID; host UTF8 byte bound explicit. No caller run ID/scope/owner/permission."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected read-time display snapshot, fully encoded with BASE request_id inside owner lifetime. Not streaming, dispatch, completion-by-EOF or provider proof.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDisplayResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE input/unavailable/too-large error, never a synthetic/null/empty successful snapshot; no automatic read retry.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3717,6 +3777,91 @@
             ]
           }
         }
+      },
+      "RunDisplaySnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversation_id",
+          "generation",
+          "message_id",
+          "run_id",
+          "message_sequence",
+          "status",
+          "event_highwater",
+          "text",
+          "text_state"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled",
+              "context_invalid",
+              "unknown"
+            ]
+          },
+          "event_highwater": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "text": {
+            "type": "string",
+            "description": "Exact persisted display text; empty queued text is allowed. Explicit host UTF8 byte bound, never truncation or generated fallback."
+          },
+          "text_state": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "partial"
+            ],
+            "description": "complete only for completed status; every other status is partial, including failed/cancelled/unknown."
+          }
+        },
+        "description": "Read-time original-message-linked persisted display projection. No scope/raw message/events/effects/usage/outbound bytes/model/failure-stage fields. message_sequence differs from event_highwater. Not SSE, a cursor, dispatch or provider-success proof."
+      },
+      "RunDisplayResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "snapshot"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/RunDisplaySnapshot"
+          }
+        },
+        "description": "BASE envelope must be fully materialized and bounded inside producer protected callback. No nullable or synthetic snapshot on error."
       }
     },
     "securitySchemes": {
@@ -3732,5 +3877,6 @@
   "x-memory-wire-version": "MEMORY-WIRE@0.1.0-rc.1",
   "x-trip-wire-version": "TRIP-WIRE@0.1.0-rc.1",
   "x-needs-wire-version": "NEEDS-WIRE@0.1.0-rc.1",
-  "x-feedback-wire-version": "FEEDBACK-WIRE@0.1.0-rc.1"
+  "x-feedback-wire-version": "FEEDBACK-WIRE@0.1.0-rc.1",
+  "x-run-display-wire-version": "RUN-DISPLAY-WIRE@0.1.0-rc.1"
 }
