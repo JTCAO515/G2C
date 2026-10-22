@@ -1,0 +1,37 @@
+Building for debugging...
+[Provisioning 3 / 24]
+[Pre-planning 29 / 507]
+[Planning deferred tasks]
+[1 / 32] DequeModule
+[8 / 19] CJMessageClientTests-product
+[10 / 21] CJMessageClientTests-product
+[16 / 20] CJMessageClientTests-product
+Build complete! (1.08秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentPutReentryTests started.
+◇ Test confirmationPersistenceCallbackMustNotOverwriteOrMarkNewEditorSaved() started.
+◇ Test beginSaveMustKeepPendingDurableAndPreserveNewEditorAfterStoreCallback() started.
+✘ Test confirmationPersistenceCallbackMustNotOverwriteOrMarkNewEditorSaved() recorded an issue at PutStorageReentryTests.swift:36:3: Expectation failed: try state.draft(conversationID:"chat",lease:lease)==newEdit
+↳ old response persistence must not overwrite newer same-lease edit
+↳ try state.draft(conversationID:"chat",lease:lease)==newEdit → <not evaluated>
+✘ Test confirmationPersistenceCallbackMustNotOverwriteOrMarkNewEditorSaved() recorded an issue at PutStorageReentryTests.swift:37:3: Expectation failed: !matches
+↳ old response must not report newer editor saved
+↳ !matches → <not evaluated>
+↳   matches → <not evaluated>
+✘ Test confirmationPersistenceCallbackMustNotOverwriteOrMarkNewEditorSaved() recorded an issue at PutStorageReentryTests.swift:38:3: Expectation failed: try !state.draftConfirmationMatchesEditor(conversationID:"chat",revision:1,lease:lease)
+↳ try !state.draftConfirmationMatchesEditor(conversationID:"chat",revision:1,lease:lease) → <not evaluated>
+✘ Test beginSaveMustKeepPendingDurableAndPreserveNewEditorAfterStoreCallback() recorded an issue at PutStorageReentryTests.swift:22:3: Expectation failed: try recovery.draft(conversationID:"chat",lease:lease)==newEdit
+↳ old begin-save persistence must not erase newer same-lease editor
+↳ try recovery.draft(conversationID:"chat",lease:lease)==newEdit → <not evaluated>
+✘ Test confirmationPersistenceCallbackMustNotOverwriteOrMarkNewEditorSaved() failed after 0.001 seconds with 3 issues.
+✘ Test beginSaveMustKeepPendingDurableAndPreserveNewEditorAfterStoreCallback() recorded an issue at PutStorageReentryTests.swift:26:3: Expectation failed: pending.count == 1
+↳ beginDraftSave must not return send operation after callback removed durable pending CAS
+↳ pending.count == 1 → false
+↳   pending.count → 0
+✘ Test beginSaveMustKeepPendingDurableAndPreserveNewEditorAfterStoreCallback() failed after 0.001 seconds with 2 issues.
+✘ Suite IndependentPutReentryTests failed after 0.001 seconds with 5 issues.
+✘ Test run with 2 tests in 1 suite failed after 0.001 seconds with 5 issues.
+Note: Some test targets reported failures:
+  - CJMessageClientTests (Swift Testing)

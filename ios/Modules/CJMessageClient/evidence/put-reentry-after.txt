@@ -1,0 +1,53 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[1 / 1]
+[2 / 22] CJMessageClient
+[7 / 26] CJMessageClient
+[11 / 33] CJMessageRecoveryProbe-product
+[21 / 40] CJMessageKeyBridge
+[25 / 43] CJMessageClient
+[34 / 43] CJMessageClientTests-product
+[48 / 56] CJMessageClientTests-product
+[52 / 58] CJMessageClientTests-product
+[54 / 61] CJMessageClientTests-product
+[58 / 62] CJMessageHTTPTests-product
+Build complete! (2.39秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite DraftPutTests started.
+◇ Test emptyDraftSuccessAndLateIdentityRemainDistinct() started.
+◇ Test malformedCommittedResponseAndConflictRetainOriginalCAS() started.
+◇ Test encryptedReopenRetainsUnknownDraftWrite() started.
+◇ Test matchingReadbackDoesNotSettleUnknownPut() started.
+◇ Test confirmationCannotMarkLaterSameBytesEditSaved() started.
+◇ Test invalidLeaseAndLivePutNeverSend() started.
+◇ Test cancellationAfterResponseKeepsPendingCAS() started.
+◇ Test exactCASBytesAndSuccessNeverOverwriteNewEdit() started.
+◇ Test unknownSurvivesReopenAndNullDoesNotPermitReplacementPut() started.
+✔ Test confirmationCannotMarkLaterSameBytesEditSaved() passed after 0.010 seconds.
+✔ Test encryptedReopenRetainsUnknownDraftWrite() passed after 0.010 seconds.
+✔ Test invalidLeaseAndLivePutNeverSend() passed after 0.011 seconds.
+✔ Test cancellationAfterResponseKeepsPendingCAS() passed after 0.011 seconds.
+✔ Test emptyDraftSuccessAndLateIdentityRemainDistinct() passed after 0.011 seconds.
+✔ Test exactCASBytesAndSuccessNeverOverwriteNewEdit() passed after 0.011 seconds.
+✔ Test matchingReadbackDoesNotSettleUnknownPut() passed after 0.011 seconds.
+✔ Test unknownSurvivesReopenAndNullDoesNotPermitReplacementPut() passed after 0.011 seconds.
+✔ Test malformedCommittedResponseAndConflictRetainOriginalCAS() passed after 0.012 seconds.
+✔ Suite DraftPutTests passed after 0.012 seconds.
+✔ Test run with 9 tests in 1 suite passed after 0.012 seconds.
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentPutReentryTests started.
+◇ Suite FreshAuthorizationTests started.
+◇ Test beginSaveMustKeepPendingDurableAndPreserveNewEditorAfterStoreCallback() started.
+◇ Test confirmationPersistenceCallbackMustNotOverwriteOrMarkNewEditorSaved() started.
+◇ Test callbackScopeSwitchCannotWriteOrInvalidateNewScope() started.
+✔ Test confirmationPersistenceCallbackMustNotOverwriteOrMarkNewEditorSaved() passed after 0.001 seconds.
+✔ Test beginSaveMustKeepPendingDurableAndPreserveNewEditorAfterStoreCallback() passed after 0.001 seconds.
+✔ Test callbackScopeSwitchCannotWriteOrInvalidateNewScope() passed after 0.001 seconds.
+✔ Suite FreshAuthorizationTests passed after 0.001 seconds.
+✔ Suite IndependentPutReentryTests passed after 0.001 seconds.
+✔ Test run with 3 tests in 2 suites passed after 0.001 seconds.
