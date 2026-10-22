@@ -1,0 +1,5 @@
+PASS: external public API typecheck, exit 0; no compiler diagnostics.
+No @testable; distinct package-name CJ007ExternalClearConsumer.
+Command:
+xcrun swiftc -typecheck -swift-version 6 -target arm64-apple-macos14.0 -package-name CJ007ExternalClearConsumer -I /private/tmp/cj007-sdk-build/out/Products/Debug -module-cache-path /private/tmp/cj007-external-clear-cache ios/Modules/CJAuth/Tests/CJSessionTests/ExternalClearSettlementConsumer.swift
+No runtime/credentials/Keychain/network.
