@@ -1611,5 +1611,568 @@ extension Components {
                 ])
             }
         }
+        /// Historical original canonical Action receipt. Reject committed_version is explicit null; accept version is the then-committed version, never latest Trip inference. No proof of current proposal eligibility or provider fact verification.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TripActionReceipt`.
+        public struct TripActionReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripActionReceipt/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripActionReceipt/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case accept = "accept"
+                case reject = "reject"
+            }
+            /// - Remark: Generated from `#/components/schemas/TripActionReceipt/kind`.
+            public var kind: Components.Schemas.TripActionReceipt.kindPayload
+            /// - Remark: Generated from `#/components/schemas/TripActionReceipt/proposal_id`.
+            public var proposal_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripActionReceipt/candidate_hash`.
+            public var candidate_hash: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripActionReceipt/trip_id`.
+            public var trip_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripActionReceipt/committed_version`.
+            @frozen public enum committed_versionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TripActionReceipt/committed_version/case1`.
+                case case1(Swift.Int)
+                /// - Remark: Generated from `#/components/schemas/TripActionReceipt/committed_version/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TripActionReceipt/committed_version`.
+            public var committed_version: Components.Schemas.TripActionReceipt.committed_versionPayload
+            /// Creates a new `TripActionReceipt`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - kind:
+            ///   - proposal_id:
+            ///   - candidate_hash:
+            ///   - trip_id:
+            ///   - committed_version:
+            public init(
+                action_id: Swift.String,
+                kind: Components.Schemas.TripActionReceipt.kindPayload,
+                proposal_id: Swift.String,
+                candidate_hash: Swift.String,
+                trip_id: Swift.String,
+                committed_version: Components.Schemas.TripActionReceipt.committed_versionPayload
+            ) {
+                self.action_id = action_id
+                self.kind = kind
+                self.proposal_id = proposal_id
+                self.candidate_hash = candidate_hash
+                self.trip_id = trip_id
+                self.committed_version = committed_version
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case kind
+                case proposal_id
+                case candidate_hash
+                case trip_id
+                case committed_version
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.kind = try container.decode(
+                    Components.Schemas.TripActionReceipt.kindPayload.self,
+                    forKey: .kind
+                )
+                self.proposal_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .proposal_id
+                )
+                self.candidate_hash = try container.decode(
+                    Swift.String.self,
+                    forKey: .candidate_hash
+                )
+                self.trip_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .trip_id
+                )
+                self.committed_version = try container.decode(
+                    Components.Schemas.TripActionReceipt.committed_versionPayload.self,
+                    forKey: .committed_version
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "kind",
+                    "proposal_id",
+                    "candidate_hash",
+                    "trip_id",
+                    "committed_version"
+                ])
+            }
+        }
+        /// Producer internal content projection. verified requires nonempty evidence; format validation does not certify factual accuracy. pending remains pending after acceptance.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TripDocumentItem`.
+        public struct TripDocumentItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripDocumentItem/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripDocumentItem/text`.
+            public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripDocumentItem/verification`.
+            @frozen public enum verificationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pending = "pending"
+                case verified = "verified"
+            }
+            /// - Remark: Generated from `#/components/schemas/TripDocumentItem/verification`.
+            public var verification: Components.Schemas.TripDocumentItem.verificationPayload
+            /// - Remark: Generated from `#/components/schemas/TripDocumentItem/evidence`.
+            public var evidence: [Swift.String]
+            /// Creates a new `TripDocumentItem`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - text:
+            ///   - verification:
+            ///   - evidence:
+            public init(
+                id: Swift.String,
+                text: Swift.String,
+                verification: Components.Schemas.TripDocumentItem.verificationPayload,
+                evidence: [Swift.String]
+            ) {
+                self.id = id
+                self.text = text
+                self.verification = verification
+                self.evidence = evidence
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case text
+                case verification
+                case evidence
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.id = try container.decode(
+                    Swift.String.self,
+                    forKey: .id
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                self.verification = try container.decode(
+                    Components.Schemas.TripDocumentItem.verificationPayload.self,
+                    forKey: .verification
+                )
+                self.evidence = try container.decode(
+                    [Swift.String].self,
+                    forKey: .evidence
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "id",
+                    "text",
+                    "verification",
+                    "evidence"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TripDocument`.
+        public struct TripDocument: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripDocument/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripDocument/items`.
+            public var items: [Components.Schemas.TripDocumentItem]
+            /// Creates a new `TripDocument`.
+            ///
+            /// - Parameters:
+            ///   - title:
+            ///   - items:
+            public init(
+                title: Swift.String,
+                items: [Components.Schemas.TripDocumentItem]
+            ) {
+                self.title = title
+                self.items = items
+            }
+            public enum CodingKeys: String, CodingKey {
+                case title
+                case items
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.title = try container.decode(
+                    Swift.String.self,
+                    forKey: .title
+                )
+                self.items = try container.decode(
+                    [Components.Schemas.TripDocumentItem].self,
+                    forKey: .items
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "title",
+                    "items"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TripRecord`.
+        public struct TripRecord: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripRecord/trip_id`.
+            public var trip_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripRecord/version`.
+            public var version: Swift.Int
+            /// RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TripRecord/content_utf8_base64`.
+            public var content_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripRecord/document`.
+            public var document: Components.Schemas.TripDocument
+            /// Creates a new `TripRecord`.
+            ///
+            /// - Parameters:
+            ///   - trip_id:
+            ///   - version:
+            ///   - content_utf8_base64: RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.
+            ///   - document:
+            public init(
+                trip_id: Swift.String,
+                version: Swift.Int,
+                content_utf8_base64: Swift.String,
+                document: Components.Schemas.TripDocument
+            ) {
+                self.trip_id = trip_id
+                self.version = version
+                self.content_utf8_base64 = content_utf8_base64
+                self.document = document
+            }
+            public enum CodingKeys: String, CodingKey {
+                case trip_id
+                case version
+                case content_utf8_base64
+                case document
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.trip_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .trip_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.content_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .content_utf8_base64
+                )
+                self.document = try container.decode(
+                    Components.Schemas.TripDocument.self,
+                    forKey: .document
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "trip_id",
+                    "version",
+                    "content_utf8_base64",
+                    "document"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TripActionResponse`.
+        public struct TripActionResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripActionResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/TripActionResponse/receipt`.
+            public var receipt: Components.Schemas.TripActionReceipt
+            /// Creates a new `TripActionResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.TripActionReceipt
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.TripActionReceipt.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// Required receipt null means not observed by original action_id. Does not prove noncommit or permit new-ID retry.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TripActionQueryResponse`.
+        public struct TripActionQueryResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripActionQueryResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/TripActionQueryResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TripActionQueryResponse/receipt/case1`.
+                case TripActionReceipt(Components.Schemas.TripActionReceipt)
+                /// - Remark: Generated from `#/components/schemas/TripActionQueryResponse/receipt/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .TripActionReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .TripActionReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TripActionQueryResponse/receipt`.
+            public var receipt: Components.Schemas.TripActionQueryResponse.receiptPayload
+            /// Creates a new `TripActionQueryResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.TripActionQueryResponse.receiptPayload
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.TripActionQueryResponse.receiptPayload.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TripDetailResponse`.
+        public struct TripDetailResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripDetailResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/TripDetailResponse/trip`.
+            @frozen public enum tripPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TripDetailResponse/trip/case1`.
+                case TripRecord(Components.Schemas.TripRecord)
+                /// - Remark: Generated from `#/components/schemas/TripDetailResponse/trip/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .TripRecord(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .TripRecord(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TripDetailResponse/trip`.
+            public var trip: Components.Schemas.TripDetailResponse.tripPayload
+            /// Creates a new `TripDetailResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - trip:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                trip: Components.Schemas.TripDetailResponse.tripPayload
+            ) {
+                self.request_id = request_id
+                self.trip = trip
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case trip
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.trip = try container.decode(
+                    Components.Schemas.TripDetailResponse.tripPayload.self,
+                    forKey: .trip
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "trip"
+                ])
+            }
+        }
+        /// Candidate live Trip-ID keyset page; next_after is last nonempty trip_id or null on an empty page, pending producer consumer confirmation. Not has-more or snapshot.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TripListResponse`.
+        public struct TripListResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripListResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/TripListResponse/trips`.
+            public var trips: [Components.Schemas.TripRecord]
+            /// - Remark: Generated from `#/components/schemas/TripListResponse/next_after`.
+            @frozen public enum next_afterPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TripListResponse/next_after/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/TripListResponse/next_after/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TripListResponse/next_after`.
+            public var next_after: Components.Schemas.TripListResponse.next_afterPayload
+            /// Creates a new `TripListResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - trips:
+            ///   - next_after:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                trips: [Components.Schemas.TripRecord],
+                next_after: Components.Schemas.TripListResponse.next_afterPayload
+            ) {
+                self.request_id = request_id
+                self.trips = trips
+                self.next_after = next_after
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case trips
+                case next_after
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.trips = try container.decode(
+                    [Components.Schemas.TripRecord].self,
+                    forKey: .trips
+                )
+                self.next_after = try container.decode(
+                    Components.Schemas.TripListResponse.next_afterPayload.self,
+                    forKey: .next_after
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "trips",
+                    "next_after"
+                ])
+            }
+        }
     }
 }

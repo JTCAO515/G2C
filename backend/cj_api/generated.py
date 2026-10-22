@@ -314,3 +314,97 @@ class MemoryManualSaveCommand(BaseModel):
     kind: Kind
     extent: Extent
     context_id: constr(min_length=1, max_length=4096) | ContextId
+
+
+class Kind2(StrEnum):
+    accept = 'accept'
+    reject = 'reject'
+
+
+class CommittedVersion(Enum):
+    NoneType_None = None
+
+
+class TripActionReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    kind: Kind2
+    proposal_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    candidate_hash: constr(pattern=r'^[0-9a-f]{64}$')
+    trip_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    committed_version: conint(ge=1, le=9223372036854775807) | CommittedVersion
+
+
+class Verification(StrEnum):
+    pending = 'pending'
+    verified = 'verified'
+
+
+class TripDocumentItem(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    text: constr(min_length=1)
+    verification: Verification
+    evidence: list[constr(min_length=1)]
+
+
+class TripDocument(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    title: constr(min_length=1)
+    items: list[TripDocumentItem] = Field(..., min_length=1)
+
+
+class TripRecord(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    trip_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    version: conint(ge=1, le=9223372036854775807)
+    content_utf8_base64: constr(min_length=4) = Field(
+        ...,
+        description='RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.',
+    )
+    document: TripDocument
+
+
+class TripActionResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: TripActionReceipt
+
+
+class TripActionQueryResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: TripActionReceipt | Receipt
+
+
+class Trip(Enum):
+    NoneType_None = None
+
+
+class TripDetailResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    trip: TripRecord | Trip
+
+
+class TripListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    trips: list[TripRecord]
+    next_after: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$') | NextAfter
