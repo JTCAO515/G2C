@@ -1,0 +1,25 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 6] CJNeedsClient
+[3 / 7] CJNeedsClient
+[7 / 9] CJNeedsClient
+[10 / 11] CJNeedsClientTests-product
+Build complete! (1.59秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite PendingDirectoryTests started.
+◇ Test unchangedEmptyDirectoryStillLoads() started.
+◇ Test callbackDirectoryReplacementFailsEvenForEmptyRead(initiallyEmpty:callbackNumber:) started.
+◇ Test case passing 2 arguments initiallyEmpty → false, callbackNumber → 3 to callbackDirectoryReplacementFailsEvenForEmptyRead(initiallyEmpty:callbackNumber:) started.
+◇ Test case passing 2 arguments initiallyEmpty → true, callbackNumber → 3 to callbackDirectoryReplacementFailsEvenForEmptyRead(initiallyEmpty:callbackNumber:) started.
+◇ Test case passing 2 arguments initiallyEmpty → true, callbackNumber → 2 to callbackDirectoryReplacementFailsEvenForEmptyRead(initiallyEmpty:callbackNumber:) started.
+◇ Test case passing 2 arguments initiallyEmpty → false, callbackNumber → 2 to callbackDirectoryReplacementFailsEvenForEmptyRead(initiallyEmpty:callbackNumber:) started.
+✔ Test unchangedEmptyDirectoryStillLoads() passed after 0.003 seconds.
+PRESERVED initiallyEmpty=false callback=3 state=failed canonical=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj013-test-9C053CA7-2907-4E89-8E8B-44610ED5A676 retired=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj013-test-9C053CA7-2907-4E89-8E8B-44610ED5A676.retired
+PRESERVED initiallyEmpty=true callback=3 state=failed canonical=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj013-test-51351EB8-BC9A-4055-BD98-6A69B1B3AF73 retired=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj013-test-51351EB8-BC9A-4055-BD98-6A69B1B3AF73.retired
+PRESERVED initiallyEmpty=true callback=2 state=failed canonical=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj013-test-69DF6969-690F-45E1-BC71-2EE121F5B46E retired=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj013-test-69DF6969-690F-45E1-BC71-2EE121F5B46E.retired
+PRESERVED initiallyEmpty=false callback=2 state=failed canonical=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj013-test-F924F13C-502D-4DC2-90F6-DA7E5D9B7FB4 retired=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj013-test-F924F13C-502D-4DC2-90F6-DA7E5D9B7FB4.retired
+✔ Test callbackDirectoryReplacementFailsEvenForEmptyRead(initiallyEmpty:callbackNumber:) with 4 test cases passed after 0.015 seconds.
+✔ Suite PendingDirectoryTests passed after 0.015 seconds.
+✔ Test run with 2 tests in 1 suite passed after 0.015 seconds.

@@ -1,0 +1,98 @@
+warning: '--skip-update' option is deprecated and will be removed in a future release
+Building for debugging...
+[Computing dependencies]
+[1 / 5]
+[2 / 6] CJRunClientTests-product
+[4 / 8] CJRunClientTests-product
+[10 / 12] CJRunClientTests-product
+Build complete! (2.07秒)
+Test Suite 'All tests' started at 2026-10-22 20:45:27.407.
+Test Suite 'All tests' passed at 2026-10-22 20:45:27.408.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite RunDisplayTests started.
+◇ Test reentrantPrepareAndSelectionAreFenced() started.
+◇ Test rejectionDoesNotCreateAnswer(_:) started.
+◇ Test headers(_:) started.
+◇ Test malformed(_:) started.
+◇ Test explicitByteLimits() started.
+◇ Test increasingSnapshotReplacesRatherThanAppends() started.
+◇ Test queuedWorkRetiresBeforeGET(_:) started.
+◇ Test referenceMismatch(_:) started.
+◇ Test lateResponseCannotClearNewSelection() started.
+◇ Test retiredWorkCannotReadAnotherMessageOrAnotherModel() started.
+◇ Test inconsistentSnapshots(_:) started.
+◇ Test responseCallbackInvalidation(_:) started.
+◇ Test sevenStates(_:) started.
+◇ Test duplicateReadReplacesSingleSnapshotAndWorkIsSingleUse() started.
+◇ Test lazyAndEagerSourceInvalidationDoNotExposeText() started.
+◇ Test credentialAwaitCannotRedirectOldRead() started.
+◇ Test cancellationIsUnknownWithoutRetry() started.
+◇ Test normalizedIDIsNotOriginal() started.
+◇ Test case passing 1 argument kind → "noTrace" to headers(_:) started.
+◇ Test case passing 1 argument kind → "wrongTrace" to headers(_:) started.
+◇ Test case passing 1 argument kind → "missing" to malformed(_:) started.
+◇ Test case passing 1 argument status → 503 to rejectionDoesNotCreateAnswer(_:) started.
+◇ Test case passing 1 argument kind → "noCache" to headers(_:) started.
+◇ Test sessionClearHidesAlreadyLoadedText() started.
+◇ Test case passing 1 argument kind → "missingSnapshot" to malformed(_:) started.
+◇ Test case passing 1 argument status → 413 to rejectionDoesNotCreateAnswer(_:) started.
+◇ Test case passing 1 argument status → 401 to rejectionDoesNotCreateAnswer(_:) started.
+◇ Test case passing 1 argument status → 429 to rejectionDoesNotCreateAnswer(_:) started.
+◇ Test case passing 1 argument kind → "cacheable" to headers(_:) started.
+◇ Test case passing 1 argument kind → "redirect" to headers(_:) started.
+◇ Test case passing 1 argument kind → "null" to malformed(_:) started.
+◇ Test case passing 1 argument kind → "extra" to malformed(_:) started.
+◇ Test case passing 1 argument kind → "unknownStatus" to malformed(_:) started.
+◇ Test case passing 1 argument change → "selection" to queuedWorkRetiresBeforeGET(_:) started.
+◇ Test case passing 1 argument field → "conversation_id" to referenceMismatch(_:) started.
+◇ Test case passing 1 argument kind → "lower" to inconsistentSnapshots(_:) started.
+◇ Test case passing 1 argument kind → "completePartial" to malformed(_:) started.
+◇ Test case passing 1 argument change → "source" to queuedWorkRetiresBeforeGET(_:) started.
+◇ Test case passing 1 argument change → "background" to queuedWorkRetiresBeforeGET(_:) started.
+◇ Test case passing 1 argument kind → "terminalRevive" to inconsistentSnapshots(_:) started.
+◇ Test case passing 1 argument change → "session" to queuedWorkRetiresBeforeGET(_:) started.
+◇ Test case passing 1 argument change → "source" to responseCallbackInvalidation(_:) started.
+◇ Test case passing 1 argument change → "session" to responseCallbackInvalidation(_:) started.
+◇ Test case passing 1 argument field → "run_id" to referenceMismatch(_:) started.
+◇ Test case passing 1 argument status → "running" to sevenStates(_:) started.
+◇ Test case passing 1 argument kind → "duplicate" to malformed(_:) started.
+◇ Test case passing 1 argument status → "completed" to sevenStates(_:) started.
+◇ Test case passing 1 argument status → "failed" to sevenStates(_:) started.
+◇ Test case passing 1 argument kind → "bool" to malformed(_:) started.
+◇ Test case passing 1 argument field → "message_id" to referenceMismatch(_:) started.
+◇ Test case passing 1 argument status → "queued" to sevenStates(_:) started.
+◇ Test case passing 1 argument kind → "negative" to malformed(_:) started.
+◇ Test case passing 1 argument kind → "prefixConflict" to inconsistentSnapshots(_:) started.
+◇ Test case passing 1 argument status → "context_invalid" to sevenStates(_:) started.
+◇ Test case passing 1 argument status → "cancelled" to sevenStates(_:) started.
+◇ Test case passing 1 argument status → "unknown" to sevenStates(_:) started.
+◇ Test case passing 1 argument field → "generation" to referenceMismatch(_:) started.
+◇ Test case passing 1 argument change → "background" to responseCallbackInvalidation(_:) started.
+◇ Test case passing 1 argument kind → "invalidJSON" to malformed(_:) started.
+◇ Test case passing 1 argument kind → "queuedText" to malformed(_:) started.
+◇ Test case passing 1 argument field → "message_sequence" to referenceMismatch(_:) started.
+◇ Test case passing 1 argument kind → "sameConflict" to inconsistentSnapshots(_:) started.
+✔ Test queuedWorkRetiresBeforeGET(_:) with 4 test cases passed after 0.012 seconds.
+✔ Test credentialAwaitCannotRedirectOldRead() passed after 0.013 seconds.
+✔ Test retiredWorkCannotReadAnotherMessageOrAnotherModel() passed after 0.013 seconds.
+✔ Test sessionClearHidesAlreadyLoadedText() passed after 0.015 seconds.
+✔ Test lateResponseCannotClearNewSelection() passed after 0.015 seconds.
+✔ Test malformed(_:) with 11 test cases passed after 0.016 seconds.
+✔ Test normalizedIDIsNotOriginal() passed after 0.015 seconds.
+✔ Test referenceMismatch(_:) with 5 test cases passed after 0.016 seconds.
+✔ Test reentrantPrepareAndSelectionAreFenced() passed after 0.017 seconds.
+✔ Test headers(_:) with 5 test cases passed after 0.017 seconds.
+✔ Test sevenStates(_:) with 7 test cases passed after 0.017 seconds.
+✔ Test rejectionDoesNotCreateAnswer(_:) with 4 test cases passed after 0.017 seconds.
+✔ Test responseCallbackInvalidation(_:) with 3 test cases passed after 0.017 seconds.
+✔ Test cancellationIsUnknownWithoutRetry() passed after 0.017 seconds.
+✔ Test explicitByteLimits() passed after 0.017 seconds.
+✔ Test lazyAndEagerSourceInvalidationDoNotExposeText() passed after 0.017 seconds.
+✔ Test increasingSnapshotReplacesRatherThanAppends() passed after 0.017 seconds.
+✔ Test inconsistentSnapshots(_:) with 4 test cases passed after 0.017 seconds.
+✔ Test duplicateReadReplacesSingleSnapshotAndWorkIsSingleUse() passed after 0.017 seconds.
+✔ Suite RunDisplayTests passed after 0.018 seconds.
+✔ Test run with 19 tests in 1 suite passed after 0.018 seconds.

@@ -1,0 +1,21 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 7] CJShellTests-product
+[4 / 9] CJShellTests-product
+[8 / 11] CJShellTests-product
+[10 / 14] CJShellTests-product
+Build complete! (2.56秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite RunContainerHostTests started.
+◇ Test selectionCallbackCannotAdoptNewMessageUnderOldCapture(trigger:) started.
+◇ Test case passing 1 argument trigger → 3 to selectionCallbackCannotAdoptNewMessageUnderOldCapture(trigger:) started.
+◇ Test case passing 1 argument trigger → 1 to selectionCallbackCannotAdoptNewMessageUnderOldCapture(trigger:) started.
+◇ Test case passing 1 argument trigger → 4 to selectionCallbackCannotAdoptNewMessageUnderOldCapture(trigger:) started.
+◇ Test case passing 1 argument trigger → 2 to selectionCallbackCannotAdoptNewMessageUnderOldCapture(trigger:) started.
+✔ Test selectionCallbackCannotAdoptNewMessageUnderOldCapture(trigger:) with 4 test cases passed after 0.011 seconds.
+✔ Suite RunContainerHostTests passed after 0.011 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.011 seconds.

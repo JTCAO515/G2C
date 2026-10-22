@@ -1,0 +1,26 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 13] CJFeedbackClient
+[4 / 15] CJFeedbackClient
+[7 / 17] CJFeedbackClient
+[11 / 12] CJShellTests-product
+Build complete! (1.71秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite FeedbackContainerHostTests started.
+◇ Test defaultsUnavailableAndPublicClientCannotSubmit() started.
+◇ Test answerChangeInsidePrepareCallbackCannotFreezeOldAssociation() started.
+◇ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "answer-problem" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "answer-association" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "answer-expectation" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "general-expectation" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "general-problem" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+✔ Test defaultsUnavailableAndPublicClientCannotSubmit() passed after 0.016 seconds.
+✔ Test answerChangeInsidePrepareCallbackCannotFreezeOldAssociation() passed after 0.016 seconds.
+✔ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) with 5 test cases passed after 0.018 seconds.
+✔ Suite FeedbackContainerHostTests passed after 0.018 seconds.
+✔ Test run with 3 tests in 1 suite passed after 0.018 seconds.

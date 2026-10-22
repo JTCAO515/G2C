@@ -1,0 +1,27 @@
+Command: xcodebuild -scheme CJFeedbackClient -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/ios-unsigned CODE_SIGNING_ALLOWED=NO build
+Working directory: ios/Modules/CJFeedbackClient
+Xcode27.1 / Swift6.4. Unsigned arm64/x86_64 module compilation; no launch.
+Original full log SHA256: ccd6cbceae2111590d839df4ecda5bbb3a717180322398083b818ee2df384a04
+Lossless full log: ios-build-full.txt.xz
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ CJFeedbackClient (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 Compiling\ FeedbackPresentation.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackPresentation.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackPresentation.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 Compiling\ FeedbackTypes.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackTypes.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackTypes.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 Compiling\ FeedbackView.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackView.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackView.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 Compiling\ FeedbackClient.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackClient.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackClient.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ CJFeedbackClient (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 Compiling\ FeedbackTypes.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackTypes.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackTypes.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 Compiling\ FeedbackClient.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackClient.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackClient.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 Compiling\ FeedbackPresentation.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackPresentation.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackPresentation.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 Compiling\ FeedbackView.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackView.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackView.swift (in target 'CJFeedbackClient' from project 'CJFeedbackClient')
+** BUILD SUCCEEDED **

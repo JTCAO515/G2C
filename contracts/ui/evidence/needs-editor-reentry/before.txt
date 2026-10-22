@@ -1,0 +1,33 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Constructing description]
+[Pre-planning 1 / 900]
+[Planning deferred tasks]
+[1 / 4] CJAPI
+[8 / 19] CJShellTests-product
+[10 / 21] CJShellTests-product
+[11 / 22] CJShellTests-product
+[15 / 21] CJShellTests-product
+[17 / 21] CJShellTests-product
+Build complete! (3.84秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentNeedsEditReentryTests started.
+◇ Test oldEditCannotOverwriteNewerSameEditorCallbackEdit() started.
+✘ Test oldEditCannotOverwriteNewerSameEditorCallbackEdit() recorded an issue at IndependentNeedsEditReentryTests.swift:106:9: Expectation failed: !oldAccepted
+↳ Old update retained ownership after a newer editor write in current-binding callback
+↳ !oldAccepted → <not evaluated>
+↳   oldAccepted → <not evaluated>
+✘ Test oldEditCannotOverwriteNewerSameEditorCallbackEdit() recorded an issue at IndependentNeedsEditReentryTests.swift:107:9: Expectation failed: model.draft?.sourceText == "newer draft" && model.draft?.observations[.pace]?.value == "new pace"
+↳ Older local correction overwrote the newer same-editor value
+↳ model.draft?.sourceText == "newer draft" && model.draft?.observations[.pace]?.value == "new pace" → false
+↳   model.draft?.sourceText == "newer draft" → false
+↳   model.draft?.observations[.pace]?.value == "new pace" → <not evaluated>
+✘ Test oldEditCannotOverwriteNewerSameEditorCallbackEdit() failed after 0.006 seconds with 2 issues.
+✘ Suite IndependentNeedsEditReentryTests failed after 0.006 seconds with 2 issues.
+✘ Test run with 1 test in 1 suite failed after 0.006 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - CJShellTests (Swift Testing)

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import CJMessageClient
+import CJAPI
 
 /// Trusted composition input, never constructed from view text or a session token.
 /// queryOriginal must use the same recovery/scope/lease and a verified query adapter.
@@ -28,6 +29,21 @@ import CJMessageClient
     }
 }
 
+/// Captured only from the current transport-accepted canonical MESSAGE record.
+/// No public initializer, credentials, or UI-derived message/run identifiers.
+@MainActor public final class AcceptedMessageRunReceipt: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    let receipt: Components.Schemas.MessageReceipt
+    let isCurrent: @MainActor () -> Bool
+    let isStillOwned: @MainActor () -> Bool
+    fileprivate init(receipt: Components.Schemas.MessageReceipt, isCurrent: @escaping @MainActor () -> Bool,
+                     isStillOwned: @escaping @MainActor () -> Bool) {
+        self.receipt = receipt; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
+    }
+    public nonisolated var description: String { "<redacted accepted message receipt>" }
+    public nonisolated var debugDescription: String { description }
+    public nonisolated var customMirror: Mirror { Mirror(self, children: [:]) }
+}
+
 /// Activity only; canonical action phase/bytes/receipt stay in CJMessageClient.ActionRecord.
 public enum MessageHostActivity: Equatable {
     case unavailable, ready, querying, unknown, storageBlocked, invalidated
@@ -45,6 +61,8 @@ public enum MessageHostActivity: Equatable {
     private var projection: LocalRecoveryProjection?
     private var selectedConversationID: String?
     private var selectedMessageID: String?
+    private var runSelectionRevision = UUID()
+    private var runSelectionAllowed = false
     public var visibleProjection: LocalRecoveryProjection? {
         guard bindingIsCurrent, let binding, let projection,
               (try? binding.recovery.validateProjection(projection, scope: binding.scope, lease: binding.lease)) != nil else { return nil }
@@ -82,10 +100,12 @@ public enum MessageHostActivity: Equatable {
             try value.recovery.validateScope(value.scope, lease: value.lease)
             let draft = try value.conversationID.flatMap { try value.recovery.draft(conversationID: $0, lease: value.lease) }
             let restored = try value.messageID.flatMap { try value.recovery.action(messageID: $0, lease: value.lease) }
+            retireRunSelection()
             binding = value
             projection = try value.recovery.localProjection(scope: value.scope, lease: value.lease)
             selectedConversationID = value.conversationID
             selectedMessageID = value.messageID
+            runSelectionAllowed = value.messageID != nil
             if let draft {
                 guard let text = String(data: draft, encoding: .utf8) else { throw RecoveryError.invalidInput }
                 shell.draft = text
@@ -108,7 +128,9 @@ public enum MessageHostActivity: Equatable {
             try binding.recovery.validateProjection(captured, scope: binding.scope, lease: binding.lease)
             guard captured.actions.contains(where: { Data($0.messageID.utf8) == Data(reference.messageID.utf8) }),
                   let action = try binding.recovery.action(messageID: reference.messageID, lease: binding.lease) else { return false }
+            retireRunSelection()
             selectedMessageID = reference.messageID
+            runSelectionAllowed = true
             record = action
             projection = try binding.recovery.localProjection(scope: binding.scope, lease: binding.lease)
             activity = .ready
@@ -124,11 +146,48 @@ public enum MessageHostActivity: Equatable {
             guard captured.drafts.contains(where: { Data($0.conversationID.utf8) == Data(reference.conversationID.utf8) }),
                   let bytes = try binding.recovery.draft(conversationID: reference.conversationID, lease: binding.lease),
                   let text = String(data: bytes, encoding: .utf8) else { return false }
+            retireRunSelection()
             selectedConversationID = reference.conversationID
             shell.draft = text
             storedDraftBytes = bytes
             return true
         } catch { return false }
+    }
+
+    private func retireRunSelection() {
+        runSelectionRevision = UUID(); runSelectionAllowed = false
+        shell.runContainerHost?.retireSelection()
+    }
+    /// Decode the exact typed payload encoded by MessageHTTPClient only after its
+    /// accepted recovery state, original bytes/hash, lease and current selection agree.
+    public func captureAcceptedRunReceipt() -> AcceptedMessageRunReceipt? {
+        let revision = runSelectionRevision
+        guard let originalBinding = binding, runSelectionAllowed, let id = selectedMessageID,
+              bindingIsCurrent, isSameBinding(originalBinding), revision == runSelectionRevision,
+              let record = try? originalBinding.recovery.action(messageID: id, lease: originalBinding.lease),
+              record.phase == .accepted, let bytes = record.receipt,
+              let receipt = try? JSONDecoder().decode(Components.Schemas.MessageReceipt.self, from: bytes),
+              Data(receipt.message_id.utf8) == Data(record.messageID.utf8), receipt.input_sha256 == record.inputSHA256,
+              ownsRunReceipt(record, binding: originalBinding, revision: revision) else { return nil }
+        return AcceptedMessageRunReceipt(receipt: receipt, isCurrent: { [weak self] in
+            self?.ownsRunReceipt(record, binding: originalBinding, revision: revision) == true
+        }, isStillOwned: { [weak self] in
+            self?.ownsRunReceiptWithoutCallbacks(record, binding: originalBinding, revision: revision) == true
+        })
+    }
+    private func ownsRunReceipt(_ original: ActionRecord, binding: AssistantMessageBinding, revision: UUID) -> Bool {
+        guard ownsRunReceiptWithoutCallbacks(original, binding: binding, revision: revision),
+              bindingIsCurrent else { return false }
+        return ownsRunReceiptWithoutCallbacks(original, binding: binding, revision: revision)
+    }
+    /// Canonical in-memory lease/record reads only: safe after the last trusted callback.
+    /// This establishes original ownership, not admission or server authorization.
+    private func ownsRunReceiptWithoutCallbacks(_ original: ActionRecord, binding: AssistantMessageBinding, revision: UUID) -> Bool {
+        guard !shell.messageBindingBlocked, isSameBinding(binding), revision == runSelectionRevision, runSelectionAllowed,
+              selectedMessageID.map({ Data($0.utf8) == Data(original.messageID.utf8) }) == true,
+              (try? binding.recovery.validateScope(binding.scope, lease: binding.lease)) != nil,
+              let current = try? binding.recovery.action(messageID: original.messageID, lease: binding.lease) else { return false }
+        return current == original && current.phase == .accepted
     }
 
     private func isSameBinding(_ original: AssistantMessageBinding) -> Bool {
@@ -158,6 +217,7 @@ public enum MessageHostActivity: Equatable {
 
     public func queryOriginal() {
         guard canQuery, let binding, let messageID = selectedMessageID, let query = binding.queryOriginal else { return }
+        retireRunSelection()
         activity = .querying
         task = Task { [weak self] in
             do {
@@ -166,6 +226,7 @@ public enum MessageHostActivity: Equatable {
                 guard self.bindingIsCurrent else { self.blockStorage(for: binding); return }
                 guard self.isSameBinding(binding) else { return }
                 self.record = try binding.recovery.action(messageID: messageID, lease: binding.lease)
+                self.runSelectionAllowed = true
                 self.projection = try binding.recovery.localProjection(scope: binding.scope, lease: binding.lease)
                 self.activity = .ready
                 self.task = nil
@@ -186,6 +247,7 @@ public enum MessageHostActivity: Equatable {
         let previous = binding
         binding = nil; record = nil; projection = nil; storedDraftBytes = nil
         selectedConversationID = nil; selectedMessageID = nil
+        retireRunSelection()
         task?.cancel(); task = nil
         activity = nextActivity
         // Detach before invoking an external callback; never mutate a replacement afterward.

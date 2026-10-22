@@ -1,0 +1,7 @@
+{
+  "command": "xcodebuild -scheme CJNeedsClient -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/ios CODE_SIGNING_ALLOWED=NO build",
+  "result": "BUILD SUCCEEDED",
+  "archive": "ios-full.txt.xz",
+  "original_bytes": 216722,
+  "uncompressed_sha256": "ac1ca01ba72ea78e59b17a1c5c7a73a5f1bb81d5031d63f641928c78f8e3e42e"
+}

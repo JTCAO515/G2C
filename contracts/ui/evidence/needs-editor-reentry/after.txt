@@ -1,0 +1,34 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 13] CJShell
+[4 / 15] CJShell
+[10 / 21] CJShell
+[14 / 24] CJShell
+[18 / 23] CJShellTests-product
+[21 / 26] CJShellTests-product
+[25 / 28] CJShellTests-product
+[27 / 31] CJShellTests-product
+Build complete! (4.58秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentNeedsEditReentryTests started.
+◇ Suite NeedsContainerHostTests started.
+◇ Test oldEditCannotOverwriteNewerSameEditorCallbackEdit() started.
+◇ Test partialEditorPreservesUnknownDecimalAndOriginalRevision() started.
+◇ Test callbackReentryAndRetiredSessionDoNotCreateWork() started.
+◇ Test queuedWorkAndEditorCannotRetargetNewSelection() started.
+◇ Test localEditRevisionTracksOnlyAcceptedWrites(mode:) started.
+◇ Test case passing 1 argument mode → "accepted-aba" to localEditRevisionTracksOnlyAcceptedWrites(mode:) started.
+◇ Test case passing 1 argument mode → "rejected-editor" to localEditRevisionTracksOnlyAcceptedWrites(mode:) started.
+◇ Test case passing 1 argument mode → "sequential" to localEditRevisionTracksOnlyAcceptedWrites(mode:) started.
+✔ Test callbackReentryAndRetiredSessionDoNotCreateWork() passed after 0.009 seconds.
+✔ Test oldEditCannotOverwriteNewerSameEditorCallbackEdit() passed after 0.010 seconds.
+✔ Suite IndependentNeedsEditReentryTests passed after 0.010 seconds.
+✔ Test localEditRevisionTracksOnlyAcceptedWrites(mode:) with 3 test cases passed after 0.011 seconds.
+✔ Test queuedWorkAndEditorCannotRetargetNewSelection() passed after 0.012 seconds.
+✔ Test partialEditorPreservesUnknownDecimalAndOriginalRevision() passed after 0.012 seconds.
+✔ Suite NeedsContainerHostTests passed after 0.012 seconds.
+✔ Test run with 5 tests in 2 suites passed after 0.013 seconds.

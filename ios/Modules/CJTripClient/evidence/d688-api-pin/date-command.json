@@ -1,0 +1,23 @@
+[
+  "xcrun",
+  "swiftc",
+  "-swift-version",
+  "6",
+  "-parse-as-library",
+  "-target",
+  "arm64-apple-macos27.0",
+  "-I",
+  "/tmp/cj015-trip-client-build/out/Products/Debug",
+  "-module-cache-path",
+  "/tmp/cj015-d688-date-cache",
+  "ios/Modules/CJTripClient/evidence/d688-api-pin/DateConfigurationCheck.swift",
+  "/tmp/cj015-trip-client-build/out/Products/Debug/CJAPI.o",
+  "/tmp/cj015-trip-client-build/out/Products/Debug/OpenAPIRuntime.o",
+  "/tmp/cj015-trip-client-build/out/Products/Debug/OpenAPIURLSession.o",
+  "/tmp/cj015-trip-client-build/out/Products/Debug/HTTPTypes.o",
+  "/tmp/cj015-trip-client-build/out/Products/Debug/DequeModule.o",
+  "/tmp/cj015-trip-client-build/out/Products/Debug/InternalCollectionsUtilities.o",
+  "/tmp/cj015-trip-client-build/out/Products/Debug/SpanPreview.o",
+  "-o",
+  "/tmp/cj015-d688-date-check"
+]

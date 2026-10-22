@@ -1,0 +1,106 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 10] CJShell
+[4 / 12] CJShell
+[11 / 12] CJShellTests-product
+Build complete! (1.81秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentHostReentryTests started.
+◇ Suite RunContainerHostTests started.
+◇ Suite IdentityCallbackReentryTests started.
+◇ Suite LocalRecoveryListHostTests started.
+◇ Test canonicalMessageReceiptFeedsOnlyOriginalRead(status:) started.
+◇ Test oldDraftFailureMustNotInvalidateNewAccountBinding(storageThrows:) started.
+◇ Suite ShellStateTests started.
+◇ Suite AssistantMessageHostTests started.
+◇ Test failedOldClientLoadLeavesReentrantBHostUntouched() started.
+◇ Test oldQueryFailureCannotInvalidateNewBinding() started.
+◇ Test oldBindReadAdmissionCannotOverrideReentrantNewBinding() started.
+◇ Test queuedASelectionAndReceiptRetirementCannotReadB() started.
+◇ Test normalInvalidationClearsBeforeResourceCallback() started.
+◇ Test outerCleanupCannotOverwriteCallbackInstalledB() started.
+◇ Test receiptPayloadMustBeCanonicalAcceptedAndMatchOriginal(mode:) started.
+◇ Test backgroundRetiresOldWorkAndRequiresExplicitReselection() started.
+◇ Test selectionCallbackCannotAdoptNewMessageUnderOldCapture() started.
+◇ Test listsReferencesWithoutManualIDOrBodyRead() started.
+◇ Test failedReadDoesNotPublishOldBodyAsFallbackOrAppend() started.
+◇ Test defaultsAndUnacceptedRecordsCannotCreateSource() started.
+◇ Test case passing 1 argument status → "queued" to canonicalMessageReceiptFeedsOnlyOriginalRead(status:) started.
+◇ Test case passing 1 argument status → "running" to canonicalMessageReceiptFeedsOnlyOriginalRead(status:) started.
+◇ Test canonicalPrepareReentryDuringSelectIsNotClearedByOldHostReturn() started.
+◇ Test explicitDraftSelectionAndLanguageKeepExactContent() started.
+◇ Test case passing 1 argument storageThrows → true to oldDraftFailureMustNotInvalidateNewAccountBinding(storageThrows:) started.
+◇ Test oldProjectionCannotLoadAfterIdentityChange() started.
+◇ Test case passing 1 argument status → "failed" to canonicalMessageReceiptFeedsOnlyOriginalRead(status:) started.
+◇ Test case passing 1 argument storageThrows → false to oldDraftFailureMustNotInvalidateNewAccountBinding(storageThrows:) started.
+◇ Test case passing 1 argument status → "cancelled" to canonicalMessageReceiptFeedsOnlyOriginalRead(status:) started.
+◇ Test case passing 1 argument status → "context_invalid" to canonicalMessageReceiptFeedsOnlyOriginalRead(status:) started.
+◇ Test switchingSelectionWhileQueryWaitsIsRejected() started.
+◇ Test case passing 1 argument status → "unknown" to canonicalMessageReceiptFeedsOnlyOriginalRead(status:) started.
+◇ Test selectedExactUTF8IDIsTheOnlyQueriedID() started.
+◇ Test case passing 1 argument status → "completed" to canonicalMessageReceiptFeedsOnlyOriginalRead(status:) started.
+◇ Test case passing 1 argument mode → "hash" to receiptPayloadMustBeCanonicalAcceptedAndMatchOriginal(mode:) started.
+◇ Test lateAResultCannotOverwriteSelectedB() started.
+◇ Test case passing 1 argument mode → "malformed" to receiptPayloadMustBeCanonicalAcceptedAndMatchOriginal(mode:) started.
+◇ Test unknownWireValuesAreRejected() started.
+◇ Test unknownAndReceiptAreDistinctWithoutAssistantReply() started.
+◇ Test accountAndSessionRetirementFailClosedWithoutMutatingNewContext() started.
+◇ Test tabSwitchPreservesDraftAndMemoryPath() started.
+◇ Test queryNullRemainsNotObservedAndCannotSend() started.
+◇ Test case passing 1 argument mode → "notObserved" to receiptPayloadMustBeCanonicalAcceptedAndMatchOriginal(mode:) started.
+◇ Test identityInvalidationClearsAllPrivatePresentationAndRejectsLateWork() started.
+◇ Test reopenedStagedRecordDisplaysQueryOnlyWithIdenticalBytes() started.
+◇ Test wrongScopeAndSameGenerationRebindAreRejected() started.
+◇ Test cleanupFailureImmediatelyFencesClientAndLateQuery() started.
+◇ Test defaultHasNoSendOrStorage() started.
+◇ Test unavailableSendNeverClaimsSuccess() started.
+◇ Test languagePreservesNavigationDraftAndReferences() started.
+◇ Test storageUnknownNeverKeepsAVisibleReceiptOrSavedDraft() started.
+◇ Test invalidPreferenceIsVisibleAndNotSilentlyRewritten() started.
+◇ Test stagedAndLanguagePreserveOriginalBytesIDAndDraft() started.
+✔ Test defaultsAndUnacceptedRecordsCannotCreateSource() passed after 0.019 seconds.
+✔ Test selectedExactUTF8IDIsTheOnlyQueriedID() passed after 0.020 seconds.
+✔ Test oldDraftFailureMustNotInvalidateNewAccountBinding(storageThrows:) with 2 test cases passed after 0.027 seconds.
+✔ Test normalInvalidationClearsBeforeResourceCallback() passed after 0.027 seconds.
+✔ Test failedOldClientLoadLeavesReentrantBHostUntouched() passed after 0.028 seconds.
+✔ Test oldBindReadAdmissionCannotOverrideReentrantNewBinding() passed after 0.028 seconds.
+✔ Test listsReferencesWithoutManualIDOrBodyRead() passed after 0.028 seconds.
+✔ Test oldProjectionCannotLoadAfterIdentityChange() passed after 0.028 seconds.
+✔ Test receiptPayloadMustBeCanonicalAcceptedAndMatchOriginal(mode:) with 3 test cases passed after 0.028 seconds.
+✔ Test explicitDraftSelectionAndLanguageKeepExactContent() passed after 0.028 seconds.
+✔ Test unknownWireValuesAreRejected() passed after 0.028 seconds.
+✔ Test defaultHasNoSendOrStorage() passed after 0.028 seconds.
+✔ Test tabSwitchPreservesDraftAndMemoryPath() passed after 0.028 seconds.
+✔ Test unavailableSendNeverClaimsSuccess() passed after 0.028 seconds.
+✔ Test languagePreservesNavigationDraftAndReferences() passed after 0.028 seconds.
+✔ Test reopenedStagedRecordDisplaysQueryOnlyWithIdenticalBytes() passed after 0.029 seconds.
+✔ Test wrongScopeAndSameGenerationRebindAreRejected() passed after 0.029 seconds.
+✔ Test invalidPreferenceIsVisibleAndNotSilentlyRewritten() passed after 0.029 seconds.
+✔ Test storageUnknownNeverKeepsAVisibleReceiptOrSavedDraft() passed after 0.029 seconds.
+✔ Test outerCleanupCannotOverwriteCallbackInstalledB() passed after 0.029 seconds.
+✔ Test queryNullRemainsNotObservedAndCannotSend() passed after 0.029 seconds.
+✔ Test identityInvalidationClearsAllPrivatePresentationAndRejectsLateWork() passed after 0.029 seconds.
+✔ Suite ShellStateTests passed after 0.029 seconds.
+✔ Test stagedAndLanguagePreserveOriginalBytesIDAndDraft() passed after 0.028 seconds.
+✔ Suite IdentityCallbackReentryTests passed after 0.029 seconds.
+✔ Test unknownAndReceiptAreDistinctWithoutAssistantReply() passed after 0.032 seconds.
+✔ Test backgroundRetiresOldWorkAndRequiresExplicitReselection() passed after 0.036 seconds.
+✔ Test canonicalPrepareReentryDuringSelectIsNotClearedByOldHostReturn() passed after 0.036 seconds.
+✔ Test canonicalMessageReceiptFeedsOnlyOriginalRead(status:) with 7 test cases passed after 0.037 seconds.
+✔ Test queuedASelectionAndReceiptRetirementCannotReadB() passed after 0.037 seconds.
+✔ Test selectionCallbackCannotAdoptNewMessageUnderOldCapture() passed after 0.037 seconds.
+✔ Test switchingSelectionWhileQueryWaitsIsRejected() passed after 0.037 seconds.
+✔ Suite LocalRecoveryListHostTests passed after 0.037 seconds.
+✔ Test cleanupFailureImmediatelyFencesClientAndLateQuery() passed after 0.037 seconds.
+✔ Suite AssistantMessageHostTests passed after 0.037 seconds.
+✔ Test accountAndSessionRetirementFailClosedWithoutMutatingNewContext() passed after 0.038 seconds.
+✔ Test oldQueryFailureCannotInvalidateNewBinding() passed after 0.038 seconds.
+✔ Suite IndependentHostReentryTests passed after 0.038 seconds.
+✔ Test failedReadDoesNotPublishOldBodyAsFallbackOrAppend() passed after 0.038 seconds.
+✔ Test lateAResultCannotOverwriteSelectedB() passed after 0.038 seconds.
+✔ Suite RunContainerHostTests passed after 0.038 seconds.
+✔ Test run with 35 tests in 6 suites passed after 0.039 seconds.

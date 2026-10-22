@@ -46,6 +46,7 @@ public enum MemoryRoute: Hashable, Sendable {
     case group(MemoryGroup)
     case account, language, help, privacy, support
     case memoryItems, memoryDetail, manualMemory
+    case feedback(FeedbackContainerEntry?)
 }
 
 /// Retained opaquely during UI navigation; never an authority or an ID generator.
@@ -92,11 +93,17 @@ public final class ShellState {
     public private(set) var draftRevision = UUID()
     public var draft = "" { didSet { draftRevision = UUID() } }
     var messageBindingBlocked = false
+    @ObservationIgnored weak var runContainerHost: RunContainerHost?
+    @ObservationIgnored weak var answerFeedbackHost: FeedbackContainerHost?
+    @ObservationIgnored weak var generalFeedbackHost: FeedbackContainerHost?
+    @ObservationIgnored weak var needsContainerHost: NeedsContainerHost?
     @ObservationIgnored weak var tripContainerHost: TripContainerHost?
     @ObservationIgnored weak var memoryContainerHost: MemoryContainerHost?
     @ObservationIgnored weak var serverHistoryHost: ServerHistoryHost?
     @ObservationIgnored weak var messageHost: AssistantMessageHost?
     public private(set) var generation = ShellGeneration()
+    /// Local displayed-answer revision only; the trusted root supplies actual message/run references.
+    public private(set) var assistantContentRevision = UUID()
     public private(set) var presentation = ShellPresentation()
     public var context: ShellContext { presentation.context }
     public var assistantBody: String? { presentation.assistantBody }
@@ -130,6 +137,14 @@ public final class ShellState {
         contextReset()
         // Publish the fence and clear private UI before a resource callback can reenter.
         // No outer-lifetime mutation is allowed after this callback.
+        runContainerHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
+        answerFeedbackHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
+        generalFeedbackHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
+        needsContainerHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
         tripContainerHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
         memoryContainerHost?.invalidate()
@@ -142,6 +157,7 @@ public final class ShellState {
 
     private func contextReset() {
         memoryPath = []; tripPath = []
+        assistantContentRevision = UUID()
         presentation = ShellPresentation()
     }
 
@@ -150,6 +166,11 @@ public final class ShellState {
     @discardableResult
     public func apply(_ value: ShellPresentation, for capturedGeneration: ShellGeneration) -> Bool {
         guard generation == capturedGeneration else { return false }
+        // Every new displayed presentation retires the old answer-feedback association.
+        // General feedback remains independent. The root may bind the new actual references afterward.
+        answerFeedbackHost?.invalidate()
+        guard generation == capturedGeneration else { return false }
+        assistantContentRevision = UUID()
         presentation = value
         return true
     }

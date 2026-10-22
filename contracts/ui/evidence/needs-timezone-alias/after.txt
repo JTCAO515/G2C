@@ -1,0 +1,27 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[1 / 5] CJShell-product
+[2 / 12] CJNeedsClient
+[4 / 14] CJNeedsClient
+[13 / 23] CJNeedsClient
+[13 / 23] CJShell
+[15 / 25] CJNeedsClient
+[17 / 25] CJShell
+[22 / 27] CJShellTests-product
+[40 / 45] CJShellTests-product
+[42 / 45] CJShellTests-product
+[44 / 48] CJShellTests-product
+Build complete! (4.95秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite NeedsContainerHostTests started.
+◇ Test legalTimezoneAliasSurvivesHostReadEditAndRevision(alias:) started.
+◇ Test case passing 1 argument alias → "US/Eastern" to legalTimezoneAliasSurvivesHostReadEditAndRevision(alias:) started.
+◇ Test case passing 1 argument alias → "PRC" to legalTimezoneAliasSurvivesHostReadEditAndRevision(alias:) started.
+◇ Test case passing 1 argument alias → "Etc/UTC" to legalTimezoneAliasSurvivesHostReadEditAndRevision(alias:) started.
+✔ Test legalTimezoneAliasSurvivesHostReadEditAndRevision(alias:) with 3 test cases passed after 0.012 seconds.
+✔ Suite NeedsContainerHostTests passed after 0.012 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.012 seconds.

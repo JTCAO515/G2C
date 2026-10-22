@@ -1,0 +1,123 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 13] CJNeedsClientTests-product
+[6 / 17] CJNeedsClientTests-product
+[9 / 15] CJNeedsClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/Tests/CJNeedsClientTests/BoundaryTests.swift:109:16: warning: 'mutate' mutated after capture by sendable closure
+ 91 |     }
+ 92 |     @Test func ciphertextChangedByLastCallbackCannotSettle() async throws {
+ 93 |         let h = try Harness(); defer { h.clean() }; let a = try original(); var keys = 0; var mutate = false; var changed = false
+    |                                                                                               `- note: variable defined here
+ 94 |         let store = try h.store(key: { keys += 1; return h.key }); try store.append(a)
+ 95 |         let t = Interceptor { _, _, op in
+    :
+ 99 |         // The final settlement key read follows: append1, pending2, query transport3..5,
+100 |         // revision transport6..8, settlement9. Last binding callback then corrupts original.
+101 |         let client = try h.client(t, store: store, bindingCallback: {
+    |                                                                     `- note: variable captured by sendable closure
+102 |             if mutate && keys == 9 && !changed {
+    |                `- note: capturing use
+103 |                 changed = true
+104 |                 let file = try! FileManager.default.contentsOfDirectory(at: h.root, includingPropertiesForKeys: nil)[0]
+    :
+107 |             return h.binding
+108 |         })
+109 |         mutate = true
+    |                `- warning: 'mutate' mutated after capture by sendable closure
+110 |         await #expect(throws: (any Error).self) { try await client.perform(client.prepareQuery(actionID: a.actionID, binding: h.binding)) }
+111 |         #expect(changed); #expect(await t.calls.count == 2)
+[11 / 15] CJNeedsClientTests-product
+Build complete! (1.69秒)
+Test Suite 'All tests' started at 2026-10-22 18:03:04.395.
+Test Suite 'All tests' passed at 2026-10-22 18:03:04.396.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ContractTests started.
+◇ Suite ClientTests started.
+◇ Suite BoundaryTests started.
+◇ Suite LocalTimeTests started.
+◇ Test sourceBytesAreNotUnicodeNormalized() started.
+◇ Test decimalAndBudgetMeaningAreNeverCalculated() started.
+◇ Test unknownNeverAllowsNewAction(mode:) started.
+◇ Test queuedSelectionAndDuplicateWorkCannotDispatch() started.
+◇ Test bindingCallbackReentryCannotAdoptNewWork() started.
+◇ Test fixedItemsCompanionsConditionsRemainExplicit() started.
+◇ Test absentAndFourStatesUseOfficialGeneratedTypes() started.
+◇ Test patchOnlyIncludesExplicitlyChangedField() started.
+◇ Test lostACKReopenQueriesOriginalThenHistoricalRevision() started.
+◇ Test publicConstructionCannotWrite() started.
+◇ Test emptyPatchAndInvalidIDsRejectWithoutUUIDAssumption() started.
+◇ Test invalidLocalValuesRejectWithoutDateConversion() started.
+◇ Test receiptRevisionMismatchCannotSettle(mode:) started.
+◇ Test explicitEmptyCollectionIsDifferentFromAbsent() started.
+◇ Test actionIDsHaveOneDispatchEvenAfterConfirmed() started.
+◇ Test deviceTimezoneDoesNotChangeLocalDSTOrDecimalBytes() started.
+◇ Test malformedGeneratedObservationsReject() started.
+◇ Test cancellationSettlesLoadingWithoutResend(write:) started.
+◇ Test latestDetailNeverReconcilesOriginal() started.
+◇ Test conflictPreservesDraftAndOriginalVersionAfterLatestRead() started.
+◇ Test actualOfficialClientUsesFourOperationsAndExactBytes() started.
+◇ Test queuedOriginalActionCannotBecomeAdjacentNewAction() started.
+◇ Test pendingNestedLoadFailureDoesNotOverwriteNewResult() started.
+◇ Test encryptedRecordsRejectWrongKeyPurposeAccountAndCorruption() started.
+◇ Test accountSwitchWhileRequestSuspendedRejectsLateResult() started.
+◇ Test case passing 1 argument mode → "query-null" to unknownNeverAllowsNewAction(mode:) started.
+◇ Test case passing 1 argument mode → "revision-null" to unknownNeverAllowsNewAction(mode:) started.
+◇ Test keyCallbackReentryCannotPersistOldAction(throwsAfter:) started.
+◇ Test case passing 1 argument mode → "revision-error" to unknownNeverAllowsNewAction(mode:) started.
+◇ Test case passing 1 argument mode → "error" to unknownNeverAllowsNewAction(mode:) started.
+◇ Test lastBindingCallbackReplacesDirectoryOrCiphertextBeforeOutflow(fileOnly:) started.
+◇ Test case passing 1 argument mode → "invalid-oneOf" to unknownNeverAllowsNewAction(mode:) started.
+◇ Test case passing 1 argument mode → "action" to receiptRevisionMismatchCannotSettle(mode:) started.
+◇ Test case passing 1 argument mode → "version" to receiptRevisionMismatchCannotSettle(mode:) started.
+◇ Test case passing 1 argument mode → "whitespace" to receiptRevisionMismatchCannotSettle(mode:) started.
+◇ Test case passing 1 argument mode → "revisionID" to receiptRevisionMismatchCannotSettle(mode:) started.
+◇ Test case passing 1 argument write → false to cancellationSettlesLoadingWithoutResend(write:) started.
+◇ Test case passing 1 argument write → true to cancellationSettlesLoadingWithoutResend(write:) started.
+◇ Test credentialReentryKeepsNewSelection(throwsAfter:) started.
+◇ Test case passing 1 argument mode → "needs" to receiptRevisionMismatchCannotSettle(mode:) started.
+◇ Test case passing 1 argument mode → "revisionBody" to receiptRevisionMismatchCannotSettle(mode:) started.
+◇ Test case passing 1 argument throwsAfter → false to keyCallbackReentryCannotPersistOldAction(throwsAfter:) started.
+◇ Test case passing 1 argument fileOnly → false to lastBindingCallbackReplacesDirectoryOrCiphertextBeforeOutflow(fileOnly:) started.
+◇ Test case passing 1 argument fileOnly → true to lastBindingCallbackReplacesDirectoryOrCiphertextBeforeOutflow(fileOnly:) started.
+◇ Test case passing 1 argument throwsAfter → true to keyCallbackReentryCannotPersistOldAction(throwsAfter:) started.
+◇ Test case passing 1 argument throwsAfter → false to credentialReentryKeepsNewSelection(throwsAfter:) started.
+◇ Test case passing 1 argument mode → "unicode" to receiptRevisionMismatchCannotSettle(mode:) started.
+◇ Test case passing 1 argument throwsAfter → true to credentialReentryKeepsNewSelection(throwsAfter:) started.
+◇ Test ciphertextChangedByLastCallbackCannotSettle() started.
+✔ Test invalidLocalValuesRejectWithoutDateConversion() passed after 0.001 seconds.
+✔ Test absentAndFourStatesUseOfficialGeneratedTypes() passed after 0.001 seconds.
+✔ Test patchOnlyIncludesExplicitlyChangedField() passed after 0.001 seconds.
+✔ Test explicitEmptyCollectionIsDifferentFromAbsent() passed after 0.001 seconds.
+✔ Test emptyPatchAndInvalidIDsRejectWithoutUUIDAssumption() passed after 0.001 seconds.
+✔ Test sourceBytesAreNotUnicodeNormalized() passed after 0.001 seconds.
+✔ Test fixedItemsCompanionsConditionsRemainExplicit() passed after 0.001 seconds.
+✔ Test decimalAndBudgetMeaningAreNeverCalculated() passed after 0.002 seconds.
+✔ Test malformedGeneratedObservationsReject() passed after 0.003 seconds.
+✔ Suite ContractTests passed after 0.004 seconds.
+✔ Test deviceTimezoneDoesNotChangeLocalDSTOrDecimalBytes() passed after 0.004 seconds.
+✔ Suite LocalTimeTests passed after 0.004 seconds.
+✔ Test bindingCallbackReentryCannotAdoptNewWork() passed after 0.032 seconds.
+✔ Test keyCallbackReentryCannotPersistOldAction(throwsAfter:) with 2 test cases passed after 0.041 seconds.
+✔ Test credentialReentryKeepsNewSelection(throwsAfter:) with 2 test cases passed after 0.041 seconds.
+✔ Test publicConstructionCannotWrite() passed after 0.041 seconds.
+✔ Test pendingNestedLoadFailureDoesNotOverwriteNewResult() passed after 0.045 seconds.
+✔ Test encryptedRecordsRejectWrongKeyPurposeAccountAndCorruption() passed after 0.046 seconds.
+✔ Test lastBindingCallbackReplacesDirectoryOrCiphertextBeforeOutflow(fileOnly:) with 2 test cases passed after 0.056 seconds.
+✔ Test latestDetailNeverReconcilesOriginal() passed after 0.063 seconds.
+✔ Test accountSwitchWhileRequestSuspendedRejectsLateResult() passed after 0.064 seconds.
+✔ Test cancellationSettlesLoadingWithoutResend(write:) with 2 test cases passed after 0.066 seconds.
+✔ Test queuedSelectionAndDuplicateWorkCannotDispatch() passed after 0.067 seconds.
+✔ Test conflictPreservesDraftAndOriginalVersionAfterLatestRead() passed after 0.073 seconds.
+✔ Test unknownNeverAllowsNewAction(mode:) with 5 test cases passed after 0.074 seconds.
+✔ Test actionIDsHaveOneDispatchEvenAfterConfirmed() passed after 0.074 seconds.
+✔ Test receiptRevisionMismatchCannotSettle(mode:) with 7 test cases passed after 0.075 seconds.
+✔ Test queuedOriginalActionCannotBecomeAdjacentNewAction() passed after 0.075 seconds.
+✔ Test ciphertextChangedByLastCallbackCannotSettle() passed after 0.075 seconds.
+✔ Suite BoundaryTests passed after 0.075 seconds.
+✔ Test lostACKReopenQueriesOriginalThenHistoricalRevision() passed after 0.076 seconds.
+✔ Test actualOfficialClientUsesFourOperationsAndExactBytes() passed after 0.080 seconds.
+✔ Suite ClientTests passed after 0.081 seconds.
+✔ Test run with 29 tests in 4 suites passed after 0.081 seconds.

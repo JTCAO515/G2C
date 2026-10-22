@@ -5,21 +5,31 @@ struct AssistantShell: View {
     @Bindable var state: ShellState
     let messageHost: AssistantMessageHost
     let serverHistoryHost: ServerHistoryHost
+    let needsHost: NeedsContainerHost
+    let feedbackHost: FeedbackContainerHost
+    let runHost: RunContainerHost
     let bodyText: String?
-    private enum Panel: String, Identifiable { case local, server; var id: String { rawValue } }
+    private enum Panel: String, Identifiable { case local, server, needs, feedback; var id: String { rawValue } }
     @State private var panel: Panel?
+    @State private var feedbackEntry: FeedbackContainerEntry?
     @FocusState private var draftFocused: Bool
     @ScaledMetric(relativeTo: .body) private var headerClearance = 112.0
 
     var body: some View {
+        let answerEntry = feedbackHost.captureEntry()
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Keeps meaningful content reachable below the separate floating controls.
                 Color.clear.frame(height: draftFocused ? 80 : headerClearance).accessibilityHidden(true)
-                if let bodyText {
+                if let bodyText, !runHost.isShowingOriginal {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                    Button(state.language.text("Report a problem with this answer", "反馈此回答的问题")) {
+                        feedbackEntry = answerEntry; panel = .feedback
+                    }
                 }
                 Button(state.language.text("Server history and drafts", "服务器历史与草稿")) { panel = .server }
+                Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }
+                RunContainerView(host: runHost, messages: messageHost, language: state.language)
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if !messageHost.isConfigured {
                     ShellStatusView(state: state.assistantState, language: state.language)
@@ -39,12 +49,16 @@ struct AssistantShell: View {
         }
         .onChange(of: state.generation) { _, _ in
             draftFocused = false
-            panel = nil
+            panel = nil; feedbackEntry = nil
         }
         .sheet(item: $panel) { selectedPanel in
             NavigationStack {
                 Group {
-                    if selectedPanel == .server {
+                    if selectedPanel == .feedback {
+                        FeedbackContainerView(host: feedbackHost, entry: feedbackEntry, language: state.language)
+                    } else if selectedPanel == .needs {
+                        NeedsContainerView(host: needsHost, language: state.language).id(needsHost.viewIdentity)
+                    } else if selectedPanel == .server {
                         ServerHistoryView(host: serverHistoryHost, language: state.language)
                     } else {
                         LocalRecoveryList(host: messageHost, language: state.language)

@@ -1,0 +1,16 @@
+{
+  "Sources/CJFeedbackClient/FeedbackClient.swift": "ca5c7c6b429b001d64d4981f22bcd5178bd15cd494a3ec7f61bee441819d5c86",
+  "Sources/CJFeedbackClient/FeedbackPendingStore.swift": "65976c1521744587bcfa07bbff1237083df7711170fadcec888d7c015c575542",
+  "Sources/CJFeedbackClient/FeedbackPresentation.swift": "bf0e7629ea7513ebff40b96a4ecefdd5699454bb7907278c68fee11ba7b3119b",
+  "Sources/CJFeedbackClient/FeedbackTransport.swift": "7a5817739bbbc2aaaa15dc92dc1e44608fc8d5e459a6498ee0e2e5716be2e9a2",
+  "Sources/CJFeedbackClient/FeedbackTypes.swift": "f17df7055af43aace46ad43820c215309da42729911e425608efa5e5bb90d734",
+  "Sources/CJFeedbackClient/FeedbackView.swift": "4a0433c90f4816e17101633fd662e3548dbc21573205eb5a9f9268a85d718dc1",
+  "Sources/CJFeedbackClient/StrictFeedbackJSON.swift": "77b81b05dbb4a3e41174dd8a89ba87d08b2a81033e1078ab0ea8cf6ad5ece70d",
+  "Tests/CJFeedbackClientTests/FeedbackClientTests.swift": "2e2fd842844e777d0ceb6c40f4bcc50c234aa179f93c5c5910845067f0fa6f80",
+  "Tests/CJFeedbackClientTests/LifecycleTests.swift": "1e82a01be3068f7ead79f358a8e8cdc50a5d524ddf7654d08d3755598ba33427",
+  "Tests/CJFeedbackClientTests/PresentationTests.swift": "4d0f7128792cfbb8a70f2e4237408de889981b30ed25659795fe048fe74e7eeb",
+  "Tests/CJFeedbackClientTests/StoreAndGateTests.swift": "eec2b8424c40065e9ffd2e85c66fedb283d6c9652d09bad6497070f59a096aa4",
+  "Tests/CJFeedbackClientTests/Support.swift": "2c769d9ff02af42f065e6155243723062d06dfea7192f5caa31b1ec76a66415e",
+  "Package.swift": "163cc481017b653fc460bd7c0286cffca29cab198a8abdddaed7ab79b084a13b",
+  "Package.resolved": "ac553d48a91768d3a170f87909966b3455a69a2cb2028ecb6da05b210fa63952"
+}
