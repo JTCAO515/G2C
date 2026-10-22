@@ -1,0 +1,7 @@
+{
+  "ios/Modules/CJShell/Package.swift": "72dcf2b1ede5ae71539f2dec600c244ef6a5eb3b03369e68d40df49c140d8ad7",
+  "ios/Modules/CJShell/Sources/CJShell/AssistantShell.swift": "c45d53df2518afd4606fd1b479c45745f19b9ce3757d8469be262491f3e92206",
+  "ios/Modules/CJShell/Sources/CJShell/BrandAvatar.swift": "fe0ff9337457be11114e1bc9f01b1bce50d814f8acc016817f1d1d4cd06e2aa8",
+  "ios/Modules/CJShell/Sources/CJShell/Resources/BrandAvatar.png": "dc2ca11638328f658669c21d5ff5d24010ee70f5f704f46354b09334e1560f4d",
+  "ios/Modules/CJShell/scripts/build-demo.sh": "a2373dd3c741b2bccd411cbd15c751c5d44c7f4610d9ee1fc6b4ca5b1cf84d28"
+}

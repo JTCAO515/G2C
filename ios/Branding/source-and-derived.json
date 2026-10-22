@@ -1,0 +1,82 @@
+[
+  {
+    "path": "digital-assets/ios-avatar/2026-10-21/README.md",
+    "bytes": 2254,
+    "sha256": "d73d21dcc0df50dd692bee5c4bbf108ec1399bec00e3b324e55ad55b262aae40",
+    "three_git_versions_equal": true
+  },
+  {
+    "path": "digital-assets/ios-avatar/2026-10-21/manifest.json",
+    "bytes": 3508,
+    "sha256": "4bf364b4d04ad498fe7eec02608bdd9f312077c40cf14b6568f1952c334a1045",
+    "three_git_versions_equal": true
+  },
+  {
+    "path": "digital-assets/ios-avatar/2026-10-21/roamlion-symbol-original.png",
+    "bytes": 4183637,
+    "sha256": "cc1460d9ae4e46424289b5fd18c79d37361c2f536686090ae5774988b05670b1",
+    "three_git_versions_equal": true
+  },
+  {
+    "path": "digital-assets/ios-avatar/2026-10-21/roamlion-symbol-original.svg",
+    "bytes": 5819001,
+    "sha256": "692150e8434924c9b82927307fb244a1f162ced70961fb886a5dd2a3cdc277af",
+    "three_git_versions_equal": true
+  },
+  {
+    "path": "ios/Branding/Assets/AppIcon1024.png",
+    "bytes": 1110719,
+    "sha256": "289f9f8375583d7100017373881dbfefc03a2685a7f2809f13426d0a091256b2",
+    "width": 1024,
+    "height": 1024,
+    "png_color_type": 2
+  },
+  {
+    "path": "ios/Branding/Assets/AppIcon60x60@2x.png",
+    "bytes": 21039,
+    "sha256": "3a08a0c171d32a5a9d7122d2dc610697ea9a240256729a86824fe121668f668b",
+    "width": 120,
+    "height": 120,
+    "png_color_type": 2
+  },
+  {
+    "path": "ios/Branding/Assets/AppIcon60x60@3x.png",
+    "bytes": 44057,
+    "sha256": "9cf5550746fac5e213a740d990b20d722491bedead0c0c643945a7dabcc5da4a",
+    "width": 180,
+    "height": 180,
+    "png_color_type": 2
+  },
+  {
+    "path": "ios/Branding/Assets/AppIcon76x76.png",
+    "bytes": 9236,
+    "sha256": "def6d7bb74f9424842441921d5339d14b196ed0798e697e6320c360dbc2fab1d",
+    "width": 76,
+    "height": 76,
+    "png_color_type": 2
+  },
+  {
+    "path": "ios/Branding/Assets/AppIcon76x76@2x.png",
+    "bytes": 32342,
+    "sha256": "01512105e1e887dce97b82eddf25be196d3101e48c14771c3b76746b0204cc46",
+    "width": 152,
+    "height": 152,
+    "png_color_type": 2
+  },
+  {
+    "path": "ios/Branding/Assets/AppIcon83.5x83.5@2x.png",
+    "bytes": 38359,
+    "sha256": "87121a85c8d28e53fa10a904210805b8cb1e61e0fce4547446b6524024fe8dcb",
+    "width": 167,
+    "height": 167,
+    "png_color_type": 2
+  },
+  {
+    "path": "ios/Branding/Assets/BrandAvatar.png",
+    "bytes": 59376,
+    "sha256": "dc2ca11638328f658669c21d5ff5d24010ee70f5f704f46354b09334e1560f4d",
+    "width": 192,
+    "height": 192,
+    "png_color_type": 6
+  }
+]
