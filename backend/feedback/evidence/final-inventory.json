@@ -1,0 +1,18 @@
+{
+  "base": "8f2ff45519d1d09f178f1fa766b6829d81bda77a",
+  "data": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-7rzb5yv4/data",
+  "socket": "/tmp/cj023-2c0adq59",
+  "port": 56423,
+  "bootstrap_role": "cj023_19f1c9c316",
+  "runtime_role": "cj023_19f1c9c316_runtime",
+  "passfile": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-7rzb5yv4/empty.pgpass",
+  "listen_addresses": "",
+  "stopped": true,
+  "external_services": "UNRUN",
+  "postgres": "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit",
+  "tests_run": 28,
+  "failures": 0,
+  "errors": 0,
+  "restart_original_receipt": "PASS",
+  "log_content_check": "PASS"
+}

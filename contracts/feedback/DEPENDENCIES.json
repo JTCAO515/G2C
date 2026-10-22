@@ -1,0 +1,19 @@
+{
+  "base": "8f2ff45519d1d09f178f1fa766b6829d81bda77a",
+  "core_product": "fc55f6cb69cbd8d5cd2ead53165698c434c7d066",
+  "message": {
+    "owner_head": "bf79a948c36a7c5cecf40d840cb9623c2d2e9d7c",
+    "local_preparation_commit": "7182df3c79d671ffef7cab07dce35462e7b8dc68",
+    "source": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-context-query",
+    "subtree": "backend/message",
+    "unmodified": true
+  },
+  "run": {
+    "owner_head": "eadda152d3138ad04696392fcdc59c411c2c95a4",
+    "local_preparation_commit": "cf6aed76151a482b01352d199aa2e51b664861cc",
+    "source": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run",
+    "subtrees": ["backend/run", "contracts/run"],
+    "unmodified": true
+  },
+  "integration": "Publish must consume separately approved original dependencies or identical subtrees; do not duplicate preparation commits as FEEDBACK-owned edits."
+}

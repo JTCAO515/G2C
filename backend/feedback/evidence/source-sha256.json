@@ -1,0 +1,10 @@
+{
+  "backend/feedback/cj_feedback/__init__.py": "58bcba3b87afa0298ca8c8b0836d5b415b4f6995bef4eeadd1091c53f8fb2616",
+  "backend/feedback/cj_feedback/boundary.py": "0faf48b98423da7a261b192b8acda08a8bca5334b883caf00f45c3ed588ffebb",
+  "backend/feedback/cj_feedback/domain.py": "49da8241b1502951b420c43a276f0efdefe75d3dfc8ba6c5293f20dfda3febdd",
+  "backend/feedback/cj_feedback/postgres.py": "c123148d6c65d85d739e4b78fba4da73b37ffad9c0fa33283495cf60d4cc9257",
+  "backend/feedback/sql/candidate.sql": "1d7516cba0ec8cbbc4ca0dc5332f7e13637e2f2b50e97df22cacf69ddb9f1b12",
+  "backend/feedback/tests/private_pg.py": "14e6db14d19b1dcc66734f1266fdbc47eb95b289ef2e7593c3bf9018533f27db",
+  "backend/feedback/tests/test_domain.py": "0fdaa4c1992071b405c6d7418321ed29e184a86b9b2012f212b07bbd7f46a9ad",
+  "backend/feedback/tests/test_postgres.py": "380f3a94ca95833cebb24d433b2f439c2ab6bbfa1dec1c15207af9bb282c9fe9"
+}
