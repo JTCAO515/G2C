@@ -1,0 +1,26 @@
+{
+  "task": "CJ-012",
+  "base": "8deb696f8149b4f5aa70c767be6c3a263b036227",
+  "source_head": "dd4c375a731bbaef1d436bc3e88466040ac02294",
+  "branch": "cj/012-place",
+  "python": "3.14.7",
+  "scope_only": true,
+  "files": {
+    "backend/place/README.md": "74cc4685f888d6a703627697ac2f4e8716b33f5699f41ba7ecd8133f064c0ea2",
+    "backend/place/cj_place/__init__.py": "9b8e974709204e436f4ffae3d5097737fc40ffec11c28a98178f091e08297899",
+    "backend/place/cj_place/gaode.py": "d67d372fa0fa26e01a8616aa5fb79da9be5f3fc2e101f726295431c7c211e52d",
+    "backend/place/cj_place/models.py": "2d721d1330266990b78c8ae657c910f2b55a85d48374620c23c1ea8eaea1d397",
+    "backend/place/cj_place/synthetic.py": "445b943e02d9a52cb15a11a0de43ee43dab229559f1d373471961bc781438bde",
+    "backend/place/evidence/candidate-examples.txt": "b06828588e5afc0b8f2bea023706fad923118b178b1c955bd54bb391bac8864d",
+    "backend/place/evidence/candidate-tests.txt": "5301c80780200647cc37b55d20147e7d11d7685b5585009eabcfaccdae7da62b",
+    "backend/place/evidence/consumer-examples.txt": "b06828588e5afc0b8f2bea023706fad923118b178b1c955bd54bb391bac8864d",
+    "backend/place/evidence/extreme-exponent-before.txt": "99c3c99683045bb27bc0966c36711398ab7c21c8b9d1e116043d6b88e7f56faf",
+    "backend/place/evidence/final-tests.txt": "effe19af7323be06fa4077aafa659b68d6844bd446b34bd60d1ee2446d632e81",
+    "backend/place/evidence/initial-tests.txt": "c6fada41a9cc404ccfc759af141298201e0d4335699cf287aa4153ee88b4f03b",
+    "backend/place/pyproject.toml": "c80ab959ad82d1481a38dd0e5df61bb4e82fcf5d5f7acab3779b4f03b47f06b0",
+    "backend/place/tests/test_gaode.py": "8e1e263986f1fc35de642c5c07909468960834b93ed74614617c32b8c0dc67e6",
+    "contracts/place/README.md": "2b67206a7e9d2abf9d016e3e442bebf63121d37c9415af6bb59e7a8d2926376b",
+    "contracts/place/SOURCES.md": "539b946cdf8e0a5a523e90e1437ebf9489d2158c72eec98f106e0a3f38aade68",
+    "contracts/place/examples.py": "7f8deac58c9f694f5834d610f88717dfa55a3d52b9bd7be2bfe177f97eeaa108"
+  }
+}
