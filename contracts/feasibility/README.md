@@ -154,3 +154,6 @@ in this candidate closes Issue 18 or permits domain writes.
 
 Fixed PLACE estimate consumption is documented in [ROUTES](ROUTES.md); its
 optional dependency and tests are separate from NEEDS-only.
+
+The separate bounded conditional solver is documented in [SOLVER](SOLVER.md);
+this does not turn local/synthetic acceptance into real trip feasibility.
