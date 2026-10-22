@@ -4,6 +4,7 @@ Consumes MESSAGE bf79's real synchronous context and a trusted host RUN resolver
 No caller run ID/scope, cached admission boolean or second principal is accepted.
 """
 from dataclasses import dataclass
+import inspect
 import json
 from cj_message.auth_boundary import Boundary, HistoryReadContext
 from .core import Binding, Cursor, Event, State, TERMINAL, advance
@@ -87,8 +88,20 @@ class DisplaySnapshotReader:
         environment is server configuration, never a request argument. Return a
         repository exposing the existing scope/recover(binding) interface.
         """
+        return self.read_projected(token, message_id, lambda encoded: encoded)
+
+    def read_projected(self, token: str, message_id: str, project) -> bytes:
+        """Run a trusted synchronous bytes-to-bytes wire projection under the owner guard.
+
+        project receives only the verified nine-field JSON bytes, never context,
+        State, repository or USAGE. It must validate/encode the final host envelope
+        before returning. No envelope construction is permitted after this method.
+        """
         if type(message_id) is not str or not message_id.strip():
             raise ValueError('original message ID required')
+        if not callable(project):
+            raise ValueError('trusted synchronous projection required')
+        configuration = self.configuration  # Freeze this read's bounds across callbacks.
 
         def operation(ctx):
             if type(ctx) is not HistoryReadContext:
@@ -108,8 +121,14 @@ class DisplaySnapshotReader:
 
             source_guard()  # Resolver callbacks cannot replace the original source.
             first = _checked_recovery(repository, binding)
-            encoded = _encode_snapshot(first.state, self.configuration)
-            # Encoding and all size checks precede final source/epoch/identity checks.
+            encoded = project(_encode_snapshot(first.state, configuration))
+            if type(encoded) is not bytes:
+                if inspect.iscoroutine(encoded):
+                    encoded.close()
+                raise SnapshotUnavailable('projection must return materialized bytes')
+            if len(encoded) > configuration.max_response_bytes:
+                raise SnapshotTooLarge('projected envelope exceeds configured bound')
+            # Projection, encoding and final envelope bound precede every final guard.
             final = _checked_recovery(repository, binding)
             if final.state != first.state or final.cursor != first.cursor:
                 raise SnapshotChanged('RUN changed during snapshot projection')

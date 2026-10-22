@@ -11,7 +11,9 @@ boundary source matches this base. No root pin, API, MESSAGE or UI source change
 from cj_run.display_snapshot import DisplaySnapshotReader, DisplaySnapshotConfiguration
 configuration = DisplaySnapshotConfiguration(max_text_bytes=EXPLICIT, max_response_bytes=EXPLICIT)
 reader = DisplaySnapshotReader(message_boundary, resolve_run_repository, configuration=configuration)
-body: bytes = reader.read(token, message_id)
+body: bytes = reader.read(token, message_id)  # compatible nine-field body
+final_body: bytes = reader.read_projected(token, message_id, project)
+# project(verified_nine_field_bytes: bytes) -> final_encoded_bytes: bytes
 ```
 
 `message_boundary` must be the actual fixed `cj_message.auth_boundary.Boundary`.
@@ -54,8 +56,9 @@ protected callback. Output is already materialized before the MESSAGE final
 identity guard. CJ005 must not decode/rebuild/wrap this body outside that guard and
 call it the same protected result. If formal wire requires an extra envelope or
 request_id, its fixed design must be materialized and size-checked inside the
-protected callback in a subsequent accepted interface change. This is a source
-contract for consumption, not an already registered/frozen OpenAPI endpoint.
+protected callback through the now-public read_projected seam described below.
+This is a source contract for consumption, not an already registered/frozen
+OpenAPI endpoint.
 
 ## Freshness, failure and recovery
 
@@ -116,3 +119,49 @@ The cached environment includes psycopg but this script opens no database. No
 private cluster was restarted, no new resource/table/permission created, no push
 or merge performed. Source consumption hashes are in display-snapshot-inputs.json.
 Issue11's complete real streaming/stopping/recovery/device acceptance remains open.
+
+## Host envelope projection increment (parent c12a255)
+
+`read_projected(token, message_id, project) -> bytes` preserves the same protected
+read lifetime. `read` delegates with an identity projection, preserving its exact
+nine-field bytes. The trusted synchronous project receives only those validated
+encoded bytes; no State, context, repository, effects or USAGE object is supplied.
+
+CJ005 may decode those bytes INSIDE project, validate its official generated model,
+and encode `{request_id, snapshot}` there. request_id must come from the trusted
+server trace context. The final HTTP body is the exact returned bytes; do not
+decode/re-wrap it after this call. X-Request-ID must match that server trace and
+Cache-Control no-store remains the root HTTP adapter's responsibility. This module
+imports no root models and does not manufacture request IDs or HTTP headers.
+
+The project function owns its final envelope schema/JSON validation; this generic
+seam enforces strict materialized bytes and byte size, not a second copy of the
+root schema. Nonbytes (including dict/str/bytearray/memoryview), awaitables and
+generators are rejected. A returned coroutine is closed without awaiting it;
+deferred results are never iterated/executed. Project exceptions and cancellation
+propagate; there is no successful fallback. No trust is granted to request-supplied
+project functions: this hook is host code only.
+
+Ordering: verify original snapshot -> bounded nine-field encoding -> project /
+final encoding -> strict bytes check -> final max_response_bytes check -> second
+RUN recover/state+epoch check -> original source/scope recheck -> MESSAGE final
+identity guard -> return final bytes. The read captures its immutable configuration
+before callbacks so project cannot enlarge that invocation's limit. Original
+max_text_bytes is unchanged; neither body nor envelope is silently truncated.
+
+Evidence: display-projected-tests.txt has 8 targeted groups PASS on Python3.14.7:
+normal envelope and legacy byte equality; final-envelope exact/over bound; callback
+cannot enlarge captured bounds; invalid/deferred returns; exception/cancellation;
+projection changes identity/source/epoch/RUN; nested context refusal and expired
+context; final owner guard withholds envelope. display-projected-legacy.txt records
+12 prior reader tests PASS after introducing the delegated read path. After the
+additional bound-capture hardening only its affected 8-group suite was rerun.
+Original unrelated core/PG/USAGE evidence remains reused, not rerun.
+
+```sh
+PYTHONPATH=backend/run:backend/message:backend/auth uv run --offline --no-project --with psycopg==3.3.4 python -B backend/run/tests/display_projected_checks.py
+```
+
+No PG/Keychain/provider, root API/schema/pins, AUTH policy, tables or dispatcher
+changed. Actual generated-model envelope/trace/header integration belongs to
+CJ005's fixed consumer validation and is UNRUN here. Independent review pending.
