@@ -1,0 +1,24 @@
+test_cross_day_solution_preserves_duration_and_local_zone (test_solver.ActualSolverTests.test_cross_day_solution_preserves_duration_and_local_zone) ... ok
+test_dst_ambiguous_or_missing_date_not_inferred (test_solver.ActualSolverTests.test_dst_ambiguous_or_missing_date_not_inferred) ... ok
+test_locked_and_unselected_cannot_move_to_satisfy_window (test_solver.ActualSolverTests.test_locked_and_unselected_cannot_move_to_satisfy_window) ... ok
+test_missing_duration_or_buffer_not_zero (test_solver.ActualSolverTests.test_missing_duration_or_buffer_not_zero) ... ok
+test_occupancy_constraints_do_not_relax_shared_subject (test_solver.ActualSolverTests.test_occupancy_constraints_do_not_relax_shared_subject) ... ok
+test_pre_stop_exception_and_real_budget_exhaustion_not_unsat (test_solver.ActualSolverTests.test_pre_stop_exception_and_real_budget_exhaustion_not_unsat) ... ok
+test_precision_requires_exact_scale_and_overflow_is_unknown (test_solver.ActualSolverTests.test_precision_requires_exact_scale_and_overflow_is_unknown) ... ok
+test_real_route_requires_moving_selected_destination_only (test_solver.ActualSolverTests.test_real_route_requires_moving_selected_destination_only) ... ok
+test_route_origin_cannot_be_moved_to_future_query_time (test_solver.ActualSolverTests.test_route_origin_cannot_be_moved_to_future_query_time) ... ok
+test_sixty_cannot_fit_fixed_fifteen_is_conditional_unsat (test_solver.ActualSolverTests.test_sixty_cannot_fit_fixed_fifteen_is_conditional_unsat) ... ok
+test_foreign_route_assessment_candidate_binding_is_rejected (test_solver.IndependentOutputTests.test_foreign_route_assessment_candidate_binding_is_rejected) ... ok
+test_solver_status_does_not_bypass_public_independent_rejection (test_solver.IndependentOutputTests.test_solver_status_does_not_bypass_public_independent_rejection) ... ok
+test_tampered_route_window_and_fixed_item_rejected (test_solver.IndependentOutputTests.test_tampered_route_window_and_fixed_item_rejected) ... ok
+test_unrelated_field_duration_horizon_and_identity_tampering_rejected (test_solver.IndependentOutputTests.test_unrelated_field_duration_horizon_and_identity_tampering_rejected) ... ok
+test_engine_unknown_invalid_and_post_stop_are_not_unsat (test_solver.LimitsAndStatusTests.test_engine_unknown_invalid_and_post_stop_are_not_unsat) ... ok
+test_explicit_limits_and_selected_window_are_required (test_solver.LimitsAndStatusTests.test_explicit_limits_and_selected_window_are_required) ... ok
+test_small_exhaustive_window_oracle_agrees_with_real_solver (test_solver.LimitsAndStatusTests.test_small_exhaustive_window_oracle_agrees_with_real_solver) ... ok
+test_output_ambiguous_wall_time_is_independently_rejected (test_solver.RepresentationTests.test_output_ambiguous_wall_time_is_independently_rejected) ... ok
+test_subsecond_start_window_is_not_rounded_into_needs (test_solver.RepresentationTests.test_subsecond_start_window_is_not_rounded_into_needs) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.259s
+
+OK

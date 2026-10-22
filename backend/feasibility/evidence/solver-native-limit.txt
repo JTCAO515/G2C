@@ -1,0 +1,1 @@
+synthetic real CP-SAT limit probe: TIMEOUT BOUNDED_SEARCH_INCOMPLETE UNKNOWN candidate False

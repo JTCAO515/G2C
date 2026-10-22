@@ -1,0 +1,9 @@
+test_foreign_route_assessment_candidate_binding_is_rejected (test_solver.IndependentOutputTests.test_foreign_route_assessment_candidate_binding_is_rejected) ... ok
+test_solver_status_does_not_bypass_public_independent_rejection (test_solver.IndependentOutputTests.test_solver_status_does_not_bypass_public_independent_rejection) ... ok
+test_tampered_route_window_and_fixed_item_rejected (test_solver.IndependentOutputTests.test_tampered_route_window_and_fixed_item_rejected) ... ok
+test_unrelated_field_duration_horizon_and_identity_tampering_rejected (test_solver.IndependentOutputTests.test_unrelated_field_duration_horizon_and_identity_tampering_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.233s
+
+OK

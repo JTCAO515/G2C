@@ -1,0 +1,6 @@
+test_precision_requires_exact_scale_and_overflow_is_unknown (test_solver.ActualSolverTests.test_precision_requires_exact_scale_and_overflow_is_unknown) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.258s
+
+OK
