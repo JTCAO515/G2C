@@ -1,0 +1,18 @@
+test_admission_denied_before_connection (test_read_status.ReadTests.test_admission_denied_before_connection) ... ok
+test_all_states_zero_receipt_and_cancellation (test_read_status.ReadTests.test_all_states_zero_receipt_and_cancellation) ... ok
+test_autocommit_rejected_and_closed (test_read_status.ReadTests.test_autocommit_rejected_and_closed) ... ok
+test_bound_materialized_projection_and_guard_required (test_read_status.ReadTests.test_bound_materialized_projection_and_guard_required) ... ok
+test_cleanup_error_prevents_result (test_read_status.ReadTests.test_cleanup_error_prevents_result) ... ok
+test_cross_scope_missing_attempt_same_unavailable (test_read_status.ReadTests.test_cross_scope_missing_attempt_same_unavailable) ... ok
+test_every_callback_revocation_withholds (test_read_status.ReadTests.test_every_callback_revocation_withholds) ... ok
+test_final_close_identity_and_scope_change (test_read_status.ReadTests.test_final_close_identity_and_scope_change) ... ok
+test_missing_corrupt_and_version_never_reset (test_read_status.ReadTests.test_missing_corrupt_and_version_never_reset) ... ok
+test_primary_and_commit_unknown_priority (test_read_status.ReadTests.test_primary_and_commit_unknown_priority) ... ok
+test_project_final_encoding_and_revoke (test_read_status.ReadTests.test_project_final_encoding_and_revoke) ... ok
+test_resolver_connection_callback_rebinding (test_read_status.ReadTests.test_resolver_connection_callback_rebinding) ... ok
+test_select_only_and_minimal_unknown (test_read_status.ReadTests.test_select_only_and_minimal_unknown) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.002s
+
+OK

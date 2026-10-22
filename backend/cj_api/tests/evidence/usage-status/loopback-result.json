@@ -1,0 +1,93 @@
+{
+  "source_head": "9d0f4b4c1e89b28d01de18092b5bf695de5bcde7",
+  "scope": "new private PostgreSQL + numeric HTTP loopback; synthetic JWT/historical usage fixtures; SELECT-only status",
+  "checks": [
+    {
+      "name": "verified fresh private PG identity, candidate schema only, zero USAGE rows",
+      "status": "PASS"
+    },
+    {
+      "name": "SELECT-only runtime NOBYPASSRLS, original unknown-null/confirmed-zero/>Int64 exact units and original host historical period",
+      "status": "PASS"
+    },
+    {
+      "name": "two concurrent numeric HTTP reads succeed with separate native lifetimes; refreshed token stays original partition",
+      "status": "PASS"
+    },
+    {
+      "name": "foreign/missing attempt and RLS connection-scope mismatch unavailable; wrong host period rejected, caller period forbidden",
+      "status": "PASS"
+    },
+    {
+      "name": "authority lost during protected projection or final connection-close withholds all original status bytes",
+      "status": "PASS"
+    },
+    {
+      "name": "read COMMIT unknown/cancellation/close failure unavailable; primary unknown outranks later close revocation",
+      "status": "PASS"
+    },
+    {
+      "name": "official generated Swift original status, exact strings/null/zero and opaque unit; every ledger/revision unchanged, no FOR UPDATE or mutator SQL",
+      "status": "PASS"
+    }
+  ],
+  "pins": {
+    "schema_version": 1,
+    "evidence_head": "be473a9d98b20aee113b97e42722a054f1ed5783",
+    "sources": [
+      {
+        "name": "auth",
+        "commit": "8b6abb236cf10c1865a9cc8c6155bd8ac732c07e",
+        "prefix": "backend/auth/cj_auth/",
+        "files": {
+          "backend/auth/cj_auth/__init__.py": "6921fa11f3bdb1cefb618f0e067581fa22385cf1e0836e479f989a84dcb6374a",
+          "backend/auth/cj_auth/interfaces.py": "39711c9511c942274162fc4d32986a554147f8f32067ffd1e49e5aa94c9a0b9c",
+          "backend/auth/cj_auth/admission.py": "5e9fab7cea50a260622896cb7aeba76ebe1ba511d63a87a69e83fe7bdea526dc",
+          "backend/auth/cj_auth/jwt_adapter.py": "ede933a2af99965ecaa8e7d58b950fc51fe38232538dd825c4a23bcf6d85aad5",
+          "backend/auth/cj_auth/read_context.py": "c74e64fc2667d89beebab49d832804510894e84701416d38b3849238b02b3f2c"
+        }
+      },
+      {
+        "name": "usage",
+        "commit": "6f2b552d1b53792dfae88647dcb8ea155319c552",
+        "prefix": "backend/usage/cj_usage/",
+        "files": {
+          "backend/usage/cj_usage/__init__.py": "fcb091dc25c846fe642333af9b4cc43603b12fde528763c4b2cd45d267ce5bac",
+          "backend/usage/cj_usage/core.py": "149b0af63bdca59e7bf5ecfc7cf7b9857193a0761df5b0e20c860b3f1076ebfa",
+          "backend/usage/cj_usage/codec.py": "9843e09c80a24119be7048af5e53b60e4bd069925ef0f10c03da2be7602342fb",
+          "backend/usage/cj_usage/postgres.py": "b7bed373545155285c55b724a4227c3ef0fe0a06f412963065d5d7e2967f38b0",
+          "backend/usage/cj_usage/read_status.py": "adc20e8cd08adef4c6ffa7e836c7355ddb11cd458e8d80c14bfabc8262dab829",
+          "backend/usage/cj_usage/protected_status.py": "a5ca68e9904d6f2b55847d5704f877c04c089889f9a80324e4a183e34c69a496"
+        }
+      }
+    ]
+  },
+  "driver": {
+    "version": "3.2.10",
+    "implementation": "python"
+  },
+  "postgres": {
+    "identity": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-usage-read-pg/data",
+      "",
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-usage-read-pg/s",
+      "cj005u_admin",
+      "postgres",
+      "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit"
+    ],
+    "schema_sha256": "d5950f6fb28fa7f60e4a2955818124b671b55be08016fd85e619e2e54cd726a6"
+  },
+  "result": "PASS",
+  "safe_stop": "PASS",
+  "tested_file_sha256": {
+    "backend/cj_api/usage_status_routes.py": "faf2cb5d984babd0be59a9b3ddbfa3b1dce512b4679a4f9ab598dbe8935039f5",
+    "backend/cj_api/usage_status_projection.py": "9f4716833a5f96a67a587881ade0fdc7906e1316e450ec3030a5a5b1d3e47097",
+    "backend/cj_api/usage_status_composition.py": "595360bd969da7d46181efb12b0e93561d275ed577cadcb51846b4469bc9fa24",
+    "backend/cj_api/usage_status_pins.json": "14a87a622e909203f7b6be1fc12dd25449f8f67f40375aa26009d4ef532a7e9a",
+    "contracts/api/openapi.json": "c4459f7421d697fb609e5f4493bb8aa055d0c434c42877b4ee83b094ca1e8bcf",
+    "backend/cj_api/tests/usage_status_loopback_postgres.py": "069a3a680d4c64a2c954d22e12f50a7a11f19c2f91b2b7e11dfaa9227c035998",
+    "backend/cj_api/tests/usage_status_loopback_client.swift": "12968605718c05906f316eeabf8698f028429a74a9d405fbd4ea35cb3ff3a1cb"
+  },
+  "offline_driver_manifest_sha256": "b41f66bb951e2efd9fef7fec66935a90c9db7f895d4d57ae18d93f45b9631e40",
+  "offline_driver_file_count": 91
+}

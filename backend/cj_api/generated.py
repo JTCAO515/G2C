@@ -1216,3 +1216,52 @@ class ManualPreviewResponse(BaseModel):
     )
     request_id: RequestId
     preview: ManualPreview
+
+
+class Status7(StrEnum):
+    reserved = 'reserved'
+    unknown = 'unknown'
+    released = 'released'
+    settled = 'settled'
+
+
+class ConfirmedUnits(Enum):
+    NoneType_None = None
+
+
+class ConfirmedOutput(Enum):
+    NoneType_None = None
+
+
+class ReceiptId(Enum):
+    NoneType_None = None
+
+
+class UsageAttemptStatus(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    attempt_id: constr(min_length=1, max_length=200)
+    operation_id: constr(min_length=1, max_length=200)
+    run_id: constr(min_length=1, max_length=200)
+    status: Status7
+    unit: constr(min_length=1, max_length=200)
+    reserved_units: constr(pattern=r'^[1-9][0-9]*$') = Field(
+        ...,
+        description='Exact base10 integer-unit count, not currency/float. String avoids SDK integer overflow; no arithmetic or rounding.',
+    )
+    confirmed_units: constr(pattern=r'^(0|[1-9][0-9]*)$') | ConfirmedUnits
+    confirmed_output: constr(pattern=r'^(0|[1-9][0-9]*)$') | ConfirmedOutput
+    receipt_id: constr(min_length=1, max_length=200) | ReceiptId
+    cancelled: bool
+    exceeded: bool
+    message_en: constr(min_length=1)
+    message_zh: constr(min_length=1)
+
+
+class UsageAttemptStatusResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    attempt: UsageAttemptStatus

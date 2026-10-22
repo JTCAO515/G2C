@@ -1,0 +1,22 @@
+{
+  "unchanged_from": "9d0f4b4c1e89b28d01de18092b5bf695de5bcde7",
+  "files": {
+    "contracts/api/openapi.json": "c4459f7421d697fb609e5f4493bb8aa055d0c434c42877b4ee83b094ca1e8bcf",
+    "backend/cj_api/generated.py": "e50a72dffb6605e6a95d712cdc0d49dc0901cd0cff7da269e74ca85e2b261b45",
+    "backend/cj_api/usage_status_routes.py": "faf2cb5d984babd0be59a9b3ddbfa3b1dce512b4679a4f9ab598dbe8935039f5",
+    "backend/cj_api/usage_status_projection.py": "9f4716833a5f96a67a587881ade0fdc7906e1316e450ec3030a5a5b1d3e47097",
+    "backend/cj_api/usage_status_composition.py": "595360bd969da7d46181efb12b0e93561d275ed577cadcb51846b4469bc9fa24",
+    "ios/Sources/CJAPI/Generated/Client.swift": "4bd5fffdbf608ad5d0bbfd7baecdade4bf643d63fe1156648e63a6787a82e1ab",
+    "ios/Sources/CJAPI/Generated/Types+Components+Headers.swift": "b920e1a8ad3af618f10823dfd9ead2ac7a2833dcd9e06f84973789d7b578e1e2",
+    "ios/Sources/CJAPI/Generated/Types+Components+Parameters.swift": "06b05f078460bb0cc022223f7e6bf5d8509978b81486f2c191e241c08f38664b",
+    "ios/Sources/CJAPI/Generated/Types+Components+RequestBodies.swift": "3a79bacb276382b5f534e3a02a5a50297f67c53832e30b31e7afd9afbc6275bd",
+    "ios/Sources/CJAPI/Generated/Types+Components+Responses.swift": "8b243eb7012a5949f3818188cd64cc40021b87061be2b9de50a611f2ab9ab776",
+    "ios/Sources/CJAPI/Generated/Types+Components+Schemas.swift": "f9d5f414c2335861f6f5952f22262fb640aeebbde6918bd565f41c0d44aa0f50",
+    "ios/Sources/CJAPI/Generated/Types+Components.swift": "6ea69a3694541e5a67e2e3fe774048b7e0e3706ba7957ddefedd4e9e136b04e7",
+    "ios/Sources/CJAPI/Generated/Types+Operations.swift": "ebd7d620c8ca970e3630ca97b5de47bcda4000be2646435dc74b5593097ff3a9",
+    "ios/Sources/CJAPI/Generated/Types.swift": "8c70f71f997a8d04db3fb91e958e5a07033b7ed37104b4d8bc50edaa143c832d"
+  },
+  "original_review_assertions_sha256": "4b3147f8bac3a5b63f020d3151d3988971d82b20c2c8daf89dd4cec02e493697",
+  "pg_restarted": false,
+  "sdk_regenerated": false
+}
