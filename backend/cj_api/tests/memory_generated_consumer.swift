@@ -39,7 +39,7 @@ private struct FixtureTransport: ClientTransport {
     }
     static func main() async throws {
         let original = Data("e\u{301} 中文 original immutable fixture\n".utf8)
-        let receipt = "{\"operation_id\":\"original+operation\",\"item_id\":\"item\",\"version\":1,\"status\":\"candidate\"}"
+        let receipt = "{\"operation_id\":\"original+operation\",\"item_id\":\"item\",\"version\":1,\"status\":\"candidate\",\"input_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
         guard let url = URL(string: "https://fixture.invalid") else { throw CheckFailed.invalid }
         let client = Client(serverURL: url, transport: FixtureTransport(original: original, receiptJSON: receipt))
         let saved = try await client.saveMemory(.init(body: .binary(HTTPBody(original)))).ok.body.json

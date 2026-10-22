@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "contract": "MEMORY-internal.1",
-  "consumption_document_commit": "f410193c3d8675869a9a996e83ead23b1a5a6a56",
+  "consumption_document_commit": "426d337b0647d7770f1716fad83f2e5e724d28e4",
   "sources": [
     {
       "name": "auth",
@@ -16,13 +16,14 @@
     },
     {
       "name": "memory",
-      "commit": "f410193c3d8675869a9a996e83ead23b1a5a6a56",
+      "commit": "426d337b0647d7770f1716fad83f2e5e724d28e4",
       "prefix": "backend/memory/cj_memory/",
       "files": {
         "backend/memory/cj_memory/__init__.py": "8adc2a0b636874f2c6e6664d3b4a51f8cf2a87a1767e9f92009b9fe6bf0d60d6",
-        "backend/memory/cj_memory/domain.py": "dee98acb604abc6179939e4169f55fb96c6f2e317c42fc102c029e0ee9b907a0",
-        "backend/memory/cj_memory/postgres.py": "3966395fe8c8264568dc422612272b5d14ffdcf38305067af513c49303845c7d",
-        "backend/memory/cj_memory/operation.py": "a1aad491e94ebf5b8f793c423e4114add03aab5c29b6d7a16df068c696c55be9"
+        "backend/memory/cj_memory/domain.py": "93f6243d46ff2ea63364f40dc1de6a93c8ebd5d29eda0bb1357ef5ca82982ce0",
+        "backend/memory/cj_memory/postgres.py": "2908c1b60cbfa88b983e7128c19d290777362c8bbfa4fdf45e2db7c7dea453c5",
+        "backend/memory/cj_memory/operation.py": "01ca8f8bdd88868ee84415dc9710acac0e0aa13e8638f064691d7808b11d7e37",
+        "backend/memory/cj_memory/manual.py": "e9552bcc692d2a1c4c1f5777967f1c169034be66536dbb34f881f0094afc484d"
       }
     }
   ]

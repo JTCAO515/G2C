@@ -220,6 +220,10 @@ class MemoryReceipt(BaseModel):
     item_id: constr(min_length=1, max_length=4096)
     version: conint(ge=1, le=9223372036854775807)
     status: Status1
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$') = Field(
+        ...,
+        description='SHA256 of persisted original operation ledger bytes, returned by producer save/query decoder; manual nine-key input, never derived source/item Command bytes.',
+    )
 
 
 class Status2(StrEnum):
@@ -295,3 +299,18 @@ class MemoryListResponse(BaseModel):
     request_id: RequestId
     items: list[MemoryItem]
     next_after: constr(min_length=1, max_length=4096) | NextAfter
+
+
+class MemoryManualSaveCommand(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    operation_id: constr(min_length=1, max_length=4096)
+    item_id: constr(min_length=1, max_length=4096)
+    subject: constr(min_length=1, max_length=4096)
+    slot: constr(min_length=1, max_length=4096)
+    text: constr(min_length=1, max_length=4096)
+    occurred_at: constr(min_length=1, max_length=4096)
+    kind: Kind
+    extent: Extent
+    context_id: constr(min_length=1, max_length=4096) | ContextId

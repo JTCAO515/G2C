@@ -951,6 +951,10 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/MemoryReceipt/status`.
             public var status: Components.Schemas.MemoryReceipt.statusPayload
+            /// SHA256 of persisted original operation ledger bytes, returned by producer save/query decoder; manual nine-key input, never derived source/item Command bytes.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MemoryReceipt/input_sha256`.
+            public var input_sha256: Swift.String
             /// Creates a new `MemoryReceipt`.
             ///
             /// - Parameters:
@@ -958,22 +962,26 @@ extension Components {
             ///   - item_id:
             ///   - version:
             ///   - status:
+            ///   - input_sha256: SHA256 of persisted original operation ledger bytes, returned by producer save/query decoder; manual nine-key input, never derived source/item Command bytes.
             public init(
                 operation_id: Swift.String,
                 item_id: Swift.String,
                 version: Swift.Int,
-                status: Components.Schemas.MemoryReceipt.statusPayload
+                status: Components.Schemas.MemoryReceipt.statusPayload,
+                input_sha256: Swift.String
             ) {
                 self.operation_id = operation_id
                 self.item_id = item_id
                 self.version = version
                 self.status = status
+                self.input_sha256 = input_sha256
             }
             public enum CodingKeys: String, CodingKey {
                 case operation_id
                 case item_id
                 case version
                 case status
+                case input_sha256
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -993,11 +1001,16 @@ extension Components {
                     Components.Schemas.MemoryReceipt.statusPayload.self,
                     forKey: .status
                 )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "operation_id",
                     "item_id",
                     "version",
-                    "status"
+                    "status",
+                    "input_sha256"
                 ])
             }
         }
@@ -1431,6 +1444,170 @@ extension Components {
                     "request_id",
                     "items",
                     "next_after"
+                ])
+            }
+        }
+        /// First manual save: exactly nine required keys, original immutable UTF8 JSON octet-stream. No source/owner/approval/confirmed fields. Trusted ManualPolicy required; source+item+original receipt created in one transaction. No normalization or invented occurrence time.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand`.
+        public struct MemoryManualSaveCommand: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/operation_id`.
+            public var operation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/subject`.
+            public var subject: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/slot`.
+            public var slot: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/text`.
+            public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/occurred_at`.
+            public var occurred_at: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case fact = "fact"
+                case experience = "experience"
+                case preference = "preference"
+                case inference = "inference"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/kind`.
+            public var kind: Components.Schemas.MemoryManualSaveCommand.kindPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/extent`.
+            @frozen public enum extentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case long_term = "long_term"
+                case current = "current"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/extent`.
+            public var extent: Components.Schemas.MemoryManualSaveCommand.extentPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/context_id`.
+            @frozen public enum context_idPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/context_id/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/context_id/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveCommand/context_id`.
+            public var context_id: Components.Schemas.MemoryManualSaveCommand.context_idPayload
+            /// Creates a new `MemoryManualSaveCommand`.
+            ///
+            /// - Parameters:
+            ///   - operation_id:
+            ///   - item_id:
+            ///   - subject:
+            ///   - slot:
+            ///   - text:
+            ///   - occurred_at:
+            ///   - kind:
+            ///   - extent:
+            ///   - context_id:
+            public init(
+                operation_id: Swift.String,
+                item_id: Swift.String,
+                subject: Swift.String,
+                slot: Swift.String,
+                text: Swift.String,
+                occurred_at: Swift.String,
+                kind: Components.Schemas.MemoryManualSaveCommand.kindPayload,
+                extent: Components.Schemas.MemoryManualSaveCommand.extentPayload,
+                context_id: Components.Schemas.MemoryManualSaveCommand.context_idPayload
+            ) {
+                self.operation_id = operation_id
+                self.item_id = item_id
+                self.subject = subject
+                self.slot = slot
+                self.text = text
+                self.occurred_at = occurred_at
+                self.kind = kind
+                self.extent = extent
+                self.context_id = context_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case operation_id
+                case item_id
+                case subject
+                case slot
+                case text
+                case occurred_at
+                case kind
+                case extent
+                case context_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.operation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .operation_id
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.subject = try container.decode(
+                    Swift.String.self,
+                    forKey: .subject
+                )
+                self.slot = try container.decode(
+                    Swift.String.self,
+                    forKey: .slot
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                self.occurred_at = try container.decode(
+                    Swift.String.self,
+                    forKey: .occurred_at
+                )
+                self.kind = try container.decode(
+                    Components.Schemas.MemoryManualSaveCommand.kindPayload.self,
+                    forKey: .kind
+                )
+                self.extent = try container.decode(
+                    Components.Schemas.MemoryManualSaveCommand.extentPayload.self,
+                    forKey: .extent
+                )
+                self.context_id = try container.decode(
+                    Components.Schemas.MemoryManualSaveCommand.context_idPayload.self,
+                    forKey: .context_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "operation_id",
+                    "item_id",
+                    "subject",
+                    "slot",
+                    "text",
+                    "occurred_at",
+                    "kind",
+                    "extent",
+                    "context_id"
                 ])
             }
         }

@@ -534,7 +534,7 @@
         },
         "requestBody": {
           "required": true,
-          "description": "Exact immutable UTF8 JSON satisfying MemorySaveCommand. Freeze original bytes/operation_id before first send; preserve them through unknown ACK. No reconstruction, replacement ID or automatic retry.",
+          "description": "Exact immutable UTF8 JSON satisfying MemoryManualSaveCommand (nine keys, no source or approval). Freeze original bytes and operation_id before first attempt. Server-owned explicit ManualPolicy and guarded same-transaction manual source creation required; no preseeded source, implicit collection approval or automatic retry.",
           "content": {
             "application/octet-stream": {
               "schema": {
@@ -1239,7 +1239,8 @@
           "operation_id",
           "item_id",
           "version",
-          "status"
+          "status",
+          "input_sha256"
         ],
         "properties": {
           "operation_id": {
@@ -1263,6 +1264,11 @@
               "active",
               "candidate"
             ]
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "SHA256 of persisted original operation ledger bytes, returned by producer save/query decoder; manual nine-key input, never derived source/item Command bytes."
           }
         },
         "description": "Historical original committed save receipt; not current effectiveness or collection approval."
@@ -1450,6 +1456,84 @@
           }
         },
         "description": "Live item-ID keyset page, not snapshot. next_after is last returned item_id for any nonempty page, null for an empty page. Final nonempty page may require one empty read; no guessed has-more."
+      },
+      "MemoryManualSaveCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "item_id",
+          "subject",
+          "slot",
+          "text",
+          "occurred_at",
+          "kind",
+          "extent",
+          "context_id"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "slot": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "occurred_at": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "experience",
+              "preference",
+              "inference"
+            ]
+          },
+          "extent": {
+            "type": "string",
+            "enum": [
+              "long_term",
+              "current"
+            ]
+          },
+          "context_id": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "description": "First manual save: exactly nine required keys, original immutable UTF8 JSON octet-stream. No source/owner/approval/confirmed fields. Trusted ManualPolicy required; source+item+original receipt created in one transaction. No normalization or invented occurrence time."
       }
     },
     "securitySchemes": {

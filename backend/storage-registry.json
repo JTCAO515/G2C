@@ -61,9 +61,9 @@
             "cj_memory_item",
             "cj_memory_operation"
           ],
-          "source": "backend/memory/schema.sql@f410193c3d8675869a9a996e83ead23b1a5a6a56",
+          "source": "backend/memory/schema.sql@426d337b0647d7770f1716fad83f2e5e724d28e4",
           "status": "candidate/local_only; production_not_provisioned",
-          "principal_binding": "Explicit environment/profile + trusted issuer/subject/audience mapped host scope; public guarded Service required; source/subject/slot/context references need separate explicit host policy",
+          "principal_binding": "Explicit environment/profile + trusted issuer/subject/audience mapped host scope; public guarded Service; manual source/item/ledger only via explicit ManualPolicy in one transaction; no caller source/approval",
           "sensitive_fields": [
             "original_input and approved_input exact bytes (also duplicated in operation ledger)",
             "source references/version/approval and expiry",
@@ -193,5 +193,8 @@
     }
   ],
   "evidence_tree": "3c52f72daf1d8e2304c0c569b47e68d92a4b323e",
-  "production_activation": "BLOCKED; source/local acceptance does not provision production"
+  "production_activation": "BLOCKED; source/local acceptance does not provision production",
+  "candidate_sources": {
+    "memory": "426d337b0647d7770f1716fad83f2e5e724d28e4"
+  }
 }

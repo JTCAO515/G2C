@@ -4,7 +4,7 @@ from dataclasses import asdict
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
-from .generated import (MemorySaveCommand, MemoryReceipt, MemoryItem, MemoryGroup,
+from .generated import (MemorySaveCommand, MemoryManualSaveCommand, MemoryReceipt, MemoryItem, MemoryGroup,
     MemorySaveResponse, MemoryReceiptQueryResponse, MemoryDetailResponse,
     MemoryGroupsResponse, MemoryListResponse)
 from .history_routes import _query, _number, PrivateOutputTooLarge
@@ -64,7 +64,6 @@ def register_memory_routes(app, boundary=None, configuration=None):
     def item(value):
         if type(value) is not domain.Item or type(value.command) is not domain.Command:
             raise ValueError('Invalid memory item')
-        original = json.loads(value.command.raw.decode('utf-8'))
         projected = MemorySaveCommand.model_validate_json(value.command.raw,strict=True)
         return MemoryItem.model_validate_json(json.dumps(dict(command=projected.model_dump(mode='json'),
             version=value.version,status=value.status,recorded_at=value.recorded_at.isoformat())),strict=True)
@@ -114,10 +113,10 @@ def register_memory_routes(app, boundary=None, configuration=None):
                     return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
                 chunks.append(chunk)
             raw=b''.join(chunks)
-            command=domain.Command.parse(raw)
+            command=boundary.modules['cj_memory.manual'].parse_manual(raw)
             # Validate codepoint bounds, integer range and UTF8 scalar values without
             # regenerating or normalizing original bytes used for approval/replay.
-            MemorySaveCommand.model_validate_json(raw,strict=True)
+            MemoryManualSaveCommand.model_validate_json(raw,strict=True)
             for value in asdict(command).values():
                 if type(value) is str:value.encode('utf-8')
         except (ValueError,UnicodeError,domain.InvalidInput):

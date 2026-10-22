@@ -69,7 +69,8 @@ def build_message_boundary(*, environment, jwt_configuration, verification_keys,
 
 
 def create_composed_app(*, environment, jwt_configuration, verification_keys,
-                        access_provider, resolve_repository, new_run_id, max_body_bytes, history_configuration=None):
+                        access_provider, resolve_repository, new_run_id, max_body_bytes, history_configuration=None,
+                        memory_configuration=None, resolve_memory_binding=None, memory_source_policy=None):
     """No zero-argument/public production configuration exists."""
     if type(max_body_bytes) is not int or max_body_bytes <= 0:
         raise CompositionUnavailable('Explicit positive body byte limit required')
@@ -88,6 +89,15 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
     from .history_config import HistoryWireConfiguration
     if history_configuration is not None and not isinstance(history_configuration,HistoryWireConfiguration):
         raise CompositionUnavailable('Explicit history configuration required')
+    memory_boundary = None
+    if any(value is not None for value in (memory_configuration,resolve_memory_binding,memory_source_policy)):
+        from .memory_boundary import MemoryWireConfiguration, build_memory_boundary
+        if type(memory_configuration) is not MemoryWireConfiguration:
+            raise CompositionUnavailable('Explicit memory configuration/binding/domain policy required')
+        memory_boundary = build_memory_boundary(environment=environment,jwt_configuration=jwt_configuration,
+            verification_keys=verification_keys,access_provider=access_provider,
+            resolve_binding=resolve_memory_binding,source_policy=memory_source_policy)
     from .app import create_app
     return create_app(_message_boundary=boundary, _max_body_bytes=max_body_bytes,
-                      _history_configuration=history_configuration, _history_environment=environment)
+                      _history_configuration=history_configuration, _history_environment=environment,
+                      _memory_boundary=memory_boundary, _memory_configuration=memory_configuration)

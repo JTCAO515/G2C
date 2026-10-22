@@ -40,3 +40,36 @@ production role/RLS and complete Issue12 acceptance remain UNRUN.
 Real private PostgreSQL + loopback combination is NOT part of this first candidate;
 may be added after its fixed head under the granted fresh task-private execution
 scope, without reusing retained databases or rerunning PR49/59.
+
+## Manual completion increment (supersedes reference-only POST scope)
+
+Producer9b added exactly nine-key manual input and server-owned explicit
+ManualPolicy; final426d337b0647d7770f1716fad83f2e5e724d28e4 adds required receipt
+input_sha256 from actual operation-ledger readback and fixes the two real Review
+cancellation failures. Prior f410/9b HOLD is not called passed. Current source
+pins contain all five runtime files at426d, AUTH f3 unchanged. New fixed candidate
+will be reported separately after commit; independent Review/Testing remain UNRUN.
+
+POST path/operationId stay saveMemory /v1/memories, request now manual nine keys;
+source/reference fields are server-derived detail only. Old reference save stays
+internal, no second public write route. This changes un-frozen144fc70 MEMORY rc
+semantics and adds required receipt hash; no compatibility claim for that rc.
+Accepted23e operations/schemas remain byte-for-byte definitions unchanged.
+
+PASS fourteen scoped tests on426d for current manual API (new output
+manual-wire-tests.txt): real public manual Service/context, synthetic transaction
+double, explicit collection allow-list policy, no preseeded sources. First save
+creates source/item/operation together; receipt hash equals original manual bytes
+and differs from derived Command. Missing/unknown ManualPolicy rejects with no
+source/item/operation. Precommit cancellation withholds/rolls back; postcommit final
+cancellation returns unknown and original hash remains queryable. Also mixed
+MESSAGE+MEMORY app composition shares existing AUTH provider; previous applicable
+wire cases exercised using new manual shape. These do not prove actual PG/network.
+
+PASS regenerated official Py/Swift output and generated Client fixture on current
+manual/hash definitions; prepared live Swift consumer compiled. Fresh private PG
+manual-first/HTTP combination has not yet executed at this source commit. Prepared
+runner refuses existing directories, uses only numeric loopback/new Unix socket,
+explicit dependency whitelist and verified empty candidate DB, then safe-stops.
+Execution requires current task's explicit private-resource authorization; it is
+not a startup command or product policy installer.

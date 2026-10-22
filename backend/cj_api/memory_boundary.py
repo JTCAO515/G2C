@@ -43,7 +43,7 @@ class MemoryBoundary:
     def invoke(self, token, kind, argument, project):
         from cj_auth.interfaces import AdmissionStatus, TrustedPrincipal
         domain = self.modules['cj_memory.domain']
-        command = domain.Command.parse(argument) if kind == 'save' else None
+        command = self.modules['cj_memory.manual'].parse_manual(argument) if kind == 'save' else None
         last_fault = None
         captured = None
 
@@ -86,7 +86,7 @@ class MemoryBoundary:
                 raise
 
         def operation(context):
-            if kind == 'save': value = context.save(argument)
+            if kind == 'save': value = context.save_manual(argument)
             elif kind == 'query': value = context.query(argument)
             elif kind == 'detail': value = context.detail(argument)
             elif kind == 'groups': value = context.groups()
