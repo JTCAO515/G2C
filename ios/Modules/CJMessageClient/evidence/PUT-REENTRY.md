@@ -49,3 +49,8 @@ review remain separate requirements. Production live writes remain disabled.
 All changes are within CJMessageClient; no backend/wire/credential changes. Original
 failure logs preserved. Independent Review/Testing must reassess this fixed new delta;
 P2 is not declared independently closed by its author.
+
+Follow-up exactness correction: READBACK-BYTE-IDENTITY.md records that synthesized Swift
+Snapshot equality was insufficient for opaque metadata. Fixed record/dictionary equality
+now preserves exact UTF8 identities; new begin/confirm mismatch counterexamples fail closed.
+This supersedes any implication that the original synthesized equality proved byte identity.

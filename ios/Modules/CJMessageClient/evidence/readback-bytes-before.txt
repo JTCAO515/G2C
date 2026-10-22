@@ -1,0 +1,27 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 507]
+[Planning deferred tasks]
+[1 / 2] CJMessageKeyBridge-product
+[8 / 19] CJMessageClientTests-product
+[10 / 21] CJMessageClientTests-product
+[16 / 20] CJMessageClientTests-product
+Build complete! (1.17秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ReadbackByteIdentityTests started.
+◇ Test canonicallyEquivalentButByteDifferentDurableGenerationMustRefuseOperation() started.
+✘ Test canonicallyEquivalentButByteDifferentDurableGenerationMustRefuseOperation() recorded an issue at ReadbackByteIdentityTests.swift:38:3: Expectation failed: an error was expected but none was thrown
+↳ RecoveryError.self → <not evaluated>
+↳   RecoveryError → <not evaluated>
+↳   self → <not evaluated>
+✘ Test canonicallyEquivalentButByteDifferentDurableGenerationMustRefuseOperation() recorded an issue at ReadbackByteIdentityTests.swift:40:3: Expectation failed: !returned
+↳ durable original generation changed; no outbound operation may escape
+↳ !returned → <not evaluated>
+↳   returned → <not evaluated>
+✘ Test canonicallyEquivalentButByteDifferentDurableGenerationMustRefuseOperation() failed after 0.001 seconds with 2 issues.
+✘ Suite ReadbackByteIdentityTests failed after 0.001 seconds with 2 issues.
+✘ Test run with 1 test in 1 suite failed after 0.001 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - CJMessageClientTests (Swift Testing)

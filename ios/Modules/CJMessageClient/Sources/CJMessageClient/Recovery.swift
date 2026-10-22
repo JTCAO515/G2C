@@ -42,6 +42,10 @@ public struct ActionRecord: Codable, Sendable, Equatable {
     /// Opaque transport-verified receipt bytes, not a second wire schema.
     public fileprivate(set) var receipt: Data?
     public var inputSHA256: String { SHA256.hash(data: originalUTF8).map { String(format: "%02x", $0) }.joined() }
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        Data(lhs.messageID.utf8) == Data(rhs.messageID.utf8) && lhs.originalUTF8 == rhs.originalUTF8
+            && lhs.phase == rhs.phase && lhs.receipt == rhs.receipt
+    }
 }
 
 /// Minimal local-only metadata. Neither type is a server-history or sending authority.
@@ -69,6 +73,12 @@ public struct DraftSaveRecord: Codable, Sendable, Equatable {
     public let originalUTF8: Data
     fileprivate let editorRevision: UUID?
     public fileprivate(set) var confirmedRevision: Int64?
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        Data(lhs.conversationID.utf8) == Data(rhs.conversationID.utf8)
+            && Data(lhs.generation.utf8) == Data(rhs.generation.utf8)
+            && lhs.expectedRevision == rhs.expectedRevision && lhs.originalUTF8 == rhs.originalUTF8
+            && lhs.editorRevision == rhs.editorRevision && lhs.confirmedRevision == rhs.confirmedRevision
+    }
 }
 public struct DraftSaveOperation: Sendable {
     fileprivate let lease: Lease
@@ -82,6 +92,17 @@ public struct Snapshot: Codable, Sendable, Equatable {
     var drafts: [String: Data] = [:]
     var draftEdits: [String: UUID] = [:]
     var draftSaves: [String: DraftSaveRecord] = [:]
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.version == rhs.version && byteKeyedEqual(lhs.actions, rhs.actions)
+            && byteKeyedEqual(lhs.drafts, rhs.drafts) && byteKeyedEqual(lhs.draftEdits, rhs.draftEdits)
+            && byteKeyedEqual(lhs.draftSaves, rhs.draftSaves)
+    }
+    // Storage keys are normally base64 ASCII. Compare exact bytes even for a malformed
+    // injected snapshot; never let Swift canonical equivalence hide a changed binding.
+    private static func byteKeyedEqual<Value: Equatable>(_ lhs: [String: Value], _ rhs: [String: Value]) -> Bool {
+        Dictionary(uniqueKeysWithValues: lhs.map { (Data($0.key.utf8), $0.value) })
+            == Dictionary(uniqueKeysWithValues: rhs.map { (Data($0.key.utf8), $0.value) })
+    }
     enum CodingKeys: String, CodingKey { case version, actions, drafts, draftEdits, draftSaves }
     init() { }
     public init(from decoder: any Decoder) throws {

@@ -1,0 +1,14 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 7] CJMessageClientTests-product
+[4 / 9] CJMessageClientTests-product
+[10 / 14] CJMessageClientTests-product
+Build complete! (0.84秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ReadbackByteIdentityTests started.
+◇ Test byteDifferentConfirmationReadbackCannotReportSaved() started.
+✔ Test byteDifferentConfirmationReadbackCannotReportSaved() passed after 0.001 seconds.
+✔ Suite ReadbackByteIdentityTests passed after 0.001 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.001 seconds.
