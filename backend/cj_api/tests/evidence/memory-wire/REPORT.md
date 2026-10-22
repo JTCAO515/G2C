@@ -110,3 +110,31 @@ stage/status/decoding class only, no private IDs/body/token/URL/error strings.
 A fresh `--swift-only` runner mode will rerun only the affected real Swift segment,
 starting from empty sources; earlier Python groups reuse their actual evidence.
 No successful post-repair real-loopback claim is made at this commit.
+
+## Post-repair affected real Swift segment — PASS
+
+Fixed tested source bf954c39a3ee4c595ec5b4239a88ec342ec514e2, same producer426d,
+formal OpenAPI/Generated/backend unchanged from9a. Only affected actual Swift
+segment rerun in another NEW empty cluster `.local-cj005-memory-pg2`, role cj005m,
+postgres DB, PostgreSQL16.15, UTF8, Unix55448/listen_addresses empty/private0700,
+new pgpass0600. First cluster never restarted. Driver91-file copied code manifest
+matched the same approved psycopg3.2.10 source; no old cluster state copied.
+
+PASS official generated Swift Client with formal Configuration.memory over actual
+numeric loopback HTTP → existing strict PyJWT/fresh CJAccessProvider → guarded
+Service.save_manual → actual PostgreSQL transaction. Starting with zero source
+rows, Swift created first manual candidate (inference deliberately stays candidate)
+without any source seed, queried same original receipt/hash independently, decoded
+actual fractional recorded_at detail, paged until explicit null anchor, read
+subject/status groups and required-null missing original operation. The client
+compares opaque IDs as UTF8 Data and compares returned hash to preserved original
+manual bytes. Independent PG read verified exact operation.original_input bytes
+and one source row. Actual client output loopback-swift-client.txt; source/input
+hash metadata loopback-swift-result.json (no synthetic token/body/config copied).
+
+PASS finally stopped new HTTP thread and exact PG; absent PID/socket independently
+checked for BOTH memory clusters after execution. Original failure and source7
+PASS groups retained; they were NOT rerun or relabeled a one-shot full PASS. This
+is author incremental composition evidence, not independent gate acceptance.
+No cloud/real accounts/source policy deployment/actual model/context/App/device,
+cleanup/restore/production migration or full Issue12 acceptance. No push/merge.
