@@ -7,5 +7,11 @@
     "backend/auth/cj_auth/admission.py": "5e9fab7cea50a260622896cb7aeba76ebe1ba511d63a87a69e83fe7bdea526dc",
     "backend/message/cj_message/auth_boundary.py": "b0589ad9f23a61e56cc93e70077032d58f60d8532a164e9fc407af676cc68eb3"
   },
-  "owner_confirmation": "PENDING"
+  "owner_confirmation": {
+    "status": "AUTH_BOUNDED_SEMANTICS_CONFIRMED_BASE_MAPPING_PENDING",
+    "candidate": "2520bca6e86f75e54fb969c9f45a81e894561bb0",
+    "source": "Main 01a15e24-928b-7540-97a4-14b52e6ee995 relayed AUTH owner confirmation in this chat",
+    "record": "contracts/usage/README.md",
+    "limits": "Synthetic LocalExit only; no real permission or cost acceptance"
+  }
 }

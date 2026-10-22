@@ -20,13 +20,24 @@ Before a real adapter/route can consume this candidate, Main must route:
    one budget repository. Token iat/exp must NOT create fresh budget partitions.
    No caller-selected scope; account/session revocation atomicity remains open.
 3. BASE owner mapping of internal blocked/unknown/conflict outcomes into existing
-   ErrorResponse, request_id and recovery_action. No fabricated request_id or
+   ErrorResponse, request_id and recovery. No fabricated request_id or
    invented public error codes; no edits to shared OpenAPI in this slice.
 4. Configured budget, integer unit, period, output/step/tool/time limits and trusted
    provider receipt conversion. No actual prices, dollar/token units or defaults.
 
-These are confirmation requirements, not claims of owner acceptance. Local core
-work is independent; real Auth/host/DB/provider integration remains blocked.
+AUTH owner bounded confirmation was relayed by Main for `2520bca6e86f75e54fb969c9f45a81e894561bb0`:
+- Stable issuer/subject plus authorized environment maps to one budget partition;
+  token timestamps, refreshes and caller scope must not create new partitions.
+- Recheck before dispatch; only ALLOWED with a trusted principal permits dispatch.
+- Entry UNKNOWN permits safe reads only. Unknown claim/execution/cost retains the
+  original attempt and reservation for `reconcile_original`, never redispatch.
+- A late receipt reconciles only its original scope; it grants no new dispatch.
+
+This confirms these AUTH consumption semantics only. BASE uses the actual field
+`recovery` (verified in the fixed OpenAPI); final outcome mappings and real
+composition/configuration remain pending. LocalExit stays synthetic-only;
+real Auth/host/DB/provider integration and real permission/cost acceptance are
+not established by this confirmation.
 
 ## State and idempotency
 
