@@ -26,6 +26,7 @@ private struct LocalTransport: ClientTransport {
 }
 @main struct MemoryLoopbackClient {
     static func main() async {
+        var stage = "configuration"
         do {
             guard CommandLine.arguments.count == 2 else { throw Failed.check }
             let c = try JSONDecoder().decode(Configuration.self,from:Data(contentsOf:URL(fileURLWithPath:CommandLine.arguments[1])))
@@ -34,15 +35,19 @@ private struct LocalTransport: ClientTransport {
             settings.connectionProxyDictionary = [:]
             let session = URLSession(configuration:settings)
             defer { session.invalidateAndCancel() }
-            let client = Client(serverURL:c.baseURL,transport:LocalTransport(base:URLSessionTransport(configuration:.init(session:session)),token:c.token))
+            let client = Client(serverURL:c.baseURL,configuration:.memory,transport:LocalTransport(base:URLSessionTransport(configuration:.init(session:session)),token:c.token))
+            stage = "save"
             let saved = try await client.saveMemory(.init(body:.binary(HTTPBody(raw)))).ok.body.json
             guard Data(saved.receipt.operation_id.utf8) == Data(c.operationID.utf8),saved.receipt.status == .candidate,saved.receipt.input_sha256 == c.expectedInputHash else { throw Failed.check }
+            stage = "query"
             let found = try await client.queryMemoryReceipt(.init(query:.init(operation_id:c.operationID))).ok.body.json
             guard case .MemoryReceipt(let receipt) = found.receipt,receipt == saved.receipt else { throw Failed.check }
+            stage = "detail"
             let detail = try await client.getMemoryItem(.init(query:.init(item_id:c.itemID))).ok.body.json
             guard case .MemoryItem(let item) = detail.item,
                   Data(item.command.operation_id.utf8) == Data(c.operationID.utf8),item.status == .candidate,
                   case .case2(let noContext) = item.command.context_id,noContext.value == nil else { throw Failed.check }
+            stage = "list"
             var after: String? = nil
             var identifiers = Set<Data>()
             for _ in 0..<20 {
@@ -56,6 +61,7 @@ private struct LocalTransport: ClientTransport {
                     after = anchor
                 case .case2(let end):
                     guard end.value == nil,page.items.isEmpty,identifiers.count == c.expectedItems else { throw Failed.check }
+                    stage = "groups"
                     let groups = try await client.listMemoryGroups().ok.body.json
                     guard groups.groups.reduce(0,{$0+$1.count}) == c.expectedItems else { throw Failed.check }
                     let absent = try await client.queryMemoryReceipt(.init(query:.init(operation_id:"never-observed"))).ok.body.json
@@ -67,7 +73,10 @@ private struct LocalTransport: ClientTransport {
             throw Failed.check
         } catch {
             // No token/URL/body/ID/error content in diagnostics.
-            print("FAIL generated MEMORY live consumer")
+            if let clientError = error as? ClientError {
+                let status = clientError.response?.status.code ?? 0
+                print("FAIL generated MEMORY live consumer stage=\(stage) HTTP=\(status) decoded=\(clientError.underlyingError is DecodingError)")
+            } else { print("FAIL generated MEMORY live consumer stage=\(stage)") }
             exit(1)
         }
     }

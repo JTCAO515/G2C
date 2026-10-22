@@ -31,6 +31,7 @@ def main():
     parser.add_argument('--auth-repository',type=Path,required=True)
     parser.add_argument('--memory-repository',type=Path,required=True)
     parser.add_argument('--driver-source',type=Path,required=True)
+    parser.add_argument('--swift-only',action='store_true',help='Fresh cluster, first manual Swift path only; earlier Python groups not rerun')
     parser.add_argument('--private-name',default='.local-cj005-memory-pg')
     args=parser.parse_args()
     if not re.fullmatch(r'\.local-cj005-memory-[a-z0-9-]+',args.private_name):
@@ -153,6 +154,22 @@ def main():
                     text='Synthetic e\u0301 中文',extent='long_term',context_id=None,occurred_at='date unknown'),ensure_ascii=False,indent=1).encode()
             def post(value):return client.post('/v1/memories',content=value,headers=headers)
             def query(oid):return client.get('/v1/memory-receipts',params={'operation_id':oid},headers=headers)
+            def run_swift(expected):
+                swift_raw=raw('swift +/%&é','swift-item','inference');approved.add(swift_raw)
+                settings={'baseURL':base,'token':token_a,'operationID':'swift +/%&é','itemID':'swift-item',
+                    'originalBase64':base64.b64encode(swift_raw).decode(),'expectedItems':expected,
+                    'expectedInputHash':hashlib.sha256(swift_raw).hexdigest()}
+                config=PRIVATE/'swift-config.json';config.touch(mode=0o600);config.write_text(json.dumps(settings))
+                command([ROOT/'.local/memory-loopback-client',config],PRIVATE/'swift-client.txt',os.environ.copy())
+                with connect() as c:
+                    stored=bytes(c.execute("SELECT original_input FROM cj_memory_operation WHERE scope='fixture-a' AND operation_id=%s",('swift +/%&é',)).fetchone()[0])
+                    assert stored==swift_raw
+                    assert c.execute('SELECT count(*) FROM cj_memory_source').fetchone()[0]==expected
+                record('official generated Swift Client actual memory save/query/list/groups/detail over real HTTP and PG')
+            if args.swift_only:
+                run_swift(1)
+                evidence['result']='PASS_SWIFT_ONLY'
+                return  # finally stops new HTTP/PG; no repeat of prior Python groups.
             first_raw=raw('original +/%&é','first-item','preference');approved.add(first_raw)
             first=post(first_raw);assert first.status_code==200
             first_receipt=first.json()['receipt'];assert first_receipt['status']=='active'
@@ -198,14 +215,7 @@ def main():
             assert client.get('/v1/memories',params={'limit':1},headers=b_headers).json()['items']==[]
             assert client.get('/v1/memory-receipts',params={'operation_id':'lost-ack'},headers=b_headers).json()['receipt'] is None
             record('live API C-byte keyset/opaque Unicode IDs and independent verified B empty partition')
-            swift_raw=raw('swift +/%&é','swift-item','inference');approved.add(swift_raw)
-            # Inference is deliberately candidate; live consumer checks the returned state.
-            settings={'baseURL':base,'token':token_a,'operationID':'swift +/%&é','itemID':'swift-item',
-                      'originalBase64':base64.b64encode(swift_raw).decode(),'expectedItems':12,
-                      'expectedInputHash':hashlib.sha256(swift_raw).hexdigest()}
-            config=PRIVATE/'swift-config.json';config.touch(mode=0o600);config.write_text(json.dumps(settings))
-            command([ROOT/'.local/memory-loopback-client',config],PRIVATE/'swift-client.txt',os.environ.copy())
-            record('official generated Swift Client actual memory save/query/list/groups/detail over real HTTP and PG')
+            run_swift(12)
         evidence['result']='PASS'
     finally:
         if server:server.should_exit=True

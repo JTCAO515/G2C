@@ -21,7 +21,16 @@ private struct FixtureTransport: ClientTransport {
         case "listMemories":
             payload = "{\"request_id\":\"00000000-0000-4000-8000-000000000001\",\"items\":[],\"next_after\":null}"
         case "getMemoryItem":
-            payload = "{\"request_id\":\"00000000-0000-4000-8000-000000000001\",\"item\":null}"
+            if request.path == "/v1/memory-items?item_id=present" || request.path == "/v1/memory-items?item_id=whole" || request.path == "/v1/memory-items?item_id=invalidDate" || request.path == "/v1/memory-items?item_id=timezone" || request.path == "/v1/memory-items?item_id=wholeTimezone" {
+                var datedPayload = #"{"request_id":"00000000-0000-4000-8000-000000000001","item":{"command":{"operation_id":"original+operation","item_id":"item","subject":"self","slot":"diet.spicy","text":"synthetic","source_id":"server-source","source_version":1,"occurred_at":"date unknown","kind":"preference","extent":"long_term","context_id":null},"version":1,"status":"candidate","recorded_at":"2026-10-22T00:00:00.123456Z"}}"#
+                if request.path?.contains("whole") == true { datedPayload = datedPayload.replacingOccurrences(of:"00:00:00.123456Z",with:"00:00:00Z") }
+                if request.path?.contains("wholeTimezone") == true { datedPayload = datedPayload.replacingOccurrences(of:"2026-10-22T00:00:00.123456Z",with:"2026-10-22T08:00:00+08:00").replacingOccurrences(of:"2026-10-22T00:00:00Z",with:"2026-10-22T08:00:00+08:00") }
+                else if request.path?.contains("timezone") == true { datedPayload = datedPayload.replacingOccurrences(of:"2026-10-22T00:00:00.123456Z",with:"2026-10-22T08:00:00.123456+08:00") }
+                if request.path?.contains("invalidDate") == true { datedPayload = datedPayload.replacingOccurrences(of:"2026-10-22T00:00:00.123456Z",with:"invalid-date") }
+                payload = datedPayload
+            } else {
+                payload = "{\"request_id\":\"00000000-0000-4000-8000-000000000001\",\"item\":null}"
+            }
         case "listMemoryGroups":
             payload = "{\"request_id\":\"00000000-0000-4000-8000-000000000001\",\"groups\":[]}"
         default: throw CheckFailed.invalid
@@ -50,6 +59,19 @@ private struct FixtureTransport: ClientTransport {
         guard case .case2(let end) = page.next_after, end.value == nil else { throw CheckFailed.invalid }
         let detail = try await client.getMemoryItem(.init(query: .init(item_id: "item"))).ok.body.json
         guard case .case2(let absent) = detail.item, absent.value == nil else { throw CheckFailed.invalid }
+        let fractionalClient = Client(serverURL:url, configuration:.memory,
+            transport:FixtureTransport(original:original,receiptJSON:receipt))
+        let dated = try await fractionalClient.getMemoryItem(.init(query:.init(item_id:"present"))).ok.body.json
+        guard case .MemoryItem = dated.item else { throw CheckFailed.invalid }
+        let whole = try await fractionalClient.getMemoryItem(.init(query:.init(item_id:"whole"))).ok.body.json
+        guard case .MemoryItem = whole.item else { throw CheckFailed.invalid }
+        let zoned = try await fractionalClient.getMemoryItem(.init(query:.init(item_id:"timezone"))).ok.body.json
+        let zonedWhole = try await fractionalClient.getMemoryItem(.init(query:.init(item_id:"wholeTimezone"))).ok.body.json
+        guard case .MemoryItem(let a) = dated.item,case .MemoryItem(let b) = zoned.item,a.recorded_at == b.recorded_at,
+              case .MemoryItem(let x) = whole.item,case .MemoryItem(let y) = zonedWhole.item,x.recorded_at == y.recorded_at else { throw CheckFailed.invalid }
+        let invalid = try await fractionalClient.getMemoryItem(.init(query:.init(item_id:"invalidDate"))).ok.body.json
+        guard case .case2(let invalidContainer) = invalid.item,invalidContainer.value != nil else { throw CheckFailed.invalid }
+        print("PASS official RFC3339 whole/fractional/offset decoding, invalid date remains nonnull invalid fallback")
         _ = try await client.listMemoryGroups().ok.body.json
         print("PASS actual generated MEMORY Client five operations; exact body, query encoding, candidate and required null")
         let rid = "\"request_id\":\"00000000-0000-4000-8000-000000000001\""

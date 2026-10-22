@@ -73,3 +73,40 @@ runner refuses existing directories, uses only numeric loopback/new Unix socket,
 explicit dependency whitelist and verified empty candidate DB, then safe-stops.
 Execution requires current task's explicit private-resource authorization; it is
 not a startup command or product policy installer.
+
+## Real manual loopback attempt and required Swift date repair
+
+Source9a25e65aaf07a16c76ab1b5dea645ef259702c0d / producer426d. New private
+`.local-cj005-memory-pg`, PostgreSQL16.15/cj005m/postgres, Unix55448, TCP disabled,
+0700 private directory/socket, explicit fresh pgpass0600, inherited DB settings
+rejected. Only fixed candidate schema in verified empty public DB; source table
+started with zero rows. No preseeded source. Offline psycopg3.2.10 code/metadata
+copy from the previously authorized driver whitelist, 91 files hashed before/after;
+no old data/socket/config/log copied or old instance started. Driver Python impl.
+
+Actual first run: seven groups PASS (see loopback-first-result.json): empty/private
+identity/schema; first HTTP manual save+ledger original UTF8/hash+exact replay/
+modified-byte conflict; unknown collection policy rejection; real source/item/
+receipt rollback on fresh AUTH precommit withdrawal; committed original query after
+postcommit denial; real COMMIT then injected lost ACK; actual API Unicode C keyset
+and separate B partition. Final generated Swift Client group FAIL. Whole attempt
+is **FAIL**, not a full combination PASS. HTTP thread and exact PG stopped in
+finally; no PID/socket remained, data/failure logs retained. The Swift manual save
+may have committed before failure; no blind resend/reuse against that old instance.
+
+No-DB official Client reproduction isolated recorded_at: default Runtime .iso8601
+failed a valid fractional timestamp; generated oneOf fallback was nonnull and
+correctly rejected. Official fractional transcoder alone fixed that reproduction.
+Main explicitly granted only new formal MemoryClientConfiguration.swift; final
+helper composes official whole/fractional transcoders, leaves DB microseconds,
+OpenAPI date-time, generated sources and old consumer defaults unchanged.
+
+PASS no-DB current generated Client with the formal `Configuration.memory`:
+fractional UTC, whole UTC, fractional +08:00 and whole +08:00 produce matching
+instants; invalid-date remains invalid nonnull fallback and is explicitly rejected.
+Existing five operation/null/input checks preserved. Actual output date-fixture.txt.
+Prepared live consumer rebuilt with `.memory`; safe failure diagnostics show fixed
+stage/status/decoding class only, no private IDs/body/token/URL/error strings.
+A fresh `--swift-only` runner mode will rerun only the affected real Swift segment,
+starting from empty sources; earlier Python groups reuse their actual evidence.
+No successful post-repair real-loopback claim is made at this commit.

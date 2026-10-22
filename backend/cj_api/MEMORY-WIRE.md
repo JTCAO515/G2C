@@ -129,3 +129,16 @@ not rerun unrelated PR49/59. Generated Client transport checks are fixture-only,
 not network/DB or App UI evidence. Source, author fixtures, private loopback/PG,
 independent reviews, real accounts/approval resources, model next-answer use,
 App/device and deployment evidence must stay separate. Issue12 remains open.
+
+## Swift date configuration
+
+Use `Client(serverURL: ..., configuration: .memory, transport: ...)` for MEMORY.
+`ios/Sources/CJAPI/MemoryClientConfiguration.swift` combines the existing official
+Runtime1.13.3 ISO8601 whole/fractional transcoders. It handles valid RFC3339 dates
+with whole seconds, fractional seconds and offsets; invalid values still throw.
+No timestamp truncation, new dependency, generator edit or old-client default
+change. The first real PG run found this necessary: default `.iso8601` failed to
+decode a valid microsecond recorded_at; the detail landed in a nonnull oneOf
+fallback, which the consumer correctly rejected. Keep that explicit fallback
+check after enabling the date configuration. The helper is the single reusable
+MEMORY configuration for future clients, not a second generated client.
