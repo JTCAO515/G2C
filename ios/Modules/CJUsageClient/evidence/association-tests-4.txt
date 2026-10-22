@@ -1,0 +1,106 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 7] CJUsageClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:152:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+150 |             let h = try OriginalHarness(); try await h.accept()
+151 |             var source: ResolvedUsageSource?
+152 |         if statusStage { let result = try await h.resolve(); source = try #require(result) }
+    |                                                                                    `- warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+153 |             let old = h.paths.count
+154 |             h.credentialHook = {
+[4 / 9] CJUsageClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:152:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+150 |             let h = try OriginalHarness(); try await h.accept()
+151 |             var source: ResolvedUsageSource?
+152 |         if statusStage { let result = try await h.resolve(); source = try #require(result) }
+    |                                                                                    `- warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+153 |             let old = h.paths.count
+154 |             h.credentialHook = {
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:172:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+170 |         let h = try OriginalHarness(); try await h.accept()
+171 |         var source: ResolvedUsageSource?
+172 |         if statusStage { let result = try await h.resolve(); source = try #require(result) }
+    |                                                                                    `- warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+173 |         var inner: PreparedOriginalUsageRead?
+174 |         func prepare() throws -> PreparedOriginalUsageRead { try source.map(h.model.prepareStatus) ?? h.model.prepareAssociation(try #require(h.selected)) }
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:186:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+184 |         let h = try OriginalHarness(); try await h.accept()
+185 |         var source: ResolvedUsageSource?
+186 |         if statusStage { let result = try await h.resolve(); source = try #require(result) }
+    |                                                                                    `- warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+187 |         var received = false; var count = 0; var inner: PreparedOriginalUsageRead?
+188 |         h.sendHook = { received = true }
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:233:88: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+231 |             let h = try OriginalHarness(); try await h.accept()
+232 |             var source: ResolvedUsageSource?
+233 |             if statusStage { let result = try await h.resolve(); source = try #require(result) }
+    |                                                                                        `- warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+234 |             let gate = AssociationBodyGate()
+235 |             h.delayedBody = HTTPBody(AsyncThrowingStream<HTTPBody.ByteChunk, any Error>(unfolding: { await gate.next() }), length: .unknown)
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:255:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+253 |         let h = try OriginalHarness(); try await h.accept()
+254 |         var source: ResolvedUsageSource?
+255 |         if statusStage { let result = try await h.resolve(); source = try #require(result) }
+    |                                                                                    `- warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+256 |         var newer: PreparedOriginalUsageRead?
+257 |         h.credentialHook = {
+[8 / 11] CJUsageClientTests-product
+[10 / 14] CJUsageClientTests-product
+Build complete! (1.81秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite OriginalUsageTests started.
+◇ Test badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test sourceCannotMoveToAnotherModelOrSurviveInvalidation() started.
+◇ Test credentialErrorReentryCannotClearNewPreparation(_:) started.
+◇ Test stagedForeignOrReplacedCanonicalInputCannotBeCaptured() started.
+◇ Test acceptedCanonicalReceiptThenAssociationThenExplicitOriginalStatus() started.
+◇ Test finalPublicationCallbackCannotOverwriteNewPreparation(_:) started.
+◇ Test bodyAwaitAndLateErrorCannotReplaceNewerSourceOrStatus(_:) started.
+◇ Test statusMustRemainBoundToClosedAssociation(_:) started.
+◇ Test actorABAAndRecoveryInvalidationAcrossBothReads(_:) started.
+◇ Test case passing 1 argument field → "conversation_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "attempt_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → false to credentialErrorReentryCannotClearNewPreparation(_:) started.
+◇ Test case passing 1 argument statusStage → true to credentialErrorReentryCannotClearNewPreparation(_:) started.
+◇ Test case passing 1 argument field → "extra" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "normalized-message" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → false to finalPublicationCallbackCannotOverwriteNewPreparation(_:) started.
+◇ Test case passing 1 argument field → "operation_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "message_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "message_sequence" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "generation" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) started.
+◇ Test case passing 1 argument field → "missing" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → true to finalPublicationCallbackCannotOverwriteNewPreparation(_:) started.
+◇ Test case passing 1 argument field → "operation_id" to statusMustRemainBoundToClosedAssociation(_:) started.
+◇ Test case passing 1 argument field → "run_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "run_id" to statusMustRemainBoundToClosedAssociation(_:) started.
+◇ Test case passing 1 argument field → "attempt_id" to statusMustRemainBoundToClosedAssociation(_:) started.
+◇ Test case passing 1 argument statusStage → false to bodyAwaitAndLateErrorCannotReplaceNewerSourceOrStatus(_:) started.
+◇ Test case passing 1 argument field → "bool-sequence" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → true to actorABAAndRecoveryInvalidationAcrossBothReads(_:) started.
+◇ Test case passing 1 argument statusStage → true to bodyAwaitAndLateErrorCannotReplaceNewerSourceOrStatus(_:) started.
+◇ Test case passing 1 argument field → "normalized-generation" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "503" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → false to actorABAAndRecoveryInvalidationAcrossBothReads(_:) started.
+◇ Test case passing 1 argument field → "fraction-sequence" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → true to equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) started.
+◇ Test case passing 1 argument statusStage → false to equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) started.
+✔ Test stagedForeignOrReplacedCanonicalInputCannotBeCaptured() passed after 0.016 seconds.
+✔ Test sourceCannotMoveToAnotherModelOrSurviveInvalidation() passed after 0.026 seconds.
+✔ Test badAssociationNeverBecomesUsageSource(_:) with 14 test cases passed after 0.028 seconds.
+✔ Test acceptedCanonicalReceiptThenAssociationThenExplicitOriginalStatus() passed after 0.030 seconds.
+✔ Test equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) with 2 test cases passed after 0.030 seconds.
+✔ Test credentialErrorReentryCannotClearNewPreparation(_:) with 2 test cases passed after 0.031 seconds.
+✔ Test statusMustRemainBoundToClosedAssociation(_:) with 3 test cases passed after 0.030 seconds.
+✔ Test finalPublicationCallbackCannotOverwriteNewPreparation(_:) with 2 test cases passed after 0.033 seconds.
+✔ Test actorABAAndRecoveryInvalidationAcrossBothReads(_:) with 2 test cases passed after 0.035 seconds.
+✔ Test bodyAwaitAndLateErrorCannotReplaceNewerSourceOrStatus(_:) with 2 test cases passed after 0.037 seconds.
+✔ Suite OriginalUsageTests passed after 0.037 seconds.
+✔ Test run with 10 tests in 1 suite passed after 0.037 seconds.

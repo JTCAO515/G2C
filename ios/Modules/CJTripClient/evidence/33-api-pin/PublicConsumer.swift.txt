@@ -1,0 +1,3 @@
+Compiler output; trailing whitespace trimmed.
+
+exit=0

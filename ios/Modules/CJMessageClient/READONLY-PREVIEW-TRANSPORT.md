@@ -55,7 +55,6 @@ c5 producer/export/Package/SDK inputs unchanged; no implicit re-export. No CJShe
 manual client adoption/UI/network acceptance claimed. Independent double review and
 CJ017 exact fixed consumption still required. Existing69d/b868 HOLD unaffected.
 
-Host-header P2 correction: the narrow preview branch now rejects ANY ordinary Host
-header, case-insensitively, including duplicates and a nominally same-origin value.
-Configured baseURL supplies authority; no raw body/header rewriting is used. See
-evidence/PREVIEW-HOST-FIX.md for exact c5-base runtime patch and original failing probe.
+9d branch now consumes the exact94c50ab runtime ordinary-Host rejection. Source hashes,
+original failure evidence and two9d compatibility observations are recorded in
+evidence/USAGE-HOST-COMBINATION.md. This does not require c5 hosts to adopt the9d SDK.

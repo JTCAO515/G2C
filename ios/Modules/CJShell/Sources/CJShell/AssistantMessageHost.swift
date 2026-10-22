@@ -44,6 +44,25 @@ import CJAPI
     public nonisolated var customMirror: Mirror { Mirror(self, children: [:]) }
 }
 
+/// Current canonical recovery input only. The USAGE client, not the UI, must decode
+/// and capture its own closed AcceptedUsageMessage. No public constructor or actor IDs.
+@MainActor public final class AcceptedMessageUsageInput: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    let recovery: MessageRecovery
+    let scope: StorageScope
+    let lease: Lease
+    let record: ActionRecord
+    let isCurrent: @MainActor () -> Bool
+    let isStillOwned: @MainActor () -> Bool
+    fileprivate init(binding: AssistantMessageBinding, record: ActionRecord,
+                     isCurrent: @escaping @MainActor () -> Bool, isStillOwned: @escaping @MainActor () -> Bool) {
+        recovery = binding.recovery; scope = binding.scope; lease = binding.lease; self.record = record
+        self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
+    }
+    public nonisolated var description: String { "<redacted accepted message usage input>" }
+    public nonisolated var debugDescription: String { description }
+    public nonisolated var customMirror: Mirror { Mirror(self, children: [:]) }
+}
+
 /// Activity only; canonical action phase/bytes/receipt stay in CJMessageClient.ActionRecord.
 public enum MessageHostActivity: Equatable {
     case unavailable, ready, querying, unknown, storageBlocked, invalidated
@@ -157,6 +176,20 @@ public enum MessageHostActivity: Equatable {
     private func retireRunSelection() {
         runSelectionRevision = UUID(); runSelectionAllowed = false
         shell.runContainerHost?.retireSelection()
+        shell.originalUsageContainerHost?.retireSelection()
+    }
+    public func captureAcceptedUsageInput() -> AcceptedMessageUsageInput? {
+        let revision = runSelectionRevision
+        guard let originalBinding = binding, runSelectionAllowed, let id = selectedMessageID,
+              bindingIsCurrent, isSameBinding(originalBinding), revision == runSelectionRevision,
+              let record = try? originalBinding.recovery.action(messageID: id, lease: originalBinding.lease),
+              record.phase == .accepted, record.receipt != nil,
+              ownsRunReceipt(record, binding: originalBinding, revision: revision) else { return nil }
+        return AcceptedMessageUsageInput(binding: originalBinding, record: record, isCurrent: { [weak self] in
+            self?.ownsRunReceipt(record, binding: originalBinding, revision: revision) == true
+        }, isStillOwned: { [weak self] in
+            self?.ownsRunReceiptWithoutCallbacks(record, binding: originalBinding, revision: revision) == true
+        })
     }
     /// Decode the exact typed payload encoded by MessageHTTPClient only after its
     /// accepted recovery state, original bytes/hash, lease and current selection agree.

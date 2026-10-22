@@ -1,0 +1,9 @@
+FAIL legal 201-character message_id rejected by capture: invalidResponse
+CONTROL canonical MessageHTTPClient query produced accepted original record
+FAIL legal 201-character message_id association wire rejected: invalidResponse
+FAIL legal 201-character conversation_id rejected by capture: invalidResponse
+CONTROL canonical MessageHTTPClient query produced accepted original record
+FAIL legal 201-character conversation_id association wire rejected: invalidResponse
+FAIL legal 201-character generation rejected by capture: invalidResponse
+CONTROL canonical MessageHTTPClient query produced accepted original record
+FAIL legal 201-character generation association wire rejected: invalidResponse

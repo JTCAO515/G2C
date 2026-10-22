@@ -1,0 +1,102 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 393]
+[Planning deferred tasks]
+[7 / 18] CJUsageClientTests-product
+[11 / 22] CJUsageClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:149:53: warning: '#require(_:_:)' is redundant because 'await h.resolve()' never equals 'nil' (from macro 'require')
+147 |         for mutation in ["actor", "ABA", "recovery", "session"] {
+148 |             let h = try OriginalHarness(); try await h.accept()
+149 |             let source = statusStage ? try #require(await h.resolve()) : nil
+    |                                                     `- warning: '#require(_:_:)' is redundant because 'await h.resolve()' never equals 'nil' (from macro 'require')
+150 |             let old = h.paths.count
+151 |             h.credentialHook = {
+error: SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift failed with a nonzero exit code. Command line:     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules
+    builtin-SwiftPerFileCompile OriginalUsageTests.swift
+macro expansion #require:2:3: error: call can throw, but it is not marked with 'try' and the error is not handled
+`- /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:74:85: note: expanded code originates here
+ 72 |         let raw = try JSONSerialization.data(withJSONObject: ["message_id":message,"conversation_id":conversation,"text":"synthetic"])
+ 73 |         try recovery.stage(messageID: message, originalUTF8: raw, lease: lease)
+ 74 |         let record = try #require(recovery.action(messageID: message, lease: lease))
+    |                          `- note: in expansion of macro 'require' here
+    +--- macro expansion #require --------------------------------------
+    |1 | Testing.__checkFunctionCall(recovery.self,calling: {
+    |2 |   $0.action(messageID: $1,lease: $2)
+    |  |   `- error: call can throw, but it is not marked with 'try' and the error is not handled
+    |3 | },message,lease,expression: .__fromFunctionCall(.__fromSyntaxNode("recovery"),"action",("messageID",.__fromSyntaxNode("message")),("lease",.__fromSyntaxNode("lease"))),comments: [],isRequired: true,sourceLocation: Testing.SourceLocation.__here()).__required()
+    +-------------------------------------------------------------------
+ 75 |         let receipt: [String:Any] = ["message_id":message,"conversation_id":conversation,"generation":messageGeneration,"run_id":run,"sequence":7,"input_sha256":record.inputSHA256]
+ 76 |         let http = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint, credentials: OriginalCredentials(),
+
+macro expansion #require:2:3: error: call can throw, but it is not marked with 'try' and the error is not handled
+`- /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:84:87: note: expanded code originates here
+ 82 |             })
+ 83 |         if case .accepted = try await http.query(messageID: message, lease: lease) {} else { Issue.record("canonical query not accepted") }
+ 84 |         let accepted = try #require(recovery.action(messageID: message, lease: lease))
+    |                            `- note: in expansion of macro 'require' here
+    +--- macro expansion #require --------------------------------------
+    |1 | Testing.__checkFunctionCall(recovery.self,calling: {
+    |2 |   $0.action(messageID: $1,lease: $2)
+    |  |   `- error: call can throw, but it is not marked with 'try' and the error is not handled
+    |3 | },message,lease,expression: .__fromFunctionCall(.__fromSyntaxNode("recovery"),"action",("messageID",.__fromSyntaxNode("message")),("lease",.__fromSyntaxNode("lease"))),comments: [],isRequired: true,sourceLocation: Testing.SourceLocation.__here()).__required()
+    +-------------------------------------------------------------------
+ 85 |         let captured = try model.captureAcceptedMessage(accepted, lease: lease)
+ 86 |         selected = OriginalUsageBinding(acceptedMessage: captured, sessionOperation: try session.beginTrustedSDKSave(),
+
+macro expansion #require:2:3: error: call can throw, but it is not marked with 'try' and the error is not handled
+`- /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:137:91: note: expanded code originates here
+135 |         let h = try OriginalHarness()
+136 |         try h.recovery.stage(messageID: h.message, originalUTF8: Data("{}".utf8), lease: h.lease)
+137 |         let staged = try #require(h.recovery.action(messageID: h.message, lease: h.lease))
+    |                          `- note: in expansion of macro 'require' here
+    +--- macro expansion #require --------------------------------------
+    |1 | Testing.__checkFunctionCall(h.recovery.self,calling: {
+    |2 |   $0.action(messageID: $1,lease: $2)
+    |  |   `- error: call can throw, but it is not marked with 'try' and the error is not handled
+    |3 | },h.message,h.lease,expression: .__fromFunctionCall(.__fromSyntaxNode("h.recovery"),"action",("messageID",.__fromSyntaxNode("h.message")),("lease",.__fromSyntaxNode("h.lease"))),comments: [],isRequired: true,sourceLocation: Testing.SourceLocation.__here()).__required()
+    +-------------------------------------------------------------------
+138 |         #expect(throws: UsageFailure.unavailable) { try h.model.captureAcceptedMessage(staged, lease: h.lease) }
+139 |         #expect(h.paths.isEmpty)
+
+macro expansion #require:2:3: error: call can throw, but it is not marked with 'try' and the error is not handled
+`- /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:141:115: note: expanded code originates here
+139 |         #expect(h.paths.isEmpty)
+140 |         let accepted = try OriginalHarness(); try await accepted.accept()
+141 |         let oldRecord = try #require(accepted.recovery.action(messageID: accepted.message, lease: accepted.lease))
+    |                             `- note: in expansion of macro 'require' here
+    +--- macro expansion #require --------------------------------------
+    |1 | Testing.__checkFunctionCall(accepted.recovery.self,calling: {
+    |2 |   $0.action(messageID: $1,lease: $2)
+    |  |   `- error: call can throw, but it is not marked with 'try' and the error is not handled
+    |3 | },accepted.message,accepted.lease,expression: .__fromFunctionCall(.__fromSyntaxNode("accepted.recovery"),"action",("messageID",.__fromSyntaxNode("accepted.message")),("lease",.__fromSyntaxNode("accepted.lease"))),comments: [],isRequired: true,sourceLocation: Testing.SourceLocation.__here()).__required()
+    +-------------------------------------------------------------------
+142 |         accepted.recovery.invalidate()
+143 |         #expect(throws: (any Error).self) { try accepted.model.captureAcceptedMessage(oldRecord, lease: accepted.lease) }
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:149:53: warning: '#require(_:_:)' is redundant because 'await h.resolve()' never equals 'nil' (from macro 'require')
+147 |         for mutation in ["actor", "ABA", "recovery", "session"] {
+148 |             let h = try OriginalHarness(); try await h.accept()
+149 |             let source = statusStage ? try #require(await h.resolve()) : nil
+    |                                                     `- warning: '#require(_:_:)' is redundant because 'await h.resolve()' never equals 'nil' (from macro 'require')
+150 |             let old = h.paths.count
+151 |             h.credentialHook = {
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:168:49: warning: '#require(_:_:)' is redundant because 'await h.resolve()' never equals 'nil' (from macro 'require')
+166 |     func equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_ statusStage: Bool) async throws {
+167 |         let h = try OriginalHarness(); try await h.accept()
+168 |         let source = statusStage ? try #require(await h.resolve()) : nil
+    |                                                 `- warning: '#require(_:_:)' is redundant because 'await h.resolve()' never equals 'nil' (from macro 'require')
+169 |         var inner: PreparedOriginalUsageRead?
+170 |         func prepare() throws -> PreparedOriginalUsageRead { try source.map(h.model.prepareStatus) ?? h.model.prepareAssociation(try #require(h.selected)) }
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:181:49: warning: '#require(_:_:)' is redundant because 'await h.resolve()' never equals 'nil' (from macro 'require')
+179 |     func finalPublicationCallbackCannotOverwriteNewPreparation(_ statusStage: Bool) async throws {
+180 |         let h = try OriginalHarness(); try await h.accept()
+181 |         let source = statusStage ? try #require(await h.resolve()) : nil
+    |                                                 `- warning: '#require(_:_:)' is redundant because 'await h.resolve()' never equals 'nil' (from macro 'require')
+182 |         var received = false; var count = 0; var inner: PreparedOriginalUsageRead?
+183 |         h.sendHook = { received = true }
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/DerivedSources/test_entry_point.swift -primary-file /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/UsageTests.swift -emit-dependencies-path /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/OriginalUsageTests.d -emit-const-values-path /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/OriginalUsageTests.swiftconstvalues -emit-reference-dependencies-path /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/OriginalUsageTests.swiftdeps -serialize-diagnostics-path /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/OriginalUsageTests.dia -target arm64-apple-macos14.0 -module-can-import-version Testing 2084 0 -module-can-import-version XCTest 25229 0 -disable-cross-import-overlay-search -swift-module-cross-import Testing /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay -swift-module-cross-import Testing /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreGraphics.swiftoverlay -swift-module-cross-import Testing /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreImage.swiftoverlay -swift-module-cross-import Testing /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreTransferable.swiftoverlay -swift-module-cross-import Testing /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/Foundation.swiftoverlay -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing/libTestingMacros.dylib\#\#TestingMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/CJUsageClientTests-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -I /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Products/Debug -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Products/Debug/PackageFrameworks -F /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Products/Debug -F /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -module-cache-path /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/SwiftExplicitPrecompiledModules -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=4 -swift-version 6 -Onone -D SWIFT_PACKAGE -D DEBUG -D Xcode -serialize-debugging-options -enable-experimental-feature DebugDescriptionMacro -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules -enable-anonymous-context-mangled-names -file-compilation-dir /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/SDKStatCaches.noindex/macosx27.0-26A425-a0facfad118c1a7a18f0aad9463f65497231f6df4def33e022ae2eb8f782df1a.sdkstatcache -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -Xcc -I/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Products/Debug/include -Xcc -I/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/DerivedSources-normal/arm64 -Xcc -I/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/DerivedSources/arm64 -Xcc -I/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name CJUsageClientTests -package-name cjusageclient -const-gather-protocols-file /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/CJUsageClientTests_const_extract_protocols.json -disable-clang-spi -clang-target arm64-apple-macos27.0 -target-sdk-version 27.0 -target-sdk-name macosx27.0 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -parse-as-library -o /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/OriginalUsageTests.o -debug-module-path /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out/Intermediates.noindex/CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/CJUsageClientTests.swiftmodule -index-unit-output-path /CJUsageClient.build/Debug/CJUsageClientTests-p.build/Objects-normal/arm64/OriginalUsageTests.o -index-store-path /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/out -index-system-modules
+error: Build failed
+error: fatalError

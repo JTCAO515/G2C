@@ -1,0 +1,110 @@
+Building for debugging...
+[Provisioning 4 / 22]
+[2 / 13] CJUsageClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:149:53: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+147 |         for mutation in ["actor", "ABA", "recovery", "session"] {
+148 |             let h = try OriginalHarness(); try await h.accept()
+149 |             let source = statusStage ? try #require(try await h.resolve()) : nil
+    |                                                     `- warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+150 |             let old = h.paths.count
+151 |             h.credentialHook = {
+[5 / 16] CJUsageClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:149:53: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+147 |         for mutation in ["actor", "ABA", "recovery", "session"] {
+148 |             let h = try OriginalHarness(); try await h.accept()
+149 |             let source = statusStage ? try #require(try await h.resolve()) : nil
+    |                                                     `- warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+150 |             let old = h.paths.count
+151 |             h.credentialHook = {
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:168:49: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+166 |     func equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_ statusStage: Bool) async throws {
+167 |         let h = try OriginalHarness(); try await h.accept()
+168 |         let source = statusStage ? try #require(try await h.resolve()) : nil
+    |                                                 `- warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+169 |         var inner: PreparedOriginalUsageRead?
+170 |         func prepare() throws -> PreparedOriginalUsageRead { try source.map(h.model.prepareStatus) ?? h.model.prepareAssociation(try #require(h.selected)) }
+
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:181:49: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+179 |     func finalPublicationCallbackCannotOverwriteNewPreparation(_ statusStage: Bool) async throws {
+180 |         let h = try OriginalHarness(); try await h.accept()
+181 |         let source = statusStage ? try #require(try await h.resolve()) : nil
+    |                                                 `- warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+182 |         var received = false; var count = 0; var inner: PreparedOriginalUsageRead?
+183 |         h.sendHook = { received = true }
+[8 / 14] CJUsageClientTests-product
+[10 / 14] CJUsageClientTests-product
+Build complete! (1.66秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite OriginalUsageTests started.
+◇ Test finalPublicationCallbackCannotOverwriteNewPreparation(_:) started.
+◇ Test badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test actorABAAndRecoveryInvalidationAcrossBothReads(_:) started.
+◇ Test stagedForeignOrReplacedCanonicalInputCannotBeCaptured() started.
+◇ Test sourceCannotMoveToAnotherModelOrSurviveInvalidation() started.
+◇ Test statusMustRemainBoundToClosedAssociation(_:) started.
+◇ Test acceptedCanonicalReceiptThenAssociationThenExplicitOriginalStatus() started.
+◇ Test equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) started.
+◇ Test case passing 1 argument statusStage → false to finalPublicationCallbackCannotOverwriteNewPreparation(_:) started.
+◇ Test case passing 1 argument field → "message_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → false to actorABAAndRecoveryInvalidationAcrossBothReads(_:) started.
+◇ Test case passing 1 argument statusStage → true to finalPublicationCallbackCannotOverwriteNewPreparation(_:) started.
+◇ Test case passing 1 argument field → "conversation_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "attempt_id" to statusMustRemainBoundToClosedAssociation(_:) started.
+◇ Test case passing 1 argument field → "message_sequence" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → true to actorABAAndRecoveryInvalidationAcrossBothReads(_:) started.
+◇ Test case passing 1 argument field → "operation_id" to statusMustRemainBoundToClosedAssociation(_:) started.
+◇ Test case passing 1 argument field → "attempt_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "generation" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "operation_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "normalized-message" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "run_id" to statusMustRemainBoundToClosedAssociation(_:) started.
+◇ Test case passing 1 argument field → "run_id" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "extra" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → true to equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) started.
+◇ Test case passing 1 argument field → "fraction-sequence" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "bool-sequence" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument statusStage → false to equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) started.
+◇ Test case passing 1 argument field → "normalized-generation" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "missing" to badAssociationNeverBecomesUsageSource(_:) started.
+◇ Test case passing 1 argument field → "503" to badAssociationNeverBecomesUsageSource(_:) started.
+✘ Test actorABAAndRecoveryInvalidationAcrossBothReads(_:) recorded an issue with 1 argument statusStage → false at OriginalUsageTests.swift:145:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "conversation_id" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "message_id" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test stagedForeignOrReplacedCanonicalInputCannotBeCaptured() recorded an issue at OriginalUsageTests.swift:134:6: Caught error: .queryOnly
+✘ Test stagedForeignOrReplacedCanonicalInputCannotBeCaptured() failed after 0.002 seconds with 1 issue.
+✘ Test statusMustRemainBoundToClosedAssociation(_:) recorded an issue with 1 argument field → "attempt_id" at OriginalUsageTests.swift:202:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "message_sequence" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test actorABAAndRecoveryInvalidationAcrossBothReads(_:) recorded an issue with 1 argument statusStage → true at OriginalUsageTests.swift:145:6: Caught error: .queryOnly
+✘ Test actorABAAndRecoveryInvalidationAcrossBothReads(_:) with 2 test cases failed after 0.003 seconds with 2 issues.
+✘ Test statusMustRemainBoundToClosedAssociation(_:) recorded an issue with 1 argument field → "operation_id" at OriginalUsageTests.swift:202:6: Caught error: .queryOnly
+✘ Test sourceCannotMoveToAnotherModelOrSurviveInvalidation() recorded an issue at OriginalUsageTests.swift:194:6: Caught error: .queryOnly
+✘ Test sourceCannotMoveToAnotherModelOrSurviveInvalidation() failed after 0.003 seconds with 1 issue.
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "attempt_id" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "operation_id" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "normalized-message" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "generation" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test statusMustRemainBoundToClosedAssociation(_:) recorded an issue with 1 argument field → "run_id" at OriginalUsageTests.swift:202:6: Caught error: .queryOnly
+✘ Test statusMustRemainBoundToClosedAssociation(_:) with 3 test cases failed after 0.005 seconds with 3 issues.
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "extra" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) recorded an issue with 1 argument statusStage → true at OriginalUsageTests.swift:165:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "run_id" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "bool-sequence" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "fraction-sequence" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) recorded an issue with 1 argument statusStage → false at OriginalUsageTests.swift:165:6: Caught error: .queryOnly
+✘ Test equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_:) with 2 test cases failed after 0.006 seconds with 2 issues.
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "normalized-generation" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "missing" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test finalPublicationCallbackCannotOverwriteNewPreparation(_:) recorded an issue with 1 argument statusStage → false at OriginalUsageTests.swift:178:6: Caught error: .queryOnly
+✘ Test finalPublicationCallbackCannotOverwriteNewPreparation(_:) recorded an issue with 1 argument statusStage → true at OriginalUsageTests.swift:178:6: Caught error: .queryOnly
+✘ Test finalPublicationCallbackCannotOverwriteNewPreparation(_:) with 2 test cases failed after 0.007 seconds with 2 issues.
+✘ Test badAssociationNeverBecomesUsageSource(_:) recorded an issue with 1 argument field → "503" at OriginalUsageTests.swift:115:6: Caught error: .queryOnly
+✘ Test badAssociationNeverBecomesUsageSource(_:) with 14 test cases failed after 0.008 seconds with 14 issues.
+✘ Test acceptedCanonicalReceiptThenAssociationThenExplicitOriginalStatus() recorded an issue at OriginalUsageTests.swift:101:6: Caught error: .queryOnly
+✘ Test acceptedCanonicalReceiptThenAssociationThenExplicitOriginalStatus() failed after 0.008 seconds with 1 issue.
+✘ Suite OriginalUsageTests failed after 0.008 seconds with 26 issues.
+✘ Test run with 8 tests in 1 suite failed after 0.008 seconds with 26 issues.
+Note: Some test targets reported failures:
+  - CJUsageClientTests (Swift Testing)

@@ -1,0 +1,43 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[2 / 7] CJShellTests-product
+[4 / 9] CJShellTests-product
+[8 / 11] CJShellTests-product
+[10 / 14] CJShellTests-product
+Build complete! (2.50秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite OriginalUsageContainerHostTests started.
+◇ Test backgroundAndReceiptRetirementWithholdBothActions() started.
+◇ Test messageSelectionABAInvalidatesClosedSourceBetweenActions() started.
+◇ Test equalRevisionStatusReentryPreservesOnlyNewerRead() started.
+◇ Test actualAcceptedMessageResolvesThenRequiresSecondExplicitAction() started.
+◇ Test finalMessageCallbackRevokingAdmissionHidesSource() started.
+◇ Test identityOrOriginalSessionRetirementBlocksBothActions(sessionOnly:) started.
+◇ Test lateAssociationAndOldErrorCannotPublishOverNewMessage() started.
+◇ Test absentOrStagedMessageCannotQueryOrCreateAttempt() started.
+◇ Test equalRevisionResolveReentryPreservesNewerWork() started.
+◇ Test legalLongMessageIDIsNotTreatedAsAttemptID() started.
+◇ Test case passing 1 argument sessionOnly → false to identityOrOriginalSessionRetirementBlocksBothActions(sessionOnly:) started.
+◇ Test unavailableAssociationNeverTriggersStatus(mode:) started.
+◇ Test case passing 1 argument sessionOnly → true to identityOrOriginalSessionRetirementBlocksBothActions(sessionOnly:) started.
+◇ Test case passing 1 argument mode → "503" to unavailableAssociationNeverTriggersStatus(mode:) started.
+◇ Test case passing 1 argument mode → "null" to unavailableAssociationNeverTriggersStatus(mode:) started.
+◇ Test case passing 1 argument mode → "foreign" to unavailableAssociationNeverTriggersStatus(mode:) started.
+✔ Test absentOrStagedMessageCannotQueryOrCreateAttempt() passed after 0.012 seconds.
+✔ Test backgroundAndReceiptRetirementWithholdBothActions() passed after 0.023 seconds.
+✔ Test equalRevisionResolveReentryPreservesNewerWork() passed after 0.023 seconds.
+✔ Test legalLongMessageIDIsNotTreatedAsAttemptID() passed after 0.023 seconds.
+✔ Test finalMessageCallbackRevokingAdmissionHidesSource() passed after 0.023 seconds.
+✔ Test identityOrOriginalSessionRetirementBlocksBothActions(sessionOnly:) with 2 test cases passed after 0.023 seconds.
+✔ Test unavailableAssociationNeverTriggersStatus(mode:) with 3 test cases passed after 0.023 seconds.
+✔ Test equalRevisionStatusReentryPreservesOnlyNewerRead() passed after 0.026 seconds.
+✔ Test actualAcceptedMessageResolvesThenRequiresSecondExplicitAction() passed after 0.026 seconds.
+✔ Test lateAssociationAndOldErrorCannotPublishOverNewMessage() passed after 0.026 seconds.
+✔ Test messageSelectionABAInvalidatesClosedSourceBetweenActions() passed after 0.026 seconds.
+✔ Suite OriginalUsageContainerHostTests passed after 0.026 seconds.
+✔ Test run with 11 tests in 1 suite passed after 0.026 seconds.

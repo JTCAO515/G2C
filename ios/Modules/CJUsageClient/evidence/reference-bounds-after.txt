@@ -1,0 +1,29 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 11] CJUsageClient
+[5 / 14] CJUsageClient
+[8 / 17] CJUsageClient
+[12 / 13] CJUsageClientTests-product
+Build complete! (1.33秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentOriginalReferenceBoundsTests started.
+◇ Test validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "message_id", length → 200 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "conversation_id", length → 200 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "message_id", length → 200 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "message_id", length → 201 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "conversation_id", length → 201 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "message_id", length → 201 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "conversation_id", length → 200 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "generation", length → 201 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "generation", length → 200 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "conversation_id", length → 201 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "generation", length → 201 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "generation", length → 200 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+✔ Test associationWireMustUseItsOwnFieldBounds(_:_:) with 6 test cases passed after 0.004 seconds.
+✔ Test validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) with 6 test cases passed after 0.007 seconds.
+✔ Suite IndependentOriginalReferenceBoundsTests passed after 0.007 seconds.
+✔ Test run with 2 tests in 1 suite passed after 0.008 seconds.

@@ -93,6 +93,8 @@ public final class ShellState {
     public private(set) var draftRevision = UUID()
     public var draft = "" { didSet { draftRevision = UUID() } }
     var messageBindingBlocked = false
+    @ObservationIgnored weak var originalUsageContainerHost: OriginalUsageContainerHost?
+    @ObservationIgnored weak var usageContainerHost: UsageContainerHost?
     @ObservationIgnored weak var runContainerHost: RunContainerHost?
     @ObservationIgnored weak var answerFeedbackHost: FeedbackContainerHost?
     @ObservationIgnored weak var generalFeedbackHost: FeedbackContainerHost?
@@ -137,6 +139,10 @@ public final class ShellState {
         contextReset()
         // Publish the fence and clear private UI before a resource callback can reenter.
         // No outer-lifetime mutation is allowed after this callback.
+        originalUsageContainerHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
+        usageContainerHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
         runContainerHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
         answerFeedbackHost?.invalidate()

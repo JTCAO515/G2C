@@ -1,0 +1,14 @@
+{
+  "base": "f9d0fca5a7b51d07edabdcc3f77e0357f0a3a0de",
+  "shared_head": "6936a632ecc5cdbfd615b80c75312a09ed64b23a",
+  "original_prep": {
+    "ios/Modules/CJMessageClient/Package.swift": "ffb8c3ed0dcc4a578d9f7c369ad89fc6ffb1c33d1a8171059d8ee1108966fa5e",
+    "ios/Modules/CJMessageClient/scripts/prepare_generated.py": "b4c531de17da6ef247c2376ca2b2dd926234a82101afa0987556c8a9678c19c9",
+    "ios/Modules/CJMessageClient/evidence/generated-pin.json": "2fce5d225993e2e9e852638e2fb1b7d1403d525711582a59757fa312c27d80b2"
+  },
+  "sdk_commit": "33cec5ba71d74820cb0acd3c89ecbe39ba125590",
+  "transport94_unchanged_sha256": "fe1b002d25e56290e7518b96110ff5a17440d304436bfca4842a4a4be6c76472",
+  "sources_tests_locks_unchanged": true,
+  "Trip33_fixed_head": null,
+  "full_graph_compile": "UNRUN awaiting Main delivery of exact original Trip owner 33 head"
+}
