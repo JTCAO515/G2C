@@ -1,0 +1,35 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 11] CJMessageKeys
+[4 / 13] CJMessageKeys
+[10 / 17] CJMessageKeys
+[13 / 17] CJMessageKeysTests-product
+[15 / 19] CJMessageKeysTests-product
+[21 / 23] CJMessageKeysTests-product
+Build complete! (3.05秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite MessageKeyTests started.
+◇ Test needsPendingUnknownCreateAndClearUseOriginalReadback() started.
+◇ Test memoryPendingUnknownCreationReusesOriginalReconciliation() started.
+◇ Test memoryPurposeHasDedicatedSlotWithoutChangingMessageBytes() started.
+◇ Test needsPurposePreservesAllExistingNamespaceBytes() started.
+◇ Test tripPurposeKeepsMessageAndMemoryNamespaceBytesUnchanged() started.
+◇ Test needsPurposeScopeAndCleanupCannotCrossExistingKeys() started.
+◇ Test tripPurposeAccountEnvironmentAndCleanupRemainIsolated() started.
+◇ Test tripPendingUnknownCreationReconcilesOnlyOriginalKey() started.
+◇ Test memoryPurposeAccountEnvironmentAndExpectedIDCannotCrossKeys() started.
+✔ Test memoryPendingUnknownCreationReusesOriginalReconciliation() passed after 0.001 seconds.
+✔ Test needsPurposeScopeAndCleanupCannotCrossExistingKeys() passed after 0.001 seconds.
+✔ Test needsPurposePreservesAllExistingNamespaceBytes() passed after 0.001 seconds.
+✔ Test tripPurposeAccountEnvironmentAndCleanupRemainIsolated() passed after 0.001 seconds.
+✔ Test memoryPurposeHasDedicatedSlotWithoutChangingMessageBytes() passed after 0.001 seconds.
+✔ Test memoryPurposeAccountEnvironmentAndExpectedIDCannotCrossKeys() passed after 0.001 seconds.
+✔ Test tripPurposeKeepsMessageAndMemoryNamespaceBytesUnchanged() passed after 0.001 seconds.
+✔ Test tripPendingUnknownCreationReconcilesOnlyOriginalKey() passed after 0.001 seconds.
+✔ Test needsPendingUnknownCreateAndClearUseOriginalReadback() passed after 0.001 seconds.
+✔ Suite MessageKeyTests passed after 0.001 seconds.
+✔ Test run with 9 tests in 1 suite passed after 0.001 seconds.
