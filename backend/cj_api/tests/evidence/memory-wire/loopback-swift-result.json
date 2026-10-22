@@ -1,0 +1,76 @@
+{
+  "tested_source_head": "bf954c39a3ee4c595ec5b4239a88ec342ec514e2",
+  "new_swift_only_result": {
+    "source_head": "bf954c39a3ee4c595ec5b4239a88ec342ec514e2",
+    "scope": "new private PostgreSQL + numeric HTTP loopback; synthetic JWT/collection policy only",
+    "checks": [
+      {
+        "name": "verified fresh private PG identity, candidate schema only, zero source/item/operation rows",
+        "status": "PASS"
+      },
+      {
+        "name": "official generated Swift Client actual memory save/query/list/groups/detail over real HTTP and PG",
+        "status": "PASS"
+      }
+    ],
+    "pins": {
+      "schema_version": 1,
+      "contract": "MEMORY-internal.1",
+      "consumption_document_commit": "426d337b0647d7770f1716fad83f2e5e724d28e4",
+      "sources": [
+        {
+          "name": "auth",
+          "commit": "f3c8e5074eb27de0de6fef6dd7558763cbcf4291",
+          "prefix": "backend/auth/cj_auth/",
+          "files": {
+            "backend/auth/cj_auth/__init__.py": "6921fa11f3bdb1cefb618f0e067581fa22385cf1e0836e479f989a84dcb6374a",
+            "backend/auth/cj_auth/admission.py": "5e9fab7cea50a260622896cb7aeba76ebe1ba511d63a87a69e83fe7bdea526dc",
+            "backend/auth/cj_auth/interfaces.py": "39711c9511c942274162fc4d32986a554147f8f32067ffd1e49e5aa94c9a0b9c",
+            "backend/auth/cj_auth/jwt_adapter.py": "ede933a2af99965ecaa8e7d58b950fc51fe38232538dd825c4a23bcf6d85aad5"
+          }
+        },
+        {
+          "name": "memory",
+          "commit": "426d337b0647d7770f1716fad83f2e5e724d28e4",
+          "prefix": "backend/memory/cj_memory/",
+          "files": {
+            "backend/memory/cj_memory/__init__.py": "8adc2a0b636874f2c6e6664d3b4a51f8cf2a87a1767e9f92009b9fe6bf0d60d6",
+            "backend/memory/cj_memory/domain.py": "93f6243d46ff2ea63364f40dc1de6a93c8ebd5d29eda0bb1357ef5ca82982ce0",
+            "backend/memory/cj_memory/postgres.py": "2908c1b60cbfa88b983e7128c19d290777362c8bbfa4fdf45e2db7c7dea453c5",
+            "backend/memory/cj_memory/operation.py": "01ca8f8bdd88868ee84415dc9710acac0e0aa13e8638f064691d7808b11d7e37",
+            "backend/memory/cj_memory/manual.py": "e9552bcc692d2a1c4c1f5777967f1c169034be66536dbb34f881f0094afc484d"
+          }
+        }
+      ]
+    },
+    "driver": {
+      "version": "3.2.10",
+      "implementation": "python"
+    },
+    "postgres": {
+      "identity": [
+        "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-memory-pg2/data",
+        "",
+        "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-memory-pg2/s",
+        "cj005m",
+        "postgres",
+        "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit"
+      ],
+      "schema_sha256": "156bbfc72d3983c03de97410c9867448be34796a149e7f736ee3ab8ea45605de"
+    },
+    "result": "PASS_SWIFT_ONLY",
+    "safe_stop": "PASS"
+  },
+  "initial_full_run_result": "FAIL; seven Python/HTTP/PG groups PASS, Swift date failure preserved",
+  "prior_python_groups": "reused at9a25e65; no backend/domain/schema changes in date repair",
+  "remaining": "independent Review/Testing, real accounts/product policy/next-model/App/device/cleanup/deployment UNRUN",
+  "sha256": {
+    "backend/cj_api/memory_boundary.py": "f8bc3269fb36b4e9e413cc2b39089814529627c5d84792222ae0719bcbee78f5",
+    "backend/cj_api/memory_routes.py": "38cc80f5fb6758cf7131e51f8ebd081b5a8dd96007cc03e4240845862bbbba82",
+    "backend/cj_api/memory_pins.json": "94a70fdd41b0bc209f7f9349bda20799cc467d85fce0b7ee896df531d3d94a1d",
+    "contracts/api/openapi.json": "a5498322fa3c772d17dbcd8238bccd2f1b5260af02faa8a259a68f00dec5375d",
+    "ios/Sources/CJAPI/MemoryClientConfiguration.swift": "3088bab954be24d7fdda0c5815822feb846b772e6d4dc299889cdfd29e4f6d82",
+    "backend/cj_api/tests/memory_loopback_postgres.py": "7ef94a4d8ba325f325ca5bb7e29dab4c8debcf29a9a377c66688780dcf04578c",
+    "backend/cj_api/tests/memory_loopback_client.swift": "7fa1a685945ca07ca28805353ce66e6f1ad3c092a6b3da6dd0b27f8d8f9ba13a"
+  }
+}

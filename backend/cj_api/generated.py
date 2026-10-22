@@ -6,7 +6,15 @@ from __future__ import annotations
 from enum import Enum, StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    conint,
+    constr,
+)
 
 
 class RequestId(RootModel[UUID]):
@@ -164,3 +172,145 @@ class MessageDraftSaveResponse(BaseModel):
     )
     request_id: RequestId
     draft: MessageDraftSnapshot
+
+
+class Kind(StrEnum):
+    fact = 'fact'
+    experience = 'experience'
+    preference = 'preference'
+    inference = 'inference'
+
+
+class Extent(StrEnum):
+    long_term = 'long_term'
+    current = 'current'
+
+
+class ContextId(Enum):
+    NoneType_None = None
+
+
+class MemorySaveCommand(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    operation_id: constr(min_length=1, max_length=4096)
+    item_id: constr(min_length=1, max_length=4096)
+    subject: constr(min_length=1, max_length=4096)
+    slot: constr(min_length=1, max_length=4096)
+    text: constr(min_length=1, max_length=4096)
+    source_id: constr(min_length=1, max_length=4096)
+    occurred_at: constr(min_length=1, max_length=4096)
+    kind: Kind
+    extent: Extent
+    context_id: constr(min_length=1, max_length=4096) | ContextId
+    source_version: conint(ge=1, le=9223372036854775807)
+
+
+class Status1(StrEnum):
+    active = 'active'
+    candidate = 'candidate'
+
+
+class MemoryReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    operation_id: constr(min_length=1, max_length=4096)
+    item_id: constr(min_length=1, max_length=4096)
+    version: conint(ge=1, le=9223372036854775807)
+    status: Status1
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$') = Field(
+        ...,
+        description='SHA256 of persisted original operation ledger bytes, returned by producer save/query decoder; manual nine-key input, never derived source/item Command bytes.',
+    )
+
+
+class Status2(StrEnum):
+    active = 'active'
+    candidate = 'candidate'
+    disabled = 'disabled'
+    withdrawn = 'withdrawn'
+
+
+class MemoryItem(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    command: MemorySaveCommand
+    version: conint(ge=1, le=9223372036854775807)
+    status: Status2
+    recorded_at: AwareDatetime
+
+
+class MemorySaveResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: MemoryReceipt
+
+
+class MemoryReceiptQueryResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: MemoryReceipt | Receipt
+
+
+class Item(Enum):
+    NoneType_None = None
+
+
+class MemoryDetailResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    item: MemoryItem | Item
+
+
+class MemoryGroup(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    subject: constr(min_length=1, max_length=4096)
+    status: Status2
+    count: conint(ge=1, le=9223372036854775807)
+
+
+class MemoryGroupsResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    groups: list[MemoryGroup]
+
+
+class NextAfter(Enum):
+    NoneType_None = None
+
+
+class MemoryListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    items: list[MemoryItem]
+    next_after: constr(min_length=1, max_length=4096) | NextAfter
+
+
+class MemoryManualSaveCommand(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    operation_id: constr(min_length=1, max_length=4096)
+    item_id: constr(min_length=1, max_length=4096)
+    subject: constr(min_length=1, max_length=4096)
+    slot: constr(min_length=1, max_length=4096)
+    text: constr(min_length=1, max_length=4096)
+    occurred_at: constr(min_length=1, max_length=4096)
+    kind: Kind
+    extent: Extent
+    context_id: constr(min_length=1, max_length=4096) | ContextId
