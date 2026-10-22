@@ -44,6 +44,24 @@ public struct ActionRecord: Codable, Sendable {
     public var inputSHA256: String { SHA256.hash(data: originalUTF8).map { String(format: "%02x", $0) }.joined() }
 }
 
+/// Minimal local-only metadata. Neither type is a server-history or sending authority.
+public struct LocalActionReference: Sendable {
+    public let messageID: String
+    public let phase: ActionPhase
+}
+
+public struct LocalDraftReference: Sendable {
+    public let conversationID: String
+}
+
+/// Unordered in-memory projection; not Codable and not valid after a lease change.
+/// Caller must revalidate after every await before display or further local use.
+public struct LocalRecoveryProjection: Sendable {
+    public let actions: [LocalActionReference]
+    public let drafts: [LocalDraftReference]
+    fileprivate let lease: Lease
+}
+
 public struct Snapshot: Codable, Sendable {
     var version = 1
     var actions: [String: ActionRecord] = [:]
@@ -129,6 +147,27 @@ public struct Submission: Sendable {
     public func validateScope(_ expected: StorageScope, lease: Lease) throws {
         try check(lease)
         guard scope?.binding == expected.binding else { throw RecoveryError.inactive }
+    }
+
+    public func localProjection(scope: StorageScope, lease: Lease) throws -> LocalRecoveryProjection {
+        try validateScope(scope, lease: lease)
+        // No storage calls/awaits or mutations: enumeration cannot refresh identity,
+        // mint fresh authorization, acknowledge a message or rewrite a snapshot.
+        let drafts = try snapshot.drafts.keys.map { encoded -> LocalDraftReference in
+            guard let bytes = Data(base64Encoded: encoded),
+                  let id = String(data: bytes, encoding: .utf8), !id.isEmpty,
+                  Self.key(id) == encoded else { throw RecoveryError.invalidSnapshot }
+            return LocalDraftReference(conversationID: id)
+        }
+        let actions = snapshot.actions.values.map {
+            LocalActionReference(messageID: $0.messageID, phase: $0.phase)
+        }
+        return LocalRecoveryProjection(actions: actions, drafts: drafts, lease: lease)
+    }
+
+    public func validateProjection(_ projection: LocalRecoveryProjection, scope: StorageScope, lease: Lease) throws {
+        try validateScope(scope, lease: lease)
+        guard projection.lease == lease else { throw RecoveryError.inactive }
     }
 
     public func saveDraft(_ bytes: Data, conversationID: String, lease: Lease) throws {

@@ -111,3 +111,8 @@ Once-only local authority: [FRESH-AUTHORIZATION.md](FRESH-AUTHORIZATION.md) docu
 private nonserialized first-attempt permission and same-process rollback/reentry denial.
 27 affected checks plus one overlap check pass; no global rollback guarantee or live
 POST activation follows. Draft and original-action state remain separate.
+
+Local recovery enumeration: [LOCAL-PROJECTION.md](LOCAL-PROJECTION.md) exposes current
+scope/Lease-bound action ID/phase and draft references only. Complete unordered local
+projection, no payload or invented server sequence; six targeted checks pass. Revalidate
+after await before display. It grants no new sending or server-history authority.
