@@ -1,6 +1,7 @@
 """RUN internal candidate. No authentication, provider, tools or network entry point."""
 from dataclasses import dataclass, replace
-from typing import Callable, ContextManager, Protocol
+from typing import Callable, ContextManager, Protocol, Optional
+from .usage_binding import UsageBinding
 
 
 class Conflict(Exception):
@@ -67,6 +68,7 @@ class State:
     events: tuple[Event, ...] = ()
     text: str = ''
     effects: tuple[str, ...] = ()
+    usage: Optional[UsageBinding] = None
 
     @property
     def sequence(self):
@@ -129,7 +131,7 @@ def page(state: State, epoch: str, cursor: Cursor, limit: int):
 
 
 class Transaction(Protocol):
-    def accept(self, binding: Binding) -> State: ...
+    def accept(self, binding: Binding, usage: Optional[UsageBinding] = None, require_new: bool = False) -> State: ...
     def get(self, binding: Binding) -> State: ...
     def put(self, state: State) -> None: ...
     def previous_terminal(self, binding: Binding) -> bool: ...
@@ -151,6 +153,14 @@ class Service:
     def accept(self, binding):
         with self.repository.transaction() as tx:
             state = tx.accept(binding)
+        return state
+
+    def accept_with_usage(self, binding, usage, *, require_new=False):
+        if type(usage) is not UsageBinding:
+            raise ValueError('explicit original usage binding required')
+        usage.check_run(binding.run_id)
+        with self.repository.transaction() as tx:
+            state = tx.accept(binding, usage, require_new=require_new)
         return state
 
     def apply(self, event):
