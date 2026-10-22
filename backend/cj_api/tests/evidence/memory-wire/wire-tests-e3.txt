@@ -1,0 +1,18 @@
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+test_generated_python_required_null_enum_and_integer (memory_wire_checks.MemoryWireTests.test_generated_python_required_null_enum_and_integer) ... ok
+test_guard_precommit_rollback_and_postcommit_original_recovery (memory_wire_checks.MemoryWireTests.test_guard_precommit_rollback_and_postcommit_original_recovery) ... ok
+test_invalid_raw_fields_bounds_media_queries_and_access (memory_wire_checks.MemoryWireTests.test_invalid_raw_fields_bounds_media_queries_and_access) ... ok
+test_missing_configuration_and_wrong_environment_fail_closed (memory_wire_checks.MemoryWireTests.test_missing_configuration_and_wrong_environment_fail_closed) ... ok
+test_required_null_list_groups_and_candidate (memory_wire_checks.MemoryWireTests.test_required_null_list_groups_and_candidate) ... ok
+test_response_cap_after_commit_does_not_report_false_failure (memory_wire_checks.MemoryWireTests.test_response_cap_after_commit_does_not_report_false_failure) ... ok
+test_save_replay_original_query_and_private_detail (memory_wire_checks.MemoryWireTests.test_save_replay_original_query_and_private_detail) ... ok
+test_two_identity_partition_and_refresh_not_a_new_scope (memory_wire_checks.MemoryWireTests.test_two_identity_partition_and_refresh_not_a_new_scope) ... ok
+test_unapproved_source_and_source_policy_never_create_approval (memory_wire_checks.MemoryWireTests.test_unapproved_source_and_source_policy_never_create_approval) ... ok
+test_unknown_commit_original_query_and_withheld_private_response (memory_wire_checks.MemoryWireTests.test_unknown_commit_original_query_and_withheld_private_response) ... ok
+test_wrong_service_binding_never_opens_transaction (memory_wire_checks.MemoryWireTests.test_wrong_service_binding_never_opens_transaction) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.387s
+
+OK

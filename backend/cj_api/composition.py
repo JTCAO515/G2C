@@ -14,8 +14,8 @@ class CompositionUnavailable(RuntimeError):
     pass
 
 
-def _pinned_modules():
-    manifest = json.loads(Path(__file__).with_name('composition_pins.json').read_text())
+def _pinned_modules(*, manifest_name='composition_pins.json'):
+    manifest = json.loads(Path(__file__).with_name(manifest_name).read_text())
     loaded = {}
     for source in manifest['sources']:
         prefix = Path(source['prefix'])

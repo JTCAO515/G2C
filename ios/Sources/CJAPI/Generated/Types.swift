@@ -28,6 +28,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `PUT /v1/message-drafts`.
     /// - Remark: Generated from `#/paths//v1/message-drafts/put(saveMessageDraft)`.
     func saveMessageDraft(_ input: Operations.saveMessageDraft.Input) async throws -> Operations.saveMessageDraft.Output
+    /// - Remark: HTTP `GET /v1/memories`.
+    /// - Remark: Generated from `#/paths//v1/memories/get(listMemories)`.
+    func listMemories(_ input: Operations.listMemories.Input) async throws -> Operations.listMemories.Output
+    /// - Remark: HTTP `POST /v1/memories`.
+    /// - Remark: Generated from `#/paths//v1/memories/post(saveMemory)`.
+    func saveMemory(_ input: Operations.saveMemory.Input) async throws -> Operations.saveMemory.Output
+    /// - Remark: HTTP `GET /v1/memory-receipts`.
+    /// - Remark: Generated from `#/paths//v1/memory-receipts/get(queryMemoryReceipt)`.
+    func queryMemoryReceipt(_ input: Operations.queryMemoryReceipt.Input) async throws -> Operations.queryMemoryReceipt.Output
+    /// - Remark: HTTP `GET /v1/memory-groups`.
+    /// - Remark: Generated from `#/paths//v1/memory-groups/get(listMemoryGroups)`.
+    func listMemoryGroups(_ input: Operations.listMemoryGroups.Input) async throws -> Operations.listMemoryGroups.Output
+    /// - Remark: HTTP `GET /v1/memory-items`.
+    /// - Remark: Generated from `#/paths//v1/memory-items/get(getMemoryItem)`.
+    func getMemoryItem(_ input: Operations.getMemoryItem.Input) async throws -> Operations.getMemoryItem.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -105,6 +120,55 @@ extension APIProtocol {
             query: query,
             headers: headers,
             body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/memories`.
+    /// - Remark: Generated from `#/paths//v1/memories/get(listMemories)`.
+    public func listMemories(
+        query: Operations.listMemories.Input.Query,
+        headers: Operations.listMemories.Input.Headers = .init()
+    ) async throws -> Operations.listMemories.Output {
+        try await listMemories(Operations.listMemories.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/memories`.
+    /// - Remark: Generated from `#/paths//v1/memories/post(saveMemory)`.
+    public func saveMemory(
+        headers: Operations.saveMemory.Input.Headers = .init(),
+        body: Operations.saveMemory.Input.Body
+    ) async throws -> Operations.saveMemory.Output {
+        try await saveMemory(Operations.saveMemory.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/memory-receipts`.
+    /// - Remark: Generated from `#/paths//v1/memory-receipts/get(queryMemoryReceipt)`.
+    public func queryMemoryReceipt(
+        query: Operations.queryMemoryReceipt.Input.Query,
+        headers: Operations.queryMemoryReceipt.Input.Headers = .init()
+    ) async throws -> Operations.queryMemoryReceipt.Output {
+        try await queryMemoryReceipt(Operations.queryMemoryReceipt.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/memory-groups`.
+    /// - Remark: Generated from `#/paths//v1/memory-groups/get(listMemoryGroups)`.
+    public func listMemoryGroups(headers: Operations.listMemoryGroups.Input.Headers = .init()) async throws -> Operations.listMemoryGroups.Output {
+        try await listMemoryGroups(Operations.listMemoryGroups.Input(headers: headers))
+    }
+    /// - Remark: HTTP `GET /v1/memory-items`.
+    /// - Remark: Generated from `#/paths//v1/memory-items/get(getMemoryItem)`.
+    public func getMemoryItem(
+        query: Operations.getMemoryItem.Input.Query,
+        headers: Operations.getMemoryItem.Input.Headers = .init()
+    ) async throws -> Operations.getMemoryItem.Output {
+        try await getMemoryItem(Operations.getMemoryItem.Input(
+            query: query,
+            headers: headers
         ))
     }
 }

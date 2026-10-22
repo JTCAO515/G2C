@@ -748,5 +748,691 @@ extension Components {
                 ])
             }
         }
+        /// Strict exact-key original UTF8 JSON carried as octet-stream (maximum 32768 bytes, host may choose smaller). References are not authorization. Host validates canonical subject/slot/context/source; no owner, approval or policy fields. long_term requires context_id=null; current requires explicit validated nonempty context.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemorySaveCommand`.
+        public struct MemorySaveCommand: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/operation_id`.
+            public var operation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/subject`.
+            public var subject: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/slot`.
+            public var slot: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/text`.
+            public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/source_id`.
+            public var source_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/occurred_at`.
+            public var occurred_at: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case fact = "fact"
+                case experience = "experience"
+                case preference = "preference"
+                case inference = "inference"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/kind`.
+            public var kind: Components.Schemas.MemorySaveCommand.kindPayload
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/extent`.
+            @frozen public enum extentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case long_term = "long_term"
+                case current = "current"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/extent`.
+            public var extent: Components.Schemas.MemorySaveCommand.extentPayload
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/context_id`.
+            @frozen public enum context_idPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/context_id/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/context_id/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/context_id`.
+            public var context_id: Components.Schemas.MemorySaveCommand.context_idPayload
+            /// - Remark: Generated from `#/components/schemas/MemorySaveCommand/source_version`.
+            public var source_version: Swift.Int
+            /// Creates a new `MemorySaveCommand`.
+            ///
+            /// - Parameters:
+            ///   - operation_id:
+            ///   - item_id:
+            ///   - subject:
+            ///   - slot:
+            ///   - text:
+            ///   - source_id:
+            ///   - occurred_at:
+            ///   - kind:
+            ///   - extent:
+            ///   - context_id:
+            ///   - source_version:
+            public init(
+                operation_id: Swift.String,
+                item_id: Swift.String,
+                subject: Swift.String,
+                slot: Swift.String,
+                text: Swift.String,
+                source_id: Swift.String,
+                occurred_at: Swift.String,
+                kind: Components.Schemas.MemorySaveCommand.kindPayload,
+                extent: Components.Schemas.MemorySaveCommand.extentPayload,
+                context_id: Components.Schemas.MemorySaveCommand.context_idPayload,
+                source_version: Swift.Int
+            ) {
+                self.operation_id = operation_id
+                self.item_id = item_id
+                self.subject = subject
+                self.slot = slot
+                self.text = text
+                self.source_id = source_id
+                self.occurred_at = occurred_at
+                self.kind = kind
+                self.extent = extent
+                self.context_id = context_id
+                self.source_version = source_version
+            }
+            public enum CodingKeys: String, CodingKey {
+                case operation_id
+                case item_id
+                case subject
+                case slot
+                case text
+                case source_id
+                case occurred_at
+                case kind
+                case extent
+                case context_id
+                case source_version
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.operation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .operation_id
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.subject = try container.decode(
+                    Swift.String.self,
+                    forKey: .subject
+                )
+                self.slot = try container.decode(
+                    Swift.String.self,
+                    forKey: .slot
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                self.source_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .source_id
+                )
+                self.occurred_at = try container.decode(
+                    Swift.String.self,
+                    forKey: .occurred_at
+                )
+                self.kind = try container.decode(
+                    Components.Schemas.MemorySaveCommand.kindPayload.self,
+                    forKey: .kind
+                )
+                self.extent = try container.decode(
+                    Components.Schemas.MemorySaveCommand.extentPayload.self,
+                    forKey: .extent
+                )
+                self.context_id = try container.decode(
+                    Components.Schemas.MemorySaveCommand.context_idPayload.self,
+                    forKey: .context_id
+                )
+                self.source_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .source_version
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "operation_id",
+                    "item_id",
+                    "subject",
+                    "slot",
+                    "text",
+                    "source_id",
+                    "occurred_at",
+                    "kind",
+                    "extent",
+                    "context_id",
+                    "source_version"
+                ])
+            }
+        }
+        /// Historical original committed save receipt; not current effectiveness or collection approval.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryReceipt`.
+        public struct MemoryReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryReceipt/operation_id`.
+            public var operation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryReceipt/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryReceipt/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryReceipt/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case candidate = "candidate"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryReceipt/status`.
+            public var status: Components.Schemas.MemoryReceipt.statusPayload
+            /// Creates a new `MemoryReceipt`.
+            ///
+            /// - Parameters:
+            ///   - operation_id:
+            ///   - item_id:
+            ///   - version:
+            ///   - status:
+            public init(
+                operation_id: Swift.String,
+                item_id: Swift.String,
+                version: Swift.Int,
+                status: Components.Schemas.MemoryReceipt.statusPayload
+            ) {
+                self.operation_id = operation_id
+                self.item_id = item_id
+                self.version = version
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case operation_id
+                case item_id
+                case version
+                case status
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.operation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .operation_id
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.status = try container.decode(
+                    Components.Schemas.MemoryReceipt.statusPayload.self,
+                    forKey: .status
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "operation_id",
+                    "item_id",
+                    "version",
+                    "status"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryItem`.
+        public struct MemoryItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryItem/command`.
+            public var command: Components.Schemas.MemorySaveCommand
+            /// - Remark: Generated from `#/components/schemas/MemoryItem/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryItem/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case candidate = "candidate"
+                case disabled = "disabled"
+                case withdrawn = "withdrawn"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryItem/status`.
+            public var status: Components.Schemas.MemoryItem.statusPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryItem/recorded_at`.
+            public var recorded_at: Foundation.Date
+            /// Creates a new `MemoryItem`.
+            ///
+            /// - Parameters:
+            ///   - command:
+            ///   - version:
+            ///   - status:
+            ///   - recorded_at:
+            public init(
+                command: Components.Schemas.MemorySaveCommand,
+                version: Swift.Int,
+                status: Components.Schemas.MemoryItem.statusPayload,
+                recorded_at: Foundation.Date
+            ) {
+                self.command = command
+                self.version = version
+                self.status = status
+                self.recorded_at = recorded_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case command
+                case version
+                case status
+                case recorded_at
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.command = try container.decode(
+                    Components.Schemas.MemorySaveCommand.self,
+                    forKey: .command
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.status = try container.decode(
+                    Components.Schemas.MemoryItem.statusPayload.self,
+                    forKey: .status
+                )
+                self.recorded_at = try container.decode(
+                    Foundation.Date.self,
+                    forKey: .recorded_at
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "command",
+                    "version",
+                    "status",
+                    "recorded_at"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemorySaveResponse`.
+        public struct MemorySaveResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemorySaveResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemorySaveResponse/receipt`.
+            public var receipt: Components.Schemas.MemoryReceipt
+            /// Creates a new `MemorySaveResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryReceipt
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryReceipt.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// Required receipt=null means not observed by original operation_id; never establishes noncommit or permission to resend unknown action.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryReceiptQueryResponse`.
+        public struct MemoryReceiptQueryResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryReceiptQueryResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryReceiptQueryResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryReceiptQueryResponse/receipt/case1`.
+                case MemoryReceipt(Components.Schemas.MemoryReceipt)
+                /// - Remark: Generated from `#/components/schemas/MemoryReceiptQueryResponse/receipt/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryReceiptQueryResponse/receipt`.
+            public var receipt: Components.Schemas.MemoryReceiptQueryResponse.receiptPayload
+            /// Creates a new `MemoryReceiptQueryResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryReceiptQueryResponse.receiptPayload
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryReceiptQueryResponse.receiptPayload.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryDetailResponse`.
+        public struct MemoryDetailResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailResponse/item`.
+            @frozen public enum itemPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryDetailResponse/item/case1`.
+                case MemoryItem(Components.Schemas.MemoryItem)
+                /// - Remark: Generated from `#/components/schemas/MemoryDetailResponse/item/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryItem(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryItem(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailResponse/item`.
+            public var item: Components.Schemas.MemoryDetailResponse.itemPayload
+            /// Creates a new `MemoryDetailResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - item:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                item: Components.Schemas.MemoryDetailResponse.itemPayload
+            ) {
+                self.request_id = request_id
+                self.item = item
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case item
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.item = try container.decode(
+                    Components.Schemas.MemoryDetailResponse.itemPayload.self,
+                    forKey: .item
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "item"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryGroup`.
+        public struct MemoryGroup: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryGroup/subject`.
+            public var subject: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryGroup/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case candidate = "candidate"
+                case disabled = "disabled"
+                case withdrawn = "withdrawn"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryGroup/status`.
+            public var status: Components.Schemas.MemoryGroup.statusPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryGroup/count`.
+            public var count: Swift.Int
+            /// Creates a new `MemoryGroup`.
+            ///
+            /// - Parameters:
+            ///   - subject:
+            ///   - status:
+            ///   - count:
+            public init(
+                subject: Swift.String,
+                status: Components.Schemas.MemoryGroup.statusPayload,
+                count: Swift.Int
+            ) {
+                self.subject = subject
+                self.status = status
+                self.count = count
+            }
+            public enum CodingKeys: String, CodingKey {
+                case subject
+                case status
+                case count
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.subject = try container.decode(
+                    Swift.String.self,
+                    forKey: .subject
+                )
+                self.status = try container.decode(
+                    Components.Schemas.MemoryGroup.statusPayload.self,
+                    forKey: .status
+                )
+                self.count = try container.decode(
+                    Swift.Int.self,
+                    forKey: .count
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "subject",
+                    "status",
+                    "count"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryGroupsResponse`.
+        public struct MemoryGroupsResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryGroupsResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryGroupsResponse/groups`.
+            public var groups: [Components.Schemas.MemoryGroup]
+            /// Creates a new `MemoryGroupsResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - groups:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                groups: [Components.Schemas.MemoryGroup]
+            ) {
+                self.request_id = request_id
+                self.groups = groups
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case groups
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.groups = try container.decode(
+                    [Components.Schemas.MemoryGroup].self,
+                    forKey: .groups
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "groups"
+                ])
+            }
+        }
+        /// Live item-ID keyset page, not snapshot. next_after is last returned item_id for any nonempty page, null for an empty page. Final nonempty page may require one empty read; no guessed has-more.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryListResponse`.
+        public struct MemoryListResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryListResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryListResponse/items`.
+            public var items: [Components.Schemas.MemoryItem]
+            /// - Remark: Generated from `#/components/schemas/MemoryListResponse/next_after`.
+            @frozen public enum next_afterPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryListResponse/next_after/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/MemoryListResponse/next_after/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryListResponse/next_after`.
+            public var next_after: Components.Schemas.MemoryListResponse.next_afterPayload
+            /// Creates a new `MemoryListResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - items:
+            ///   - next_after:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                items: [Components.Schemas.MemoryItem],
+                next_after: Components.Schemas.MemoryListResponse.next_afterPayload
+            ) {
+                self.request_id = request_id
+                self.items = items
+                self.next_after = next_after
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case items
+                case next_after
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.items = try container.decode(
+                    [Components.Schemas.MemoryItem].self,
+                    forKey: .items
+                )
+                self.next_after = try container.decode(
+                    Components.Schemas.MemoryListResponse.next_afterPayload.self,
+                    forKey: .next_after
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "items",
+                    "next_after"
+                ])
+            }
+        }
     }
 }
