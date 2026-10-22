@@ -782,6 +782,312 @@
           }
         ]
       }
+    },
+    "/v1/trip-actions": {
+      "post": {
+        "operationId": "actOnTripProposal",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized guarded TRIP response; historical action receipt is not latest-version inference.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripActionResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error. Generic producer Denied includes unavailable/unknown AUTH and confirmation; conservatively unavailable, no private result or existence disclosure.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact canonical UTF8 JSON array of five strings [action_id, kind, proposal_id, candidate_hash, confirmation_ref], byte-for-byte producer Action.raw(): compact JSON, no whitespace. kind accept/reject; IDs match [A-Za-z0-9][A-Za-z0-9_.:-]{0,127}; candidate_hash is 64 lowercase hex. Freeze bytes and original action_id before first send. No owner/viewed/approval, no caller-created confirmation evidence. Server validator defaults absent/deny. Unknown outcome requires original action query, never replacement ID or latest-Trip guess.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/trip-action-receipts": {
+      "get": {
+        "operationId": "queryTripAction",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized guarded TRIP response; historical action receipt is not latest-version inference.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripActionQueryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error. Generic producer Denied includes unavailable/unknown AUTH and confirmation; conservatively unavailable, no private result or existence disclosure.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/trips": {
+      "get": {
+        "operationId": "listTrips",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized guarded TRIP response; historical action receipt is not latest-version inference.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error. Generic producer Denied includes unavailable/unknown AUTH and confirmation; conservatively unavailable, no private result or existence disclosure.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/trip-details": {
+      "get": {
+        "operationId": "getTrip",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized guarded TRIP response; historical action receipt is not latest-version inference.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDetailResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error. Generic producer Denied includes unavailable/unknown AUTH and confirmation; conservatively unavailable, no private result or existence disclosure.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "trip_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/trip-proposals": {
+      "get": {
+        "operationId": "getTripProposal",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized guarded TRIP response; historical action receipt is not latest-version inference.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripProposalResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error. Generic producer Denied includes unavailable/unknown AUTH and confirmation; conservatively unavailable, no private result or existence disclosure.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1534,6 +1840,323 @@
           }
         },
         "description": "First manual save: exactly nine required keys, original immutable UTF8 JSON octet-stream. No source/owner/approval/confirmed fields. Trusted ManualPolicy required; source+item+original receipt created in one transaction. No normalization or invented occurrence time."
+      },
+      "TripActionReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "kind",
+          "proposal_id",
+          "candidate_hash",
+          "trip_id",
+          "committed_version"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject"
+            ]
+          },
+          "proposal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "candidate_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "trip_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "committed_version": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "description": "Historical original canonical Action receipt. Reject committed_version is explicit null; accept version is the then-committed version, never latest Trip inference. No proof of current proposal eligibility or provider fact verification."
+      },
+      "TripDocumentItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "text",
+          "verification",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "verified"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "description": "Producer internal content projection. verified requires nonempty evidence; format validation does not certify factual accuracy. pending remains pending after acceptance."
+      },
+      "TripDocument": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "items"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/TripDocumentItem"
+            }
+          }
+        }
+      },
+      "TripRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trip_id",
+          "version",
+          "content_utf8_base64",
+          "document"
+        ],
+        "properties": {
+          "trip_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "content_utf8_base64": {
+            "type": "string",
+            "minLength": 4,
+            "description": "RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string."
+          },
+          "document": {
+            "$ref": "#/components/schemas/TripDocument"
+          }
+        }
+      },
+      "TripActionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/TripActionReceipt"
+          }
+        }
+      },
+      "TripActionQueryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TripActionReceipt"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "description": "Required receipt null means not observed by original action_id. Does not prove noncommit or permit new-ID retry."
+      },
+      "TripDetailResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "trip"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "trip": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TripRecord"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "TripListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "trips",
+          "next_after"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "trips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripRecord"
+            }
+          },
+          "next_after": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "description": "Live Trip-ID keyset page with C byte ordering. next_after is last returned trip_id for any nonempty page and null for an empty page. At most requested limit; no has-more or cross-page snapshot/completeness promise. The complete returned ID is an opaque next boundary, never parsed/incremented."
+      },
+      "TripProposalSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "proposal_id",
+          "trip_id",
+          "expected_version",
+          "basis_version",
+          "expires_at",
+          "content_utf8_base64",
+          "document",
+          "candidate_hash",
+          "status"
+        ],
+        "properties": {
+          "proposal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "trip_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "basis_version": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "expires_at": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "content_utf8_base64": {
+            "type": "string",
+            "minLength": 4,
+            "description": "RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string."
+          },
+          "document": {
+            "$ref": "#/components/schemas/TripDocument"
+          },
+          "candidate_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected",
+              "expired",
+              "superseded"
+            ]
+          }
+        },
+        "description": "Protected immutable display snapshot. Stored candidate_hash is revalidated by producer against original fields and server scope; never hash a reserialized API body. expires_at is Unix seconds. Stored pending may already be elapsed; this read does not retire, authorize, record review, or confirm acceptance."
+      },
+      "TripProposalResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "proposal"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/TripProposalSnapshot"
+          }
+        },
+        "description": "Missing and wrong-scope candidates both fail generically; no nullable candidate or confirmation evidence is fabricated."
       }
     },
     "securitySchemes": {
@@ -1546,5 +2169,6 @@
   },
   "x-cj-message-wire": "receive-receipt-0.1.0-rc.1; partial internal composition, not MESSAGE@1.0",
   "x-cj-history-draft-wire": "history-draft-0.1.0-rc.1; owner-confirmed narrow wire, context review pending, not MESSAGE@1.0",
-  "x-memory-wire-version": "MEMORY-WIRE@0.1.0-rc.1"
+  "x-memory-wire-version": "MEMORY-WIRE@0.1.0-rc.1",
+  "x-trip-wire-version": "TRIP-WIRE@0.1.0-rc.1"
 }
