@@ -2,6 +2,8 @@
 
 Composition base `1a93051e4f15c5c1d83c0be69d665b16a349675b` (product312a69c unchanged). Internal source under consideration: MESSAGE `b722281001f57cc7bc1c7df8dd38f2543e7dc250`, HISTORY-DRAFT.md and actual Boundary/Service/dataclasses. Its independent review is in progress, not claimed PASS. Current receive/query pins, source, generated client and prior loopback evidence remain unchanged. This proposal is not current OpenAPI or an implemented route; no second runtime wire source.
 
+Exact machine-readable projection/path proposal: `history-draft-schema-proposal.json`, validated only by in-memory merge with current OpenAPI; not a runtime/generator source.
+
 ## Minimal endpoints / exact projections (all require current restricted-business AUTH gate)
 
 | Method/path | Input and domain call | Response200 JSON, always server request_id/header |
