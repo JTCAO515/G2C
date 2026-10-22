@@ -19,7 +19,7 @@ struct AssistantShell: View {
                 if let bodyText {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Button(state.language.text("Server history (read-only)", "服务器历史（只读）")) { panel = .server }
+                Button(state.language.text("Server history and drafts", "服务器历史与草稿")) { panel = .server }
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if !messageHost.isConfigured {
                     ShellStatusView(state: state.assistantState, language: state.language)

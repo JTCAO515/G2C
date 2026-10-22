@@ -1,0 +1,81 @@
+Building for debugging...
+[Using on-disk description]
+[2 / 13] CJShell
+[5 / 16] CJShell
+[8 / 18] CJShell
+[12 / 17] CJShellTests-product
+[14 / 19] CJShellTests-product
+[17 / 20] CJShellTests-product
+[19 / 23] CJShellTests-product
+Build complete! (1.83秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ServerHistoryHostTests started.
+◇ Suite IndependentHistoryActionTests started.
+◇ Suite IdentityCallbackReentryTests started.
+◇ Suite ServerDraftSaveHostTests started.
+◇ Test oldAccountListActionMustNotReadReplacementBinding() started.
+◇ Test allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test nullAndSavedEmptyDraftNeverReplaceLocalEditor() started.
+◇ Test distinctCanonicalUnicodeCursorsKeepTheirOriginalUTF8Pages() started.
+◇ Test invalidReadFailsRatherThanEmptySuccess() started.
+◇ Test completedReadRetiresOldRetryContextWithoutTouchingNewPage() started.
+◇ Test historyPagesKeepOneSelectedConversationAndOrderedServerSequence() started.
+◇ Test oldSelectedConversationActionMustNotReadNewSelection() started.
+◇ Test identityFenceHidesLateResultsAndLanguagePreservesLifetime() started.
+◇ Test pagesAppendOnceAndRepeatedCursorRequiresResync() started.
+◇ Test historyGenerationDifferentFromSelectionRequiresResync() started.
+◇ Test outerCleanupCannotOverwriteCallbackInstalledB() started.
+◇ Test normalInvalidationClearsBeforeResourceCallback() started.
+◇ Test unknownReadbackDoesNotGrantReplacementSave(null:) started.
+◇ Test editWhileSavingIsPreservedEvenWhenBytesReturnToOriginal() started.
+◇ Test identityInvalidationHidesLateSaveWithoutOverwritingNewEditor() started.
+◇ Test pendingRecordForOldServerGenerationIsNotExposedOrWritable() started.
+◇ Test localCancelRetainsCASAndCannotResave() started.
+◇ Test conflictKeepsOriginalCASAndNeverRetries() started.
+◇ Test staleEditorOrIdentityContextDoesNotStartPUT() started.
+◇ Test lateHistoryAIsNotDisplayedInSelectedB() started.
+◇ Test exactConfirmationMarksOnlyOriginalEditorAndLanguageDoesNotChangeIt(text:) started.
+◇ Test case passing 1 argument entry → "listFirst" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test case passing 1 argument entry → "historyFirst" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test defaultUnavailableAndValidEmptyAreDifferent() started.
+◇ Test oldUnknownQueryCannotReadReplacementAccount() started.
+◇ Test case passing 1 argument entry → "listMore" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test case passing 1 argument entry → "draft" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test case passing 1 argument null → false to unknownReadbackDoesNotGrantReplacementSave(null:) started.
+◇ Test case passing 1 argument entry → "historyMore" to allDeferredReadEntriesRejectChangedSelection(entry:) started.
+◇ Test case passing 1 argument null → true to unknownReadbackDoesNotGrantReplacementSave(null:) started.
+◇ Test case passing 1 argument text → "原草稿" to exactConfirmationMarksOnlyOriginalEditorAndLanguageDoesNotChangeIt(text:) started.
+◇ Test case passing 1 argument text → "" to exactConfirmationMarksOnlyOriginalEditorAndLanguageDoesNotChangeIt(text:) started.
+◇ Test getPermissionAloneNeverGrantsWrite() started.
+✔ Test invalidReadFailsRatherThanEmptySuccess() passed after 0.013 seconds.
+✔ Test oldAccountListActionMustNotReadReplacementBinding() passed after 0.016 seconds.
+✔ Test completedReadRetiresOldRetryContextWithoutTouchingNewPage() passed after 0.016 seconds.
+✔ Test outerCleanupCannotOverwriteCallbackInstalledB() passed after 0.017 seconds.
+✔ Test normalInvalidationClearsBeforeResourceCallback() passed after 0.017 seconds.
+✔ Test oldSelectedConversationActionMustNotReadNewSelection() passed after 0.017 seconds.
+✔ Suite IdentityCallbackReentryTests passed after 0.017 seconds.
+✔ Test historyGenerationDifferentFromSelectionRequiresResync() passed after 0.017 seconds.
+✔ Test defaultUnavailableAndValidEmptyAreDifferent() passed after 0.018 seconds.
+✔ Test nullAndSavedEmptyDraftNeverReplaceLocalEditor() passed after 0.020 seconds.
+✔ Test pagesAppendOnceAndRepeatedCursorRequiresResync() passed after 0.020 seconds.
+✔ Test allDeferredReadEntriesRejectChangedSelection(entry:) with 5 test cases passed after 0.020 seconds.
+✔ Suite IndependentHistoryActionTests passed after 0.020 seconds.
+✔ Test pendingRecordForOldServerGenerationIsNotExposedOrWritable() passed after 0.020 seconds.
+✔ Test staleEditorOrIdentityContextDoesNotStartPUT() passed after 0.020 seconds.
+✔ Test getPermissionAloneNeverGrantsWrite() passed after 0.020 seconds.
+✔ Test historyPagesKeepOneSelectedConversationAndOrderedServerSequence() passed after 0.021 seconds.
+✔ Test distinctCanonicalUnicodeCursorsKeepTheirOriginalUTF8Pages() passed after 0.021 seconds.
+✔ Test identityFenceHidesLateResultsAndLanguagePreservesLifetime() passed after 0.021 seconds.
+✔ Test conflictKeepsOriginalCASAndNeverRetries() passed after 0.021 seconds.
+✔ Test exactConfirmationMarksOnlyOriginalEditorAndLanguageDoesNotChangeIt(text:) with 2 test cases passed after 0.021 seconds.
+✔ Test identityInvalidationHidesLateSaveWithoutOverwritingNewEditor() passed after 0.022 seconds.
+✔ Test unknownReadbackDoesNotGrantReplacementSave(null:) with 2 test cases passed after 0.022 seconds.
+✔ Test localCancelRetainsCASAndCannotResave() passed after 0.022 seconds.
+✔ Test editWhileSavingIsPreservedEvenWhenBytesReturnToOriginal() passed after 0.022 seconds.
+✔ Test lateHistoryAIsNotDisplayedInSelectedB() passed after 0.022 seconds.
+✔ Test oldUnknownQueryCannotReadReplacementAccount() passed after 0.022 seconds.
+✔ Suite ServerHistoryHostTests passed after 0.022 seconds.
+✔ Suite ServerDraftSaveHostTests passed after 0.022 seconds.
+✔ Test run with 25 tests in 4 suites passed after 0.022 seconds.

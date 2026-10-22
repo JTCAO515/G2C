@@ -7,19 +7,24 @@ struct ServerHistoryView: View {
     let language: ShellLanguage
     var body: some View {
         let readContext = host.captureReadContext()
+        let writeContext = host.captureDraftWriteContext()
+        let queryContext = host.captureDraftQueryContext()
+        let cancelContext = host.captureDraftCancelContext()
         List {
-            Text(language.text("Server read-only records. Local recovery is a separate source. Your editor will not be changed.", "服务器只读记录，与本地恢复不同。不会修改编辑中的草稿。"))
+            Text(language.text("Server records. Local recovery is a separate source. Reads never replace your editor.", "服务器记录，与本地恢复不同。读取不会替换编辑中的草稿。"))
             if host.isSynthetic { Text(language.text("Synthetic intercepted responses", "合成拦截响应")) }
             Section(language.text("Conversations", "会话")) {
                 status(host.conversationsStatus)
                 Button(language.text("Load from first page", "从第一页读取")) { Task { await host.loadConversations(context: readContext) } }
-                    .disabled(!host.isConfigured || host.conversationsStatus == .loading)
+                    .disabled(!host.isConfigured || host.conversationsStatus == .loading || host.draftWriteStatus == .saving || host.draftQueryStatus == .loading)
                 let selectionToken = host.conversationSelectionToken
                 ForEach(host.conversations, id: \.conversationBytes) { row in
                     Button(row.conversation_id) { _ = host.selectConversation(row, token: selectionToken) }
+                        .disabled(host.draftWriteStatus == .saving || host.draftQueryStatus == .loading)
                 }
                 if host.hasMoreConversations {
                     Button(language.text("Next conversations page", "下一页会话")) { Task { await host.loadConversations(context: readContext, more: true) } }
+                        .disabled(host.draftWriteStatus == .saving || host.draftQueryStatus == .loading)
                 }
             }
             if let selected = host.selectedConversation {
@@ -45,8 +50,46 @@ struct ServerHistoryView: View {
                         }
                     }
                 }
+                Section(language.text("Server draft save", "服务器草稿保存")) {
+                    Text(writeStatus)
+                    Text(language.text("Live writes remain unavailable. Only an explicitly injected test capability can save here.", "实际服务器写入仍未开放；此处仅显式注入的测试能力可保存。"))
+                        .font(.footnote)
+                    Button(language.text("Save current editor draft", "保存当前编辑草稿")) {
+                        host.saveServerDraft(context: writeContext)
+                    }.disabled(writeContext == nil)
+                    if host.draftWriteStatus == .saving {
+                        Button(language.text("Cancel local waiting", "取消本地等待")) { host.cancelServerDraftSave(context: cancelContext) }
+                            .disabled(cancelContext == nil)
+                    }
+                    Button(language.text("Query original draft operation", "查询原草稿操作")) {
+                        Task { await host.queryOriginalDraft(context: queryContext) }
+                    }.disabled(queryContext == nil)
+                    Text(queryStatus).font(.footnote)
+                }
             }
         }.navigationTitle(language.text("Server history", "服务器历史"))
+    }
+    private var writeStatus: String {
+        switch host.draftWriteStatus {
+        case .unavailable: language.text("Save unavailable: no separate write capability.", "保存不可用：没有独立写能力。")
+        case .ready: language.text("Save requires an explicit current version and editor snapshot.", "保存需要明确的当前版本和编辑快照。")
+        case .saving: language.text("Saving the original editor snapshot…", "正在保存原编辑快照…")
+        case .savedCurrentEdit: language.text("This exact editor revision was confirmed saved.", "此编辑版本已获原响应确认保存。")
+        case .savedEarlierEdit: language.text("An earlier editor snapshot was saved. Current edits are not marked saved.", "较早的编辑快照已保存，当前编辑未标为已保存。")
+        case .queryOnly: language.text("Original operation retained. Query only; do not retry save.", "原操作已保留，仅可查询，请勿重试保存。")
+        case .unknown: language.text("Save result unknown. Original CAS retained; query only.", "保存结果未知，原 CAS 已保留，仅可查询。")
+        case .conflict: language.text("Save conflicted. Original CAS retained; no automatic replacement.", "保存冲突，原 CAS 已保留，不自动替换。")
+        case .blocked: language.text("Draft save is blocked. No new write or saved-state claim is permitted.", "草稿保存已阻断，不能新增写入或宣称保存成功。")
+        }
+    }
+    private var queryStatus: String {
+        switch host.draftQueryStatus {
+        case .idle: language.text("A GET observation cannot resolve an unknown write or grant save permission.", "GET 观察不能确认未知写入，也不能授予保存许可。")
+        case .loading: language.text("Querying only the original CAS target…", "仅查询原 CAS 目标中…")
+        case .observed: language.text("Server draft observed. Original write remains unresolved, even if content matches.", "已观察到服务器草稿；即使内容一致，原写入仍未解决。")
+        case .missing: language.text("No draft observed. Null does not authorize another save.", "未观察到草稿。null 不允许再次保存。")
+        case .failed: language.text("Query failed. Original write remains unresolved.", "查询失败，原写入仍未解决。")
+        }
     }
     private func status(_ value: ServerReadStatus) -> some View {
         Group {
