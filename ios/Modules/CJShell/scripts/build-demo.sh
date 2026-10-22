@@ -11,6 +11,12 @@ env -u SDKROOT CLANG_MODULE_CACHE_PATH="$output_dir/module-cache" SWIFTPM_MODULE
 products="$(env -u SDKROOT CLANG_MODULE_CACHE_PATH="$output_dir/module-cache" SWIFTPM_MODULECACHE_OVERRIDE="$output_dir/module-cache" swift build "${swift_args[@]}" --show-bin-path)"
 test -f "$products/CJShell.o"
 SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" -I "$products" "$package_dir/Demo/DemoApp.swift" "$products"/*.o -o "$output_dir/CJShellDemo.app/CJShellDemo"
+# SwiftPM's Bundle.module resource bundle must accompany the manually linked executable.
+test -d "$products/CJShell_CJShell.bundle"
+cp -R "$products/CJShell_CJShell.bundle" "$output_dir/CJShellDemo.app/"
+for icon in "$package_dir"/../../Branding/Assets/AppIcon*.png; do
+  cp "$icon" "$output_dir/CJShellDemo.app/"
+done
 cat > "$output_dir/CJShellDemo.app/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -23,6 +29,12 @@ cat > "$output_dir/CJShellDemo.app/Info.plist" <<'PLIST'
 <key>CFBundleShortVersionString</key><string>1.0</string>
 <key>MinimumOSVersion</key><string>17.0</string>
 <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
+<key>CFBundleIcons</key><dict><key>CFBundlePrimaryIcon</key><dict>
+<key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array>
+</dict></dict>
+<key>CFBundleIcons~ipad</key><dict><key>CFBundlePrimaryIcon</key><dict>
+<key>CFBundleIconFiles</key><array><string>AppIcon60x60</string><string>AppIcon76x76</string><string>AppIcon83.5x83.5</string></array>
+</dict></dict>
 <key>UILaunchScreen</key><dict/>
 </dict></plist>
 PLIST

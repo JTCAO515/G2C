@@ -1,0 +1,13 @@
+{
+  "bundle_id": "local.cj006.shell.demo",
+  "app_executable_sha256": "072f945c563e76e2abe6b6f7e1e2a5690955b51abf16a86112086b35358059b5",
+  "resource_bundle_png_matches": true,
+  "all_six_icons_match": true,
+  "icon_declaration": {
+    "CFBundlePrimaryIcon": {
+      "CFBundleIconFiles": [
+        "AppIcon60x60"
+      ]
+    }
+  }
+}

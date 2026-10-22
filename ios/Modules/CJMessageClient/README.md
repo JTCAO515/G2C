@@ -126,3 +126,9 @@ Draft PUT candidate: [DRAFT-PUT-CLIENT.md](DRAFT-PUT-CLIENT.md) provides interce
 original-byte CAS saves with encrypted pending records, query-only uncertainty and
 editor-revision confirmation. Nine new +three affected checks pass. Live PUT/POST remain
 disabled; equal GET content or null never grants replacement PUT authority.
+
+Formal main integration correction (base3c52f72): CJMessageKeyBridge now depends directly
+on ../CJAuth's official CJMessageKeys product. Do not run prepare_keys for the main graph;
+that old standalone interface-export harness is historical only and no longer a dependency.
+prepare_generated remains required for the pinned official CJAPI export. See
+evidence/KEY-DEPENDENCY-MAIN.md for exact interface identity and graph/consumer evidence.

@@ -1,0 +1,47 @@
+{
+  "schema": "xcodebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "C52D892F-B5EC-4414-97C4-ED34829DCD7A"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "09oq3pp",
+      "seq": 8,
+      "count": 73,
+      "targets": [
+        "e23|tap|button|Server history (read-only)||",
+        "e36|typeText|text-field|Message draft|Start chatting|assistant.draft",
+        "e30|tap|button|Local recovery||assistant.history",
+        "e49|tap|tab|Assistant|1|",
+        "e51|tap|tab|Trips|0|",
+        "e53|tap|tab|Plugins|0|",
+        "e55|tap|tab|Memory|0|"
+      ],
+      "scroll": [
+        "e18|swipe|scroll-view|||"
+      ],
+      "text": [
+        "e31|text|text|Assistant||",
+        "e33|text|text|Assistant||",
+        "e24|text|text|Message recovery is not connected. Sending is unavailable.||assistant.recoveryStatus",
+        "e25|text|text|This service is not connected yet. No records have been loaded.||",
+        "e40|text|text|Sending, attachments, voice and gifts are not available yet.||"
+      ],
+      "udid": "C52D892F-B5EC-4414-97C4-ED34829DCD7A"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: snapshot_ui({ simulatorId: \"C52D892F-B5EC-4414-97C4-ED34829DCD7A\" })",
+    "Wait for UI to settle: wait_for_ui({ simulatorId: \"C52D892F-B5EC-4414-97C4-ED34829DCD7A\", predicate: \"settled\" })",
+    "Tap an elementRef: tap({ simulatorId: \"C52D892F-B5EC-4414-97C4-ED34829DCD7A\", elementRef: \"e23\" })",
+    "Scroll visible content: swipe({ simulatorId: \"C52D892F-B5EC-4414-97C4-ED34829DCD7A\", withinElementRef: \"e18\", direction: \"up\", distance: 0.5 })"
+  ]
+}
