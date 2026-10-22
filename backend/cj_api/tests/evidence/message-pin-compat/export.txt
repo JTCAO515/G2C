@@ -1,0 +1,4 @@
+PASS fixed auth f3c8e5074eb27de0de6fef6dd7558763cbcf4291 (4 runtime blobs)
+PASS fixed message ac2981078ec3a001c577de1d557337010feb5d43 (4 runtime blobs)
+Export root: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-pin-compat/.local/composition-deps/f3c8e5074eb27de0de6fef6dd7558763cbcf4291-ac2981078ec3a001c577de1d557337010feb5d43
+Use only the printed fixed export via PYTHONPATH for owner tests; production integration must contain the original commits.

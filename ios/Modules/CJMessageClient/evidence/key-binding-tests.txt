@@ -1,0 +1,46 @@
+Building for debugging...
+[Computing dependencies]
+[1 / 54]
+[2 / 33] CJMessageClient
+[11 / 44] CJMessageClient
+[24 / 50] CJMessageHTTP
+[34 / 54] CJMessageHTTP
+[38 / 54] CJMessageHTTPTests-product
+[43 / 54] CJMessageHTTPTests-product
+[45 / 54] CJMessageHTTPTests-product
+[49 / 54] CJMessageHTTPTests-product
+Build complete! (1.59秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite RecoveryTests started.
+◇ Suite KeyBindingTests started.
+◇ Test accountEnvironmentAndSameAccountGenerationRejectOldResults() started.
+◇ Test encryptedReopenRetainsOriginalBytesDraftAndUnknown() started.
+◇ Test unicodeOpaqueIDsDoNotAliasAndLanguageDoesNotRewrite() started.
+◇ Test nullNeverAuthorizesPostAndOriginalIDCannotChange() started.
+◇ Test keyIDReadbackAndAuthenticatedHeader() started.
+◇ Test latestQueryAndReceiptBindingOnly() started.
+◇ Test missingKeyWrongKeyCorruptionNeverMeansEmpty() started.
+◇ Test unknownBodyCannotBeRekeyedAndMalformedUTF8Rejected() started.
+◇ Test ambiguousSaveInvalidatesUntilReadback() started.
+◇ Test hostMappingMismatchRejected() started.
+◇ Test ciphertextCannotMoveBetweenScopesEvenWithSameKey() started.
+◇ Test legacyCiphertextNotOverwrittenOrGuessed() started.
+◇ Test officialExistingAdapterBindsScopeAndNeverCreates() started.
+✔ Test accountEnvironmentAndSameAccountGenerationRejectOldResults() passed after 0.009 seconds.
+✔ Test keyIDReadbackAndAuthenticatedHeader() passed after 0.009 seconds.
+✔ Test unicodeOpaqueIDsDoNotAliasAndLanguageDoesNotRewrite() passed after 0.009 seconds.
+✔ Test missingKeyWrongKeyCorruptionNeverMeansEmpty() passed after 0.009 seconds.
+✔ Test encryptedReopenRetainsOriginalBytesDraftAndUnknown() passed after 0.017 seconds.
+✔ Test ambiguousSaveInvalidatesUntilReadback() passed after 0.017 seconds.
+✔ Test unknownBodyCannotBeRekeyedAndMalformedUTF8Rejected() passed after 0.017 seconds.
+✔ Test nullNeverAuthorizesPostAndOriginalIDCannotChange() passed after 0.017 seconds.
+✔ Test latestQueryAndReceiptBindingOnly() passed after 0.017 seconds.
+✔ Test ciphertextCannotMoveBetweenScopesEvenWithSameKey() passed after 0.017 seconds.
+✔ Test legacyCiphertextNotOverwrittenOrGuessed() passed after 0.017 seconds.
+✔ Test hostMappingMismatchRejected() passed after 0.017 seconds.
+✔ Test officialExistingAdapterBindsScopeAndNeverCreates() passed after 0.017 seconds.
+✔ Suite KeyBindingTests passed after 0.017 seconds.
+✔ Suite RecoveryTests passed after 0.017 seconds.
+✔ Test run with 13 tests in 2 suites passed after 0.017 seconds.

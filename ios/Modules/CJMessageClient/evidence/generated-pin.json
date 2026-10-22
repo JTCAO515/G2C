@@ -1,0 +1,20 @@
+{
+  "commit": "312a69caf0bd97ed65679cfd8ff049972c212cef",
+  "sha256": {
+    "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
+    "ios/Package.swift": "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0",
+    "ios/Sources/CJAPI/Generated/Client.swift": "66965981764cb78719ccefe8fe00ff8b71bba7401881929cff2eea6f06b83533",
+    "ios/Sources/CJAPI/Generated/Types+Components+Headers.swift": "b920e1a8ad3af618f10823dfd9ead2ac7a2833dcd9e06f84973789d7b578e1e2",
+    "ios/Sources/CJAPI/Generated/Types+Components+Parameters.swift": "06b05f078460bb0cc022223f7e6bf5d8509978b81486f2c191e241c08f38664b",
+    "ios/Sources/CJAPI/Generated/Types+Components+RequestBodies.swift": "3a79bacb276382b5f534e3a02a5a50297f67c53832e30b31e7afd9afbc6275bd",
+    "ios/Sources/CJAPI/Generated/Types+Components+Responses.swift": "8b243eb7012a5949f3818188cd64cc40021b87061be2b9de50a611f2ab9ab776",
+    "ios/Sources/CJAPI/Generated/Types+Components+Schemas.swift": "8c7228a61789474e749d067158b83c8721992ddded0f13c805423281bc1e156d",
+    "ios/Sources/CJAPI/Generated/Types+Components.swift": "6ea69a3694541e5a67e2e3fe774048b7e0e3706ba7957ddefedd4e9e136b04e7",
+    "ios/Sources/CJAPI/Generated/Types+Operations.swift": "12e868b83f7e9a006abd13661489790226f294fc3d6029c3b1b33b76daf07a10",
+    "ios/Sources/CJAPI/Generated/Types.swift": "41cb68e470cc71a0a318b5f8212c70838220d18862f47dd260da59b6e0575c3c",
+    "ios/Sources/CJAPI/ProbeConnection.swift": "e78a03f68abafeb8c559b99e669d04cb9e98a5c4ffe9f7bb8cfb4ace83ed9e1a",
+    "ios/Sources/CJProbe/main.swift": "59d0ac90be38554507637ce38e40e4a447cacf79a13a0c36d24b82493eb53991",
+    "ios/Sources/CJProbeUI/ProbeView.swift": "47c4b5d03c82ecd8e6a2c23b4f590d36fd80f9dc53938704f85cc007265f4282",
+    "ios/Tests/CJAPITests/ContractTests.swift": "dd16b31dac10eeb1459d5263b69a824404546e7dec4c682ab612c371c8e07cac"
+  }
+}

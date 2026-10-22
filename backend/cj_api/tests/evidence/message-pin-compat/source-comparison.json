@@ -1,0 +1,36 @@
+{
+  "base": "26167831cc4b2d36bb4598f2caa0bd8fffdd5b4f",
+  "old_message": "cec92299aa77e74baafba473ecf9db7b926fbe4e",
+  "new_message": "ac2981078ec3a001c577de1d557337010feb5d43",
+  "auth_pin_unchanged": "f3c8e5074eb27de0de6fef6dd7558763cbcf4291",
+  "comparison": [
+    {
+      "path": "backend/message/cj_message/__init__.py",
+      "old_sha256": "b1e1f2b75932230f58e5bc8b17576ad33f22700beb7a099bd7d8230cc72ec5f5",
+      "new_sha256": "b1e1f2b75932230f58e5bc8b17576ad33f22700beb7a099bd7d8230cc72ec5f5",
+      "changed": false,
+      "identical_to_reviewed_b722": true
+    },
+    {
+      "path": "backend/message/cj_message/auth_boundary.py",
+      "old_sha256": "40c0de915efe9dd97b3ca08dce4e41a4043e2a78d16b7ea61db879803eb22511",
+      "new_sha256": "b0589ad9f23a61e56cc93e70077032d58f60d8532a164e9fc407af676cc68eb3",
+      "changed": true,
+      "identical_to_reviewed_b722": true
+    },
+    {
+      "path": "backend/message/cj_message/domain.py",
+      "old_sha256": "6e64cb44060335d30917eaf3c7a3d60d03292165ad50e70d5e1bef30ac0df52b",
+      "new_sha256": "6d732990d62717e84f50edfe035e05f3c91dae93b47f03bd26c8240938ddb22a",
+      "changed": true,
+      "identical_to_reviewed_b722": true
+    },
+    {
+      "path": "backend/message/cj_message/postgres.py",
+      "old_sha256": "471d6e02ab19f38f9cbd7f4ceedc4cfe8862b58c2c18705a4c12b6df959d2876",
+      "new_sha256": "cf31c7d444a128a6e6ac74eaa59fcdffef83d241b1aa65c6be40cfeeb0bd25d2",
+      "changed": true,
+      "identical_to_reviewed_b722": true
+    }
+  ]
+}

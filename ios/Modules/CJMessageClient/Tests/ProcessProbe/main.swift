@@ -6,7 +6,11 @@ import CJMessageClient
 @MainActor final class SyntheticKeys: MessageEncryptionKeyProvider {
     let secret: SymmetricKey
     init(file: URL) throws { secret = SymmetricKey(data: try Data(contentsOf: file)) }
-    func key(for scope: StorageScope) throws -> SymmetricKey? { secret }
+    func existing(for scope: StorageScope, expectedID: UUID?) throws -> MessageStorageKey? {
+        // Stable synthetic fixture ID for the two test processes only.
+        guard let id = UUID(uuidString: "e4b15274-d6ee-41f4-af20-22865eaa3041") else { throw RecoveryError.invalidInput }
+        return MessageStorageKey(id: id, key: secret)
+    }
 }
 
 @main struct Probe {

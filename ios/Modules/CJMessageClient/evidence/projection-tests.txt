@@ -1,0 +1,34 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 507]
+[Planning deferred tasks]
+[1 / 1]
+[5 / 35] CJMessageClient
+[7 / 37] CJMessageClient
+[15 / 47] CJMessageKeyBridge
+[26 / 53] CJMessageHTTP
+[29 / 55] CJMessageHTTP
+[39 / 54] CJMessageClientTests-product
+[50 / 66] CJMessageHTTPTests-product
+[56 / 65] CJMessageClientTests-product
+[58 / 65] CJMessageClientTests-product
+[62 / 63] CJMessageHTTPTests-product
+Build complete! (2.09秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ProjectionTests started.
+◇ Test loadCallbackCannotExposeOldAccountProjection() started.
+◇ Test malformedDraftReferenceIsExplicitFailureNotEmpty() started.
+◇ Test oldProjectionAndWrongScopeRejectedAfterSwitchOrReopen() started.
+◇ Test missingKeyCannotActivateOrReadProjection() started.
+◇ Test emptyLocalProjectionIsNotServerHistory() started.
+◇ Test reopenEnumeratesOnlyReferencesWithoutGrantingSend() started.
+✔ Test loadCallbackCannotExposeOldAccountProjection() passed after 0.001 seconds.
+✔ Test oldProjectionAndWrongScopeRejectedAfterSwitchOrReopen() passed after 0.005 seconds.
+✔ Test malformedDraftReferenceIsExplicitFailureNotEmpty() passed after 0.005 seconds.
+✔ Test missingKeyCannotActivateOrReadProjection() passed after 0.005 seconds.
+✔ Test reopenEnumeratesOnlyReferencesWithoutGrantingSend() passed after 0.005 seconds.
+✔ Test emptyLocalProjectionIsNotServerHistory() passed after 0.005 seconds.
+✔ Suite ProjectionTests passed after 0.005 seconds.
+✔ Test run with 6 tests in 1 suite passed after 0.005 seconds.
