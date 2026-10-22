@@ -1,0 +1,31 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "index": 0,
+      "codec_type": "video",
+      "width": 1206,
+      "height": 2622,
+      "r_frame_rate": "600/1"
+    }
+  ],
+  "format": {
+    "duration": "89.025000"
+  },
+  "requested_frame_times_seconds": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    15,
+    20,
+    50,
+    70,
+    88
+  ],
+  "note": "Unmodified frames extracted with ffmpeg; nominal stream r_frame_rate is not app/rendering FPS."
+}

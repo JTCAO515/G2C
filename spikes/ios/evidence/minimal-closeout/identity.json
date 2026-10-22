@@ -1,0 +1,12 @@
+{
+  "base": "ad903eb19890552b419ec28b8cb613efed41b190",
+  "source_sha256": "eb1b4fab47051d0322e7ff419da49dba1569fa010b1070374d66affb8f1f0cd0",
+  "installed_binary_sha256": "532860895903c76afe6e482197655885ef3ff5d42788f0085c7a91579f6966ab",
+  "binary_uuid": "UUID: DC77E156-7E16-38C4-88E6-1E683DD7BAD6 (arm64) /Users/jtsm5p/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data/Containers/Bundle/Application/6712A32E-45B8-47BB-A9E4-785D65115C67/CJIOSSpike.app/CJIOSSpike",
+  "runtime": "iOS26.5 (23F77)",
+  "device": "B80AD40D-F779-4FE3-A36D-CFD4C4A19D83",
+  "models": {
+    "requested": "gpt-6.1-sol/medium per Main",
+    "effective": "UNKNOWN"
+  }
+}
