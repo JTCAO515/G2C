@@ -14,11 +14,11 @@
     },
     {
       "name": "message",
-      "commit": "e4ca761bf1bb4f60a5d02be102fe0d5f721e478b",
+      "commit": "bf79a948c36a7c5cecf40d840cb9623c2d2e9d7c",
       "prefix": "backend/message/cj_message/",
       "files": {
         "backend/message/cj_message/__init__.py": "b1e1f2b75932230f58e5bc8b17576ad33f22700beb7a099bd7d8230cc72ec5f5",
-        "backend/message/cj_message/auth_boundary.py": "4ffed702acf3b3adcb5635ea65cb84451d86e3c0b9f51c650326315fa5940473",
+        "backend/message/cj_message/auth_boundary.py": "4356c876089feef9b9ebee517dfeb7331b5ffa1a2ad1aea7a2b5925f24407790",
         "backend/message/cj_message/domain.py": "6d732990d62717e84f50edfe035e05f3c91dae93b47f03bd26c8240938ddb22a",
         "backend/message/cj_message/postgres.py": "cf31c7d444a128a6e6ac74eaa59fcdffef83d241b1aa65c6be40cfeeb0bd25d2"
       }

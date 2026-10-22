@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "stores": [
     {
       "id": "business",
@@ -114,6 +114,24 @@
           "retention": "UNDECIDED; revisions/receipts retained by candidate, not an infinite dedupe promise; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no cleanup/deletion API for current records, revisions or original source bytes; no automatic Memory/Trip promotion",
           "restore_fence": "UNIMPLEMENTED; source/scope/account revocations and deletion replay required before restored reads"
+        },
+        {
+          "id": "feedback-private-actions",
+          "owner": "CJ-023; cleanup CJ-024",
+          "objects": [
+            "cj_feedback_action"
+          ],
+          "source": "backend/feedback/sql/candidate.sql@cf48196e5eb5012630603172951d5c75a46adec4",
+          "status": "candidate/local_only; production_not_provisioned",
+          "principal_binding": "Fresh existing AUTH and explicit host scope; referenced writes use concrete MESSAGE bf79/RUN eadda Sources and same canonical checker, missing Sources rejects new references",
+          "sensitive_fields": [
+            "sole exact original voluntary problem/expectation UTF8 and requested message/run IDs",
+            "scope/action ID/input digest/database submission time",
+            "nullable minimal verified message/run binding, message input hash, read-time status/event highwater; no source transcript/tool payload copied"
+          ],
+          "retention": "UNDECIDED; dedupe only while row retained; no infinite or supplier-retention promise",
+          "cleanup_hook": "UNIMPLEMENTED; accepted account cleanup must cover retired scope records, backups/exported artifacts and in-flight resubmission; no queue or secondary ledger",
+          "restore_fence": "UNIMPLEMENTED; no retired-scope recycling or stale writer resurrection; source reads and feedback write are not cross-domain atomic"
         }
       ]
     },
@@ -238,6 +256,7 @@
   "candidate_sources": {
     "memory": "426d337b0647d7770f1716fad83f2e5e724d28e4",
     "trip": "5fd115fc97e542bc8776a445d8245fd272000e56",
-    "needs": "c821b34d607016c6dbc1020c203621841f1a60e8"
+    "needs": "c821b34d607016c6dbc1020c203621841f1a60e8",
+    "feedback": "cf48196e5eb5012630603172951d5c75a46adec4"
   }
 }

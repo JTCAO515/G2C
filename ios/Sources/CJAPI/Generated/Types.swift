@@ -70,6 +70,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/needs-revisions`.
     /// - Remark: Generated from `#/paths//v1/needs-revisions/get(getNeedsRevision)`.
     func getNeedsRevision(_ input: Operations.getNeedsRevision.Input) async throws -> Operations.getNeedsRevision.Output
+    /// - Remark: HTTP `POST /v1/feedback`.
+    /// - Remark: Generated from `#/paths//v1/feedback/post(submitFeedback)`.
+    func submitFeedback(_ input: Operations.submitFeedback.Input) async throws -> Operations.submitFeedback.Output
+    /// - Remark: HTTP `GET /v1/feedback-action-receipts`.
+    /// - Remark: Generated from `#/paths//v1/feedback-action-receipts/get(queryFeedbackAction)`.
+    func queryFeedbackAction(_ input: Operations.queryFeedbackAction.Input) async throws -> Operations.queryFeedbackAction.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -293,6 +299,28 @@ extension APIProtocol {
         headers: Operations.getNeedsRevision.Input.Headers = .init()
     ) async throws -> Operations.getNeedsRevision.Output {
         try await getNeedsRevision(Operations.getNeedsRevision.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/feedback`.
+    /// - Remark: Generated from `#/paths//v1/feedback/post(submitFeedback)`.
+    public func submitFeedback(
+        headers: Operations.submitFeedback.Input.Headers = .init(),
+        body: Operations.submitFeedback.Input.Body
+    ) async throws -> Operations.submitFeedback.Output {
+        try await submitFeedback(Operations.submitFeedback.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/feedback-action-receipts`.
+    /// - Remark: Generated from `#/paths//v1/feedback-action-receipts/get(queryFeedbackAction)`.
+    public func queryFeedbackAction(
+        query: Operations.queryFeedbackAction.Input.Query,
+        headers: Operations.queryFeedbackAction.Input.Headers = .init()
+    ) async throws -> Operations.queryFeedbackAction.Output {
+        try await queryFeedbackAction(Operations.queryFeedbackAction.Input(
             query: query,
             headers: headers
         ))
