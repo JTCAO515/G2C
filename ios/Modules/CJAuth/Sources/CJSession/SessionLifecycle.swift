@@ -53,6 +53,18 @@ public struct SessionOperation: Equatable, Sendable {
     fileprivate let generation: UUID
     fileprivate let id = UUID()
     fileprivate let purpose: Purpose
+    package let sdkBridgeClaim = SessionBridgeClaim()
+}
+
+/// Original-operation ownership shared across value copies; no credentials or global registry.
+@MainActor package final class SessionBridgeClaim: Equatable, Sendable {
+    private var owner: UUID?
+    nonisolated init() {}
+    package func claim(_ candidate: UUID) -> Bool {
+        if let owner { return owner == candidate }
+        owner = candidate; return true
+    }
+    nonisolated package static func == (lhs: SessionBridgeClaim, rhs: SessionBridgeClaim) -> Bool { lhs === rhs }
 }
 
 /// One lifecycle/writer per namespace. MainActor sync persistence has no await reentrancy.
@@ -82,8 +94,13 @@ public struct SessionOperation: Equatable, Sendable {
         current = op; consumed = false
         return op
     }
+    package var identityGeneration: UUID { generation }
     public func isCurrent(_ operation: SessionOperation) -> Bool {
-        !blocked && current == operation && operation.instance == instance && operation.generation == generation
+        !blocked && ownsOperation(operation)
+    }
+    /// Ownership remains inspectable after a genuine failure blocks this same operation.
+    package func ownsOperation(_ operation: SessionOperation) -> Bool {
+        current == operation && operation.instance == instance && operation.generation == generation
     }
     private func consume(_ operation: SessionOperation, purpose: SessionOperation.Purpose) throws {
         guard isCurrent(operation), !consumed, operation.purpose == purpose else { throw SessionFailure.staleOperation }
@@ -93,21 +110,38 @@ public struct SessionOperation: Equatable, Sendable {
         try consume(operation, purpose: .load)
         do {
             let material = try persistence.load()
+            guard isCurrent(operation) else { throw SessionFailure.staleOperation }
             state = material == nil ? .missing : .loadedNeedsVerification
             return material
-        } catch { throw block(error) }
+        } catch {
+            guard ownsOperation(operation) else { throw SessionFailure.staleOperation }
+            throw block(error)
+        }
     }
     public func save(_ material: SessionMaterial, for operation: SessionOperation) throws {
         try consume(operation, purpose: .save)
-        do { try persistence.save(material); state = .saved }
-        catch { throw block(error) }
+        do {
+            try persistence.save(material)
+            guard isCurrent(operation) else { throw SessionFailure.staleOperation }
+            state = .saved
+        } catch {
+            guard ownsOperation(operation) else { throw SessionFailure.staleOperation }
+            throw block(error)
+        }
     }
     /// Logout/account switch/authoritative invalidation: fence first, then clear storage.
     /// A new trusted SDK save is allowed only after clearAndBlock succeeds.
     public func clear() throws {
         generation = UUID(); current = nil; consumed = true; blocked = true
-        do { try persistence.clearAndBlock(); blocked = false; state = .cleared }
-        catch { throw block(error) }
+        let clearingGeneration = generation
+        do {
+            try persistence.clearAndBlock()
+            guard generation == clearingGeneration, current == nil else { throw SessionFailure.staleOperation }
+            blocked = false; state = .cleared
+        } catch {
+            guard generation == clearingGeneration, current == nil else { throw SessionFailure.staleOperation }
+            throw block(error)
+        }
     }
     /// Network uncertainty is not logout and does not touch the store or generation.
     public func noteNetworkUnknown() { if !blocked { state = .networkUnknown } }

@@ -15,8 +15,8 @@ let package = Package(
         .target(name: "CJMessageKeys"),
         .testTarget(name: "CJMessageKeysTests", dependencies: ["CJMessageKeys"]),
         .testTarget(name: "CJSessionTests", dependencies: ["CJSession"]),
-        .target(name: "CJAuthSupabase", dependencies: ["CJAuth", .product(name: "Auth", package: "supabase-swift")]),
+        .target(name: "CJAuthSupabase", dependencies: ["CJAuth", "CJSession", .product(name: "Auth", package: "supabase-swift")]),
         .testTarget(name: "CJAuthTests", dependencies: ["CJAuth"]),
-        .testTarget(name: "CJAuthSupabaseTests", dependencies: ["CJAuthSupabase", "CJAuth"])
+        .testTarget(name: "CJAuthSupabaseTests", dependencies: ["CJAuthSupabase", "CJAuth", "CJSession"])
     ]
 )

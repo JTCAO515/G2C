@@ -54,3 +54,5 @@ Apple 能力、nonce/state/PKCE 校验、邮件、真实注册/恢复、服务�
 
 独立消息密钥 provider 与未执行的签名提案见 [MESSAGE-KEYS](MESSAGE-KEYS.md)；
 不使用 SessionMaterial/token 作为密钥，不默认自动创建或轮换。
+
+官方 SDK Session 编码/再验证与显式安全保存桥接候选见 [SESSION-BRIDGE](SESSION-BRIDGE.md)；默认无验证 hook、不自动激活。

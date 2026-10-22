@@ -1,0 +1,87 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 7] CJAuthSupabaseTests-product
+[4 / 9] CJAuthSupabaseTests-product
+[8 / 11] CJAuthSupabaseTests-product
+[10 / 14] CJAuthSupabaseTests-product
+Build complete! (1.67秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite SessionStoreTests started.
+◇ Test automaticRestoreNeverTouchesStorageEvenAfterRecreation() started.
+◇ Test emptyOrBroadConfigurationRejected() started.
+◇ Test keychainQueriesAreExactAndTombstoneSurvivesAdapterRecreation() started.
+◇ Test saveLoadRedactionAndNoBusinessGrant() started.
+◇ Test lateDuplicateWrongPurposeAndOtherInstanceRejected() started.
+◇ Test keychainLockedAndCorruptAreNotNotFoundAndNoBlindFallback() started.
+◇ Test networkUnknownPreservesBytesAndBinding() started.
+◇ Test clearFailureBlocksLoadSaveAndRetryClearFencesOldWork() started.
+◇ Test loadAndSaveFailureAreExplicitNotMissing() started.
+✔ Test keychainQueriesAreExactAndTombstoneSurvivesAdapterRecreation() passed after 0.001 seconds.
+✔ Test keychainLockedAndCorruptAreNotNotFoundAndNoBlindFallback() passed after 0.001 seconds.
+✔ Test saveLoadRedactionAndNoBusinessGrant() passed after 0.001 seconds.
+✔ Test emptyOrBroadConfigurationRejected() passed after 0.001 seconds.
+✔ Test lateDuplicateWrongPurposeAndOtherInstanceRejected() passed after 0.001 seconds.
+✔ Test automaticRestoreNeverTouchesStorageEvenAfterRecreation() passed after 0.001 seconds.
+✔ Test clearFailureBlocksLoadSaveAndRetryClearFencesOldWork() passed after 0.001 seconds.
+✔ Test networkUnknownPreservesBytesAndBinding() passed after 0.001 seconds.
+✔ Test loadAndSaveFailureAreExplicitNotMissing() passed after 0.001 seconds.
+✔ Suite SessionStoreTests passed after 0.001 seconds.
+✔ Test run with 9 tests in 1 suite passed after 0.001 seconds.
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite SupabaseSessionBridgeTests started.
+◇ Suite AdjacentSessionCallbackTests started.
+◇ Suite SessionSaveReentryTests started.
+◇ Test replacedSuccessfulSaveMustReportStaleWithoutChangingB() started.
+◇ Test replacedClearErrorMustNotBlockNewSavedSession() started.
+◇ Test replacedLoadMustNotReturnOldBytesOrOverwriteNewSavedState() started.
+◇ Test replacedMissingLoadMustNotPublishMissingOverNewSession() started.
+◇ Test currentAuthoritativeInvalidClearStillCompletes() started.
+◇ Test oldInitialSaveFailureCannotBlockSuccessfulNewAccount() started.
+◇ Test replacedLoadErrorMustNotBlockNewSave() started.
+◇ Test oldVerifiedPersistFailureCannotBlockSuccessfulNewAccount() started.
+◇ Test invalidClearCallbackMustNotReportOrPublishClearedForNewSession() started.
+◇ Test sameOriginalLoadAndClearFailuresRemainBlocked() started.
+◇ Test sameVerifiedPersistFailureStillBlocksWithoutDeletingOriginal() started.
+◇ Test sameOriginalSaveFailureStillBlocks() started.
+◇ Test originalOperationCannotBeRevalidatedBySecondBridge() started.
+◇ Test unknownPreservesSessionAndDoesNotRepeatSDK() started.
+◇ Test staleInitialSDKSaveAndChangedDuplicateAreRejected() started.
+◇ Test uiPredicateReentryCannotRebindOldVerifiedSessionToNewOperation() started.
+◇ Test absentHookMalformedDataAndWrongUserCannotActivate() started.
+◇ Test actualSDKDecodedSyntheticSessionReachesBoundStorageOnce() started.
+◇ Test existingTrailingMaterialClosureStillCompilesAndStaysDisabled() started.
+◇ Test lateOldScopeAndUIResultsCannotClearOrSave() started.
+◇ Test officialSessionRoundTripAndRefreshUsesTwoPhaseCommit() started.
+◇ Test explicitInvalidIsNotDeletionUntilHostCommits() started.
+✔ Test replacedLoadMustNotReturnOldBytesOrOverwriteNewSavedState() passed after 0.002 seconds.
+✔ Test replacedSuccessfulSaveMustReportStaleWithoutChangingB() passed after 0.002 seconds.
+✔ Test currentAuthoritativeInvalidClearStillCompletes() passed after 0.003 seconds.
+✔ Test replacedMissingLoadMustNotPublishMissingOverNewSession() passed after 0.003 seconds.
+✔ Test oldVerifiedPersistFailureCannotBlockSuccessfulNewAccount() passed after 0.003 seconds.
+✔ Test replacedClearErrorMustNotBlockNewSavedSession() passed after 0.003 seconds.
+✔ Test replacedLoadErrorMustNotBlockNewSave() passed after 0.003 seconds.
+✔ Test sameVerifiedPersistFailureStillBlocksWithoutDeletingOriginal() passed after 0.003 seconds.
+✔ Test unknownPreservesSessionAndDoesNotRepeatSDK() passed after 0.003 seconds.
+✔ Test originalOperationCannotBeRevalidatedBySecondBridge() passed after 0.003 seconds.
+✔ Test oldInitialSaveFailureCannotBlockSuccessfulNewAccount() passed after 0.003 seconds.
+✔ Test sameOriginalSaveFailureStillBlocks() passed after 0.003 seconds.
+✔ Test sameOriginalLoadAndClearFailuresRemainBlocked() passed after 0.003 seconds.
+✔ Suite SessionSaveReentryTests passed after 0.003 seconds.
+✔ Test invalidClearCallbackMustNotReportOrPublishClearedForNewSession() passed after 0.003 seconds.
+✔ Test existingTrailingMaterialClosureStillCompilesAndStaysDisabled() passed after 0.003 seconds.
+✔ Test uiPredicateReentryCannotRebindOldVerifiedSessionToNewOperation() passed after 0.003 seconds.
+✔ Suite AdjacentSessionCallbackTests passed after 0.003 seconds.
+✔ Test staleInitialSDKSaveAndChangedDuplicateAreRejected() passed after 0.003 seconds.
+✔ Test officialSessionRoundTripAndRefreshUsesTwoPhaseCommit() passed after 0.003 seconds.
+✔ Test explicitInvalidIsNotDeletionUntilHostCommits() passed after 0.003 seconds.
+✔ Test absentHookMalformedDataAndWrongUserCannotActivate() passed after 0.003 seconds.
+✔ Test lateOldScopeAndUIResultsCannotClearOrSave() passed after 0.003 seconds.
+✔ Test actualSDKDecodedSyntheticSessionReachesBoundStorageOnce() passed after 0.006 seconds.
+✔ Suite SupabaseSessionBridgeTests passed after 0.007 seconds.
+✔ Test run with 22 tests in 3 suites passed after 0.007 seconds.
