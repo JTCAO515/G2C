@@ -5,9 +5,9 @@ classes = {};
 objectVersion = 60;
 objects = {
 000000000000000000000001 = {isa = PBXProject; buildConfigurationList = 000000000000000000000010; compatibilityVersion = "Xcode 15.0"; developmentRegion = en; knownRegions = (en, zh-Hans, Base); mainGroup = 000000000000000000000002; productRefGroup = 000000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (000000000000000000000004); packageReferences = (000000000000000000000020); };
-000000000000000000000002 = {isa = PBXGroup; children = (000000000000000000000005, 000000000000000000000003); sourceTree = "<group>"; };
+000000000000000000000002 = {isa = PBXGroup; children = (000000000000000000000005, 000000000000000000000003, 000000000000000000000100, 000000000000000000000101, 000000000000000000000102, 000000000000000000000103, 000000000000000000000104, 000000000000000000000105); sourceTree = "<group>"; };
 000000000000000000000003 = {isa = PBXGroup; children = (000000000000000000000006); name = Products; sourceTree = "<group>"; };
-000000000000000000000004 = {isa = PBXNativeTarget; buildConfigurationList = 000000000000000000000011; buildPhases = (000000000000000000000007, 000000000000000000000008); buildRules = (); dependencies = (); name = CJProbeApp; packageProductDependencies = (000000000000000000000021); productName = CJProbeApp; productReference = 000000000000000000000006; productType = "com.apple.product-type.application"; };
+000000000000000000000004 = {isa = PBXNativeTarget; buildConfigurationList = 000000000000000000000011; buildPhases = (000000000000000000000007, 000000000000000000000008, 000000000000000000000120); buildRules = (); dependencies = (); name = CJProbeApp; packageProductDependencies = (000000000000000000000021); productName = CJProbeApp; productReference = 000000000000000000000006; productType = "com.apple.product-type.application"; };
 000000000000000000000005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/CJProbeApp.swift; sourceTree = "<group>"; };
 000000000000000000000006 = {isa = PBXFileReference; explicitFileType = wrapper.application; path = CJProbeApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 000000000000000000000007 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (000000000000000000000009); runOnlyForDeploymentPostprocessing = 0; };
@@ -22,6 +22,19 @@ objects = {
 000000000000000000000020 = {isa = XCLocalSwiftPackageReference; relativePath = .; };
 000000000000000000000021 = {isa = XCSwiftPackageProductDependency; package = 000000000000000000000020; productName = CJProbeUI; };
 000000000000000000000022 = {isa = PBXBuildFile; productRef = 000000000000000000000021; };
+000000000000000000000100 = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Branding/Assets/AppIcon1024.png"; sourceTree = "<group>"; };
+000000000000000000000110 = {isa = PBXBuildFile; fileRef = 000000000000000000000100; };
+000000000000000000000101 = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Branding/Assets/AppIcon60x60@2x.png"; sourceTree = "<group>"; };
+000000000000000000000111 = {isa = PBXBuildFile; fileRef = 000000000000000000000101; };
+000000000000000000000102 = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Branding/Assets/AppIcon60x60@3x.png"; sourceTree = "<group>"; };
+000000000000000000000112 = {isa = PBXBuildFile; fileRef = 000000000000000000000102; };
+000000000000000000000103 = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Branding/Assets/AppIcon76x76.png"; sourceTree = "<group>"; };
+000000000000000000000113 = {isa = PBXBuildFile; fileRef = 000000000000000000000103; };
+000000000000000000000104 = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Branding/Assets/AppIcon76x76@2x.png"; sourceTree = "<group>"; };
+000000000000000000000114 = {isa = PBXBuildFile; fileRef = 000000000000000000000104; };
+000000000000000000000105 = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Branding/Assets/AppIcon83.5x83.5@2x.png"; sourceTree = "<group>"; };
+000000000000000000000115 = {isa = PBXBuildFile; fileRef = 000000000000000000000105; };
+000000000000000000000120 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (000000000000000000000110, 000000000000000000000111, 000000000000000000000112, 000000000000000000000113, 000000000000000000000114, 000000000000000000000115); runOnlyForDeploymentPostprocessing = 0; };
 };
 rootObject = 000000000000000000000001;
 }
