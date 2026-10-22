@@ -1,0 +1,47 @@
+warning: '--skip-update' option is deprecated and will be removed in a future release
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[2 / 13] CJOfflineTrip
+[4 / 15] CJOfflineTrip
+[11 / 16] CJOfflineTripTests-product
+[13 / 18] CJOfflineTripTests-product
+[17 / 20] CJOfflineTripTests-product
+[19 / 23] CJOfflineTripTests-product
+Build complete! (2.09秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite AcceptedSourceTests started.
+◇ Suite IndependentAcceptedSourceAttemptTests started.
+◇ Suite CanonicalKeyTests started.
+◇ Test originalHandleRetiredAcrossAwaitCannotCapture() started.
+◇ Test providerCallbackSessionChangeCannotWrite() started.
+◇ Test providerCallbackRetiresOriginalAndCannotPolluteNewSource() started.
+◇ Test retiredBetweenConstructionAndWriteNeverLooksUpKey() started.
+◇ Test failedSourceValidationKeepsReservationAcrossReentry() started.
+◇ Test finalSourceCallbackFileReplacementCannotBeOverwritten() started.
+◇ Test networkAwaitSelectionChangeYieldsNoSourceOrCache() started.
+◇ Test unknownWriteBlocksNewCaptureAndReconcilesExactOriginal() started.
+◇ Test sourceValidationReentryCannotCommitSameCaptureTwice() started.
+◇ Test fileCallbackRetiresSourceWithoutSuccessOrResend() started.
+◇ Test exactPublicHookToCanonicalKeyToEncryptedFile() started.
+◇ Test callbackReentrancyAndLookupGenerationAreFenced() started.
+◇ Test canonicalUnknownWriteUsesOriginalCiphertextOnly() started.
+✔ Test canonicalUnknownWriteUsesOriginalCiphertextOnly() passed after 0.016 seconds.
+✔ Test callbackReentrancyAndLookupGenerationAreFenced() passed after 0.016 seconds.
+✔ Suite CanonicalKeyTests passed after 0.016 seconds.
+✔ Test networkAwaitSelectionChangeYieldsNoSourceOrCache() passed after 0.017 seconds.
+✔ Test providerCallbackSessionChangeCannotWrite() passed after 0.018 seconds.
+✔ Test unknownWriteBlocksNewCaptureAndReconcilesExactOriginal() passed after 0.022 seconds.
+✔ Test finalSourceCallbackFileReplacementCannotBeOverwritten() passed after 0.023 seconds.
+✔ Test exactPublicHookToCanonicalKeyToEncryptedFile() passed after 0.024 seconds.
+✔ Test sourceValidationReentryCannotCommitSameCaptureTwice() passed after 0.025 seconds.
+✔ Suite IndependentAcceptedSourceAttemptTests passed after 0.025 seconds.
+✔ Test failedSourceValidationKeepsReservationAcrossReentry() passed after 0.025 seconds.
+✔ Test fileCallbackRetiresSourceWithoutSuccessOrResend() passed after 0.025 seconds.
+✔ Test retiredBetweenConstructionAndWriteNeverLooksUpKey() passed after 0.025 seconds.
+✔ Test originalHandleRetiredAcrossAwaitCannotCapture() passed after 0.026 seconds.
+✔ Test providerCallbackRetiresOriginalAndCannotPolluteNewSource() passed after 0.027 seconds.
+✔ Suite AcceptedSourceTests passed after 0.027 seconds.
+✔ Test run with 13 tests in 3 suites passed after 0.027 seconds.
