@@ -20,11 +20,13 @@ Python dataclass/对象与 `capabilities` 只是 trusted host 组合输入；不
 
 输入由原操作生成：同 Scope、operation_id、confirmation_digest、冻结 registry_digest、target、version、唯一 invocation。target 仅内部登记 ID；不消费 registry 路径、不动态 import、不执行 SQL。必须先 journal intent，再由未来获准 host 调用其**显式注入**原域 hook；本模块无调用代码。
 
-回执 exact UTF8 JSON（仅下列字段，最大4096bytes，无正文/异常/provider payload）：
+回执 exact UTF8 JSON（严格 UTF-8 decode，不接受 BOM/UTF-16/UTF-32；所有对象层级拒绝重复 key；仅下列字段，最大4096bytes，无正文/异常/provider payload）：
 
 ```json
 {"protocol":"CJ-CLEANUP-INTERNAL@0.1.0-rc.1","scope_digest":"<sha256(canonical internal Scope)>","operation_id":"original-operation","target":"auth_revocation","version":"CJ-CLEANUP-INTERNAL@0.1.0-rc.1","invocation":"original-call","outcome":"confirmed"}
 ```
+
+无效回执在修改操作或 journal 前拒绝；rebuild 重新校验每份原 receipt bytes，旧无效记录也拒绝恢复，不能通过 canonicalize 掩盖冲突。
 
 store target 为 `store:<registry path ID>`，version 为冻结 Entry.version；barrier version 为本协议版本。`outcome` 仅 confirmed/unknown/failed。`confirmed` 必须是该原域已验证的实际原结果，不能把 accepted/排队/空数组/零条/停止检索/SDK clear/过期/未上线/外部仍留存映射 confirmed。importer 必须校验原域结果再生成 metadata；本候选不定义各域事实查询接口，也不猜原回执形状。
 
