@@ -61,3 +61,8 @@ transport/PG evidence reused. No Keychain/network/PG call or unrelated module mo
 
 Independent review/host integration, iOS device and full recovery/user acceptance remain
 pending. This interface is ready for bounded host consumption, not a server history API.
+
+Draft PUT candidate addition: draft references now include conversation IDs present in
+retained local draftSaves, even if no editor body exists. This enables restart discovery
+of original pending CAS; it does not expose payload or authorize retries. Use draftSave
+under current lease for explicit recovery details. Existing projection fencing is intact.
