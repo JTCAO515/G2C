@@ -95,3 +95,8 @@ Python syntax/diff checks PASS. Prior backend/Swift evidence reused; no broad ol
 rerun. Real target auth, RLS/privileges, provider/model, deployed migration, TTL/physical
 cleanup, crash/power loss, device/API and independent review remain UNRUN/PENDING.
 Issue10 remains open. CJ005 can now confirm this exact internal slice before formal wire.
+
+CJ005 proposal consumption: HISTORY-CONTEXT.md confirms exact e3a15696 wire proposal and
+introduces Boundary.with_history_context for same-principal/scope codec binding. Do not
+consume _service or independently reauthenticate for cursor authority. SQL/txn semantics
+remain unchanged; no old database application is authorized by this interface delta.

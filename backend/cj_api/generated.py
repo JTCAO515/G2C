@@ -83,3 +83,84 @@ class MessageReceiptQueryResponse(BaseModel):
         ...,
         description='Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.',
     )
+
+
+class ConversationSummary(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    epoch: conint(ge=0, le=9223372036854775807)
+    list_sequence: conint(ge=1, le=9223372036854775807)
+
+
+class MessageHistoryItem(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    receipt: MessageReceipt
+    original_utf8_base64: constr(
+        pattern=r'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$'
+    ) = Field(
+        ...,
+        description='RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string.',
+    )
+    text: str
+
+
+class MessageDraftSnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    revision: conint(ge=1, le=9223372036854775807)
+    original_utf8_base64: constr(
+        pattern=r'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$'
+    ) = Field(
+        ...,
+        description='RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string.',
+    )
+
+
+class NextCursor(Enum):
+    NoneType_None = None
+
+
+class ConversationPageResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    conversations: list[ConversationSummary]
+    next_cursor: constr(min_length=1) | NextCursor
+
+
+class MessageHistoryResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    messages: list[MessageHistoryItem]
+    next_cursor: constr(min_length=1) | NextCursor
+
+
+class Draft(Enum):
+    NoneType_None = None
+
+
+class MessageDraftReadResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    draft: MessageDraftSnapshot | Draft
+
+
+class MessageDraftSaveResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    draft: MessageDraftSnapshot
