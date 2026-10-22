@@ -1,0 +1,10 @@
+{
+  "device": "CJ004-iOS26-20261021",
+  "udid": "B80AD40D-F779-4FE3-A36D-CFD4C4A19D83",
+  "initial": "VoiceOver off, Settings inspector row188",
+  "enabled": "VoiceOver on, row189",
+  "final": "VoiceOver off, row188 after dismissing History local modal",
+  "provenance": "Actual native CUA getAXState readbacks in this chat; no speech/audio inference",
+  "host_voiceover_changed": false,
+  "audio_capture_obtained": false
+}

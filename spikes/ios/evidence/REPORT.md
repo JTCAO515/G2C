@@ -1,5 +1,7 @@
 # CJ-004 本地选型段交付
 
+2026-10-22 最小收尾见 [原scope补验](minimal-closeout/REPORT.md)：增量滚动局部观察已补，iOS18/主要VoiceOver仍有明确缺口。
+
 最新性能补验见 [post-P2 报告](performance-post-p2/REPORT.md)。
 
 最新定向差额见 [P2-LIFECYCLE.md](resume/P2-LIFECYCLE.md) 与 [恢复补验](resume/SUPPLEMENT.md)；下文保留1dd735e候选的原始结论，不能覆盖新差额。
