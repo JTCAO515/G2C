@@ -1,0 +1,29 @@
+Command: swift test --package-path ios/Modules/CJMemoryClient --filter officialDateDecoderAndKeysetPage|nonNullMalformedReceiptIsNotAbsence|groupsAndEmptyListUseOfficialClient|serverOpaqueIDsAreReadableWithoutUUIDNarrowing|opaqueDetailRequiresExactBytes|acceptedOpaqueRowsHaveUniqueCurrentViewIDs|originalQuerySettlesPersistedHashOnly|expiredCredentialsAreNotEmptyGroups
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentOpaqueViewIdentityTests started.
+◇ Suite IndependentContractAndStoreTests started.
+◇ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() started.
+◇ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() started.
+◇ Suite MemoryClientTests started.
+◇ Test opaqueDetailRequiresExactBytes() started.
+◇ Test nonNullMalformedReceiptIsNotAbsence() started.
+◇ Test officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test groupsAndEmptyListUseOfficialClient() started.
+◇ Test originalQuerySettlesPersistedHashOnly() started.
+◇ Test expiredCredentialsAreNotEmptyGroups() started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00.123456Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+✔ Test expiredCredentialsAreNotEmptyGroups() passed after 0.013 seconds.
+✔ Test originalQuerySettlesPersistedHashOnly() passed after 0.013 seconds.
+✔ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() passed after 0.014 seconds.
+✔ Suite IndependentOpaqueViewIdentityTests passed after 0.015 seconds.
+✔ Test nonNullMalformedReceiptIsNotAbsence() passed after 0.014 seconds.
+✔ Test opaqueDetailRequiresExactBytes() passed after 0.015 seconds.
+✔ Test groupsAndEmptyListUseOfficialClient() passed after 0.015 seconds.
+✔ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() passed after 0.015 seconds.
+✔ Suite IndependentContractAndStoreTests passed after 0.015 seconds.
+✔ Test officialDateDecoderAndKeysetPage(timestamp:) with 2 test cases passed after 0.016 seconds.
+✔ Suite MemoryClientTests passed after 0.016 seconds.
+✔ Test run with 8 tests in 3 suites passed after 0.017 seconds.

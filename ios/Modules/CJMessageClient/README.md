@@ -144,3 +144,20 @@ single .generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation path. Pr
 commit and exports stay intact for current delivery. Old interfaces/SDK versions remain;
 standalone32 checks pass, while Trip activation/full App same-pin integration remain
 pending. See evidence/TRIP-API-PIN.md; no other consumer should create a private CJFoundation.
+
+Next shared NEEDS candidate: officiald688c01 adds four operations at the ONE
+.generated/d688c01dc0fb18488a1e9c49414a039ce0126204/CJFoundation path. Old9dc/573 exports
+and4fb remain intact. Standalone35 checks and one-package graph pass; NEEDS business
+activation/full App common-pin integration remain pending. See evidence/NEEDS-API-PIN.md.
+
+Next shared Feedback candidate: official201156c9 at the single
+.generated/201156c9bf9850f9b8e87dc1f986452ce1ae789f/CJFoundation path adds generated
+Feedback methods/types while preserving NEEDS and prior interfaces. Standalone38 checks
+pass; old d688/9dc/573 exports remain. Current d688 App delivery and future common-pin
+activation are separate. See evidence/FEEDBACK-API-PIN.md; no business POST is enabled.
+
+Next RUN display shared candidate: officialc02cf08e at the single
+.generated/c02cf08e52a0d8ffc2fefac99226654a7e01539c/CJFoundation path. Standalone41
+checks pass with exact old-interface/SDK compatibility; prior exports remain. No real
+RUN request or App pin switch, and no69d/b868 HOLD resolution is implied. See
+evidence/RUN-DISPLAY-API-PIN.md for limited GET/codec evidence and remaining gates.

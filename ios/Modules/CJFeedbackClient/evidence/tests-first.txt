@@ -1,0 +1,66 @@
+Building for debugging...
+[Provisioning 2 / 23]
+[Pre-planning 1 / 422]
+[Planning deferred tasks]
+[14 / 38] CJFeedbackClient
+[34 / 75]
+[37 / 75]
+[43 / 75]
+[44 / 75]
+[45 / 75]
+[46 / 75]
+[47 / 75]
+[51 / 75] CJFeedbackClient
+[58 / 74] CJFeedbackClient
+[64 / 75] CJFeedbackClientTests-product
+[65 / 81]
+[70 / 81] CJFeedbackClientTests-product
+[75 / 81] CJFeedbackClientTests-product
+[77 / 81] CJFeedbackClientTests-product
+Build complete! (8.21秒)
+Test Suite 'All tests' started at 2026-10-22 18:55:51.240.
+Test Suite 'All tests' passed at 2026-10-22 18:55:51.241.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite FeedbackClientTests started.
+◇ Test malformedReceiptRejected(kind:) started.
+◇ Test officialExactBodyAndOriginalQuery(linked:) started.
+◇ Test invalidInputAndExactUnicode() started.
+◇ Test lostACKReopenQueryOnly() started.
+◇ Test malformedStoredOriginalShapes() started.
+◇ Test officialUTC(date:) started.
+◇ Test badLinkedSourceRejected(source:) started.
+◇ Test case passing 1 argument kind → "feedbackHash" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "messageHash" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "run" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument linked → true to officialExactBodyAndOriginalQuery(linked:) started.
+◇ Test case passing 1 argument linked → false to officialExactBodyAndOriginalQuery(linked:) started.
+◇ Test case passing 1 argument kind → "action" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "message" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "extra" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "missingSource" to malformedReceiptRejected(kind:) started.
+◇ Test nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument source → "{}" to badLinkedSourceRejected(source:) started.
+◇ Test case passing 1 argument kind → "duplicate" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "generalLinked" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument source → "null" to badLinkedSourceRejected(source:) started.
+◇ Test case passing 1 argument date → "2026-10-22T10:00:00Z" to officialUTC(date:) started.
+◇ Test case passing 1 argument date → "2026-10-22T10:00:00.125Z" to officialUTC(date:) started.
+◇ Test case passing 1 argument source → "false" to badLinkedSourceRejected(source:) started.
+◇ Test case passing 1 argument value → "{}" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument value → "null" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument value → "false" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument value → "42" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument value → ""invalid"" to nullAndMalformedLookupNeverAllowResend(value:) started.
+✔ Test invalidInputAndExactUnicode() passed after 0.031 seconds.
+✔ Test malformedStoredOriginalShapes() passed after 0.035 seconds.
+✔ Test officialUTC(date:) with 2 test cases passed after 0.047 seconds.
+✔ Test malformedReceiptRejected(kind:) with 9 test cases passed after 0.050 seconds.
+✔ Test badLinkedSourceRejected(source:) with 3 test cases passed after 0.051 seconds.
+✔ Test nullAndMalformedLookupNeverAllowResend(value:) with 5 test cases passed after 0.056 seconds.
+✔ Test officialExactBodyAndOriginalQuery(linked:) with 2 test cases passed after 0.058 seconds.
+✔ Test lostACKReopenQueryOnly() passed after 0.059 seconds.
+✔ Suite FeedbackClientTests passed after 0.059 seconds.
+✔ Test run with 8 tests in 1 suite passed after 0.059 seconds.

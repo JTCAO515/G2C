@@ -6,6 +6,7 @@ struct MemoryShell: View {
     @Bindable var state: ShellState
     let accountHost: AccountHost
     let memoryHost: MemoryContainerHost
+    let feedbackHost: FeedbackContainerHost
     private var language: ShellLanguage { state.language }
 
     var body: some View {
@@ -23,6 +24,7 @@ struct MemoryShell: View {
                     NavigationLink(language.text("Help", "帮助"), value: MemoryRoute.help)
                     NavigationLink(language.text("Privacy", "隐私"), value: MemoryRoute.privacy)
                     NavigationLink(language.text("Support", "支持"), value: MemoryRoute.support)
+                    NavigationLink(language.text("Feedback", "问题反馈"), value: MemoryRoute.feedback(feedbackHost.captureEntry()))
                 }
             }
             .navigationTitle(ShellTab.memory.title(language))
@@ -54,6 +56,8 @@ struct MemoryShell: View {
             MemoryContainerDetail(host: memoryHost, language: language)
         case .manualMemory:
             MemoryContainerManual(host: memoryHost, language: language)
+        case .feedback(let entry):
+            FeedbackContainerView(host: feedbackHost, entry: entry, language: language)
         case .account:
             AccountView(host: accountHost, shell: state)
         case .help:

@@ -1,0 +1,25 @@
+Building for debugging...
+[Provisioning 2 / 23]
+[2 / 11] CJFeedbackClient
+[4 / 13] CJFeedbackClient
+[10 / 13] CJFeedbackClientTests-product
+[12 / 15] CJFeedbackClientTests-product
+[17 / 19] CJFeedbackClientTests-product
+Build complete! (1.97秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite FeedbackClientTests started.
+◇ Test malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "message" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "run" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "feedbackHash" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "action" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "extra" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "messageHash" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "missingSource" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "duplicate" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "generalLinked" to malformedReceiptRejected(kind:) started.
+✔ Test malformedReceiptRejected(kind:) with 9 test cases passed after 0.022 seconds.
+✔ Suite FeedbackClientTests passed after 0.022 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.022 seconds.

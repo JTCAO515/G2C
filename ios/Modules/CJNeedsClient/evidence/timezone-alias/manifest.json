@@ -1,0 +1,11 @@
+{
+  "base": "8c28bcb2facef0c76ebf8b997101c6b18d44f17f",
+  "changed_source_sha256": {
+    "Sources/CJNeedsClient/NeedsValidation.swift": "807c219fc36f804ffabd6d76d39f965ef3e84360b6653d8a0b14f78a38a66cb9",
+    "Tests/CJNeedsClientTests/TimezoneAliasTests.swift": "34809812b915b5c1c800dab4603a6ad3a924893699d43f9cf34869d149850cc4"
+  },
+  "ios_full_uncompressed_sha256": "bf1f9ee599dc171a2f3eab9608e084f1e3ae577605f00b7eb474370a5a652fbb",
+  "before": "5 functions; 10 failing cases, 1 passing case",
+  "after": "5 functions; 11 passing cases",
+  "reused": "36 functions / 51 cases from 8c28"
+}

@@ -1,0 +1,9 @@
+Relevant output; raw log under ignored .build/feedback-pin-evidence/full-tests.txt.
+Build complete! (4.01秒)
+◇ Test officialReceiptUTCTimestampsUseUnchangedDateHelper() started.
+◇ Test fixedOfficialFeedbackMethodsCompileWithoutRequests() started.
+◇ Test receiptNullMissingAndFallbackRemainDistinct() started.
+✔ Test receiptNullMissingAndFallbackRemainDistinct() passed after 0.001 seconds.
+✔ Test fixedOfficialFeedbackMethodsCompileWithoutRequests() passed after 0.002 seconds.
+✔ Test officialReceiptUTCTimestampsUseUnchangedDateHelper() passed after 0.004 seconds.
+✔ Test run with 38 tests in 7 suites passed after 0.024 seconds.

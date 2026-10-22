@@ -1,0 +1,17 @@
+ios/Modules/CJTripClient/evidence/d688-api-pin/DateConfigurationCheck.swift:12:26: error: call can throw, but it is executed in a non-throwing autoclosure
+10 |         let fractional = try transcoder.decode("2026-10-22T00:00:00.125Z")
+11 |         precondition(abs(fractional.timeIntervalSince(whole) - 0.125) < 0.00001)
+12 |         precondition(try transcoder.decode(transcoder.encode(fractional)) == fractional)
+   |                          `- error: call can throw, but it is executed in a non-throwing autoclosure
+13 |         do {
+14 |             _ = try transcoder.decode("not-a-date")
+
+ios/Modules/CJTripClient/evidence/d688-api-pin/DateConfigurationCheck.swift:12:44: error: call can throw, but it is executed in a non-throwing autoclosure
+10 |         let fractional = try transcoder.decode("2026-10-22T00:00:00.125Z")
+11 |         precondition(abs(fractional.timeIntervalSince(whole) - 0.125) < 0.00001)
+12 |         precondition(try transcoder.decode(transcoder.encode(fractional)) == fractional)
+   |                                            `- error: call can throw, but it is executed in a non-throwing autoclosure
+13 |         do {
+14 |             _ = try transcoder.decode("not-a-date")
+
+exit=1

@@ -7,27 +7,39 @@ public struct ShellView: View {
     @State private var accountHost: AccountHost
     @State private var messageHost: AssistantMessageHost
     @State private var serverHistoryHost: ServerHistoryHost
+    @State private var runContainerHost: RunContainerHost
+    @State private var answerFeedbackHost: FeedbackContainerHost
+    @State private var generalFeedbackHost: FeedbackContainerHost
+    @State private var needsContainerHost: NeedsContainerHost
     @State private var tripContainerHost: TripContainerHost
     @State private var memoryContainerHost: MemoryContainerHost
     @Environment(\.scenePhase) private var scenePhase
 
-    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil) {
+    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil) {
         if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
         if let messageHost { precondition(messageHost.belongs(to: state), "Message host must own the same ShellState") }
         if let serverHistoryHost { precondition(serverHistoryHost.belongs(to: state)) }
         if let memoryContainerHost { precondition(memoryContainerHost.belongs(to: state)) }
         if let tripContainerHost { precondition(tripContainerHost.belongs(to: state)) }
+        if let needsContainerHost { precondition(needsContainerHost.belongs(to: state)) }
+        if let answerFeedbackHost { precondition(answerFeedbackHost.belongs(to: state, surface: .answer)) }
+        if let generalFeedbackHost { precondition(generalFeedbackHost.belongs(to: state, surface: .general)) }
+        if let runContainerHost { precondition(runContainerHost.belongs(to: state)) }
         self.state = state
         self._accountHost = State(initialValue: accountHost ?? AccountHost(shell: state))
         self._messageHost = State(initialValue: messageHost ?? state.messageHost ?? AssistantMessageHost(shell: state))
         self._serverHistoryHost = State(initialValue: serverHistoryHost ?? state.serverHistoryHost ?? ServerHistoryHost(shell: state))
+        self._runContainerHost = State(initialValue: runContainerHost ?? state.runContainerHost ?? RunContainerHost(shell: state))
+        self._answerFeedbackHost = State(initialValue: answerFeedbackHost ?? state.answerFeedbackHost ?? FeedbackContainerHost(shell: state, surface: .answer))
+        self._generalFeedbackHost = State(initialValue: generalFeedbackHost ?? state.generalFeedbackHost ?? FeedbackContainerHost(shell: state, surface: .general))
+        self._needsContainerHost = State(initialValue: needsContainerHost ?? state.needsContainerHost ?? NeedsContainerHost(shell: state))
         self._tripContainerHost = State(initialValue: tripContainerHost ?? state.tripContainerHost ?? TripContainerHost(shell: state))
         self._memoryContainerHost = State(initialValue: memoryContainerHost ?? state.memoryContainerHost ?? MemoryContainerHost(shell: state))
     }
 
     public var body: some View {
         TabView(selection: $state.selectedTab) {
-            NavigationStack { AssistantShell(state: state, messageHost: messageHost, serverHistoryHost: serverHistoryHost, bodyText: state.assistantBody) }
+            NavigationStack { AssistantShell(state: state, messageHost: messageHost, serverHistoryHost: serverHistoryHost, needsHost: needsContainerHost, feedbackHost: answerFeedbackHost, runHost: runContainerHost, bodyText: state.assistantBody) }
                 .tabItem { Label(ShellTab.assistant.title(state.language), systemImage: "bubble.left.and.bubble.right") }
                 .tag(ShellTab.assistant)
             TripShell(state: state, host: tripContainerHost)
@@ -43,7 +55,7 @@ public struct ShellView: View {
             }
             .tabItem { Label(ShellTab.plugins.title(state.language), systemImage: "square.grid.2x2") }
             .tag(ShellTab.plugins)
-            MemoryShell(state: state, accountHost: accountHost, memoryHost: memoryContainerHost)
+            MemoryShell(state: state, accountHost: accountHost, memoryHost: memoryContainerHost, feedbackHost: generalFeedbackHost)
                 .tabItem { Label(ShellTab.memory.title(state.language), systemImage: "tray") }
                 .tag(ShellTab.memory)
         }
@@ -51,6 +63,10 @@ public struct ShellView: View {
         .tint(.primary)
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
+                runContainerHost.setForeground(false)
+                answerFeedbackHost.suspendForBackground()
+                generalFeedbackHost.suspendForBackground()
+                needsContainerHost.suspendForBackground()
                 tripContainerHost.suspendForBackground()
                 memoryContainerHost.suspendForBackground()
             }

@@ -1,0 +1,5 @@
+Command: xcodebuild -scheme CJRunClient -destination generic/platform=iOS Simulator -derivedDataPath .build/ios CODE_SIGNING_ALLOWED=NO build
+SDK: iPhoneSimulator27.1; Xcode27A9275
+Architectures: arm64, x86_64; deployment target17.0
+** BUILD SUCCEEDED **
+Full raw log: .build/author-raw/ios-build.log

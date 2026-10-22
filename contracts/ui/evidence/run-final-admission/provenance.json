@@ -1,0 +1,60 @@
+{
+  "base": "340af1b548dd19fef379e990d10167e913d6ffdf",
+  "exact_independent_harness_sha256": "fbb580b03748521cfc3e9feb8d94af3cccab13b5bf254cd62b628a1fc3f12416",
+  "reused_graph_sha256": "08c7b7cc35c236aa83611167c58757b10c336a680ea50912793ee9312081433b",
+  "unchanged_fixed_module_trees": {
+    "CJRunClient": {
+      "fixed": "84f41e1d5c76db789565e46fb05377f27fedea45",
+      "tree": "e9db8decc23ee0f49667f9bf031ac0946cdb396a"
+    },
+    "CJMessageClient": {
+      "fixed": "540da02a335e96e98917ffd3d94a395f8ca2d892",
+      "tree": "5a4eeb016652f0abcfd306eec3c8a5bb61e8afad"
+    },
+    "CJMemoryClient": {
+      "fixed": "4eac4ee563eafd44c26438902077839bcc558989",
+      "tree": "480c8d5ac3ac3a2e5aff6294e59a4e4e9e64a827"
+    },
+    "CJTripClient": {
+      "fixed": "b7966a1a95ed3e9b4c701f616693cf7e13d2d313",
+      "tree": "ea506632a83013789acd3ff2524a3a5ecbe44646"
+    },
+    "CJNeedsClient": {
+      "fixed": "25e50dbc25cc5aa9443b2d6da50c514528b2b3c6",
+      "tree": "75cdeb0c6b5bd0259c85fe7414065f28ba5c94a5"
+    },
+    "CJFeedbackClient": {
+      "fixed": "147a9ae3d9dc9e1b182c6f9b01482dfe5f6fcc53",
+      "tree": "3c3b6feaf6359840b486cd09365d98026836635a"
+    },
+    "CJAuth": {
+      "fixed": "f2c01d7e9e3292b7d8bcc207b965bf6a36cec96c",
+      "tree": "3ba7e7f5390b48ba523342131f25b73c996b4410"
+    }
+  },
+  "protected_unchanged_host_sources_manifests_locks": {
+    "ios/Modules/CJShell/Package.resolved": "cc71314c2752233d54606a362aa47a1baf6c335712a80da3642c1a3e56f3c09c",
+    "ios/Modules/CJShell/Package.swift": "fefe18f8bc2e2a45bd17ecae9dd6912cd08fe3bc5e94d20a89daeb999277cff1",
+    "ios/Modules/CJShell/Sources/CJShell/AccountHost.swift": "02308e8429a97dc6a2c37cda1d59d00890ca61fc1fe30531ec068e9feca753c6",
+    "ios/Modules/CJShell/Sources/CJShell/AccountView.swift": "2e4d7ab5974218a0cc0ff303fe82993e8d0d4ba9a1a500f4b57c7f296040d10d",
+    "ios/Modules/CJShell/Sources/CJShell/AssistantShell.swift": "0984643ae1fe2ae4be9147d23c22567cf7e6b37ef492e607e7db4093b2ba91b4",
+    "ios/Modules/CJShell/Sources/CJShell/BrandAvatar.swift": "fe0ff9337457be11114e1bc9f01b1bce50d814f8acc016817f1d1d4cd06e2aa8",
+    "ios/Modules/CJShell/Sources/CJShell/FeedbackContainerHost.swift": "f93a26ecb4e358913d666b8279feb544bcd54097420e54dcfca2052a4bb63ea2",
+    "ios/Modules/CJShell/Sources/CJShell/FeedbackContainerView.swift": "5e93107c4b3f47fb3e0307883a5743adb836b0dbeed1b862b61b72947d4d9242",
+    "ios/Modules/CJShell/Sources/CJShell/LocalRecoveryList.swift": "2b6c0c1bcccc32602175d9337112119b9c4a6459f93d2db543fbd7404ae996d5",
+    "ios/Modules/CJShell/Sources/CJShell/MemoryContainerHost.swift": "6f99ea7ceb0fa664ee6c6fa1f6d4d09f2ce7d011f903570a721f9999e860aea1",
+    "ios/Modules/CJShell/Sources/CJShell/MemoryContainerViews.swift": "110c370a6a5182929ac25efb7b7afb7cdf3fb63db6c05be21ec410889a83c74e",
+    "ios/Modules/CJShell/Sources/CJShell/MemoryShell.swift": "1c58d135c6e8370c2827c8389473059ea2f99b37dba157652c3b20be49b3b83a",
+    "ios/Modules/CJShell/Sources/CJShell/MessageRecoveryStatus.swift": "0a08d3108d1f7d089f6d09792264665e7d1cb7a20627d0b7548d855a88430e27",
+    "ios/Modules/CJShell/Sources/CJShell/NeedsContainerHost.swift": "b2b206928d41e7a414c0d8a8dbf9bfda3a714f0c82a9c7cfeab1b8b47f9e819e",
+    "ios/Modules/CJShell/Sources/CJShell/NeedsContainerView.swift": "bde84524d4495321d10cc577bb88125474b8c180aa2f7a72ed576ec07eeb4c71",
+    "ios/Modules/CJShell/Sources/CJShell/Resources/BrandAvatar.png": "dc2ca11638328f658669c21d5ff5d24010ee70f5f704f46354b09334e1560f4d",
+    "ios/Modules/CJShell/Sources/CJShell/RunContainerView.swift": "fc08c0be80e994f30eebc83e5a33d473187f40d914baf9e4bf430c561c3e66d7",
+    "ios/Modules/CJShell/Sources/CJShell/ServerHistoryHost.swift": "7df6c52ec88caf0f7b77e28be14f6b47e914887aa2404a8908c0df11d83757b5",
+    "ios/Modules/CJShell/Sources/CJShell/ServerHistoryView.swift": "c85c01efd6cc0065d25391fdbcddca450113698bc89f41a833a56547b5c567e8",
+    "ios/Modules/CJShell/Sources/CJShell/ShellState.swift": "010d3734baed2833f1a139f9958a82ef2cebe178461f7b27e1833e282d8a18f0",
+    "ios/Modules/CJShell/Sources/CJShell/ShellView.swift": "03de77f57035459abd02225720a61614ce6b53f5049f2e5303ab2f367ab385fc",
+    "ios/Modules/CJShell/Sources/CJShell/TripContainerHost.swift": "fcf337a70b9c9c940a23e51768f9f8a786718906510b63a3af93b18f835fa1a3",
+    "ios/Modules/CJShell/Sources/CJShell/TripShell.swift": "b86532cdb9b52c360bd21471d8e9cc08bf90c222b6d663098d39c497e11adf5e"
+  }
+}

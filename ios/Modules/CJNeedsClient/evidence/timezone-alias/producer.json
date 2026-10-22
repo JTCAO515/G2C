@@ -1,0 +1,30 @@
+{
+  "producer": "c821b34d607016c6dbc1020c203621841f1a60e8",
+  "checks": [
+    {
+      "timezone": "Etc/UTC",
+      "producer_accepts": true,
+      "original_preserved": true
+    },
+    {
+      "timezone": "US/Eastern",
+      "producer_accepts": true,
+      "original_preserved": true
+    },
+    {
+      "timezone": "PRC",
+      "producer_accepts": true,
+      "original_preserved": true
+    },
+    {
+      "timezone": "",
+      "producer_rejects": true
+    },
+    {
+      "timezone": "Not/A_Real_Zone",
+      "producer_rejects": true
+    }
+  ],
+  "SQL": "UNRUN",
+  "HTTP": "UNRUN"
+}

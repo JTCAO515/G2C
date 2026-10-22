@@ -1,0 +1,131 @@
+Building for debugging...
+[Computing dependencies]
+[1 / 10]
+[2 / 11] CJFeedbackClient
+[4 / 13] CJFeedbackClient
+[8 / 14] CJFeedbackClient
+[11 / 14] CJFeedbackClientTests-product
+[17 / 20] CJFeedbackClientTests-product
+[23 / 25] CJFeedbackClientTests-product
+Build complete! (2.13秒)
+Test Suite 'All tests' started at 2026-10-22 19:00:11.428.
+Test Suite 'All tests' passed at 2026-10-22 19:00:11.429.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite LifecycleTests started.
+◇ Suite FinalResponseTests started.
+◇ Suite FeedbackClientTests started.
+◇ Suite PresentationTests started.
+◇ Suite StoreAndGateTests started.
+◇ Test replacementAfterResponseWithholdsConfirmation(kind:) started.
+◇ Test cancelledExchangeKeepsOriginal() started.
+◇ Test finalBindingCallbackCannotReplaceDurability(kind:) started.
+◇ Test clientOwnershipAndInventoryFence() started.
+◇ Test malformedReceiptRejected(kind:) started.
+◇ Test officialUTC(date:) started.
+◇ Test sameBindingKeyCallbackReentryBlocksAppend() started.
+◇ Test credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test lostACKReopenQueryOnly() started.
+◇ Test invalidInputAndExactUnicode() started.
+◇ Test malformedStoredOriginalShapes() started.
+◇ Test lastKeyCallbackCannotReplaceOriginal(kind:) started.
+◇ Test queuedOldSubmitCannotUseNewContext() started.
+◇ Test bindingCallbackReentryCannotReturnOldOperation() started.
+◇ Test officialExactBodyAndOriginalQuery(linked:) started.
+◇ Test bindingReentryDuringPrepareDoesNotFreezeOldDraft() started.
+◇ Test sameBindingInvalidationDuringCredentialCallback() started.
+◇ Test duplicateWorkIsOneShotAndCancellationSettlesBusy() started.
+◇ Test confirmationComesOnlyFromReceipt() started.
+◇ Test sameBindingSelectionReentryFromKeyDoesNotPublishOrClearNewState() started.
+◇ Test case passing 1 argument kind → "directory" to replacementAfterResponseWithholdsConfirmation(kind:) started.
+◇ Test badLinkedSourceRejected(source:) started.
+◇ Test responseAfterAccountSwitchCannotPublish() started.
+◇ Test case passing 1 argument kind → "ciphertext" to finalBindingCallbackCannotReplaceDurability(kind:) started.
+◇ Test case passing 1 argument kind → "feedbackHash" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument date → "2026-10-22T10:00:00Z" to officialUTC(date:) started.
+◇ Test case passing 1 argument kind → "directory" to finalBindingCallbackCannotReplaceDurability(kind:) started.
+◇ Test case passing 1 argument kind → "extra" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "message" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument date → "2026-10-22T10:00:00.125Z" to officialUTC(date:) started.
+◇ Test case passing 1 argument kind → "messageHash" to malformedReceiptRejected(kind:) started.
+◇ Test queuedOldQueryCannotQueryNewSelection() started.
+◇ Test case passing 1 argument kind → "action" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "missingSource" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "account" to credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test case passing 1 argument value → "false" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument kind → "run" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "selection" to credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test case passing 1 argument kind → "directory" to lastKeyCallbackCannotReplaceOriginal(kind:) started.
+◇ Test case passing 1 argument value → "{}" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument kind → "ciphertext" to lastKeyCallbackCannotReplaceOriginal(kind:) started.
+◇ Test case passing 1 argument kind → "generalLinked" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument value → "null" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test conflictRetainsOriginalDraftAndRecovery() started.
+◇ Test case passing 1 argument linked → false to officialExactBodyAndOriginalQuery(linked:) started.
+◇ Test wrongNamespaceRejected(kind:) started.
+◇ Test case passing 1 argument value → ""invalid"" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument kind → "environment" to credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test case passing 1 argument linked → true to officialExactBodyAndOriginalQuery(linked:) started.
+◇ Test privateTransportExceptionIsSanitized() started.
+◇ Test noKeyNeverCreatesRetriesOrSends(kind:) started.
+◇ Test case passing 1 argument kind → "ciphertext" to replacementAfterResponseWithholdsConfirmation(kind:) started.
+◇ Test case passing 1 argument source → "{}" to badLinkedSourceRejected(source:) started.
+◇ Test publicClientCannotPostEvenWithTrustedSessionAndResources() started.
+◇ Test wrongOriginalKeyAndDirectorySymlinkFailClosed() started.
+◇ Test case passing 1 argument kind → "account" to wrongNamespaceRejected(kind:) started.
+◇ Test case passing 1 argument kind → "duplicate" to malformedReceiptRejected(kind:) started.
+◇ Test case passing 1 argument kind → "unknown" to noKeyNeverCreatesRetriesOrSends(kind:) started.
+◇ Test case passing 1 argument kind → "wrongID" to noKeyNeverCreatesRetriesOrSends(kind:) started.
+◇ Test case passing 1 argument kind → "unknownCreation" to noKeyNeverCreatesRetriesOrSends(kind:) started.
+◇ Test missingBindingBeforeQueuedWorkDoesNotHangBusy() started.
+◇ Test exclusiveAppendRetainsBytesAndNeverDeletes() started.
+◇ Test case passing 1 argument value → "42" to nullAndMalformedLookupNeverAllowResend(value:) started.
+◇ Test case passing 1 argument kind → "generation" to credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test case passing 1 argument kind → "purpose" to wrongNamespaceRejected(kind:) started.
+◇ Test case passing 1 argument kind → "missing" to noKeyNeverCreatesRetriesOrSends(kind:) started.
+◇ Test case passing 1 argument kind → "environment" to wrongNamespaceRejected(kind:) started.
+◇ Test canonicalProviderOriginalPurposeAndEncryptedReopen() started.
+◇ Test case passing 1 argument source → "null" to badLinkedSourceRejected(source:) started.
+◇ Test case passing 1 argument source → "false" to badLinkedSourceRejected(source:) started.
+✔ Test queuedOldSubmitCannotUseNewContext() passed after 0.059 seconds.
+✔ Test sameBindingSelectionReentryFromKeyDoesNotPublishOrClearNewState() passed after 0.062 seconds.
+✔ Test queuedOldQueryCannotQueryNewSelection() passed after 0.064 seconds.
+✔ Test publicClientCannotPostEvenWithTrustedSessionAndResources() passed after 0.064 seconds.
+✔ Test missingBindingBeforeQueuedWorkDoesNotHangBusy() passed after 0.066 seconds.
+✔ Test clientOwnershipAndInventoryFence() passed after 0.072 seconds.
+✔ Test sameBindingKeyCallbackReentryBlocksAppend() passed after 0.073 seconds.
+✔ Test bindingCallbackReentryCannotReturnOldOperation() passed after 0.077 seconds.
+✔ Test bindingReentryDuringPrepareDoesNotFreezeOldDraft() passed after 0.077 seconds.
+✔ Test sameBindingInvalidationDuringCredentialCallback() passed after 0.078 seconds.
+✔ Test wrongOriginalKeyAndDirectorySymlinkFailClosed() passed after 0.077 seconds.
+✔ Test invalidInputAndExactUnicode() passed after 0.078 seconds.
+✔ Test exclusiveAppendRetainsBytesAndNeverDeletes() passed after 0.077 seconds.
+✔ Test credentialCallbackCannotCrossBinding(kind:) with 4 test cases passed after 0.078 seconds.
+✔ Test wrongNamespaceRejected(kind:) with 3 test cases passed after 0.078 seconds.
+✔ Test malformedStoredOriginalShapes() passed after 0.078 seconds.
+✔ Test privateTransportExceptionIsSanitized() passed after 0.078 seconds.
+✔ Test canonicalProviderOriginalPurposeAndEncryptedReopen() passed after 0.078 seconds.
+✔ Test noKeyNeverCreatesRetriesOrSends(kind:) with 4 test cases passed after 0.085 seconds.
+✔ Suite StoreAndGateTests passed after 0.086 seconds.
+✔ Test finalBindingCallbackCannotReplaceDurability(kind:) with 2 test cases passed after 0.087 seconds.
+✔ Test officialUTC(date:) with 2 test cases passed after 0.088 seconds.
+✔ Test lastKeyCallbackCannotReplaceOriginal(kind:) with 2 test cases passed after 0.088 seconds.
+✔ Test confirmationComesOnlyFromReceipt() passed after 0.093 seconds.
+✔ Test malformedReceiptRejected(kind:) with 9 test cases passed after 0.098 seconds.
+✔ Test badLinkedSourceRejected(source:) with 3 test cases passed after 0.099 seconds.
+✔ Test replacementAfterResponseWithholdsConfirmation(kind:) with 2 test cases passed after 0.100 seconds.
+✔ Suite FinalResponseTests passed after 0.100 seconds.
+✔ Test duplicateWorkIsOneShotAndCancellationSettlesBusy() passed after 0.102 seconds.
+✔ Test responseAfterAccountSwitchCannotPublish() passed after 0.103 seconds.
+✔ Test nullAndMalformedLookupNeverAllowResend(value:) with 5 test cases passed after 0.103 seconds.
+✔ Test cancelledExchangeKeepsOriginal() passed after 0.103 seconds.
+✔ Suite LifecycleTests passed after 0.103 seconds.
+✔ Test conflictRetainsOriginalDraftAndRecovery() passed after 0.104 seconds.
+✔ Suite PresentationTests passed after 0.105 seconds.
+✔ Test officialExactBodyAndOriginalQuery(linked:) with 2 test cases passed after 0.106 seconds.
+✔ Test lostACKReopenQueryOnly() passed after 0.107 seconds.
+✔ Suite FeedbackClientTests passed after 0.107 seconds.
+✔ Test run with 33 tests in 5 suites passed after 0.107 seconds.

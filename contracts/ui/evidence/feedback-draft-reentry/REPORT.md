@@ -1,0 +1,15 @@
+# CJ006 exact Feedback f19 consumer compatibility
+
+Base b868f50f444349f4d239f8caf8d37697e355c55f. Read independent Testing CJ-023-ios-feedback-client/REPORT.md and producer f19 draft-reentry report/source before intake. Imported exact f19b0150fe336f303af6e05aa7bb38f665530ee1 as separate b0b1ae9. Complete CJFeedbackClient subtree matches its fixed producer tree; no domain source authored. **No CJShell product source change was needed**: both entries already embed the public form and use its public preparation/edit methods.
+
+New host test covers5 callback scenarios: Answer problem/expectation/association, General problem/expectation. Under prior69d input, all5 fail2 ownership assertions each (10 runtime failures, exit1; before.txt). The test deliberately does not dispatch the known-bad returned work. Synthetic fields only; no real credential or user text.
+
+After f19: accepted callback edits return nil for stale preparation, leave the newer text/association editable, create no original record and make zero calls. A subsequent explicit prepare captures exactly that accepted draft. Edits attempted after freezing remain rejected and do not mutate original bytes. Invalidation then discards queued work before persistence/outflow. The separate original public-constructor POST-disabled control and answer-change-inside-prepare control also remain PASS. **3 test functions /7 expanded cases PASS** (`after.txt`). Producer's24-function/33-case actual dispatch/query tests are reused as producer author evidence, not newly executed or independently accepted by this host run.
+
+PASS: unsigned arm64 iOS17 simulator-target CJShell compilation (`ios-build.txt`) includes exact f19 under the unchanged201156 graph. Product sources/manifests/lock/export bytes are unchanged from b868, so prior127+1/UI contract/single-SDK evidence is reused without unrelated full-suite or graph rebuild. No RUN c02 pin change.
+
+Public production POST stays disabled. No fixture POST is dispatched by this host regression. No real account, platform Keychain, HTTP socket, PG, App/simulator launch, device/rendered UI, signing or release action. The empty-pending Feedback negative was independently PASS and is not expanded into storage work.
+
+Independent re-review of f19/b868 composition remains pending. Main also delivered a **separate confirmed NEEDS-container same-editor callback P2** while this intake was finishing; that host repair is next and is not fixed or waived by these Feedback results. All original b868/69d failures and prior evidence remain.
+
+Commands: established cache environment; swift test --disable-sandbox package CJShell/scratch /tmp/cj006-sdk-host-build/cache /tmp/cj006-spm-cache/--disable-automatic-resolution, filter 'acceptedEditorCallbackRetiresOldPreparationThroughHost|defaultsUnavailableAndPublicClientCannotSubmit|answerChangeInsidePrepareCallbackCannotFreezeOldAssociation'. Established unsigned iOS CJShell command with /tmp/cj006-memory-ios, arm64-apple-ios17.0-simulator and iPhoneSimulator27.1 SDK, SDKROOT unset.

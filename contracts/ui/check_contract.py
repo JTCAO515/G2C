@@ -4,7 +4,8 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[2]
 base = json.loads((root / "contracts/api/openapi.json").read_text())
 assert base["info"]["version"] == "1.0.0"
-assert set(base["paths"]) == {"/v1/probe"}
+# Accepted domain routes extend BASE. UI validates the probe, not the global API inventory.
+assert "/v1/probe" in base["paths"]
 assert set(base["paths"]["/v1/probe"]) == {"get"}
 assert "never an idempotency or authorization token" in base["components"]["schemas"]["RequestId"]["description"]
 examples = json.loads(Path(__file__).with_name("examples.json").read_text())
@@ -19,4 +20,4 @@ def valid(item):
 
 assert all(map(valid, examples["positive"]))
 assert not any(map(valid, examples["negative"]))
-print("PASS: BASE boundary; 7 positive and 5 negative UI presentation samples")
+print("PASS: BASE probe boundary; 7 positive and 5 negative UI presentation samples")

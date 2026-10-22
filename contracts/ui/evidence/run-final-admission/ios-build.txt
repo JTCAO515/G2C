@@ -1,0 +1,14 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Provisioning 3 / 52]
+[Pre-planning 1 / 871]
+[Planning deferred tasks]
+[1 / 4] InternalCollectionsUtilities
+[1 / 39] CJFeedbackClient
+[3 / 7] CJShell
+[6 / 10] CJShell
+[20 / 24] CJShell
+[24 / 26] CJShell
+Build complete! (2.66秒)

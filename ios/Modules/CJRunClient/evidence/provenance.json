@@ -1,0 +1,32 @@
+{
+  "base": "000b6d4dd089594a61b32028aa2f60ff2ff3460d",
+  "prep": "c4e59dc4528c2d86fa5996e1351f5d0e2bf9632b",
+  "shared_export": "540da02a335e96e98917ffd3d94a395f8ca2d892",
+  "official": "c02cf08e52a0d8ffc2fefac99226654a7e01539c",
+  "run": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f",
+  "official_files_verified": 16,
+  "unchanged_lock_pins": 11,
+  "source_sha256": {
+    "Package.resolved": "7e6dd3b7c965cb7444c96f9c4ee09d09b73ee12713d5a1cded28700982f3564c",
+    "Package.swift": "e6c822e3c835ec7d10eb2bafe4919bcf91597a5a3086ed4c9df65ea258495586",
+    "Sources/CJRunClient/RunDisplay.swift": "67f2f8de5d696f2d80a33383e93205340c0f80e0c8ad880c1dd6ba473164ab8a",
+    "Sources/CJRunClient/RunDisplayView.swift": "eb47f8b5b1e4dd5c15d4778a944b26a65e6198d0f94a14117a6c96934b79fc72",
+    "Sources/CJRunClient/RunReadTransport.swift": "daf27e985ccb560bdba6fe7fe2ab14cd2f4800210cf12c2489c0338e36842140",
+    "Sources/CJRunClient/StrictRunJSON.swift": "daaa7443479bb5841175307a7461139cfd01fe016b6596988923ea333bd3f575",
+    "Tests/CJRunClientTests/RunDisplayTests.swift": "95eba5d714e582bdb7397629a3c110e1c31c1b0305aae02e6ca3180c1e576e9a"
+  },
+  "raw_logs": {
+    ".build/author-raw/first-build.log": {
+      "sha256": "fa9b6ac3e4cf8512abad62803c7af2c4d3634b7e5fab0286eb7c5d93bac84dc9",
+      "bytes": 31356
+    },
+    ".build/author-raw/tests.log": {
+      "sha256": "c1ec898aaddac162adb8787ab71d173c078614a6e9a9e366d5ab3f40c552ef77",
+      "bytes": 6138
+    },
+    ".build/author-raw/ios-build.log": {
+      "sha256": "1fcef139582489bedb01be04ebd2d6fadf21fdd9d15d0a9a719da51325b600a5",
+      "bytes": 1183328
+    }
+  }
+}

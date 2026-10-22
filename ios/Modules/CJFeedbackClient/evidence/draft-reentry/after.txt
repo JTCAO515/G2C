@@ -1,0 +1,88 @@
+Building for debugging...
+[Provisioning 2 / 23]
+[Pre-planning 1 / 422]
+[Planning deferred tasks]
+[5 / 22] CJFeedbackClient
+[7 / 24] CJFeedbackClient
+[10 / 23] CJFeedbackClient
+[14 / 23] CJFeedbackClientTests-product
+[16 / 25] CJFeedbackClientTests-product
+[20 / 24] CJFeedbackClientTests-product
+[22 / 24] CJFeedbackClientTests-product
+Build complete! (2.12秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite PresentationTests started.
+◇ Suite DraftPreparationTests started.
+◇ Suite LifecycleTests started.
+◇ Suite FinalResponseTests started.
+◇ Suite IndependentFeedbackBoundaryTests started.
+◇ Test nextExplicitSubmitConfirmsOnlyAcceptedDraft() started.
+◇ Test acceptedCallbackChangesRetirePreparation(field:) started.
+◇ Test queuedOldSubmitCannotUseNewContext() started.
+◇ Test frozenQueuedSubmitRejectsEditsAndPreservesExactDisplay() started.
+◇ Test lockedOriginalRejectsCallbackEditWithoutInvalidatingQuery() started.
+◇ Test duplicateWorkIsOneShotAndCancellationSettlesBusy() started.
+◇ Test sameBindingInvalidationDuringCredentialCallback() started.
+◇ Test emptyPendingLastBindingDirectoryReplacementFailsClosed() started.
+◇ Test queuedOldQueryCannotQueryNewSelection() started.
+◇ Test bindingCallbackReentryCannotReturnOldOperation() started.
+◇ Test bindingReentryDuringPrepareDoesNotFreezeOldDraft() started.
+◇ Test lastKeyCallbackCannotReplaceOriginal(kind:) started.
+◇ Test missingBindingBeforeQueuedWorkDoesNotHangBusy() started.
+◇ Test case passing 1 argument field → "expectation" to acceptedCallbackChangesRetirePreparation(field:) started.
+◇ Test case passing 1 argument field → "association" to acceptedCallbackChangesRetirePreparation(field:) started.
+◇ Test confirmationComesOnlyFromReceipt() started.
+◇ Test case passing 1 argument field → "problem" to acceptedCallbackChangesRetirePreparation(field:) started.
+◇ Test responseAfterAccountSwitchCannotPublish() started.
+◇ Test prepareCallbackMustNotDisplayNewDraftAsOldSubmittedContent() started.
+◇ Test cancelledExchangeKeepsOriginal() started.
+◇ Test case passing 1 argument field → "aba" to acceptedCallbackChangesRetirePreparation(field:) started.
+◇ Test clientOwnershipAndInventoryFence() started.
+◇ Test conflictRetainsOriginalDraftAndRecovery() started.
+◇ Test sameBindingSelectionReentryFromKeyDoesNotPublishOrClearNewState() started.
+◇ Test finalBindingCallbackCannotReplaceDurability(kind:) started.
+◇ Test replacementAfterResponseWithholdsConfirmation(kind:) started.
+◇ Test case passing 1 argument kind → "directory" to finalBindingCallbackCannotReplaceDurability(kind:) started.
+◇ Test case passing 1 argument kind → "directory" to lastKeyCallbackCannotReplaceOriginal(kind:) started.
+◇ Test case passing 1 argument kind → "directory" to replacementAfterResponseWithholdsConfirmation(kind:) started.
+◇ Test case passing 1 argument kind → "ciphertext" to replacementAfterResponseWithholdsConfirmation(kind:) started.
+◇ Test credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test sameBindingKeyCallbackReentryBlocksAppend() started.
+◇ Test case passing 1 argument kind → "account" to credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test case passing 1 argument kind → "selection" to credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test case passing 1 argument kind → "ciphertext" to finalBindingCallbackCannotReplaceDurability(kind:) started.
+◇ Test case passing 1 argument kind → "environment" to credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test case passing 1 argument kind → "generation" to credentialCallbackCannotCrossBinding(kind:) started.
+◇ Test case passing 1 argument kind → "ciphertext" to lastKeyCallbackCannotReplaceOriginal(kind:) started.
+✔ Test prepareCallbackMustNotDisplayNewDraftAsOldSubmittedContent() passed after 0.012 seconds.
+✔ Test queuedOldSubmitCannotUseNewContext() passed after 0.028 seconds.
+✔ Test queuedOldQueryCannotQueryNewSelection() passed after 0.029 seconds.
+✔ Test sameBindingSelectionReentryFromKeyDoesNotPublishOrClearNewState() passed after 0.036 seconds.
+✔ Test missingBindingBeforeQueuedWorkDoesNotHangBusy() passed after 0.036 seconds.
+✔ Test sameBindingInvalidationDuringCredentialCallback() passed after 0.038 seconds.
+✔ Test bindingCallbackReentryCannotReturnOldOperation() passed after 0.038 seconds.
+✔ Test acceptedCallbackChangesRetirePreparation(field:) with 4 test cases passed after 0.038 seconds.
+✔ Test bindingReentryDuringPrepareDoesNotFreezeOldDraft() passed after 0.038 seconds.
+✔ Test sameBindingKeyCallbackReentryBlocksAppend() passed after 0.038 seconds.
+✔ Test clientOwnershipAndInventoryFence() passed after 0.039 seconds.
+✔ Test credentialCallbackCannotCrossBinding(kind:) with 4 test cases passed after 0.040 seconds.
+✔ Test emptyPendingLastBindingDirectoryReplacementFailsClosed() passed after 0.040 seconds.
+✔ Suite IndependentFeedbackBoundaryTests passed after 0.041 seconds.
+✔ Test finalBindingCallbackCannotReplaceDurability(kind:) with 2 test cases passed after 0.043 seconds.
+✔ Test lastKeyCallbackCannotReplaceOriginal(kind:) with 2 test cases passed after 0.046 seconds.
+✔ Test confirmationComesOnlyFromReceipt() passed after 0.046 seconds.
+✔ Test frozenQueuedSubmitRejectsEditsAndPreservesExactDisplay() passed after 0.047 seconds.
+✔ Test lockedOriginalRejectsCallbackEditWithoutInvalidatingQuery() passed after 0.047 seconds.
+✔ Test nextExplicitSubmitConfirmsOnlyAcceptedDraft() passed after 0.047 seconds.
+✔ Suite DraftPreparationTests passed after 0.048 seconds.
+✔ Test replacementAfterResponseWithholdsConfirmation(kind:) with 2 test cases passed after 0.048 seconds.
+✔ Suite FinalResponseTests passed after 0.048 seconds.
+✔ Test responseAfterAccountSwitchCannotPublish() passed after 0.048 seconds.
+✔ Test duplicateWorkIsOneShotAndCancellationSettlesBusy() passed after 0.049 seconds.
+✔ Test cancelledExchangeKeepsOriginal() passed after 0.049 seconds.
+✔ Suite LifecycleTests passed after 0.050 seconds.
+✔ Test conflictRetainsOriginalDraftAndRecovery() passed after 0.050 seconds.
+✔ Suite PresentationTests passed after 0.050 seconds.
+✔ Test run with 24 tests in 5 suites passed after 0.050 seconds.

@@ -1,0 +1,9 @@
+Relevant output; full log under ignored .build/needs-pin-evidence/full-tests.txt.
+Build complete! (3.78秒)
+◇ Test officialNullableFieldsRequirePresenceAndActualNull() started.
+◇ Test fixedOfficialNeedsMethodsCompileWithoutRequests() started.
+◇ Test validReceiptUsesOfficialTypedBranch() started.
+✔ Test validReceiptUsesOfficialTypedBranch() passed after 0.001 seconds.
+✔ Test officialNullableFieldsRequirePresenceAndActualNull() passed after 0.001 seconds.
+✔ Test fixedOfficialNeedsMethodsCompileWithoutRequests() passed after 0.001 seconds.
+✔ Test run with 35 tests in 6 suites passed after 0.027 seconds.

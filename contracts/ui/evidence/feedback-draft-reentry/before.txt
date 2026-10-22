@@ -1,0 +1,210 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[1 / 82] Auth
+[2 / 7] CJShellTests-product
+[4 / 9] CJShellTests-product
+[8 / 11] CJShellTests-product
+[10 / 14] CJShellTests-product
+Build complete! (3.22秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite FeedbackContainerHostTests started.
+◇ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "answer-problem" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "general-problem" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "answer-association" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "answer-expectation" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+◇ Test case passing 1 argument scenario → "general-expectation" to acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) started.
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "answer-problem" at FeedbackContainerHostTests.swift:101:9: Expectation failed: stale == nil
+↳ Accepted callback edit must retire old frozen preparation
+↳ stale == nil → false
+↳   stale → FeedbackWork(owner: 36360923-02E8-4DE5-B2C2-5A215C4C2D20, lifetime: AEF6EBFF-2AEE-485D-8A8B-4AC1AFC390E0, request: 3A54D64F-A49E-4B89-BEF1-CEE5D210E492, operation: CJFeedbackClient.FeedbackOperation(owner: C10E534D-F3F2-4254-992A-BA76A1D27259, generation: 0909A881-6838-4F1C-A81F-4E55C8044236, binding: CJFeedbackClient.FeedbackBinding(environment: 4BCC44BA-7687-465A-BA95-4237B2477546, account: 198CDFF3-EB52-4770-A00A-93C4AFBF37BD, generation: 6FAC3182-29E5-4D1D-8A2C-52A02BEFD1F6, selection: 7C0E9796-7A22-4CF6-A76B-D6F5F02FFABC)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳     some → FeedbackWork(owner: 36360923-02E8-4DE5-B2C2-5A215C4C2D20, lifetime: AEF6EBFF-2AEE-485D-8A8B-4AC1AFC390E0, request: 3A54D64F-A49E-4B89-BEF1-CEE5D210E492, operation: CJFeedbackClient.FeedbackOperation(owner: C10E534D-F3F2-4254-992A-BA76A1D27259, generation: 0909A881-6838-4F1C-A81F-4E55C8044236, binding: CJFeedbackClient.FeedbackBinding(environment: 4BCC44BA-7687-465A-BA95-4237B2477546, account: 198CDFF3-EB52-4770-A00A-93C4AFBF37BD, generation: 6FAC3182-29E5-4D1D-8A2C-52A02BEFD1F6, selection: 7C0E9796-7A22-4CF6-A76B-D6F5F02FFABC)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳       owner → 36360923-02E8-4DE5-B2C2-5A215C4C2D20
+↳       lifetime → AEF6EBFF-2AEE-485D-8A8B-4AC1AFC390E0
+↳       request → 3A54D64F-A49E-4B89-BEF1-CEE5D210E492
+↳       operation → FeedbackOperation(owner: C10E534D-F3F2-4254-992A-BA76A1D27259, generation: 0909A881-6838-4F1C-A81F-4E55C8044236, binding: CJFeedbackClient.FeedbackBinding(environment: 4BCC44BA-7687-465A-BA95-4237B2477546, account: 198CDFF3-EB52-4770-A00A-93C4AFBF37BD, generation: 6FAC3182-29E5-4D1D-8A2C-52A02BEFD1F6, selection: 7C0E9796-7A22-4CF6-A76B-D6F5F02FFABC))
+↳         owner → C10E534D-F3F2-4254-992A-BA76A1D27259
+↳         generation → 0909A881-6838-4F1C-A81F-4E55C8044236
+↳         binding → FeedbackBinding(environment: 4BCC44BA-7687-465A-BA95-4237B2477546, account: 198CDFF3-EB52-4770-A00A-93C4AFBF37BD, generation: 6FAC3182-29E5-4D1D-8A2C-52A02BEFD1F6, selection: 7C0E9796-7A22-4CF6-A76B-D6F5F02FFABC)
+↳           environment → 4BCC44BA-7687-465A-BA95-4237B2477546
+↳           account → 198CDFF3-EB52-4770-A00A-93C4AFBF37BD
+↳           generation → 6FAC3182-29E5-4D1D-8A2C-52A02BEFD1F6
+↳           selection → 7C0E9796-7A22-4CF6-A76B-D6F5F02FFABC
+↳       kind → .submit(<private feedback pending>)
+↳         submit → <private feedback pending>
+↳           actionID → "4D92B21F-4131-4C61-9B0D-2D430DC1C3CF"
+↳           originalUTF8 → 199 bytes
+↳             count → 199
+↳             pointer → 0x0000007ab000c000
+↳               pointerValue → 526938849280
+↳             bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 52, 68, 57, 50, 66, 50, 49, 70, 45, 52, 49, 51, 49, 45, 52, 67, 54, 49, 45, 57, 66, 48, 68, 45, 50, 68, 52, 51, 48, 68, 67, 49, 67, 51, 67, 70, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 123, 34, 105, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 45, 101, 204, 129, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 34, 125, 44, 123, 34, 105, 100, 34, 58, 34, 114, 117, 110, 45, 65, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 114, 117, 110, 34, 125, 93, 125]
+↳           inputSHA256 → "906681423dc8bb74ffaf979641f27e225b8f224aafa73eb188162a66429cd52c"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "answer-problem" at FeedbackContainerHostTests.swift:102:9: Expectation failed: model.original == nil
+↳ No stale original may be presented beside the new draft
+↳ model.original == nil → false
+↳   model.original → <private feedback pending>
+↳     some → <private feedback pending>
+↳       actionID → "4D92B21F-4131-4C61-9B0D-2D430DC1C3CF"
+↳       originalUTF8 → 199 bytes
+↳         count → 199
+↳         pointer → 0x0000007ab000c000
+↳           pointerValue → 526938849280
+↳         bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 52, 68, 57, 50, 66, 50, 49, 70, 45, 52, 49, 51, 49, 45, 52, 67, 54, 49, 45, 57, 66, 48, 68, 45, 50, 68, 52, 51, 48, 68, 67, 49, 67, 51, 67, 70, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 123, 34, 105, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 45, 101, 204, 129, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 34, 125, 44, 123, 34, 105, 100, 34, 58, 34, 114, 117, 110, 45, 65, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 114, 117, 110, 34, 125, 93, 125]
+↳       inputSHA256 → "906681423dc8bb74ffaf979641f27e225b8f224aafa73eb188162a66429cd52c"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "general-problem" at FeedbackContainerHostTests.swift:101:9: Expectation failed: stale == nil
+↳ Accepted callback edit must retire old frozen preparation
+↳ stale == nil → false
+↳   stale → FeedbackWork(owner: D0015EAB-70FB-4C10-A52D-0B930ED5233C, lifetime: 1169D732-9C3C-42AD-BE6B-5D0C26B8F703, request: 91523B2A-55A0-452B-BAA4-6DF600A8C153, operation: CJFeedbackClient.FeedbackOperation(owner: 85E7EC33-8E78-4C86-A809-CEB9763287A7, generation: 71382786-8A2F-44B8-A8F9-8E1CD2EFD66D, binding: CJFeedbackClient.FeedbackBinding(environment: 562F6F5D-7972-4B9B-970E-71415EF7E991, account: 1F4FF8C5-0829-4810-B00F-05284C64208B, generation: 7F74AFA7-C1B6-482B-84F2-083840B97F72, selection: 8CDD4D2F-A69E-48E8-8491-9EE436127928)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳     some → FeedbackWork(owner: D0015EAB-70FB-4C10-A52D-0B930ED5233C, lifetime: 1169D732-9C3C-42AD-BE6B-5D0C26B8F703, request: 91523B2A-55A0-452B-BAA4-6DF600A8C153, operation: CJFeedbackClient.FeedbackOperation(owner: 85E7EC33-8E78-4C86-A809-CEB9763287A7, generation: 71382786-8A2F-44B8-A8F9-8E1CD2EFD66D, binding: CJFeedbackClient.FeedbackBinding(environment: 562F6F5D-7972-4B9B-970E-71415EF7E991, account: 1F4FF8C5-0829-4810-B00F-05284C64208B, generation: 7F74AFA7-C1B6-482B-84F2-083840B97F72, selection: 8CDD4D2F-A69E-48E8-8491-9EE436127928)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳       owner → D0015EAB-70FB-4C10-A52D-0B930ED5233C
+↳       lifetime → 1169D732-9C3C-42AD-BE6B-5D0C26B8F703
+↳       request → 91523B2A-55A0-452B-BAA4-6DF600A8C153
+↳       operation → FeedbackOperation(owner: 85E7EC33-8E78-4C86-A809-CEB9763287A7, generation: 71382786-8A2F-44B8-A8F9-8E1CD2EFD66D, binding: CJFeedbackClient.FeedbackBinding(environment: 562F6F5D-7972-4B9B-970E-71415EF7E991, account: 1F4FF8C5-0829-4810-B00F-05284C64208B, generation: 7F74AFA7-C1B6-482B-84F2-083840B97F72, selection: 8CDD4D2F-A69E-48E8-8491-9EE436127928))
+↳         owner → 85E7EC33-8E78-4C86-A809-CEB9763287A7
+↳         generation → 71382786-8A2F-44B8-A8F9-8E1CD2EFD66D
+↳         binding → FeedbackBinding(environment: 562F6F5D-7972-4B9B-970E-71415EF7E991, account: 1F4FF8C5-0829-4810-B00F-05284C64208B, generation: 7F74AFA7-C1B6-482B-84F2-083840B97F72, selection: 8CDD4D2F-A69E-48E8-8491-9EE436127928)
+↳           environment → 562F6F5D-7972-4B9B-970E-71415EF7E991
+↳           account → 1F4FF8C5-0829-4810-B00F-05284C64208B
+↳           generation → 7F74AFA7-C1B6-482B-84F2-083840B97F72
+↳           selection → 8CDD4D2F-A69E-48E8-8491-9EE436127928
+↳       kind → .submit(<private feedback pending>)
+↳         submit → <private feedback pending>
+↳           actionID → "6C05A45C-77BB-4300-8242-7380702C08BD"
+↳           originalUTF8 → 134 bytes
+↳             count → 134
+↳             pointer → 0x0000007ab0004280
+↳               pointerValue → 526938817152
+↳             bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 54, 67, 48, 53, 65, 52, 53, 67, 45, 55, 55, 66, 66, 45, 52, 51, 48, 48, 45, 56, 50, 52, 50, 45, 55, 51, 56, 48, 55, 48, 50, 67, 48, 56, 66, 68, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 93, 125]
+↳           inputSHA256 → "a5c969951a084c0e5ad658fa4d4431b9caeafca0cc20ffd7841f82d421cf0fd6"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "general-problem" at FeedbackContainerHostTests.swift:102:9: Expectation failed: model.original == nil
+↳ No stale original may be presented beside the new draft
+↳ model.original == nil → false
+↳   model.original → <private feedback pending>
+↳     some → <private feedback pending>
+↳       actionID → "6C05A45C-77BB-4300-8242-7380702C08BD"
+↳       originalUTF8 → 134 bytes
+↳         count → 134
+↳         pointer → 0x0000007ab0004280
+↳           pointerValue → 526938817152
+↳         bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 54, 67, 48, 53, 65, 52, 53, 67, 45, 55, 55, 66, 66, 45, 52, 51, 48, 48, 45, 56, 50, 52, 50, 45, 55, 51, 56, 48, 55, 48, 50, 67, 48, 56, 66, 68, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 93, 125]
+↳       inputSHA256 → "a5c969951a084c0e5ad658fa4d4431b9caeafca0cc20ffd7841f82d421cf0fd6"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "answer-expectation" at FeedbackContainerHostTests.swift:101:9: Expectation failed: stale == nil
+↳ Accepted callback edit must retire old frozen preparation
+↳ stale == nil → false
+↳   stale → FeedbackWork(owner: EE255C14-E415-43DA-AB3D-FD7055A397C9, lifetime: 9E297085-82F7-4482-8569-078E9BF9BBBC, request: 4D091D98-1820-4881-9A9D-53305FD6AE5F, operation: CJFeedbackClient.FeedbackOperation(owner: 4BE6B396-17DD-42D5-AE95-93B79D1E8B3E, generation: 2C055626-5EEF-4434-9F7B-133F175FB085, binding: CJFeedbackClient.FeedbackBinding(environment: 87D15559-0A65-4230-A8E2-27662AC36C8E, account: D7652F31-8B08-47BB-BD09-9B62BEA5B1FE, generation: 5CB7FFA6-3A50-4109-AA1A-A868EE6CD4CD, selection: 872753FB-ED3F-4F77-8970-2BED35442DA2)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳     some → FeedbackWork(owner: EE255C14-E415-43DA-AB3D-FD7055A397C9, lifetime: 9E297085-82F7-4482-8569-078E9BF9BBBC, request: 4D091D98-1820-4881-9A9D-53305FD6AE5F, operation: CJFeedbackClient.FeedbackOperation(owner: 4BE6B396-17DD-42D5-AE95-93B79D1E8B3E, generation: 2C055626-5EEF-4434-9F7B-133F175FB085, binding: CJFeedbackClient.FeedbackBinding(environment: 87D15559-0A65-4230-A8E2-27662AC36C8E, account: D7652F31-8B08-47BB-BD09-9B62BEA5B1FE, generation: 5CB7FFA6-3A50-4109-AA1A-A868EE6CD4CD, selection: 872753FB-ED3F-4F77-8970-2BED35442DA2)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳       owner → EE255C14-E415-43DA-AB3D-FD7055A397C9
+↳       lifetime → 9E297085-82F7-4482-8569-078E9BF9BBBC
+↳       request → 4D091D98-1820-4881-9A9D-53305FD6AE5F
+↳       operation → FeedbackOperation(owner: 4BE6B396-17DD-42D5-AE95-93B79D1E8B3E, generation: 2C055626-5EEF-4434-9F7B-133F175FB085, binding: CJFeedbackClient.FeedbackBinding(environment: 87D15559-0A65-4230-A8E2-27662AC36C8E, account: D7652F31-8B08-47BB-BD09-9B62BEA5B1FE, generation: 5CB7FFA6-3A50-4109-AA1A-A868EE6CD4CD, selection: 872753FB-ED3F-4F77-8970-2BED35442DA2))
+↳         owner → 4BE6B396-17DD-42D5-AE95-93B79D1E8B3E
+↳         generation → 2C055626-5EEF-4434-9F7B-133F175FB085
+↳         binding → FeedbackBinding(environment: 87D15559-0A65-4230-A8E2-27662AC36C8E, account: D7652F31-8B08-47BB-BD09-9B62BEA5B1FE, generation: 5CB7FFA6-3A50-4109-AA1A-A868EE6CD4CD, selection: 872753FB-ED3F-4F77-8970-2BED35442DA2)
+↳           environment → 87D15559-0A65-4230-A8E2-27662AC36C8E
+↳           account → D7652F31-8B08-47BB-BD09-9B62BEA5B1FE
+↳           generation → 5CB7FFA6-3A50-4109-AA1A-A868EE6CD4CD
+↳           selection → 872753FB-ED3F-4F77-8970-2BED35442DA2
+↳       kind → .submit(<private feedback pending>)
+↳         submit → <private feedback pending>
+↳           actionID → "52C193CC-FFF7-46DA-9474-FD5860C89BE6"
+↳           originalUTF8 → 199 bytes
+↳             count → 199
+↳             pointer → 0x0000007ab000c000
+↳               pointerValue → 526938849280
+↳             bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 53, 50, 67, 49, 57, 51, 67, 67, 45, 70, 70, 70, 55, 45, 52, 54, 68, 65, 45, 57, 52, 55, 52, 45, 70, 68, 53, 56, 54, 48, 67, 56, 57, 66, 69, 54, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 123, 34, 105, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 45, 101, 204, 129, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 34, 125, 44, 123, 34, 105, 100, 34, 58, 34, 114, 117, 110, 45, 65, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 114, 117, 110, 34, 125, 93, 125]
+↳           inputSHA256 → "4d581564942119b92c25542cbb78f28781c5d2240a677dfe0a62b443fe03a8c9"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "answer-expectation" at FeedbackContainerHostTests.swift:102:9: Expectation failed: model.original == nil
+↳ No stale original may be presented beside the new draft
+↳ model.original == nil → false
+↳   model.original → <private feedback pending>
+↳     some → <private feedback pending>
+↳       actionID → "52C193CC-FFF7-46DA-9474-FD5860C89BE6"
+↳       originalUTF8 → 199 bytes
+↳         count → 199
+↳         pointer → 0x0000007ab000c000
+↳           pointerValue → 526938849280
+↳         bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 53, 50, 67, 49, 57, 51, 67, 67, 45, 70, 70, 70, 55, 45, 52, 54, 68, 65, 45, 57, 52, 55, 52, 45, 70, 68, 53, 56, 54, 48, 67, 56, 57, 66, 69, 54, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 123, 34, 105, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 45, 101, 204, 129, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 34, 125, 44, 123, 34, 105, 100, 34, 58, 34, 114, 117, 110, 45, 65, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 114, 117, 110, 34, 125, 93, 125]
+↳       inputSHA256 → "4d581564942119b92c25542cbb78f28781c5d2240a677dfe0a62b443fe03a8c9"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "answer-association" at FeedbackContainerHostTests.swift:101:9: Expectation failed: stale == nil
+↳ Accepted callback edit must retire old frozen preparation
+↳ stale == nil → false
+↳   stale → FeedbackWork(owner: 19196B35-9671-44D2-882F-ADE0E172D5CB, lifetime: 2881919B-6412-4919-85FB-E57D20A7E8D2, request: C74B4661-FF7B-4080-AB26-E89F76C06138, operation: CJFeedbackClient.FeedbackOperation(owner: 3562CFBF-B9BD-4BC2-9F12-CA33DD75D688, generation: 81710719-7D74-435E-8AC4-83FB5E597122, binding: CJFeedbackClient.FeedbackBinding(environment: 235D124E-7EF0-4071-817C-6456A214341A, account: 57CB4809-55B1-4071-B2C5-901437A39468, generation: 25D0FE1B-81C3-4DCC-87C9-092FC1E18E8E, selection: 4F04B675-A264-4FE2-B3E0-7DB841AE6CC2)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳     some → FeedbackWork(owner: 19196B35-9671-44D2-882F-ADE0E172D5CB, lifetime: 2881919B-6412-4919-85FB-E57D20A7E8D2, request: C74B4661-FF7B-4080-AB26-E89F76C06138, operation: CJFeedbackClient.FeedbackOperation(owner: 3562CFBF-B9BD-4BC2-9F12-CA33DD75D688, generation: 81710719-7D74-435E-8AC4-83FB5E597122, binding: CJFeedbackClient.FeedbackBinding(environment: 235D124E-7EF0-4071-817C-6456A214341A, account: 57CB4809-55B1-4071-B2C5-901437A39468, generation: 25D0FE1B-81C3-4DCC-87C9-092FC1E18E8E, selection: 4F04B675-A264-4FE2-B3E0-7DB841AE6CC2)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳       owner → 19196B35-9671-44D2-882F-ADE0E172D5CB
+↳       lifetime → 2881919B-6412-4919-85FB-E57D20A7E8D2
+↳       request → C74B4661-FF7B-4080-AB26-E89F76C06138
+↳       operation → FeedbackOperation(owner: 3562CFBF-B9BD-4BC2-9F12-CA33DD75D688, generation: 81710719-7D74-435E-8AC4-83FB5E597122, binding: CJFeedbackClient.FeedbackBinding(environment: 235D124E-7EF0-4071-817C-6456A214341A, account: 57CB4809-55B1-4071-B2C5-901437A39468, generation: 25D0FE1B-81C3-4DCC-87C9-092FC1E18E8E, selection: 4F04B675-A264-4FE2-B3E0-7DB841AE6CC2))
+↳         owner → 3562CFBF-B9BD-4BC2-9F12-CA33DD75D688
+↳         generation → 81710719-7D74-435E-8AC4-83FB5E597122
+↳         binding → FeedbackBinding(environment: 235D124E-7EF0-4071-817C-6456A214341A, account: 57CB4809-55B1-4071-B2C5-901437A39468, generation: 25D0FE1B-81C3-4DCC-87C9-092FC1E18E8E, selection: 4F04B675-A264-4FE2-B3E0-7DB841AE6CC2)
+↳           environment → 235D124E-7EF0-4071-817C-6456A214341A
+↳           account → 57CB4809-55B1-4071-B2C5-901437A39468
+↳           generation → 25D0FE1B-81C3-4DCC-87C9-092FC1E18E8E
+↳           selection → 4F04B675-A264-4FE2-B3E0-7DB841AE6CC2
+↳       kind → .submit(<private feedback pending>)
+↳         submit → <private feedback pending>
+↳           actionID → "8F10BE69-99D1-4D5D-9F83-61C83D1E5481"
+↳           originalUTF8 → 199 bytes
+↳             count → 199
+↳             pointer → 0x0000007ab000c000
+↳               pointerValue → 526938849280
+↳             bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 56, 70, 49, 48, 66, 69, 54, 57, 45, 57, 57, 68, 49, 45, 52, 68, 53, 68, 45, 57, 70, 56, 51, 45, 54, 49, 67, 56, 51, 68, 49, 69, 53, 52, 56, 49, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 123, 34, 105, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 45, 101, 204, 129, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 34, 125, 44, 123, 34, 105, 100, 34, 58, 34, 114, 117, 110, 45, 65, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 114, 117, 110, 34, 125, 93, 125]
+↳           inputSHA256 → "976c796d9e54edd52adcb61c5369a027193e9a31c0638c8637a8cba0b09775ba"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "answer-association" at FeedbackContainerHostTests.swift:102:9: Expectation failed: model.original == nil
+↳ No stale original may be presented beside the new draft
+↳ model.original == nil → false
+↳   model.original → <private feedback pending>
+↳     some → <private feedback pending>
+↳       actionID → "8F10BE69-99D1-4D5D-9F83-61C83D1E5481"
+↳       originalUTF8 → 199 bytes
+↳         count → 199
+↳         pointer → 0x0000007ab000c000
+↳           pointerValue → 526938849280
+↳         bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 56, 70, 49, 48, 66, 69, 54, 57, 45, 57, 57, 68, 49, 45, 52, 68, 53, 68, 45, 57, 70, 56, 51, 45, 54, 49, 67, 56, 51, 68, 49, 69, 53, 52, 56, 49, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 123, 34, 105, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 45, 101, 204, 129, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 109, 101, 115, 115, 97, 103, 101, 34, 125, 44, 123, 34, 105, 100, 34, 58, 34, 114, 117, 110, 45, 65, 34, 44, 34, 107, 105, 110, 100, 34, 58, 34, 114, 117, 110, 34, 125, 93, 125]
+↳       inputSHA256 → "976c796d9e54edd52adcb61c5369a027193e9a31c0638c8637a8cba0b09775ba"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "general-expectation" at FeedbackContainerHostTests.swift:101:9: Expectation failed: stale == nil
+↳ Accepted callback edit must retire old frozen preparation
+↳ stale == nil → false
+↳   stale → FeedbackWork(owner: B7B8C40C-D084-4E9B-A5C9-710DFB7D0682, lifetime: 6650A9A4-FF4E-413D-9167-CD3DEF0DA2B1, request: 44DC7083-7EFA-43F5-A2B3-4ADBCA08E8E6, operation: CJFeedbackClient.FeedbackOperation(owner: E07DA764-C899-48F9-95D9-1BEAD48267C2, generation: 127279B8-6908-4CDD-B62D-18B437019ED4, binding: CJFeedbackClient.FeedbackBinding(environment: C73984E1-DB72-4B24-9F40-D7E17AED9B65, account: 8386167C-D5B0-48FF-8242-1F1459446F78, generation: 73926A86-441F-4288-A96B-D16C84F7C848, selection: DB0CF221-B526-4489-A175-79C8AFDE47F4)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳     some → FeedbackWork(owner: B7B8C40C-D084-4E9B-A5C9-710DFB7D0682, lifetime: 6650A9A4-FF4E-413D-9167-CD3DEF0DA2B1, request: 44DC7083-7EFA-43F5-A2B3-4ADBCA08E8E6, operation: CJFeedbackClient.FeedbackOperation(owner: E07DA764-C899-48F9-95D9-1BEAD48267C2, generation: 127279B8-6908-4CDD-B62D-18B437019ED4, binding: CJFeedbackClient.FeedbackBinding(environment: C73984E1-DB72-4B24-9F40-D7E17AED9B65, account: 8386167C-D5B0-48FF-8242-1F1459446F78, generation: 73926A86-441F-4288-A96B-D16C84F7C848, selection: DB0CF221-B526-4489-A175-79C8AFDE47F4)), kind: CJFeedbackClient.FeedbackWork.(unknown context at $10b7cc640).Kind.submit(<private feedback pending>))
+↳       owner → B7B8C40C-D084-4E9B-A5C9-710DFB7D0682
+↳       lifetime → 6650A9A4-FF4E-413D-9167-CD3DEF0DA2B1
+↳       request → 44DC7083-7EFA-43F5-A2B3-4ADBCA08E8E6
+↳       operation → FeedbackOperation(owner: E07DA764-C899-48F9-95D9-1BEAD48267C2, generation: 127279B8-6908-4CDD-B62D-18B437019ED4, binding: CJFeedbackClient.FeedbackBinding(environment: C73984E1-DB72-4B24-9F40-D7E17AED9B65, account: 8386167C-D5B0-48FF-8242-1F1459446F78, generation: 73926A86-441F-4288-A96B-D16C84F7C848, selection: DB0CF221-B526-4489-A175-79C8AFDE47F4))
+↳         owner → E07DA764-C899-48F9-95D9-1BEAD48267C2
+↳         generation → 127279B8-6908-4CDD-B62D-18B437019ED4
+↳         binding → FeedbackBinding(environment: C73984E1-DB72-4B24-9F40-D7E17AED9B65, account: 8386167C-D5B0-48FF-8242-1F1459446F78, generation: 73926A86-441F-4288-A96B-D16C84F7C848, selection: DB0CF221-B526-4489-A175-79C8AFDE47F4)
+↳           environment → C73984E1-DB72-4B24-9F40-D7E17AED9B65
+↳           account → 8386167C-D5B0-48FF-8242-1F1459446F78
+↳           generation → 73926A86-441F-4288-A96B-D16C84F7C848
+↳           selection → DB0CF221-B526-4489-A175-79C8AFDE47F4
+↳       kind → .submit(<private feedback pending>)
+↳         submit → <private feedback pending>
+↳           actionID → "E2847F41-F76D-40DA-AEB0-B520CB1FCB0C"
+↳           originalUTF8 → 134 bytes
+↳             count → 134
+↳             pointer → 0x0000007ab0004280
+↳               pointerValue → 526938817152
+↳             bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 69, 50, 56, 52, 55, 70, 52, 49, 45, 70, 55, 54, 68, 45, 52, 48, 68, 65, 45, 65, 69, 66, 48, 45, 66, 53, 50, 48, 67, 66, 49, 70, 67, 66, 48, 67, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 93, 125]
+↳           inputSHA256 → "626c07960bcb040edb7dae03dfde8d249a3ee624b87bf4165ac6b6c1565fe4a7"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) recorded an issue with 1 argument scenario → "general-expectation" at FeedbackContainerHostTests.swift:102:9: Expectation failed: model.original == nil
+↳ No stale original may be presented beside the new draft
+↳ model.original == nil → false
+↳   model.original → <private feedback pending>
+↳     some → <private feedback pending>
+↳       actionID → "E2847F41-F76D-40DA-AEB0-B520CB1FCB0C"
+↳       originalUTF8 → 134 bytes
+↳         count → 134
+↳         pointer → 0x0000007ab0004280
+↳           pointerValue → 526938817152
+↳         bytes → [123, 34, 97, 99, 116, 105, 111, 110, 95, 105, 100, 34, 58, 34, 69, 50, 56, 52, 55, 70, 52, 49, 45, 70, 55, 54, 68, 45, 52, 48, 68, 65, 45, 65, 69, 66, 48, 45, 66, 53, 50, 48, 67, 66, 49, 70, 67, 66, 48, 67, 34, 44, 34, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 101, 120, 112, 101, 99, 116, 97, 116, 105, 111, 110, 34, 44, 34, 112, 114, 111, 98, 108, 101, 109, 34, 58, 34, 79, 114, 105, 103, 105, 110, 97, 108, 32, 112, 114, 111, 98, 108, 101, 109, 34, 44, 34, 114, 101, 102, 101, 114, 101, 110, 99, 101, 115, 34, 58, 91, 93, 125]
+↳       inputSHA256 → "626c07960bcb040edb7dae03dfde8d249a3ee624b87bf4165ac6b6c1565fe4a7"
+✘ Test acceptedEditorCallbackRetiresOldPreparationThroughHost(scenario:) with 5 test cases failed after 0.015 seconds with 10 issues.
+✘ Suite FeedbackContainerHostTests failed after 0.015 seconds with 10 issues.
+✘ Test run with 1 test in 1 suite failed after 0.015 seconds with 10 issues.
+Note: Some test targets reported failures:
+  - CJShellTests (Swift Testing)

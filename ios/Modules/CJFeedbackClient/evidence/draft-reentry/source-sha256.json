@@ -1,0 +1,5 @@
+{
+  "Sources/CJFeedbackClient/FeedbackPresentation.swift": "24a8add3a2549d25b09abfff654ea88098b3abc0e0c2cbc96d0bb846f742ef9a",
+  "Tests/CJFeedbackClientTests/IndependentFeedbackBoundaryTests.swift": "f83f21f7f07907ef8ca8935db4660060501dc33832de649e7c3d64d038d2a9d7",
+  "Tests/CJFeedbackClientTests/DraftPreparationTests.swift": "d929b6a25da2db2d8bfa7a77a04dd3adaa2427c51d8f84bbf7f24b9d078093b1"
+}
