@@ -132,3 +132,9 @@ on ../CJAuth's official CJMessageKeys product. Do not run prepare_keys for the m
 that old standalone interface-export harness is historical only and no longer a dependency.
 prepare_generated remains required for the pinned official CJAPI export. See
 evidence/KEY-DEPENDENCY-MAIN.md for exact interface identity and graph/consumer evidence.
+
+Shared API export update (base main23e12f2): prepare_generated now pins official57336d50,
+including required non-Generated MemoryClientConfiguration.swift. The ONE shared path is
+.generated/57336d501e5691302a3d5e9770f07666d1c57d4a/CJFoundation for all consumers.
+Formal CJAuth key dependency and SDK versions remain. Standalone31 checks pass; full
+CJShell graph awaits CJ006's same-pin update. See evidence/MEMORY-API-PIN.md.

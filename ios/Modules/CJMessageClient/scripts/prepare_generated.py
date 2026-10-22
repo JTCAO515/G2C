@@ -1,11 +1,13 @@
 """Export exact official CJAPI package inputs; no generated-file rewriting."""
 from pathlib import Path
 import hashlib, json, subprocess, sys
-PIN='2f8be7c3e2dd298457488412b3a5e3b2ca59ca93'
+PIN='57336d501e5691302a3d5e9770f07666d1c57d4a'
 root=Path(__file__).resolve().parents[1]
 source=sys.argv[1]
 paths=subprocess.check_output(['git','-C',source,'ls-tree','-r','--name-only',PIN,'ios']).decode().splitlines()
 selected=[p for p in paths if p in ('ios/Package.swift','ios/Package.resolved') or p.startswith(('ios/Sources/','ios/Tests/'))]
+required={'ios/Package.swift','ios/Package.resolved','ios/Sources/CJAPI/MemoryClientConfiguration.swift'}
+if not required.issubset(selected): raise SystemExit('fixed package missing required manifest/lock/Memory configuration helper')
 out=root/'.generated'/PIN/'CJFoundation'
 hashes={}
 for path in selected:
