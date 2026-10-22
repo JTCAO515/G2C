@@ -8,14 +8,14 @@ let package = Package(
                .library(name: "CJMessageKeyBridge", targets: ["CJMessageKeyBridge"])],
     dependencies: [
         .package(path: ".generated/2f8be7c3e2dd298457488412b3a5e3b2ca59ca93/CJFoundation"),
-        .package(path: ".generated/CJMessageKeysInterface"),
+        .package(path: "../CJAuth"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
         .package(url: "https://github.com/apple/swift-openapi-urlsession", exact: "1.3.2"),
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")
     ],
     targets: [
         .target(name: "CJMessageClient"),
-        .target(name: "CJMessageKeyBridge", dependencies: ["CJMessageClient", .product(name: "CJMessageKeys", package: "CJMessageKeysInterface")]),
+        .target(name: "CJMessageKeyBridge", dependencies: ["CJMessageClient", .product(name: "CJMessageKeys", package: "CJAuth")]),
         .target(name: "CJMessageHTTP", dependencies: ["CJMessageClient", .product(name: "CJAPI", package: "CJFoundation"),
             .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
             .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
