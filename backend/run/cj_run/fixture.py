@@ -8,16 +8,26 @@ class MemoryRepository:
     def __init__(self):
         self.rows = {}
         self.lock = RLock()
+        self.revision = 0
 
     @contextmanager
     def transaction(self):
         with self.lock:
-            before = self.rows.copy()
-            try:
-                yield self
-            except BaseException:
-                self.rows = before
-                raise
+            revision = self.revision
+            tx = _Transaction(self.rows.copy())
+            yield tx
+            # A nested transaction commits independently. Never roll it back when
+            # an older callback/outer transaction fails or attempts a stale commit.
+            if revision != self.revision:
+                raise Conflict('repository changed during callback')
+            if tx.rows != self.rows:
+                self.rows = tx.rows
+                self.revision += 1
+
+
+class _Transaction:
+    def __init__(self, rows):
+        self.rows = rows
 
     def accept(self, binding: Binding):
         if type(binding) is not Binding:

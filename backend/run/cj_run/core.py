@@ -137,7 +137,9 @@ class Transaction(Protocol):
 
 class Repository(Protocol):
     # Implementations must atomically fence scope/chat and run, rollback on exception,
-    # and return only after durable commit. Unknown commit => query original binding.
+    # and return only after durable commit. Reentrant committed writes must survive
+    # stale outer aborts; snapshot adapters need a commit revision fence.
+    # Unknown commit => query original binding.
     def transaction(self) -> ContextManager[Transaction]: ...
 
 
@@ -157,6 +159,11 @@ class Service:
             if event.kind == 'started' and not tx.previous_terminal(event.binding):
                 raise Conflict('earlier message unfinished or missing')
             state = advance(old, event, self.valid)
+            # The validity hook may synchronously commit cancellation or another event.
+            # Never publish a transition derived from a superseded state. Snapshot
+            # repositories must additionally validate their revision at commit.
+            if tx.get(event.binding) != old:
+                raise Conflict('state changed during context callback')
             tx.put(state)
         return state
 

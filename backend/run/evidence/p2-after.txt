@@ -1,0 +1,10 @@
+test_callback_committed_event_survives_stale_outer (test_reentry.ReentryTests) ... ok
+test_cancel_during_append_and_finish_preserved (test_reentry.ReentryTests) ... ok
+test_cancel_during_start_preserved (test_reentry.ReentryTests) ... ok
+test_cancel_survives_hook_false_and_exception (test_reentry.ReentryTests) ... ok
+test_read_only_reentry_is_allowed (test_reentry.ReentryTests) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+OK
