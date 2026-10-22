@@ -13,6 +13,7 @@ import unittest
 PIN = 'a6693615aa773ddcffff852a9860ec1703aa2681'
 parser=argparse.ArgumentParser()
 parser.add_argument('--usage-repo',required=True)
+parser.add_argument('--case')
 args,rest=parser.parse_known_args()
 root=Path(__file__).resolve().parents[1]
 export=root/'.local'/('usage-'+PIN)
@@ -50,14 +51,15 @@ class CompositionTests(unittest.TestCase):
         self.repo=MemoryRepository()
         self.run=Service(self.repo,lambda _:True)
         self.b=Binding('fixture-same-trusted-partition','chat','g','m','r',1)
-        self.run.accept(self.b)
         self.usage=UsageFixture()
         self.meter=Meter(self.usage,Config('synthetic-unit',100,0,1000,10,10,100,100),lambda:10)
-        self.command=Command('attempt','operation','r','model','1'*64,20,10)
+        self.input_bytes=b'{"synthetic_prompt": "fixture"}\n'
+        self.command=Command('attempt','operation','r','model',hashlib.sha256(self.input_bytes).hexdigest(),20,10)
         self.start=Event(self.b,1,'start','started')
         self.receipt=Receipt('attempt','fixture-receipt','synthetic-unit',3,2)
         self.calls=[]
-        self.adapter=SyntheticFirstStep(self.run,self.meter,original_binding=self.b,original_command=self.command,synthetic_executor=self.execute)
+        self.adapter=SyntheticFirstStep(self.run,self.meter,original_binding=self.b,original_command=self.command,original_input_bytes=self.input_bytes,synthetic_executor=self.execute)
+        self.adapter.create_fixture()
     def execute(self,command):
         self.calls.append(command)
         return self.receipt
@@ -111,7 +113,7 @@ class CompositionTests(unittest.TestCase):
         self.adapter.executor=lost
         with self.assertRaises(ReconcileOriginal) as error: self.go()
         self.assertEqual(error.exception.stage,'executor')
-        rebuilt=SyntheticFirstStep(Service(self.repo,lambda _:True),self.meter,original_binding=self.b,original_command=self.command,synthetic_executor=self.execute)
+        rebuilt=SyntheticFirstStep(Service(self.repo,lambda _:True),self.meter,original_binding=self.b,original_command=self.command,original_input_bytes=self.input_bytes,synthetic_executor=self.execute)
         self.assertEqual(rebuilt.observe(self.b,self.command).attempt.state,'unknown')
         with self.assertRaises(ReconcileOriginal): rebuilt.execute_fixture(self.b,self.command,self.start)
         self.assertEqual(len(self.calls),1)
@@ -182,6 +184,23 @@ class CompositionTests(unittest.TestCase):
         self.command=replace(self.command,attempt_id='new-attempt')
         with self.assertRaises(Conflict): self.go()
         self.assertEqual(len(self.usage.ledger.attempts),1)
+        self.assertEqual(self.calls,[])
+
+    def test_reserve_ack_unknown_never_claims_on_reconstruction(self):
+        reserve=self.meter.reserve
+        def lost(command):
+            reserve(command)
+            raise OSError('reserve ACK lost')
+        self.meter.reserve=lost
+        with self.assertRaises(ReconcileOriginal): self.go()
+        self.meter.reserve=reserve
+        self.assertEqual(self.observed().attempt.state,'reserved')
+        with self.assertRaises(ReconcileOriginal): self.go()
+        rebuilt=SyntheticFirstStep(self.run,self.meter,original_binding=self.b,original_command=self.command,
+                                   original_input_bytes=self.input_bytes,synthetic_executor=self.execute)
+        with self.assertRaises(Conflict): rebuilt.create_fixture()
+        with self.assertRaises(ReconcileOriginal): rebuilt.execute_fixture(self.b,self.command,self.start)
+        self.assertEqual(self.observed().attempt.state,'reserved')
         self.assertEqual(self.calls,[])
 
     def test_changed_attempt_command_rejected(self):

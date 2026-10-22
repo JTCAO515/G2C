@@ -3,9 +3,11 @@
 Consumes CJ008 a6693615 core. No shared transaction exists between these domains.
 An arbitrary injected callable is trusted test code, NOT a network sandbox.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+import json
 from cj_usage.core import Command, Receipt
 from .core import Binding, Event, State, Denied, Conflict
+from .usage_binding import UsageBinding
 
 
 class ReconcileOriginal(Exception):
@@ -24,19 +26,34 @@ class Observation:
 
 
 class SyntheticFirstStep:
-    def __init__(self, run_service, meter, *, original_binding, original_command, synthetic_executor=None):
+    def __init__(self, run_service, meter, *, original_binding, original_command, original_input_bytes, synthetic_executor=None):
         if type(original_binding) is not Binding or type(original_command) is not Command or original_command.run_id != original_binding.run_id:
             raise Conflict('fixed original fixture binding required')
+        self.association = UsageBinding(
+            json.dumps(asdict(original_command), ensure_ascii=False, separators=(',', ':')).encode('utf-8'),
+            original_input_bytes)
         self.original_binding, self.original_command = original_binding, original_command
+        self._fresh_create_ack = False
         self.run = run_service
         self.meter = meter
         self.executor = synthetic_executor
+
+    def create_fixture(self):
+        # Require a genuinely new row, not replayed acceptance. A failed/unknown
+        # ACK never arms execution; existing rows are query/reconcile only here.
+        self._fresh_create_ack = False
+        state = self.run.accept_with_usage(self.original_binding, self.association, require_new=True)
+        self._fresh_create_ack = True
+        return state
 
     def _binding(self, binding, command):
         if type(binding) is not Binding or type(command) is not Command or command.run_id != binding.run_id:
             raise Conflict('original run/attempt binding required')
         if binding != self.original_binding or command != self.original_command:
             raise Conflict('fixture may only reconcile its fixed original action')
+        stored = self.run.snapshot(binding)
+        if stored.usage != self.association:
+            raise Conflict('stored original usage association absent or changed')
         # Scope equivalence is a trusted fixture composition prerequisite. Meter has
         # no public authority/scope accessor; do not invent one or infer from run_id.
 
@@ -53,6 +70,11 @@ class SyntheticFirstStep:
         self._binding(binding, command)
         if type(started) is not Event or started.binding != binding or started.kind != 'started' or started.sequence != 1:
             raise Conflict('explicit original start event required')
+        if not self._fresh_create_ack:
+            raise ReconcileOriginal('original_binding_query_only')
+        # One synthetic invocation per acknowledged NEW row. Never re-arm after
+        # reserve/claim/write ACK uncertainty, including in a reconstructed instance.
+        self._fresh_create_ack = False
         stage = 'preflight'
         try:
             if self.run.snapshot(binding).status != 'queued':

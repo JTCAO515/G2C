@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import logging
 from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, advance, page
+from .usage_binding import UsageBinding
 
 
 class CommitUnknown(Exception):
@@ -101,14 +102,21 @@ class Transaction:
 
     def _record(self, binding):
         self._scope(binding)
-        self.cur.execute('SELECT conversation_id,generation,message_id,message_sequence,status,event_sequence,expires_at>clock_timestamp() FROM cj_run_record WHERE scope=%s AND run_id=%s FOR UPDATE',
+        self.cur.execute('SELECT conversation_id,generation,message_id,message_sequence,status,event_sequence,expires_at>clock_timestamp(),usage_command_bytes,usage_input_bytes FROM cj_run_record WHERE scope=%s AND run_id=%s FOR UPDATE',
                          (self.scope, binding.run_id))
         return self.cur.fetchone()
 
-    def accept(self, binding):
+    def accept(self, binding, usage=None, require_new=False):
+        if usage is not None:
+            if type(usage) is not UsageBinding:
+                raise ValueError('usage binding required')
+            usage.check_run(binding.run_id)
         row = self._record(binding)
         if row is not None:
-            return self.get(binding)
+            old = self.get(binding)
+            if require_new or (usage is not None and old.usage != usage):
+                raise Conflict('original usage binding absent or changed')
+            return old
         self.cur.execute('SELECT 1 FROM cj_run_record WHERE scope=%s AND (message_id=%s OR (conversation_id=%s AND generation=%s AND message_sequence=%s))',
                          (self.scope, binding.message_id, binding.conversation_id, binding.generation, binding.message_sequence))
         if self.cur.fetchone() is not None:
@@ -116,10 +124,11 @@ class Transaction:
         self.cur.execute('SELECT %s::timestamptz>clock_timestamp()', (self.expires_at,))
         if self.cur.fetchone()[0] is not True:
             raise ResyncRequired('expired acceptance window')
-        self.cur.execute("INSERT INTO cj_run_record(scope,run_id,conversation_id,generation,message_id,message_sequence,status,event_sequence,expires_at) VALUES (%s,%s,%s,%s,%s,%s,'queued',0,%s)",
+        self.cur.execute("INSERT INTO cj_run_record(scope,run_id,conversation_id,generation,message_id,message_sequence,status,event_sequence,expires_at,usage_command_bytes,usage_input_bytes) VALUES (%s,%s,%s,%s,%s,%s,'queued',0,%s,%s,%s)",
                          (self.scope, binding.run_id, binding.conversation_id, binding.generation,
-                          binding.message_id, binding.message_sequence, self.expires_at))
-        return State(binding)
+                          binding.message_id, binding.message_sequence, self.expires_at,
+                          usage.command_bytes if usage else None, usage.input_bytes if usage else None))
+        return State(binding, usage=usage)
 
     def get(self, binding):
         row = self._record(binding)
@@ -131,7 +140,14 @@ class Transaction:
             raise ResyncRequired('run recovery expired; not absent')
         self.cur.execute('SELECT sequence,event_id,kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
                          (self.scope, binding.run_id))
-        state = State(binding)
+        usage = None
+        if row[7] is not None or row[8] is not None:
+            try:
+                usage = UsageBinding(bytes(row[7]), bytes(row[8]))
+                usage.check_run(binding.run_id)
+            except (ValueError, TypeError) as exc:
+                raise ResyncRequired('invalid stored usage binding') from exc
+        state = State(binding, usage=usage)
         for sequence, identity, kind, value in self.cur.fetchall():
             # Reconstruct already committed facts; no output or execution occurs here.
             state = advance(state, Event(binding, sequence, identity, kind, value), lambda _: True)

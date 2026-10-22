@@ -21,4 +21,6 @@ which is stopped. No existing database or formal migration was touched.
 
 Synthetic RUN→USAGE first-step checks and explicit production blockers are in
 [USAGE composition](../../contracts/run/USAGE-COMPOSITION.md). The retained
-missing-durable-binding counterexample is FAIL; no real dispatcher is enabled.
+missing-durable-binding counterexample remains as historical FAIL evidence;
+[the association repair](../../contracts/run/USAGE-BINDING.md) now rejects the
+replacement attempt. No real dispatcher is enabled.

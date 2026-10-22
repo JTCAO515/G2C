@@ -1,0 +1,23 @@
+fixed-source __init__.py fcb091dc25c846fe642333af9b4cc43603b12fde528763c4b2cd45d267ce5bac
+fixed-source core.py 149b0af63bdca59e7bf5ecfc7cf7b9857193a0761df5b0e20c860b3f1076ebfa
+test_absent_executor_has_no_reservation (__main__.CompositionTests.test_absent_executor_has_no_reservation) ... ok
+test_cancel_in_valid_hook_no_revive_or_release_claim (__main__.CompositionTests.test_cancel_in_valid_hook_no_revive_or_release_claim) ... ok
+test_cancel_unclaimed_releases_only_reserved (__main__.CompositionTests.test_cancel_unclaimed_releases_only_reserved) ... ok
+test_changed_attempt_command_rejected (__main__.CompositionTests.test_changed_attempt_command_rejected) ... ok
+test_claim_ack_unknown_never_executes (__main__.CompositionTests.test_claim_ack_unknown_never_executes) ... ok
+test_default_context_does_not_reach_executor (__main__.CompositionTests.test_default_context_does_not_reach_executor) ... ok
+test_executor_unknown_rebuild_queries_no_retry (__main__.CompositionTests.test_executor_unknown_rebuild_queries_no_retry) ... ok
+test_late_receipt_settles_without_reviving (__main__.CompositionTests.test_late_receipt_settles_without_reviving) ... ok
+test_new_attempt_after_claim_unknown_rejected_by_fixed_fixture (__main__.CompositionTests.test_new_attempt_after_claim_unknown_rejected_by_fixed_fixture) ... ok
+test_reserve_ack_unknown_never_claims_on_reconstruction (__main__.CompositionTests.test_reserve_ack_unknown_never_claims_on_reconstruction) ... ok
+test_settle_ack_unknown_not_run_success (__main__.CompositionTests.test_settle_ack_unknown_not_run_success) ... ok
+test_started_write_ack_unknown_never_executes (__main__.CompositionTests.test_started_write_ack_unknown_never_executes) ... ok
+test_started_write_fails_before_commit_holds_claim (__main__.CompositionTests.test_started_write_fails_before_commit_holds_claim) ... ok
+test_stop_partial_failure_is_explicit_no_compensation (__main__.CompositionTests.test_stop_partial_failure_is_explicit_no_compensation) ... ok
+test_success_settles_usage_not_run_completion (__main__.CompositionTests.test_success_settles_usage_not_run_completion) ... ok
+test_wrong_receipt_holds_original_reservation (__main__.CompositionTests.test_wrong_receipt_holds_original_reservation) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.004s
+
+OK

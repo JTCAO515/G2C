@@ -1,4 +1,8 @@
-# RUN → USAGE synthetic first-step candidate
+# RUN → USAGE synthetic first-step candidate (historical 448bcc)
+
+This records the parent candidate and its retained FAIL. The current bounded
+persistent-association repair and updated execution restriction are documented
+in [USAGE-BINDING.md](USAGE-BINDING.md); remaining production fences still HOLD.
 
 Parent RUN: b65d6ce07b3e0509d1347aa39071b4f1bea280f7.
 Fixed USAGE: a6693615aa773ddcffff852a9860ec1703aa2681.

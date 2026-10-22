@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 from threading import RLock
 from .core import Binding, State, Conflict
+from .usage_binding import UsageBinding
 
 
 class MemoryRepository:
@@ -29,18 +30,22 @@ class _Transaction:
     def __init__(self, rows):
         self.rows = rows
 
-    def accept(self, binding: Binding):
+    def accept(self, binding: Binding, usage=None, require_new=False):
         if type(binding) is not Binding:
             raise ValueError('binding required')
+        if usage is not None:
+            if type(usage) is not UsageBinding:
+                raise ValueError('usage binding required')
+            usage.check_run(binding.run_id)
         for old in self.rows.values():
             b = old.binding
             if ((b.scope, b.run_id) == (binding.scope, binding.run_id) or
                 (b.scope, b.message_id) == (binding.scope, binding.message_id) or
                 (b.chat, b.message_sequence) == (binding.chat, binding.message_sequence)):
-                if b != binding:
+                if require_new or b != binding or (usage is not None and old.usage != usage):
                     raise Conflict('binding reuse')
                 return old
-        state = State(binding)
+        state = State(binding, usage=usage)
         self.put(state)
         return state
 
@@ -51,6 +56,9 @@ class _Transaction:
         return state
 
     def put(self, state):
+        old = self.rows.get((state.binding.scope, state.binding.run_id))
+        if old is not None and old.usage != state.usage:
+            raise Conflict('immutable usage association')
         self.rows[state.binding.scope, state.binding.run_id] = state
 
     def previous_terminal(self, binding):

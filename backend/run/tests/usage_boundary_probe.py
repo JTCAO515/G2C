@@ -1,10 +1,10 @@
-"""Known missing cross-instance durable binding: deliberately expected FAIL.
+"""Known missing cross-instance durable binding: originally FAIL; now must reject a replacement.
 
 Run with the same --usage-repo argument as usage_composition_checks.py.
-This demonstrates why the fixture MUST NOT be wired to a real executor.
+The old FAIL log is retained. This regression does not enable a real executor.
 """
 from dataclasses import replace
-from usage_composition_checks import CompositionTests, SyntheticFirstStep, ReconcileOriginal
+from usage_composition_checks import CompositionTests, SyntheticFirstStep, ReconcileOriginal, Conflict
 case=CompositionTests()
 case.setUp()
 claim=case.meter.claim
@@ -22,10 +22,11 @@ case.meter.claim=claim
 # to a replacement attempt. There is no canonical durable fence to reject it.
 replacement=replace(case.command,attempt_id='replacement')
 new=SyntheticFirstStep(case.run,case.meter,original_binding=case.b,
-                       original_command=replacement,synthetic_executor=case.execute)
+                       original_command=replacement,original_input_bytes=case.input_bytes,synthetic_executor=case.execute)
 try:
     new.execute_fixture(case.b,replacement,case.start)
-except ReconcileOriginal:
+except (ReconcileOriginal, Conflict):
     pass
-print('known-gap: replacement executor calls=',len(case.calls),flush=True)
-assert len(case.calls)==0, 'UNIMPLEMENTED durable run-to-original-attempt fence; production composition HOLD'
+print('regression: replacement executor calls=',len(case.calls),flush=True)
+assert len(case.calls)==0, 'original attempt must survive reconstruction'
+print('PASS: replaced attempt rejected by original stored association; real cross-domain fence still HOLD')
