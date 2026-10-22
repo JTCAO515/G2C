@@ -1,0 +1,24 @@
+Building for debugging...
+[Provisioning 3 / 24]
+[2 / 7] CJMessageClientTests-product
+[4 / 9] CJMessageClientTests-product
+[10 / 14] CJMessageClientTests-product
+Build complete! (0.83秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite PutReentryUncertaintyTests started.
+◇ Suite FreshAuthorizationTests started.
+◇ Suite RecoveryTests started.
+◇ Test storeOverwritingNestedCommitCannotReportSuccess() started.
+◇ Test readbackFailureDoesNotGrantOutboundOperation() started.
+◇ Test ambiguousSaveInvalidatesUntilReadback() started.
+◇ Test storageReentryCannotConsumeAuthorizationTwice() started.
+✔ Test storeOverwritingNestedCommitCannotReportSuccess() passed after 0.004 seconds.
+✔ Test storageReentryCannotConsumeAuthorizationTwice() passed after 0.004 seconds.
+✔ Test ambiguousSaveInvalidatesUntilReadback() passed after 0.004 seconds.
+✔ Test readbackFailureDoesNotGrantOutboundOperation() passed after 0.004 seconds.
+✔ Suite FreshAuthorizationTests passed after 0.004 seconds.
+✔ Suite RecoveryTests passed after 0.004 seconds.
+✔ Suite PutReentryUncertaintyTests passed after 0.004 seconds.
+✔ Test run with 4 tests in 3 suites passed after 0.004 seconds.

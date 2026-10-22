@@ -82,3 +82,9 @@ A Swift throwing-boolean expression was corrected without weakening assertions.
 All HTTP responses are in-process interceptors, keys/storage are synthetic. No real
 network, account, Keychain, backend/PG or CJShell change. Independent review pending;
 wire uncertainty/resolution gap is explicit, not masked by a passing fixture.
+
+Same-lease storage reentry correction: evidence/PUT-REENTRY.md supersedes the initial
+9+3-only confidence. Nested editor writes inherit original CAS, outer writes cannot
+replace newer committed memory, nested durable readback is mandatory before success,
+and confirm re-evaluates editor revision afterward. Unknown/inconsistent stores fail
+closed; original failing tests and new targeted evidence are retained.

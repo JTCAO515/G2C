@@ -35,7 +35,7 @@ public enum ActionPhase: String, Codable, Sendable {
     case staged, queryRequired, notObserved, accepted
 }
 
-public struct ActionRecord: Codable, Sendable {
+public struct ActionRecord: Codable, Sendable, Equatable {
     public let messageID: String
     public let originalUTF8: Data
     public fileprivate(set) var phase: ActionPhase
@@ -62,7 +62,7 @@ public struct LocalRecoveryProjection: Sendable {
     fileprivate let lease: Lease
 }
 
-public struct DraftSaveRecord: Codable, Sendable {
+public struct DraftSaveRecord: Codable, Sendable, Equatable {
     public let conversationID: String
     public let generation: String
     public let expectedRevision: Int64
@@ -76,7 +76,7 @@ public struct DraftSaveOperation: Sendable {
     fileprivate let nonce: UUID
 }
 
-public struct Snapshot: Codable, Sendable {
+public struct Snapshot: Codable, Sendable, Equatable {
     var version = 1
     var actions: [String: ActionRecord] = [:]
     var drafts: [String: Data] = [:]
@@ -124,6 +124,14 @@ public struct Submission: Sendable {
     private var lease: Lease?
     private var scope: StorageScope?
     private var snapshot = Snapshot()
+    private var memoryRevision = UUID()
+    // A nested mutation must include the outer transaction's intended fields, but reads
+    // continue to expose only snapshot (the last confirmed storage result).
+    private var writeView: (lease: Lease, value: Snapshot)?
+    private var mutationSnapshot: Snapshot {
+        if let view = writeView, view.lease == lease { return view.value }
+        return snapshot
+    }
     private var operations: [String: Operation] = [:]
     private var draftOperations: [String: UUID] = [:]
     // Never Codable or stored in Snapshot. Consumed before any storage callback.
@@ -168,14 +176,14 @@ public struct Submission: Sendable {
             Self.remember(record.messageID, digest: record.inputSHA256, scope: scope)
         }
         let next = Lease(instance: instance, generation: UUID())
-        self.scope = scope; snapshot = restored; lease = next
+        self.scope = scope; snapshot = restored; memoryRevision = UUID(); lease = next
         return next
     }
 
     /// Immediate local fence; does not claim remote logout/deletion or erase recovery data.
     public func invalidate() {
         activationGeneration = UUID()
-        lease = nil; scope = nil; snapshot = Snapshot(); operations = [:]; draftOperations = [:]; fresh = [:]
+        lease = nil; scope = nil; snapshot = Snapshot(); memoryRevision = UUID(); writeView = nil; operations = [:]; draftOperations = [:]; fresh = [:]
     }
 
     public func validateScope(_ expected: StorageScope, lease: Lease) throws {
@@ -207,7 +215,7 @@ public struct Submission: Sendable {
     public func saveDraft(_ bytes: Data, conversationID: String, lease: Lease) throws {
         try check(lease)
         guard !conversationID.isEmpty, String(data: bytes, encoding: .utf8) != nil else { throw RecoveryError.invalidInput }
-        var next = snapshot; next.drafts[Self.key(conversationID)] = bytes
+        var next = mutationSnapshot; next.drafts[Self.key(conversationID)] = bytes
         next.draftEdits[Self.key(conversationID)] = UUID()
         try persist(next)
     }
@@ -239,7 +247,7 @@ public struct Submission: Sendable {
         }
         // Reserve before save: an unknown save or reentrant caller cannot mint again.
         Self.remember(messageID, digest: record.inputSHA256, scope: scope)
-        var next = snapshot; next.actions[key] = record
+        var next = mutationSnapshot; next.actions[key] = record
         try persist(next)
         fresh[key] = FreshAuthorization(lease: lease, digest: record.inputSHA256)
     }
@@ -257,7 +265,7 @@ public struct Submission: Sendable {
         if let old = snapshot.draftSaves[key] {
             guard old.confirmedRevision == expectedRevision, Data(old.generation.utf8) == Data(generation.utf8) else { throw RecoveryError.queryOnly }
         }
-        var next = snapshot
+        var next = mutationSnapshot
         next.draftSaves[key] = DraftSaveRecord(conversationID:conversationID,generation:generation,
             expectedRevision:expectedRevision,originalUTF8:originalUTF8,editorRevision:snapshot.draftEdits[key])
         let nonce = UUID(); draftOperations[key] = nonce
@@ -280,11 +288,11 @@ public struct Submission: Sendable {
               var record = snapshot.draftSaves[operation.key] else { throw RecoveryError.staleOperation }
         guard Self.key(conversationID) == operation.key, Data(generation.utf8) == Data(record.generation.utf8),
               revision == record.expectedRevision + 1, originalUTF8 == record.originalUTF8 else { throw RecoveryError.receiptMismatch }
-        let matchesEditor = snapshot.draftEdits[operation.key] == record.editorRevision && snapshot.drafts[operation.key] == originalUTF8
         record.confirmedRevision = revision
-        var next = snapshot; next.draftSaves[operation.key] = record
-        try persist(next); draftOperations.removeValue(forKey:operation.key)
-        return matchesEditor
+        var next = mutationSnapshot; next.draftSaves[operation.key] = record
+        draftOperations.removeValue(forKey:operation.key)
+        try persist(next)
+        return try draftConfirmationMatchesEditor(conversationID:conversationID,revision:revision,lease:operation.lease)
     }
 
     public func action(messageID: String, lease: Lease) throws -> ActionRecord? {
@@ -303,7 +311,7 @@ public struct Submission: Sendable {
         // Persist uncertainty BEFORE handing any bytes to transport. A crash here must
         // recover by query even if the actual POST never started.
         record.phase = .queryRequired
-        var next = snapshot; next.actions[key] = record
+        var next = mutationSnapshot; next.actions[key] = record
         try persist(next)
         return Submission(operation: issue(key, record.messageID, lease, false), originalUTF8: record.originalUTF8)
     }
@@ -355,21 +363,42 @@ public struct Submission: Sendable {
         try checkOperation(operation)
         guard var record = snapshot.actions[operation.actionKey] else { throw RecoveryError.staleOperation }
         record.phase = phase; record.receipt = receipt
-        var next = snapshot; next.actions[operation.actionKey] = record
+        var next = mutationSnapshot; next.actions[operation.actionKey] = record
         try persist(next)
         operations.removeValue(forKey: operation.actionKey)
     }
     private func persist(_ next: Snapshot) throws {
         guard let scope, let originalLease = lease else { throw RecoveryError.inactive }
+        let before = memoryRevision
+        let previousView = writeView
+        writeView = (originalLease, next)
+        defer {
+            if lease == originalLease {
+                writeView = previousView == nil ? nil : (originalLease, snapshot)
+            }
+        }
         do { try storage.save(next, scope: scope) }
         catch {
-            // Atomic rename may have succeeded before an I/O error. Reopen/read before
-            // doing anything else; do not retry or keep an in-memory success illusion.
             if lease == originalLease { invalidate() }
             throw RecoveryError.persistenceUnknown
         }
-        // Sync dependency callbacks can reenter; never overwrite a newly activated scope.
         try check(originalLease)
-        snapshot = next
+        if memoryRevision == before {
+            snapshot = next
+            memoryRevision = UUID()
+        } else {
+            // Nested save succeeded. Do not overwrite its newer committed snapshot.
+            // Verify durable state before granting any outbound operation/confirmation:
+            // a non-linear store may have overwritten the nested write after its callback.
+            let expected = memoryRevision
+            do {
+                let durable = try storage.load(scope: scope)
+                try check(originalLease)
+                guard memoryRevision == expected, durable == snapshot else { throw RecoveryError.persistenceUnknown }
+            } catch {
+                if lease == originalLease { invalidate() }
+                throw RecoveryError.persistenceUnknown
+            }
+        }
     }
 }
