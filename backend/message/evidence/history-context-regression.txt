@@ -1,0 +1,8 @@
+test_allowed_real_gate_consumed_and_rechecked (auth_consumption.AuthConsumption.test_allowed_real_gate_consumed_and_rechecked) ... ok
+test_commit_boundary_revocation_rolls_back (auth_consumption.AuthConsumption.test_commit_boundary_revocation_rolls_back) ... ok
+test_after_commit_denial_preserves_original_recovery (auth_consumption.AuthConsumption.test_after_commit_denial_preserves_original_recovery) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
