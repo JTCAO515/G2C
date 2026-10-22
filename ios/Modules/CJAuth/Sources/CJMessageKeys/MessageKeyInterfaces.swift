@@ -7,6 +7,7 @@ public enum MessageKeyPurpose: String, Sendable {
     case localTripPendingV1 = "local-trip-pending-v1"
     case localNeedsPendingV1 = "local-needs-pending-v1"
     case localFeedbackPendingV1 = "local-feedback-pending-v1"
+    case localOfflineTripSnapshotV1 = "local-offline-trip-snapshot-v1"
 }
 public struct MessageKeyNamespace: Equatable, Sendable {
     public let environment: UUID

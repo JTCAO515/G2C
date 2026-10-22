@@ -1,0 +1,30 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[2 / 11] CJMessageKeys
+[4 / 13] CJMessageKeys
+[10 / 17] CJMessageKeys
+[13 / 17] CJMessageKeysTests-product
+[15 / 19] CJMessageKeysTests-product
+[21 / 23] CJMessageKeysTests-product
+[24 / 36] CJAuthSupabase
+Build complete! (3.70秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite MessageKeyTests started.
+◇ Test offlineTripSnapshotPurposePreservesAllExistingNamespaceBytes() started.
+◇ Test feedbackPurposeScopeAndCleanupCannotCrossExistingKeys() started.
+◇ Test offlineTripSnapshotPurposeScopeAndCleanupCannotCrossExistingKeys() started.
+◇ Test feedbackPendingUnknownCreateAndClearUseOriginalReadback() started.
+◇ Test feedbackPurposePreservesAllExistingNamespaceBytes() started.
+◇ Test offlineTripSnapshotUnknownCreateAndClearUseOriginalReadback() started.
+✔ Test feedbackPurposePreservesAllExistingNamespaceBytes() passed after 0.002 seconds.
+✔ Test feedbackPurposeScopeAndCleanupCannotCrossExistingKeys() passed after 0.002 seconds.
+✔ Test offlineTripSnapshotPurposeScopeAndCleanupCannotCrossExistingKeys() passed after 0.002 seconds.
+✔ Test offlineTripSnapshotPurposePreservesAllExistingNamespaceBytes() passed after 0.002 seconds.
+✔ Test feedbackPendingUnknownCreateAndClearUseOriginalReadback() passed after 0.002 seconds.
+✔ Test offlineTripSnapshotUnknownCreateAndClearUseOriginalReadback() passed after 0.002 seconds.
+✔ Suite MessageKeyTests passed after 0.002 seconds.
+✔ Test run with 6 tests in 1 suite passed after 0.002 seconds.
