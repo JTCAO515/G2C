@@ -19,7 +19,8 @@ def error_body(request_id, code, category, en, zh, recovery="do_not_retry"):
 
 def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configuration=None, _history_environment=None,
                _memory_boundary=None, _memory_configuration=None,
-               _trip_boundary=None, _trip_configuration=None, _trip_modules=None):
+               _trip_boundary=None, _trip_configuration=None, _trip_modules=None,
+               _needs_boundary=None, _needs_configuration=None, _needs_modules=None):
     if os.environ.get("CJ_ENV") != "local":
         raise RuntimeError("CJ_ENV must explicitly be local; other environments are not configured")
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -61,4 +62,6 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
     register_memory_routes(app, _memory_boundary, _memory_configuration)
     from .trip_routes import register_trip_routes
     register_trip_routes(app, _trip_boundary, _trip_configuration, _trip_modules)
+    from .needs_routes import register_needs_routes
+    register_needs_routes(app, _needs_boundary, _needs_configuration, _needs_modules)
     return app
