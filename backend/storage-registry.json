@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "stores": [
     {
       "id": "business",
@@ -164,7 +164,15 @@
           ],
           "retention": "UNDECIDED; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; expiry is not deletion",
-          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
+          "read_consumers": [
+            {
+              "contract": "RUN-DISPLAY-WIRE@0.1.0-rc.1",
+              "producer": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f",
+              "output": "Original-message refs/status/highwater/persisted display text/text_state only; no raw user message/events/effects/usage/outbound bytes",
+              "persistence": "NONE; no new cache/queue/table; existing cleanup/restore limitations remain"
+            }
+          ]
         }
       ]
     },
@@ -257,6 +265,7 @@
     "memory": "426d337b0647d7770f1716fad83f2e5e724d28e4",
     "trip": "5fd115fc97e542bc8776a445d8245fd272000e56",
     "needs": "c821b34d607016c6dbc1020c203621841f1a60e8",
-    "feedback": "cf48196e5eb5012630603172951d5c75a46adec4"
+    "feedback": "cf48196e5eb5012630603172951d5c75a46adec4",
+    "run_display": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f"
   }
 }

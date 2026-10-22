@@ -76,6 +76,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/feedback-action-receipts`.
     /// - Remark: Generated from `#/paths//v1/feedback-action-receipts/get(queryFeedbackAction)`.
     func queryFeedbackAction(_ input: Operations.queryFeedbackAction.Input) async throws -> Operations.queryFeedbackAction.Output
+    /// - Remark: HTTP `GET /v1/run-display`.
+    /// - Remark: Generated from `#/paths//v1/run-display/get(getRunDisplaySnapshot)`.
+    func getRunDisplaySnapshot(_ input: Operations.getRunDisplaySnapshot.Input) async throws -> Operations.getRunDisplaySnapshot.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -321,6 +324,17 @@ extension APIProtocol {
         headers: Operations.queryFeedbackAction.Input.Headers = .init()
     ) async throws -> Operations.queryFeedbackAction.Output {
         try await queryFeedbackAction(Operations.queryFeedbackAction.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/run-display`.
+    /// - Remark: Generated from `#/paths//v1/run-display/get(getRunDisplaySnapshot)`.
+    public func getRunDisplaySnapshot(
+        query: Operations.getRunDisplaySnapshot.Input.Query,
+        headers: Operations.getRunDisplaySnapshot.Input.Headers = .init()
+    ) async throws -> Operations.getRunDisplaySnapshot.Output {
+        try await getRunDisplaySnapshot(Operations.getRunDisplaySnapshot.Input(
             query: query,
             headers: headers
         ))
