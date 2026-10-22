@@ -19,3 +19,9 @@ Author verification: generator PASS; Git original-byte comparisons PASS; derived
 ## Foundation path ACK delta
 
 Main explicitly released scripts/build-ios.sh and ios/App/Info.plist. The existing build command is unchanged except removing shell exec to allow the successful-build icon copy step. Plist comparison after removing only the two new icon dictionaries equals the original parsed plist. Shell syntax and plist lint PASS. Xcode project / CJShell remain untouched. All discovered simulators were Shutdown; no device was booted, installed or launched. Build/package/display remain UNRUN pending the coordinated target and Xcode resource-path ACK.
+
+## Actual Foundation build/package/display
+
+At commit dce3460e45798cb895c9220d68551c34808faaf2, `scripts/build-ios.sh C52D892F-B5EC-4414-97C4-ED34829DCD7A` succeeded with original signing-disabled command parameters. Main authorized creating the dedicated CJ-BRAND-001-20261022 iPhone 17 Pro / iOS 26.5 simulator. All six packaged icon PNGs match source derivatives; icon plist and original bundle ID checked. Installation succeeded. XcodeBuildMCP runtime snapshot showed CJ Foundation on SpringBoard (screenHash 1by7wwm), and foundation-home.jpg visibly shows the PR37 image as its system icon. Simulator shut down successfully after capture; preserved, not erased. Probe App never launched; no account, application networking or Keychain activity initiated. Dependency resolution downloaded pinned public Swift packages during build, not application service access.
+
+Evidence: evidence/foundation-build.txt, evidence/foundation-package.txt, evidence/foundation-home.jpg. This proves the existing Foundation script's build/package/system-icon path on this simulator only. CJShell Agent avatar and direct Xcode resource integration remain pending exact file lease; full task is not complete. No push/PR/merge/store action.
