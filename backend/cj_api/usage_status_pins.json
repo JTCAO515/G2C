@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "evidence_head": "8cf6a85b56651cab9f20d056fcec2831b31f543d",
+  "sources": [
+    {
+      "name": "auth",
+      "commit": "8b6abb236cf10c1865a9cc8c6155bd8ac732c07e",
+      "prefix": "backend/auth/cj_auth/",
+      "files": {
+        "backend/auth/cj_auth/__init__.py": "6921fa11f3bdb1cefb618f0e067581fa22385cf1e0836e479f989a84dcb6374a",
+        "backend/auth/cj_auth/interfaces.py": "39711c9511c942274162fc4d32986a554147f8f32067ffd1e49e5aa94c9a0b9c",
+        "backend/auth/cj_auth/admission.py": "5e9fab7cea50a260622896cb7aeba76ebe1ba511d63a87a69e83fe7bdea526dc",
+        "backend/auth/cj_auth/jwt_adapter.py": "ede933a2af99965ecaa8e7d58b950fc51fe38232538dd825c4a23bcf6d85aad5",
+        "backend/auth/cj_auth/read_context.py": "c74e64fc2667d89beebab49d832804510894e84701416d38b3849238b02b3f2c"
+      }
+    },
+    {
+      "name": "usage",
+      "commit": "8cf6a85b56651cab9f20d056fcec2831b31f543d",
+      "prefix": "backend/usage/cj_usage/",
+      "files": {
+        "backend/usage/cj_usage/__init__.py": "fcb091dc25c846fe642333af9b4cc43603b12fde528763c4b2cd45d267ce5bac",
+        "backend/usage/cj_usage/core.py": "149b0af63bdca59e7bf5ecfc7cf7b9857193a0761df5b0e20c860b3f1076ebfa",
+        "backend/usage/cj_usage/codec.py": "9843e09c80a24119be7048af5e53b60e4bd069925ef0f10c03da2be7602342fb",
+        "backend/usage/cj_usage/postgres.py": "b7bed373545155285c55b724a4227c3ef0fe0a06f412963065d5d7e2967f38b0",
+        "backend/usage/cj_usage/read_status.py": "adc20e8cd08adef4c6ffa7e836c7355ddb11cd458e8d80c14bfabc8262dab829",
+        "backend/usage/cj_usage/protected_status.py": "8d830b95f4629dce631224d9e042b5e9b572c1573651ca9b55a746d8c7e19e18"
+      }
+    }
+  ]
+}

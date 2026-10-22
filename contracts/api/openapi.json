@@ -1573,6 +1573,67 @@
           }
         }
       }
+    },
+    "/v1/usage-attempt-status": {
+      "get": {
+        "operationId": "getUsageAttemptStatus",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "attempt_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "Exact original attempt only. No caller owner/environment/period/unit/budget selector. Host UTF8 bound explicit."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected SELECT-only original status; all final bytes/header trace/close/final AUTH guards must pass. No synthetic/null attempt on failure.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageAttemptStatusResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE sanitized error. Missing/foreign/unknown ledger or read/close/guard failure is unavailable, not zero balance or permission to retry a write.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4120,6 +4181,134 @@
             "$ref": "#/components/schemas/ManualPreview"
           }
         }
+      },
+      "UsageAttemptStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attempt_id",
+          "operation_id",
+          "run_id",
+          "status",
+          "unit",
+          "reserved_units",
+          "confirmed_units",
+          "confirmed_output",
+          "receipt_id",
+          "cancelled",
+          "exceeded",
+          "message_en",
+          "message_zh"
+        ],
+        "properties": {
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "reserved",
+              "unknown",
+              "released",
+              "settled"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "reserved_units": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]*$",
+            "description": "Exact base10 integer-unit count, not currency/float. String avoids SDK integer overflow; no arithmetic or rounding."
+          },
+          "confirmed_units": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)$",
+                "description": "Exact base10 integer-unit count, not currency/float. String avoids SDK integer overflow; no arithmetic or rounding."
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
+          "confirmed_output": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)$",
+                "description": "Exact base10 integer-unit count, not currency/float. String avoids SDK integer overflow; no arithmetic or rounding."
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
+          "receipt_id": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
+          "cancelled": {
+            "type": "boolean"
+          },
+          "exceeded": {
+            "type": "boolean"
+          },
+          "message_en": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_zh": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "description": "Historical original-attempt status in server-authorized period. Counts are exact integer decimal strings; unknown confirmed fields remain null, actual confirmed zero is \"0\". Opaque unit is not money; reservation/receipt is not current balance/charge or dispatch permission. No whole ledger/input digest/prompts/budget ceiling."
+      },
+      "UsageAttemptStatusResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "attempt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "attempt": {
+            "$ref": "#/components/schemas/UsageAttemptStatus"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -4137,5 +4326,6 @@
   "x-needs-wire-version": "NEEDS-WIRE@0.1.0-rc.1",
   "x-feedback-wire-version": "FEEDBACK-WIRE@0.1.0-rc.1",
   "x-run-display-wire-version": "RUN-DISPLAY-WIRE@0.1.0-rc.1",
-  "x-manual-preview-wire-version": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1"
+  "x-manual-preview-wire-version": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1",
+  "x-usage-status-wire-version": "USAGE-STATUS-WIRE@0.1.0-rc.1"
 }

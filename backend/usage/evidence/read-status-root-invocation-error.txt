@@ -1,0 +1,21 @@
+test_read_status (unittest.loader._FailedTest.test_read_status) ... ERROR
+
+======================================================================
+ERROR: test_read_status (unittest.loader._FailedTest.test_read_status)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_read_status
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/test_read_status.py", line 13, in <module>
+    from cj_usage.core import Config, Ledger, Command, Attempt, Receipt, Run
+ModuleNotFoundError: No module named 'cj_usage'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

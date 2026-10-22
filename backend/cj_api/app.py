@@ -23,7 +23,8 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
                _needs_boundary=None, _needs_configuration=None, _needs_modules=None,
                _feedback_boundary=None, _feedback_configuration=None, _feedback_modules=None,
                _run_display_reader=None, _run_display_configuration=None, _run_display_modules=None,
-               _manual_preview_boundary=None, _manual_preview_configuration=None, _manual_preview_modules=None):
+               _manual_preview_boundary=None, _manual_preview_configuration=None, _manual_preview_modules=None,
+               _usage_status_configuration=None, _usage_status_dependencies=None):
     if os.environ.get("CJ_ENV") != "local":
         raise RuntimeError("CJ_ENV must explicitly be local; other environments are not configured")
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -73,4 +74,6 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
     register_run_display_route(app, _run_display_reader, _run_display_configuration, _run_display_modules)
     from .manual_preview_routes import register_manual_preview
     register_manual_preview(app, _manual_preview_boundary, _manual_preview_configuration, _manual_preview_modules)
+    from .usage_status_routes import register_usage_status
+    register_usage_status(app, _usage_status_configuration, _usage_status_dependencies)
     return app

@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "stores": [
     {
       "id": "business",
@@ -50,7 +50,17 @@
           ],
           "retention": "UNDECIDED; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; USAGE cancel releases reservations only",
-          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
+          "read_consumers": [
+            {
+              "contract": "USAGE-STATUS-WIRE@0.1.0-rc.1",
+              "producer": "8cf6a85b56651cab9f20d056fcec2831b31f543d",
+              "auth_context": "8b6abb236cf10c1865a9cc8c6155bd8ac732c07e",
+              "persistence": "NONE; plain SELECT/read-only transaction, no revision/config/ledger write",
+              "scope": "Original attempt under trusted environment/issuer/subject/audience and authorized historical period; opaque unit and confirmed receipt are not current balance/charge",
+              "projection": "Minimum original attempt/status/units/receipt only, exact integer strings or null; no whole ledger/input digest/prompt"
+            }
+          ]
         },
         {
           "id": "memory-authoritative",
@@ -275,6 +285,7 @@
     "needs": "c821b34d607016c6dbc1020c203621841f1a60e8",
     "feedback": "cf48196e5eb5012630603172951d5c75a46adec4",
     "run_display": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f",
-    "manual_preview": "6944a66186800ecd26246ce7028d9c9a8767f810"
+    "manual_preview": "6944a66186800ecd26246ce7028d9c9a8767f810",
+    "usage_status": "8cf6a85b56651cab9f20d056fcec2831b31f543d"
   }
 }

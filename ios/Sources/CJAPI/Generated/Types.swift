@@ -82,6 +82,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/trip-manual-previews`.
     /// - Remark: Generated from `#/paths//v1/trip-manual-previews/post(previewManualTripEdit)`.
     func previewManualTripEdit(_ input: Operations.previewManualTripEdit.Input) async throws -> Operations.previewManualTripEdit.Output
+    /// - Remark: HTTP `GET /v1/usage-attempt-status`.
+    /// - Remark: Generated from `#/paths//v1/usage-attempt-status/get(getUsageAttemptStatus)`.
+    func getUsageAttemptStatus(_ input: Operations.getUsageAttemptStatus.Input) async throws -> Operations.getUsageAttemptStatus.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -351,6 +354,17 @@ extension APIProtocol {
         try await previewManualTripEdit(Operations.previewManualTripEdit.Input(
             headers: headers,
             body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/usage-attempt-status`.
+    /// - Remark: Generated from `#/paths//v1/usage-attempt-status/get(getUsageAttemptStatus)`.
+    public func getUsageAttemptStatus(
+        query: Operations.getUsageAttemptStatus.Input.Query,
+        headers: Operations.getUsageAttemptStatus.Input.Headers = .init()
+    ) async throws -> Operations.getUsageAttemptStatus.Output {
+        try await getUsageAttemptStatus(Operations.getUsageAttemptStatus.Input(
+            query: query,
+            headers: headers
         ))
     }
 }

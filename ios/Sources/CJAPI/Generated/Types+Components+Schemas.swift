@@ -5867,5 +5867,322 @@ extension Components {
                 ])
             }
         }
+        /// Historical original-attempt status in server-authorized period. Counts are exact integer decimal strings; unknown confirmed fields remain null, actual confirmed zero is "0". Opaque unit is not money; reservation/receipt is not current balance/charge or dispatch permission. No whole ledger/input digest/prompts/budget ceiling.
+        ///
+        /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus`.
+        public struct UsageAttemptStatus: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/attempt_id`.
+            public var attempt_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/operation_id`.
+            public var operation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case reserved = "reserved"
+                case unknown = "unknown"
+                case released = "released"
+                case settled = "settled"
+            }
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/status`.
+            public var status: Components.Schemas.UsageAttemptStatus.statusPayload
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/unit`.
+            public var unit: Swift.String
+            /// Exact base10 integer-unit count, not currency/float. String avoids SDK integer overflow; no arithmetic or rounding.
+            ///
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/reserved_units`.
+            public var reserved_units: Swift.String
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/confirmed_units`.
+            @frozen public enum confirmed_unitsPayload: Codable, Hashable, Sendable {
+                /// Exact base10 integer-unit count, not currency/float. String avoids SDK integer overflow; no arithmetic or rounding.
+                ///
+                /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/confirmed_units/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/confirmed_units/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/confirmed_units`.
+            public var confirmed_units: Components.Schemas.UsageAttemptStatus.confirmed_unitsPayload
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/confirmed_output`.
+            @frozen public enum confirmed_outputPayload: Codable, Hashable, Sendable {
+                /// Exact base10 integer-unit count, not currency/float. String avoids SDK integer overflow; no arithmetic or rounding.
+                ///
+                /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/confirmed_output/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/confirmed_output/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/confirmed_output`.
+            public var confirmed_output: Components.Schemas.UsageAttemptStatus.confirmed_outputPayload
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/receipt_id`.
+            @frozen public enum receipt_idPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/receipt_id/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/receipt_id/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/receipt_id`.
+            public var receipt_id: Components.Schemas.UsageAttemptStatus.receipt_idPayload
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/cancelled`.
+            public var cancelled: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/exceeded`.
+            public var exceeded: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/message_en`.
+            public var message_en: Swift.String
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatus/message_zh`.
+            public var message_zh: Swift.String
+            /// Creates a new `UsageAttemptStatus`.
+            ///
+            /// - Parameters:
+            ///   - attempt_id:
+            ///   - operation_id:
+            ///   - run_id:
+            ///   - status:
+            ///   - unit:
+            ///   - reserved_units: Exact base10 integer-unit count, not currency/float. String avoids SDK integer overflow; no arithmetic or rounding.
+            ///   - confirmed_units:
+            ///   - confirmed_output:
+            ///   - receipt_id:
+            ///   - cancelled:
+            ///   - exceeded:
+            ///   - message_en:
+            ///   - message_zh:
+            public init(
+                attempt_id: Swift.String,
+                operation_id: Swift.String,
+                run_id: Swift.String,
+                status: Components.Schemas.UsageAttemptStatus.statusPayload,
+                unit: Swift.String,
+                reserved_units: Swift.String,
+                confirmed_units: Components.Schemas.UsageAttemptStatus.confirmed_unitsPayload,
+                confirmed_output: Components.Schemas.UsageAttemptStatus.confirmed_outputPayload,
+                receipt_id: Components.Schemas.UsageAttemptStatus.receipt_idPayload,
+                cancelled: Swift.Bool,
+                exceeded: Swift.Bool,
+                message_en: Swift.String,
+                message_zh: Swift.String
+            ) {
+                self.attempt_id = attempt_id
+                self.operation_id = operation_id
+                self.run_id = run_id
+                self.status = status
+                self.unit = unit
+                self.reserved_units = reserved_units
+                self.confirmed_units = confirmed_units
+                self.confirmed_output = confirmed_output
+                self.receipt_id = receipt_id
+                self.cancelled = cancelled
+                self.exceeded = exceeded
+                self.message_en = message_en
+                self.message_zh = message_zh
+            }
+            public enum CodingKeys: String, CodingKey {
+                case attempt_id
+                case operation_id
+                case run_id
+                case status
+                case unit
+                case reserved_units
+                case confirmed_units
+                case confirmed_output
+                case receipt_id
+                case cancelled
+                case exceeded
+                case message_en
+                case message_zh
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.attempt_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .attempt_id
+                )
+                self.operation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .operation_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.status = try container.decode(
+                    Components.Schemas.UsageAttemptStatus.statusPayload.self,
+                    forKey: .status
+                )
+                self.unit = try container.decode(
+                    Swift.String.self,
+                    forKey: .unit
+                )
+                self.reserved_units = try container.decode(
+                    Swift.String.self,
+                    forKey: .reserved_units
+                )
+                self.confirmed_units = try container.decode(
+                    Components.Schemas.UsageAttemptStatus.confirmed_unitsPayload.self,
+                    forKey: .confirmed_units
+                )
+                self.confirmed_output = try container.decode(
+                    Components.Schemas.UsageAttemptStatus.confirmed_outputPayload.self,
+                    forKey: .confirmed_output
+                )
+                self.receipt_id = try container.decode(
+                    Components.Schemas.UsageAttemptStatus.receipt_idPayload.self,
+                    forKey: .receipt_id
+                )
+                self.cancelled = try container.decode(
+                    Swift.Bool.self,
+                    forKey: .cancelled
+                )
+                self.exceeded = try container.decode(
+                    Swift.Bool.self,
+                    forKey: .exceeded
+                )
+                self.message_en = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_en
+                )
+                self.message_zh = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_zh
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "attempt_id",
+                    "operation_id",
+                    "run_id",
+                    "status",
+                    "unit",
+                    "reserved_units",
+                    "confirmed_units",
+                    "confirmed_output",
+                    "receipt_id",
+                    "cancelled",
+                    "exceeded",
+                    "message_en",
+                    "message_zh"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/UsageAttemptStatusResponse`.
+        public struct UsageAttemptStatusResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatusResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/UsageAttemptStatusResponse/attempt`.
+            public var attempt: Components.Schemas.UsageAttemptStatus
+            /// Creates a new `UsageAttemptStatusResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - attempt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                attempt: Components.Schemas.UsageAttemptStatus
+            ) {
+                self.request_id = request_id
+                self.attempt = attempt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case attempt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.attempt = try container.decode(
+                    Components.Schemas.UsageAttemptStatus.self,
+                    forKey: .attempt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "attempt"
+                ])
+            }
+        }
     }
 }
