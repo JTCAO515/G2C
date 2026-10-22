@@ -133,3 +133,5 @@ Issue #8 保持未完成。独立审验应固定提交 head；内容变化后补
 
 新增有界 JWKS 注入候选：[JWKS-PROVIDER](JWKS-PROVIDER.md)，不含真实网络 transport，
 不改变旧 profile/准入逻辑或已停止的 Keychain 执行状态。
+
+可选 HTTPS I/O adapter 候选：[HTTPS-JWKS-TRANSPORT](HTTPS-JWKS-TRANSPORT.md)，不自动装配或启用真实 JWKS。
