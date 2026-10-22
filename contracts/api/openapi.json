@@ -1514,6 +1514,65 @@
           }
         }
       }
+    },
+    "/v1/trip-manual-previews": {
+      "post": {
+        "operationId": "previewManualTripEdit",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Readonly computation with bounded strict UTF8 JSON; HTTP POST does not enable any write. All fields explicit, nullable title/order indicate no update. No save metadata accepted.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Readonly preview only, never saved or feasible. Complete response encoded within existing Trip public operation.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualPreviewResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE error. Version/original-byte/observed conflict409; missing/unknown/lost authority503. Keep the exact original request/local draft, do not silently rebase or discard. No draft is persisted or write outcome inferred.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3862,6 +3921,205 @@
           }
         },
         "description": "BASE envelope must be fully materialized and bounded inside producer protected callback. No nullable or synthetic snapshot on error."
+      },
+      "ManualPreviewTextUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item_id",
+          "text"
+        ],
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "ManualPreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trip_id",
+          "expected_version",
+          "original_content_utf8_base64",
+          "selected_ids",
+          "title_selected",
+          "title",
+          "text_updates",
+          "order"
+        ],
+        "properties": {
+          "trip_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "original_content_utf8_base64": {
+            "type": "string",
+            "minLength": 4
+          },
+          "selected_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          },
+          "title_selected": {
+            "type": "boolean"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
+          "text_updates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManualPreviewTextUpdate"
+            }
+          },
+          "order": {
+            "oneOf": [
+              {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                }
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "description": "Read-only preview input. Original bytes from an authenticated Trip read must match server current version/content exactly. Caller retains this entire draft on conflict/unknown. Supports only selected title/text/order; no protected IDs/owner/day/time/lock/proposal/action/confirmation/expiry fields."
+      },
+      "ManualPreviewChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "before_utf8_base64",
+          "after_utf8_base64"
+        ],
+        "properties": {
+          "path": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "before_utf8_base64": {
+            "type": "string"
+          },
+          "after_utf8_base64": {
+            "type": "string"
+          }
+        },
+        "description": "Producer Change display metadata, not apply-patch input. before/after are exact canonical JSON value bytes; path is title, items/order, or items/id/<original item ID>."
+      },
+      "ManualPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "preview_status",
+          "original",
+          "content_utf8_base64",
+          "document",
+          "selected_ids",
+          "title_selected",
+          "protection_status",
+          "can_save",
+          "diff"
+        ],
+        "properties": {
+          "preview_status": {
+            "type": "string",
+            "enum": [
+              "LOCAL"
+            ]
+          },
+          "original": {
+            "$ref": "#/components/schemas/TripRecord"
+          },
+          "content_utf8_base64": {
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/TripDocument"
+          },
+          "selected_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          },
+          "title_selected": {
+            "type": "boolean"
+          },
+          "protection_status": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN"
+            ]
+          },
+          "can_save": {
+            "type": "boolean",
+            "const": false,
+            "description": "Always false; no confirmation issuer/feasibility/save authority exists."
+          },
+          "diff": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManualPreviewChange"
+            }
+          }
+        },
+        "description": "Pure local structural diff after same-owner protected reads. No persistence/Proposal/receipt/save/feasibility claim. Missing trusted protected-state context remains UNKNOWN, never unlocked/fully checked."
+      },
+      "ManualPreviewResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "preview"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/ManualPreview"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -3878,5 +4136,6 @@
   "x-trip-wire-version": "TRIP-WIRE@0.1.0-rc.1",
   "x-needs-wire-version": "NEEDS-WIRE@0.1.0-rc.1",
   "x-feedback-wire-version": "FEEDBACK-WIRE@0.1.0-rc.1",
-  "x-run-display-wire-version": "RUN-DISPLAY-WIRE@0.1.0-rc.1"
+  "x-run-display-wire-version": "RUN-DISPLAY-WIRE@0.1.0-rc.1",
+  "x-manual-preview-wire-version": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1"
 }
