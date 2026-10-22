@@ -1,0 +1,15 @@
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+test_authenticated_bad_payload_fields_bounds_and_ttl (test_aead_cursor.AeadCursorTests.test_authenticated_bad_payload_fields_bounds_and_ttl) ... ok
+test_binding_environment_query_kind_id_and_real_identity_scope (test_aead_cursor.AeadCursorTests.test_binding_environment_query_kind_id_and_real_identity_scope) ... ok
+test_expiry_unknown_key_version_tamper_and_canonical_base64 (test_aead_cursor.AeadCursorTests.test_expiry_unknown_key_version_tamper_and_canonical_base64) ... ok
+test_explicit_old_key_rotation_and_policy_reduction (test_aead_cursor.AeadCursorTests.test_explicit_old_key_rotation_and_policy_reduction) ... ok
+test_missing_forged_expired_context_no_metadata_only_fallback (test_aead_cursor.AeadCursorTests.test_missing_forged_expired_context_no_metadata_only_fallback) ... ok
+test_real_context_api_opt_in_and_final_authority_guard (test_aead_cursor.AeadCursorTests.test_real_context_api_opt_in_and_final_authority_guard) ... ok
+test_roundtrip_both_types_nonce_privacy_and_no_default_secret (test_aead_cursor.AeadCursorTests.test_roundtrip_both_types_nonce_privacy_and_no_default_secret) ... ok
+test_same_context_identity_and_metadata_checked_after_crypto_clock (test_aead_cursor.AeadCursorTests.test_same_context_identity_and_metadata_checked_after_crypto_clock) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.265s
+
+OK

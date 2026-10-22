@@ -138,7 +138,7 @@ def register_history_routes(app, boundary=None, configuration=None, environment=
             principal = context.principal
             cid = query.get('conversation_id')
             binding = CursorBinding(environment,principal.issuer,principal.subject,principal.audience,
-                                    context.scope,kind,cid)
+                                    context.scope,kind,cid,context=context)
             policy = configuration.cursor_policy
             cursor = policy.decode(query['cursor'],binding) if 'cursor' in query else None
             expected = ChatListCursor if kind=='conversations' else Cursor
