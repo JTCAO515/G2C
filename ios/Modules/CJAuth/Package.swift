@@ -6,11 +6,14 @@ let package = Package(
     platforms: [.iOS(.v17), .macOS(.v14)], // local experiment, not product minimum OS
     products: [.library(name: "CJAuth", targets: ["CJAuth"]),
                .library(name: "CJAuthSupabase", targets: ["CJAuthSupabase"]),
-               .library(name: "CJSession", targets: ["CJSession"])],
+               .library(name: "CJSession", targets: ["CJSession"]),
+               .library(name: "CJMessageKeys", targets: ["CJMessageKeys"])],
     dependencies: [.package(url: "https://github.com/supabase/supabase-swift", exact: "2.55.4")],
     targets: [
         .target(name: "CJAuth"),
         .target(name: "CJSession"),
+        .target(name: "CJMessageKeys"),
+        .testTarget(name: "CJMessageKeysTests", dependencies: ["CJMessageKeys"]),
         .testTarget(name: "CJSessionTests", dependencies: ["CJSession"]),
         .target(name: "CJAuthSupabase", dependencies: ["CJAuth", .product(name: "Auth", package: "supabase-swift")]),
         .testTarget(name: "CJAuthTests", dependencies: ["CJAuth"]),

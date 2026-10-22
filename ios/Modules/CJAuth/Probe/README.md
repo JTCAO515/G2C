@@ -22,3 +22,6 @@ Current run on CJ007-Session-20261021: prepare SecItemAdd failed with
 errSecMissingEntitlement (-34018), before any successful creation; later phases UNRUN.
 Do not add entitlement or borrow another app identity to work around this without a new
 host capability lease. See ../SESSION-STORE.md for precise executed evidence and limitations.
+
+消息密钥 probe 已准备但未执行；见 Proposals/KEYCHAIN-APPROVAL.md。build.sh 不自动
+应用 entitlement 提案；本轮未重建/重签/重启现有 probe，旧 -34018 保留。

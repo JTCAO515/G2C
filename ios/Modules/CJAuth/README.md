@@ -51,3 +51,6 @@ Apple 能力、nonce/state/PKCE 校验、邮件、真实注册/恢复、服务�
 
 独立 SessionStore/生命周期候选与真实 Keychain 未验项见 [SESSION-STORE](SESSION-STORE.md)。
 它尚未接入 SDK host；自动恢复未启用，不能据本地读写授予业务权限。
+
+独立消息密钥 provider 与未执行的签名提案见 [MESSAGE-KEYS](MESSAGE-KEYS.md)；
+不使用 SessionMaterial/token 作为密钥，不默认自动创建或轮换。
