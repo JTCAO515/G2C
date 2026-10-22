@@ -18,3 +18,7 @@ Contract and dependency gates: ../../contracts/run/README.md.
 PostgreSQL adapter and candidate SQL are now present; see evidence/REPORT.md.
 SQL was applied only to the explicitly authorized task-private empty test cluster,
 which is stopped. No existing database or formal migration was touched.
+
+Synthetic RUN→USAGE first-step checks and explicit production blockers are in
+[USAGE composition](../../contracts/run/USAGE-COMPOSITION.md). The retained
+missing-durable-binding counterexample is FAIL; no real dispatcher is enabled.
