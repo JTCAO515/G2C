@@ -73,3 +73,8 @@ scripts/build-needs-loopback-client.sh. Scoped wire positive cases are explicitl
 public-seam fixtures, while denied/unknown AUTH uses the actual verifier/provider.
 Fresh private PG/HTTP runner is separate author evidence and must never reuse an old
 cluster. Registry1.4 records all three private stores; no migration apply/RLS/cloud.
+
+Author real combination passed9 groups at b22c690 on a new private PG/HTTP instance,
+including official Swift4ops and original-byte recovery; services stopped. The first
+runner startup failure is retained in evidence and does not affect production source.
+See tests/evidence/needs-wire/REPORT.md for exact layer and remaining product limits.
