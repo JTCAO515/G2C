@@ -1,11 +1,11 @@
-"""Local offset/fold audit; consumes original fixed dd4 PLACE, not its repair."""
+"""Independent consumer-boundary injection probes; parser integration is separate."""
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import json
 import unittest
 
-from cj_place import Response, parse_response, prepare
+from cj_place import Outcome, Response, parse_response, prepare
 from cj_feasibility import Candidate
 from cj_feasibility.routes import assess_route
 from test_routes import fixture, details
@@ -18,7 +18,7 @@ def at_fold(fold, second=0, minute=30):
     return datetime(2026, 11, 1, 1, minute, second, tzinfo=NY, fold=fold)
 
 
-def rebound(start, receive, now, *, max_age=60):
+def rebound(start, receive, now, *, max_age=60, consumer_boundary=True):
     args = fixture()
     # Candidate departure is a unique UTC wall time, not a guessed NY fold.
     fields = json.loads(args['candidate'].content)
@@ -34,16 +34,23 @@ def rebound(start, receive, now, *, max_age=60):
                    'route':{'origin':args['window'].query.origin.coordinate.raw,
                             'destination':args['window'].query.destination.coordinate.raw,
                             'paths':[{'distance':'1000','duration':'3600'}]}})
+    original_routes = args['result'].routes
     args['result'] = parse_response(args['config'], args['request'],
                                    Response(args['request'].binding_digest,args['request'].origin,args['request'].path,
                                             200,body,receive), now=now,evidence='synthetic')
+    if consumer_boundary and args['result'].outcome is not Outcome.OK:
+        # Deliberately inject actual typed synthetic values at our own boundary
+        # so upstream rejection does not erase coverage of our independent gates.
+        # This is not a successful parser result; test_place_repair uses False.
+        args['result'] = replace(args['result'], outcome=Outcome.OK,
+                                 reason='synthetic_consumer_boundary_probe', routes=original_routes)
     args['as_of'] = now
     return args
 
 
 class OffsetAuditTests(unittest.TestCase):
     def test_original_source_age_across_fold_uses_elapsed_utc(self):
-        # dd4 parser permits 2 wall seconds; actual elapsed age is 3602 seconds.
+        # Consumer-boundary probe: actual elapsed age is 3602, not 2 wall seconds.
         args = rebound(at_fold(0),at_fold(1,1),at_fold(1,2))
         self.assertIsNotNone(args['result'].source)
         r = assess_route(**args)

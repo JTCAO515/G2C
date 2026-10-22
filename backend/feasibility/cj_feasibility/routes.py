@@ -10,7 +10,7 @@ from cj_place import (CONTRACT_VERSION, Config, FieldState, Observed, Outcome,
 from cj_needs.domain import InvalidInput, decode, validate_fields
 from .validator import Candidate, Check, Report, _evidence, _instant, protect
 
-PLACE_COMMIT = 'dd4c375a731bbaef1d436bc3e88466040ac02294'
+PLACE_COMMIT = '80ba4ae5527875ce375d22f3439f8e3256e2c4d6'
 VERSION = 'CJ-FEASIBILITY-ROUTE-ESTIMATE@0.1.0-candidate.1'
 
 

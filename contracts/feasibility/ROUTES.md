@@ -7,12 +7,13 @@ Consumer source: `backend/feasibility/cj_feasibility/routes.py`.
 
 ## Exact dependency, not a copied schema
 
-Pins PLACE commit `dd4c375a731bbaef1d436bc3e88466040ac02294` and imports
+Currently pins PLACE commit `80ba4ae5527875ce375d22f3439f8e3256e2c4d6` and imports
 `cj_place.Result/Route/Observed/Source` and the existing request/config/query
 classes directly. No vendored/copy DTO, provider request or alternate route
-schema. The author's PLACE checkout had already moved to ec2d0a6 (evidence-only
-diff); testing instead used `git archive` of the exact dd4c375 commit in a fresh
-temporary directory. `routes-manifest.json` records consumed file hashes.
+schema. Initial dd4 consumption and its original hashes remain in
+`routes-manifest.json`; the later 80ba time-repair consumption uses another fresh
+`git archive` export and is recorded separately in `place80-manifest.json`.
+Typed `models.py` is byte-unchanged between those two fixed sources.
 
 **This fixed Source only allows `synthetic` and `unverified_bytes`.** There is no
 verified transport category or supported specified-time query. This slice can
@@ -157,11 +158,11 @@ UNRUN. No empty solver adapter is added: the fixed evidence cannot support a
 real-world solution or its independent invariants yet. Owner confirms only this
 fixed PLACE consumer interface and its synthetic/conditional behavior.
 
-## Offset audit follow-up: upstream dependency remains HOLD
+## Historical offset audit at 2634ccd: upstream dependency HOLD retained
 
 Main reported the fixed dd4/ec2d PLACE elapsed-time/freshness P2 HOLD. This
-consumer remains pinned to dd4; upstream repair has **not** been consumed or
-accepted. A later fixed upstream repair must receive separate consumer attribution.
+consumer at 2634ccd remained pinned to dd4; no upstream repair was then consumed
+or accepted. The following section separately records the later repair consumption.
 
 Own NEEDS `_instant` maps unique wall date/time/zone values to UTC, and keeps
 ambiguous/nonexistent wall times UNKNOWN. Own route window/age/receipt order
@@ -178,3 +179,37 @@ fix, substituted fold start could incorrectly produce QUERY_AGE_CHECKED; aggrega
 still remained UNKNOWN and no real evidence was promoted. Original FAIL logs are
 preserved; new targeted offset tests plus affected route tests pass. This local
 fix does not repair PLACE or release its freshness/chronology dependency HOLD.
+
+
+## Fixed 80ba time-repair consumption, author evidence only
+
+The next isolated pin change consumes PLACE
+`80ba4ae5527875ce375d22f3439f8e3256e2c4d6`, parent ec2d0a6. The actual upstream
+code delta only changes parser elapsed/age/order checks to UTC instants; public
+models and value shapes remain unchanged. No dependency DTO or time wrapper was
+copied. Own source change is only `PLACE_COMMIT`; the 2634 UTC binding fix remains.
+
+Six targeted parser-to-consumer checks use genuine `prepare/parse_response`
+outputs with `consumer_boundary=False`: stale across a fall fold, actual deadline
+exceeded, receipt before query, fresh response across spring jump, and valid fold1
+identity/association, plus the fixed pin check. No OK outcome is injected into
+these integration checks. Invalid/stale/unknown parser outputs never receive an
+age/association PASS from the consumer. Source offset/fold remains original while
+instant arithmetic is UTC. Evidence is still synthetic, never actual provider data.
+
+Four own-boundary offset tests separately inject actual typed synthetic results
+where repaired PLACE now rejects before our guard. This keeps the exact original
+consumer-gate assertions tested (including wrong-fold source binding) without
+pretending the repaired parser returned OK. Test helper/doc labels expose that
+injection explicitly. Genuine repaired-parser flow is tested separately above.
+
+New logs: `place80-consumer-time.txt` (6 PASS), `place80-own-offsets.txt` (4 PASS).
+Prior 17 route-rule tests and 29 NEEDS tests are unchanged and reused, not rerun
+for the pure pin. Historical dd4 tests/FAIL logs remain attached to their original
+fixed commits. To run new genuine parser consumption tests with PLACE_EXPORT at
+an exact 80ba export, substitute `-p test_place_repair.py` in the command above.
+
+This confirms the local fixed source's time-family consumption only. PLACE
+independent Review/Testing and release of Main's HOLD are **not** asserted here.
+Trusted transport, real route/date applicability, endpoint mapping confirmation,
+provider, complete solver and Issue I gates remain UNRUN/UNKNOWN as before.
