@@ -4,6 +4,9 @@ CJ010 / Issue 11; base d30cbc5200f8fdaa59558a07984049caa5ba5999.
 This candidate implements the accepted RUN scope, not a declaration that RUN@1.0
 is frozen. CJ005 owns formal OpenAPI and generation. No public routes/schema,
 AUTH principal parsing, durable worker or real provider has been introduced.
+The follow-on PostgreSQL repository is described in backend/run/evidence/REPORT.md;
+the original core 930236d is preserved in Git; the independent P2 fix is
+8a5c81a and does not include the repository increment.
 
 ## Internal values and semantics
 
@@ -44,7 +47,8 @@ invalidation is explicit; a failed hook does not silently fabricate a terminal.
 Snapshot returns immutable full state and sequence, including terminal/effects.
 An internal Cursor binds the whole binding, external repository epoch, fixed
 through and after; pagination never includes events appended after through.
-Wrong epoch/identity/range requires resync. Epoch issuance, retention/expiry,
+Wrong epoch/identity/range requires resync. PostgreSQL stores the explicitly provisioned epoch and per-run expiry, and
+rejects expired recovery. Epoch provisioning/rotation policy, retention cleanup,
 public tamper-proof token codec, read authorization and wire mapping remain
 unimplemented. Never accept serialized client scope/cursor as authority.
 A consumer replaces its projection from an authenticated snapshot and continues
@@ -92,15 +96,26 @@ can progress independently. No second scheduler or platform is introduced.
   reconciles original attempt/reservation, late receipt grants no new execution.
   This RC adds no recovery_action wire field. Direct RUN adapter confirmation
   remains pending; these notes do not implement authentication.
-- AUTH consumption/worker composition, durable repository, real receipts and
+- AUTH consumption/worker composition, production repository integration, real receipts and
   API/iOS consumers require fixed owner-confirmed adapters. dispatch raises Denied
   unconditionally, even with enabled/auth/quota kwargs. There is no provider path.
 
 Private inventory: binding, partial output, events and receipt references.
 Future cleanup must revoke scope/generation/epoch and invalidate queued workers,
 not merely hide UI. Retention duration and physical deletion/backup policy are
-not invented; clean-up adapter and actual persistence remain UNRUN.
+not invented; cleanup adapter remains UNRUN. Local PostgreSQL persistence has
+limited fixture evidence; production persistence and policy remain UNRUN.
 
 Positive/negative executable samples are `backend/run/tests/test_core.py`.
 Independent Review/Testing pending; real model, accounts, workers/DB recovery,
 network, device and release UNRUN. Issue 11 stays open.
+
+## USAGE owner follow-up (relayed by Main)
+
+USAGE owner confirmed the pinned semantics above. RUN terminal events currently
+do not call Meter.cancel and cannot declare reserved quota released. Future
+claim/cancel integration must share a serialization fence. USAGE claim UNKNOWN
+is conservative pre-dispatch accounting, distinct from RUN terminal unknown;
+started/claim durable ordering and reconciliation must be fixed before connecting
+them. A RUN completed/failed event is never a fee receipt; settle accepts only the
+original trusted receipt. This repository slice adds no usage ledger or dispatch.
