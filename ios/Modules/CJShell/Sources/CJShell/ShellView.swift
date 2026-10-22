@@ -5,16 +5,19 @@ import SwiftUI
 public struct ShellView: View {
     @Bindable private var state: ShellState
     @State private var accountHost: AccountHost
+    @State private var messageHost: AssistantMessageHost
 
-    public init(state: ShellState, accountHost: AccountHost? = nil) {
+    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil) {
         if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
+        if let messageHost { precondition(messageHost.belongs(to: state), "Message host must own the same ShellState") }
         self.state = state
         self._accountHost = State(initialValue: accountHost ?? AccountHost(shell: state))
+        self._messageHost = State(initialValue: messageHost ?? state.messageHost ?? AssistantMessageHost(shell: state))
     }
 
     public var body: some View {
         TabView(selection: $state.selectedTab) {
-            NavigationStack { AssistantShell(state: state, bodyText: state.assistantBody) }
+            NavigationStack { AssistantShell(state: state, messageHost: messageHost, bodyText: state.assistantBody) }
                 .tabItem { Label(ShellTab.assistant.title(state.language), systemImage: "bubble.left.and.bubble.right") }
                 .tag(ShellTab.assistant)
             NavigationStack {

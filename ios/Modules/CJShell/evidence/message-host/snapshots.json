@@ -1,0 +1,64 @@
+[
+  {
+    "step": "query-required",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "1svcw71",
+      "seq": 1,
+      "count": 74,
+      "targets": [
+        "e37|typeText|text-field|消息草稿|Synthetic draft / 合成草稿|assistant.draft",
+        "e25|tap|button|保存本地草稿||",
+        "e26|tap|button|查询原操作||",
+        "e31|tap|button|聊天历史||assistant.history",
+        "e50|tap|tab|助手|1|",
+        "e52|tap|tab|行程|0|",
+        "e54|tap|tab|插件|0|",
+        "e56|tap|tab|记忆|0|"
+      ],
+      "scroll": [
+        "e18|swipe|scroll-view|||"
+      ],
+      "text": [
+        "e32|text|text|助手||",
+        "e34|text|text|助手||",
+        "e23|text|text|合成本地状态——不是服务回复||",
+        "e24|text|text|原结果待核对，只能查询，请勿重发。||assistant.recoveryStatus",
+        "e41|text|text|发送、附件、语音和礼物尚未开放。||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  },
+  {
+    "step": "not-observed",
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0kzr6f1",
+      "seq": 3,
+      "count": 74,
+      "targets": [
+        "e37|typeText|text-field|消息草稿|Synthetic draft / 合成草稿|assistant.draft",
+        "e25|tap|button|保存本地草稿||",
+        "e26|tap|button|查询原操作||",
+        "e31|tap|button|聊天历史||assistant.history",
+        "e50|tap|tab|助手|1|",
+        "e52|tap|tab|行程|0|",
+        "e54|tap|tab|插件|0|",
+        "e56|tap|tab|记忆|0|"
+      ],
+      "scroll": [
+        "e18|swipe|scroll-view|||"
+      ],
+      "text": [
+        "e32|text|text|助手||",
+        "e34|text|text|助手||",
+        "e23|text|text|合成本地状态——不是服务回复||",
+        "e24|text|text|未观察到回执。这不证明消息未发送，也不允许重新发送。||assistant.recoveryStatus",
+        "e41|text|text|发送、附件、语音和礼物尚未开放。||"
+      ],
+      "udid": "824A7623-8882-45C9-94A7-7BD2F758B685"
+    }
+  }
+]

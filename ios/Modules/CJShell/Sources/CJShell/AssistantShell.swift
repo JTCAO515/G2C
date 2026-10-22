@@ -3,6 +3,7 @@ import SwiftUI
 
 struct AssistantShell: View {
     @Bindable var state: ShellState
+    let messageHost: AssistantMessageHost
     let bodyText: String?
     @State private var showingHistory = false
     @FocusState private var draftFocused: Bool
@@ -16,7 +17,10 @@ struct AssistantShell: View {
                 if let bodyText {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                 }
-                ShellStatusView(state: state.assistantState, language: state.language)
+                MessageRecoveryStatus(host: messageHost, language: state.language)
+                if !messageHost.isConfigured {
+                    ShellStatusView(state: state.assistantState, language: state.language)
+                }
             }
             .padding(.horizontal)
             .padding(.bottom)
@@ -36,11 +40,8 @@ struct AssistantShell: View {
         }
         .sheet(isPresented: $showingHistory) {
             NavigationStack {
-                ScrollView {
-                    Text(state.language.text("Chat history is not connected. No conversations have been loaded.", "聊天历史尚未接入，尚未读取会话。"))
-                        .frame(maxWidth: .infinity, alignment: .leading).padding()
-                }
-                .navigationTitle(state.language.text("Chats", "聊天"))
+                LocalRecoveryList(host: messageHost, language: state.language)
+                .navigationTitle(state.language.text("Local recovery", "本地恢复"))
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(state.language.text("Done", "完成")) { showingHistory = false }
@@ -61,7 +62,7 @@ struct AssistantShell: View {
                 .contentShape(Circle())
             }
             .background(.thinMaterial, in: Circle())
-            .accessibilityLabel(state.language.text("Chat history", "聊天历史"))
+            .accessibilityLabel(state.language.text("Local recovery", "本地恢复"))
             .accessibilityIdentifier("assistant.history")
             Spacer(minLength: 8)
             VStack(spacing: 4) {

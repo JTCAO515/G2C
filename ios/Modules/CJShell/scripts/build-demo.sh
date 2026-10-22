@@ -8,10 +8,12 @@ sdk_path="$(xcrun --sdk iphonesimulator --show-sdk-path)"
 auth_module="$output_dir/auth-module"
 mkdir -p "$auth_module"
 SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -package-name CJAuth -module-name CJAuth -emit-module -emit-library -static -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" "$package_dir"/../CJAuth/Sources/CJAuth/*.swift -emit-module-path "$auth_module/CJAuth.swiftmodule" -o "$auth_module/libCJAuth.a"
+SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -package-name CJAuth -module-name CJSession -emit-module -emit-library -static -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" "$package_dir"/../CJAuth/Sources/CJSession/*.swift -emit-module-path "$auth_module/CJSession.swiftmodule" -o "$auth_module/libCJSession.a"
+SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -module-name CJMessageClient -emit-module -emit-library -static -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" "$package_dir"/../CJMessageClient/Sources/CJMessageClient/*.swift -emit-module-path "$auth_module/CJMessageClient.swiftmodule" -o "$auth_module/libCJMessageClient.a"
 SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 \
   -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" \
   -module-cache-path "$output_dir/module-cache" \
-  -I "$auth_module" -L "$auth_module" -lCJAuth "$package_dir"/Sources/CJShell/*.swift "$package_dir/Demo/DemoApp.swift" \
+  -I "$auth_module" -L "$auth_module" -lCJAuth -lCJSession -lCJMessageClient "$package_dir"/Sources/CJShell/*.swift "$package_dir/Demo/DemoApp.swift" \
   -o "$output_dir/CJShellDemo.app/CJShellDemo"
 cat > "$output_dir/CJShellDemo.app/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

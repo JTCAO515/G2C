@@ -1,0 +1,2 @@
+/tmp/cj006-message-demo/CJShellDemo.app: replacing existing signature
+/tmp/cj006-message-demo/CJShellDemo.app
