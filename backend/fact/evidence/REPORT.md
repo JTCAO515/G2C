@@ -1,7 +1,8 @@
 # CJ-034 author evidence — local FACT slice
 
 Historical baseline: `401d082bd2f0a47893f3049bf8e953229a68bb67`.
-Current instant-comparison repair: [time-fix/REPORT.md](time-fix/REPORT.md).
+Instant-comparison repair: [time-fix/REPORT.md](time-fix/REPORT.md).
+Current UTC representability repair: [range-fix/REPORT.md](range-fix/REPORT.md).
 Original logs and source manifest below remain the baseline evidence.
 
 Date: 2026-10-22, Asia/Shanghai. Base:

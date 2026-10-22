@@ -12,11 +12,15 @@ T = TypeVar("T")
 def aware(value: datetime) -> None:
     if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("timezone_required")
+    _instant(value)  # Reject unrepresentable UTC instants at every timestamp boundary.
 
 
 def _instant(value: datetime) -> datetime:
     """Comparison view only; preserve original source datetime, offset and fold."""
-    return value.astimezone(timezone.utc)
+    try:
+        return value.astimezone(timezone.utc)
+    except OverflowError:
+        raise ValueError("instant_out_of_range") from None
 
 
 @dataclass(frozen=True)

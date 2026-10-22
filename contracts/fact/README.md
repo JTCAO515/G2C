@@ -67,6 +67,12 @@ including same-ZoneInfo DST folds. Retrieval/publication freshness, expiry and
 publication-before-expiry validation share this rule. Original timestamp
 objects, offsets, fold values and source excerpts are retained unchanged.
 DateRange still compares inclusive source calendar dates without UTC conversion.
+Aware timestamps must also have a representable UTC instant (Python years
+1 through 9999). Document, Query and each optional Evidence timestamp validate
+this before use; out-of-range instants raise safe ValueError
+`instant_out_of_range`. Structured source timestamp rejection maps to existing
+FactFailure `invalid_structured_evidence`, including when a companion optional
+timestamp is absent. No offset relabeling, clamping or validity substitution.
 
 A missing publication date remains absent but alone does not invalidate other
 explicit scope and expiry declarations. Missing expiry is unknown even when the
