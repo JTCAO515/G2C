@@ -59,3 +59,9 @@ scripts/check-generated-run-display.sh; scripts/build-run-display-loopback-clien
 scripts/generate.sh --check. Source pins/export preserve original dependency ownership.
 New private PG/numeric HTTP author evidence is separate from scoped doubles and from
 independent Review/Testing. Old suites/instances need not be restarted.
+
+Actual author combination at c02cf08 passed7 groups on a fresh private PG/numeric
+HTTP instance including official generated Swift GET. Two cap controls use real
+DB+ASGI and are labeled separately. Services stopped; complete layer/source hashes
+and remaining limits are in tests/evidence/run-display/REPORT.md. No production
+limits/account/provider or full App/Issue11 acceptance follows from that result.

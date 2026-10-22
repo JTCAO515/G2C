@@ -27,3 +27,41 @@ foreign/missing/inactive scope and actual official Client. Limits are synthetic 
 explicit. At this source commit real run UNRUN; no production/account/provider,
 cancel/SSE/worker or old-instance action. Source and root independent gates pending;
 no issue closure, push/merge/deployment claimed.
+
+## Actual private display combination — PASS
+
+Tested fixed source c02cf08e52a0d8ffc2fefac99226654a7e01539c, producer414/bf79.
+New `.local-cj005-display-pg`, PostgreSQL16.15, UTF8 postgres/cj005d, Unix55452,
+listen_addresses='', private0700 and new pgpass0600. Verified actual identity and
+empty public DB before fixed MESSAGE/RUN candidate fixtures only (SQL hashes in
+result). No display table/cache/queue created. Approved offline psycopg3.2.10
+code/metadata91-file whitelist copied/hash-verified; no old cluster state or config.
+
+Seven groups PASS in loopback-result.json (tested code/config hashes included):
+1. Fresh private identity/empty DB and separate canonical MESSAGE/RUN fixtures.
+2. Public MESSAGE receive alone does not create RUN: display unavailable and RUN
+   count0. Explicit synthetic RunService fixture then persists queued empty,
+   running partial and completed exact Unicode; BASE request/header/no-store match,
+   original message and tool-effect sentinels excluded; message sequence1 differs
+   from event highwater4.
+3. Actual failed/cancelled/context_invalid/unknown records preserve partial text,
+   never completed by EOF/fallback. Fixture events are not a cancel/worker API.
+4. Real DB plus in-process ASGI controls (not TCP for these two cap cases): exact
+   bare nine-field size limit rejects the larger request_id envelope; text UTF8
+   cap rejects without truncation. Producer final limit includes final body.
+5. Change actual scope epoch during final encoding, and separate late AUTH denial:
+   already encoded envelope withheld with no private snapshot.
+6. Actual read COMMIT followed by injected unknown ACK/CancelledError, inactive RUN
+   scope, foreign and missing original messages all return unavailable, not null or
+   synthetic successful output. Outer HTTP cancellation is not converted by adapter.
+7. Official generated Swift GET over actual numeric HTTP preserves exact opaque
+   Unicode/reserved message ID and text bytes, status/highwater/text_state and header
+   trace. Independent before/after SQL counts confirm display read creates no RUN
+   or event rows. No provider/task execution occurs.
+
+HTTP thread and exact private PG stopped in finally; absent PID/socket independently
+checked. Data/logs retained and clone-local excluded. No old instance, source20/legacy
+PG/Memory/Trip suite rerun, production default limit, RLS/migration/apply, real account/
+provider/worker or device interaction. Synthetic statuses/limits prove this local
+read projection only. Source/root independent gates and full Issue11/App I remain
+separate. Neither latest-at-delivery nor distributed revocation atomicity is claimed.
