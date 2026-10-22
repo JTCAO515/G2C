@@ -1,0 +1,8 @@
+test_codec_metadata_and_domain_use_single_resolved_identity (history_context_tests.ContextTests.test_codec_metadata_and_domain_use_single_resolved_identity) ... ok
+test_context_expires_on_return_or_error_and_rejects_deferred_work (history_context_tests.ContextTests.test_context_expires_on_return_or_error_and_rejects_deferred_work) ... ok
+test_final_projection_recheck_withholds_private_response (history_context_tests.ContextTests.test_final_projection_recheck_withholds_private_response) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+OK

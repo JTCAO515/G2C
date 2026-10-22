@@ -87,3 +87,8 @@ No database/server/key/provider/Keychain/network call, no PG rerun. Source synta
 checks PASS. Domain/postgres/SQL and Swift source unchanged. Independent review pending.
 This explicit seam and the confirmed proposal are ready for CJ005 bounded implementation;
 no need to wait for complete MESSAGE/AUTH freeze, but not permission to deploy/apply old DB.
+
+Feedback-source additive seam: CONTEXT-QUERY-MESSAGE.md defines public ctx.query_message
+with original raw/digest/ID verification and callback-thread/context lifetime protection.
+It returns the existing Stored/Receipt shape, not serialized receipt bytes or RUN completion.
+No source lookup should call private _service or cross-domain SQL for this association.
