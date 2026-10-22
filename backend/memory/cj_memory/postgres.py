@@ -1,5 +1,6 @@
 """DB-API adapter. Factory supplies fresh non-autocommit connections; no DSN defaults."""
 from contextlib import contextmanager
+import hashlib
 from .domain import Command, Receipt, Item, Conflict, Unavailable, CommitUnknown
 
 class Repository:
@@ -21,7 +22,7 @@ class Repository:
                 raise
             else:
                 try: conn.commit()
-                except Exception: raise CommitUnknown('query original operation') from None
+                except BaseException: raise CommitUnknown('query original operation') from None
         finally:
             # Cleanup cannot turn a durable commit into a failed save or mask unknown ACK.
             for resource in (cur, conn):
@@ -39,7 +40,7 @@ class Transaction:
     def operation(self, oid):
         self.cur.execute('SELECT original_input,operation_id,item_id,version,status FROM cj_memory_operation WHERE scope=%s AND operation_id=%s', (self.scope,oid))
         row = self.cur.fetchone()
-        return (bytes(row[0]),Receipt(*row[1:])) if row else None
+        return (bytes(row[0]),Receipt(*row[1:], hashlib.sha256(bytes(row[0])).hexdigest())) if row else None
     def source(self, c):
         self.cur.execute('SELECT approved_input,confirmed,semantic_resolved FROM cj_memory_source WHERE scope=%s AND source_id=%s AND version=%s AND authorized AND active AND expires_at>clock_timestamp() FOR UPDATE', (self.scope,c.source_id,c.source_version))
         row = self.cur.fetchone()
@@ -57,7 +58,10 @@ class Transaction:
         self.cur.execute('INSERT INTO cj_memory_item(scope,item_id,version,status,subject,slot,extent,context_id,source_id,source_version,original_input) VALUES (%s,%s,1,%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,c.item_id,status,c.subject,c.slot,c.extent,c.context_id or '',c.source_id,c.source_version,c.raw))
         self.cur.execute('INSERT INTO cj_memory_operation VALUES (%s,%s,%s,%s,1,%s)', (self.scope,c.operation_id,c.raw if operation_raw is None else operation_raw,c.item_id,status))
         self.cur.execute('UPDATE cj_memory_scope SET epoch=epoch+1 WHERE scope=%s', (self.scope,))
-        return Receipt(c.operation_id,c.item_id,1,status)
+        # Read back the actual operation ledger bytes, not the request or derived item.
+        stored = self.operation(c.operation_id)
+        if stored is None: raise Unavailable("operation receipt missing")
+        return stored[1]
     def detail(self, iid):
         self.cur.execute('SELECT original_input,version,status,recorded_at FROM cj_memory_item WHERE scope=%s AND item_id=%s', (self.scope,iid))
         row = self.cur.fetchone()

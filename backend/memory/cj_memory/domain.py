@@ -53,6 +53,7 @@ class Receipt:
     item_id: str
     version: int
     status: str
+    input_sha256: str
 
 @dataclass(frozen=True)
 class Item:

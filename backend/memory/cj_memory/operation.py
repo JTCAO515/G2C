@@ -103,7 +103,8 @@ def with_operation(service, guard, operation):
                 bound = current
             elif current != bound:
                 raise ValueError('binding changed')
-        except Exception:
+        except BaseException:
+            # Cancellation/interruption is also a sticky boundary failure.
             state['blocked'] = True
             raise OperationWithheld(stage, state['operation_id'], state['commit_possible']) from None
 
@@ -123,6 +124,12 @@ def with_operation(service, guard, operation):
             except CommitUnknown:
                 state['blocked'] = True
                 raise
+            except BaseException as exc:
+                if not isinstance(exc, Exception):
+                    state['blocked'] = True
+                    raise OperationWithheld('interrupted', state['operation_id'],
+                                            state['commit_possible']) from None
+                raise
 
     try:
         check('entry')
@@ -136,9 +143,11 @@ def with_operation(service, guard, operation):
         return result
     except OperationWithheld:
         raise
-    except Exception as exc:
+    except BaseException as exc:
         if state['commit_possible'] or isinstance(exc, CommitUnknown):
             raise OperationWithheld('result_unavailable', state['operation_id'], True) from None
+        if not isinstance(exc, Exception):
+            raise OperationWithheld('interrupted', state['operation_id'], False) from None
         raise
     finally:
         state['active'] = False
