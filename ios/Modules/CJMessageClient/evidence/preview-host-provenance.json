@@ -1,0 +1,14 @@
+{
+  "parent": "f4c17b59213828543cef042d127c56d8467963d8",
+  "sdk_pin": "c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a",
+  "runtime_path": "ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift",
+  "runtime_before_sha256": "6df582bee7c9575839b21ec82d54f8f0de8773c6672f3ace47d8a811fef81ca9",
+  "runtime_after_sha256": "fe1b002d25e56290e7518b96110ff5a17440d304436bfca4842a4a4be6c76472",
+  "runtime_patch_sha256": "cf61f1e8634495908e41ef2efc9e8be4d136f8cbf4bdf86df1bf7ed0d917589e",
+  "exact_original_probe_sha256": "3e42a34bf617e3f03e7808a56d5768e05723eeda4af2a50d9c13ccae3a638aba",
+  "same_pre_runtime_in_5d85408": true,
+  "raw_logs": {
+    "preview-host-before.txt": "01f2fc85d4237e1bd5e249a028bee453f786a4b0ccfd532a8a4eebac890d2f09",
+    "preview-host-after.txt": "c539264c8e8dcd746e52c89954bc28b6641168d17657f683a07ff691eda8cc13"
+  }
+}

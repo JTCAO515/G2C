@@ -1,0 +1,7 @@
+{
+  "Package.swift": "bc255f4863b3ed4bef92a2b1cd535191a1071b6c3073777d1acff8b3ed06623a",
+  "Package.resolved": "6b41305c3cd2a4172116e1f23c19bdd9d351bd332b829c5def93f8483f3b11ea",
+  "README.md": "80da5739b37bd5afbd9b829e8f61189f20920a76579733248b959a7d74c3909d",
+  "Sources/CJManualPreviewClient/PreviewEditor.swift": "9a64a83f72d927998eb208c0e4587b8e9463309f41bd27717f494421b35976c9",
+  "Tests/CJManualPreviewClientTests/ReadonlyCapabilityTests.swift": "9e8aae9f704c4aa64dfa7c6b410cda2cbf262c62bd83a5afba75b55ce1de46a8"
+}

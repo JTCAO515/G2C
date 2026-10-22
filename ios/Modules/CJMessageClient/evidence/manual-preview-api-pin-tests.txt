@@ -1,0 +1,9 @@
+Relevant output; raw log under ignored .build/manual-preview-pin-evidence/full-tests.txt.
+Build complete! (4.30秒)
+◇ Test methodAndRequiredNullableRequestPreserveOriginalBytes() started.
+◇ Test requiredPreviewAndBASEErrorsCannotBePreviewSuccess() started.
+◇ Test originalDiffBytesUnknownProtectionAndNoSaveAreExplicit() started.
+✔ Test originalDiffBytesUnknownProtectionAndNoSaveAreExplicit() passed after 0.001 seconds.
+✔ Test requiredPreviewAndBASEErrorsCannotBePreviewSuccess() passed after 0.001 seconds.
+✔ Test methodAndRequiredNullableRequestPreserveOriginalBytes() passed after 0.002 seconds.
+✔ Test run with 6 tests in 4 suites passed after 0.003 seconds.

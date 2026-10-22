@@ -1,0 +1,3 @@
+error: Unknown option '--disable-automatic-resolution'
+Usage: swift package show-dependencies [--format <format>] [--output-path <output-path>]
+  See 'package show-dependencies -help' for more information.

@@ -1,0 +1,28 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 452]
+[Planning deferred tasks]
+[4 / 45]
+[6 / 15] CJManualPreviewClientTests-product
+[8 / 17] CJManualPreviewClientTests-product
+[14 / 16] CJManualPreviewClientTests-product
+Build complete! (1.68秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentPreparationTests started.
+◇ Test olderPreparationCannotRetireNewerCallbackPreparedWork() started.
+✘ Test olderPreparationCannotRetireNewerCallbackPreparedWork() recorded an issue at IndependentPreparationTests.swift:17:9: Expectation failed: await wire.calls.count==1
+↳ Older preparation replaced the newer active work ID before its Task ran
+↳ await wire.calls.count==1 → <not evaluated>
+✘ Test olderPreparationCannotRetireNewerCallbackPreparedWork() recorded an issue at IndependentPreparationTests.swift:18:9: Expectation failed: editor.display()?.status == .local
+↳ Newer preview was silently retired and editor stayed loading
+↳ editor.display()?.status == .local → false
+↳   editor.display()?.status → .loading
+↳     some → .loading
+↳     some → .local
+✘ Test olderPreparationCannotRetireNewerCallbackPreparedWork() failed after 0.003 seconds with 2 issues.
+✘ Suite IndependentPreparationTests failed after 0.003 seconds with 2 issues.
+✘ Test run with 1 test in 1 suite failed after 0.003 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - CJManualPreviewClientTests (Swift Testing)
