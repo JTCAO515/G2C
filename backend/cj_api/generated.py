@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, StrEnum
+from typing import Literal
 from uuid import UUID
 
 from pydantic import (
@@ -1130,3 +1131,88 @@ class RunDisplayResponse(BaseModel):
     )
     request_id: RequestId
     snapshot: RunDisplaySnapshot
+
+
+class ManualPreviewTextUpdate(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    item_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    text: constr(min_length=1)
+
+
+class SelectedId(RootModel[constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')]):
+    root: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+
+
+class Title(Enum):
+    NoneType_None = None
+
+
+class OrderItem(RootModel[constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')]):
+    root: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+
+
+class Order(Enum):
+    NoneType_None = None
+
+
+class ManualPreviewRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    trip_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    expected_version: conint(ge=1, le=9223372036854775807)
+    original_content_utf8_base64: constr(min_length=4)
+    selected_ids: list[SelectedId]
+    title_selected: bool
+    title: constr(min_length=1) | Title
+    text_updates: list[ManualPreviewTextUpdate]
+    order: list[OrderItem] | Order
+
+
+class PathItem(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class ManualPreviewChange(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: list[PathItem] = Field(..., max_length=3, min_length=1)
+    before_utf8_base64: str
+    after_utf8_base64: str
+
+
+class PreviewStatus(StrEnum):
+    LOCAL = 'LOCAL'
+
+
+class ProtectionStatus(StrEnum):
+    UNKNOWN = 'UNKNOWN'
+
+
+class ManualPreview(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    preview_status: PreviewStatus
+    original: TripRecord
+    content_utf8_base64: str
+    document: TripDocument
+    selected_ids: list[SelectedId]
+    title_selected: bool
+    protection_status: ProtectionStatus
+    can_save: Literal[False] = Field(
+        ...,
+        description='Always false; no confirmation issuer/feasibility/save authority exists.',
+    )
+    diff: list[ManualPreviewChange]
+
+
+class ManualPreviewResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    preview: ManualPreview

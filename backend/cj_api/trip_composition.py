@@ -39,9 +39,14 @@ def build_trip_boundary(*,environment,jwt_configuration,verification_keys,access
     return boundary,modules
 
 
-def create_trip_composed_app(*,configuration,**dependencies):
+def create_trip_composed_app(*,configuration,manual_preview_configuration=None,**dependencies):
     if type(configuration) is not TripWireConfiguration:
         raise CompositionUnavailable('Explicit TRIP wire configuration required')
     boundary,modules=build_trip_boundary(**dependencies)
+    preview_boundary = preview_modules = None
+    if manual_preview_configuration is not None:
+        from .manual_preview_composition import _attach_manual_preview
+        preview_boundary,preview_modules = _attach_manual_preview(boundary,manual_preview_configuration)
     from .app import create_app
-    return create_app(_trip_boundary=boundary,_trip_configuration=configuration,_trip_modules=modules)
+    return create_app(_trip_boundary=boundary,_trip_configuration=configuration,_trip_modules=modules,
+        _manual_preview_boundary=preview_boundary,_manual_preview_configuration=manual_preview_configuration,_manual_preview_modules=preview_modules)

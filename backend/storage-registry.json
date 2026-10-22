@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "stores": [
     {
       "id": "business",
@@ -93,7 +93,15 @@
           ],
           "retention": "UNDECIDED; candidate deadline is not physical retention; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no deletion of proposal/action receipts or formal records; dedupe only while retained; generation cancellation is not candidate rejection",
-          "restore_fence": "UNIMPLEMENTED; scope/confirmation/candidate/version revocations and deletion replay must precede reads; no backup restoration acceptance"
+          "restore_fence": "UNIMPLEMENTED; scope/confirmation/candidate/version revocations and deletion replay must precede reads; no backup restoration acceptance",
+          "read_consumers": [
+            {
+              "contract": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1",
+              "producer": "6944a66186800ecd26246ce7028d9c9a8767f810",
+              "persistence": "NONE; explicit original/after/diff transient only, no server draft/Proposal/receipt/action/lock or Memory write",
+              "scope": "Actual own current formal Trip inside existing public TRIP lifetime; caller base is exact comparison only; protection UNKNOWN/save unavailable"
+            }
+          ]
         },
         {
           "id": "needs-current-planning",
@@ -266,6 +274,7 @@
     "trip": "5fd115fc97e542bc8776a445d8245fd272000e56",
     "needs": "c821b34d607016c6dbc1020c203621841f1a60e8",
     "feedback": "cf48196e5eb5012630603172951d5c75a46adec4",
-    "run_display": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f"
+    "run_display": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f",
+    "manual_preview": "6944a66186800ecd26246ce7028d9c9a8767f810"
   }
 }
