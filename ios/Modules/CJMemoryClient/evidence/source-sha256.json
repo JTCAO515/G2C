@@ -1,0 +1,9 @@
+{
+  "Package.resolved": "13aad08398e4d4917224a717e304e0b271ad07ff839c994943b5f7eb92b28c3c",
+  "Package.swift": "7bd716edc408b6a5203dbc8d3b8c92cf0f557fa52b4db5d0c922fbd569cf1108",
+  "Sources/CJMemoryClient/MemoryClient.swift": "fe64c6c9a435335ce65a0d74c0c34777e1e5357377ea07bf61c0fb62bee8fbc9",
+  "Sources/CJMemoryClient/MemoryViews.swift": "50461211a677a1dc71c26793a8f2f4994584f87e362bf8dcadbe17afd59abea4",
+  "Sources/CJMemoryClient/PendingStore.swift": "a84f7b027f0a4de8c4eedb233dbfe438887a140ea332dc01d1416d29072e4880",
+  "Sources/CJMemoryClient/StrictMemoryJSON.swift": "345fd01bb4c9a018b31e228c631653612c604e36a02f47ad3bf55b08610017af",
+  "Tests/CJMemoryClientTests/MemoryClientTests.swift": "01a07b95c96c5d6ffae005bf4b65acad1e894e2f07afd287198acda3b1ad0ed5"
+}

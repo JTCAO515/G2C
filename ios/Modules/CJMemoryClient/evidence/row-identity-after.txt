@@ -1,0 +1,18 @@
+Building for debugging...
+[Using on-disk description]
+[2 / 11] CJMemoryClient
+[4 / 13] CJMemoryClient
+[8 / 14] CJMemoryClient
+[9 / 15] CJMemoryClient
+[12 / 15] CJMemoryClientTests-product
+[16 / 19] CJMemoryClientTests-product
+[21 / 23] CJMemoryClientTests-product
+Build complete! (2.58秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentOpaqueViewIdentityTests started.
+◇ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() started.
+✔ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() passed after 0.005 seconds.
+✔ Suite IndependentOpaqueViewIdentityTests passed after 0.005 seconds.
+✔ Test run with 1 test in 1 suite passed after 0.005 seconds.

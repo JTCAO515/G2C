@@ -1,0 +1,68 @@
+import Testing
+import Foundation
+import CJAPI
+import CryptoKit
+@testable import CJMemoryClient
+
+@Suite @MainActor struct IndependentContractAndStoreTests {
+    @Test func semanticCandidateForExplicitPreferenceIsAValidReceipt() async throws {
+        let f=try Fixture();defer{f.cleanup()}
+        var c=command();c.occurred_at="date unknown"
+        let expected=try MemoryPending(c)
+        let transport=Interceptor { _,bytes,op in
+            let original=op=="saveMemory" ? bytes : expected.originalUTF8
+            return try receipt(original).replacingOccurrences(of:"\"status\":\"active\"",with:"\"status\":\"candidate\"")
+        }
+        let client=try f.client(transport)
+        do {
+            guard case .candidate=try await client.save(c,binding:f.binding) else {Issue.record("Candidate was not surfaced distinctly");return}
+        } catch {Issue.record("Valid semantic-unresolved preference candidate receipt rejected")}
+        do {
+            guard case .candidate=try await client.query(operationID:c.operation_id,binding:f.binding) else {Issue.record("Original candidate query did not settle");return}
+        } catch {Issue.record("Valid original candidate query remains unresolvable")}
+    }
+    @Test func serverOpaqueIDsAreReadableWithoutUUIDNarrowing() async throws {
+        let f=try Fixture();defer{f.cleanup()}
+        let opaque="e\u{301}"
+        let item=itemJSON(id:opaque,timestamp:"2026-10-22T01:00:00.123456Z")
+            .replacingOccurrences(of:"00000000-0000-0000-0000-000000000010",with:"original +/%&é")
+        let client=try f.client(Interceptor { _,_,op in
+            if op=="getMemoryItem" {return "{\"request_id\":\"\(trace)\",\"item\":\(item)}"}
+            return "{\"request_id\":\"\(trace)\",\"items\":[\(item)],\"next_after\":\"\(opaque)\"}"
+        })
+        do {#expect(try await client.detail(itemID:opaque,binding:f.binding) != nil)}
+        catch {Issue.record("Contract-valid opaque item ID rejected by detail")}
+        do {#expect(try await client.list(limit:1,binding:f.binding).items.count==1)}
+        catch {Issue.record("Contract-valid opaque IDs rejected by list validation")}
+    }
+    @Test func directoryReplacementInsideKeyCallbackCannotLoseDurableOriginalBeforePOST() async throws {
+        let f=try Fixture();defer{f.cleanup()}
+        let moved=f.root.appendingPathExtension("independent-retired")
+        defer{try? FileManager.default.removeItem(at:moved)}
+        var swapped=false
+        let store=try MemoryPendingStore(directory:f.root,maximumBytes:100_000,maximumRecords:100,
+            namespace:.init(environment:f.binding.environment,account:f.binding.account,purpose:.localMemoryPendingV1),keyID:f.keyID) {
+                if !swapped {
+                    swapped=true
+                    try FileManager.default.moveItem(at:f.root,to:moved)
+                    try FileManager.default.createDirectory(at:f.root,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+                }
+                return f.secret
+            }
+        let transport=Interceptor { _,bytes,_ in try receipt(bytes) }
+        let client=MemoryClient(endpoint:f.endpoint,credentials:{_ in "synthetic-only"},currentBinding:{f.current},pendingStore:store,interceptedTransport:transport)
+        var c=command();c.occurred_at="date unknown"
+        do {_=try await client.save(c,binding:f.binding)} catch {}
+        let calls=await transport.calls
+        #expect(calls.isEmpty,"POST escaped after canonical pending directory was replaced")
+        if !calls.isEmpty {
+            #expect(try !f.store().pending().isEmpty,"Reopening canonical directory lost original after POST")
+        }
+    }
+    @Test func optionalOccurrenceCannotEmitServerRejectedBlankValue() throws {
+        let option=MemoryManualOption(id:UUID(),label:"Synthetic",disclosure:"Synthetic scope only",subject:"self",slot:"test",kind:.preference,extent:.long_term,contextID:nil)
+        let c=try option.command(text:"synthetic",occurredAt:"")
+        #expect(!c.occurred_at.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,
+            "Form optional time emits blank required wire field")
+    }
+}

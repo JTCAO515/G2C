@@ -1,0 +1,23 @@
+Building for debugging...
+[Constructing description]
+[Planning deferred tasks]
+[4 / 45]
+[6 / 15] CJMemoryClientTests-product
+[8 / 17] CJMemoryClientTests-product
+[14 / 16] CJMemoryClientTests-product
+Build complete! (1.66秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentOpaqueViewIdentityTests started.
+◇ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() started.
+✘ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() recorded an issue at IndependentOpaqueViewIdentityTests.swift:18:9: Expectation failed: Set(currentViewIDs).count == page.items.count
+↳ Byte-distinct legal server IDs collide under current String ForEach identity
+↳ Set(currentViewIDs).count == page.items.count → false
+↳   Set(currentViewIDs).count → 1
+↳   page.items.count → 2
+✘ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() failed after 0.006 seconds with 1 issue.
+✘ Suite IndependentOpaqueViewIdentityTests failed after 0.006 seconds with 1 issue.
+✘ Test run with 1 test in 1 suite failed after 0.006 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - CJMemoryClientTests (Swift Testing)
