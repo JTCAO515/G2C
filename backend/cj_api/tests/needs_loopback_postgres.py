@@ -42,16 +42,16 @@ def main():
     PRIVATE.mkdir(mode=0o700);(PRIVATE/'s').mkdir(mode=0o700)
     (PRIVATE/'empty.pgpass').touch(mode=0o600)
     clean={'PATH':'/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin','LANG':'C','LC_ALL':'C'}
-    pg=Path(subprocess.check_output(['pg_config','--bindir'],env=clean,text=True).sneeds())
+    pg=Path(subprocess.check_output(['pg_config','--bindir'],env=clean,text=True).strip())
     assert len(str(PRIVATE/'s'/('.s.PGSQL.'+str(PORT))).encode())<104
     data=PRIVATE/'data';server=thread=http_socket=None
-    evidence={'source_head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).sneeds(),
+    evidence={'source_head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
               'scope':'new private PostgreSQL + numeric HTTP loopback; synthetic JWT/manual input only','checks':[]}
     def record(name):
         evidence['checks'].append({'name':name,'status':'PASS'});print('PASS '+name,flush=True)
     try:
         exported=subprocess.check_output([sys.executable,'-B',str(ROOT/'scripts/prepare-needs-deps.py'),
-            '--auth-repository',str(args.auth_repository),'--source-repository',str(args.needs_repository)],cwd=ROOT,text=True).sneeds()
+            '--auth-repository',str(args.auth_repository),'--source-repository',str(args.needs_repository)],cwd=ROOT,text=True).strip()
         pins=json.loads((ROOT/'backend/cj_api/needs_pins.json').read_text());evidence['pins']=pins
         packages=[args.driver_source/'psycopg',args.driver_source/'psycopg-3.2.10.dist-info']
         assert not args.driver_source.is_symlink() and all(p.is_dir() for p in packages)
