@@ -1,0 +1,21 @@
+{
+  "base": "8f2ff45519d1d09f178f1fa766b6829d81bda77a",
+  "sha256": {
+    "backend/needs/cj_needs/__init__.py": "702e49e341fa43cb40263da79cd43f53ec7f5fd683b11fa0f31ad5aab36e65e3",
+    "backend/needs/cj_needs/boundary.py": "96da6cc959a9890c403d2b9489a52e2b7901d16bb838111c46fb232bbea980c6",
+    "backend/needs/cj_needs/domain.py": "19d9bf84a86e5a7918aefc641ba7f8e50c67066d43b3b944ea27f49e59883de9",
+    "backend/needs/cj_needs/postgres.py": "c69630cfa70212c3c12afec77b62530a34658704b79f81b33d0051dd1e9811e5",
+    "backend/needs/sql/candidate.sql": "e363ccd71efa1c1837a56335042ec09605b3bea9eaa45d10ee9d84b6d47d2113",
+    "backend/needs/tests/conftest.py": "79b9e0286d8b1598788441b6cf33cd7ca2c7d9f5f0dd41a5a9225a56299543c7",
+    "backend/needs/tests/helpers.py": "77a49509ca0f641bb3d24cb0a8549f91b8693b902b3639252de14026aacd4c24",
+    "backend/needs/tests/test_domain.py": "1385dde5c766520e0fc44e755a3c34690d64326fc4a83d328bffebcbca30d014",
+    "backend/needs/tests/test_postgres.py": "f7f51d21f72c6f401d96b6cd2fefafff61f858e1a1252eacdc43ad28592fde73",
+    "backend/needs/uv.lock": "ec96e803991d807a53406978889bf4b6cdf21ad2d80a53f18d81894c02954926",
+    "contracts/needs/README.md": "4ed2714bfb5a7b21fd7cce3879a805819af8adb4f0865874728a77aa93695703",
+    "contracts/needs/examples.json": "0e16ea773069004949ad8154e721ac8143fdc425f78014268debc3282a6ed15c"
+  },
+  "auth_git_blobs": {
+    "backend/auth/cj_auth/interfaces.py": "1d4eb140e873d3aec45746edcc3b9a357fa585ca",
+    "backend/auth/cj_auth/admission.py": "696930fb219957df650d36061320fb4d7c82501e"
+  }
+}
