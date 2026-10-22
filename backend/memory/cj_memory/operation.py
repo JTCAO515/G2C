@@ -81,7 +81,8 @@ def with_operation(service, guard, operation):
             if (type(current) is not tuple or len(current) != 2
                     or type(current[0]) is not TrustedPrincipal
                     or type(current[1]) is not str or not current[1]
-                    or current[1] != repository.scope):
+                    or current[1] != repository.scope
+                    or service.repository is not repository):
                 raise ValueError('invalid trusted binding')
             if bound is None:
                 bound = current
