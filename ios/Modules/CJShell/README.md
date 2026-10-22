@@ -27,3 +27,7 @@ Manual acceptance steps (runtime coverage and limits now in `evidence/RUNTIME-DE
 Actual local checks and exclusions are recorded in `evidence/RESULTS.md`. Do not treat app compilation as any of the above visual/runtime checks.
 
 Account host wiring and transient-input boundaries: see `contracts/ui/ACCOUNT-HOST.md` at repository root. Default account actions remain unconfigured and offline.
+
+Explicit local-session UI and synthetic `--session-demo` flags are documented in `contracts/ui/SESSION-HOST.md`. Default launch never creates a session store.
+
+Assistant recovery host and fixed generated dependency preparation: `contracts/ui/MESSAGE-HOST.md`. `--message-demo` is memory-only, visibly synthetic and never enables POST.

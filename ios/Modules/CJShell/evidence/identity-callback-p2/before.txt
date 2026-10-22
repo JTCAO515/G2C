@@ -1,0 +1,48 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Pre-planning 1 / 185]
+[Planning deferred tasks]
+[6 / 15] CJShellTests-product
+[8 / 17] CJShellTests-product
+[12 / 16] CJShellTests-product
+[14 / 16] CJShellTests-product
+Build complete! (1.16秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IdentityCallbackReentryTests started.
+◇ Test normalInvalidationClearsBeforeResourceCallback() started.
+◇ Test outerCleanupCannotOverwriteCallbackInstalledB() started.
+✘ Test normalInvalidationClearsBeforeResourceCallback() recorded an issue at IdentityCallbackReentryTests.swift:69:9: Expectation failed: sawCleared && !host.isConfigured && shell.messageBindingBlocked
+↳ sawCleared && !host.isConfigured && shell.messageBindingBlocked → false
+↳   sawCleared && !host.isConfigured → false
+↳   shell.messageBindingBlocked → <not evaluated>
+✘ Test outerCleanupCannotOverwriteCallbackInstalledB() recorded an issue at IdentityCallbackReentryTests.swift:45:9: Expectation failed: rebound && host.isConfigured
+↳ rebound && host.isConfigured → false
+↳   rebound → true
+↳   host.isConfigured → false
+✘ Test outerCleanupCannotOverwriteCallbackInstalledB() recorded an issue at IdentityCallbackReentryTests.swift:46:9: Expectation failed: shell.generation == bGeneration
+↳ shell.generation == bGeneration → false
+↳   shell.generation → ShellGeneration(value: FFE51673-F985-4E44-AE1B-66821365CDE9)
+↳     value → FFE51673-F985-4E44-AE1B-66821365CDE9
+↳   bGeneration → ShellGeneration(value: 59B7090D-552C-4E0A-82A1-92D7AEFFD130)
+↳     some → ShellGeneration(value: 59B7090D-552C-4E0A-82A1-92D7AEFFD130)
+↳       value → 59B7090D-552C-4E0A-82A1-92D7AEFFD130
+✘ Test outerCleanupCannotOverwriteCallbackInstalledB() recorded an issue at IdentityCallbackReentryTests.swift:47:9: Expectation failed: shell.draft == "synthetic reentrant B editor"
+↳ shell.draft == "synthetic reentrant B editor" → false
+↳   shell.draft → ""
+✘ Test outerCleanupCannotOverwriteCallbackInstalledB() recorded an issue at IdentityCallbackReentryTests.swift:48:9: Expectation failed: shell.memoryPath == [.privacy] && shell.assistantBody == "synthetic B body"
+↳ shell.memoryPath == [.privacy] && shell.assistantBody == "synthetic B body" → false
+↳   shell.memoryPath == [.privacy] → false
+↳   shell.assistantBody == "synthetic B body" → <not evaluated>
+✘ Test outerCleanupCannotOverwriteCallbackInstalledB() recorded an issue at IdentityCallbackReentryTests.swift:49:9: Expectation failed: store.clears == 1
+↳ Only nested B lifecycle cleanup may proceed; stale outer cleanup must not touch its store
+↳ store.clears == 1 → false
+↳   store.clears → 2
+✘ Test normalInvalidationClearsBeforeResourceCallback() failed after 0.003 seconds with 1 issue.
+✘ Test outerCleanupCannotOverwriteCallbackInstalledB() failed after 0.003 seconds with 5 issues.
+✘ Suite IdentityCallbackReentryTests failed after 0.003 seconds with 6 issues.
+✘ Test run with 2 tests in 1 suite failed after 0.003 seconds with 6 issues.
+Note: Some test targets reported failures:
+  - CJShellTests (Swift Testing)

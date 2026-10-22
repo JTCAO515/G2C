@@ -86,6 +86,8 @@ public final class ShellState {
     public var selectedTab: ShellTab = .assistant
     public var memoryPath: [MemoryRoute] = []
     public var draft = ""
+    var messageBindingBlocked = false
+    @ObservationIgnored weak var messageHost: AssistantMessageHost?
     public private(set) var generation = ShellGeneration()
     public private(set) var presentation = ShellPresentation()
     public var context: ShellContext { presentation.context }
@@ -112,10 +114,16 @@ public final class ShellState {
 
     /// Host calls synchronously before changing identity or accepting new account work.
     /// This only clears local UI; it does not revoke credentials or cancel remote work.
-    public func invalidateIdentity() {
-        generation = ShellGeneration()
+    @discardableResult public func invalidateIdentity() -> ShellGeneration {
+        let invalidatedGeneration = ShellGeneration()
+        messageBindingBlocked = true
+        generation = invalidatedGeneration
         draft = ""
         contextReset()
+        // Publish the fence and clear private UI before a resource callback can reenter.
+        // No outer-lifetime mutation is allowed after this callback.
+        messageHost?.invalidate()
+        return invalidatedGeneration
     }
 
     private func contextReset() {

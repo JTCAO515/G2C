@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJAuth
+import CJSession
 
 private enum EmailMode: String, CaseIterable {
     case signIn, register, recovery
@@ -37,11 +38,22 @@ struct AccountView: View {
                     Text(language.text("The original result must be checked before another attempt. Recovery checking is not connected yet.", "再次尝试前须核对原操作结果。目前尚未接入结果核对。"))
                 }
             }
+            Section(language.text("Session on this device", "本机会话")) {
+                Text(localSessionText).accessibilityIdentifier("account.localSessionStatus")
+                Button(language.text("Restore local session", "恢复本机会话")) {
+                    password = ""; email = ""; editing = false; host.restoreSession()
+                }.disabled(!host.canRestoreSession)
+                Button(language.text("Sign out locally and clear", "本机退出并清理")) {
+                    password = ""; email = ""; editing = false; host.clearLocalSession()
+                }.disabled(!host.hasSessionStore)
+                Text(language.text("Local cleanup does not revoke a server session or resolve an unknown operation.", "本机清理不代表撤销服务端会话，也不代表未决操作已核实。"))
+                    .font(.footnote)
+            }
             Section(language.text("Email", "邮箱")) {
                 Picker(language.text("Action", "操作"), selection: $mode) {
                     ForEach(EmailMode.allCases, id: \.self) { value in Text(value.title(language)).tag(value) }
                 }
-                .disabled(host.isWaiting || host.requiresReconciliation)
+                .disabled(!host.canSubmitAccount)
                 TextField(language.text("Email address", "邮箱地址"), text: $email)
                     .keyboardType(.emailAddress).textContentType(.emailAddress)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -56,14 +68,14 @@ struct AccountView: View {
                 actionButton(mode.action, title: mode.title(language))
                 if let reason = host.unavailableReason(for: mode.action) { Text(reasonText(reason)).font(.footnote) }
             }
-            .disabled(host.isWaiting || host.requiresReconciliation)
+            .disabled(!host.canSubmitAccount)
             Section(language.text("Other sign-in options", "其他登录方式")) {
                 actionButton(.googleSignIn, title: language.text("Continue with Google", "使用 Google 登录"))
                 if let reason = host.unavailableReason(for: .googleSignIn) { Text(reasonText(reason)).font(.footnote) }
                 actionButton(.appleSignIn, title: language.text("Continue with Apple", "使用 Apple 登录"))
                 if let reason = host.unavailableReason(for: .appleSignIn) { Text(reasonText(reason)).font(.footnote) }
             }
-            if host.isWaiting {
+            if host.isWaiting || host.isRestoring {
                 Button(language.text("Cancel locally", "取消本地等待")) {
                     password = ""; email = ""; editing = false; host.cancel()
                 }
@@ -86,7 +98,7 @@ struct AccountView: View {
             editing = false
             host.submit(action, email: email, password: &password)
         }
-        .disabled(host.unavailableReason(for: action) != nil || host.isWaiting || host.requiresReconciliation)
+        .disabled(host.unavailableReason(for: action) != nil || !host.canSubmitAccount)
     }
 
     private func reasonText(_ reason: UnavailableReason) -> String {
@@ -95,6 +107,20 @@ struct AccountView: View {
         case .missingRuntimeMaterial: language.text("Not available — secure sign-in material is missing.", "尚未开放：缺少安全登录材料。")
         case .sdkAdapterNotInstalled: language.text("Not available — sign-in integration is missing.", "尚未开放：登录组件未接入。")
         case .hostCapabilityRequired: language.text("Not available — this device flow is not connected.", "尚未开放：设备登录流程未接入。")
+        }
+    }
+
+    private var localSessionText: String {
+        switch host.localSessionStatus {
+        case .notConfigured: language.text("Local session storage is not configured. Restore and cleanup are unavailable.", "本机会话存储未配置，恢复与清理尚不可用。")
+        case .idle: language.text("No automatic restore. Choose restore explicitly.", "不会自动恢复，请明确选择恢复。")
+        case .restoring: language.text("Checking the restored session… Access is not granted.", "正在核对恢复的会话，尚未授予访问权限。")
+        case .missing: language.text("No local session was found.", "未找到本机会话。")
+        case .needsVerification: language.text("Local material was read; server and invitation verification are still required.", "已读取本地材料，仍需服务端及邀请资格验证。")
+        case .verificationFailed: language.text("Session verification failed. Access is not granted.", "会话验证失败，尚未授予访问权限。")
+        case .unknown: language.text("The restore result is unknown. Do not start a replacement attempt.", "恢复结果未知，请勿创建替代尝试。")
+        case .cleared: language.text("Local session cleanup completed. This is not server sign-out.", "本机会话清理已完成，不代表服务端已退出。")
+        case .blocked: language.text("Local session storage is blocked. Cleanup or storage access failed; restore is disabled. You may explicitly retry local cleanup.", "本机会话存储已阻断。清理或存储访问失败，已禁用恢复；可明确重试本机清理。")
         }
     }
 
