@@ -564,7 +564,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ InternalCollectionsUtilities
 
 SwiftCompile normal arm64 (in target 'InternalCollectionsUtilities' from project 'swift-collections')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/CJProbeApp.xcodeproj
-    
+
 
 SwiftCompile normal arm64 Compiling\ _SortedCollection.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-collections/Sources/InternalCollectionsUtilities/_SortedCollection.swift (in target 'InternalCollectionsUtilities' from project 'swift-collections')
 
@@ -810,7 +810,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ SpanPreview (in target 'Span
 
 SwiftCompile normal arm64 (in target 'SpanPreview' from project 'swift-collections')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/CJProbeApp.xcodeproj
-    
+
 
 SwiftCompile normal arm64 Compiling\ OutputSpan+InputSpanHelpers.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-collections/Sources/SpanPreview/OutputSpan+InputSpanHelpers.swift (in target 'SpanPreview' from project 'swift-collections')
 
@@ -1098,7 +1098,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ DequeModule (in target 'Dequ
 
 SwiftCompile normal arm64 (in target 'DequeModule' from project 'swift-collections')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/CJProbeApp.xcodeproj
-    
+
 
 SwiftCompile normal arm64 Compiling\ UniqueDeque.swift,\ _DequeSlot.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-collections/Sources/DequeModule/UniqueDeque/UniqueDeque.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-collections/Sources/DequeModule/_DequeSlot.swift (in target 'DequeModule' from project 'swift-collections')
 
@@ -1192,7 +1192,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ HTTPTypes (in target 'HTTPTy
 
 SwiftCompile normal arm64 (in target 'HTTPTypes' from project 'swift-http-types')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/CJProbeApp.xcodeproj
-    
+
 
 SwiftCompile normal arm64 Compiling\ HTTPFields.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-http-types/Sources/HTTPTypes/HTTPFields.swift (in target 'HTTPTypes' from project 'swift-http-types')
 
@@ -1616,7 +1616,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ OpenAPIRuntime (in target 'O
 
 SwiftCompile normal arm64 (in target 'OpenAPIRuntime' from project 'swift-openapi-runtime')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/CJProbeApp.xcodeproj
-    
+
 
 SwiftCompile normal arm64 Compiling\ MultipartRawPartsToFramesSequence.swift,\ MultipartValidation.swift,\ OpenAPIMIMEType+Multipart.swift,\ URICodeCodingKey.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-openapi-runtime/Sources/OpenAPIRuntime/Multipart/MultipartRawPartsToFramesSequence.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-openapi-runtime/Sources/OpenAPIRuntime/Multipart/MultipartValidation.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-openapi-runtime/Sources/OpenAPIRuntime/Multipart/OpenAPIMIMEType+Multipart.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-openapi-runtime/Sources/OpenAPIRuntime/URICoder/Common/URICodeCodingKey.swift (in target 'OpenAPIRuntime' from project 'swift-openapi-runtime')
 
@@ -1780,7 +1780,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ OpenAPIURLSession (in target
 
 SwiftCompile normal arm64 (in target 'OpenAPIURLSession' from project 'swift-openapi-urlsession')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/CJProbeApp.xcodeproj
-    
+
 
 SwiftCompile normal arm64 Compiling\ URLSession+Extensions.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/XcodePackages/checkouts/swift-openapi-urlsession/Sources/OpenAPIURLSession/URLSessionBidirectionalStreaming/URLSession+Extensions.swift (in target 'OpenAPIURLSession' from project 'swift-openapi-urlsession')
 
@@ -2024,7 +2024,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ CJAPI (in target 'CJAPI' fro
 
 SwiftCompile normal arm64 (in target 'CJAPI' from project 'CJFoundation')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/CJProbeApp.xcodeproj
-    
+
 
 SwiftCompile normal arm64 Compiling\ Types+Components.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/Sources/CJAPI/Generated/Types+Components.swift (in target 'CJAPI' from project 'CJFoundation')
 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/Sources/CJAPI/Generated/Types+Components.swift:2:25: warning: public import of 'OpenAPIRuntime' was not used in public declarations or inlinable code [#UnusedImportAccess]
@@ -2310,7 +2310,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ CJProbeUI (in target 'CJProb
 
 SwiftCompile normal arm64 (in target 'CJProbeUI' from project 'CJFoundation')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/CJProbeApp.xcodeproj
-    
+
 
 SwiftCompile normal arm64 Compiling\ ProbeView.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios/Sources/CJProbeUI/ProbeView.swift (in target 'CJProbeUI' from project 'CJFoundation')
 
@@ -2508,7 +2508,7 @@ SwiftEmitModule normal arm64 Emitting\ module\ for\ CJProbeApp (in target 'CJPro
 
 SwiftCompile normal arm64 (in target 'CJProbeApp' from project 'CJProbeApp')
     cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/ios
-    
+
 
 SwiftDriverJobDiscovery normal arm64 Emitting module for CJProbeApp (in target 'CJProbeApp' from project 'CJProbeApp')
 
@@ -2602,4 +2602,3 @@ PruneExplicitPrecompiledModules /Users/jtsm5p/Documents/Codex/2026-10-21/cj-bran
 PruneExplicitPrecompiledModules /Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/DerivedData/SDKExplicitPrecompiledModules
 
 ** BUILD SUCCEEDED **
-
