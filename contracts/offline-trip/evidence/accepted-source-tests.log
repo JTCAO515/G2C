@@ -1,0 +1,29 @@
+warning: '--skip-update' option is deprecated and will be removed in a future release
+Building for debugging...
+[Computing dependencies]
+[2 / 13] CJOfflineTripTests-product
+[6 / 17] CJOfflineTripTests-product
+[10 / 16] CJOfflineTripTests-product
+[11 / 17] CJOfflineTripTests-product
+[13 / 17] CJOfflineTripTests-product
+Build complete! (1.63秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite AcceptedSourceTests started.
+◇ Test networkAwaitSelectionChangeYieldsNoSourceOrCache() started.
+◇ Test providerCallbackSessionChangeCannotWrite() started.
+◇ Test finalSourceCallbackFileReplacementCannotBeOverwritten() started.
+◇ Test providerCallbackRetiresOriginalAndCannotPolluteNewSource() started.
+◇ Test unknownWriteBlocksNewCaptureAndReconcilesExactOriginal() started.
+◇ Test originalHandleRetiredAcrossAwaitCannotCapture() started.
+◇ Test exactPublicHookToCanonicalKeyToEncryptedFile() started.
+✔ Test networkAwaitSelectionChangeYieldsNoSourceOrCache() passed after 0.010 seconds.
+✔ Test unknownWriteBlocksNewCaptureAndReconcilesExactOriginal() passed after 0.014 seconds.
+✔ Test providerCallbackSessionChangeCannotWrite() passed after 0.014 seconds.
+✔ Test finalSourceCallbackFileReplacementCannotBeOverwritten() passed after 0.015 seconds.
+✔ Test exactPublicHookToCanonicalKeyToEncryptedFile() passed after 0.016 seconds.
+✔ Test originalHandleRetiredAcrossAwaitCannotCapture() passed after 0.016 seconds.
+✔ Test providerCallbackRetiresOriginalAndCannotPolluteNewSource() passed after 0.017 seconds.
+✔ Suite AcceptedSourceTests passed after 0.018 seconds.
+✔ Test run with 7 tests in 1 suite passed after 0.018 seconds.

@@ -65,6 +65,7 @@ public enum SnapshotCodec {
     static func encoder() -> JSONEncoder {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]; return encoder
     }
+    // Raw SymmetricKey calls are isolated test fixtures; canonical composition uses MessageEncryptionKey.withSymmetricKey.
     static func seal(_ snapshot: OfflineSnapshot, key: SymmetricKey) throws -> Data {
         guard key.bitCount == 256 else { throw OfflineFailure.keyUnavailable }
         let aad = try encoder().encode(snapshot.metadata)

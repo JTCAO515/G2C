@@ -78,8 +78,11 @@ final class AtomicSnapshotStore {
         try checkRoot()
         return data
     }
-    func write(_ sealed: Data) throws {
+    func requireNoPendingWrite() throws {
         guard pending == nil else { throw OfflineFailure.writeUnknown }
+    }
+    func write(_ sealed: Data) throws {
+        try requireNoPendingWrite()
         guard !sealed.isEmpty, sealed.count <= SnapshotCodec.maximumBytes else { throw OfflineFailure.invalidSnapshot }
         let previous = try read()
         let temporary = ".write-" + UUID().uuidString
