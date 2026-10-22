@@ -1,0 +1,20 @@
+test_actual_proposal_and_exact_diff (test_manual_edit.ManualEditTests.test_actual_proposal_and_exact_diff) ... ok
+test_actual_proposal_validator_is_used (test_manual_edit.ManualEditTests.test_actual_proposal_validator_is_used) ... ok
+test_candidate_metadata_all_required_and_original_version (test_manual_edit.ManualEditTests.test_candidate_metadata_all_required_and_original_version) ... ok
+test_conflict_unknown_preserve_exact_draft_and_version (test_manual_edit.ManualEditTests.test_conflict_unknown_preserve_exact_draft_and_version) ... ok
+test_direct_draft_cannot_bypass_protection_or_fact_reset (test_manual_edit.ManualEditTests.test_direct_draft_cannot_bypass_protection_or_fact_reset) ... ok
+test_exact_original_required (test_manual_edit.ManualEditTests.test_exact_original_required) ... ok
+test_ids_scope_and_shape_rejected (test_manual_edit.ManualEditTests.test_ids_scope_and_shape_rejected) ... ok
+test_immutable_and_input_not_aliased (test_manual_edit.ManualEditTests.test_immutable_and_input_not_aliased) ... ok
+test_no_unknown_schema_defaults (test_manual_edit.ManualEditTests.test_no_unknown_schema_defaults) ... ok
+test_noncanonical_or_invalid_original (test_manual_edit.ManualEditTests.test_noncanonical_or_invalid_original) ... ok
+test_noop_is_exact_and_no_evidence_loss (test_manual_edit.ManualEditTests.test_noop_is_exact_and_no_evidence_loss) ... ok
+test_save_unavailable_has_no_trip_write_calls (test_manual_edit.ManualEditTests.test_save_unavailable_has_no_trip_write_calls) ... ok
+test_title_requires_explicit_selection (test_manual_edit.ManualEditTests.test_title_requires_explicit_selection) ... ok
+test_trusted_protection_is_constraint_only (test_manual_edit.ManualEditTests.test_trusted_protection_is_constraint_only) ... ok
+test_unselected_content_and_position_exact (test_manual_edit.ManualEditTests.test_unselected_content_and_position_exact) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.002s
+
+OK
