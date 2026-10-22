@@ -1,7 +1,8 @@
 -- Candidate only: CJ005 owns registration/application. No production migration.
 CREATE TABLE cj_memory_scope(scope text PRIMARY KEY, active boolean NOT NULL DEFAULT true, epoch bigint NOT NULL DEFAULT 1 CHECK(epoch>0));
 -- Trusted composition inserts exact approved bytes after source ownership, consent,
--- subject, canonical slot, purpose/time/retention checks. No public writer exists.
+-- subject, canonical slot, purpose/time/retention checks. Manual Service may also
+-- create a server-derived source inside its save transaction under explicit policy.
 CREATE TABLE cj_memory_source(
  scope text REFERENCES cj_memory_scope, source_id text, version bigint NOT NULL CHECK(version>0),
  approved_input bytea NOT NULL, authorized boolean NOT NULL, confirmed boolean NOT NULL,

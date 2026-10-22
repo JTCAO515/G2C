@@ -38,6 +38,19 @@ class OperationContext:
         finally:
             self._state['writing'] = False
 
+    def save_manual(self, raw):
+        self._check()
+        if self._state['operation_id'] is not None:
+            raise RuntimeError('one save per operation context')
+        from .manual import parse_manual
+        c = parse_manual(raw)
+        self._state['operation_id'] = c.operation_id
+        self._state['writing'] = True
+        try:
+            return self._service.save_manual(raw)
+        finally:
+            self._state['writing'] = False
+
     def query(self, operation_id):
         self._check()
         return self._service.query(operation_id)
@@ -71,6 +84,7 @@ def with_operation(service, guard, operation):
                  commit_possible=False, writing=False, blocked=False)
     bound = None
     repository = service.repository
+    manual_policy = service.manual_policy
 
     def check(stage):
         nonlocal bound
@@ -82,7 +96,8 @@ def with_operation(service, guard, operation):
                     or type(current[0]) is not TrustedPrincipal
                     or type(current[1]) is not str or not current[1]
                     or current[1] != repository.scope
-                    or service.repository is not repository):
+                    or service.repository is not repository
+                    or service.manual_policy is not manual_policy):
                 raise ValueError('invalid trusted binding')
             if bound is None:
                 bound = current
@@ -111,7 +126,7 @@ def with_operation(service, guard, operation):
 
     try:
         check('entry')
-        context = OperationContext(type(service)(GuardedRepository()), state)
+        context = OperationContext(type(service)(GuardedRepository(), manual_policy=manual_policy), state)
         result = operation(context)
         if type(result) is not bytes:
             if inspect.iscoroutine(result): result.close()

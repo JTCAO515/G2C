@@ -45,11 +45,17 @@ class Transaction:
         row = self.cur.fetchone()
         if row is None or bytes(row[0]) != c.raw: raise Unavailable('source not authorized')
         return row[1] and row[2]
-    def insert(self, c, status):
+    def create_manual_source(self, c, resolved, expires_at):
+        # Service-generated source only. Never reactivate/overwrite a pre-existing row.
+        self.cur.execute("INSERT INTO cj_memory_source(scope,source_id,version,approved_input,authorized,confirmed,semantic_resolved,active,expires_at) VALUES (%s,%s,1,%s,true,%s,%s,true,%s) ON CONFLICT(scope,source_id) DO NOTHING", (self.scope,c.source_id,c.raw,c.kind != 'inference',resolved,expires_at))
+        if self.cur.rowcount != 1:
+            raise Conflict('manual source already exists without original receipt')
+
+    def insert(self, c, status, *, operation_raw=None):
         self.cur.execute('SELECT 1 FROM cj_memory_item WHERE scope=%s AND (item_id=%s OR (subject=%s AND slot=%s AND extent=%s AND context_id=%s AND status=\'active\' AND %s=\'active\'))', (self.scope,c.item_id,c.subject,c.slot,c.extent,c.context_id or '',status))
         if self.cur.fetchone(): raise Conflict('item or canonical slot exists; review current version')
         self.cur.execute('INSERT INTO cj_memory_item(scope,item_id,version,status,subject,slot,extent,context_id,source_id,source_version,original_input) VALUES (%s,%s,1,%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,c.item_id,status,c.subject,c.slot,c.extent,c.context_id or '',c.source_id,c.source_version,c.raw))
-        self.cur.execute('INSERT INTO cj_memory_operation VALUES (%s,%s,%s,%s,1,%s)', (self.scope,c.operation_id,c.raw,c.item_id,status))
+        self.cur.execute('INSERT INTO cj_memory_operation VALUES (%s,%s,%s,%s,1,%s)', (self.scope,c.operation_id,c.raw if operation_raw is None else operation_raw,c.item_id,status))
         self.cur.execute('UPDATE cj_memory_scope SET epoch=epoch+1 WHERE scope=%s', (self.scope,))
         return Receipt(c.operation_id,c.item_id,1,status)
     def detail(self, iid):

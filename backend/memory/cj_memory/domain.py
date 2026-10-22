@@ -68,7 +68,9 @@ class Context:
     epoch: int
 
 class Service:
-    def __init__(self, repository): self.repository = repository
+    def __init__(self, repository, *, manual_policy=None):
+        self.repository = repository
+        self.manual_policy = manual_policy
 
     def with_operation(self, guard, operation):
         """Trusted request entry: guard and JSON projection stay in one lifetime."""
@@ -88,6 +90,25 @@ class Service:
                 confirmed = tx.source(c)
                 status = 'active' if confirmed and c.kind != 'inference' else 'candidate'
                 result = tx.insert(c, status)
+        return result
+
+    def save_manual(self, raw):
+        from .manual import ManualPolicy, parse_manual
+        c = parse_manual(raw)
+        with self.repository.transaction() as tx:
+            tx.lock_scope()
+            old = tx.operation(c.operation_id)
+            if old:
+                if old[0] != raw: raise Conflict('operation bytes differ')
+                result = old[1]  # Historical receipt; do not renew source or its expiry.
+            else:
+                if type(self.manual_policy) is not ManualPolicy:
+                    raise Unavailable('manual policy unavailable')
+                resolved = self.manual_policy.evaluate(c, raw)
+                tx.create_manual_source(c, resolved, self.manual_policy.expires_at)
+                confirmed = tx.source(c)
+                status = 'active' if confirmed and c.kind != 'inference' else 'candidate'
+                result = tx.insert(c, status, operation_raw=raw)
         return result
 
     def query(self, operation_id):
