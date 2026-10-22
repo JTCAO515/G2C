@@ -1,0 +1,6 @@
+Building for debugging...
+Build complete! (0.27秒)
+PASS generated list/history next_cursor object-string/null/missing distinctions
+PASS actual generated draft object/null/missing; nonnull fallback rejected
+PASS exact/empty UTF8 base64, invalid encoding/noncanonical/invalid UTF8 rejected
+PASS generated private history receipt/raw/text projection readable without byte reconstruction

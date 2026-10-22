@@ -16,6 +16,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/message-receipts`.
     /// - Remark: Generated from `#/paths//v1/message-receipts/get(queryMessageReceipt)`.
     func queryMessageReceipt(_ input: Operations.queryMessageReceipt.Input) async throws -> Operations.queryMessageReceipt.Output
+    /// - Remark: HTTP `GET /v1/conversations`.
+    /// - Remark: Generated from `#/paths//v1/conversations/get(listConversations)`.
+    func listConversations(_ input: Operations.listConversations.Input) async throws -> Operations.listConversations.Output
+    /// - Remark: HTTP `GET /v1/message-history`.
+    /// - Remark: Generated from `#/paths//v1/message-history/get(readMessageHistory)`.
+    func readMessageHistory(_ input: Operations.readMessageHistory.Input) async throws -> Operations.readMessageHistory.Output
+    /// - Remark: HTTP `GET /v1/message-drafts`.
+    /// - Remark: Generated from `#/paths//v1/message-drafts/get(readMessageDraft)`.
+    func readMessageDraft(_ input: Operations.readMessageDraft.Input) async throws -> Operations.readMessageDraft.Output
+    /// - Remark: HTTP `PUT /v1/message-drafts`.
+    /// - Remark: Generated from `#/paths//v1/message-drafts/put(saveMessageDraft)`.
+    func saveMessageDraft(_ input: Operations.saveMessageDraft.Input) async throws -> Operations.saveMessageDraft.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -47,6 +59,52 @@ extension APIProtocol {
         try await queryMessageReceipt(Operations.queryMessageReceipt.Input(
             query: query,
             headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/conversations`.
+    /// - Remark: Generated from `#/paths//v1/conversations/get(listConversations)`.
+    public func listConversations(
+        query: Operations.listConversations.Input.Query,
+        headers: Operations.listConversations.Input.Headers = .init()
+    ) async throws -> Operations.listConversations.Output {
+        try await listConversations(Operations.listConversations.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/message-history`.
+    /// - Remark: Generated from `#/paths//v1/message-history/get(readMessageHistory)`.
+    public func readMessageHistory(
+        query: Operations.readMessageHistory.Input.Query,
+        headers: Operations.readMessageHistory.Input.Headers = .init()
+    ) async throws -> Operations.readMessageHistory.Output {
+        try await readMessageHistory(Operations.readMessageHistory.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/message-drafts`.
+    /// - Remark: Generated from `#/paths//v1/message-drafts/get(readMessageDraft)`.
+    public func readMessageDraft(
+        query: Operations.readMessageDraft.Input.Query,
+        headers: Operations.readMessageDraft.Input.Headers = .init()
+    ) async throws -> Operations.readMessageDraft.Output {
+        try await readMessageDraft(Operations.readMessageDraft.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PUT /v1/message-drafts`.
+    /// - Remark: Generated from `#/paths//v1/message-drafts/put(saveMessageDraft)`.
+    public func saveMessageDraft(
+        query: Operations.saveMessageDraft.Input.Query,
+        headers: Operations.saveMessageDraft.Input.Headers = .init(),
+        body: Operations.saveMessageDraft.Input.Body
+    ) async throws -> Operations.saveMessageDraft.Output {
+        try await saveMessageDraft(Operations.saveMessageDraft.Input(
+            query: query,
+            headers: headers,
+            body: body
         ))
     }
 }

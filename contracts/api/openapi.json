@@ -169,6 +169,322 @@
           }
         }
       }
+    },
+    "/v1/conversations": {
+      "get": {
+        "operationId": "listConversations",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Required client limit within explicit host cap; 100 is current internal implementation ceiling, not product quota."
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private projection only after current authority checks; not a model dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationPageResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Private projection only after current authority checks; not a model dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/message-history": {
+      "get": {
+        "operationId": "readMessageHistory",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Required client limit within explicit host cap; 100 is current internal implementation ceiling, not product quota."
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private projection only after current authority checks; not a model dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageHistoryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Private projection only after current authority checks; not a model dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/message-drafts": {
+      "get": {
+        "operationId": "readMessageDraft",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          },
+          {
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private projection only after current authority checks; not a model dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDraftReadResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Private projection only after current authority checks; not a model dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "saveMessageDraft",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          },
+          {
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9223372036854775806
+            },
+            "description": "Decoded once; duplicate/extra parameters rejected; opaque strings are not normalized."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private projection only after current authority checks; not a model dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDraftSaveResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Private projection only after current authority checks; not a model dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact original UTF8 plain draft bytes, including empty bytes. Not message send; unknown requires original draft/revision reconciliation, never same-text inference.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -336,6 +652,198 @@
             "description": "Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone."
           }
         }
+      },
+      "ConversationSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversation_id",
+          "generation",
+          "epoch",
+          "list_sequence"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "epoch": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "list_sequence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          }
+        }
+      },
+      "MessageHistoryItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "receipt",
+          "original_utf8_base64",
+          "text"
+        ],
+        "properties": {
+          "receipt": {
+            "$ref": "#/components/schemas/MessageReceipt"
+          },
+          "original_utf8_base64": {
+            "type": "string",
+            "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+            "description": "RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string."
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "MessageDraftSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversation_id",
+          "generation",
+          "revision",
+          "original_utf8_base64"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "original_utf8_base64": {
+            "type": "string",
+            "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+            "description": "RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string."
+          }
+        }
+      },
+      "ConversationPageResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "conversations",
+          "next_cursor"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "conversations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConversationSummary"
+            }
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "MessageHistoryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "messages",
+          "next_cursor"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageHistoryItem"
+            }
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "MessageDraftReadResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "draft"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "draft": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageDraftSnapshot"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "MessageDraftSaveResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "draft"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/MessageDraftSnapshot"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -346,5 +854,6 @@
       }
     }
   },
-  "x-cj-message-wire": "receive-receipt-0.1.0-rc.1; partial internal composition, not MESSAGE@1.0"
+  "x-cj-message-wire": "receive-receipt-0.1.0-rc.1; partial internal composition, not MESSAGE@1.0",
+  "x-cj-history-draft-wire": "history-draft-0.1.0-rc.1; owner-confirmed narrow wire, context review pending, not MESSAGE@1.0"
 }
