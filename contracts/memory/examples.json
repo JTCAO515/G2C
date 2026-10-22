@@ -1,0 +1,49 @@
+{
+  "version": "MEMORY-internal.1",
+  "positive": {
+    "operation_id": "example-save-1",
+    "item_id": "example-item-1",
+    "subject": "self",
+    "slot": "diet.spicy",
+    "kind": "preference",
+    "text": "No spicy food / 不吃辣",
+    "extent": "long_term",
+    "context_id": null,
+    "source_id": "example-manual-source-1",
+    "source_version": 1,
+    "occurred_at": "date not specified"
+  },
+  "negative_extra_owner": {
+    "operation_id": "example-save-1",
+    "item_id": "example-item-1",
+    "subject": "self",
+    "slot": "diet.spicy",
+    "kind": "preference",
+    "text": "No spicy food / 不吃辣",
+    "extent": "long_term",
+    "context_id": null,
+    "source_id": "example-manual-source-1",
+    "source_version": 1,
+    "occurred_at": "date not specified",
+    "owner": "A"
+  },
+  "negative_current_without_context": {
+    "operation_id": "example-save-1",
+    "item_id": "example-item-1",
+    "subject": "self",
+    "slot": "diet.spicy",
+    "kind": "preference",
+    "text": "No spicy food / 不吃辣",
+    "extent": "current",
+    "context_id": null,
+    "source_id": "example-manual-source-1",
+    "source_version": 1,
+    "occurred_at": "date not specified"
+  },
+  "outcomes": {
+    "unapproved": "Unavailable; no saved receipt",
+    "ambiguous_equivalence": "candidate; absent from effective",
+    "same_id_other_bytes": "Conflict",
+    "commit_ack_lost": "CommitUnknown; query original operation"
+  }
+}

@@ -1,0 +1,15 @@
+# CJ011 local author validation — 2026-10-22
+
+Base 23e12f28435ab0ddc685d544670564e3fa79db41. Only backend/memory and contracts/memory changed. This is author evidence, not independent Testing/Review.
+
+- PASS 10 PostgreSQL tests in `tests/pg_checks.py` initial run (0.131s): persisted receipt/detail, A/B scope isolation, 16 submissions over 8 workers same result, same ID/different bytes conflict, inference/unconfirmed/ambiguous candidates excluded, unauthorized/revoked sources reject, current versus long-term and companion separation, real commit then simulated ACK loss original query, failure before commit conservatively unknown with absent original, source revision/revocation epoch invalidation, bilingual canonical-slot conflict, malformed/expired/stale-source/item collision rejection.
+- PASS 2 added tests in `tests/additional_checks.py` (0.029s): bounded disjoint keyset list and disabled exclusion; expired source invalidates publication guard even without epoch change. The final pg_checks suite includes these as cases 10/11, original case 10 renamed 12. Existing evidence reused; no claim of a later full 12-case run.
+- PASS actual PostgreSQL 17 stop/start, new process/connections: durable and lost-ACK receipts read, exact Chinese UTF-8 preserved, B list empty.
+- Observed DB identity: role cj011_owner / database cj011_test / listen_addresses empty / port 56111. Cluster newly initialized in backend/memory/.local/pg; private Unix socket /tmp/cj011-memory-01a16218 (0700). No TCP listener. Fresh UTF8 database from template0. Test connection clears PG* environment, explicit identity and empty task-local pgpass (0600), no inherited DSN. Initial run used /dev/null as passfile and emitted a non-plain-file warning; changed to empty task file for added/restart checks. No secret read or fallback.
+- PASS private server stopped after restart checks; cluster retained. `.local` and `.venv` excluded from Git. No existing PG instance touched.
+
+Reproduce in a **new authorized empty task cluster**: `uv sync --project backend/memory`; initialize PostgreSQL and create private socket; adapt the explicit task identity in tests to that new cluster; run `.venv/bin/python tests/pg_checks.py --setup` from backend/memory. Setup intentionally CREATEs a new DB without IF NOT EXISTS; do not rerun against retained original DB or drop old data to force green. No startup automation targets arbitrary DSN.
+
+UNRUN: actual AUTH/source approval composition, API wire/generated client/migration registration, App UI, real account/provider/model next-answer use, deployment/RLS/grants, cleanup/backup lifecycle and Issue12 complete acceptance. No push/PR/merge/close performed.
+
+Contract examples: PASS executable positive and two strict negative shapes under locked Python 3.11 environment. First attempted with system python3 (older than package requires >=3.11), import rejected PEP604 annotation; no DB action occurred. Reran with task .venv Python 3.11 successfully. PASS compileall and git diff whitespace check.
