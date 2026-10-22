@@ -1,0 +1,26 @@
+test_fall_and_spring_unique_local_endpoints_have_real_elapsed_gap (test_route_offsets.OffsetAuditTests.test_fall_and_spring_unique_local_endpoints_have_real_elapsed_gap) ... ok
+test_original_source_age_across_fold_uses_elapsed_utc (test_route_offsets.OffsetAuditTests.test_original_source_age_across_fold_uses_elapsed_utc) ... ok
+test_receipt_order_across_fold_uses_elapsed_utc (test_route_offsets.OffsetAuditTests.test_receipt_order_across_fold_uses_elapsed_utc) ... ok
+test_source_start_different_fold_must_not_match_original_request (test_route_offsets.OffsetAuditTests.test_source_start_different_fold_must_not_match_original_request) ... ok
+test_explicit_zero_duration_stays_zero_but_unknown_is_not_zero (test_routes.AdditionalRouteRiskTests.test_explicit_zero_duration_stays_zero_but_unknown_is_not_zero) ... ok
+test_route_entry_cannot_claim_another_query_or_future_guarantee (test_routes.AdditionalRouteRiskTests.test_route_entry_cannot_claim_another_query_or_future_guarantee) ... ok
+test_same_or_absent_item_and_naive_asof_invalid (test_routes.AdditionalRouteRiskTests.test_same_or_absent_item_and_naive_asof_invalid) ... ok
+test_different_subjects_unknown_and_cancelled_not_imposed (test_routes.RouteTests.test_different_subjects_unknown_and_cancelled_not_imposed) ... ok
+test_explicit_buffer_rest_and_fractional_seconds_no_rounding (test_routes.RouteTests.test_explicit_buffer_rest_and_fractional_seconds_no_rounding) ... ok
+test_future_or_past_departure_not_inferred_from_query_time (test_routes.RouteTests.test_future_or_past_departure_not_inferred_from_query_time) ... ok
+test_inputs_unchanged_deterministic_and_bilingual (test_routes.RouteTests.test_inputs_unchanged_deterministic_and_bilingual) ... ok
+test_missing_duration_and_each_observed_state_never_zero (test_routes.RouteTests.test_missing_duration_and_each_observed_state_never_zero) ... ok
+test_no_inferred_buffer_or_rest (test_routes.RouteTests.test_no_inferred_buffer_or_rest) ... ok
+test_no_results_missing_source_no_automatic_route_selection (test_routes.RouteTests.test_no_results_missing_source_no_automatic_route_selection) ... ok
+test_protected_candidate_change_blocks_arithmetic (test_routes.RouteTests.test_protected_candidate_change_blocks_arithmetic) ... ok
+test_quantity_invalid_unit_nan_negative_raw_mismatch_not_usable (test_routes.RouteTests.test_quantity_invalid_unit_nan_negative_raw_mismatch_not_usable) ... ok
+test_sixty_minutes_cannot_fit_fifteen_conditionally_not_reality (test_routes.RouteTests.test_sixty_minutes_cannot_fit_fifteen_conditionally_not_reality) ... ok
+test_source_ref_digest_endpoint_version_and_original_time_bound (test_routes.RouteTests.test_source_ref_digest_endpoint_version_and_original_time_bound) ... ok
+test_stale_and_timestamp_anomalies_unknown (test_routes.RouteTests.test_stale_and_timestamp_anomalies_unknown) ... ok
+test_unverified_fixture_never_promoted_and_fake_trust_rejected (test_routes.RouteTests.test_unverified_fixture_never_promoted_and_fake_trust_rejected) ... ok
+test_wrong_identity_role_coordinates_mode_and_result_query_unknown (test_routes.RouteTests.test_wrong_identity_role_coordinates_mode_and_result_query_unknown) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.030s
+
+OK

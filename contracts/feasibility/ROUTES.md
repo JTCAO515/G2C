@@ -156,3 +156,25 @@ full rest/cost integration, OR-Tools/bounded solving and Issue 18 I gates remain
 UNRUN. No empty solver adapter is added: the fixed evidence cannot support a
 real-world solution or its independent invariants yet. Owner confirms only this
 fixed PLACE consumer interface and its synthetic/conditional behavior.
+
+## Offset audit follow-up: upstream dependency remains HOLD
+
+Main reported the fixed dd4/ec2d PLACE elapsed-time/freshness P2 HOLD. This
+consumer remains pinned to dd4; upstream repair has **not** been consumed or
+accepted. A later fixed upstream repair must receive separate consumer attribution.
+
+Own NEEDS `_instant` maps unique wall date/time/zone values to UTC, and keeps
+ambiguous/nonexistent wall times UNKNOWN. Own route window/age/receipt order
+already normalize to UTC before subtraction/comparison. Calendar date declarations
+remain unmodified: a date label is not an instant or elapsed duration. Across US
+fall/spring DST, unique 00:30→02:30 / 00:30→03:30 windows yield 10800 / 7200 seconds.
+No fold is guessed to make an ambiguous NEEDS event usable.
+
+The audit found and fixed one separate consumer correlation defect: source
+`query_started_at` equality against the original request directly compared aware
+datetimes and could treat different folds of the same ZoneInfo as equal. That
+check now reuses existing `_aware()` and compares **UTC instants**. Before the
+fix, substituted fold start could incorrectly produce QUERY_AGE_CHECKED; aggregate
+still remained UNKNOWN and no real evidence was promoted. Original FAIL logs are
+preserved; new targeted offset tests plus affected route tests pass. This local
+fix does not repair PLACE or release its freshness/chronology dependency HOLD.

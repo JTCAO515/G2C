@@ -158,7 +158,8 @@ def assess_route(before, revisions, candidate: Candidate, window: Window, result
         if (source.provider != 'gaode' or source.api_version != 'v3'
                 or source.endpoint != request.origin + request.path
                 or source.request_ref != request.request_ref or source.binding_digest != request.binding_digest
-                or source.query_started_at != request.started_at or source.provider_updated_at is not None):
+                or _aware(source.query_started_at) != _aware(request.started_at)
+                or source.provider_updated_at is not None):
             add('ROUTE_SOURCE_BINDING_UNKNOWN', 'UNKNOWN', ('original_source_binding',),
                 '来源与原请求绑定不一致，不能采用时长。', 'Source does not match the original request; duration withheld.')
             return finish()
