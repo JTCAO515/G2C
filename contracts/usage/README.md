@@ -83,12 +83,28 @@ is NOT implemented: unknown reservations must carry across period changes, and
 stable IDs/run counts must not be dropped to evade limits. Do not provision a new
 scope on expiry; deny until an accepted rollover protocol exists.
 
-SQL is an unapplied, deny-all-RLS design candidate with no policy or grants. No
-PostgreSQL adapter/codec is supplied. `tests.TransactionFake` is only a local
-rollback/locking substitute, not restart durability or multi-process evidence.
-Future codec must validate all data and reject corruption/unknown schema rather
-than constructing a fresh ledger. Cleanup/retention and canonical storage registry
-need their owners before integration; no deletion/reconciliation deadlines guessed.
+SQL remains a module candidate, not a registered migration. It was applied only
+to fresh task-private PostgreSQL clusters. The candidate itself grants no runtime
+access and keeps deny-all RLS. `PostgresRepository` now implements the protocol
+using an injected new idle non-autocommit DB-API connection; it locks one entire
+scope row at READ COMMITTED, validates codec/version/counters/receipt binding,
+updates atomically, and commits before returning. It never creates a missing row.
+Trusted provisioning must explicitly supply the initial `Ledger(config)` once;
+missing state, corruption and changed config cannot reset budgets. No DSN/default
+connection, role creation, policy or retry is built into the runtime repository.
+
+`CommitUnknown` means original-attempt reconciliation only; even an exception
+before actual commit is conservatively unknown until readback. Cleanup errors use
+fixed diagnostics and cannot replace successful commit or the primary exception.
+Tests inject commit ACK failures over real PostgreSQL connections. This establishes
+local behavior, not network-partition or production failover evidence.
+
+The private harness uses synthetic roles/policies and verifies a non-superuser,
+non-BYPASSRLS runtime plus cross-scope denial. Those policies are test fixtures,
+not canonical product authority. Product RLS, schema rollout, trusted provisioning,
+retention/cleanup and Auth composition remain UNRUN. The test-only transaction
+fake remains separate. Real server stop/start recovery and concurrent connections
+are recorded in `backend/usage/evidence/postgres-tests.txt`.
 
 `LocalExit` is a single injectable **synthetic-only** exit for both foreground and
 background. Default executor is absent and rejects before reservation. It contains
