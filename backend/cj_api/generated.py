@@ -984,3 +984,105 @@ class NeedsRevisionResponse(BaseModel):
     )
     request_id: RequestId
     revision: NeedsRevision | Revision
+
+
+class Kind5(StrEnum):
+    message = 'message'
+    run = 'run'
+
+
+class FeedbackReference(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind5
+    id: constr(min_length=1, max_length=1024) = Field(
+        ...,
+        description='Exact nonblank Unicode ID, maximum1024 UTF8 bytes, no NUL or normalization.',
+    )
+
+
+class FeedbackAction(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(pattern=r'^[A-Za-z0-9_-]{1,128}$')
+    problem: constr(min_length=1, max_length=6000)
+    expectation: constr(max_length=6000)
+    references: list[FeedbackReference] = Field(
+        ...,
+        description='Empty for general; otherwise exactly one message plus optional one run, kinds unique. No run-only/Trip/Memory/proposal/owner/source diagnostics.',
+        max_length=2,
+    )
+
+
+class RunStatusAtRead(StrEnum):
+    queued = 'queued'
+    running = 'running'
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+    context_invalid = 'context_invalid'
+    unknown = 'unknown'
+
+
+class FeedbackSourceObservation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    message_id: constr(min_length=1)
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_sequence: conint(ge=1, le=9223372036854775807)
+    run_id: constr(min_length=1)
+    message_input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+    run_status_at_read: RunStatusAtRead
+    event_highwater_at_read: conint(ge=0, le=9223372036854775807)
+
+
+class Status5(StrEnum):
+    submitted = 'submitted'
+
+
+class MessageEn(StrEnum):
+    Feedback_submitted_ = 'Feedback submitted.'
+
+
+class MessageZh(StrEnum):
+    反馈已提交_ = '反馈已提交。'
+
+
+class Source(Enum):
+    NoneType_None = None
+
+
+class FeedbackReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(pattern=r'^[A-Za-z0-9_-]{1,128}$')
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+    submitted_at: AwareDatetime = Field(
+        ...,
+        description='Actual stored database UTC submission time; historical replay/query value.',
+    )
+    status: Status5
+    message_en: MessageEn
+    message_zh: MessageZh
+    source: FeedbackSourceObservation | Source
+
+
+class FeedbackSubmitResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: FeedbackReceipt
+
+
+class FeedbackQueryResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: FeedbackReceipt | Receipt

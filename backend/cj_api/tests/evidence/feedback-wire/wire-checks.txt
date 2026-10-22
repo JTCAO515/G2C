@@ -1,0 +1,13 @@
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+test_actual_auth_missing_unknown_denied_and_missing_configuration (feedback_wire_checks.FeedbackWireChecks.test_actual_auth_missing_unknown_denied_and_missing_configuration) ... ok
+test_conflict_source_unknown_and_postcommit_withheld (feedback_wire_checks.FeedbackWireChecks.test_conflict_source_unknown_and_postcommit_withheld) ... ok
+test_input_bytes_authority_unsupported_references_and_limits (feedback_wire_checks.FeedbackWireChecks.test_input_bytes_authority_unsupported_references_and_limits) ... ok
+test_minimal_historical_source_whitelist_only (feedback_wire_checks.FeedbackWireChecks.test_minimal_historical_source_whitelist_only) ... ok
+test_original_receipt_hash_time_source_null_and_no_text_echo (feedback_wire_checks.FeedbackWireChecks.test_original_receipt_hash_time_source_null_and_no_text_echo) ... ok
+test_sources_missing_or_single_shared_checker_no_fallback (feedback_wire_checks.FeedbackWireChecks.test_sources_missing_or_single_shared_checker_no_fallback) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.213s
+
+OK
