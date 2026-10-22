@@ -1,0 +1,96 @@
+{
+  "plan_version": 1,
+  "plan_revision": "CJ-EMPTY-INIT-PLAN@0.1.0-rc.1",
+  "accepted_tree": "3c52f72daf1d8e2304c0c569b47e68d92a4b323e",
+  "source_repository": "JTCAO515/G2C (existing Git identity; not a new resource)",
+  "artifacts": [
+    {
+      "id": "foundation",
+      "kind": "registered_foundation_v1",
+      "artifact_revision": "db9c040f262032acaf5375db43d7169b3217e504",
+      "path": "backend/migrations/0001_foundation.sql",
+      "sha256": "d4a30e7d14dac428a9c09c3a16c9543427330085f5d066d278d9e7a0bdda58d7",
+      "tables": [
+        "cj.schema_migrations"
+      ],
+      "sql_requires_artifact": [],
+      "intra_file_references": [],
+      "namespace": "cj (registered foundation only)",
+      "migration_registered": true,
+      "execution_boundary": "new empty explicit task-private PostgreSQL only; not an upgrade"
+    },
+    {
+      "id": "message",
+      "kind": "domain_candidate_only",
+      "artifact_revision": "b722281001f57cc7bc1c7df8dd38f2543e7dc250",
+      "path": "backend/message/sql/candidate.sql",
+      "sha256": "4060541a06fdd1233b787b212917ecd69728aa272f2e9ce46b34d48d44b1107b",
+      "tables": [
+        "cj_message_scope",
+        "cj_message_chat",
+        "cj_message_receipt",
+        "cj_message_delivery",
+        "cj_message_draft"
+      ],
+      "sql_requires_artifact": [],
+      "intra_file_references": [
+        "cj_message_scope",
+        "cj_message_chat",
+        "cj_message_receipt",
+        "cj_message_chat"
+      ],
+      "namespace": "unqualified; no product search_path approved",
+      "migration_registered": false,
+      "execution_boundary": "new empty explicit task-private PostgreSQL only; not an upgrade"
+    },
+    {
+      "id": "run",
+      "kind": "domain_candidate_only",
+      "artifact_revision": "25e8e1b6c7384164d706e8108512bd74d11e4fd6",
+      "path": "backend/run/sql/candidate.sql",
+      "sha256": "f0ae02165372c0381e9932f226ed515266c81886650cbd206020900f45da03e7",
+      "tables": [
+        "cj_run_scope",
+        "cj_run_record",
+        "cj_run_event"
+      ],
+      "sql_requires_artifact": [],
+      "intra_file_references": [
+        "cj_run_scope",
+        "cj_run_record"
+      ],
+      "namespace": "unqualified; no product search_path approved",
+      "migration_registered": false,
+      "execution_boundary": "new empty explicit task-private PostgreSQL only; not an upgrade"
+    },
+    {
+      "id": "usage",
+      "kind": "domain_candidate_only",
+      "artifact_revision": "5c248ad22f449aef8e42d7f4256bfc19e6c346a2",
+      "path": "backend/usage/sql/001_candidate.sql",
+      "sha256": "d5950f6fb28fa7f60e4a2955818124b671b55be08016fd85e619e2e54cd726a6",
+      "tables": [
+        "cj_usage_ledger_candidate"
+      ],
+      "sql_requires_artifact": [],
+      "intra_file_references": [],
+      "namespace": "unqualified; no product search_path approved",
+      "migration_registered": false,
+      "execution_boundary": "new empty explicit task-private PostgreSQL only; not an upgrade"
+    }
+  ],
+  "display_order_is_apply_order": false,
+  "apply_order": null,
+  "apply_enabled": false,
+  "apply_blockers": [
+    "Domain candidates are not registered migrations; no accepted composite migration/rollback protocol",
+    "Unqualified candidate SQL namespace/search_path and trusted scope provisioning not approved",
+    "Product runtime roles/RLS/grants remain unresolved; retain USAGE FORCE RLS and no-policy denial, never bypass",
+    "RUN to MESSAGE/USAGE runtime byte association and concurrency fences are not cross-domain SQL dependencies or apply approval"
+  ],
+  "runtime_dependency_notes": {
+    "message": "trusted AUTH principal -> approved stable storage scope; no caller owner",
+    "run": "original MESSAGE receipt + exact persisted USAGE command/input; dispatch disabled; not a SQL FK or certified initialization order",
+    "usage": "canonical budget scope and mandatory configuration/receipt units; missing scope must not reset/create runtime state"
+  }
+}

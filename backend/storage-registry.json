@@ -1,25 +1,91 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "stores": [
     {
       "id": "business",
       "owner": "CJ-005 / domain owners",
       "status": "not_provisioned",
       "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
-      "sensitive_fields": "Domain owner must enumerate before activation",
+      "sensitive_fields": "Enumerated per object below; new objects require domain-owner registration before activation",
       "retention": "UNDECIDED; activation blocked",
       "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
-      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
+      "objects": [
+        {
+          "id": "message",
+          "owner": "CJ-009",
+          "objects": [
+            "cj_message_scope",
+            "cj_message_chat",
+            "cj_message_receipt",
+            "cj_message_delivery",
+            "cj_message_draft"
+          ],
+          "source": "backend/message/sql/candidate.sql@b722281001f57cc7bc1c7df8dd38f2543e7dc250",
+          "status": "candidate_or_local_only; production_not_provisioned",
+          "principal_binding": "Server-authenticated principal -> approved canonical storage scope; provisioning unresolved",
+          "sensitive_fields": [
+            "raw_input bytes",
+            "draft original_utf8",
+            "conversation/message/run IDs and receipts",
+            "delivery state/history metadata"
+          ],
+          "retention": "UNDECIDED; activation blocked",
+          "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/TTL API; future cleanup must serialize the scope lock",
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+        },
+        {
+          "id": "usage",
+          "owner": "CJ-008",
+          "objects": [
+            "cj_usage_ledger_candidate"
+          ],
+          "source": "backend/usage/sql/001_candidate.sql@5c248ad22f449aef8e42d7f4256bfc19e6c346a2",
+          "status": "candidate_or_local_only; production_not_provisioned",
+          "principal_binding": "Server-authenticated principal -> approved canonical storage scope; provisioning unresolved",
+          "sensitive_fields": [
+            "budget scope/configuration",
+            "attempt and reservation identifiers",
+            "charges and usage ledger JSON"
+          ],
+          "retention": "UNDECIDED; activation blocked",
+          "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; USAGE cancel releases reservations only",
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+        }
+      ]
     },
     {
       "id": "checkpoints",
       "owner": "CJ-002 / CJ-010",
       "status": "not_provisioned",
       "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
-      "sensitive_fields": "Domain owner must enumerate before activation",
+      "sensitive_fields": "Enumerated per object below; new objects require domain-owner registration before activation",
       "retention": "UNDECIDED; activation blocked",
       "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
-      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
+      "objects": [
+        {
+          "id": "run",
+          "owner": "CJ-010",
+          "objects": [
+            "cj_run_scope",
+            "cj_run_record",
+            "cj_run_event"
+          ],
+          "source": "backend/run/sql/candidate.sql@25e8e1b6c7384164d706e8108512bd74d11e4fd6",
+          "status": "candidate_or_local_only; production_not_provisioned",
+          "principal_binding": "Server-authenticated scope; RUN/MESSAGE/USAGE association and dispatch fences unresolved",
+          "sensitive_fields": [
+            "private event text/effect values",
+            "message/run association",
+            "exact usage command/input bytes",
+            "status and expiry"
+          ],
+          "retention": "UNDECIDED; activation blocked",
+          "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; expiry is not deletion",
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+        }
+      ]
     },
     {
       "id": "memory-derived",
@@ -33,13 +99,65 @@
     },
     {
       "id": "device-cache",
-      "owner": "CJ-022",
+      "owner": "CJ-007 / CJ-009 / CJ-022",
       "status": "not_provisioned",
       "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
-      "sensitive_fields": "Domain owner must enumerate before activation",
+      "sensitive_fields": "Enumerated per object below; new objects require domain-owner registration before activation",
       "retention": "UNDECIDED; activation blocked",
-      "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
-      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+      "cleanup_hook": "See objects: accepted session blocking and exact key removal exist; encrypted-file deletion remains UNIMPLEMENTED",
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
+      "objects": [
+        {
+          "id": "encrypted-message-file",
+          "owner": "CJ-009",
+          "objects": [
+            "AES-GCM .sealed snapshot"
+          ],
+          "source": "ios/Modules/CJMessageClient/Sources/CJMessageClient/EncryptedFileStorage.swift",
+          "status": "candidate_or_local_only; production_not_provisioned",
+          "principal_binding": "Environment/account-scoped authenticated key header; external scoped key provider",
+          "sensitive_fields": [
+            "action originalUTF8/receipt",
+            "draft bytes",
+            "pending edits/save revisions"
+          ],
+          "retention": "UNDECIDED; activation blocked",
+          "cleanup_hook": "UNIMPLEMENTED physical-file deletion; invalidate() clears memory/leases only; load/save are not erase",
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+        },
+        {
+          "id": "sdk-session-keychain",
+          "owner": "CJ-007 / CJ-005",
+          "objects": [
+            "device-only nonsynchronizable session item"
+          ],
+          "source": "ios/Modules/CJAuth/Sources/CJSession/KeychainSessionStore.swift",
+          "status": "candidate_or_local_only; production_not_provisioned",
+          "principal_binding": "Explicit service/slot/applicationIdentifier/accessGroup namespace",
+          "sensitive_fields": [
+            "SDK session bytes"
+          ],
+          "retention": "UNDECIDED; activation blocked",
+          "cleanup_hook": "clearAndBlock() replaces secret with durable nonsecret blocked marker; no broad physical deletion or server revocation",
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+        },
+        {
+          "id": "message-key-keychain",
+          "owner": "CJ-007 / CJ-009",
+          "objects": [
+            "device-only scoped 256-bit key and UUID"
+          ],
+          "source": "ios/Modules/CJAuth/Sources/CJMessageKeys/ScopedMessageKeyProvider.swift; KeychainMessageKeys.swift",
+          "status": "candidate_or_local_only; production_not_provisioned",
+          "principal_binding": "Explicit namespace/accessGroup + exact expected key UUID; no cross-account/broad deletion",
+          "sensitive_fields": [
+            "message encryption key bytes and identifier"
+          ],
+          "retention": "UNDECIDED; activation blocked",
+          "cleanup_hook": "clear(expectedID:storageState:for:) -> remove(expectedID:) exact SecItemDelete after reconciliation permit; invalidate() does not delete; not automatic with encrypted data present",
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+        }
+      ]
     },
     {
       "id": "external-processing",
@@ -51,5 +169,7 @@
       "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
       "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
     }
-  ]
+  ],
+  "evidence_tree": "3c52f72daf1d8e2304c0c569b47e68d92a4b323e",
+  "production_activation": "BLOCKED; source/local acceptance does not provision production"
 }
