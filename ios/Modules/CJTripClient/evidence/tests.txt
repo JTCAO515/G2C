@@ -1,0 +1,81 @@
+Command: swift test --disable-sandbox --package-path ios/Modules/CJTripClient --scratch-path /tmp/cj015-trip-client-build
+Building for debugging...
+[Computing dependencies]
+Build complete! (0.37秒)
+Test Suite 'All tests' started at 2026-10-22 16:56:52.492.
+Test Suite 'All tests' passed at 2026-10-22 16:56:52.492.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite TripClientTests started.
+◇ Suite BoundaryTests started.
+◇ Suite LifetimeTests started.
+◇ Test nonemptyPageNeedsExactLastID(_:) started.
+◇ Test keysetUsesCOrderAndEmptyPageEndsTraversal() started.
+◇ Test publicReadAndCallerViewedCannotEnablePost() started.
+◇ Test nonNullOneOfFallbackNeverMeansAbsent(_:) started.
+◇ Test receiptIsHistoricalAndFormalEntrancesReadCurrentVersion() started.
+◇ Test rejectRequiresNullAndMismatchedReceiptCannotSettle() started.
+◇ Test sameAccountSelectionLateAResponseCannotReplaceB() started.
+◇ Test duplicateJSONAndTraceMismatchRejectedBeforeDecode() started.
+◇ Test keyLossWrongKeyAndWrongNamespaceNeverRecoverPlaintext() started.
+◇ Test lostReceiptReopenNullOnlyQueriesOriginalAndNeverResends() started.
+◇ Test directoryReplacementWhileAwaitingCredentialPreventsDispatch() started.
+◇ Test selectPendingCallbackCannotSelectNewBUsingOldClick() started.
+◇ Test canceledOriginalRemainsPendingAndCannotBeResent() started.
+◇ Test officialRawBytesFreezeBeforeAwaitAndSurviveReopen() started.
+◇ Test lateReadFailureCannotMarkBFailed() started.
+◇ Test credentialsSwitchNeverDispatchesAndKeepsOriginalPending() started.
+◇ Test oldQuerySuccessCannotOverwriteNewIdentityUIOrClearPending() started.
+◇ Test storageKeyCallbackSwitchCannotAppendDispatchOrBlockB() started.
+◇ Test originalCJSessionOperationInvalidationFencesAwaitEvenIfBindingUnchanged() started.
+◇ Test case passing 1 argument cursor → "null" to nonemptyPageNeedsExactLastID(_:) started.
+◇ Test symlinkHardlinkAndTruncatedCiphertextFailClosed() started.
+◇ Test canceledReconciliationReturnsToUnknownAndCanQueryAgain() started.
+◇ Test case passing 1 argument invalid → "false" to nonNullOneOfFallbackNeverMeansAbsent(_:) started.
+◇ Test proposalProjectionMismatchAndDuplicateItemFail() started.
+◇ Test case passing 1 argument invalid → ""bad"" to nonNullOneOfFallbackNeverMeansAbsent(_:) started.
+◇ Test case passing 1 argument invalid → "{}" to nonNullOneOfFallbackNeverMeansAbsent(_:) started.
+◇ Test case passing 1 argument cursor → "{}" to nonemptyPageNeedsExactLastID(_:) started.
+◇ Test illegalRejectVersionFallbackAndWrongAcceptVersionFail() started.
+◇ Test latePageCannotAppendAfterRefresh() started.
+◇ Test case passing 1 argument invalid → "7" to nonNullOneOfFallbackNeverMeansAbsent(_:) started.
+◇ Test case passing 1 argument cursor → ""other"" to nonemptyPageNeedsExactLastID(_:) started.
+◇ Test terminalProposalReadableWithoutGrantingWrite(_:) started.
+◇ Test expiredOrTerminalTestCandidateCannotDispatch() started.
+◇ Test case passing 1 argument status → .accepted to terminalProposalReadableWithoutGrantingWrite(_:) started.
+◇ Test case passing 1 argument status → .pending to terminalProposalReadableWithoutGrantingWrite(_:) started.
+◇ Test case passing 1 argument status → .rejected to terminalProposalReadableWithoutGrantingWrite(_:) started.
+◇ Test case passing 1 argument status → .expired to terminalProposalReadableWithoutGrantingWrite(_:) started.
+◇ Test case passing 1 argument status → .superseded to terminalProposalReadableWithoutGrantingWrite(_:) started.
+✔ Test selectPendingCallbackCannotSelectNewBUsingOldClick() passed after 0.033 seconds.
+✔ Test keyLossWrongKeyAndWrongNamespaceNeverRecoverPlaintext() passed after 0.033 seconds.
+✔ Test credentialsSwitchNeverDispatchesAndKeepsOriginalPending() passed after 0.034 seconds.
+✔ Test symlinkHardlinkAndTruncatedCiphertextFailClosed() passed after 0.034 seconds.
+✔ Test illegalRejectVersionFallbackAndWrongAcceptVersionFail() passed after 0.034 seconds.
+✔ Test originalCJSessionOperationInvalidationFencesAwaitEvenIfBindingUnchanged() passed after 0.034 seconds.
+✔ Test storageKeyCallbackSwitchCannotAppendDispatchOrBlockB() passed after 0.035 seconds.
+✔ Test expiredOrTerminalTestCandidateCannotDispatch() passed after 0.037 seconds.
+✔ Test directoryReplacementWhileAwaitingCredentialPreventsDispatch() passed after 0.039 seconds.
+✔ Test terminalProposalReadableWithoutGrantingWrite(_:) with 5 test cases passed after 0.042 seconds.
+✔ Test nonemptyPageNeedsExactLastID(_:) with 3 test cases passed after 0.044 seconds.
+✔ Test proposalProjectionMismatchAndDuplicateItemFail() passed after 0.044 seconds.
+✔ Test publicReadAndCallerViewedCannotEnablePost() passed after 0.049 seconds.
+✔ Test officialRawBytesFreezeBeforeAwaitAndSurviveReopen() passed after 0.049 seconds.
+✔ Test canceledOriginalRemainsPendingAndCannotBeResent() passed after 0.051 seconds.
+✔ Test keysetUsesCOrderAndEmptyPageEndsTraversal() passed after 0.051 seconds.
+✔ Test lateReadFailureCannotMarkBFailed() passed after 0.052 seconds.
+✔ Test duplicateJSONAndTraceMismatchRejectedBeforeDecode() passed after 0.052 seconds.
+✔ Test lostReceiptReopenNullOnlyQueriesOriginalAndNeverResends() passed after 0.053 seconds.
+✔ Test nonNullOneOfFallbackNeverMeansAbsent(_:) with 4 test cases passed after 0.053 seconds.
+✔ Test oldQuerySuccessCannotOverwriteNewIdentityUIOrClearPending() passed after 0.054 seconds.
+✔ Test sameAccountSelectionLateAResponseCannotReplaceB() passed after 0.055 seconds.
+✔ Test receiptIsHistoricalAndFormalEntrancesReadCurrentVersion() passed after 0.055 seconds.
+✔ Test canceledReconciliationReturnsToUnknownAndCanQueryAgain() passed after 0.055 seconds.
+✔ Suite LifetimeTests passed after 0.056 seconds.
+✔ Test rejectRequiresNullAndMismatchedReceiptCannotSettle() passed after 0.056 seconds.
+✔ Suite TripClientTests passed after 0.056 seconds.
+✔ Test latePageCannotAppendAfterRefresh() passed after 0.055 seconds.
+✔ Suite BoundaryTests passed after 0.056 seconds.
+✔ Test run with 26 tests in 3 suites passed after 0.056 seconds.

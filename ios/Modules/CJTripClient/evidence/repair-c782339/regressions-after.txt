@@ -1,0 +1,21 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 11] CJTripClient
+[8 / 17] CJTripClient
+[13 / 19] CJTripClient
+[16 / 19] CJTripClientTests-product
+[22 / 25] CJTripClientTests-product
+[27 / 29] CJTripClientTests-product
+Build complete! (2.31秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ReviewBoundaryTests started.
+◇ Test queuedOriginalClickMustNotRetargetNewSelection() started.
+◇ Test keyCallbackNewSelectionMustWin() started.
+◇ Test finalBindingCallbackDirectoryReplacementMustPreventDispatch() started.
+✔ Test keyCallbackNewSelectionMustWin() passed after 0.012 seconds.
+✔ Test queuedOriginalClickMustNotRetargetNewSelection() passed after 0.012 seconds.
+✔ Test finalBindingCallbackDirectoryReplacementMustPreventDispatch() passed after 0.013 seconds.
+✔ Suite ReviewBoundaryTests passed after 0.013 seconds.
+✔ Test run with 3 tests in 1 suite passed after 0.013 seconds.

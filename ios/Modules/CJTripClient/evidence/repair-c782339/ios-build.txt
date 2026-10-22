@@ -1,0 +1,26 @@
+Command: xcodebuild -scheme CJTripClient -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/cj015-trip-client-ios CODE_SIGNING_ALLOWED=NO build
+Working directory: ios/Modules/CJTripClient
+Xcode 27.1 / Swift 6.4. Selected compiler/status lines; no launch/signing.
+SwiftCompile normal arm64 (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 Compiling\ TripPendingStore.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripPendingStore.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripPendingStore.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 Compiling\ TripPresentation.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripPresentation.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripPresentation.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 Compiling\ TripRecovery.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripRecovery.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripRecovery.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 Compiling\ TripViews.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripViews.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripViews.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 Compiling\ TripPresentation.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripPresentation.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripPresentation.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 Compiling\ TripClient.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripClient.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripClient.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 Compiling\ TripRecovery.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripRecovery.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripRecovery.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 Compiling\ TripPendingStore.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripPendingStore.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripPendingStore.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 Compiling\ TripClient.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripClient.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripClient.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 Compiling\ TripViews.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripViews.swift (in target 'CJTripClient' from project 'CJTripClient')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/Sources/CJTripClient/TripViews.swift (in target 'CJTripClient' from project 'CJTripClient')
+** BUILD SUCCEEDED **

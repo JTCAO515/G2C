@@ -1,0 +1,20 @@
+{
+  "Package.swift": "d68e90163a207bd1b799a790529edead636eeaad93ed35985a09b481b7ac0f36",
+  "Package.resolved": "ac553d48a91768d3a170f87909966b3455a69a2cb2028ecb6da05b210fa63952",
+  "Sources/CJTripClient/StrictTripJSON.swift": "0c941d8a66cf2313624ba370f1fe7bb5867d36528508bc08d2d02c2cc22958d1",
+  "Sources/CJTripClient/TripAction.swift": "d4fe95d194aea856348def8f7535d5d2570ebdb37f4a80dafafc4d41b03bcb81",
+  "Sources/CJTripClient/TripClient.swift": "5d6e89fea4dd705c41527ca567df30bfef0571492276f4527e56be05d55f41df",
+  "Sources/CJTripClient/TripPendingStore.swift": "45783ec28611bd6bc2f97aced3d5c28a50cad0d98027cd0563f46efc54763149",
+  "Sources/CJTripClient/TripPresentation.swift": "16c6c9ecc66fd5fd2b23abc909123e2778f73b7d5c68c77d87e8e978adc04884",
+  "Sources/CJTripClient/TripRecovery.swift": "83591c5d7be013c764eac210cd836366eac50a822f80cc91281725e96e8b4a1f",
+  "Sources/CJTripClient/TripTransport.swift": "4ed809cd9981f7de85439af09ac7fc7a7860f271ccd4b187637f87120a93a6e8",
+  "Sources/CJTripClient/TripTypes.swift": "807d93bfe5a96c2c822cd3828bcdb22b117674aa9751921c2c470021734e3b78",
+  "Sources/CJTripClient/TripValidation.swift": "785db325f2f21098f65de189bf8ddb9d53a19afb68f4c84590fec306e04eb2dd",
+  "Sources/CJTripClient/TripViews.swift": "827d1a869243fe98f3ede3dccfab06e9ce701c7421348e01f99ac63bf91cf904",
+  "Tests/CJTripClientTests/BoundaryTests.swift": "8c4a354401983415f6c533cd94befd0fcfeedb628d52d91e806aea71fa0a99b8",
+  "Tests/CJTripClientTests/Fixtures/action.json": "f2ad71c0af123ed11d2b0165cea108a06dbddcebe7a5d4390c7e59ceb2a96c20",
+  "Tests/CJTripClientTests/LifetimeTests.swift": "1c46fca35bdf82e35db296fccbeb88466365d262fc1692064798610ba67265f0",
+  "Tests/CJTripClientTests/ReviewBoundaryTests.swift": "6947207a3d2ab08e44c27332f69a8889f0586abe330526ddc2d39e736d3efb61",
+  "Tests/CJTripClientTests/Support.swift": "e3af76a4059cd2c7b8b4aed9035d5593ea06ecef75c3c31b0b326446fce38c29",
+  "Tests/CJTripClientTests/TripClientTests.swift": "16b625d52affa565f21927f92931ae6c73af097c7a0c8fbb0a81f7fc225083fa"
+}
