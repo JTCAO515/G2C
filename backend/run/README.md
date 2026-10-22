@@ -28,3 +28,7 @@ replacement attempt. No real dispatcher is enabled.
 [Internal diagnostic whitelist](../../contracts/run/DIAGNOSTIC-READ.md) exposes
 only original Binding, read-time status and event highwater. It requires the
 MESSAGE-owned protected server composition; it is not an authenticated API.
+
+[Protected display snapshot](../../contracts/run/DISPLAY-SNAPSHOT.md) reads by
+original message ID inside the actual MESSAGE context and returns bounded
+allowlisted JSON bytes. It does not activate an HTTP route or dispatcher.
