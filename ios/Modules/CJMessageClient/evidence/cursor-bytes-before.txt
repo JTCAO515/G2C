@@ -1,0 +1,18 @@
+Building for debugging...
+[Computing dependencies]
+[2 / 7] CJMessageHTTPTests-product
+[4 / 9] CJMessageHTTPTests-product
+[8 / 11] CJMessageHTTPTests-product
+[10 / 14] CJMessageHTTPTests-product
+Build complete! (1.18秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite HistoryReadTests started.
+◇ Test canonicallyEquivalentCursorStringsRemainDistinctBytes() started.
+✘ Test canonicallyEquivalentCursorStringsRemainDistinctBytes() recorded an issue at HistoryReadTests.swift:119:6: Caught error: .resyncRequired
+✘ Test canonicallyEquivalentCursorStringsRemainDistinctBytes() failed after 0.003 seconds with 1 issue.
+✘ Suite HistoryReadTests failed after 0.003 seconds with 1 issue.
+✘ Test run with 1 test in 1 suite failed after 0.003 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - CJMessageHTTPTests (Swift Testing)

@@ -116,6 +116,20 @@ private actor ReadInterceptor: ClientTransport {
         await #expect(throws:MessageReadFailure.self) { try await c.conversations(limit:1,limits:tiny,lease:l) }
     }
 
+    @Test func canonicallyEquivalentCursorStringsRemainDistinctBytes() async throws {
+        let firstToken="é", secondToken="e\u{301}"
+        #expect(Data(firstToken.utf8) != Data(secondToken.utf8))
+        let t=ReadInterceptor([try encoded(["conversations":[chat("a",1)],"next_cursor":firstToken]),
+            try encoded(["conversations":[chat("b",2)],"next_cursor":secondToken]),
+            try encoded(["conversations":[chat("c",3)],"next_cursor":NSNull()])],trace:trace)
+        let (_,lease,client)=try setup(t)
+        let first=try await client.conversations(limit:1,limits:limits,lease:lease)
+        let second=try await client.conversations(limit:1,after:first.next,limits:limits,lease:lease)
+        let last=try await client.conversations(limit:1,after:second.next,limits:limits,lease:lease)
+        #expect(last.value[0].conversation_id=="c" && last.next==nil)
+        #expect(await t.calls==[.get,.get,.get])
+    }
+
     @Test func repeatedOpaqueCursorRequiresResync() async throws {
         let t=ReadInterceptor([try encoded(["conversations":[chat("a",1)],"next_cursor":"same"]),try encoded(["conversations":[chat("b",2)],"next_cursor":"same"])],trace:trace)
         let (_,lease,client)=try setup(t)

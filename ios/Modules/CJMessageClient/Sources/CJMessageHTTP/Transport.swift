@@ -216,7 +216,7 @@ public struct MessageReadCursor: Sendable {
     fileprivate let opaque: String
     fileprivate let last: Int64
     fileprivate let generation: String?
-    fileprivate let seenCursors: Set<String>
+    fileprivate let seenCursors: Set<Data>
     fileprivate let seenIDs: Set<Data>
 }
 /// Wrapper around official generated values, not a second wire schema.
@@ -250,7 +250,7 @@ extension MessageHTTPClient {
         guard let text else { return nil }
         var seen = previous?.seenCursors ?? []
         guard !text.isEmpty, text.utf8.count <= limits.maximumCursorBytes,
-              seen.count + 1 < limits.maximumPages, seen.insert(text).inserted else { throw MessageReadFailure.resyncRequired }
+              seen.count + 1 < limits.maximumPages, seen.insert(Data(text.utf8)).inserted else { throw MessageReadFailure.resyncRequired }
         return MessageReadCursor(owner: readOwner, lease: lease, purpose: purpose, opaque: text,
                                  last: last, generation: generation, seenCursors: seen, seenIDs: ids)
     }
