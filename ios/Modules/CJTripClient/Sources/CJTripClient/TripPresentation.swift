@@ -20,6 +20,7 @@ public struct TripPresentationWork: Sendable {
     fileprivate let lifetime: UUID
     fileprivate let binding: TripBinding
     fileprivate let request: UUID
+    fileprivate let detailSource: UUID?
     fileprivate let kind: Kind
 }
 
@@ -67,7 +68,9 @@ public struct TripPresentationWork: Sendable {
     }
     private func work(_ kind: TripPresentationWork.Kind, request: UUID) -> TripPresentationWork? {
         guard let binding, client != nil else { return nil }
-        return .init(owner: owner, lifetime: lifetime, binding: binding, request: request, kind: kind)
+        let source: UUID?
+        if case .detail = kind { source = client?.detailSnapshotSource } else { source = nil }
+        return .init(owner: owner, lifetime: lifetime, binding: binding, request: request, detailSource: source, kind: kind)
     }
     /// Capture at the lifecycle event/button click, not inside its asynchronous Task.
     public func prepareProposal(id: String) -> TripPresentationWork? {
@@ -78,6 +81,15 @@ public struct TripPresentationWork: Sendable {
         return work
     }
     public func prepareTrip(id: String) -> TripPresentationWork? {
+        if let client {
+            guard let binding else { detailState = .unavailable; return nil }
+            let originalLifetime = lifetime; let originalRequest = detailRequest
+            do { try client.retireDetailSnapshots(ifCurrent: binding) }
+            catch {
+                guard lifetime == originalLifetime, detailRequest == originalRequest else { return nil }
+                detailState = .unavailable; return nil
+            }
+        }
         detailRequest = UUID(); selectedTripID = id; trip = nil
         let work = work(.detail(id), request: detailRequest)
         detailState = work == nil ? .unavailable : .loading
@@ -104,7 +116,9 @@ public struct TripPresentationWork: Sendable {
         switch work.kind {
         case .proposal(let id): return proposalRequest == work.request && selectedProposalID.map { same($0, id) } == true
         case .reconcile(let id): return proposalRequest == work.request && selectedActionID.map { same($0, id) } == true
-        case .detail(let id): return detailRequest == work.request && selectedTripID.map { same($0, id) } == true
+        case .detail(let id):
+            return detailRequest == work.request && selectedTripID.map { same($0, id) } == true
+                && work.detailSource == client?.detailSnapshotSource
         case .list: return listRequest == work.request
         }
     }
@@ -131,7 +145,8 @@ public struct TripPresentationWork: Sendable {
                 let value = try await client.proposal(id: id, binding: work.binding)
                 guard isCurrent(work) else { return }; proposal = value; proposalState = .loaded
             case .detail(let id):
-                let value = try await client.detail(id: id, binding: work.binding)
+                guard let source = work.detailSource else { return }
+                let value = try await client.selectedDetail(id: id, binding: work.binding, source: source)
                 guard isCurrent(work) else { return }; trip = value; detailState = value == nil ? .missing : .loaded
             case .list(let limit, let cursor):
                 let page = try await client.list(limit: limit, after: cursor, binding: work.binding)

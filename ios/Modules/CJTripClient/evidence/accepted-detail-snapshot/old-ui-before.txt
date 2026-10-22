@@ -1,0 +1,20 @@
+warning: '--skip-update' option is deprecated and will be removed in a future release
+Building for debugging...
+[Computing dependencies]
+[1 / 1]
+[2 / 7] CJTripClientTests-product
+[4 / 9] CJTripClientTests-product
+[8 / 11] CJTripClientTests-product
+[10 / 14] CJTripClientTests-product
+Build complete! (2.03秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite AcceptedDetailSnapshotTests started.
+◇ Test olderPreparedUIWorkCannotRetireNewSnapshotSource() started.
+✘ Test olderPreparedUIWorkCannotRetireNewSnapshotSource() recorded an issue at AcceptedDetailSnapshotTests.swift:335:6: Caught error: .staleBinding
+✘ Test olderPreparedUIWorkCannotRetireNewSnapshotSource() failed after 0.008 seconds with 1 issue.
+✘ Suite AcceptedDetailSnapshotTests failed after 0.008 seconds with 1 issue.
+✘ Test run with 1 test in 1 suite failed after 0.008 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - CJTripClientTests (Swift Testing)

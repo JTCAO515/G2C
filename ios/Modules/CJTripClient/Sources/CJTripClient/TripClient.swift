@@ -17,6 +17,8 @@ import OpenAPIRuntime
     var confirmed = Set<Data>()
     let owner = UUID()
     var generation = UUID()
+    var detailSnapshotSource = UUID()
+    var startedDetailSnapshotSource: UUID?
 
     public init(endpoint: TripEndpoint, credentials: @escaping TripCredentialCallback,
                 currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
@@ -33,7 +35,7 @@ import OpenAPIRuntime
         transport = interceptedTransport; testWrites = true; store = pendingStore
         self.session = session; self.sessionOperation = sessionOperation
     }
-    public func invalidate() { generation = UUID(); confirmed.removeAll() }
+    public func invalidate() { generation = UUID(); confirmed.removeAll(); invalidateDetailSnapshots() }
     public var acceptsUserActions: Bool { false }
     private var sessionIsCurrent: Bool {
         if let session, let sessionOperation { return session.isCurrent(sessionOperation) }
@@ -55,7 +57,8 @@ import OpenAPIRuntime
         let token = generation; try check(binding, token); return token
     }
     func api(_ binding: TripBinding, _ token: UUID,
-             original: TripPending? = nil) async throws -> Client {
+             original: TripPending? = nil, detailCapture: TripDetailResponseCapture? = nil,
+             detailSource: UUID? = nil) async throws -> Client {
         try check(binding, token)
         let bearer: String?
         do { bearer = try await credentials(binding) }
@@ -63,9 +66,10 @@ import OpenAPIRuntime
         try check(binding, token)
         guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw TripFailure.unconfigured }
         return Client(serverURL: endpoint.url, configuration: .memory,
-                      transport: TripTransport(underlying: transport, endpoint: endpoint, bearer: bearer, testWrites: testWrites,
+                      transport: TripTransport(underlying: transport, endpoint: endpoint, bearer: bearer, testWrites: testWrites, detailCapture: detailCapture,
                         validate: { [self] in
                             try check(binding, token)
+                            if let detailSource, detailSnapshotSource != detailSource { throw TripFailure.staleBinding }
                             if let original {
                                 guard let store else { throw TripFailure.unconfigured }
                                 let proof = try store.requireOriginal(original)
@@ -98,10 +102,26 @@ import OpenAPIRuntime
         }
     }
     public func detail(id: String, binding: TripBinding) async throws -> Components.Schemas.TripRecord? {
+        let previousSource = detailSnapshotSource
         let token = try capture(binding)
         guard tripID(id) else { throw TripFailure.invalidInput }
-        let client = try await api(binding, token)
+        guard previousSource == detailSnapshotSource else { throw TripFailure.staleBinding }
+        invalidateDetailSnapshots()
+        return try await readDetail(id: id, binding: binding, token: token)
+    }
+    // Presentation work already retired/captured its source synchronously. Do not
+    // retire a newer source by starting an older queued or in-flight UI read.
+    func selectedDetail(id: String, binding: TripBinding, source: UUID) async throws -> Components.Schemas.TripRecord? {
+        let token = try capture(binding)
+        guard source == detailSnapshotSource else { throw TripFailure.staleBinding }
+        guard tripID(id) else { throw TripFailure.invalidInput }
+        return try await readDetail(id: id, binding: binding, token: token, source: source)
+    }
+    private func readDetail(id: String, binding: TripBinding, token: UUID,
+                            source: UUID? = nil) async throws -> Components.Schemas.TripRecord? {
+        let client = try await api(binding, token, detailSource: source)
         let output = try await exchange(binding, token) { try await client.getTrip(query: .init(trip_id: id)) }
+        if let source, detailSnapshotSource != source { throw TripFailure.staleBinding }
         switch output {
         case .ok(let value):
             switch try value.body.json.trip {

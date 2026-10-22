@@ -88,6 +88,48 @@ there is no plaintext fallback, new-key retry, automatic cleanup or deletion.
 The host remains responsible for accepted private-storage registry/retention and
 cleanup integration before activation. Never provide a shared/old account directory.
 
+## Accepted formal detail byte source
+
+The current hook uses the single c02 CJAPI identity from `Package.swift`:
+`AcceptedTripDetailSnapshot.apiSourceCommit` is
+`c02cf08e52a0d8ffc2fefac99226654a7e01539c`.
+
+- Synchronously call `prepareDetailSnapshot(id:binding:)` at the original formal
+  selection event, before queuing a Task. It returns an opaque one-use
+  `TripDetailSnapshotRequest`; caller IDs only request a GET, never declare acceptance.
+- `await detailSnapshot(for:)` performs exactly one existing generated `getTrip`.
+  Actual null returns nil. Only a fully decoded/validated formal record with the
+  original Trip ID, positive version, matching trace and current original lifetime
+  becomes an `AcceptedTripDetailSnapshot`. Proposal/receipt/error/malformed/fallback
+  bodies cannot produce that handle. Constructors are closed to consumers.
+- `withCurrentDetailSnapshot(_:read:)` exposes the exact received response `Data`,
+  the same official `TripRecord`, original request-ID trace and original `TripBinding`
+  to a synchronous read-only closure. It checks the original source before and
+  after the closure. Data is the transport's received buffer, never encoded from
+  a decoded model. Description/debug/reflection of the handle reveal no raw content.
+- After any consumer await, call `validateDetailSnapshot(_:)` and recheck again
+  immediately before external use. No caller-supplied fresh identity can relabel
+  the handle. A synchronous callback that retires the source withholds its result.
+- A new preparation, `invalidateDetailSnapshots()`, full client invalidation,
+  `TripPresentation.prepareTrip`, or an ordinary `detail` read retires previous
+  snapshot sources. Session/account/environment/binding selection changes also
+  deny old sources. Use the explicit selection invalidation at a host selection
+  change even if no replacement GET will be made. Source retirement first validates
+  the original binding; stale callers cannot retire a newer account's source.
+  Existing prepared detail UI work is bound to its captured source, so it cannot
+  retire or apply over a newer snapshot selection while queued or in flight.
+
+The old `detail(id:binding:) -> TripRecord?` signature and record/null/error behavior
+remain available. The new hook adds no request to that path. All capture storage
+is per-exchange, bounded, transient memory. The returned handle proves only this
+client's current acceptance of a particular formal-detail response. It grants no
+TTL, offline key, cache write, remote-revocation, cleanup or offline-session policy.
+A consumer extracting Data remains responsible for its own identity/source fence
+before persistence/display; do not perform side effects inside the read callback.
+CJ022's adapter/format/policy remains its original owner's scope.
+
+Actual checks and public API examples: `evidence/accepted-detail-snapshot/REPORT.md`.
+
 ## Decisions and unknown results
 
 Public `choose` always throws `liveWriteUnavailable`; `acceptsUserActions` is false,
