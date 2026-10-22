@@ -1,0 +1,50 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 393]
+[Planning deferred tasks]
+[1 / 1]
+[6 / 17] CJUsageClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:152:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+150 |             let h = try OriginalHarness(); try await h.accept()
+151 |             var source: ResolvedUsageSource?
+152 |         if statusStage { let result = try await h.resolve(); source = try #require(result) }
+    |                                                                                    `- warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+153 |             let old = h.paths.count
+154 |             h.credentialHook = {
+[8 / 19] CJUsageClientTests-product
+[12 / 18] CJUsageClientTests-product
+[14 / 18] CJUsageClientTests-product
+Build complete! (1.84秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentOriginalReferenceBoundsTests started.
+◇ Test associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "message_id", length → 200 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "conversation_id", length → 201 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "message_id", length → 200 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "conversation_id", length → 200 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "message_id", length → 201 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "message_id", length → 201 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "generation", length → 200 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "conversation_id", length → 200 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "generation", length → 201 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "generation", length → 200 to associationWireMustUseItsOwnFieldBounds(_:_:) started.
+◇ Test case passing 2 arguments field → "generation", length → 201 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+◇ Test case passing 2 arguments field → "conversation_id", length → 201 to validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) started.
+✘ Test associationWireMustUseItsOwnFieldBounds(_:_:) recorded an issue with 2 arguments field → "conversation_id", length → 201 at IndependentOriginalReferenceBoundsTests.swift:123:6: Caught error: .invalidResponse
+✘ Test associationWireMustUseItsOwnFieldBounds(_:_:) recorded an issue with 2 arguments field → "generation", length → 201 at IndependentOriginalReferenceBoundsTests.swift:123:6: Caught error: .invalidResponse
+✘ Test associationWireMustUseItsOwnFieldBounds(_:_:) recorded an issue with 2 arguments field → "message_id", length → 201 at IndependentOriginalReferenceBoundsTests.swift:123:6: Caught error: .invalidResponse
+✘ Test associationWireMustUseItsOwnFieldBounds(_:_:) with 6 test cases failed after 0.003 seconds with 3 issues.
+✘ Test validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) recorded an issue with 2 arguments field → "message_id", length → 201 at IndependentOriginalReferenceBoundsTests.swift:117:25: Issue recorded
+↳ Canonical MESSAGE query accepted original bytes within configured caps, but usage capture rejects unbounded contract field message_id: .invalidResponse
+✘ Test validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) recorded an issue with 2 arguments field → "generation", length → 201 at IndependentOriginalReferenceBoundsTests.swift:117:25: Issue recorded
+↳ Canonical MESSAGE query accepted original bytes within configured caps, but usage capture rejects unbounded contract field generation: .invalidResponse
+✘ Test validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) recorded an issue with 2 arguments field → "conversation_id", length → 201 at IndependentOriginalReferenceBoundsTests.swift:117:25: Issue recorded
+↳ Canonical MESSAGE query accepted original bytes within configured caps, but usage capture rejects unbounded contract field conversation_id: .invalidResponse
+✘ Test validCanonicalAcceptedMessageReferencesOver200RemainUsable(_:_:) with 6 test cases failed after 0.007 seconds with 3 issues.
+✘ Suite IndependentOriginalReferenceBoundsTests failed after 0.007 seconds with 6 issues.
+✘ Test run with 2 tests in 1 suite failed after 0.007 seconds with 6 issues.
+Note: Some test targets reported failures:
+  - CJUsageClientTests (Swift Testing)

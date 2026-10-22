@@ -1,0 +1,26 @@
+[
+  {
+    "file": "graph-attempt.json",
+    "archive": "graph-attempt.json.xz",
+    "sha256": "5bfa620cfb508e7e1f587ea1535cc971f532dae33a14391bc736e7d21fead50b",
+    "bytes": 48134
+  },
+  {
+    "file": "graph-attempt.txt",
+    "archive": "graph-attempt.txt.xz",
+    "sha256": "019acf2b1150ffede66a3e244cc058ddd07ce172f333a3c94c58e8bc649dab01",
+    "bytes": 6297
+  },
+  {
+    "file": "isolated-preview-codecs.txt",
+    "archive": "isolated-preview-codecs.txt.xz",
+    "sha256": "dfe43022a4d50be707d3dd012405fa56b8c7c88e09dc425922c5020006f46b09",
+    "bytes": 21787
+  },
+  {
+    "file": "manifest.json",
+    "archive": "manifest.json.xz",
+    "sha256": "c05d001db7603785fc6ebeb2870769f4ed812659a2eae087f9bd8319e300e29e",
+    "bytes": 4940
+  }
+]

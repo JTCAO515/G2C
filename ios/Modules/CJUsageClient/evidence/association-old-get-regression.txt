@@ -1,0 +1,13 @@
+Building for debugging...
+[Computing dependencies]
+Build complete! (0.41秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite UsageTests started.
+◇ Test canonicalDefaultReadTransportWithGeneratedClient() started.
+◇ Test exactOriginalGETAndBigIntegerUnknownThenActualZero() started.
+✔ Test canonicalDefaultReadTransportWithGeneratedClient() passed after 0.002 seconds.
+✔ Test exactOriginalGETAndBigIntegerUnknownThenActualZero() passed after 0.003 seconds.
+✔ Suite UsageTests passed after 0.003 seconds.
+✔ Test run with 2 tests in 1 suite passed after 0.003 seconds.

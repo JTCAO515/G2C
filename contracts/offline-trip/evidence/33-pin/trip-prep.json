@@ -1,0 +1,20 @@
+{
+  "owner_head": "c48016f3188380f33570b8c7e01ded797821c0bd",
+  "all_input_sha256": {
+    "ios/Modules/CJTripClient/Package.swift": "5fabb2954489ff883deb523ae739cdc7a920fd32863a7a7278a546a7570ce815",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/AcceptedTripDetailSnapshot.swift": "36d41f7c326bcd34637ac1b048c391dfd5734d7522b6ca7e3ab89a1d139cb1c7",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/StrictTripJSON.swift": "0c941d8a66cf2313624ba370f1fe7bb5867d36528508bc08d2d02c2cc22958d1",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripAction.swift": "d4fe95d194aea856348def8f7535d5d2570ebdb37f4a80dafafc4d41b03bcb81",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripClient.swift": "0188f2f78f80f2c73633ff577838afd6d52f2e23dc10a1d1477d11a6d79e2317",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripPendingStore.swift": "45783ec28611bd6bc2f97aced3d5c28a50cad0d98027cd0563f46efc54763149",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripPresentation.swift": "19300c8603ce33b2534b6c01ebaf176f95a067131f23bd485ac4cc3b8c9a4e5e",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripRecovery.swift": "83591c5d7be013c764eac210cd836366eac50a822f80cc91281725e96e8b4a1f",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripTransport.swift": "9e2d865eb93f91374215fea626db0301722445f8232dc2489a914c96c5e01971",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripTypes.swift": "807d93bfe5a96c2c822cd3828bcdb22b117674aa9751921c2c470021734e3b78",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripValidation.swift": "785db325f2f21098f65de189bf8ddb9d53a19afb68f4c84590fec306e04eb2dd",
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripViews.swift": "827d1a869243fe98f3ede3dccfab06e9ce701c7421348e01f99ac63bf91cf904"
+  },
+  "original_prep": {
+    "ios/Modules/CJTripClient/Package.swift": "5fabb2954489ff883deb523ae739cdc7a920fd32863a7a7278a546a7570ce815"
+  }
+}

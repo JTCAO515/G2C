@@ -1,0 +1,9 @@
+PASS legal 201-character message_id captured
+CONTROL canonical MessageHTTPClient query produced accepted original record
+PASS legal 201-character message_id association wire
+PASS legal 201-character conversation_id captured
+CONTROL canonical MessageHTTPClient query produced accepted original record
+PASS legal 201-character conversation_id association wire
+PASS legal 201-character generation captured
+CONTROL canonical MessageHTTPClient query produced accepted original record
+PASS legal 201-character generation association wire

@@ -1,0 +1,43 @@
+Building for debugging...
+[Provisioning 19 / 22]
+[Pre-planning 1 / 393]
+[Planning deferred tasks]
+[1 / 1]
+[6 / 17] CJUsageClientTests-product
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:152:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+150 |             let h = try OriginalHarness(); try await h.accept()
+151 |             var source: ResolvedUsageSource?
+152 |         if statusStage { let result = try await h.resolve(); source = try #require(result) }
+    |                                                                                    `- warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+153 |             let old = h.paths.count
+154 |             h.credentialHook = {
+[8 / 19] CJUsageClientTests-product
+[15 / 19] CJUsageClientTests-product
+Build complete! (1.62秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ReferenceFieldControlsTests started.
+◇ Test unicodeMessageRefsUseConfiguredBudgetsNotUsageIDLimit(_:) started.
+◇ Test usageAndStoredRunBoundRetained(_:_:) started.
+◇ Test emptyReferenceStillRejected(_:) started.
+◇ Test case passing 1 argument field → "message_id" to unicodeMessageRefsUseConfiguredBudgetsNotUsageIDLimit(_:) started.
+◇ Test case passing 1 argument field → "conversation_id" to unicodeMessageRefsUseConfiguredBudgetsNotUsageIDLimit(_:) started.
+◇ Test case passing 1 argument field → "generation" to unicodeMessageRefsUseConfiguredBudgetsNotUsageIDLimit(_:) started.
+◇ Test case passing 1 argument field → "conversation_id" to emptyReferenceStillRejected(_:) started.
+◇ Test case passing 2 arguments field → "attempt_id", length → 200 to usageAndStoredRunBoundRetained(_:_:) started.
+◇ Test case passing 1 argument field → "run_id" to emptyReferenceStillRejected(_:) started.
+◇ Test case passing 1 argument field → "generation" to emptyReferenceStillRejected(_:) started.
+◇ Test case passing 1 argument field → "attempt_id" to emptyReferenceStillRejected(_:) started.
+◇ Test case passing 1 argument field → "operation_id" to emptyReferenceStillRejected(_:) started.
+◇ Test case passing 2 arguments field → "attempt_id", length → 201 to usageAndStoredRunBoundRetained(_:_:) started.
+◇ Test case passing 1 argument field → "message_id" to emptyReferenceStillRejected(_:) started.
+◇ Test case passing 2 arguments field → "operation_id", length → 200 to usageAndStoredRunBoundRetained(_:_:) started.
+◇ Test case passing 2 arguments field → "operation_id", length → 201 to usageAndStoredRunBoundRetained(_:_:) started.
+◇ Test case passing 2 arguments field → "run_id", length → 200 to usageAndStoredRunBoundRetained(_:_:) started.
+◇ Test case passing 2 arguments field → "run_id", length → 201 to usageAndStoredRunBoundRetained(_:_:) started.
+✔ Test emptyReferenceStillRejected(_:) with 6 test cases passed after 0.003 seconds.
+✔ Test usageAndStoredRunBoundRetained(_:_:) with 6 test cases passed after 0.003 seconds.
+✔ Test unicodeMessageRefsUseConfiguredBudgetsNotUsageIDLimit(_:) with 3 test cases passed after 0.004 seconds.
+✔ Suite ReferenceFieldControlsTests passed after 0.004 seconds.
+✔ Test run with 3 tests in 1 suite passed after 0.004 seconds.

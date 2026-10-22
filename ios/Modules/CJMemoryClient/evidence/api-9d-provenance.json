@@ -1,0 +1,68 @@
+{
+  "base": "ba9ed1a81dc4ac035980b62f7cb95fb48ede07a4",
+  "dependency_original": "e450e3828577feb211467e63177254f909b06b91",
+  "dependency_local": "c81c4604172208c20dc1eb734d654804ed1fcdf7",
+  "dependency_parent_original": "5d85408c641a50d922cc4bddef7148a449f05381",
+  "dependency_parent_local": "dd184e7769e4a68d664005d1f94d82bfe8190ca5",
+  "prerequisite_import_files_byte_equal": 17,
+  "old_paths_equal": 23,
+  "old_schemas_equal": 86,
+  "unchanged_manifest_lock_memory_helper": [
+    "ios/Package.swift",
+    "ios/Package.resolved",
+    "ios/Sources/CJAPI/MemoryClientConfiguration.swift"
+  ],
+  "official_exports": {
+    "57336d501e5691302a3d5e9770f07666d1c57d4a": {
+      "files_verified": 16,
+      "file_hash_manifest_sha256": "b2f03450b87983079ae5b0bda00fb58e2e48dd6fbede6e7d69a331f947376154"
+    },
+    "9dc67ced50a0cb7611a84b4adf97ab0b43c88bea": {
+      "files_verified": 16,
+      "file_hash_manifest_sha256": "1e36401de9d7b8363334be1b4c7499f40f6b26e8acd5290831f164f6efdb2b27"
+    },
+    "d688c01dc0fb18488a1e9c49414a039ce0126204": {
+      "files_verified": 16,
+      "file_hash_manifest_sha256": "ff9001830082efbbf8d963be9e35e7f09d4dc2e61e8aaee044a53c5df53a40e4"
+    },
+    "201156c9bf9850f9b8e87dc1f986452ce1ae789f": {
+      "files_verified": 16,
+      "file_hash_manifest_sha256": "286a2eedc24e85c00a09cab387df0c57d152e794004c6d40d55145d4e576df6c"
+    },
+    "c02cf08e52a0d8ffc2fefac99226654a7e01539c": {
+      "files_verified": 16,
+      "file_hash_manifest_sha256": "258922516c5bd9a2656c23b1f27769ae4e4d7c24d2e079e291a1e72a90381d5d"
+    },
+    "c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a": {
+      "files_verified": 16,
+      "file_hash_manifest_sha256": "7925ae323fe2944bcbec000d08a160c7834cbd76ee13f2ab5ddbbfb52f3691db"
+    },
+    "9d0f4b4c1e89b28d01de18092b5bf695de5bcde7": {
+      "files_verified": 16,
+      "file_hash_manifest_sha256": "93544d2c362ed5b10777893930ae965decb8fe153ff1d1d78a012f378b44952d",
+      "sha256": {
+        "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
+        "ios/Package.swift": "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0",
+        "ios/Sources/CJAPI/Generated/Client.swift": "4bd5fffdbf608ad5d0bbfd7baecdade4bf643d63fe1156648e63a6787a82e1ab",
+        "ios/Sources/CJAPI/Generated/Types+Components+Headers.swift": "b920e1a8ad3af618f10823dfd9ead2ac7a2833dcd9e06f84973789d7b578e1e2",
+        "ios/Sources/CJAPI/Generated/Types+Components+Parameters.swift": "06b05f078460bb0cc022223f7e6bf5d8509978b81486f2c191e241c08f38664b",
+        "ios/Sources/CJAPI/Generated/Types+Components+RequestBodies.swift": "3a79bacb276382b5f534e3a02a5a50297f67c53832e30b31e7afd9afbc6275bd",
+        "ios/Sources/CJAPI/Generated/Types+Components+Responses.swift": "8b243eb7012a5949f3818188cd64cc40021b87061be2b9de50a611f2ab9ab776",
+        "ios/Sources/CJAPI/Generated/Types+Components+Schemas.swift": "f9d5f414c2335861f6f5952f22262fb640aeebbde6918bd565f41c0d44aa0f50",
+        "ios/Sources/CJAPI/Generated/Types+Components.swift": "6ea69a3694541e5a67e2e3fe774048b7e0e3706ba7957ddefedd4e9e136b04e7",
+        "ios/Sources/CJAPI/Generated/Types+Operations.swift": "ebd7d620c8ca970e3630ca97b5de47bcda4000be2646435dc74b5593097ff3a9",
+        "ios/Sources/CJAPI/Generated/Types.swift": "8c70f71f997a8d04db3fb91e958e5a07033b7ed37104b4d8bc50edaa143c832d",
+        "ios/Sources/CJAPI/MemoryClientConfiguration.swift": "3088bab954be24d7fdda0c5815822feb846b772e6d4dc299889cdfd29e4f6d82",
+        "ios/Sources/CJAPI/ProbeConnection.swift": "e78a03f68abafeb8c559b99e669d04cb9e98a5c4ffe9f7bb8cfb4ace83ed9e1a",
+        "ios/Sources/CJProbe/main.swift": "59d0ac90be38554507637ce38e40e4a447cacf79a13a0c36d24b82493eb53991",
+        "ios/Sources/CJProbeUI/ProbeView.swift": "47c4b5d03c82ecd8e6a2c23b4f590d36fd80f9dc53938704f85cc007265f4282",
+        "ios/Tests/CJAPITests/ContractTests.swift": "dd16b31dac10eeb1459d5263b69a824404546e7dec4c682ab612c371c8e07cac"
+      }
+    }
+  },
+  "openapi_sha256": "c4459f7421d697fb609e5f4493bb8aa055d0c434c42877b4ee83b094ca1e8bcf",
+  "resolved_cjfoundation_occurrences": 2,
+  "resolved_unique_cjfoundation_paths": [
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation"
+  ]
+}

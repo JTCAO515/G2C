@@ -1,0 +1,19 @@
+Command: swift test --package-path ios/Modules/CJMemoryClient --force-resolved-versions --filter officialDateDecoderAndKeysetPage|nonNullMalformedReceiptIsNotAbsence|groupsAndEmptyListUseOfficialClient|serverOpaqueIDsAreReadableWithoutUUIDNarrowing
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentContractAndStoreTests started.
+◇ Suite MemoryClientTests started.
+◇ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() started.
+◇ Test groupsAndEmptyListUseOfficialClient() started.
+◇ Test officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test nonNullMalformedReceiptIsNotAbsence() started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00.123456Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+✔ Test nonNullMalformedReceiptIsNotAbsence() passed after 0.009 seconds.
+✔ Test groupsAndEmptyListUseOfficialClient() passed after 0.010 seconds.
+✔ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() passed after 0.010 seconds.
+✔ Suite IndependentContractAndStoreTests passed after 0.011 seconds.
+✔ Test officialDateDecoderAndKeysetPage(timestamp:) with 2 test cases passed after 0.012 seconds.
+✔ Suite MemoryClientTests passed after 0.012 seconds.
+✔ Test run with 4 tests in 2 suites passed after 0.012 seconds.

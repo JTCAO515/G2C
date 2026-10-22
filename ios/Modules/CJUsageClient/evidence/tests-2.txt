@@ -1,0 +1,70 @@
+Building for debugging...
+[Using on-disk description]
+[2 / 22] CJUsageClient
+[4 / 24] CJUsageClient
+[11 / 22] CJUsageClient-product
+[11 / 22] CJUsageClientTests-product
+[13 / 24] CJUsageClientTests-product
+[18 / 24] CJUsageClientTests-product
+[20 / 24] CJUsageClientTests-product
+Build complete! (1.92秒)
+Test Suite 'All tests' started at 2026-10-23 03:24:58.332.
+Test Suite 'All tests' passed at 2026-10-23 03:24:58.333.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite UsageTests started.
+◇ Test lifecycleFences(_:) started.
+◇ Test equalRevisionPrepareReentryDoesNotOverwriteNewOwner() started.
+◇ Test transportFailureIsSanitized(_:) started.
+◇ Test exactOriginalGETAndBigIntegerUnknownThenActualZero() started.
+◇ Test preparationIsOneShotAndOwnedByOneModel() started.
+◇ Test invalidWireFailsExplicitly(_:) started.
+◇ Test missingConfigurationAndSourceNeverRequest() started.
+◇ Test statesAndBilingualMeaning(_:) started.
+◇ Test case passing 1 argument stage → "actor" to lifecycleFences(_:) started.
+◇ Test case passing 1 argument stage → "ABA" to lifecycleFences(_:) started.
+◇ Test case passing 1 argument stage → "session" to lifecycleFences(_:) started.
+◇ Test case passing 1 argument stage → "credential-error" to lifecycleFences(_:) started.
+◇ Test case passing 1 argument mutation → "trace" to transportFailureIsSanitized(_:) started.
+◇ Test case passing 1 argument stage → "credential-reentry" to lifecycleFences(_:) started.
+◇ Test case passing 1 argument mutation → "cache" to transportFailureIsSanitized(_:) started.
+◇ Test case passing 1 argument stage → "response-ABA" to lifecycleFences(_:) started.
+◇ Test case passing 1 argument mutation → "redirect" to transportFailureIsSanitized(_:) started.
+◇ Test case passing 1 argument mutation → "leading-zero" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "oversize" to transportFailureIsSanitized(_:) started.
+◇ Test case passing 1 argument mutation → "type" to transportFailureIsSanitized(_:) started.
+◇ Test case passing 1 argument mutation → "duplicate" to transportFailureIsSanitized(_:) started.
+◇ Test case passing 1 argument mutation → "missing" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument stage → "final-callback" to lifecycleFences(_:) started.
+◇ Test case passing 1 argument mutation → "receipt-conflict" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument status → "unknown" to statesAndBilingualMeaning(_:) started.
+◇ Test case passing 1 argument mutation → "negative" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "unknown-exceeded" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "error" to transportFailureIsSanitized(_:) started.
+◇ Test case passing 1 argument status → "settled" to statesAndBilingualMeaning(_:) started.
+◇ Test case passing 1 argument mutation → "released-live" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument status → "reserved" to statesAndBilingualMeaning(_:) started.
+◇ Test case passing 1 argument mutation → "reserved-cancelled" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "number" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument status → "released" to statesAndBilingualMeaning(_:) started.
+◇ Test case passing 1 argument mutation → "malformed" to transportFailureIsSanitized(_:) started.
+◇ Test case passing 1 argument mutation → "operation" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "blank-message" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "bool-number" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "bad-id" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "run" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "extra" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "null-settled" to invalidWireFailsExplicitly(_:) started.
+◇ Test case passing 1 argument mutation → "normalized-id" to invalidWireFailsExplicitly(_:) started.
+✔ Test missingConfigurationAndSourceNeverRequest() passed after 0.010 seconds.
+✔ Test transportFailureIsSanitized(_:) with 8 test cases passed after 0.012 seconds.
+✔ Test equalRevisionPrepareReentryDoesNotOverwriteNewOwner() passed after 0.013 seconds.
+✔ Test lifecycleFences(_:) with 7 test cases passed after 0.013 seconds.
+✔ Test preparationIsOneShotAndOwnedByOneModel() passed after 0.013 seconds.
+✔ Test invalidWireFailsExplicitly(_:) with 16 test cases passed after 0.013 seconds.
+✔ Test statesAndBilingualMeaning(_:) with 4 test cases passed after 0.013 seconds.
+✔ Test exactOriginalGETAndBigIntegerUnknownThenActualZero() passed after 0.013 seconds.
+✔ Suite UsageTests passed after 0.013 seconds.
+✔ Test run with 8 tests in 1 suite passed after 0.013 seconds.

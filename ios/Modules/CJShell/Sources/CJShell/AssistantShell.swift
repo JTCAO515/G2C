@@ -8,8 +8,9 @@ struct AssistantShell: View {
     let needsHost: NeedsContainerHost
     let feedbackHost: FeedbackContainerHost
     let runHost: RunContainerHost
+    let usageHost: OriginalUsageContainerHost
     let bodyText: String?
-    private enum Panel: String, Identifiable { case local, server, needs, feedback; var id: String { rawValue } }
+    private enum Panel: String, Identifiable { case local, server, needs, feedback, usage; var id: String { rawValue } }
     @State private var panel: Panel?
     @State private var feedbackEntry: FeedbackContainerEntry?
     @FocusState private var draftFocused: Bool
@@ -29,6 +30,7 @@ struct AssistantShell: View {
                 }
                 Button(state.language.text("Server history and drafts", "服务器历史与草稿")) { panel = .server }
                 Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }
+                Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language)
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if !messageHost.isConfigured {
@@ -54,7 +56,9 @@ struct AssistantShell: View {
         .sheet(item: $panel) { selectedPanel in
             NavigationStack {
                 Group {
-                    if selectedPanel == .feedback {
+                    if selectedPanel == .usage {
+                        OriginalUsageContainerView(host: usageHost, messages: messageHost, language: state.language)
+                    } else if selectedPanel == .feedback {
                         FeedbackContainerView(host: feedbackHost, entry: feedbackEntry, language: state.language)
                     } else if selectedPanel == .needs {
                         NeedsContainerView(host: needsHost, language: state.language).id(needsHost.viewIdentity)

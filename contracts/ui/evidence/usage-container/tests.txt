@@ -1,0 +1,64 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+Build complete! (0.63秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IdentityCallbackReentryTests started.
+◇ Suite ShellStateTests started.
+◇ Suite IndependentHostReentryTests started.
+◇ Suite UsageContainerHostTests started.
+◇ Test outerCleanupCannotOverwriteCallbackInstalledB() started.
+◇ Test identityInvalidationClearsAllPrivatePresentationAndRejectsLateWork() started.
+◇ Test normalInvalidationClearsBeforeResourceCallback() started.
+◇ Test unknownWireValuesAreRejected() started.
+◇ Test languagePreservesNavigationDraftAndReferences() started.
+◇ Test failedOldClientLoadLeavesReentrantBHostUntouched() started.
+◇ Test unavailableSendNeverClaimsSuccess() started.
+◇ Test oldDraftFailureMustNotInvalidateNewAccountBinding(storageThrows:) started.
+◇ Test everySelectionIncludingABAGetsNewGeneration() started.
+◇ Test originalQueryPreservesExactUnitsUnknownAndActualZero() started.
+◇ Test tabSwitchPreservesDraftAndMemoryPath() started.
+◇ Test accountAndOriginalSessionInvalidationHidePrivateResults() started.
+◇ Test oldQueryFailureCannotInvalidateNewBinding() started.
+◇ Test invalidPreferenceIsVisibleAndNotSilentlyRewritten() started.
+◇ Test noProductionSourceIsUnavailableAndNeverQueries() started.
+◇ Test oldBindReadAdmissionCannotOverrideReentrantNewBinding() started.
+◇ Test sameBindingPrepareCallbackCannotRetireNewerRead() started.
+◇ Test finalAdmissionCallbackCannotPublishOrClearNewSelection() started.
+◇ Test lateReadCannotOverwriteRenewedOrBackgroundSource(background:) started.
+◇ Test callbackSelectionAndActorSwitchWithholdOriginal() started.
+◇ Test credentialsRetirementPreventsOutflow() started.
+◇ Test case passing 1 argument storageThrows → true to oldDraftFailureMustNotInvalidateNewAccountBinding(storageThrows:) started.
+◇ Test case passing 1 argument background → false to lateReadCannotOverwriteRenewedOrBackgroundSource(background:) started.
+◇ Test case passing 1 argument background → true to lateReadCannotOverwriteRenewedOrBackgroundSource(background:) started.
+◇ Test case passing 1 argument storageThrows → false to oldDraftFailureMustNotInvalidateNewAccountBinding(storageThrows:) started.
+✔ Test identityInvalidationClearsAllPrivatePresentationAndRejectsLateWork() passed after 0.012 seconds.
+✔ Test outerCleanupCannotOverwriteCallbackInstalledB() passed after 0.012 seconds.
+✔ Test unknownWireValuesAreRejected() passed after 0.012 seconds.
+✔ Test failedOldClientLoadLeavesReentrantBHostUntouched() passed after 0.012 seconds.
+✔ Test normalInvalidationClearsBeforeResourceCallback() passed after 0.012 seconds.
+✔ Suite IdentityCallbackReentryTests passed after 0.012 seconds.
+✔ Test noProductionSourceIsUnavailableAndNeverQueries() passed after 0.014 seconds.
+✔ Test languagePreservesNavigationDraftAndReferences() passed after 0.016 seconds.
+✔ Test everySelectionIncludingABAGetsNewGeneration() passed after 0.015 seconds.
+✔ Test tabSwitchPreservesDraftAndMemoryPath() passed after 0.016 seconds.
+✔ Test unavailableSendNeverClaimsSuccess() passed after 0.017 seconds.
+✔ Test credentialsRetirementPreventsOutflow() passed after 0.017 seconds.
+✔ Test oldBindReadAdmissionCannotOverrideReentrantNewBinding() passed after 0.017 seconds.
+✔ Test oldDraftFailureMustNotInvalidateNewAccountBinding(storageThrows:) with 2 test cases passed after 0.017 seconds.
+✔ Test invalidPreferenceIsVisibleAndNotSilentlyRewritten() passed after 0.017 seconds.
+✔ Suite ShellStateTests passed after 0.017 seconds.
+✔ Test accountAndOriginalSessionInvalidationHidePrivateResults() passed after 0.020 seconds.
+✔ Test sameBindingPrepareCallbackCannotRetireNewerRead() passed after 0.020 seconds.
+✔ Test callbackSelectionAndActorSwitchWithholdOriginal() passed after 0.020 seconds.
+✔ Test oldQueryFailureCannotInvalidateNewBinding() passed after 0.020 seconds.
+✔ Test lateReadCannotOverwriteRenewedOrBackgroundSource(background:) with 2 test cases passed after 0.020 seconds.
+✔ Suite IndependentHostReentryTests passed after 0.020 seconds.
+✔ Test finalAdmissionCallbackCannotPublishOrClearNewSelection() passed after 0.021 seconds.
+✔ Test originalQueryPreservesExactUnitsUnknownAndActualZero() passed after 0.021 seconds.
+✔ Suite UsageContainerHostTests passed after 0.021 seconds.
+✔ Test run with 21 tests in 4 suites passed after 0.022 seconds.

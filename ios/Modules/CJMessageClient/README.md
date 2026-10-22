@@ -173,3 +173,14 @@ readOnlyManualPreview factory for the official c5 operation/path, with explicit 
 timeouts and current-lifetime validator. Generic live POST/PUT remain closed; this is a
 readonly computation capability, not a Trip save permission. Eight local checks pass;
 CJ017 adoption and actual service remain separate.
+
+Next USAGE status export: fixed9d0f4b4 at the ONE
+.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation path. Six targeted
+checks pass; exact count strings/null retained, no balance or execution authority.
+Old exports stay intact, active App graph unchanged. See evidence/USAGE-STATUS-API-PIN.md.
+
+Next original-usage association export: fixed33cec5ba at the single
+.generated/33cec5ba71d74820cb0acd3c89ecbe39ba125590/CJFoundation path. Five targeted
+checks pass; required association and unavailable503 never become successful null or
+execution evidence. Transport94 and all old exports stay intact. See
+evidence/ORIGINAL-USAGE-API-PIN.md; current App and USAGE client are not changed here.

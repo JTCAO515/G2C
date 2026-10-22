@@ -1,0 +1,14 @@
+Building for debugging...
+[Provisioning 2 / 22]
+Build complete! (0.36秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite OriginalUsageTests started.
+◇ Test acceptedCanonicalReceiptThenAssociationThenExplicitOriginalStatus() started.
+✘ Test acceptedCanonicalReceiptThenAssociationThenExplicitOriginalStatus() recorded an issue at OriginalUsageTests.swift:101:6: Caught error: .queryOnly
+✘ Test acceptedCanonicalReceiptThenAssociationThenExplicitOriginalStatus() failed after 0.001 seconds with 1 issue.
+✘ Suite OriginalUsageTests failed after 0.002 seconds with 1 issue.
+✘ Test run with 1 test in 1 suite failed after 0.002 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - CJUsageClientTests (Swift Testing)

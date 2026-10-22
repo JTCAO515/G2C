@@ -1,0 +1,33 @@
+{
+  "previous_product": "49d146c1b3f608d9142bf18be4aeaf14c6281e57",
+  "prep": "6f2d877cee7d7a845c920de10c94730b3c542c1d",
+  "shared_source": "6936a632ecc5cdbfd615b80c75312a09ed64b23a",
+  "shared_tree": "e77025c95be96d306cd76e938faf3766e6fd60a9",
+  "sdk_source": "33cec5ba71d74820cb0acd3c89ecbe39ba125590",
+  "sdk_sha256": {
+    "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
+    "ios/Package.swift": "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0",
+    "ios/Sources/CJAPI/Generated/Client.swift": "c411eadc36d564d29ed213b604e633a82d24ba8faf42ed4f8f0adac6eaaffcc0",
+    "ios/Sources/CJAPI/Generated/Types+Components+Headers.swift": "b920e1a8ad3af618f10823dfd9ead2ac7a2833dcd9e06f84973789d7b578e1e2",
+    "ios/Sources/CJAPI/Generated/Types+Components+Parameters.swift": "06b05f078460bb0cc022223f7e6bf5d8509978b81486f2c191e241c08f38664b",
+    "ios/Sources/CJAPI/Generated/Types+Components+RequestBodies.swift": "3a79bacb276382b5f534e3a02a5a50297f67c53832e30b31e7afd9afbc6275bd",
+    "ios/Sources/CJAPI/Generated/Types+Components+Responses.swift": "8b243eb7012a5949f3818188cd64cc40021b87061be2b9de50a611f2ab9ab776",
+    "ios/Sources/CJAPI/Generated/Types+Components+Schemas.swift": "6973a94a941db38cfeffdbdebcf99c07b19e1613f4bc90d751ead05f526307e2",
+    "ios/Sources/CJAPI/Generated/Types+Components.swift": "6ea69a3694541e5a67e2e3fe774048b7e0e3706ba7957ddefedd4e9e136b04e7",
+    "ios/Sources/CJAPI/Generated/Types+Operations.swift": "987f2637f0d9e8e56e4c91d9156101b0228cce60892312dfd33738ba2a55d8f6",
+    "ios/Sources/CJAPI/Generated/Types.swift": "032a1975cfae637c49ef7af025b1776117fa72927c39ff7e707b3f19fa6708d6",
+    "ios/Sources/CJAPI/MemoryClientConfiguration.swift": "3088bab954be24d7fdda0c5815822feb846b772e6d4dc299889cdfd29e4f6d82",
+    "ios/Sources/CJAPI/ProbeConnection.swift": "e78a03f68abafeb8c559b99e669d04cb9e98a5c4ffe9f7bb8cfb4ace83ed9e1a",
+    "ios/Sources/CJProbe/main.swift": "59d0ac90be38554507637ce38e40e4a447cacf79a13a0c36d24b82493eb53991",
+    "ios/Sources/CJProbeUI/ProbeView.swift": "47c4b5d03c82ecd8e6a2c23b4f590d36fd80f9dc53938704f85cc007265f4282",
+    "ios/Tests/CJAPITests/ContractTests.swift": "dd16b31dac10eeb1459d5263b69a824404546e7dec4c682ab612c371c8e07cac"
+  },
+  "all_seven_old_exports_exact": true,
+  "module_lock_unchanged": true,
+  "auth_unchanged": true,
+  "archived_raw_logs": {
+    "association-public-interface.txt.gz": {
+      "original_sha256": "321a4828f62aeb4d6210ac967ec6c299dbb5004eb6a18b263410c419ef347ae9"
+    }
+  }
+}
