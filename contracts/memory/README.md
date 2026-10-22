@@ -1,0 +1,34 @@
+# MEMORY-internal.1 — CJ011 first candidate
+
+Internal Python domain/repository only. NOT MEMORY@1.0 public-wire freeze. Root OpenAPI, generated clients and migration registry remain CJ005-owned. Source baseline: 23e12f28435ab0ddc685d544670564e3fa79db41. AUTH composition decision remains existing `AdmissionDecision`; MESSAGE/RUN scope is the existing trusted internal partition concept, not a new principal schema. Concrete consumer acceptance via Main is pending.
+
+`Command`, `Receipt`, `Item`, `Context` live in backend/memory/cj_memory/domain.py (one executable source, no shadow model). `Service.save(original_utf8)`, `query(operation_id)`, `groups()`, `list_items(after, limit)`, `detail(item_id)`, `effective(subject, context_id)` are the minimal consumer interface. Commands are strict exact-key UTF-8 JSON (positive/negative examples in examples.json); no owner field. An operation ID belongs to one scope and save operation; byte-for-byte replay returns the immutable original receipt, different bytes conflict. A receipt is historical saved/candidate status and version, not proof the item is still effective. query absence does NOT prove an unknown original operation never committed or authorize retry after retention/cleanup. No automatic retry exists.
+
+## Trusted composition responsibilities (required before public use)
+
+- AUTH must authenticate and revalidate account eligibility/generation, choose a non-reused server scope, and hold its account fence through each transaction. This module neither authenticates nor provides public source registration.
+- Source approval is explicit, exact-byte-bound `cj_memory_source`: owning scope/source revision, approved bytes, authorized/confirmed/semantic_resolved/active, explicit expiry. Trusted composition checks source provenance (manual save or exact MESSAGE generation/message), subject ownership, applicable context/trip ownership, purpose and consent/time/retention. Missing/unknown sensitive collection approval means **no approval row / reject**, not an inferred default. Table booleans cannot come from client flags. Schema does not provision any scope or source.
+- `subject` and `slot` are canonical references checked by composition; one stable slot across languages, never a translation-derived ID. Unresolved equivalence sets semantic_resolved=false, saved as candidate only. Existing active same subject/slot/extent/context conflicts; user reviews the existing item for future CJ019 versioned change. Arbitrary new slots must not be minted to evade this check. No translator/model or semantic equivalence detector is claimed.
+- `inference` is always candidate in this first create path, even with confirmation flags. A confirmed inference requires a reviewed concrete fact/experience/preference representation; no automatic promotion.
+- `extent=current` requires an explicit server-validated context identity (include generation where relevant); it overrides only matching subject/slot while composing that context. Other contexts see the unchanged long-term value. Companion subject is never silently self.
+- Source expiry is explicit, not a retention-policy default. Approximate occurred_at is supplied display text; recorded_at is DB time. The local tests use synthetic one-hour approvals ONLY, not product retention policy.
+
+## Transaction and subsequent lifecycle seams
+
+New fresh non-autocommit DB-API connection at READ COMMITTED per call. Scope lock serializes operations and future mutations; item+receipt+epoch increment commit together. Commit exception is CommitUnknown, even if it failed before committing, because the caller lacks proof. Query the original operation. Cleanup failure cannot mask a durable receipt. No ReMe/derived component is authoritative.
+
+CJ019/021 must take the SAME scope row lock; compare expected item version and source revision, increment item version and scope epoch, and atomically write their own original action receipts. Revocation must disable/increment source as appropriate and update scope epoch. No public edit/delete/enable implementation is supplied here. Source history/retombstones and full deletion lifecycle remain required before those features can ship.
+
+Every effective read joins current source revision, authorization, confirmation, active flag and expiry, excludes candidate/disabled/withdrawn items, and returns scope epoch. Before RUN publishes an answer it must use `Transaction.require_current(context, subject, context_id)` and retain that transaction/scope lock through publication; cross-domain adapter must share that transaction. `Service.check_fence` is only an epoch probe, NOT publication authorization: expiry passage also invalidates context. No existing RUN publication path is connected by this candidate.
+
+List uses bounded (1..100) live item-ID keyset pages, not an immutable snapshot; groups aggregate subject/status. Detail exposes source ID/version, text, scope of applicability, type, occurrence display time, DB record time and item version/status. User-facing bilingual labels are a UI responsibility and do not create authoritative IDs.
+
+## Sensitive storage and cleanup
+
+`original_input`/`approved_input` contain user content and source references; operation ledger also duplicates original bytes for exact replay. All must be included in CJ021/CJ024 cleanup, including backups and logs/checkpoints maintained by consumers. `source_id`, subject, slot, context, operation/item IDs and time can be identifying. Do not log them. No physical cleanup or retention job is implemented; neither disabled nor withdrawn means erased. Receipt lifetime and tombstone/cleanup reconciliation are unresolved integration requirements, so no unlimited dedupe claim. Source approvals require an expiry; content cleanup retention still requires approved policy before deployment.
+
+Candidate SQL is unregistered and has no roles/grants/RLS changes. It assumes exclusively trusted server DB access; deployment permission hardening and actual AUTH binding remain CJ005 integration work. No client or model may access these tables directly.
+
+## Original #12 acceptance remains open
+
+Domain/local PG checks cover commit/unknown/replay, restart reads, canonical-slot conflict, temporary override, scope isolation and candidate filtering. Actual App manual add/group/detail UI, skip-collection UX, real accounts, same-session next answer, new chat/another trip/model context and I prerequisites are UNRUN. These are original requirements, not optional follow-up; this candidate cannot close #12.
