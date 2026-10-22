@@ -1,5 +1,5 @@
 """Host-injected history cursor policy and explicit limits. Not authorization or defaults."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 
@@ -26,6 +26,8 @@ class CursorBinding:
     scope: str
     purpose: str
     conversation_id: str | None
+    # Live owner callback reference only: never serialize/asdict/cache/log.
+    context: object | None = field(default=None,repr=False,compare=False)
 
 
 class AuthenticatedCursorCodec(Protocol):

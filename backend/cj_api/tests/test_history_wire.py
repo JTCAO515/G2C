@@ -53,7 +53,7 @@ class SignedCursorFixture:
     def __init__(self):self.key=secrets.token_bytes(32);self.records={};self.now=100;self.on_encode=None
     def encode(self,cursor,*,binding,ttl_seconds):
         nonce=secrets.token_hex(12)
-        self.records[nonce]=(cursor,binding,self.now+ttl_seconds)
+        self.records[nonce]=(cursor,replace(binding,context=None),self.now+ttl_seconds)
         token=nonce+'.'+hmac.new(self.key,nonce.encode(),hashlib.sha256).hexdigest()
         if self.on_encode:self.on_encode()
         return token
