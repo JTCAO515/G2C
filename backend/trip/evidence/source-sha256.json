@@ -1,0 +1,9 @@
+{
+  "backend/trip/cj_trip/__init__.py": "0c290ee504260d5514f616bf307565d00dbe7df4306f7f49f4df1ee992cc496a",
+  "backend/trip/cj_trip/auth_boundary.py": "204e048d604a1ec6f959fff8f6389fddbd598bbff8d0042318a4b1375f875c04",
+  "backend/trip/cj_trip/domain.py": "06ea6f6c104ba8abc97209f2274140d2d07a329344b1959bbd46e05b564ad2b1",
+  "backend/trip/cj_trip/postgres.py": "4bff99cca3bce247efc5e071f97bc1fd38ff9c76f3f960ed3f552c780cd663bc",
+  "backend/trip/sql/candidate.sql": "aa96145bda85efa92eaa6ed73d9eac7915ad336e76cb5ebfa3162f0da96722f2",
+  "backend/trip/tests/restart_probe.py": "a9d3021ce158336552fca75573ce3c0d4e1860b364ef88dd76798d1197f226a0",
+  "backend/trip/tests/test_trip.py": "1313883102ac2636f29d951c56a1521d7b745f82841dcc7d669f8b6f3ff5a5d1"
+}

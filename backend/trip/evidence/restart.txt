@@ -1,0 +1,2 @@
+seed PASS: original action version 1; latest Trip version 2
+restart read PASS: original action version 1; latest Trip version 2; scope B absent
