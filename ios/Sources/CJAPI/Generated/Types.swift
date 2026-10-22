@@ -43,6 +43,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/memory-items`.
     /// - Remark: Generated from `#/paths//v1/memory-items/get(getMemoryItem)`.
     func getMemoryItem(_ input: Operations.getMemoryItem.Input) async throws -> Operations.getMemoryItem.Output
+    /// - Remark: HTTP `POST /v1/trip-actions`.
+    /// - Remark: Generated from `#/paths//v1/trip-actions/post(actOnTripProposal)`.
+    func actOnTripProposal(_ input: Operations.actOnTripProposal.Input) async throws -> Operations.actOnTripProposal.Output
+    /// - Remark: HTTP `GET /v1/trip-action-receipts`.
+    /// - Remark: Generated from `#/paths//v1/trip-action-receipts/get(queryTripAction)`.
+    func queryTripAction(_ input: Operations.queryTripAction.Input) async throws -> Operations.queryTripAction.Output
+    /// - Remark: HTTP `GET /v1/trips`.
+    /// - Remark: Generated from `#/paths//v1/trips/get(listTrips)`.
+    func listTrips(_ input: Operations.listTrips.Input) async throws -> Operations.listTrips.Output
+    /// - Remark: HTTP `GET /v1/trip-details`.
+    /// - Remark: Generated from `#/paths//v1/trip-details/get(getTrip)`.
+    func getTrip(_ input: Operations.getTrip.Input) async throws -> Operations.getTrip.Output
+    /// - Remark: HTTP `GET /v1/trip-proposals`.
+    /// - Remark: Generated from `#/paths//v1/trip-proposals/get(getTripProposal)`.
+    func getTripProposal(_ input: Operations.getTripProposal.Input) async throws -> Operations.getTripProposal.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -167,6 +182,61 @@ extension APIProtocol {
         headers: Operations.getMemoryItem.Input.Headers = .init()
     ) async throws -> Operations.getMemoryItem.Output {
         try await getMemoryItem(Operations.getMemoryItem.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/trip-actions`.
+    /// - Remark: Generated from `#/paths//v1/trip-actions/post(actOnTripProposal)`.
+    public func actOnTripProposal(
+        headers: Operations.actOnTripProposal.Input.Headers = .init(),
+        body: Operations.actOnTripProposal.Input.Body
+    ) async throws -> Operations.actOnTripProposal.Output {
+        try await actOnTripProposal(Operations.actOnTripProposal.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/trip-action-receipts`.
+    /// - Remark: Generated from `#/paths//v1/trip-action-receipts/get(queryTripAction)`.
+    public func queryTripAction(
+        query: Operations.queryTripAction.Input.Query,
+        headers: Operations.queryTripAction.Input.Headers = .init()
+    ) async throws -> Operations.queryTripAction.Output {
+        try await queryTripAction(Operations.queryTripAction.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/trips`.
+    /// - Remark: Generated from `#/paths//v1/trips/get(listTrips)`.
+    public func listTrips(
+        query: Operations.listTrips.Input.Query,
+        headers: Operations.listTrips.Input.Headers = .init()
+    ) async throws -> Operations.listTrips.Output {
+        try await listTrips(Operations.listTrips.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/trip-details`.
+    /// - Remark: Generated from `#/paths//v1/trip-details/get(getTrip)`.
+    public func getTrip(
+        query: Operations.getTrip.Input.Query,
+        headers: Operations.getTrip.Input.Headers = .init()
+    ) async throws -> Operations.getTrip.Output {
+        try await getTrip(Operations.getTrip.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/trip-proposals`.
+    /// - Remark: Generated from `#/paths//v1/trip-proposals/get(getTripProposal)`.
+    public func getTripProposal(
+        query: Operations.getTripProposal.Input.Query,
+        headers: Operations.getTripProposal.Input.Headers = .init()
+    ) async throws -> Operations.getTripProposal.Output {
+        try await getTripProposal(Operations.getTripProposal.Input(
             query: query,
             headers: headers
         ))

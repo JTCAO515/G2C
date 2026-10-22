@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "contract": "CJ-TRIP-INTERNAL@0.1.0-rc.1",
+  "sources": [
+    {
+      "name": "auth",
+      "commit": "f3c8e5074eb27de0de6fef6dd7558763cbcf4291",
+      "prefix": "backend/auth/cj_auth/",
+      "files": {
+        "backend/auth/cj_auth/__init__.py": "6921fa11f3bdb1cefb618f0e067581fa22385cf1e0836e479f989a84dcb6374a",
+        "backend/auth/cj_auth/admission.py": "5e9fab7cea50a260622896cb7aeba76ebe1ba511d63a87a69e83fe7bdea526dc",
+        "backend/auth/cj_auth/interfaces.py": "39711c9511c942274162fc4d32986a554147f8f32067ffd1e49e5aa94c9a0b9c",
+        "backend/auth/cj_auth/jwt_adapter.py": "ede933a2af99965ecaa8e7d58b950fc51fe38232538dd825c4a23bcf6d85aad5"
+      }
+    },
+    {
+      "name": "trip",
+      "commit": "5fd115fc97e542bc8776a445d8245fd272000e56",
+      "prefix": "backend/trip/cj_trip/",
+      "files": {
+        "backend/trip/cj_trip/__init__.py": "0c290ee504260d5514f616bf307565d00dbe7df4306f7f49f4df1ee992cc496a",
+        "backend/trip/cj_trip/domain.py": "078a5ed8962ee414f095c0c94a342d50347c794efcc4c236b77ad1389d93ce3d",
+        "backend/trip/cj_trip/auth_boundary.py": "15d7c495e5de11fb90f641a63235d1196dc8277fdb8b726f1ac3e6217a3beeab",
+        "backend/trip/cj_trip/postgres.py": "d9b3bfdbdb7db7b2a7703856015dd8f0e8ce9883778edb4ae206163bd442ef7c",
+        "backend/trip/cj_trip/operation.py": "239d0062d667905a3ac2a898476baa6fa2745389be12a7ad7ec8d0a296a3ba5c"
+      }
+    }
+  ],
+  "proposal_read_commit": "0e2c3241825d81b89cc7bdb2f2c6daa967038068",
+  "operation_contract_commit": "5fd115fc97e542bc8776a445d8245fd272000e56"
+}
