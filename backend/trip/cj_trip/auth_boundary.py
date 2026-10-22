@@ -23,6 +23,7 @@ class Boundary:
         return Repository(connect, scope, self.confirm, guard)
 
     def act(self, token, action): return self._repository(token).act(action)
+    def proposal_detail(self, token, proposal_id): return self._repository(token).proposal_detail(proposal_id)
     def query_action(self, token, action_id): return self._repository(token).query_action(action_id)
     def detail(self, token, trip_id): return self._repository(token).detail(trip_id)
     def list_trips(self, token, after='', limit=20): return self._repository(token).list_trips(after,limit)

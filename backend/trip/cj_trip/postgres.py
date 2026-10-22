@@ -7,7 +7,7 @@ from contextlib import contextmanager
 import logging
 
 logger = logging.getLogger(__name__)
-from .domain import Action, Proposal, Receipt, Trip, Conflict, Denied, CommitUnknown, identifier
+from .domain import Action, Proposal, ProposalDetail, Receipt, Trip, Conflict, Denied, CommitUnknown, identifier
 
 
 class Repository:
@@ -145,6 +145,12 @@ class Repository:
             cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', (state,self.scope,p.proposal_id))
             return state
 
+    def proposal_detail(self, proposal_id):
+        """Read-only display snapshot, never review/confirmation authorization."""
+        with self.transaction() as cur:
+            proposal, digest, status = self._proposal(cur, identifier(proposal_id))
+            return ProposalDetail(proposal, digest, status)
+
     def query_action(self, action_id):
         with self.transaction() as cur:
             row = self._receipt(cur, identifier(action_id))
@@ -158,7 +164,8 @@ class Repository:
 
     def list_trips(self, after='', limit=20):
         if type(limit) is not int or not 1 <= limit <= 100: raise ValueError('invalid limit')
+        if not isinstance(after, str): raise ValueError('invalid cursor')
         if after: identifier(after)
         with self.transaction() as cur:
-            cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id>%s ORDER BY trip_id LIMIT %s', (self.scope,after,limit))
+            cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id COLLATE "C">%s COLLATE "C" ORDER BY trip_id COLLATE "C" LIMIT %s', (self.scope,after,limit))
             return [Trip(r[0],r[1],bytes(r[2])) for r in cur.fetchall()]

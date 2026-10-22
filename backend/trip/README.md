@@ -70,3 +70,8 @@ preservation to cancellation/interruption. 30 targeted real-PG controls PASS;
 known-success cleanup cancellation propagates with commit_possible and original
 receipt recovery, never a fabricated success. New private PG stopped and preserved;
 independent gates pending. Earlier evidence remains unchanged.
+
+Protected pre-acceptance candidate display is available as `Boundary.proposal_detail`.
+[Exact read/pagination seam](../../contracts/trip/PROPOSAL-READ.md) and
+[12-test real-PG evidence](evidence/proposal-read/REPORT.md) are ready for CJ005
+consumption confirmation. Reads never authorize acceptance; default confirm still denies.

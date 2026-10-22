@@ -92,3 +92,10 @@ class Trip:
     trip_id: str
     version: int
     content: bytes
+
+
+@dataclass(frozen=True)
+class ProposalDetail:
+    proposal: Proposal
+    candidate_hash: str
+    status: str
