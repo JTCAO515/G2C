@@ -1,0 +1,15 @@
+{
+  "base": "e7257ad36f9ecb566f8d6a888f32db2a920a38ef",
+  "place_pin": "80ba4ae5527875ce375d22f3439f8e3256e2c4d6",
+  "python": "3.14.7 (main, Aug  5 2026, 10:29:49) [Clang 21.0.0 (clang-2100.3.34.2)]",
+  "ortools": "9.15.6755",
+  "files": {
+    "backend/feasibility/cj_feasibility/solver.py": "72e4bea3d60df50d48ee72379993ad74e23cbeb76ab0b4f20ba9f3fb143dfedc",
+    "backend/feasibility/cj_feasibility/output_check.py": "bf28b7588439a8fcdb7cb80a55a5dd9e7baebea38066bd94806c2a6067ff9dce",
+    "backend/feasibility/tests/test_solver.py": "1d7b97270933d4429c1e2d610747c8e47520c8b67c98b7124044b6c9ad53c910",
+    "backend/feasibility/solver_demo.py": "0638ca74176abbf8ad4e11208c91471af510754833305a83a06b155ce697c6a4",
+    "backend/feasibility/pyproject.toml": "e6cb78b1ce073ce940842738968f9141a6cf874dd0e5a8b41566ce7e851ea8fa",
+    "backend/feasibility/uv.lock": "d4657cb54b7dcff8f5960584f8a95ad6206902a6817853203296ad49fd1431b2",
+    "contracts/feasibility/SOLVER.md": "1b5a67ec8de22509868ba6ce58fbf2fe4a55169ceaaede3037a2b61bbe4d5aac"
+  }
+}

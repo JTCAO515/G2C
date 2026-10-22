@@ -2,4 +2,4 @@
 name = "cj-feasibility-needs-candidate"
 version = "0.1.0"
 requires-python = ">=3.12,<3.15"
-dependencies = []
+dependencies = ["ortools==9.15.6755"]
