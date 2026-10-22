@@ -1,0 +1,50 @@
+test_bounded_utf8_stream_success (test_fact.AcquisitionTests.test_bounded_utf8_stream_success) ... ok
+test_cancel_at_final_chunk_is_not_success (test_fact.AcquisitionTests.test_cancel_at_final_chunk_is_not_success) ... ok
+test_cancel_during_resolve_blocks_transport (test_fact.AcquisitionTests.test_cancel_during_resolve_blocks_transport) ... ok
+test_cancel_stream_closes_and_never_returns_late_data (test_fact.AcquisitionTests.test_cancel_stream_closes_and_never_returns_late_data) ... ok
+test_limit_failure_closes_body (test_fact.AcquisitionTests.test_limit_failure_closes_body) ... ok
+test_parent_task_cancellation_propagates_and_closes (test_fact.AcquisitionTests.test_parent_task_cancellation_propagates_and_closes) ... ok
+test_precancel_no_io (test_fact.AcquisitionTests.test_precancel_no_io) ... ok
+test_private_dns_rejected_before_transport (test_fact.AcquisitionTests.test_private_dns_rejected_before_transport) ... ok
+test_production_always_disabled (test_fact.AcquisitionTests.test_production_always_disabled) ... ok
+test_redirect_forbidden_never_dispatched (test_fact.AcquisitionTests.test_redirect_forbidden_never_dispatched) ... ok
+test_redirect_limit_cycle_and_implicit_follow (test_fact.AcquisitionTests.test_redirect_limit_cycle_and_implicit_follow) ... ok
+test_redirect_private_dns_and_rebind_peer (test_fact.AcquisitionTests.test_redirect_private_dns_and_rebind_peer) ... ok
+test_redirect_validates_every_hop (test_fact.AcquisitionTests.test_redirect_validates_every_hop) ... ok
+test_resolver_returning_after_deadline_does_not_dispatch (test_fact.AcquisitionTests.test_resolver_returning_after_deadline_does_not_dispatch) ... ok
+test_status_headers_compression_size_and_malformed (test_fact.AcquisitionTests.test_status_headers_compression_size_and_malformed) ... ok
+test_timeout_stalled_resolver_and_stream (test_fact.AcquisitionTests.test_timeout_stalled_resolver_and_stream) ... ok
+test_transport_failure_redacted_no_retry (test_fact.AcquisitionTests.test_transport_failure_redacted_no_retry) ... ok
+test_bad_provenance_and_immutable_shapes (test_fact.ApplicabilityTests.test_bad_provenance_and_immutable_shapes) ... ok
+test_conflict_no_precise_answer_no_source_selection (test_fact.ApplicabilityTests.test_conflict_no_precise_answer_no_source_selection) ... ok
+test_derived_text_never_replaces_negation_currency_date_conditions (test_fact.ApplicabilityTests.test_derived_text_never_replaces_negation_currency_date_conditions) ... ok
+test_empty_and_missing_condition_unknown (test_fact.ApplicabilityTests.test_empty_and_missing_condition_unknown) ... ok
+test_expiry_at_exact_boundary (test_fact.ApplicabilityTests.test_expiry_at_exact_boundary) ... ok
+test_explicit_unconditional_distinct_from_absent (test_fact.ApplicabilityTests.test_explicit_unconditional_distinct_from_absent) ... ok
+test_forecast_window_regions_and_conditions (test_fact.ApplicabilityTests.test_forecast_window_regions_and_conditions) ... ok
+test_future_observation_or_publication (test_fact.ApplicabilityTests.test_future_observation_or_publication) ... ok
+test_incomplete_other_source_blocks_answer (test_fact.ApplicabilityTests.test_incomplete_other_source_blocks_answer) ... ok
+test_missing_declarations_never_invented (test_fact.ApplicabilityTests.test_missing_declarations_never_invented) ... ok
+test_missing_publication_is_preserved_not_inferred (test_fact.ApplicabilityTests.test_missing_publication_is_preserved_not_inferred) ... ok
+test_repr_does_not_leak_body (test_fact.ApplicabilityTests.test_repr_does_not_leak_body) ... ok
+test_same_values_and_stale_source (test_fact.ApplicabilityTests.test_same_values_and_stale_source) ... ok
+test_supported_exact_original_and_provenance (test_fact.ApplicabilityTests.test_supported_exact_original_and_provenance) ... ok
+test_canonical_and_exact_origin (test_fact.PolicyParserTests.test_canonical_and_exact_origin) ... ok
+test_malformed_duplicate_and_bounded_json (test_fact.PolicyParserTests.test_malformed_duplicate_and_bounded_json) ... ok
+test_media_and_encoding_limits (test_fact.PolicyParserTests.test_media_and_encoding_limits) ... ok
+test_nonpublic_dns_table_and_mixed_answer (test_fact.PolicyParserTests.test_nonpublic_dns_table_and_mixed_answer) ... ok
+test_original_structured_bytes_and_multilingual (test_fact.PolicyParserTests.test_original_structured_bytes_and_multilingual) ... ok
+test_policy_requires_explicit_valid_limits (test_fact.PolicyParserTests.test_policy_requires_explicit_valid_limits) ... ok
+test_url_rejection_table (test_fact.PolicyParserTests.test_url_rejection_table) ... ok
+test_escaped_and_unicode_values_preserve_original_lexeme (test_structured.StructuredTests.test_escaped_and_unicode_values_preserve_original_lexeme) ... ok
+test_explicit_fields_bind_to_exact_json_substrings (test_structured.StructuredTests.test_explicit_fields_bind_to_exact_json_substrings) ... ok
+test_extractor_reapplies_bounds (test_structured.StructuredTests.test_extractor_reapplies_bounds) ... ok
+test_invalid_typed_declarations_fail_explicitly (test_structured.StructuredTests.test_invalid_typed_declarations_fail_explicitly) ... ok
+test_malicious_fields_never_become_fact_key_or_explanation (test_structured.StructuredTests.test_malicious_fields_never_become_fact_key_or_explanation) ... ok
+test_missing_fields_are_never_inferred_from_other_text (test_structured.StructuredTests.test_missing_fields_are_never_inferred_from_other_text) ... ok
+test_text_document_cannot_silently_become_structured_fact (test_structured.StructuredTests.test_text_document_cannot_silently_become_structured_fact) ... ok
+
+----------------------------------------------------------------------
+Ran 45 tests in 0.117s
+
+OK

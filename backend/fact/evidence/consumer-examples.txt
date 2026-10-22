@@ -1,0 +1,10 @@
+PASS normal: supported
+PASS missing_scope: unknown
+PASS future_window: unsupported_or_out_of_range
+PASS region_mismatch: unsupported_or_out_of_range
+PASS expired: expired
+PASS conflicting: conflicting
+PASS missing_user_condition: unknown
+PASS no_evidence: unknown
+PASS malicious_extra_fields_are_data: supported
+9 synthetic consumer cases PASS; real integration UNRUN

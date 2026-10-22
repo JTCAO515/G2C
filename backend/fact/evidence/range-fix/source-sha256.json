@@ -1,0 +1,23 @@
+{
+  "parent": "05d8683339d0ee6e7bd28eb03d01602a95e6b01d",
+  "independent_harness_byte_identical": true,
+  "independent_harness_sha256": "99305e18fef33028df2488955038f187bd80974fc77c96ebff59608260e0990c",
+  "files": {
+    "backend/fact/README.md": "61af4c8bd662da6333a4e86fd546b139c48525473daffe2598366ba7329a52b6",
+    "backend/fact/cj_fact/__init__.py": "2053cb5cdd266b136ddbe82a0851c90142ce15ce4bd644cb39b693548e0f1788",
+    "backend/fact/cj_fact/acquisition.py": "bb188ea20d26e0e3256b5896213122a4832d11dced895989f4f483d962a05f8f",
+    "backend/fact/cj_fact/model.py": "2432dd5b12807a869410b79e930a83e20dbebe272d55a8cad5b66dc4b4d7c972",
+    "backend/fact/cj_fact/policy.py": "06d1e8477932406d999c7133b3830eef33b399ef040e9bf625c3315de9abc299",
+    "backend/fact/cj_fact/structured.py": "23ff66adec0d129e30c4572481c310512ea70f92eaacf69fb8dee884d431f70c",
+    "backend/fact/pyproject.toml": "ef00a47aa3b58befc8023913f47e7d547595e408c1e0b57a4ec6cccda60daab9",
+    "backend/fact/tests/check_examples.py": "f3f2058498bfe75df0a3cdea06f140b397c7ad1d085bc2277ca53d5a9f6b1921",
+    "backend/fact/tests/independent_overflow_checks.py": "99305e18fef33028df2488955038f187bd80974fc77c96ebff59608260e0990c",
+    "backend/fact/tests/independent_time_checks.py": "c13bf0a7deb63825a2ccaf585417314d7ac9183b01562e056e9d37be1027b04e",
+    "backend/fact/tests/test_fact.py": "9072862ba17c77e62c32cd7002208d4339323b09ba560f39443c5cb566462e07",
+    "backend/fact/tests/test_instant_ranges.py": "8f7cbae360faeb3168cc29027e98a22075c0c4601a3e588c7434867a76213034",
+    "backend/fact/tests/test_structured.py": "d679f99d5a7a0a17a0492716471d7abe5ab99fa0d16f9f5d357ca348c81511b4",
+    "backend/fact/tests/test_time_instants.py": "aa1f56a7c0873af9942749bd4ebebdd97d01aefa4bc34b9e67cb839bfa4ad93e",
+    "contracts/fact/README.md": "50d885771cb3431d0679543c9b15723e4db7f32ab1662a293523373ed8344deb",
+    "contracts/fact/synthetic-cases.json": "7d478249b105027e4cdfeb6a3628152bc8e576dd778bf162bac416ca28235709"
+  }
+}
