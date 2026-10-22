@@ -66,3 +66,9 @@ manual save/lock state, real accounts/services/feasibility and full Issue22 I re
 separate. Checks: check-manual-preview-wire.sh, check-generated-manual-preview.sh,
 build-manual-preview-loopback-client.sh, generate.sh --check. Real private PG/HTTP
 combination is separately attributed, not inferred from fixtures or producer gates.
+
+Author real combination at c5ffafb passed7 groups including official Swift over
+numeric HTTP and canonical private PostgreSQL. Read/preview inventory unchanged;
+test-induced concurrent canonical correction is separately labeled. All services
+stopped. See tests/evidence/manual-preview/REPORT.md for hashes/layers and remaining
+save/UI/protection/feasibility/Issue22 requirements; no production authority follows.
