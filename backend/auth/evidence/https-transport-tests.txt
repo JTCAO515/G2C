@@ -1,0 +1,13 @@
+test_cancel_inflight_closes_response (test_https_transport.HTTPSTests.test_cancel_inflight_closes_response) ... ok
+test_configuration_and_tls_cannot_disable_verification (test_https_transport.HTTPSTests.test_configuration_and_tls_cannot_disable_verification) ... ok
+test_default_disabled_and_target_mismatch_never_call_transport (test_https_transport.HTTPSTests.test_default_disabled_and_target_mismatch_never_call_transport) ... ok
+test_limits_encoding_and_close_on_failure (test_https_transport.HTTPSTests.test_limits_encoding_and_close_on_failure) ... ok
+test_redirects_never_follow_even_to_same_origin (test_https_transport.HTTPSTests.test_redirects_never_follow_even_to_same_origin) ... ok
+test_request_has_no_secret_headers_and_timeouts_are_httpx_options (test_https_transport.HTTPSTests.test_request_has_no_secret_headers_and_timeouts_are_httpx_options) ... ok
+test_sync_entry_rejects_running_event_loop_without_io (test_https_transport.HTTPSTests.test_sync_entry_rejects_running_event_loop_without_io) ... ok
+test_total_timeout_is_inside_adapter_and_closes_stream (test_https_transport.HTTPSTests.test_total_timeout_is_inside_adapter_and_closes_stream) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.112s
+
+OK

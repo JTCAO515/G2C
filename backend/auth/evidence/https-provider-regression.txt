@@ -1,0 +1,17 @@
+test_body_chunk_keyid_limits_redirect_and_close (test_jwks_provider.JWKSTests.test_body_chunk_keyid_limits_redirect_and_close) ... ok
+test_cancel_or_close_discards_late_result_without_resetting_cooldown (test_jwks_provider.JWKSTests.test_cancel_or_close_discards_late_result_without_resetting_cooldown) ... ok
+test_concurrent_unknowns_do_not_start_parallel_refresh (test_jwks_provider.JWKSTests.test_concurrent_unknowns_do_not_start_parallel_refresh) ... ok
+test_deadline_and_backward_clock_reject (test_jwks_provider.JWKSTests.test_deadline_and_backward_clock_reject) ... ok
+test_default_closed_and_explicit_binding_validation (test_jwks_provider.JWKSTests.test_default_closed_and_explicit_binding_validation) ... ok
+test_duplicate_private_wrong_type_ops_and_key_count_rejected (test_jwks_provider.JWKSTests.test_duplicate_private_wrong_type_ops_and_key_count_rejected) ... ok
+test_expired_cache_no_fallback_and_no_failed_refresh_extension (test_jwks_provider.JWKSTests.test_expired_cache_no_fallback_and_no_failed_refresh_extension) ... ok
+test_explicit_ec_profile_and_wrong_curve (test_jwks_provider.JWKSTests.test_explicit_ec_profile_and_wrong_curve) ... ok
+test_rotation_replaces_set_and_retires_removed_key (test_jwks_provider.JWKSTests.test_rotation_replaces_set_and_retires_removed_key) ... ok
+test_same_kid_replacement_after_ttl_does_not_keep_old_material (test_jwks_provider.JWKSTests.test_same_kid_replacement_after_ttl_does_not_keep_old_material) ... ok
+test_signature_cache_and_token_url_does_not_select_source (test_jwks_provider.JWKSTests.test_signature_cache_and_token_url_does_not_select_source) ... ok
+test_unknown_kid_flood_and_failure_share_global_cooldown (test_jwks_provider.JWKSTests.test_unknown_kid_flood_and_failure_share_global_cooldown) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.057s
+
+OK

@@ -95,3 +95,5 @@ SERVER-INTERFACE.md，仍待原 owner 更新其固定消费引用/运行说明�
 
 显式可选 JWKS provider/轮换候选见 [JWKS-PROVIDER](../../contracts/auth/JWKS-PROVIDER.md)。
 默认无 transport/config 时仍 UNKNOWN、不联网；原 strict/静态公钥路径不变。
+
+可选固定 HTTPX HTTPS transport 与真实 loopback TLS 分层证据见 [HTTPS-JWKS-TRANSPORT](../../contracts/auth/HTTPS-JWKS-TRANSPORT.md)。默认仍不联网，真实外网 DNS/provider 未验。
