@@ -1,0 +1,9 @@
+Building for debugging...
+[Pre-planning 1 / 214]
+[Planning deferred tasks]
+[5 / 13] CJAPI
+[9 / 17] CJAPI
+Build complete! (0.85秒)
+PASS official RFC3339 whole/fractional/offset decoding, invalid date remains nonnull invalid fallback
+PASS actual generated MEMORY Client five operations; exact body, query encoding, candidate and required null
+PASS generated missing receipt / invalid enum; nonnull null-fallback must be rejected explicitly

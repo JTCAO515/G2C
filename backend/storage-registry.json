@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "stores": [
     {
       "id": "business",
@@ -51,6 +51,28 @@
           "retention": "UNDECIDED; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; USAGE cancel releases reservations only",
           "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+        },
+        {
+          "id": "memory-authoritative",
+          "owner": "CJ-011 (lifecycle CJ-019/020/021/024)",
+          "objects": [
+            "cj_memory_scope",
+            "cj_memory_source",
+            "cj_memory_item",
+            "cj_memory_operation"
+          ],
+          "source": "backend/memory/schema.sql@426d337b0647d7770f1716fad83f2e5e724d28e4",
+          "status": "candidate/local_only; production_not_provisioned",
+          "principal_binding": "Explicit environment/profile + trusted issuer/subject/audience mapped host scope; public guarded Service; manual source/item/ledger only via explicit ManualPolicy in one transaction; no caller source/approval",
+          "sensitive_fields": [
+            "original_input and approved_input exact bytes (also duplicated in operation ledger)",
+            "source references/version/approval and expiry",
+            "subject/slot/context/operation/item IDs",
+            "content/types/status/version/record and occurrence times"
+          ],
+          "retention": "UNDECIDED; source expiry is not content retention; activation blocked",
+          "cleanup_hook": "UNIMPLEMENTED; no physical cleanup API; source/item revocation and scope epoch lifecycle must be provided by domain owners; no derived ReMe store added",
+          "restore_fence": "UNIMPLEMENTED; source/revocation/tombstone replay must precede reads; no resurrection promise"
         }
       ]
     },
@@ -171,5 +193,8 @@
     }
   ],
   "evidence_tree": "3c52f72daf1d8e2304c0c569b47e68d92a4b323e",
-  "production_activation": "BLOCKED; source/local acceptance does not provision production"
+  "production_activation": "BLOCKED; source/local acceptance does not provision production",
+  "candidate_sources": {
+    "memory": "426d337b0647d7770f1716fad83f2e5e724d28e4"
+  }
 }
