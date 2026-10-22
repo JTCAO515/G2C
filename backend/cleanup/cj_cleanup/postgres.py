@@ -31,13 +31,16 @@ class Repository:
     @contextmanager
     def _transaction(self, *, writing):
         conn = None
-        accepted = commit_started = committed = False
+        accepted = commit_started = failed = False
         connect, scope, guard = self.connect, self.scope, self.guard
+        scope_bytes = self._scope_bytes
         def check(stage):
-            if self.connect is not connect or self.scope != scope or self.guard is not guard:
+            if (self.connect is not connect or self.scope != scope or self.guard is not guard
+                    or self._scope_bytes != scope_bytes):
                 raise core.Denied('cleanup binding changed')
             guard(stage)
-            if self.connect is not connect or self.scope != scope or self.guard is not guard:
+            if (self.connect is not connect or self.scope != scope or self.guard is not guard
+                    or self._scope_bytes != scope_bytes):
                 raise core.Denied('cleanup binding changed')
         try:
             conn = connect()
@@ -53,9 +56,8 @@ class Repository:
             check('commit')
             commit_started = True
             conn.commit()
-            committed = True
-            check('return')
         except BaseException as exc:
+            failed = True
             if writing and commit_started: raise CommitUnknown('query original operation; do not retry hook') from None
             if isinstance(exc, (core.Invalid, core.Conflict, core.Denied, Unavailable)):
                 raise
@@ -67,8 +69,18 @@ class Repository:
                     except BaseException: pass  # preserve original failure; no success is returned
                 try: conn.close()
                 except BaseException:
-                    if committed and writing: raise CommitUnknown('query original operation; do not retry hook') from None
-                    if committed: raise Unavailable('cleanup metadata unavailable') from None
+                    # Cleanup must never replace an earlier body/commit failure.
+                    if not failed:
+                        if writing and commit_started: raise CommitUnknown('query original operation; do not retry hook') from None
+                        raise Unavailable('cleanup metadata unavailable') from None
+                if not failed:
+                    # close() is external code too: only publish after its callbacks,
+                    # and with no further connection cleanup after this final fence.
+                    try: check('return')
+                    except BaseException as exc:
+                        if writing and commit_started: raise CommitUnknown('query original operation; do not retry hook') from None
+                        if isinstance(exc, (core.Denied, Unavailable)): raise
+                        raise Unavailable('cleanup metadata unavailable') from None
 
     def _load(self, cur, operation_id, *, lock=False):
         core.identifier(operation_id)

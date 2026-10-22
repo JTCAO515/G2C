@@ -27,3 +27,5 @@ intent 必须 COMMIT 成功返回后，未来获准 host 才可能调用 hook；
 这张候选表自身含 scope/operation IDs 和最小确认摘要/回执元数据，属于私有存储；需要正式 owner 注册 canonical storage ID、留存/清理及恢复围栏后才能激活。本写区没有根 registry 写权，也没有自造注册条目；当前真实注销不得忽略这项新增存储，不能据候选表存在声称全域 complete。只在授权 synthetic 空库创建它。
 
 本地 runner 使用已安装 psycopg3.2.10（局部 pin：tests/pg_requirements.lock），显式 `--pg-bin`/`--driver`。`tests/private_pg.py` 拒绝复用已存在路径；已保留实例不得再次自动启动。首次实际运行的资源和结果见后置 evidence/PG-RESULT.md。
+
+P2 close 后最终围栏返修：最终 captured guard/context 检查在最后外部 `close()` 正常完成后；原 body/COMMITunknown 结果优先，close/rollback 错误不能遮盖原失败。新55458空cluster的原两probe + 8项相关txn控制10PASS，原55457/Testing实例未重启。详见 evidence/PG-CLOSE-REPAIR.md。

@@ -55,3 +55,5 @@ CJ007：真实普通访问撤销/旧 token 和在途边界、原操作结果；C
 写入的 COMMIT/返回/close 结果不明确抛 `CommitUnknown`；只能用原 ID 只读 query/journal 核对，不自动调用、重试或换 ID。已落盘 intent 未有原结果时不能推 confirmed；显式恢复也不会把 unknown 变 complete。query 不授予普通业务权限，没有公开注销后路由。
 
 表候选 `cj_cleanup_journal_candidate` 自身是新增私有元数据存储，尚未被正式 registry 接纳，也未有留存/物理清理/备份防复活正式接口；生产激活必须经原owner登记与验证，原冻清单不能忽略它而宣称全域完成。此段仅在全新私有空cluster用合成身份验证，不触碰其他域表/权限/真实账号。生产 durable 服务、权限策略、I验收仍未完成。
+
+持久适配的最终返回围栏必须在最后外部连接cleanup之后重新检查捕获的connect/scope/guard及scope bytes；正常close回调也可能使当前上下文失效。写提交后失效返回CommitUnknown，read拒绝发布私有值。已有body/COMMITunknown异常优先，rollback/close错误不遮盖原失败；所有清理之后才允许最终返回。
