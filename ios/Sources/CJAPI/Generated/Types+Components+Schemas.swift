@@ -5437,5 +5437,435 @@ extension Components {
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/ManualPreviewTextUpdate`.
+        public struct ManualPreviewTextUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewTextUpdate/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewTextUpdate/text`.
+            public var text: Swift.String
+            /// Creates a new `ManualPreviewTextUpdate`.
+            ///
+            /// - Parameters:
+            ///   - item_id:
+            ///   - text:
+            public init(
+                item_id: Swift.String,
+                text: Swift.String
+            ) {
+                self.item_id = item_id
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case item_id
+                case text
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "item_id",
+                    "text"
+                ])
+            }
+        }
+        /// Read-only preview input. Original bytes from an authenticated Trip read must match server current version/content exactly. Caller retains this entire draft on conflict/unknown. Supports only selected title/text/order; no protected IDs/owner/day/time/lock/proposal/action/confirmation/expiry fields.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest`.
+        public struct ManualPreviewRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/trip_id`.
+            public var trip_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/original_content_utf8_base64`.
+            public var original_content_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/selected_ids`.
+            public var selected_ids: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/title_selected`.
+            public var title_selected: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/title`.
+            @frozen public enum titlePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/title/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/title/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/title`.
+            public var title: Components.Schemas.ManualPreviewRequest.titlePayload
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/text_updates`.
+            public var text_updates: [Components.Schemas.ManualPreviewTextUpdate]
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/order`.
+            @frozen public enum orderPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/order/case1`.
+                case case1([Swift.String])
+                /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/order/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewRequest/order`.
+            public var order: Components.Schemas.ManualPreviewRequest.orderPayload
+            /// Creates a new `ManualPreviewRequest`.
+            ///
+            /// - Parameters:
+            ///   - trip_id:
+            ///   - expected_version:
+            ///   - original_content_utf8_base64:
+            ///   - selected_ids:
+            ///   - title_selected:
+            ///   - title:
+            ///   - text_updates:
+            ///   - order:
+            public init(
+                trip_id: Swift.String,
+                expected_version: Swift.Int,
+                original_content_utf8_base64: Swift.String,
+                selected_ids: [Swift.String],
+                title_selected: Swift.Bool,
+                title: Components.Schemas.ManualPreviewRequest.titlePayload,
+                text_updates: [Components.Schemas.ManualPreviewTextUpdate],
+                order: Components.Schemas.ManualPreviewRequest.orderPayload
+            ) {
+                self.trip_id = trip_id
+                self.expected_version = expected_version
+                self.original_content_utf8_base64 = original_content_utf8_base64
+                self.selected_ids = selected_ids
+                self.title_selected = title_selected
+                self.title = title
+                self.text_updates = text_updates
+                self.order = order
+            }
+            public enum CodingKeys: String, CodingKey {
+                case trip_id
+                case expected_version
+                case original_content_utf8_base64
+                case selected_ids
+                case title_selected
+                case title
+                case text_updates
+                case order
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.trip_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .trip_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.original_content_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .original_content_utf8_base64
+                )
+                self.selected_ids = try container.decode(
+                    [Swift.String].self,
+                    forKey: .selected_ids
+                )
+                self.title_selected = try container.decode(
+                    Swift.Bool.self,
+                    forKey: .title_selected
+                )
+                self.title = try container.decode(
+                    Components.Schemas.ManualPreviewRequest.titlePayload.self,
+                    forKey: .title
+                )
+                self.text_updates = try container.decode(
+                    [Components.Schemas.ManualPreviewTextUpdate].self,
+                    forKey: .text_updates
+                )
+                self.order = try container.decode(
+                    Components.Schemas.ManualPreviewRequest.orderPayload.self,
+                    forKey: .order
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "trip_id",
+                    "expected_version",
+                    "original_content_utf8_base64",
+                    "selected_ids",
+                    "title_selected",
+                    "title",
+                    "text_updates",
+                    "order"
+                ])
+            }
+        }
+        /// Producer Change display metadata, not apply-patch input. before/after are exact canonical JSON value bytes; path is title, items/order, or items/id/<original item ID>.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ManualPreviewChange`.
+        public struct ManualPreviewChange: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewChange/path`.
+            public var path: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewChange/before_utf8_base64`.
+            public var before_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewChange/after_utf8_base64`.
+            public var after_utf8_base64: Swift.String
+            /// Creates a new `ManualPreviewChange`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - before_utf8_base64:
+            ///   - after_utf8_base64:
+            public init(
+                path: [Swift.String],
+                before_utf8_base64: Swift.String,
+                after_utf8_base64: Swift.String
+            ) {
+                self.path = path
+                self.before_utf8_base64 = before_utf8_base64
+                self.after_utf8_base64 = after_utf8_base64
+            }
+            public enum CodingKeys: String, CodingKey {
+                case path
+                case before_utf8_base64
+                case after_utf8_base64
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.path = try container.decode(
+                    [Swift.String].self,
+                    forKey: .path
+                )
+                self.before_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .before_utf8_base64
+                )
+                self.after_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .after_utf8_base64
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "path",
+                    "before_utf8_base64",
+                    "after_utf8_base64"
+                ])
+            }
+        }
+        /// Pure local structural diff after same-owner protected reads. No persistence/Proposal/receipt/save/feasibility claim. Missing trusted protected-state context remains UNKNOWN, never unlocked/fully checked.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ManualPreview`.
+        public struct ManualPreview: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/preview_status`.
+            @frozen public enum preview_statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case LOCAL = "LOCAL"
+            }
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/preview_status`.
+            public var preview_status: Components.Schemas.ManualPreview.preview_statusPayload
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/original`.
+            public var original: Components.Schemas.TripRecord
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/content_utf8_base64`.
+            public var content_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/document`.
+            public var document: Components.Schemas.TripDocument
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/selected_ids`.
+            public var selected_ids: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/title_selected`.
+            public var title_selected: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/protection_status`.
+            @frozen public enum protection_statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case UNKNOWN = "UNKNOWN"
+            }
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/protection_status`.
+            public var protection_status: Components.Schemas.ManualPreview.protection_statusPayload
+            /// Always false; no confirmation issuer/feasibility/save authority exists.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/can_save`.
+            public var can_save: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ManualPreview/diff`.
+            public var diff: [Components.Schemas.ManualPreviewChange]
+            /// Creates a new `ManualPreview`.
+            ///
+            /// - Parameters:
+            ///   - preview_status:
+            ///   - original:
+            ///   - content_utf8_base64:
+            ///   - document:
+            ///   - selected_ids:
+            ///   - title_selected:
+            ///   - protection_status:
+            ///   - can_save: Always false; no confirmation issuer/feasibility/save authority exists.
+            ///   - diff:
+            public init(
+                preview_status: Components.Schemas.ManualPreview.preview_statusPayload,
+                original: Components.Schemas.TripRecord,
+                content_utf8_base64: Swift.String,
+                document: Components.Schemas.TripDocument,
+                selected_ids: [Swift.String],
+                title_selected: Swift.Bool,
+                protection_status: Components.Schemas.ManualPreview.protection_statusPayload,
+                can_save: Swift.Bool,
+                diff: [Components.Schemas.ManualPreviewChange]
+            ) {
+                self.preview_status = preview_status
+                self.original = original
+                self.content_utf8_base64 = content_utf8_base64
+                self.document = document
+                self.selected_ids = selected_ids
+                self.title_selected = title_selected
+                self.protection_status = protection_status
+                self.can_save = can_save
+                self.diff = diff
+            }
+            public enum CodingKeys: String, CodingKey {
+                case preview_status
+                case original
+                case content_utf8_base64
+                case document
+                case selected_ids
+                case title_selected
+                case protection_status
+                case can_save
+                case diff
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.preview_status = try container.decode(
+                    Components.Schemas.ManualPreview.preview_statusPayload.self,
+                    forKey: .preview_status
+                )
+                self.original = try container.decode(
+                    Components.Schemas.TripRecord.self,
+                    forKey: .original
+                )
+                self.content_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .content_utf8_base64
+                )
+                self.document = try container.decode(
+                    Components.Schemas.TripDocument.self,
+                    forKey: .document
+                )
+                self.selected_ids = try container.decode(
+                    [Swift.String].self,
+                    forKey: .selected_ids
+                )
+                self.title_selected = try container.decode(
+                    Swift.Bool.self,
+                    forKey: .title_selected
+                )
+                self.protection_status = try container.decode(
+                    Components.Schemas.ManualPreview.protection_statusPayload.self,
+                    forKey: .protection_status
+                )
+                self.can_save = try container.decode(
+                    Swift.Bool.self,
+                    forKey: .can_save
+                )
+                self.diff = try container.decode(
+                    [Components.Schemas.ManualPreviewChange].self,
+                    forKey: .diff
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "preview_status",
+                    "original",
+                    "content_utf8_base64",
+                    "document",
+                    "selected_ids",
+                    "title_selected",
+                    "protection_status",
+                    "can_save",
+                    "diff"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ManualPreviewResponse`.
+        public struct ManualPreviewResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/ManualPreviewResponse/preview`.
+            public var preview: Components.Schemas.ManualPreview
+            /// Creates a new `ManualPreviewResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - preview:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                preview: Components.Schemas.ManualPreview
+            ) {
+                self.request_id = request_id
+                self.preview = preview
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case preview
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.preview = try container.decode(
+                    Components.Schemas.ManualPreview.self,
+                    forKey: .preview
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "preview"
+                ])
+            }
+        }
     }
 }

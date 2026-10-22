@@ -79,6 +79,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/run-display`.
     /// - Remark: Generated from `#/paths//v1/run-display/get(getRunDisplaySnapshot)`.
     func getRunDisplaySnapshot(_ input: Operations.getRunDisplaySnapshot.Input) async throws -> Operations.getRunDisplaySnapshot.Output
+    /// - Remark: HTTP `POST /v1/trip-manual-previews`.
+    /// - Remark: Generated from `#/paths//v1/trip-manual-previews/post(previewManualTripEdit)`.
+    func previewManualTripEdit(_ input: Operations.previewManualTripEdit.Input) async throws -> Operations.previewManualTripEdit.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -337,6 +340,17 @@ extension APIProtocol {
         try await getRunDisplaySnapshot(Operations.getRunDisplaySnapshot.Input(
             query: query,
             headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/trip-manual-previews`.
+    /// - Remark: Generated from `#/paths//v1/trip-manual-previews/post(previewManualTripEdit)`.
+    public func previewManualTripEdit(
+        headers: Operations.previewManualTripEdit.Input.Headers = .init(),
+        body: Operations.previewManualTripEdit.Input.Body
+    ) async throws -> Operations.previewManualTripEdit.Output {
+        try await previewManualTripEdit(Operations.previewManualTripEdit.Input(
+            headers: headers,
+            body: body
         ))
     }
 }

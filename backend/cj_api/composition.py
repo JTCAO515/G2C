@@ -74,7 +74,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         trip_configuration=None, resolve_trip=None, trip_confirmation_validator=None,
                         needs_configuration=None, resolve_needs=None,
                         feedback_configuration=None, resolve_feedback=None, resolve_feedback_run=None,
-                        run_display_configuration=None, resolve_run_display=None):
+                        run_display_configuration=None, resolve_run_display=None,manual_preview_configuration=None):
     """No zero-argument/public production configuration exists."""
     if type(max_body_bytes) is not int or max_body_bytes <= 0:
         raise CompositionUnavailable('Explicit positive body byte limit required')
@@ -126,6 +126,11 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
     if run_display_configuration is not None or resolve_run_display is not None:
         from .run_display_composition import _attach_run_display
         run_display_reader,run_display_modules = _attach_run_display(boundary,resolve_run_display,run_display_configuration)
+    preview_boundary = preview_modules = None
+    if manual_preview_configuration is not None:
+        if trip_boundary is None:raise CompositionUnavailable('Manual preview requires the existing configured TRIP boundary')
+        from .manual_preview_composition import _attach_manual_preview
+        preview_boundary,preview_modules = _attach_manual_preview(trip_boundary,manual_preview_configuration)
     from .app import create_app
     return create_app(_message_boundary=boundary, _max_body_bytes=max_body_bytes,
                       _history_configuration=history_configuration, _history_environment=environment,
@@ -133,4 +138,5 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                       _trip_boundary=trip_boundary, _trip_configuration=trip_configuration, _trip_modules=trip_modules,
                       _needs_boundary=needs_boundary, _needs_configuration=needs_configuration, _needs_modules=needs_modules,
                       _feedback_boundary=feedback_boundary, _feedback_configuration=feedback_configuration, _feedback_modules=feedback_modules,
-                      _run_display_reader=run_display_reader, _run_display_configuration=run_display_configuration, _run_display_modules=run_display_modules)
+                      _run_display_reader=run_display_reader, _run_display_configuration=run_display_configuration, _run_display_modules=run_display_modules,
+                      _manual_preview_boundary=preview_boundary,_manual_preview_configuration=manual_preview_configuration,_manual_preview_modules=preview_modules)
