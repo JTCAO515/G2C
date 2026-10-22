@@ -62,6 +62,12 @@ flag; none of those can be dropped when constructing a citation card.
 Per evidence: wrong fact -> out of range; observation after evaluation or
 publication after retrieval -> unknown; expired -> expired; scope/condition
 mismatch -> out of range; remaining missing fields -> unknown; otherwise supported.
+Timestamp ordering compares actual instants using UTC comparison views,
+including same-ZoneInfo DST folds. Retrieval/publication freshness, expiry and
+publication-before-expiry validation share this rule. Original timestamp
+objects, offsets, fold values and source excerpts are retained unchanged.
+DateRange still compares inclusive source calendar dates without UTC conversion.
+
 A missing publication date remains absent but alone does not invalidate other
 explicit scope and expiry declarations. Missing expiry is unknown even when the
 travel date window is known: forecast coverage does not imply freshness lifetime.

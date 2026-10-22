@@ -1,6 +1,6 @@
 """FACT evidence and deterministic applicability. Local data, never authentication."""
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
 from hashlib import sha256
 from typing import Generic, TypeVar
@@ -12,6 +12,11 @@ T = TypeVar("T")
 def aware(value: datetime) -> None:
     if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("timezone_required")
+
+
+def _instant(value: datetime) -> datetime:
+    """Comparison view only; preserve original source datetime, offset and fold."""
+    return value.astimezone(timezone.utc)
 
 
 @dataclass(frozen=True)
@@ -126,7 +131,7 @@ class Evidence:
             if stamp is not None:
                 aware(stamp.value)
         if (self.published_at is not None and self.expires_at is not None
-                and self.expires_at.value <= self.published_at.value):
+                and _instant(self.expires_at.value) <= _instant(self.published_at.value)):
             raise ValueError('invalid_validity')
         if type(self.explanations) is not tuple:
             raise ValueError('immutable_explanations_required')
@@ -195,10 +200,12 @@ def _assess(query: Query, evidence: Evidence) -> Assessment:
     reasons = []
     if evidence.fact_key != query.fact_key:
         return Assessment(evidence, Status.OUT_OF_RANGE, ('fact_key_mismatch',))
-    if (evidence.document.retrieved_at > query.evaluated_at or
-            (evidence.published_at is not None and evidence.published_at.value > evidence.document.retrieved_at)):
+    if (_instant(evidence.document.retrieved_at) > _instant(query.evaluated_at) or
+            (evidence.published_at is not None
+             and _instant(evidence.published_at.value) > _instant(evidence.document.retrieved_at))):
         return Assessment(evidence, Status.UNKNOWN, ('future_observation_or_publication',))
-    if evidence.expires_at is not None and query.evaluated_at >= evidence.expires_at.value:
+    if (evidence.expires_at is not None
+            and _instant(query.evaluated_at) >= _instant(evidence.expires_at.value)):
         return Assessment(evidence, Status.EXPIRED, ('expiry_reached',))
     if evidence.regions is None:
         reasons.append('region_not_declared')
