@@ -1,0 +1,2 @@
+# Task-private PostgreSQL acceptance runner; existing installed driver reused read-only.
+psycopg==3.2.10
