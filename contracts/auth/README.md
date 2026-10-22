@@ -130,3 +130,6 @@ python3 -B contracts/auth/check_email.py
 网络未知与明确失效、资格拒绝及服务端撤销/资格变化后再次校验。
 实际 SDK、跨用户 API/数据库、真机、CI、部署、独立 Review/Testing 均未由此证明。
 Issue #8 保持未完成。独立审验应固定提交 head；内容变化后补受影响检查。
+
+新增有界 JWKS 注入候选：[JWKS-PROVIDER](JWKS-PROVIDER.md)，不含真实网络 transport，
+不改变旧 profile/准入逻辑或已停止的 Keychain 执行状态。
