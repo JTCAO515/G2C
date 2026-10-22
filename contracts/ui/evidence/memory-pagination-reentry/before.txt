@@ -1,0 +1,42 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 840]
+[Planning deferred tasks]
+[1 / 31] CJShell_CJShell
+[8 / 19] CJShellTests-product
+[10 / 21] CJShellTests-product
+[16 / 20] CJShellTests-product
+Build complete! (2.02秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentMemoryPaginationReentryTests started.
+◇ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) started.
+◇ Test case passing 1 argument trigger → 2 to oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) started.
+◇ Test case passing 1 argument trigger → 1 to oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) started.
+◇ Test case passing 1 argument trigger → 3 to oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) started.
+✘ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) recorded an issue with 1 argument trigger → 3 at IndependentMemoryPaginationReentryTests.swift:51:9: Expectation failed: selected
+↳ selected → <not evaluated>
+✘ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) recorded an issue with 1 argument trigger → 3 at IndependentMemoryPaginationReentryTests.swift:52:9: Expectation failed: await transport.calls.count==2
+↳ Old page dispatched after a newer item-selection epoch
+↳ await transport.calls.count==2 → <not evaluated>
+✘ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) recorded an issue with 1 argument trigger → 2 at IndependentMemoryPaginationReentryTests.swift:52:9: Expectation failed: await transport.calls.count==2
+↳ Old page dispatched after a newer item-selection epoch
+↳ await transport.calls.count==2 → <not evaluated>
+✘ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) recorded an issue with 1 argument trigger → 3 at IndependentMemoryPaginationReentryTests.swift:54:9: Expectation failed: await transport.calls.last=="getMemoryItem"
+↳ Old page cleared the newly selected detail item
+↳ await transport.calls.last=="getMemoryItem" → <not evaluated>
+✘ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) recorded an issue with 1 argument trigger → 3 at IndependentMemoryPaginationReentryTests.swift:55:71: Issue recorded
+↳ Selected detail was not loaded
+✘ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) recorded an issue with 1 argument trigger → 2 at IndependentMemoryPaginationReentryTests.swift:54:9: Expectation failed: await transport.calls.last=="getMemoryItem"
+↳ Old page cleared the newly selected detail item
+↳ await transport.calls.last=="getMemoryItem" → <not evaluated>
+✘ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) recorded an issue with 1 argument trigger → 2 at IndependentMemoryPaginationReentryTests.swift:55:71: Issue recorded
+↳ Selected detail was not loaded
+✘ Test oldNextPageCannotEraseNewItemSelectionDuringHasMoreCallback(trigger:) with 3 test cases failed after 0.010 seconds with 7 issues.
+✘ Suite IndependentMemoryPaginationReentryTests failed after 0.010 seconds with 7 issues.
+✘ Test run with 1 test in 1 suite failed after 0.010 seconds with 7 issues.
+Note: Some test targets reported failures:
+  - CJShellTests (Swift Testing)

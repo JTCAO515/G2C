@@ -1,0 +1,53 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[1 / 38] Crypto
+[2 / 13] CJShell
+[4 / 15] CJShell
+[9 / 14] CJShellTests-product
+[11 / 16] CJShellTests-product
+[15 / 18] CJShellTests-product
+[17 / 21] CJShellTests-product
+Build complete! (3.78秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite TripContainerHostTests started.
+◇ Test missingStoreAndExistingKeyFailClosed() started.
+◇ Test duplicatePreparedWorkCannotReleaseBusyOrDispatchTwice() started.
+◇ Test defaultUnavailableAndNoInventedContext() started.
+◇ Test originalSessionRetirementHidesPrivatePresentation() started.
+◇ Test pendingKeyCallbackReplacementCannotNavigateOrOverwriteB() started.
+◇ Test sameBindingKeyCallbackSelectionWinsOverOldHostSelection() started.
+◇ Test currentCallbackReentryPreservesReplacementAndDoesNotDispatch() started.
+◇ Test oldReadCannotReviveAfterAccountOrBackground(background:) started.
+◇ Test emptyMissingAndMalformedReadsAreDistinct() started.
+◇ Test queuedQueryCannotSwitchToAnotherOriginal() started.
+◇ Test queuedOldActionCannotRetargetNewBindingOrSelection() started.
+◇ Test originalReceiptNeverBecomesLatestVersion(kind:) started.
+◇ Test canonicalListPagesDetailAndProposalStayReadOnly() started.
+◇ Test case passing 1 argument background → true to oldReadCannotReviveAfterAccountOrBackground(background:) started.
+◇ Test uncertainOriginalQueryStaysUnknownWithoutResend(outcome:) started.
+◇ Test case passing 1 argument background → false to oldReadCannotReviveAfterAccountOrBackground(background:) started.
+◇ Test case passing 1 argument outcome → "null" to uncertainOriginalQueryStaysUnknownWithoutResend(outcome:) started.
+◇ Test case passing 1 argument outcome → "cancel" to uncertainOriginalQueryStaysUnknownWithoutResend(outcome:) started.
+◇ Test case passing 1 argument outcome → "malformed" to uncertainOriginalQueryStaysUnknownWithoutResend(outcome:) started.
+◇ Test case passing 1 argument kind → .accept to originalReceiptNeverBecomesLatestVersion(kind:) started.
+◇ Test case passing 1 argument kind → .reject to originalReceiptNeverBecomesLatestVersion(kind:) started.
+✔ Test defaultUnavailableAndNoInventedContext() passed after 0.037 seconds.
+✔ Test missingStoreAndExistingKeyFailClosed() passed after 0.037 seconds.
+✔ Test currentCallbackReentryPreservesReplacementAndDoesNotDispatch() passed after 0.040 seconds.
+✔ Test originalSessionRetirementHidesPrivatePresentation() passed after 0.049 seconds.
+✔ Test pendingKeyCallbackReplacementCannotNavigateOrOverwriteB() passed after 0.049 seconds.
+✔ Test sameBindingKeyCallbackSelectionWinsOverOldHostSelection() passed after 0.050 seconds.
+✔ Test queuedOldActionCannotRetargetNewBindingOrSelection() passed after 0.050 seconds.
+✔ Test queuedQueryCannotSwitchToAnotherOriginal() passed after 0.050 seconds.
+✔ Test uncertainOriginalQueryStaysUnknownWithoutResend(outcome:) with 3 test cases passed after 0.052 seconds.
+✔ Test duplicatePreparedWorkCannotReleaseBusyOrDispatchTwice() passed after 0.052 seconds.
+✔ Test originalReceiptNeverBecomesLatestVersion(kind:) with 2 test cases passed after 0.052 seconds.
+✔ Test oldReadCannotReviveAfterAccountOrBackground(background:) with 2 test cases passed after 0.052 seconds.
+✔ Test emptyMissingAndMalformedReadsAreDistinct() passed after 0.052 seconds.
+✔ Test canonicalListPagesDetailAndProposalStayReadOnly() passed after 0.053 seconds.
+✔ Suite TripContainerHostTests passed after 0.053 seconds.
+✔ Test run with 14 tests in 1 suite passed after 0.053 seconds.

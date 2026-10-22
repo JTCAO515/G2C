@@ -1,0 +1,7 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[1 / 3]
+[2 / 4] CJShell
+[4 / 6] CJShell
+Build complete! (1.43秒)

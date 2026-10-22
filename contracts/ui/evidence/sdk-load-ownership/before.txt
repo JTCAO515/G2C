@@ -1,0 +1,29 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Constructing description]
+[Pre-planning 1 / 750]
+[Planning deferred tasks]
+[8 / 17] CJShellTests-product
+[10 / 19] CJShellTests-product
+[16 / 18] CJShellTests-product
+Build complete! (2.02秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentSDKHostLoadTests started.
+◇ Test sameOriginalLoadFailureStillBlocks() started.
+◇ Test oldLoadSettlementCannotBlockReplacement(fails:) started.
+◇ Test case passing 1 argument fails → false to oldLoadSettlementCannotBlockReplacement(fails:) started.
+◇ Test case passing 1 argument fails → true to oldLoadSettlementCannotBlockReplacement(fails:) started.
+✔ Test sameOriginalLoadFailureStillBlocks() passed after 0.002 seconds.
+✘ Test oldLoadSettlementCannotBlockReplacement(fails:) recorded an issue with 1 argument fails → false at IndependentSDKHostLoadTests.swift:58:25: Issue recorded
+↳ Old restore load settlement blocked host after replacement B became current
+✘ Test oldLoadSettlementCannotBlockReplacement(fails:) recorded an issue with 1 argument fails → true at IndependentSDKHostLoadTests.swift:58:25: Issue recorded
+↳ Old restore load settlement blocked host after replacement B became current
+✘ Test oldLoadSettlementCannotBlockReplacement(fails:) with 2 test cases failed after 0.004 seconds with 2 issues.
+✘ Suite IndependentSDKHostLoadTests failed after 0.004 seconds with 2 issues.
+✘ Test run with 2 tests in 1 suite failed after 0.004 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - CJShellTests (Swift Testing)
