@@ -1,0 +1,13 @@
+test_earlier_publication_with_later_wall_time_is_supported (test_time_instants.InstantControls.test_earlier_publication_with_later_wall_time_is_supported) ... ok
+test_earlier_retrieval_with_later_wall_time_is_supported (test_time_instants.InstantControls.test_earlier_retrieval_with_later_wall_time_is_supported) ... ok
+test_equal_instant_expiry_and_validity_with_different_offsets (test_time_instants.InstantControls.test_equal_instant_expiry_and_validity_with_different_offsets) ... ok
+test_future_expiry_with_earlier_wall_time_is_supported (test_time_instants.InstantControls.test_future_expiry_with_earlier_wall_time_is_supported) ... ok
+test_future_publication_during_repeated_hour (test_time_instants.InstantControls.test_future_publication_during_repeated_hour) ... ok
+test_invalid_validity_rejected_by_actual_instant (test_time_instants.InstantControls.test_invalid_validity_rejected_by_actual_instant) ... ok
+test_source_calendar_window_not_converted_to_utc_dates (test_time_instants.InstantControls.test_source_calendar_window_not_converted_to_utc_dates) ... ok
+test_valid_validity_accepted_and_source_metadata_unchanged (test_time_instants.InstantControls.test_valid_validity_accepted_and_source_metadata_unchanged) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.001s
+
+OK
