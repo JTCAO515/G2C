@@ -125,7 +125,7 @@ class Draft:
         old = {x['id']: x for x in before['items']}
         for item in after['items']:
             if item != old[item['id']]:
-                changes.append(Change(('items', item['id']), packed(old[item['id']]), packed(item)))
+                changes.append(Change(('items', 'id', item['id']), packed(old[item['id']]), packed(item)))
         return tuple(changes)
 
     def to_proposal(self, *, proposal_id, basis_version, expires_at, expected_version):

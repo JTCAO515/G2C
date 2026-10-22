@@ -48,7 +48,7 @@ scope expansion. No long-term-memory writes or preference candidates are created
 `Draft.original.content` and `Draft.content` are exact before/after bytes.
 `Draft.diff` is a tuple of `Change(path, before, after)` with canonical JSON bytes
 for both values. Paths are local UI metadata: `('title',)`, `('items','order')`
-for the ID sequence, and `('items', item_id)` for whole changed items (including
+for the ID sequence, and `('items', 'id', item_id)` for whole changed items (including
 fact reset). This diff is not an apply-patch wire. No-op returns an empty tuple.
 Decode values only to display them; preserve original bytes for candidate binding.
 

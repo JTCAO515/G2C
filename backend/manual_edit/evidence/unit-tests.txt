@@ -9,12 +9,13 @@ test_immutable_and_input_not_aliased (test_manual_edit.ManualEditTests.test_immu
 test_no_unknown_schema_defaults (test_manual_edit.ManualEditTests.test_no_unknown_schema_defaults) ... ok
 test_noncanonical_or_invalid_original (test_manual_edit.ManualEditTests.test_noncanonical_or_invalid_original) ... ok
 test_noop_is_exact_and_no_evidence_loss (test_manual_edit.ManualEditTests.test_noop_is_exact_and_no_evidence_loss) ... ok
+test_order_named_item_has_unambiguous_diff_path (test_manual_edit.ManualEditTests.test_order_named_item_has_unambiguous_diff_path) ... ok
 test_save_unavailable_has_no_trip_write_calls (test_manual_edit.ManualEditTests.test_save_unavailable_has_no_trip_write_calls) ... ok
 test_title_requires_explicit_selection (test_manual_edit.ManualEditTests.test_title_requires_explicit_selection) ... ok
 test_trusted_protection_is_constraint_only (test_manual_edit.ManualEditTests.test_trusted_protection_is_constraint_only) ... ok
 test_unselected_content_and_position_exact (test_manual_edit.ManualEditTests.test_unselected_content_and_position_exact) ... ok
 
 ----------------------------------------------------------------------
-Ran 15 tests in 0.002s
+Ran 16 tests in 0.002s
 
 OK

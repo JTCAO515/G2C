@@ -36,7 +36,7 @@ class ManualEditTests(unittest.TestCase):
         self.assertEqual(proposal.content, draft.content)
         self.assertEqual(proposal.expected_version, 7)
         change, = draft.diff
-        self.assertEqual(change.path, ('items', 'a'))
+        self.assertEqual(change.path, ('items', 'id', 'a'))
         self.assertEqual(json.loads(change.before)['text'], 'café')
         self.assertEqual(json.loads(change.after)['text'], 'cafe\u0301')
         self.assertEqual(json.loads(change.after)['verification'], 'pending')
@@ -58,6 +58,14 @@ class ManualEditTests(unittest.TestCase):
             self.edit(order=('c', 'a', 'b'))
         with self.assertRaises(ValueError):
             self.edit(text_updates=(('b', 'changed'),))
+
+    def test_order_named_item_has_unambiguous_diff_path(self):
+        original = Trip('t', 1, packed(dict(title='t', items=[item('order', 'x'), item('a', 'y')])))
+        draft = edit(original, expected_version=1, original_content=original.content,
+                     selected_ids=('order', 'a'), text_updates=(('order', 'new'),),
+                     order=('a', 'order'))
+        self.assertEqual([x.path for x in draft.diff],
+                         [('items', 'order'), ('items', 'id', 'order')])
 
     def test_title_requires_explicit_selection(self):
         with self.assertRaises(ValueError):
