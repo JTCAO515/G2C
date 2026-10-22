@@ -33,13 +33,16 @@ public typealias AuthFetch = @Sendable (URLRequest) async throws -> (Data, URLRe
     private let fetch: AuthFetch
     private let material: @MainActor (AuthAttempt) async -> SDKMaterial?
     private let isCurrent: @MainActor (AuthAttempt) -> Bool
+    private let onSessionForSecureStorage: (@MainActor (Session, AuthAttempt) -> Void)?
 
     public init(configuration: SupabaseAdapterConfiguration,
                 fetch: @escaping AuthFetch = { _ in throw URLError(.notConnectedToInternet) },
                 isCurrent: @escaping @MainActor (AuthAttempt) -> Bool,
+                onSessionForSecureStorage: (@MainActor (Session, AuthAttempt) -> Void)? = nil,
                 material: @escaping @MainActor (AuthAttempt) async -> SDKMaterial?) {
         self.configuration = configuration; self.fetch = fetch
         self.isCurrent = isCurrent; self.material = material
+        self.onSessionForSecureStorage = onSessionForSecureStorage
     }
 
     public func unavailableReason(for action: AuthAction) -> UnavailableReason? {
@@ -109,10 +112,11 @@ public typealias AuthFetch = @Sendable (URLRequest) async throws -> (Data, URLRe
         ))
         do {
             let outcome: SDKEvent
+            var verifiedSession: Session?
             switch (attempt.action, supplied) {
             case (.emailSignIn, .email(let bound, let address, let password)):
                 guard bound == attempt, nonempty(address), let password, nonempty(password) else { return .unavailable(.missingRuntimeMaterial) }
-                _ = try await client.signIn(email: address, password: password)
+                verifiedSession = try await client.signIn(email: address, password: password)
                 outcome = .identityNeedsServerCheck
             case (.emailRegister, .email(let bound, let address, let password)):
                 guard bound == attempt, nonempty(address), let password, nonempty(password) else { return .unavailable(.missingRuntimeMaterial) }
@@ -127,14 +131,16 @@ public typealias AuthFetch = @Sendable (URLRequest) async throws -> (Data, URLRe
                 let expected = attempt.action == .googleSignIn ? configuration.googleClientID : configuration.appleClientID
                 guard bound == attempt, provider == attempt.action.provider, clientID == expected,
                       nonempty(token), nonempty(nonce) else { return .unavailable(.missingRuntimeMaterial) }
-                _ = try await client.signInWithIdToken(credentials: .init(
+                verifiedSession = try await client.signInWithIdToken(credentials: .init(
                     provider: attempt.action == .googleSignIn ? .google : .apple,
                     idToken: token, accessToken: access, nonce: nonce))
                 outcome = .identityNeedsServerCheck
             default: return .unavailable(.missingRuntimeMaterial)
             }
             guard isCurrent(attempt), !Task.isCancelled else { return .userCancelled }
-            return outcome // never a principal/credential or invitation grant
+            if let verifiedSession { onSessionForSecureStorage?(verifiedSession, attempt) }
+            guard isCurrent(attempt), !Task.isCancelled else { return .userCancelled }
+            return outcome // SDK session callback is not a principal/invitation or persistence receipt
         } catch is CancellationError {
             return .userCancelled
         } catch let error as AuthError {
