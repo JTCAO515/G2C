@@ -1,0 +1,12 @@
+PASS actual fixed Swift pending construction equals producer accept/reject original bytes
+QUEUED old action accept1 after new selection reject1 dispatched: ["/v1/trip-action-receipts?action_id=reject1"]
+FAIL old pending-action click retargets newly selected original action
+REENTRANT newer selection reject1 final selected: accept1
+FAIL old pending selection overwrites newer same-binding selection after key callback
+directory-displaced submit result: exchangeUnknown
+LAST binding directory replacement: true transport calls: 1 reopened original count: 0 retained ciphertext count: 1
+FAIL POST escapes after final binding callback displaced durable pending directory
+PASS current query cancellation settles unknown, duplicate suppressed, original retained; public choice remains closed
+
+exit=0
+Synthetic retained probe directory: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/repair-probes-cbafefd1-7f69-40a5-bbe9-b7ddbc743462

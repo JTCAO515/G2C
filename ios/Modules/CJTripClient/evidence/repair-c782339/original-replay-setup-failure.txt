@@ -1,0 +1,5 @@
+Fixed c782339 reviewer executable; source ClientBoundaryCheck.swift from original review.
+Swift/ErrorType.swift:254: Fatal error: Error raised at top level: Error Domain=NSCocoaErrorDomain Code=516 "The file “cj015-review-replay-xeicq2cx” couldn’t be saved in the folder “T” because a file with the same name already exists." UserInfo={NSFilePath=/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj015-review-replay-xeicq2cx, NSURL=file:///var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj015-review-replay-xeicq2cx, NSUnderlyingError=0x10378f570 {Error Domain=NSPOSIXErrorDomain Code=17 "File exists"}}
+
+exit=-5
+Synthetic retained probe directory: /var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj015-review-replay-xeicq2cx

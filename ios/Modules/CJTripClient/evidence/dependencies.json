@@ -1,0 +1,12 @@
+{
+  "repository_base": "7b98f00e6b803d5dff351450390e490b468f00da",
+  "product_base": "2530a6e77059ee313ae78b114118e59ce1e2384b",
+  "fixed_owner_bytes": {
+    "ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift": "6fe045cf9c6851eb4076a31da20eea0eb6aed10c",
+    "ios/Modules/CJMessageClient/Package.swift": "4fb05cc1f28382c5a4e97efdd833d5f079997c96",
+    "ios/Modules/CJMessageClient/scripts/prepare_generated.py": "4fb05cc1f28382c5a4e97efdd833d5f079997c96"
+  },
+  "shared_generated_pin": "9dc67ced50a0cb7611a84b4adf97ab0b43c88bea",
+  "shared_generated_files": 16,
+  "exact_byte_check": "PASS"
+}

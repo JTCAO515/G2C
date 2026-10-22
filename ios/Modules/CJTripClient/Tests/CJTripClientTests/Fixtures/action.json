@@ -1,0 +1,26 @@
+{
+  "producer": "5fd115fc97e542bc8776a445d8245fd272000e56",
+  "proposal": {
+    "proposal_id": "proposal1",
+    "trip_id": "trip1",
+    "expected_version": 0,
+    "basis_version": "basis1",
+    "expires_at": 2000000000,
+    "content_utf8_base64": "eyJpdGVtcyI6W3siZXZpZGVuY2UiOltdLCJpZCI6Iml0ZW0xIiwidGV4dCI6IlN5bnRoZXRpYyBwZW5kaW5nIGZhY3QgLyDlvoXmoLjlrp4iLCJ2ZXJpZmljYXRpb24iOiJwZW5kaW5nIn1dLCJ0aXRsZSI6IlN5bnRoZXRpYyDljJfkuqwgdHJpcCJ9",
+    "document": {
+      "title": "Synthetic 北京 trip",
+      "items": [
+        {
+          "id": "item1",
+          "text": "Synthetic pending fact / 待核实",
+          "verification": "pending",
+          "evidence": []
+        }
+      ]
+    },
+    "candidate_hash": "40e618a5f97884ab4af7a3e462b2bd040e3025e75ed2985abfbe93eee935fd59",
+    "status": "pending"
+  },
+  "accept_raw": "[\"accept1\",\"accept\",\"proposal1\",\"40e618a5f97884ab4af7a3e462b2bd040e3025e75ed2985abfbe93eee935fd59\",\"server-held-accept-proof\"]",
+  "reject_raw": "[\"reject1\",\"reject\",\"proposal1\",\"40e618a5f97884ab4af7a3e462b2bd040e3025e75ed2985abfbe93eee935fd59\",\"server-held-reject-proof\"]"
+}
