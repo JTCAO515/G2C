@@ -1,0 +1,27 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[1 / 6] CJMessageKeysTests-product
+[2 / 6] CJMessageKeysTests-product
+[4 / 8] CJMessageKeysTests-product
+[9 / 11] CJMessageKeysTests-product
+Build complete! (2.25秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite MessageKeyTests started.
+◇ Test tripPurposeAccountEnvironmentAndCleanupRemainIsolated() started.
+◇ Test memoryPurposeHasDedicatedSlotWithoutChangingMessageBytes() started.
+◇ Test tripPendingUnknownCreationReconcilesOnlyOriginalKey() started.
+◇ Test tripPurposeKeepsMessageAndMemoryNamespaceBytesUnchanged() started.
+◇ Test memoryPurposeAccountEnvironmentAndExpectedIDCannotCrossKeys() started.
+◇ Test memoryPendingUnknownCreationReusesOriginalReconciliation() started.
+✔ Test memoryPurposeHasDedicatedSlotWithoutChangingMessageBytes() passed after 0.001 seconds.
+✔ Test tripPendingUnknownCreationReconcilesOnlyOriginalKey() passed after 0.001 seconds.
+✔ Test tripPurposeAccountEnvironmentAndCleanupRemainIsolated() passed after 0.001 seconds.
+✔ Test tripPurposeKeepsMessageAndMemoryNamespaceBytesUnchanged() passed after 0.001 seconds.
+✔ Test memoryPurposeAccountEnvironmentAndExpectedIDCannotCrossKeys() passed after 0.001 seconds.
+✔ Test memoryPendingUnknownCreationReusesOriginalReconciliation() passed after 0.001 seconds.
+✔ Suite MessageKeyTests passed after 0.001 seconds.
+✔ Test run with 6 tests in 1 suite passed after 0.001 seconds.
