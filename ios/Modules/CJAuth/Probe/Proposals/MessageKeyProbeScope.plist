@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>account</key>
+	<string>F50CD0D3-9621-46BB-B99D-7E2E7BED565F</string>
+	<key>applicationIdentifier</key>
+	<string>CJ007SIM.local.g2c.cj007.sessionprobe</string>
+	<key>bundleID</key>
+	<string>local.g2c.cj007.sessionprobe</string>
+	<key>environment</key>
+	<string>6881AF7F-DB80-49E5-8EFD-740CAB24B304</string>
+	<key>purpose</key>
+	<string>local-message-storage-v1</string>
+	<key>simulatorID</key>
+	<string>EAF9183B-2B0B-4D9C-BCB5-A9AA71C7BB01</string>
+	<key>status</key>
+	<string>PROPOSED_ONLY_NOT_APPLIED</string>
+</dict>
+</plist>
