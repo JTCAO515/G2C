@@ -108,3 +108,8 @@ server confirmation evidence; never point it at retained/old/shared state. No pa
 install or prior PR49/59/Memory regression rerun is implied. Independent gates,
 real account/provider/App review, two product entrances/reopen, production and full
 Issue20 I closure remain distinct and unrun until separately evidenced.
+
+Actual author combination at e40d703 passed nine groups including the official
+Swift Client over real HTTP/private PostgreSQL; see tests/evidence/trip-wire/REPORT.md
+and loopback-result.json. Both local services stopped. This synthetic confirmation/
+account/candidate evidence does not close Issue20's App/CJ014/real-policy requirements.

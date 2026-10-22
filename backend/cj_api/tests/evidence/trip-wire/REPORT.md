@@ -30,3 +30,48 @@ At this source commit real runner is UNRUN. Independent Review/Testing and produ
 5fd gate are not assumed passed. No old PG instance started, cloud/real accounts,
 production policy/RLS/schema registration, provider or App actions. Issue20 remains
 open; original App/I requirements unchanged. No push/merge/deploy by this owner.
+
+## Actual author loopback combination — PASS
+
+Tested fixed source e40d703118fa647a28ddcb8c42c110499ccaba39 / producer5fd.
+New private `.local-cj005-trip-pg`, PostgreSQL16.15, UTF8 postgres DB, role cj005t,
+Unix55449, listen_addresses empty, private directories/socket0700, fresh empty
+pgpass0600. Actual identity checked before applying only fixed candidate SQL to
+verified empty public tables. No old instance started or data reused. Offline
+psycopg3.2.10 pure-Python code/distribution metadata copied only from the previously
+approved driver whitelist; all91 files hashed before/after. No package install,
+cloud account, inherited DB settings or real credentials.
+
+Nine real groups PASS in loopback-result.json (source/config hashes included):
+
+1. Fresh private identity/empty DB/candidate schema, no formal Trip rows.
+2. Protected candidate display returns actual scoped hash/exact bytes. Display does
+   not confirm: disabled validator and unknown caller reference deny. Explicit
+   synthetic server-held proof then accepts; exact replay returns same receipt,
+   changed-input same ID conflicts; formal content still marks facts pending.
+3. Reject/repeat yields committed_version=null and no formal Trip; terminal accept
+   refuses; elapsed pending stays visible but action is refused for expiry.
+4. New accepted proposal advances latest Trip to2 while original action still
+   returns committed_version1; stale expected version refuses.
+5. Fresh AUTH denial at precommit rolls back Trip/proposal transition/receipt;
+   original query is null and candidate remains pending in this controlled run.
+6. After real commit, projection deliberately withdraws synthetic admission before
+   final serialized guard; no receipt escapes, original action remains queryable.
+7. Real COMMIT followed by injected lost ACK AND CancelledError each yields unknown/
+   reconcile_original, then fresh original-action query returns durable receipt.
+8. Verified synthetic B has empty own list/null A action; wrong-scope candidate and
+   missing candidate return identical generic error without existence disclosure.
+9. Official generated Swift Client over actual numeric-loopback HTTP performs all
+   five operations: display→canonical acceptance→original query→formal detail→live
+   keyset, explicit null original absence, terminal candidate read. Independent PG
+   read verifies exact original Action.raw bytes. Existing .memory configuration
+   reused; no parser or client authority created.
+
+PASS finally stopped HTTP thread and exact PostgreSQL; independent post-run PID/
+socket absence verified. Data/logs retained and only clone-local excluded. Synthetic
+JWT, immutable content and server confirmation map prove this local interface/
+transaction combination, not actual App viewing evidence, CJ014/provider truth,
+real-account revocation or production authorization. No other suites/Memory chain
+rerun. Producer76 tests are not added to our count. Independent Review/Testing,
+App entrances/reopen, actual candidate/confirmation issuer, cleanup/restore/RLS,
+production deployment and full Issue20 remain unverified. No push/merge.
