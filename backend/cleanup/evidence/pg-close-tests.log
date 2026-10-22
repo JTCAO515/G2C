@@ -1,0 +1,15 @@
+test_body_conflict_wins_over_close_and_rollback_errors (test_close_fence.CloseFenceTests.test_body_conflict_wins_over_close_and_rollback_errors) ... ok
+test_close_callback_revocation_withholds_committed_write (test_close_fence.CloseFenceTests.test_close_callback_revocation_withholds_committed_write) ... ok
+test_close_callback_revocation_withholds_read (test_close_fence.CloseFenceTests.test_close_callback_revocation_withholds_read) ... ok
+test_close_context_mutation_withholds_even_if_guard_allows (test_close_fence.CloseFenceTests.test_close_context_mutation_withholds_even_if_guard_allows) ... ok
+test_commit_unknown_wins_over_close_errors (test_close_fence.CloseFenceTests.test_commit_unknown_wins_over_close_errors) ... ok
+test_lost_create_ack_and_close_failure_preserve_original (test_close_fence.CloseFenceTests.test_lost_create_ack_and_close_failure_preserve_original) ... ok
+test_post_commit_guard_loss_withholds_result (test_close_fence.CloseFenceTests.test_post_commit_guard_loss_withholds_result) ... ok
+test_query_close_error_withholds_private_value (test_close_fence.CloseFenceTests.test_query_close_error_withholds_private_value) ... ok
+test_query_denied_wins_over_close_errors (test_close_fence.CloseFenceTests.test_query_denied_wins_over_close_errors) ... ok
+test_rollback_guard_before_commit_atomic (test_close_fence.CloseFenceTests.test_rollback_guard_before_commit_atomic) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.095s
+
+OK
