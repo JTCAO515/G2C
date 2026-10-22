@@ -7,7 +7,7 @@ let package = Package(
                .library(name: "CJMessageHTTP", targets: ["CJMessageHTTP"]),
                .library(name: "CJMessageKeyBridge", targets: ["CJMessageKeyBridge"])],
     dependencies: [
-        .package(path: ".generated/57336d501e5691302a3d5e9770f07666d1c57d4a/CJFoundation"),
+        .package(path: ".generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation"),
         .package(path: "../CJAuth"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
         .package(url: "https://github.com/apple/swift-openapi-urlsession", exact: "1.3.2"),
