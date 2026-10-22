@@ -15,14 +15,15 @@
     },
     {
       "name": "trip",
-      "commit": "63bcf9c1fa520c41a7154f5a798cef818274ebaa",
+      "commit": "0e2c3241825d81b89cc7bdb2f2c6daa967038068",
       "prefix": "backend/trip/cj_trip/",
       "files": {
         "backend/trip/cj_trip/__init__.py": "0c290ee504260d5514f616bf307565d00dbe7df4306f7f49f4df1ee992cc496a",
-        "backend/trip/cj_trip/domain.py": "06ea6f6c104ba8abc97209f2274140d2d07a329344b1959bbd46e05b564ad2b1",
-        "backend/trip/cj_trip/auth_boundary.py": "204e048d604a1ec6f959fff8f6389fddbd598bbff8d0042318a4b1375f875c04",
-        "backend/trip/cj_trip/postgres.py": "91f38dc6924a703d638be28a4f0ed3b667c674792005562c8ae84a971d75929a"
+        "backend/trip/cj_trip/domain.py": "078a5ed8962ee414f095c0c94a342d50347c794efcc4c236b77ad1389d93ce3d",
+        "backend/trip/cj_trip/auth_boundary.py": "a120c96808e81cd8b4c4a559ca30549a839e95d970bd522a8a2672e8f41cfeb6",
+        "backend/trip/cj_trip/postgres.py": "d9b3bfdbdb7db7b2a7703856015dd8f0e8ce9883778edb4ae206163bd442ef7c"
       }
     }
-  ]
+  ],
+  "proposal_read_commit": "0e2c3241825d81b89cc7bdb2f2c6daa967038068"
 }

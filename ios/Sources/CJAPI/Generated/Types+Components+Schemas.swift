@@ -2088,7 +2088,7 @@ extension Components {
                 ])
             }
         }
-        /// Candidate live Trip-ID keyset page; next_after is last nonempty trip_id or null on an empty page, pending producer consumer confirmation. Not has-more or snapshot.
+        /// Live Trip-ID keyset page with C byte ordering. next_after is last returned trip_id for any nonempty page and null for an empty page. At most requested limit; no has-more or cross-page snapshot/completeness promise. The complete returned ID is an opaque next boundary, never parsed/incremented.
         ///
         /// - Remark: Generated from `#/components/schemas/TripListResponse`.
         public struct TripListResponse: Codable, Hashable, Sendable {
@@ -2171,6 +2171,173 @@ extension Components {
                     "request_id",
                     "trips",
                     "next_after"
+                ])
+            }
+        }
+        /// Protected immutable display snapshot. Stored candidate_hash is revalidated by producer against original fields and server scope; never hash a reserialized API body. expires_at is Unix seconds. Stored pending may already be elapsed; this read does not retire, authorize, record review, or confirm acceptance.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot`.
+        public struct TripProposalSnapshot: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/proposal_id`.
+            public var proposal_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/trip_id`.
+            public var trip_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/basis_version`.
+            public var basis_version: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/expires_at`.
+            public var expires_at: Swift.Int
+            /// RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/content_utf8_base64`.
+            public var content_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/document`.
+            public var document: Components.Schemas.TripDocument
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/candidate_hash`.
+            public var candidate_hash: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pending = "pending"
+                case accepted = "accepted"
+                case rejected = "rejected"
+                case expired = "expired"
+                case superseded = "superseded"
+            }
+            /// - Remark: Generated from `#/components/schemas/TripProposalSnapshot/status`.
+            public var status: Components.Schemas.TripProposalSnapshot.statusPayload
+            /// Creates a new `TripProposalSnapshot`.
+            ///
+            /// - Parameters:
+            ///   - proposal_id:
+            ///   - trip_id:
+            ///   - expected_version:
+            ///   - basis_version:
+            ///   - expires_at:
+            ///   - content_utf8_base64: RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.
+            ///   - document:
+            ///   - candidate_hash:
+            ///   - status:
+            public init(
+                proposal_id: Swift.String,
+                trip_id: Swift.String,
+                expected_version: Swift.Int,
+                basis_version: Swift.String,
+                expires_at: Swift.Int,
+                content_utf8_base64: Swift.String,
+                document: Components.Schemas.TripDocument,
+                candidate_hash: Swift.String,
+                status: Components.Schemas.TripProposalSnapshot.statusPayload
+            ) {
+                self.proposal_id = proposal_id
+                self.trip_id = trip_id
+                self.expected_version = expected_version
+                self.basis_version = basis_version
+                self.expires_at = expires_at
+                self.content_utf8_base64 = content_utf8_base64
+                self.document = document
+                self.candidate_hash = candidate_hash
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case proposal_id
+                case trip_id
+                case expected_version
+                case basis_version
+                case expires_at
+                case content_utf8_base64
+                case document
+                case candidate_hash
+                case status
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.proposal_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .proposal_id
+                )
+                self.trip_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .trip_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.basis_version = try container.decode(
+                    Swift.String.self,
+                    forKey: .basis_version
+                )
+                self.expires_at = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expires_at
+                )
+                self.content_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .content_utf8_base64
+                )
+                self.document = try container.decode(
+                    Components.Schemas.TripDocument.self,
+                    forKey: .document
+                )
+                self.candidate_hash = try container.decode(
+                    Swift.String.self,
+                    forKey: .candidate_hash
+                )
+                self.status = try container.decode(
+                    Components.Schemas.TripProposalSnapshot.statusPayload.self,
+                    forKey: .status
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "proposal_id",
+                    "trip_id",
+                    "expected_version",
+                    "basis_version",
+                    "expires_at",
+                    "content_utf8_base64",
+                    "document",
+                    "candidate_hash",
+                    "status"
+                ])
+            }
+        }
+        /// Missing and wrong-scope candidates both fail generically; no nullable candidate or confirmation evidence is fabricated.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TripProposalResponse`.
+        public struct TripProposalResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripProposalResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/TripProposalResponse/proposal`.
+            public var proposal: Components.Schemas.TripProposalSnapshot
+            /// Creates a new `TripProposalResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - proposal:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                proposal: Components.Schemas.TripProposalSnapshot
+            ) {
+                self.request_id = request_id
+                self.proposal = proposal
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case proposal
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.proposal = try container.decode(
+                    Components.Schemas.TripProposalSnapshot.self,
+                    forKey: .proposal
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "proposal"
                 ])
             }
         }

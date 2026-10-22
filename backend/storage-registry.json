@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "stores": [
     {
       "id": "business",
@@ -73,6 +73,27 @@
           "retention": "UNDECIDED; source expiry is not content retention; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no physical cleanup API; source/item revocation and scope epoch lifecycle must be provided by domain owners; no derived ReMe store added",
           "restore_fence": "UNIMPLEMENTED; source/revocation/tombstone replay must precede reads; no resurrection promise"
+        },
+        {
+          "id": "trip-authoritative",
+          "owner": "CJ-015; cleanup CJ-024",
+          "objects": [
+            "cj_trip_scope",
+            "cj_trip_proposal",
+            "cj_trip_record",
+            "cj_trip_receipt"
+          ],
+          "source": "backend/trip/sql/candidate.sql@0e2c3241825d81b89cc7bdb2f2c6daa967038068",
+          "status": "candidate/local_only; production_not_provisioned",
+          "principal_binding": "Fresh existing AUTH plus explicit environment/profile and issuer/subject scope mapping; server-held review/confirmation validator required, default absent denies",
+          "sensitive_fields": [
+            "exact private itinerary/proposal content and evidence references",
+            "scope/trip/proposal/action identifiers, basis/version/expiry/status and scoped candidate digest",
+            "canonical original action bytes including confirmation_ref and historical receipt"
+          ],
+          "retention": "UNDECIDED; candidate deadline is not physical retention; activation blocked",
+          "cleanup_hook": "UNIMPLEMENTED; no deletion of proposal/action receipts or formal records; dedupe only while retained; generation cancellation is not candidate rejection",
+          "restore_fence": "UNIMPLEMENTED; scope/confirmation/candidate/version revocations and deletion replay must precede reads; no backup restoration acceptance"
         }
       ]
     },
@@ -195,6 +216,7 @@
   "evidence_tree": "3c52f72daf1d8e2304c0c569b47e68d92a4b323e",
   "production_activation": "BLOCKED; source/local acceptance does not provision production",
   "candidate_sources": {
-    "memory": "426d337b0647d7770f1716fad83f2e5e724d28e4"
+    "memory": "426d337b0647d7770f1716fad83f2e5e724d28e4",
+    "trip": "0e2c3241825d81b89cc7bdb2f2c6daa967038068"
   }
 }

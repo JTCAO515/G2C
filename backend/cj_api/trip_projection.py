@@ -2,7 +2,7 @@
 import base64
 from dataclasses import asdict
 import json
-from .generated import TripActionReceipt, TripDocument, TripRecord
+from .generated import TripActionReceipt, TripDocument, TripRecord, TripProposalSnapshot
 
 
 def parse_action(raw, domain):
@@ -49,3 +49,18 @@ def trip_projection(value, domain):
     document,encoded=content_projection(value.content,domain)
     return TripRecord.model_validate_json(json.dumps({'trip_id':value.trip_id,'version':value.version,
         'content_utf8_base64':encoded,'document':document.model_dump(mode='json')}),strict=True)
+
+
+def proposal_projection(value, domain):
+    if type(value) is not domain.ProposalDetail or type(value.proposal) is not domain.Proposal:
+        raise ValueError('Invalid public proposal snapshot')
+    proposal=value.proposal
+    document,encoded=content_projection(proposal.content,domain)
+    # Digest belongs to producer's authenticated scope. Never reconstruct it from
+    # presentation JSON or accept a caller scope/owner to compute a replacement.
+    return TripProposalSnapshot.model_validate_json(json.dumps({
+        'proposal_id':proposal.proposal_id,'trip_id':proposal.trip_id,
+        'expected_version':proposal.expected_version,'basis_version':proposal.basis_version,
+        'expires_at':proposal.expires_at,'content_utf8_base64':encoded,
+        'document':document.model_dump(mode='json'),'candidate_hash':value.candidate_hash,
+        'status':value.status}),strict=True)

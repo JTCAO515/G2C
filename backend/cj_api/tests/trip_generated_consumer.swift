@@ -47,6 +47,14 @@ private enum InvalidTripWire: Error { case invalid, unexpectedAcceptance }
         guard page.trips.count==1,Data(base64Encoded:page.trips[0].content_utf8_base64)==original,
               page.trips[0].document.items[0].verification == .pending else { throw InvalidTripWire.invalid }
         print("PASS generated formal Trip exact UTF8 content and accepted pending evidence state")
+        let snapshot:[String:Any]=["proposal_id":"p1","trip_id":"t1","expected_version":0,"basis_version":"basis1",
+            "expires_at":1,"content_utf8_base64":original.base64EncodedString(),"document":content,
+            "candidate_hash":hash,"status":"pending"]
+        let proposal=try JSONDecoder().decode(Components.Schemas.TripProposalResponse.self,
+            from:data(["request_id":rid,"proposal":snapshot])).proposal
+        guard proposal.status == .pending,proposal.expires_at == 1,proposal.expected_version == 0,
+              proposal.candidate_hash == hash,Data(base64Encoded:proposal.content_utf8_base64)==original else { throw InvalidTripWire.invalid }
+        print("PASS generated public candidate snapshot keeps digest, elapsed pending and exact source content")
         let canonicalAction=try JSONSerialization.data(withJSONObject:["a1","accept","p1",hash,"c1"],options:[.withoutEscapingSlashes])
         guard canonicalAction==Data("[\"a1\",\"accept\",\"p1\",\"\(hash)\",\"c1\"]".utf8) else { throw InvalidTripWire.invalid }
         print("PASS Swift exact canonical five-string Action UTF8 representation")

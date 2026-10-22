@@ -408,3 +408,37 @@ class TripListResponse(BaseModel):
     request_id: RequestId
     trips: list[TripRecord]
     next_after: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$') | NextAfter
+
+
+class Status4(StrEnum):
+    pending = 'pending'
+    accepted = 'accepted'
+    rejected = 'rejected'
+    expired = 'expired'
+    superseded = 'superseded'
+
+
+class TripProposalSnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    proposal_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    trip_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    expected_version: conint(ge=0, le=9223372036854775807)
+    basis_version: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    expires_at: conint(ge=1, le=9223372036854775807)
+    content_utf8_base64: constr(min_length=4) = Field(
+        ...,
+        description='RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.',
+    )
+    document: TripDocument
+    candidate_hash: constr(pattern=r'^[0-9a-f]{64}$')
+    status: Status4
+
+
+class TripProposalResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    proposal: TripProposalSnapshot
