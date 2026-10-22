@@ -1,0 +1,57 @@
+{
+  "valid": [
+    {
+      "action_id": "example-zh-en",
+      "needs_id": "example-visit",
+      "expected_version": 0,
+      "source": {
+        "kind": "manual",
+        "text": "三人来华，日期还没定。Three travellers; dates undecided."
+      },
+      "changes": {
+        "party_size": {
+          "state": "known",
+          "value": 3
+        },
+        "budget_currency": {
+          "state": "unknown"
+        },
+        "budget_paid": {
+          "state": "missing"
+        },
+        "pace": {
+          "state": "uncertain",
+          "note": "也许轻松一些 / possibly relaxed"
+        }
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "action_id": "example-zh-en",
+      "needs_id": "example-visit",
+      "expected_version": 0,
+      "source": {
+        "kind": "message",
+        "text": "unbound source",
+        "message_id": "not-authoritative"
+      },
+      "changes": {
+        "party_size": {
+          "state": "known",
+          "value": 3
+        },
+        "budget_currency": {
+          "state": "unknown"
+        },
+        "budget_paid": {
+          "state": "missing"
+        },
+        "pace": {
+          "state": "uncertain",
+          "note": "也许轻松一些 / possibly relaxed"
+        }
+      }
+    }
+  ]
+}
