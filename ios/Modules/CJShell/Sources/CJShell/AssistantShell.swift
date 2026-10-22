@@ -74,8 +74,7 @@ struct AssistantShell: View {
             .accessibilityIdentifier("assistant.history")
             Spacer(minLength: 8)
             VStack(spacing: 4) {
-                Image(systemName: "person.crop.circle")
-                    .font(draftFocused ? .title3 : .largeTitle).accessibilityHidden(true)
+                BrandAvatar(compact: draftFocused)
                 if !draftFocused {
                     Text(state.language.text("Assistant", "助手")).font(.headline)
                 }
