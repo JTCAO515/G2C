@@ -1,0 +1,292 @@
+[
+  {
+    "name": "known-declarations-not-overall-feasible",
+    "patches": [
+      {
+        "fixed_items": [
+          {
+            "item_id": "a",
+            "kind": "appointment",
+            "description": "synthetic appointment / 合成预约",
+            "applies_to": [
+              "self"
+            ],
+            "locked": {
+              "state": "known",
+              "value": false
+            },
+            "start": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "09:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "place": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "10:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "place": {
+                "state": "unknown"
+              }
+            },
+            "booking_status": {
+              "state": "known",
+              "value": "booked"
+            }
+          }
+        ]
+      }
+    ],
+    "expected_status": "UNKNOWN",
+    "expected_codes": [
+      "ITEM_TIME_ORDER",
+      "OVERALL_EVIDENCE_INCOMPLETE"
+    ]
+  },
+  {
+    "name": "same-person-declared-overlap",
+    "patches": [
+      {
+        "fixed_items": [
+          {
+            "item_id": "a",
+            "kind": "appointment",
+            "description": "synthetic appointment / 合成预约",
+            "applies_to": [
+              "self"
+            ],
+            "locked": {
+              "state": "known",
+              "value": false
+            },
+            "start": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "09:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "place": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "10:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "place": {
+                "state": "unknown"
+              }
+            },
+            "booking_status": {
+              "state": "known",
+              "value": "booked"
+            }
+          },
+          {
+            "item_id": "b",
+            "kind": "appointment",
+            "description": "synthetic appointment / 合成预约",
+            "applies_to": [
+              "self"
+            ],
+            "locked": {
+              "state": "known",
+              "value": false
+            },
+            "start": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "09:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "place": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "10:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "place": {
+                "state": "unknown"
+              }
+            },
+            "booking_status": {
+              "state": "known",
+              "value": "booked"
+            }
+          }
+        ]
+      }
+    ],
+    "expected_status": "CONFLICT",
+    "expected_codes": [
+      "DECLARED_OCCUPANCY_OVERLAP"
+    ]
+  },
+  {
+    "name": "dst-gap-is-unknown",
+    "patches": [
+      {
+        "fixed_items": [
+          {
+            "item_id": "a",
+            "kind": "appointment",
+            "description": "synthetic appointment / 合成预约",
+            "applies_to": [
+              "self"
+            ],
+            "locked": {
+              "state": "known",
+              "value": false
+            },
+            "start": {
+              "date": {
+                "state": "known",
+                "value": "2026-03-08"
+              },
+              "time": {
+                "state": "known",
+                "value": "02:30"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "America/New_York"
+              },
+              "place": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "date": {
+                "state": "known",
+                "value": "2026-03-08"
+              },
+              "time": {
+                "state": "known",
+                "value": "04:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "America/New_York"
+              },
+              "place": {
+                "state": "unknown"
+              }
+            },
+            "booking_status": {
+              "state": "known",
+              "value": "booked"
+            }
+          }
+        ]
+      }
+    ],
+    "expected_status": "UNKNOWN",
+    "expected_codes": [
+      "ITEM_TIME_UNKNOWN"
+    ]
+  },
+  {
+    "name": "all-four-states-and-absent",
+    "patches": [
+      {
+        "party_size": {
+          "state": "known",
+          "value": 3
+        },
+        "budget_total": {
+          "state": "missing"
+        },
+        "budget_currency": {
+          "state": "unknown"
+        },
+        "pace": {
+          "state": "uncertain",
+          "note": "undecided / 未定"
+        }
+      }
+    ],
+    "expected_status": "UNKNOWN",
+    "expected_codes": [
+      "OBSERVATION_KNOWN",
+      "OBSERVATION_MISSING",
+      "OBSERVATION_UNKNOWN",
+      "OBSERVATION_UNCERTAIN",
+      "FIELD_ABSENT"
+    ]
+  },
+  {
+    "name": "historical-budget-source-retained",
+    "patches": [
+      {
+        "budget_total": {
+          "state": "known",
+          "value": "100.000001"
+        }
+      },
+      {
+        "party_size": {
+          "state": "known",
+          "value": 2
+        }
+      }
+    ],
+    "expected_status": "UNKNOWN",
+    "expected_codes": [
+      "BUDGET_SCOPE_UNPROVEN"
+    ]
+  }
+]
