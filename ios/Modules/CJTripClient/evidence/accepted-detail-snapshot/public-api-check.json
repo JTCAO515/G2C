@@ -1,0 +1,25 @@
+{
+  "command_prefix": [
+    "xcrun",
+    "swiftc",
+    "-swift-version",
+    "6",
+    "-target",
+    "arm64-apple-macos27.0",
+    "-typecheck",
+    "-I",
+    "/tmp/cj015-trip-client-build/out/Products/Debug",
+    "-module-cache-path",
+    "/tmp/cj015-detail-public-cache"
+  ],
+  "results": {
+    "PublicConsumer.swift": {
+      "exit": 0,
+      "expected_failure": false
+    },
+    "ForbiddenConstruction.swift": {
+      "exit": 1,
+      "expected_failure": true
+    }
+  }
+}

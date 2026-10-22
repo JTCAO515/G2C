@@ -11,6 +11,7 @@ struct TripTransport: ClientTransport {
     let endpoint: TripEndpoint
     let bearer: String
     let testWrites: Bool
+    let detailCapture: TripDetailResponseCapture?
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let paths = ["getTripProposal": "/v1/trip-proposals", "getTrip": "/v1/trip-details", "listTrips": "/v1/trips",
@@ -33,6 +34,10 @@ struct TripTransport: ClientTransport {
         guard traces.count == 1, let trace = traces.first?.value, UUID(uuidString: trace) != nil,
               let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let requestID = object["request_id"] as? String, same(trace, requestID) else { throw TripFailure.invalidResponse }
+        if operationID == "getTrip", response.status.code == 200, let detailCapture {
+            try await detailCapture.record(data, trace: trace)
+            try await validate()
+        }
         return (response, HTTPBody(data))
     }
 }
