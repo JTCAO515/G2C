@@ -1,0 +1,54 @@
+{
+  "private": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-9a02a7f6df",
+  "socket": "/private/tmp/cj015-owner-repair-09016b26e0",
+  "port": 55435,
+  "postgres": "17.11",
+  "role": "cj015_private",
+  "identity": [
+    "cj015_private",
+    "cj015_test",
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-9a02a7f6df/data",
+    "",
+    "/private/tmp/cj015-owner-repair-09016b26e0"
+  ],
+  "fixed_suite": "25 PASS (14 original + 11 regression controls)",
+  "expiry_after_commit_guard": {
+    "outcome": "Conflict",
+    "expired_at_return": true,
+    "trip_exists": false,
+    "receipt_exists": false,
+    "expected": "Conflict/no new Trip or receipt",
+    "status": "PASS"
+  },
+  "autocommit_partial": {
+    "error": "Denied",
+    "trip_exists": false,
+    "receipt_exists": false,
+    "expected": "Reject autocommit before any effect",
+    "status": "PASS"
+  },
+  "cleanup_outcomes": [
+    {
+      "lost_ack": false,
+      "outcome": "Receipt",
+      "original_receipt_exists": true,
+      "expected": "Receipt",
+      "status": "PASS"
+    },
+    {
+      "lost_ack": true,
+      "outcome": "CommitUnknown",
+      "original_receipt_exists": true,
+      "expected": "CommitUnknown",
+      "status": "PASS"
+    }
+  ],
+  "restart_original_v1_latest_v2": "PASS",
+  "postmaster_pid_absent": true,
+  "sockets_absent": true,
+  "modes": {
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-9a02a7f6df": "0o700",
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-9a02a7f6df/data": "0o700",
+    "/private/tmp/cj015-owner-repair-09016b26e0": "0o700"
+  }
+}

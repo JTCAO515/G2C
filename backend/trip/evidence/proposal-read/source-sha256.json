@@ -1,0 +1,6 @@
+{
+  "backend/trip/cj_trip/domain.py": "078a5ed8962ee414f095c0c94a342d50347c794efcc4c236b77ad1389d93ce3d",
+  "backend/trip/cj_trip/postgres.py": "d9b3bfdbdb7db7b2a7703856015dd8f0e8ce9883778edb4ae206163bd442ef7c",
+  "backend/trip/cj_trip/auth_boundary.py": "a120c96808e81cd8b4c4a559ca30549a839e95d970bd522a8a2672e8f41cfeb6",
+  "backend/trip/tests/test_proposal_read.py": "7009d87f5f9f53f16dd4157b342bc17eea20c0a586e38f1324ecf76ecf0b732f"
+}

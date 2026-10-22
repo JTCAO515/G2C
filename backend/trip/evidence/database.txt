@@ -1,0 +1,1 @@
+('cj015_private', 'cj015_test', '', '55435', 'UTF8', 'PostgreSQL 17.11 (Homebrew) on aarch64-apple-darwin27.0.0, compiled by Apple clang version 21.0.0 (clang-2100.3.34.2), 64-bit')
