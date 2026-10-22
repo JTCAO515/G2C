@@ -1,0 +1,18 @@
+{
+  "base": "2634ccd0b2e914271cbbb376cfdf074982512e4f",
+  "place_pin": "80ba4ae5527875ce375d22f3439f8e3256e2c4d6",
+  "place_models_unchanged_from_dd4": true,
+  "dependency_hold": "independent Review/Testing pending; not released by author",
+  "consumed": {
+    "backend/place/cj_place/gaode.py": "e0b7fbfa12085497f4dca4f6ffd59183597909a7b1e88e7a3f899dff94182019",
+    "backend/place/cj_place/models.py": "2d721d1330266990b78c8ae657c910f2b55a85d48374620c23c1ea8eaea1d397",
+    "backend/place/cj_place/__init__.py": "9b8e974709204e436f4ffae3d5097737fc40ffec11c28a98178f091e08297899",
+    "contracts/place/README.md": "ac43f992542292c9721a96afc185bc4823a45a10126a798d93d07f15b5b841c2"
+  },
+  "consumer": {
+    "backend/feasibility/cj_feasibility/routes.py": "88322e7ed6b2abafaa7aef0038e924232c2517d49df53b1b655ad57d4c7ffae1",
+    "backend/feasibility/tests/test_route_offsets.py": "77d92c13c28080a3332b1fe3cefcc5e6e840fb224a80c7a72c3c502d32ca9e10",
+    "backend/feasibility/tests/test_place_repair.py": "603ccc0e125e6eceb2ef5c1b7359a3553704452db0e7d44996c17cefda629a07",
+    "contracts/feasibility/ROUTES.md": "c944100093d56db940d1ec058262ec57b4ef914961de2d87535c87dc07a4afbb"
+  }
+}

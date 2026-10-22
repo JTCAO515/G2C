@@ -1,0 +1,11 @@
+test_fixed_pin (test_place_repair.RepairedPlaceConsumptionTests.test_fixed_pin) ... ok
+test_real_age_across_fall_fold_is_stale_and_withheld (test_place_repair.RepairedPlaceConsumptionTests.test_real_age_across_fall_fold_is_stale_and_withheld) ... ok
+test_real_fold_deadline_exceeded_does_not_release_route (test_place_repair.RepairedPlaceConsumptionTests.test_real_fold_deadline_exceeded_does_not_release_route) ... ok
+test_real_fold_receipt_before_query_invalid_and_withheld (test_place_repair.RepairedPlaceConsumptionTests.test_real_fold_receipt_before_query_invalid_and_withheld) ... ok
+test_spring_wall_jump_does_not_expire_a_two_second_response (test_place_repair.RepairedPlaceConsumptionTests.test_spring_wall_jump_does_not_expire_a_two_second_response) ... ok
+test_valid_fall_fold_keeps_source_identity_and_utc_association (test_place_repair.RepairedPlaceConsumptionTests.test_valid_fall_fold_keeps_source_identity_and_utc_association) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.004s
+
+OK
