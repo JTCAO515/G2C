@@ -1,0 +1,32 @@
+{
+  "container_source_commit": "40cc0e85baa6f51776a557a5df23027e38540dfa",
+  "clear_repair_commit": "480c21b0e656650961c0c900a4b7537f5467cb03",
+  "shared_export_commit": "4fb05cc1f28382c5a4e97efdd833d5f079997c96",
+  "memory_client_commit": "ab8cf3eae5c79537ca05c800cad7f559b6187e86",
+  "official_api_commit": "9dc67ced50a0cb7611a84b4adf97ab0b43c88bea",
+  "graph_root": "CJShell",
+  "cjfoundation_occurrences": 4,
+  "unique_cjfoundation_paths": [
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation"
+  ],
+  "graph_sha256": "52e5952ff2c7ebb364778fa3ee874bfbd7286b78295469c5541791e66ccb3386",
+  "export_hashes": {
+    "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
+    "ios/Package.swift": "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0",
+    "ios/Sources/CJAPI/Generated/Client.swift": "9aff9ae080986fee702d24d2017aef1a038594483607490ea95cc94514c9c5a1",
+    "ios/Sources/CJAPI/Generated/Types+Components+Headers.swift": "b920e1a8ad3af618f10823dfd9ead2ac7a2833dcd9e06f84973789d7b578e1e2",
+    "ios/Sources/CJAPI/Generated/Types+Components+Parameters.swift": "06b05f078460bb0cc022223f7e6bf5d8509978b81486f2c191e241c08f38664b",
+    "ios/Sources/CJAPI/Generated/Types+Components+RequestBodies.swift": "3a79bacb276382b5f534e3a02a5a50297f67c53832e30b31e7afd9afbc6275bd",
+    "ios/Sources/CJAPI/Generated/Types+Components+Responses.swift": "8b243eb7012a5949f3818188cd64cc40021b87061be2b9de50a611f2ab9ab776",
+    "ios/Sources/CJAPI/Generated/Types+Components+Schemas.swift": "623e32f7e6fe231f7a0d10f5c91d32e71b8dd66e377f69cedf6531a873d0895a",
+    "ios/Sources/CJAPI/Generated/Types+Components.swift": "6ea69a3694541e5a67e2e3fe774048b7e0e3706ba7957ddefedd4e9e136b04e7",
+    "ios/Sources/CJAPI/Generated/Types+Operations.swift": "151829e6410252d01599fc25674bb981dfd499a342e6ef2c49c567b751102d7a",
+    "ios/Sources/CJAPI/Generated/Types.swift": "6b5fa634e47bb43728c1b1ba9c23fd9fec0891ff58137aa4134c66ca7e653845",
+    "ios/Sources/CJAPI/MemoryClientConfiguration.swift": "3088bab954be24d7fdda0c5815822feb846b772e6d4dc299889cdfd29e4f6d82",
+    "ios/Sources/CJAPI/ProbeConnection.swift": "e78a03f68abafeb8c559b99e669d04cb9e98a5c4ffe9f7bb8cfb4ace83ed9e1a",
+    "ios/Sources/CJProbe/main.swift": "59d0ac90be38554507637ce38e40e4a447cacf79a13a0c36d24b82493eb53991",
+    "ios/Sources/CJProbeUI/ProbeView.swift": "47c4b5d03c82ecd8e6a2c23b4f590d36fd80f9dc53938704f85cc007265f4282",
+    "ios/Tests/CJAPITests/ContractTests.swift": "dd16b31dac10eeb1459d5263b69a824404546e7dec4c682ab612c371c8e07cac"
+  },
+  "old_573_export_16_hashes_unchanged": true
+}

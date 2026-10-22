@@ -1,0 +1,35 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[1 / 55] DequeModule
+[2 / 7] CJShellTests-product
+[4 / 9] CJShellTests-product
+[10 / 14] CJShellTests-product
+Build complete! (1.69秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentSDKHostClearTests started.
+◇ Test sameOriginalClearFailureStillBlocks(_:) started.
+◇ Test oldClearCannotBlockSuccessfullySavedReplacement(changesVerification:) started.
+◇ Test successfulClearRetiresTokenAndStaysCleared() started.
+◇ Test case passing 1 argument failure → .staleOperation to sameOriginalClearFailureStillBlocks(_:) started.
+◇ Test case passing 1 argument failure → .storageUnavailable to sameOriginalClearFailureStillBlocks(_:) started.
+◇ Test case passing 1 argument changesVerification → false to oldClearCannotBlockSuccessfullySavedReplacement(changesVerification:) started.
+◇ Test case passing 1 argument changesVerification → true to oldClearCannotBlockSuccessfullySavedReplacement(changesVerification:) started.
+✔ Test successfulClearRetiresTokenAndStaysCleared() passed after 0.003 seconds.
+✔ Test sameOriginalClearFailureStillBlocks(_:) with 2 test cases passed after 0.003 seconds.
+✘ Test oldClearCannotBlockSuccessfullySavedReplacement(changesVerification:) recorded an issue with 1 argument changesVerification → false at IndependentSDKHostClearTests.swift:55:9: Expectation failed: host.localSessionStatus == .idle && host.sessionBridgeResult == .stale
+↳ host.localSessionStatus == .idle && host.sessionBridgeResult == .stale → false
+↳   host.localSessionStatus == .idle → false
+↳   host.sessionBridgeResult == .stale → <not evaluated>
+✘ Test oldClearCannotBlockSuccessfullySavedReplacement(changesVerification:) recorded an issue with 1 argument changesVerification → false at IndependentSDKHostClearTests.swift:56:9: Expectation failed: host.canRestoreSession && host.canSubmitAccount && !host.canUseRestrictedBusiness
+↳ host.canRestoreSession && host.canSubmitAccount && !host.canUseRestrictedBusiness → false
+↳   host.canRestoreSession && host.canSubmitAccount → false
+↳   !host.canUseRestrictedBusiness → <not evaluated>
+✘ Test oldClearCannotBlockSuccessfullySavedReplacement(changesVerification:) with 2 test cases failed after 0.005 seconds with 2 issues.
+✘ Suite IndependentSDKHostClearTests failed after 0.005 seconds with 2 issues.
+✘ Test run with 3 tests in 1 suite failed after 0.005 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - CJShellTests (Swift Testing)

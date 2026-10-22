@@ -40,9 +40,12 @@ public enum MemoryGroup: String, CaseIterable, Codable, Sendable {
     }
 }
 
+public enum TripRoute: Hashable, Sendable { case detail, proposal, originalAction }
+
 public enum MemoryRoute: Hashable, Sendable {
     case group(MemoryGroup)
     case account, language, help, privacy, support
+    case memoryItems, memoryDetail, manualMemory
 }
 
 /// Retained opaquely during UI navigation; never an authority or an ID generator.
@@ -84,10 +87,13 @@ public final class ShellState {
     public static let contractVersion = "UI@1.1"
     public static let languageKey = "cj.ui.language.v1"
     public var selectedTab: ShellTab = .assistant
+    public var tripPath: [TripRoute] = []
     public var memoryPath: [MemoryRoute] = []
     public private(set) var draftRevision = UUID()
     public var draft = "" { didSet { draftRevision = UUID() } }
     var messageBindingBlocked = false
+    @ObservationIgnored weak var tripContainerHost: TripContainerHost?
+    @ObservationIgnored weak var memoryContainerHost: MemoryContainerHost?
     @ObservationIgnored weak var serverHistoryHost: ServerHistoryHost?
     @ObservationIgnored weak var messageHost: AssistantMessageHost?
     public private(set) var generation = ShellGeneration()
@@ -124,6 +130,10 @@ public final class ShellState {
         contextReset()
         // Publish the fence and clear private UI before a resource callback can reenter.
         // No outer-lifetime mutation is allowed after this callback.
+        tripContainerHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
+        memoryContainerHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
         serverHistoryHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
         messageHost?.invalidate()
@@ -131,7 +141,7 @@ public final class ShellState {
     }
 
     private func contextReset() {
-        memoryPath = []
+        memoryPath = []; tripPath = []
         presentation = ShellPresentation()
     }
 
