@@ -1,0 +1,7 @@
+{
+  "touch": "SNAPSHOT_EXPIRED, age78859ms, not dispatched",
+  "right": "SNAPSHOT_MISSING, not dispatched",
+  "left": "SNAPSHOT_MISSING, not dispatched",
+  "screenshots": "vo-preflight-* are failed preflight observations, never action PASS",
+  "recovery": "fresh snapshot used for one live short-path attempt; see voiceover-actions.json"
+}
