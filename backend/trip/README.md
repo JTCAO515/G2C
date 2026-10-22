@@ -75,3 +75,9 @@ Protected pre-acceptance candidate display is available as `Boundary.proposal_de
 [Exact read/pagination seam](../../contracts/trip/PROPOSAL-READ.md) and
 [12-test real-PG evidence](evidence/proposal-read/REPORT.md) are ready for CJ005
 consumption confirmation. Reads never authorize acceptance; default confirm still denies.
+
+For CJ005 HTTP composition use [with_operation](../../contracts/trip/OPERATION.md)
+so JSON projection, size checks and encoding finish before the final identity/scope
+guard. Old object-return methods are internal compatibility only. New 20 targeted
+checks plus affected suite (76 total) passed on fresh private PG; see
+[operation evidence](evidence/operation/REPORT.md). Consumer confirmation pending.
