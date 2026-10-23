@@ -1,0 +1,7 @@
+PASS verified new empty private PostgreSQL, no TCP, exact two candidate schemas only
+PASS single canonical0045/a7 module identity, shared checker/repositories; numeric loopback HTTP server started
+PASS official generated Swift URLSession performed eight actual HTTP/PG calls; pause/read/resume/historical receipt and unknown original query passed
+PASS all seven HTTP200 response bodies equal exact whole BASE bytes projected in original protected lifetime, SHA matched in real Swift transport
+PASS three exact original action UTF8/IDs persisted once; committed-unknown queried under original ID only, no resend or new ID
+PASS synthetic authenticated B original receipt lookup is explicit null; B item/version and lifecycle ledger unchanged in real PG
+PASS HTTP thread joined and exact new private PostgreSQL stopped; data retained
