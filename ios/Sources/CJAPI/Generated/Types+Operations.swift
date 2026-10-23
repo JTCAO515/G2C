@@ -6352,4 +6352,217 @@ public enum Operations {
             }
         }
     }
+    /// Read-only evaluation of current authorized NEEDS and exact original history; only needs_id selector. Candidate factory hard closed pending independent gates; no solver/candidate/routes/write authority.
+    ///
+    /// - Remark: HTTP `GET /v1/needs-feasibility`.
+    /// - Remark: Generated from `#/paths//v1/needs-feasibility/get(evaluateCurrentNeedsFeasibility)`.
+    public enum evaluateCurrentNeedsFeasibility {
+        public static let id: Swift.String = "evaluateCurrentNeedsFeasibility"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/query/needs_id`.
+                public var needs_id: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - needs_id:
+                public init(needs_id: Swift.String) {
+                    self.needs_id = needs_id
+                }
+            }
+            public var query: Operations.evaluateCurrentNeedsFeasibility.Input.Query
+            /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.evaluateCurrentNeedsFeasibility.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.evaluateCurrentNeedsFeasibility.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.evaluateCurrentNeedsFeasibility.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.evaluateCurrentNeedsFeasibility.Input.Query,
+                headers: Operations.evaluateCurrentNeedsFeasibility.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/responses/200/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.evaluateCurrentNeedsFeasibility.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.FeasibilityCurrentResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.FeasibilityCurrentResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.evaluateCurrentNeedsFeasibility.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.evaluateCurrentNeedsFeasibility.Output.Ok.Headers,
+                    body: Operations.evaluateCurrentNeedsFeasibility.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Protected existing operation progress only for current valid account; final BASE bytes/close/domain/outer AUTH guards pass.
+            ///
+            /// - Remark: Generated from `#/paths//v1/needs-feasibility/get(evaluateCurrentNeedsFeasibility)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.evaluateCurrentNeedsFeasibility.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.evaluateCurrentNeedsFeasibility.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Default: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/responses/default/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/responses/default/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.evaluateCurrentNeedsFeasibility.Output.Default.Headers
+                /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/responses/default/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/needs-feasibility/GET/responses/default/content/application\/json`.
+                    case json(Components.Schemas.ErrorResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ErrorResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.evaluateCurrentNeedsFeasibility.Output.Default.Body
+                /// Creates a new `Default`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.evaluateCurrentNeedsFeasibility.Output.Default.Headers,
+                    body: Operations.evaluateCurrentNeedsFeasibility.Output.Default.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// BASE current-AUTH/input/unavailable error. No null/empty/complete fallback, no postlogout privilege restoration or hook retry.
+            ///
+            /// - Remark: Generated from `#/paths//v1/needs-feasibility/get(evaluateCurrentNeedsFeasibility)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Operations.evaluateCurrentNeedsFeasibility.Output.Default)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Operations.evaluateCurrentNeedsFeasibility.Output.Default {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
 }

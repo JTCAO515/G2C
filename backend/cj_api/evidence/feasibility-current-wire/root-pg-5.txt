@@ -1,0 +1,15 @@
+PASS verified new empty private PostgreSQL, no TCP, exact NEEDS candidate schema only
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+test_bounds_missing_data_extra_selectors_and_closed_factory (feasibility_wire_checks.FeasibilityChecks.test_bounds_missing_data_extra_selectors_and_closed_factory) ... ok
+test_exact_original_report_envelope_hash_conflict_unknown_and_no_domain_write (feasibility_wire_checks.FeasibilityChecks.test_exact_original_report_envelope_hash_conflict_unknown_and_no_domain_write) ... ok
+test_final_outer_auth_after_complete_base_config_change_withholds (feasibility_wire_checks.FeasibilityChecks.test_final_outer_auth_after_complete_base_config_change_withholds) ... ok
+test_invalid_original_history_is_explicit_safe_error_not_fake_report (feasibility_wire_checks.FeasibilityChecks.test_invalid_original_history_is_explicit_safe_error_not_fake_report) ... ok
+test_strict_first_close_failure_or_remap_withholds_at_wire (feasibility_wire_checks.FeasibilityChecks.test_strict_first_close_failure_or_remap_withholds_at_wire) ... NEEDS connection cleanup failed: close
+ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.426s
+
+OK
+PASS exact new private PostgreSQL stopped; data retained
