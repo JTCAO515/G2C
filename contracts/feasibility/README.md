@@ -157,3 +157,9 @@ optional dependency and tests are separate from NEEDS-only.
 
 The separate bounded conditional solver is documented in [SOLVER](SOLVER.md);
 this does not turn local/synthetic acceptance into real trip feasibility.
+
+The current-record read projector and exact blocked strict-read seam request
+are in [CURRENT-READ-SEAM](CURRENT-READ-SEAM.md). No protected root entry is enabled.
+
+The separate strict-reader integration candidate is [PROTECTED-CURRENT](PROTECTED-CURRENT.md);
+its own independent gates/root registration remain pending. Historical FAIL evidence stays preserved.

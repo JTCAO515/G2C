@@ -1,0 +1,31 @@
+NEW_PRIVATE_PG=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/.local/read-7r93qx3j; TCP=disabled; synthetic_only=true
+test_close_failure_must_not_release_bytes (test_current_read.UpstreamSeamProbes.test_close_failure_must_not_release_bytes) ... NEEDS connection cleanup failed: close
+NEEDS connection cleanup failed: close
+NEEDS connection cleanup failed: close
+NEEDS connection cleanup failed: close
+FAIL
+test_environment_rebind_on_close_must_not_release_bytes (test_current_read.UpstreamSeamProbes.test_environment_rebind_on_close_must_not_release_bytes) ... FAIL
+PG_STOPPED_PRESERVED=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/.local/read-7r93qx3j
+
+======================================================================
+FAIL: test_close_failure_must_not_release_bytes (test_current_read.UpstreamSeamProbes.test_close_failure_must_not_release_bytes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/tests/test_current_read.py", line 209, in test_close_failure_must_not_release_bytes
+    with self.assertRaises(Exception):self.read()
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+AssertionError: Exception not raised
+
+======================================================================
+FAIL: test_environment_rebind_on_close_must_not_release_bytes (test_current_read.UpstreamSeamProbes.test_environment_rebind_on_close_must_not_release_bytes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/tests/test_current_read.py", line 212, in test_environment_rebind_on_close_must_not_release_bytes
+    with self.assertRaises(Exception):self.read()
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+AssertionError: Exception not raised
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.649s
+
+FAILED (failures=2)

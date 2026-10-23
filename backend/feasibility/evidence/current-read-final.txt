@@ -1,0 +1,19 @@
+NEW_PRIVATE_PG=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/.local/read-xb094sjd; TCP=disabled; synthetic_only=true
+test_actual_current_projection_conflict_and_original_source (test_current_read.PrivateReadTests.test_actual_current_projection_conflict_and_original_source) ... ok
+test_authorized_missing_and_other_owner_both_withheld (test_current_read.PrivateReadTests.test_authorized_missing_and_other_owner_both_withheld) ... ok
+test_bounds_revision_input_output_explicit (test_current_read.PrivateReadTests.test_bounds_revision_input_output_explicit) ... ok
+test_close_identity_change_withheld (test_current_read.PrivateReadTests.test_close_identity_change_withheld) ... ok
+test_close_revocation_withheld_after_actual_sql (test_current_read.PrivateReadTests.test_close_revocation_withheld_after_actual_sql) ... ok
+test_current_changed_after_history_withheld (test_current_read.PrivateReadTests.test_current_changed_after_history_withheld) ... ok
+test_expired_unknown_and_missing_configuration_do_not_read (test_current_read.PrivateReadTests.test_expired_unknown_and_missing_configuration_do_not_read) ... ok
+test_final_encoded_projection_revocation_withheld (test_current_read.PrivateReadTests.test_final_encoded_projection_revocation_withheld) ... ok
+test_handle_outside_lifetime_and_forgery_rejected (test_current_read.PrivateReadTests.test_handle_outside_lifetime_and_forgery_rejected) ... ok
+test_history_missing_rejected_not_zero_or_latest (test_current_read.PrivateReadTests.test_history_missing_rejected_not_zero_or_latest) ... ok
+test_no_business_writes_during_evaluation (test_current_read.PrivateReadTests.test_no_business_writes_during_evaluation) ... ok
+test_original_revision_tampering_reuses_evaluator_rejection (test_current_read.PrivateReadTests.test_original_revision_tampering_reuses_evaluator_rejection) ... ok
+PG_STOPPED_PRESERVED=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/.local/read-xb094sjd
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.844s
+
+OK
