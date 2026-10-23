@@ -1,0 +1,15 @@
+# CJ019 pause/resume author verification
+
+Date: 2026-10-23 Asia/Shanghai. Fixed input: `513a2ebaa8cc6724cf71c68937075f0349e98a9d`, branch `cj/019-memory-management`. Only `backend/memory_management/**` and `contracts/memory-management/**` added. Source clone is read-only, no push/PR/merge/issue closure.
+
+PASS — syntax parse of six Python files; strict actions, inherited domain receipts/errors, same scope/source/item and transaction locking.
+
+PASS — actual PostgreSQL 16.15, installed Python3.11.16 / psycopg3.2.10; [full unique run log](pg-6qh79fe0.txt). 14 directed unittest methods, including 8 competing distinct-ID writers at the same expected version (one commit), concurrent same-original replay, changed bytes conflict, old item/source/context, three active kinds, scope isolation, five invalid-source conditions, candidate/withdrawn/foreign-disabled refusal, occupied canonical slot, commit errors/cancellation before/after actual commit, precommit cancellation rollback, original shared-lock behavior and temporary/companion boundaries. These are synthetic authority/content fixtures against real storage; no production policy or actual identity/provider is claimed.
+
+PASS — actual server stop/start, new Python process verifies disabled/active state, versions, original receipt/hash/replay and scope isolation after restart. Final pg_ctl status=3 with no PID/socket. Data and server logs preserved at task-local `.local/pg-6qh79fe0/`; private socket directory retained at `/private/tmp/cj019-wyrlyz5w`, empty after stop. Task-only role `cj019_owner`, socket port56219, empty passfile, listen_addresses='' were checked against server settings before schema creation.
+
+FAIL retained — [initial sandbox run](pg-xad7wmtt.txt): initdb could not allocate shared memory (shmget Operation not permitted), no server started. The subsequent dedicated test runner executed after explicit escalation approval; it did not reuse the failed data path. Initial system Python cache PermissionError, missing psycopg in unrelated foundation environment, uv cache denial/interrupted approval are recorded in [preflight](preflight.txt). No retry of the interrupted uv action.
+
+Read-only compatibility check after testing: current Publish source `b33184fdc14c55098f2f21cd7e33d05b8a5d01f0` and fixed input have exactly the same `backend/memory` tree `e959c42d23a3879fdcbbb62dd0dc362de696da01` and `contracts/memory` tree `98cd2d7c0c45e6313f3a4b4acf7960d1bff2ef76`. This supports input compatibility only; no current-root/API integration was executed.
+
+UNRUN — independent Review/Testing; SQL registration/deployment/RLS; guarded management/public API or generated clients; text editing pending exact-source authorization/history seam; RUN publication/actual model context/same-session next answer; App UI/device; real accounts/provider; full original Issue17 acceptance. Scope epoch probe/shared-lock checks do not authorize publication. Original UI/integration requirements remain open.

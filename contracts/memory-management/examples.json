@@ -1,0 +1,12 @@
+{
+  "internal_version": "CJ019-lifecycle-internal.1",
+  "positive": [
+    {"action_id":"pause-1","operation":"pause","item_id":"item-1","expected_version":1,"expected_source_version":1},
+    {"action_id":"resume-1","operation":"resume","item_id":"item-1","expected_version":2,"expected_source_version":1}
+  ],
+  "negative": [
+    {"action_id":"edit-1","operation":"edit","item_id":"item-1","expected_version":1,"expected_source_version":1},
+    {"action_id":"pause-1","operation":"pause","item_id":"item-1","expected_version":true,"expected_source_version":1},
+    {"action_id":"pause-1","operation":"pause","item_id":"item-1","expected_version":1,"expected_source_version":1,"owner":"client-supplied"}
+  ]
+}

@@ -1,0 +1,60 @@
+CJ019 local real PostgreSQL / synthetic authority fixtures
+data=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data
+socket=/private/tmp/cj019-wyrlyz5w
+PG environment replaced; empty explicit passfile; no TCP listener
+postgres (PostgreSQL) 16.15 (Homebrew)
+The files belonging to this database system will be owned by user "jtsm5p".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+creating directory /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... Asia/Shanghai
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+Success. You can now start the database server using:
+
+    '/opt/homebrew/opt/postgresql@16/bin/pg_ctl' -D /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data -l logfile start
+waiting for server to start.... done
+server started
+PASS private PG identity/settings: ('cj019_owner', 'postgres', '', '/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data', 'UTF8')
+test_01_pause_resume_current_reads_and_provenance (__main__.Checks.test_01_pause_resume_current_reads_and_provenance) ... ok
+test_02_two_writers_same_version_only_one_commits (__main__.Checks.test_02_two_writers_same_version_only_one_commits) ... ok
+test_03_original_bytes_replay_and_changed_bytes_conflict (__main__.Checks.test_03_original_bytes_replay_and_changed_bytes_conflict) ... ok
+test_04_stale_item_source_and_old_context_rejected (__main__.Checks.test_04_stale_item_source_and_old_context_rejected) ... ok
+test_05_scope_isolation_with_identical_item_and_action_ids (__main__.Checks.test_05_scope_isolation_with_identical_item_and_action_ids) ... ok
+test_06_resume_never_renews_invalid_or_expired_source (__main__.Checks.test_06_resume_never_renews_invalid_or_expired_source) ... ok
+test_07_candidate_withdrawn_and_foreign_disabled_never_promoted (__main__.Checks.test_07_candidate_withdrawn_and_foreign_disabled_never_promoted) ... ok
+test_08_resume_slot_collision_does_not_overwrite_new_save (__main__.Checks.test_08_resume_slot_collision_does_not_overwrite_new_save) ... ok
+test_09_commit_ack_unknown_and_cancellation_preserve_original_action (__main__.Checks.test_09_commit_ack_unknown_and_cancellation_preserve_original_action) ... ok
+test_10_cancel_after_mutation_before_commit_rolls_back (__main__.Checks.test_10_cancel_after_mutation_before_commit_rolls_back) ... ok
+test_11_scope_lock_serializes_with_original_publication_transaction (__main__.Checks.test_11_scope_lock_serializes_with_original_publication_transaction) ... ok
+test_12_temporary_companion_and_long_term_stay_scoped (__main__.Checks.test_12_temporary_companion_and_long_term_stay_scoped) ... ok
+test_13_shape_errors_and_no_client_authority (__main__.Checks.test_13_shape_errors_and_no_client_authority) ... ok
+test_14_durable_restart_fixtures (__main__.Checks.test_14_durable_restart_fixtures) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.675s
+
+OK
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+PASS restart: pause/resume current reads, original receipt/hash/replay, scope isolation
+PASS checks and actual server restart
+waiting for server to shut down.... done
+server stopped
+final pg_ctl status=3
+PASS safe stop: no running server/PID/socket; data/logs preserved
+evidence=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/evidence/pg-6qh79fe0.txt
