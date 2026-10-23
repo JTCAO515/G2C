@@ -18,7 +18,10 @@ ROLE = 'cj019_owner'
 PORT = 56219  # Task-private Unix socket only; no TCP listener.
 
 
-def main():
+def main(*, checks_file=None, memory_input=None,
+         label='CJ019 local real PostgreSQL / synthetic authority fixtures'):
+    checks_file = checks_file or ROOT/'tests'/'checks.py'
+    memory_input = memory_input or ROOT.parent/'memory'
     if sys.version_info < (3, 11) or psycopg.__version__ != '3.2.10':
         raise RuntimeError('requires Python 3.11+ and fixed psycopg 3.2.10')
     local = ROOT / '.local'
@@ -54,7 +57,7 @@ def main():
             command([BIN/'pg_ctl', '-D', data, '-l', run/'server.log',
                      '-o', "-c listen_addresses='' -c unix_socket_permissions=0700 -k "
                      + str(socket) + ' -p ' + str(PORT), '-w', 'start'])
-        record('CJ019 local real PostgreSQL / synthetic authority fixtures')
+        record(label)
         record('data=' + str(data) + '\nsocket=' + str(socket))
         record('PG environment replaced; empty explicit passfile; no TCP listener')
         try:
@@ -74,10 +77,10 @@ def main():
                 if settings != (ROLE, 'postgres', '', str(data), 'UTF8'):
                     raise RuntimeError('unexpected private PG identity/settings')
                 record('PASS private PG identity/settings: ' + repr(settings))
-                conn.execute((ROOT.parent/'memory'/'schema.sql').read_text())
+                conn.execute((memory_input/'schema.sql').read_text())
                 conn.execute((ROOT/'schema.sql').read_text())
                 conn.execute("INSERT INTO cj_memory_scope(scope) VALUES ('A'),('B')")
-            command([sys.executable, '-B', ROOT/'tests'/'checks.py', config_path])
+            command([sys.executable, '-B', checks_file, config_path])
             command([BIN/'pg_ctl', '-D', data, '-m', 'fast', '-w', 'stop'])
             running = False
             try:
@@ -87,7 +90,7 @@ def main():
                                         env=env, stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT, text=True)
                 running = status.returncode == 0
-            command([sys.executable, '-B', ROOT/'tests'/'checks.py', config_path,
+            command([sys.executable, '-B', checks_file, config_path,
                      '--restart'])
             record('PASS checks and actual server restart')
         finally:

@@ -1,0 +1,58 @@
+CJ019 guarded delta / canonical 0045 / synthetic AUTH and real private PG
+data=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data
+socket=/private/tmp/cj019-xeo1trph
+PG environment replaced; empty explicit passfile; no TCP listener
+postgres (PostgreSQL) 16.15 (Homebrew)
+The files belonging to this database system will be owned by user "jtsm5p".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+creating directory /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... Asia/Shanghai
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+Success. You can now start the database server using:
+
+    '/opt/homebrew/opt/postgresql@16/bin/pg_ctl' -D /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data -l logfile start
+waiting for server to start.... done
+server started
+PASS private PG identity/settings: ('cj019_owner', 'postgres', '', '/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data', 'UTF8')
+test_01_restricted_context_apply_query_same_transaction (__main__.Checks.test_01_restricted_context_apply_query_same_transaction) ... ok
+test_02_precommit_cancellation_rollback_sticky_when_caught (__main__.Checks.test_02_precommit_cancellation_rollback_sticky_when_caught) ... ok
+test_03_committed_ack_faults_keep_original_action (__main__.Checks.test_03_committed_ack_faults_keep_original_action) ... ok
+test_04_identity_change_on_commit_or_close_withholds_durable_result (__main__.Checks.test_04_identity_change_on_commit_or_close_withholds_durable_result) ... ok
+test_05_projection_final_identity_failure_keeps_receipt (__main__.Checks.test_05_projection_final_identity_failure_keeps_receipt) ... ok
+test_06_callback_cancel_or_deferred_output_after_commit (__main__.Checks.test_06_callback_cancel_or_deferred_output_after_commit) ... ok
+test_07_escape_other_thread_and_query_cannot_apply (__main__.Checks.test_07_escape_other_thread_and_query_cannot_apply) ... ok
+test_08_same_raw_replay_changed_raw_and_single_write (__main__.Checks.test_08_same_raw_replay_changed_raw_and_single_write) ... ok
+test_09_wrong_scope_and_principal_drift_before_commit (__main__.Checks.test_09_wrong_scope_and_principal_drift_before_commit) ... ok
+test_10_adapter_and_repository_replacement_withholds (__main__.Checks.test_10_adapter_and_repository_replacement_withholds) ... ok
+test_11_query_is_read_only_and_original_save_receipt_unchanged (__main__.Checks.test_11_query_is_read_only_and_original_save_receipt_unchanged) ... ok
+test_12_restart_fixture (__main__.Checks.test_12_restart_fixture) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.191s
+
+OK
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+PASS guarded query after actual new server/process restart; original receipt/hash and disabled item
+PASS checks and actual server restart
+waiting for server to shut down.... done
+server stopped
+final pg_ctl status=3
+PASS safe stop: no running server/PID/socket; data/logs preserved
+evidence=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/evidence/pg-f14gzdcf.txt

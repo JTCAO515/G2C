@@ -22,6 +22,9 @@ class OperationContext:
 
     def _check(self):
         s = self._state
+        if s.get('lifecycle_busy', False):
+            s['blocked'] = True
+            raise RuntimeError('lifecycle adapter cannot reenter request context')
         if (not s['active'] or s['blocked'] or s.get('consuming', False)
                 or threading.get_ident() != s['thread']):
             raise RuntimeError('memory context expired or used outside request thread')
@@ -68,6 +71,18 @@ class OperationContext:
         self._check()
         return self._service.detail(item_id)
 
+    def apply_lifecycle(self, original_utf8):
+        """Apply one trusted lifecycle action using the existing guarded transaction."""
+        self._check()
+        from .lifecycle import apply_lifecycle
+        return apply_lifecycle(self._service, self._state, original_utf8)
+
+    def query_lifecycle(self, action_id):
+        """Read only the original lifecycle action receipt; never initiate retry."""
+        self._check()
+        from .lifecycle import query_lifecycle
+        return query_lifecycle(self._service, self._state, action_id)
+
     def consume_current(self, subject, context_id, consumer, *, max_result_bytes):
         """Synchronously consume current memory under its original scope lock."""
         self._check()
@@ -93,6 +108,7 @@ def with_operation(service, guard, operation):
     bound = None
     repository = service.repository
     manual_policy = service.manual_policy
+    lifecycle_adapter = service.lifecycle_adapter
 
     def check(stage):
         nonlocal bound
@@ -105,7 +121,8 @@ def with_operation(service, guard, operation):
                     or type(current[1]) is not str or not current[1]
                     or current[1] != repository.scope
                     or service.repository is not repository
-                    or service.manual_policy is not manual_policy):
+                    or service.manual_policy is not manual_policy
+                    or service.lifecycle_adapter is not lifecycle_adapter):
                 raise ValueError('invalid trusted binding')
             if bound is None:
                 bound = current
@@ -144,7 +161,8 @@ def with_operation(service, guard, operation):
 
     try:
         check('entry')
-        context = OperationContext(type(service)(GuardedRepository(), manual_policy=manual_policy), state)
+        context = OperationContext(type(service)(GuardedRepository(), manual_policy=manual_policy,
+                                                lifecycle_adapter=lifecycle_adapter), state)
         result = operation(context)
         if type(result) is not bytes:
             if inspect.iscoroutine(result): result.close()
