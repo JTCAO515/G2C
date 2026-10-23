@@ -5722,4 +5722,217 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /v1/account-cleanup-progress`.
+    /// - Remark: Generated from `#/paths//v1/account-cleanup-progress/get(getCurrentAccountCleanupProgress)`.
+    public enum getCurrentAccountCleanupProgress {
+        public static let id: Swift.String = "getCurrentAccountCleanupProgress"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Existing original operation only. No owner/scope/environment/capability/receipt/permission selectors.
+                ///
+                /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/query/operation_id`.
+                public var operation_id: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - operation_id: Existing original operation only. No owner/scope/environment/capability/receipt/permission selectors.
+                public init(operation_id: Swift.String) {
+                    self.operation_id = operation_id
+                }
+            }
+            public var query: Operations.getCurrentAccountCleanupProgress.Input.Query
+            /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCurrentAccountCleanupProgress.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCurrentAccountCleanupProgress.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getCurrentAccountCleanupProgress.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getCurrentAccountCleanupProgress.Input.Query,
+                headers: Operations.getCurrentAccountCleanupProgress.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/responses/200/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.getCurrentAccountCleanupProgress.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.CurrentAccountCleanupProgressResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.CurrentAccountCleanupProgressResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getCurrentAccountCleanupProgress.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.getCurrentAccountCleanupProgress.Output.Ok.Headers,
+                    body: Operations.getCurrentAccountCleanupProgress.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Protected existing operation progress only for current valid account; final BASE bytes/close/domain/outer AUTH guards pass.
+            ///
+            /// - Remark: Generated from `#/paths//v1/account-cleanup-progress/get(getCurrentAccountCleanupProgress)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getCurrentAccountCleanupProgress.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getCurrentAccountCleanupProgress.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Default: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/responses/default/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/responses/default/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.getCurrentAccountCleanupProgress.Output.Default.Headers
+                /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/responses/default/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/account-cleanup-progress/GET/responses/default/content/application\/json`.
+                    case json(Components.Schemas.ErrorResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ErrorResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getCurrentAccountCleanupProgress.Output.Default.Body
+                /// Creates a new `Default`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.getCurrentAccountCleanupProgress.Output.Default.Headers,
+                    body: Operations.getCurrentAccountCleanupProgress.Output.Default.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// BASE current-AUTH/input/unavailable error. No null/empty/complete fallback, no postlogout privilege restoration or hook retry.
+            ///
+            /// - Remark: Generated from `#/paths//v1/account-cleanup-progress/get(getCurrentAccountCleanupProgress)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Operations.getCurrentAccountCleanupProgress.Output.Default)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Operations.getCurrentAccountCleanupProgress.Output.Default {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
 }

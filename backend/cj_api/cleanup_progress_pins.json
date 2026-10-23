@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "evidence_head": "6635bb9b301b567edeef91689c0097b25c576ba9",
+  "sources": [
+    {
+      "name": "auth",
+      "commit": "8b6abb236cf10c1865a9cc8c6155bd8ac732c07e",
+      "prefix": "backend/auth/cj_auth/",
+      "files": {
+        "backend/auth/cj_auth/__init__.py": "6921fa11f3bdb1cefb618f0e067581fa22385cf1e0836e479f989a84dcb6374a",
+        "backend/auth/cj_auth/interfaces.py": "39711c9511c942274162fc4d32986a554147f8f32067ffd1e49e5aa94c9a0b9c",
+        "backend/auth/cj_auth/admission.py": "5e9fab7cea50a260622896cb7aeba76ebe1ba511d63a87a69e83fe7bdea526dc",
+        "backend/auth/cj_auth/jwt_adapter.py": "ede933a2af99965ecaa8e7d58b950fc51fe38232538dd825c4a23bcf6d85aad5",
+        "backend/auth/cj_auth/read_context.py": "c74e64fc2667d89beebab49d832804510894e84701416d38b3849238b02b3f2c"
+      }
+    },
+    {
+      "name": "cleanup",
+      "commit": "514aba717dd0e0a7f7783b6d9072d347cdb0a623",
+      "prefix": "backend/cleanup/cj_cleanup/",
+      "files": {
+        "backend/cleanup/cj_cleanup/__init__.py": "48cdde1214129eb13dec80532b6b2e389fa5c6827b7b7100ef059ea49074b1e6",
+        "backend/cleanup/cj_cleanup/core.py": "3f12d3962b4894e4b5f24df08f92c05101e69f05727bde92f5395420ccbf4f0b",
+        "backend/cleanup/cj_cleanup/postgres.py": "1bd792a443c4e3e702ae5a54d079a08440d21e512f6281b9f49393e9d33e23b1",
+        "backend/cleanup/cj_cleanup/protected_progress.py": "a8b70d3a05b095c79e4b828672f05aa2a6c7c787bd24979127f16c52d3567a2f"
+      }
+    }
+  ]
+}

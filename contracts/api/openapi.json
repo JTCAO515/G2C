@@ -1694,6 +1694,66 @@
           }
         }
       }
+    },
+    "/v1/account-cleanup-progress": {
+      "get": {
+        "operationId": "getCurrentAccountCleanupProgress",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,159}$"
+            },
+            "description": "Existing original operation only. No owner/scope/environment/capability/receipt/permission selectors."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected existing operation progress only for current valid account; final BASE bytes/close/domain/outer AUTH guards pass.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentAccountCleanupProgressResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE current-AUTH/input/unavailable error. No null/empty/complete fallback, no postlogout privilege restoration or hook retry.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4433,6 +4493,116 @@
           }
         },
         "description": "Complete BASE encoding within original producer read_projected lifetime; exact bytes returned after strict close and final binding. No successful null association."
+      },
+      "CleanupProgressStep": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target",
+          "state",
+          "reason"
+        ],
+        "properties": {
+          "target": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,191}$"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "unknown",
+              "failed",
+              "confirmed"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "original_result_confirmed",
+              "original_result_unknown",
+              "original_result_failed",
+              "hook_unavailable",
+              "original_call_in_progress",
+              "revocation_unconfirmed",
+              "task_stop_unconfirmed",
+              "pending_original_result"
+            ]
+          }
+        }
+      },
+      "CurrentAccountCleanupProgress": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "revision",
+          "status",
+          "steps",
+          "reasons"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,159}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "blocked",
+              "unknown",
+              "failed",
+              "complete",
+              "awaiting_revocation",
+              "in_progress"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 128,
+            "items": {
+              "$ref": "#/components/schemas/CleanupProgressStep"
+            }
+          },
+          "reasons": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "coverage_incomplete",
+                "registry_review_required",
+                "hook_unavailable",
+                "original_result_unknown",
+                "original_result_failed"
+              ]
+            }
+          }
+        },
+        "description": "Current ALLOWED account original-operation metadata snapshot only. Complete is limited to original frozen operation, never all-domain/account deletion. Pending/unknown/hooks/retention/offline barriers are not zero or completion. No principal/scope/confirmation/manifest/invocation/receipt/journal/hook/exception details. No recovery/write/hook execution or postlogout capability."
+      },
+      "CurrentAccountCleanupProgressResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "progress"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/CurrentAccountCleanupProgress"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -4452,5 +4622,6 @@
   "x-run-display-wire-version": "RUN-DISPLAY-WIRE@0.1.0-rc.1",
   "x-manual-preview-wire-version": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1",
   "x-usage-status-wire-version": "USAGE-STATUS-WIRE@0.1.0-rc.1",
-  "x-original-usage-wire-version": "ORIGINAL-USAGE-WIRE@0.1.0-rc.1"
+  "x-original-usage-wire-version": "ORIGINAL-USAGE-WIRE@0.1.0-rc.1",
+  "x-cleanup-progress-wire-version": "CLEANUP-PROGRESS-WIRE@0.1.0-rc.1"
 }

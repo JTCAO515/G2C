@@ -6319,5 +6319,203 @@ extension Components {
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/CleanupProgressStep`.
+        public struct CleanupProgressStep: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CleanupProgressStep/target`.
+            public var target: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CleanupProgressStep/state`.
+            @frozen public enum statePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pending = "pending"
+                case in_progress = "in_progress"
+                case unknown = "unknown"
+                case failed = "failed"
+                case confirmed = "confirmed"
+            }
+            /// - Remark: Generated from `#/components/schemas/CleanupProgressStep/state`.
+            public var state: Components.Schemas.CleanupProgressStep.statePayload
+            /// - Remark: Generated from `#/components/schemas/CleanupProgressStep/reason`.
+            @frozen public enum reasonPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case original_result_confirmed = "original_result_confirmed"
+                case original_result_unknown = "original_result_unknown"
+                case original_result_failed = "original_result_failed"
+                case hook_unavailable = "hook_unavailable"
+                case original_call_in_progress = "original_call_in_progress"
+                case revocation_unconfirmed = "revocation_unconfirmed"
+                case task_stop_unconfirmed = "task_stop_unconfirmed"
+                case pending_original_result = "pending_original_result"
+            }
+            /// - Remark: Generated from `#/components/schemas/CleanupProgressStep/reason`.
+            public var reason: Components.Schemas.CleanupProgressStep.reasonPayload
+            /// Creates a new `CleanupProgressStep`.
+            ///
+            /// - Parameters:
+            ///   - target:
+            ///   - state:
+            ///   - reason:
+            public init(
+                target: Swift.String,
+                state: Components.Schemas.CleanupProgressStep.statePayload,
+                reason: Components.Schemas.CleanupProgressStep.reasonPayload
+            ) {
+                self.target = target
+                self.state = state
+                self.reason = reason
+            }
+            public enum CodingKeys: String, CodingKey {
+                case target
+                case state
+                case reason
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.target = try container.decode(
+                    Swift.String.self,
+                    forKey: .target
+                )
+                self.state = try container.decode(
+                    Components.Schemas.CleanupProgressStep.statePayload.self,
+                    forKey: .state
+                )
+                self.reason = try container.decode(
+                    Components.Schemas.CleanupProgressStep.reasonPayload.self,
+                    forKey: .reason
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "target",
+                    "state",
+                    "reason"
+                ])
+            }
+        }
+        /// Current ALLOWED account original-operation metadata snapshot only. Complete is limited to original frozen operation, never all-domain/account deletion. Pending/unknown/hooks/retention/offline barriers are not zero or completion. No principal/scope/confirmation/manifest/invocation/receipt/journal/hook/exception details. No recovery/write/hook execution or postlogout capability.
+        ///
+        /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress`.
+        public struct CurrentAccountCleanupProgress: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress/operation_id`.
+            public var operation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress/revision`.
+            public var revision: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case blocked = "blocked"
+                case unknown = "unknown"
+                case failed = "failed"
+                case complete = "complete"
+                case awaiting_revocation = "awaiting_revocation"
+                case in_progress = "in_progress"
+            }
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress/status`.
+            public var status: Components.Schemas.CurrentAccountCleanupProgress.statusPayload
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress/steps`.
+            public var steps: [Components.Schemas.CleanupProgressStep]
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress/reasonsPayload`.
+            @frozen public enum reasonsPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case coverage_incomplete = "coverage_incomplete"
+                case registry_review_required = "registry_review_required"
+                case hook_unavailable = "hook_unavailable"
+                case original_result_unknown = "original_result_unknown"
+                case original_result_failed = "original_result_failed"
+            }
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress/reasons`.
+            public typealias reasonsPayload = [Components.Schemas.CurrentAccountCleanupProgress.reasonsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgress/reasons`.
+            public var reasons: Components.Schemas.CurrentAccountCleanupProgress.reasonsPayload
+            /// Creates a new `CurrentAccountCleanupProgress`.
+            ///
+            /// - Parameters:
+            ///   - operation_id:
+            ///   - revision:
+            ///   - status:
+            ///   - steps:
+            ///   - reasons:
+            public init(
+                operation_id: Swift.String,
+                revision: Swift.Int,
+                status: Components.Schemas.CurrentAccountCleanupProgress.statusPayload,
+                steps: [Components.Schemas.CleanupProgressStep],
+                reasons: Components.Schemas.CurrentAccountCleanupProgress.reasonsPayload
+            ) {
+                self.operation_id = operation_id
+                self.revision = revision
+                self.status = status
+                self.steps = steps
+                self.reasons = reasons
+            }
+            public enum CodingKeys: String, CodingKey {
+                case operation_id
+                case revision
+                case status
+                case steps
+                case reasons
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.operation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .operation_id
+                )
+                self.revision = try container.decode(
+                    Swift.Int.self,
+                    forKey: .revision
+                )
+                self.status = try container.decode(
+                    Components.Schemas.CurrentAccountCleanupProgress.statusPayload.self,
+                    forKey: .status
+                )
+                self.steps = try container.decode(
+                    [Components.Schemas.CleanupProgressStep].self,
+                    forKey: .steps
+                )
+                self.reasons = try container.decode(
+                    Components.Schemas.CurrentAccountCleanupProgress.reasonsPayload.self,
+                    forKey: .reasons
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "operation_id",
+                    "revision",
+                    "status",
+                    "steps",
+                    "reasons"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgressResponse`.
+        public struct CurrentAccountCleanupProgressResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgressResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/CurrentAccountCleanupProgressResponse/progress`.
+            public var progress: Components.Schemas.CurrentAccountCleanupProgress
+            /// Creates a new `CurrentAccountCleanupProgressResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - progress:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                progress: Components.Schemas.CurrentAccountCleanupProgress
+            ) {
+                self.request_id = request_id
+                self.progress = progress
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case progress
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.progress = try container.decode(
+                    Components.Schemas.CurrentAccountCleanupProgress.self,
+                    forKey: .progress
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "progress"
+                ])
+            }
+        }
     }
 }

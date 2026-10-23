@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
+  "version": "1.10.0",
   "stores": [
     {
       "id": "business",
@@ -150,6 +150,25 @@
           "retention": "UNDECIDED; dedupe only while row retained; no infinite or supplier-retention promise",
           "cleanup_hook": "UNIMPLEMENTED; accepted account cleanup must cover retired scope records, backups/exported artifacts and in-flight resubmission; no queue or secondary ledger",
           "restore_fence": "UNIMPLEMENTED; no retired-scope recycling or stale writer resurrection; source reads and feedback write are not cross-domain atomic"
+        },
+        {
+          "id": "cleanup-metadata",
+          "owner": "CJ-024 / CJ-005",
+          "objects": [
+            "cj_cleanup_journal_candidate"
+          ],
+          "source": "backend/cleanup/cj_cleanup/postgres.py@514aba717dd0e0a7f7783b6d9072d347cdb0a623",
+          "status": "candidate_or_local_only; production_not_provisioned",
+          "principal_binding": "Trusted current authenticated principal + explicit host environment -> canonical cleanup Scope; no caller owner/env/scope",
+          "sensitive_fields": [
+            "Full original journal and receipt bytes",
+            "Confirmation digest, invocation IDs, frozen registry and gap details",
+            "Environment/issuer/subject/audience scope and original operation ID"
+          ],
+          "retention": "UNDECIDED; activation blocked; retain original reconciliation metadata until explicit policy exists",
+          "cleanup_hook": "UNIMPLEMENTED; current-account progress SELECT never deletes, creates, recovers, retries or restores access",
+          "restore_fence": "UNIMPLEMENTED; backups/offline/external retention remain explicit original barriers",
+          "read_consumer": "GET /v1/account-cleanup-progress; current ALLOWED account and original operation only; five-field progress whitelist; no private journal or post-logout capability"
         }
       ]
     },
@@ -293,6 +312,7 @@
     "run_display": "414e5c19d8470ac2fbdc645ddfaedeee8dd6039f",
     "manual_preview": "6944a66186800ecd26246ce7028d9c9a8767f810",
     "usage_status": "8cf6a85b56651cab9f20d056fcec2831b31f543d",
-    "original_usage_association": "0685dbf8ad9622ad56c4435cb2fc47c3096046d1"
+    "original_usage_association": "0685dbf8ad9622ad56c4435cb2fc47c3096046d1",
+    "cleanup_progress": "514aba717dd0e0a7f7783b6d9072d347cdb0a623"
   }
 }
