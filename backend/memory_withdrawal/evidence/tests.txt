@@ -1,0 +1,26 @@
+test_duplicate_extra_and_missing_fields_refused (test_withdrawal.CodecTests.test_duplicate_extra_and_missing_fields_refused) ... ok
+test_exact_bytes_and_unicode_ids_preserved (test_withdrawal.CodecTests.test_exact_bytes_and_unicode_ids_preserved) ... ok
+test_pause_resume_delete_not_withdrawal (test_withdrawal.CodecTests.test_pause_resume_delete_not_withdrawal) ... ok
+test_utf8_bytes_and_bounds (test_withdrawal.CodecTests.test_utf8_bytes_and_bounds) ... ok
+test_versions_not_bool_or_coerced (test_withdrawal.CodecTests.test_versions_not_bool_or_coerced) ... ok
+test_cross_scope_recovery_is_unavailable (test_withdrawal.OriginalTests.test_cross_scope_recovery_is_unavailable) ... ok
+test_missing_shared_ambiguous_or_wrong_revision_history_refused (test_withdrawal.OriginalTests.test_missing_shared_ambiguous_or_wrong_revision_history_refused) ... ok
+test_no_writer_or_public_activation (test_withdrawal.OriginalTests.test_no_writer_or_public_activation) ... ok
+test_old_source_any_revision_and_same_item_cannot_reenter (test_withdrawal.OriginalTests.test_old_source_any_revision_and_same_item_cannot_reenter) ... ok
+test_original_recovery_is_historical_and_immutable (test_withdrawal.OriginalTests.test_original_recovery_is_historical_and_immutable) ... ok
+test_receipt_hash_cas_status_item_and_action_binding (test_withdrawal.OriginalTests.test_receipt_hash_cas_status_item_and_action_binding) ... ok
+test_replay_changed_bytes_or_ids_conflict (test_withdrawal.OriginalTests.test_replay_changed_bytes_or_ids_conflict) ... ok
+test_unknown_provenance_or_old_epoch_cannot_publish (test_withdrawal.OriginalTests.test_unknown_provenance_or_old_epoch_cannot_publish) ... ok
+test_unrelated_item_check_does_not_mutate_or_grant_permission (test_withdrawal.OriginalTests.test_unrelated_item_check_does_not_mutate_or_grant_permission) ... ok
+test_absent_original_is_unknown_never_retry_permission (test_withdrawal.ProgressTests.test_absent_original_is_unknown_never_retry_permission) ... ok
+test_bare_confirmed_or_conflicting_original_receipt_refused (test_withdrawal.ProgressTests.test_bare_confirmed_or_conflicting_original_receipt_refused) ... ok
+test_binding_drift_and_incomplete_target_set_refused (test_withdrawal.ProgressTests.test_binding_drift_and_incomplete_target_set_refused) ... ok
+test_finite_completion_never_clears_cj021_blockers (test_withdrawal.ProgressTests.test_finite_completion_never_clears_cj021_blockers) ... ok
+test_missing_hooks_and_registry_drift_reuse_reducer (test_withdrawal.ProgressTests.test_missing_hooks_and_registry_drift_reuse_reducer) ... ok
+test_original_cleanup_states_and_unknown_reconcile (test_withdrawal.ProgressTests.test_original_cleanup_states_and_unknown_reconcile) ... ok
+test_withdrawn_observation_is_stopped_not_physical_complete (test_withdrawal.ProgressTests.test_withdrawn_observation_is_stopped_not_physical_complete) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.002s
+
+OK
