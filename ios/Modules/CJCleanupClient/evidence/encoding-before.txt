@@ -1,0 +1,12 @@
+Building for debugging...
+[Using on-disk description]
+[2 / 4] CJCleanupClientTests-product
+[4 / 6] CJCleanupClientTests-product
+[10 / 11] CJCleanupClientTests-product
+Build complete! (1.56秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Test nonUTF8JSONCannotBypassDuplicateKeyCheck() started.
+✔ Test nonUTF8JSONCannotBypassDuplicateKeyCheck() passed after 0.003 seconds.
+✔ Test run with 1 test in 0 suites passed after 0.003 seconds.

@@ -1,0 +1,26 @@
+[
+  {
+    "file": "dependency-graph.json",
+    "archive": "dependency-graph.json.xz",
+    "sha256": "8a425667e17343e0c9f24d2ca81a8ed8d15264fe3345180871325a6671fbdad7",
+    "bytes": 49358
+  },
+  {
+    "file": "graph-diagnostics.txt",
+    "archive": "graph-diagnostics.txt.xz",
+    "sha256": "0ee832500c29ac51013fa44722972295c4052d5c64d9f6ef016ddf81abe9afaf",
+    "bytes": 86
+  },
+  {
+    "file": "minimal-consumer-tests.txt",
+    "archive": "minimal-consumer-tests.txt.xz",
+    "sha256": "6d95926522f5e63f9091be9eed9a22a60458ab1ea3a628f36c23c8eba3940a41",
+    "bytes": 25886
+  },
+  {
+    "file": "public-api-compile.txt",
+    "archive": "public-api-compile.txt.xz",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  }
+]

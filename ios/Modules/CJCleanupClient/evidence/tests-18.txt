@@ -1,0 +1,52 @@
+Building for debugging...
+[Using on-disk description]
+[2 / 6] CJCleanupClient
+[3 / 7] CJCleanupClient
+[7 / 11] CJCleanupClient
+[10 / 12] CJCleanupClientTests-product
+[12 / 14] CJCleanupClientTests-product
+[18 / 19] CJCleanupClientTests-product
+Build complete! (2.15秒)
+Test Suite 'All tests' started at 2026-10-23 09:22:51.959.
+Test Suite 'All tests' passed at 2026-10-23 09:22:51.960.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Test cancelAndSameIdentityNewSessionDiscardLateResults() started.
+◇ Test bilingualLabelsDoNotCallUnknownComplete() started.
+◇ Test actualTaskCancellationDiscardsNoncooperativeTransport() started.
+◇ Test responseBudgetsAndCacheAreEnforced() started.
+◇ Test finalCurrentCallbackCanSwitchAfterResponseWithoutLeaking() started.
+◇ Test unavailableNotFoundDeniedAndRedirectAreNotSuccess() started.
+◇ Test oldResultCannotClearNewLoadedGeneration() started.
+◇ Test unknownInProgressFailedAndLimitedCompleteRemainDistinct() started.
+◇ Test lateResponseAndLateErrorCannotPublishAfterSwitch() started.
+◇ Test malformedAndUntrustedWireNeverBecomesComplete() started.
+◇ Test stepCountBudgetAndWholeBodyTraceAreEnforced() started.
+◇ Test credentialsAwaitSwitchAndLogoutFenceBeforeNetwork() started.
+◇ Test loadedProjectionClearsOnLogoutWithoutAnotherRequest() started.
+◇ Test missingSourceConfigurationAndInvalidOperationSendNothing() started.
+◇ Test configuredStepCapRejectsRatherThanTruncating() started.
+◇ Test environmentAndPreparedOwnerAreBound() started.
+◇ Test currentCallbackReentrancyFencesOldSuccessAndStateGetterClears() started.
+◇ Test explicitReadUsesOriginalGETOnceAndPreservesBlocked() started.
+✔ Test bilingualLabelsDoNotCallUnknownComplete() passed after 0.001 seconds.
+✔ Test credentialsAwaitSwitchAndLogoutFenceBeforeNetwork() passed after 0.002 seconds.
+✔ Test missingSourceConfigurationAndInvalidOperationSendNothing() passed after 0.003 seconds.
+✔ Test environmentAndPreparedOwnerAreBound() passed after 0.004 seconds.
+✔ Test finalCurrentCallbackCanSwitchAfterResponseWithoutLeaking() passed after 0.006 seconds.
+✔ Test actualTaskCancellationDiscardsNoncooperativeTransport() passed after 0.007 seconds.
+✔ Test lateResponseAndLateErrorCannotPublishAfterSwitch() passed after 0.007 seconds.
+✔ Test cancelAndSameIdentityNewSessionDiscardLateResults() passed after 0.007 seconds.
+✔ Test configuredStepCapRejectsRatherThanTruncating() passed after 0.007 seconds.
+✔ Test loadedProjectionClearsOnLogoutWithoutAnotherRequest() passed after 0.008 seconds.
+✔ Test explicitReadUsesOriginalGETOnceAndPreservesBlocked() passed after 0.008 seconds.
+✔ Test currentCallbackReentrancyFencesOldSuccessAndStateGetterClears() passed after 0.008 seconds.
+✔ Test responseBudgetsAndCacheAreEnforced() passed after 0.008 seconds.
+✔ Test stepCountBudgetAndWholeBodyTraceAreEnforced() passed after 0.010 seconds.
+✔ Test oldResultCannotClearNewLoadedGeneration() passed after 0.010 seconds.
+✔ Test unknownInProgressFailedAndLimitedCompleteRemainDistinct() passed after 0.011 seconds.
+✔ Test unavailableNotFoundDeniedAndRedirectAreNotSuccess() passed after 0.012 seconds.
+✔ Test malformedAndUntrustedWireNeverBecomesComplete() passed after 0.015 seconds.
+✔ Test run with 18 tests in 0 suites passed after 0.015 seconds.

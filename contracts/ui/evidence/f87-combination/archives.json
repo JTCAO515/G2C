@@ -1,0 +1,56 @@
+[
+  {
+    "original": "graph-initial-auth.json",
+    "archive": "graph-initial-auth.json.xz",
+    "bytes": 288354,
+    "sha256": "08087127ec5818d132c48a2dfdafa68f92d7c27fd922048d8297bdb498df65f7"
+  },
+  {
+    "original": "prepared-provenance.json",
+    "archive": "prepared-provenance.json.xz",
+    "bytes": 30146,
+    "sha256": "0d2301df91a482ecb9fe4d4c6df48aee3e9a5b6560033098ee8a32c39d094580"
+  },
+  {
+    "original": "affected.txt",
+    "archive": "affected.txt.xz",
+    "bytes": 28831,
+    "sha256": "91deefdf174f18761d1bf1b52dbc34a80d37c2ae6006d2782f8be8afb5b4b1d9"
+  },
+  {
+    "original": "ios-old-auth-offline-failure.txt",
+    "archive": "ios-old-auth-offline-failure.txt.xz",
+    "bytes": 31352,
+    "sha256": "da28d787e25daec25fa4f000a69f1e7fe414ef7c8bbb434f54da8c0cc965a1d8"
+  },
+  {
+    "original": "ios-initial-auth-failure.txt",
+    "archive": "ios-initial-auth-failure.txt.xz",
+    "bytes": 33405,
+    "sha256": "519b0f6eb95bbfdbd3dee5e039ead1173cc2f569043668e0158e65ff6abed850"
+  },
+  {
+    "original": "graph.json",
+    "archive": "graph.json.xz",
+    "bytes": 288354,
+    "sha256": "08087127ec5818d132c48a2dfdafa68f92d7c27fd922048d8297bdb498df65f7"
+  },
+  {
+    "original": "tests-old-auth-offline-failure.txt",
+    "archive": "tests-old-auth-offline-failure.txt.xz",
+    "bytes": 30483,
+    "sha256": "eb821b8a19c0bcd911ba0ed30f11e3edc79438aab0e8643e1a5bdee5b15db2d0"
+  },
+  {
+    "original": "tests-initial-auth-failure.txt",
+    "archive": "tests-initial-auth-failure.txt.xz",
+    "bytes": 36609,
+    "sha256": "31f1b8526f90adf263a86a56656ddaa1c2c0497be36e71bb5a91b2243500ac1b"
+  },
+  {
+    "original": "ios-build-link.txt",
+    "archive": "ios-build-link.txt.xz",
+    "bytes": 23012,
+    "sha256": "768831b8003354c9df8096481c653c810cfc83aae3d17821be3f8b2dd6f51a31"
+  }
+]

@@ -1,0 +1,9 @@
+Relevant output; raw log under ignored .build/cleanup-progress-pin-evidence/full-tests.txt.
+Build complete! (4.51秒)
+◇ Test officialCurrentAccountGETKeepsOriginalOperationAndBlockedState() started.
+◇ Test unavailableRemainsBASEErrorAndDoesNotInvokeRecovery() started.
+◇ Test unknownEnumsMissingNullAndPrivateFieldsDoNotBecomeCompletion() started.
+✔ Test unknownEnumsMissingNullAndPrivateFieldsDoNotBecomeCompletion() passed after 0.002 seconds.
+✔ Test officialCurrentAccountGETKeepsOriginalOperationAndBlockedState() passed after 0.002 seconds.
+✔ Test unavailableRemainsBASEErrorAndDoesNotInvokeRecovery() passed after 0.002 seconds.
+✔ Test run with 5 tests in 3 suites passed after 0.002 seconds.

@@ -1,0 +1,414 @@
+{
+  "base": "e590f94ff367a9821d06558b7c35c2d020b40629",
+  "shared": "5075bcf604e959d5c4592071a1e9de39d8687395",
+  "trip": "a5cc42005c69811ccb05754793107141fb4a9f02",
+  "auth": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+  "sdk": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+  "inputs": {
+    "ios/Modules/CJMessageClient/Package.resolved": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "1e9c75016a8b035a40c20b627a1fbd40721e3afa93df43f3d4de9e139a8c3e98"
+    },
+    "ios/Modules/CJMessageClient/Package.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "ce00de320b1ef3f80f2df20db2d210f65203c647946085bc3669fcecd769850d"
+    },
+    "ios/Modules/CJMessageClient/Sources/CJMessageClient/EncryptedFileStorage.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "bf17f4611857d5a1128cf4a4b398660053aab40eaeff0a4421ca28d6b906fbfc"
+    },
+    "ios/Modules/CJMessageClient/Sources/CJMessageClient/Recovery.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "887964e23d8925e4a25fb7a0daef9fac157f30c24b881f0e9b376106fa7d18f0"
+    },
+    "ios/Modules/CJMessageClient/Sources/CJMessageHTTP/StrictResponse.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "9fb76f58bd813c8a707bb0b673e3d33bf6a1e8edde39dfc69eef235d6e5cc4d2"
+    },
+    "ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "fe1b002d25e56290e7518b96110ff5a17440d304436bfca4842a4a4be6c76472"
+    },
+    "ios/Modules/CJMessageClient/Sources/CJMessageKeyBridge/ExistingMessageKeyAdapter.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "710a337c8173da7309ca63b7b4018e0d262f8eaade15aec31ed864f3879632dd"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/ActivationReentryTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "e85c1d2362f39e53000d469b642eaf9f98f900138f56a0079d7facdca12920f1"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/FreshAuthorizationTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "ca0fd4f86ed32c21c21ade923d8924664ca87817abb4e6dfe4c22668f8f28366"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/KeyBindingTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "9fed0a1e5c7299fd40d149da80c8f9206cc82d7324e58e41c5d294302484fbf2"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/ProjectionTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "b37583ba47e3f7d4ed7723930905f89fc20a4e75640f00a721ca86db10d50d20"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/PutStorageReentryTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "9889be40fba991ebf8357120589c9f55330da052a93b348470821e4ba322a09e"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/ReadbackByteIdentityTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "beed70a3055356fec0939fe716b0059863eaf8647c271621b86e1e372138d7e8"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/RecoveryTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "68733b32ae3c3d8bc33d5078b93a660f8347e0fe7231fcc94ff1af69f10bbd17"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/RollbackTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "65bbfef2007876559ca3d5afe8c958a8f530beab200938ca8664f1f1aa0353b6"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageClientTests/SnapshotExactnessTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "04c7381296f07b4c1d1cc49b3980dea60c1a89d6fb6bae7e1c1f2c663e0ad2aa"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/CleanupProgressExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "b6cd1f92d6472101add8df5c4412aae12fc0b3b0fde58daa0098c83b63a36b07"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/DraftPutTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "8194bd5bbea1df3d972a7163db63b9111dfee6a06c4e60353791ff9b27b4a07d"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/FeedbackConfigurationExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "47f5206a4c0d78a22d59324607e13177237238a7471d1a75c6147064d70e9111"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/HistoryReadTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "64d638b1b110292968d92e5e59658acd71c3750d904898320497a2f6197cc2b4"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/IndependentPreviewHostTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "3e42a34bf617e3f03e7808a56d5768e05723eeda4af2a50d9c13ccae3a638aba"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/ManualPreviewExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "522530dcdb959946c8265fcf6e2d1478efc41143b4726d23f525ac067610401d"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/MemoryConfigurationExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "3025c0c1b0894ec833dc106437154b7cc0f8b6fe5bd77b212d313fe086fd4d7b"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/NeedsConfigurationExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "a978467afc8113b4ff7fcc9b9e4c7a798f92ac134e4553a27851f79b5eb14660"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/OriginalUsageAssociationExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "b411012ff83c450a4beb4417c49eda6bbd8b4038dbfaade1494e5176b3536745"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/ReadonlyPreviewCapabilityTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "0a98a0774a6ef69b1bdf70a2bdc0a4a9078a8a430b594b951d714ce5cb7b7afd"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/RunDisplayExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "0bd9640e122dd5df8c2ca34c61907b0cb3b8e1346941074535235a0631a88d86"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/TransportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "9e0d92b00c21aae5b64be49a0bdccbbdc035d7dc7f5008671550b1c90f57e19a"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/TripConfigurationExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "37ebc97448d63812ecd74d65601953110872573c64172bb05c648286df9ed3fa"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/UsageGETTransportCompatibilityTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "d53d5484c5a18087196ff6888134abf5edcd6164d6b8ad3872f40fa4fcff862b"
+    },
+    "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/UsageStatusExportTests.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "5d2088a9676f3a9be2a3ee771c98ccb610036589155d28c8b941b28721e636ef"
+    },
+    "ios/Modules/CJMessageClient/Tests/ProcessProbe/main.swift": {
+      "owner": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "sha256": "1325b380d74cc6234c6769f5a93d46fe27ea3c523a7f8468d98d8ee115944f83"
+    },
+    "ios/Modules/CJTripClient/Package.resolved": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "ac553d48a91768d3a170f87909966b3455a69a2cb2028ecb6da05b210fa63952"
+    },
+    "ios/Modules/CJTripClient/Package.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "15426173fd485e5f0bda925bae25abb46fa56e2de4d8d5c337f87188be6dfee1"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/AcceptedTripDetailSnapshot.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "36d41f7c326bcd34637ac1b048c391dfd5734d7522b6ca7e3ab89a1d139cb1c7"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/StrictTripJSON.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "0c941d8a66cf2313624ba370f1fe7bb5867d36528508bc08d2d02c2cc22958d1"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripAction.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "d4fe95d194aea856348def8f7535d5d2570ebdb37f4a80dafafc4d41b03bcb81"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripClient.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "0188f2f78f80f2c73633ff577838afd6d52f2e23dc10a1d1477d11a6d79e2317"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripPendingStore.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "45783ec28611bd6bc2f97aced3d5c28a50cad0d98027cd0563f46efc54763149"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripPresentation.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "19300c8603ce33b2534b6c01ebaf176f95a067131f23bd485ac4cc3b8c9a4e5e"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripRecovery.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "83591c5d7be013c764eac210cd836366eac50a822f80cc91281725e96e8b4a1f"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripTransport.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "9e2d865eb93f91374215fea626db0301722445f8232dc2489a914c96c5e01971"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripTypes.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "807d93bfe5a96c2c822cd3828bcdb22b117674aa9751921c2c470021734e3b78"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripValidation.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "785db325f2f21098f65de189bf8ddb9d53a19afb68f4c84590fec306e04eb2dd"
+    },
+    "ios/Modules/CJTripClient/Sources/CJTripClient/TripViews.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "827d1a869243fe98f3ede3dccfab06e9ce701c7421348e01f99ac63bf91cf904"
+    },
+    "ios/Modules/CJTripClient/Tests/CJTripClientTests/AcceptedDetailSnapshotTests.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "6060ada3da76089d1881f9457b82ef29309c069be5ad292af66b62bf49c38aea"
+    },
+    "ios/Modules/CJTripClient/Tests/CJTripClientTests/BoundaryTests.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "8c4a354401983415f6c533cd94befd0fcfeedb628d52d91e806aea71fa0a99b8"
+    },
+    "ios/Modules/CJTripClient/Tests/CJTripClientTests/Fixtures/action.json": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "f2ad71c0af123ed11d2b0165cea108a06dbddcebe7a5d4390c7e59ceb2a96c20"
+    },
+    "ios/Modules/CJTripClient/Tests/CJTripClientTests/LifetimeTests.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "1c46fca35bdf82e35db296fccbeb88466365d262fc1692064798610ba67265f0"
+    },
+    "ios/Modules/CJTripClient/Tests/CJTripClientTests/ReviewBoundaryTests.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "6947207a3d2ab08e44c27332f69a8889f0586abe330526ddc2d39e736d3efb61"
+    },
+    "ios/Modules/CJTripClient/Tests/CJTripClientTests/Support.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "e3af76a4059cd2c7b8b4aed9035d5593ea06ecef75c3c31b0b326446fce38c29"
+    },
+    "ios/Modules/CJTripClient/Tests/CJTripClientTests/TripClientTests.swift": {
+      "owner": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "sha256": "16b625d52affa565f21927f92931ae6c73af097c7a0c8fbb0a81f7fc225083fa"
+    },
+    "ios/Modules/CJAuth/Package.resolved": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "bd9f7c522bdb0cccf8d07c2362b0d80107b11354712cfab00413886893f8cfaa"
+    },
+    "ios/Modules/CJAuth/Package.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "f680b4e046ee1592f575be9a1cc97fdda9026634d3022cd12da255df4619352b"
+    },
+    "ios/Modules/CJAuth/Sources/CJAuth/AuthFlow.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "18bc022edca61cf6c669798c54102a35fee6b0393239df581e6cba11c469e7b6"
+    },
+    "ios/Modules/CJAuth/Sources/CJAuthSupabase/SupabaseSDKAdapter.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "eab078a39bfc4810d2fa068f5fbaddcebda59e0972a3da9106ac92bfd37e6ea8"
+    },
+    "ios/Modules/CJAuth/Sources/CJAuthSupabase/SupabaseSessionBridge.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "b615962bc0f4844452a3d54cfee8a594eff78fe988c0560b29540c8e6588f989"
+    },
+    "ios/Modules/CJAuth/Sources/CJMessageKeys/KeychainMessageKeys.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "4cf8c5d1a2b406c0cf945de3b436a8c94bfe2acf1923566a6f465074cb5ccb6c"
+    },
+    "ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "7e55f37a7295da2f3aa5e214edcacc4213990a60312f382445a5fedfc7511209"
+    },
+    "ios/Modules/CJAuth/Sources/CJMessageKeys/ScopedMessageKeyProvider.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "a30b68af502888823da45b7a51def23eb47a7d3ab26cf62d9bc8e591e5b910a8"
+    },
+    "ios/Modules/CJAuth/Sources/CJSession/KeychainSessionStore.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "54bc9071e901561a145670b8e316fa84371b37916797c76d8c2492a4b7035250"
+    },
+    "ios/Modules/CJAuth/Sources/CJSession/SessionLifecycle.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "8015d493bbe36cb4e2b9fd03e57d26b09edb0d37e10da5decd45a348f5101b21"
+    },
+    "ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/AdjacentSessionCallbackTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "67c6615df10d3f0c6a2146cec300f5f15a2910f2cb71a40dde6853254b2fce07"
+    },
+    "ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/SessionSaveReentryTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "ee41421d188f0e146ce31f794fcfba51415dd4a30af6ddf390060c5f04f2458c"
+    },
+    "ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/SupabaseSDKAdapterTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "929364bf512608d28070ff02b3204142026c4de9e3a4932213897e6a9ae1a501"
+    },
+    "ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/SupabaseSessionBridgeTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "f3d5e4ffe9d1d8463d37e13102a3e80f97f4d495deb14410611906830a02e344"
+    },
+    "ios/Modules/CJAuth/Tests/CJAuthTests/AuthFlowTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "91d9666d47f8f748a4fb2003e5dee7ed7c72fd9722e3a2358d88fb2e4dcaad8f"
+    },
+    "ios/Modules/CJAuth/Tests/CJMessageKeysTests/MessageKeyTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "b52954ca4fba3ead9e7004dc187651a130f278083db31b913f465400a84782a3"
+    },
+    "ios/Modules/CJAuth/Tests/CJSessionTests/ClearSettlementTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "272546e755050af74bf3b13cd832b50d9043606ab48198c8a247c10176513320"
+    },
+    "ios/Modules/CJAuth/Tests/CJSessionTests/ExternalClearSettlementConsumer.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "0e1344dfc637bd12414c0048e3011a0fb95e2364c2e083e88bce84da03e8fa72"
+    },
+    "ios/Modules/CJAuth/Tests/CJSessionTests/ExternalOwnershipConsumer.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "038c671dfd4684abceeb5f945f72448fd17184500cf12dee115a1780aba38fb5"
+    },
+    "ios/Modules/CJAuth/Tests/CJSessionTests/PublicOwnershipTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "6c25977cd636b1f511c664ec772edcf56a3b0bdac2c06f3394aafd434cd22254"
+    },
+    "ios/Modules/CJAuth/Tests/CJSessionTests/SessionStoreTests.swift": {
+      "owner": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "sha256": "13a7e2c314c051ab6e02d8ff3af253668ac99564a6d394b916396d59c60bed09"
+    },
+    "ios/Modules/CJOfflineTrip/Package.resolved": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "86300fe447d0c440d5127e9ba74f48e82e98865b9ccc77db0c1405599c09b86d"
+    },
+    "ios/Modules/CJOfflineTrip/Package.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "53d1e8257d4338ecc1bc8431d7b9ec657fa692d0b3d66e79b10c75e5c6897c77"
+    },
+    "ios/Modules/CJOfflineTrip/Sources/CJOfflineTrip/AcceptedDetailSnapshotCache.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "731f14ae553c7bd347f6228865304401b0603698d09aee6615711fddea8f6bcc"
+    },
+    "ios/Modules/CJOfflineTrip/Sources/CJOfflineTrip/AtomicSnapshotStore.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "36e4666234db65a61d87a5d31b215777caaf33103c2cf66f75d4a23a4b0b6d26"
+    },
+    "ios/Modules/CJOfflineTrip/Sources/CJOfflineTrip/CanonicalSnapshotAccess.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "e993d23cced97fca6833603ab6142144c68b504208c3f6acc73901912ff719c5"
+    },
+    "ios/Modules/CJOfflineTrip/Sources/CJOfflineTrip/Snapshot.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "daa4f27a1dea194ff3de1af9562ff8db523f2c40a57cbb034bd9ee42c3ad08a1"
+    },
+    "ios/Modules/CJOfflineTrip/Sources/CJOfflineTrip/StrictSnapshotJSON.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "ca136e633dcfa5544101adeaabd1ad1c1ff32473861d85acfd8e1a84b5c3eea5"
+    },
+    "ios/Modules/CJOfflineTrip/Sources/CJOfflineTrip/Validity.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "56a381fdd185d6a8d8660d954df275a135f852b250bb7cebc5be58eb9c216537"
+    },
+    "ios/Modules/CJOfflineTrip/Tests/CJOfflineTripTests/AcceptedSourceTests.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "9347c72ea2b8764070c4fbcfef984a69fed5d6f070b5dc755a3d93bdab54f840"
+    },
+    "ios/Modules/CJOfflineTrip/Tests/CJOfflineTripTests/CanonicalKeyTests.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "a04d1c10475d465674ac55a9937428f48694c124937cae697f14ea784005afa1"
+    },
+    "ios/Modules/CJOfflineTrip/Tests/CJOfflineTripTests/IndependentAcceptedSourceAttemptTests.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "48ba1edba86945c0ef5af7df78bcfd7a7b444ad6d5b02218e62332cb84e66351"
+    },
+    "ios/Modules/CJOfflineTrip/Tests/CJOfflineTripTests/OfflineTests.swift": {
+      "owner": "CJ022 local manifest / unchanged e590f94ff367a9821d06558b7c35c2d020b40629",
+      "sha256": "61b7681a6d5368ac259eb6d2e83579c29a6211e806ef3b9a0a36130e5fbf9f31"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Package.resolved": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Package.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Client.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "7c595513faaf197de347d57d48b1046d736965ff6dbfc8117d27712f0554b37d"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Types+Components+Headers.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "b920e1a8ad3af618f10823dfd9ead2ac7a2833dcd9e06f84973789d7b578e1e2"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Types+Components+Parameters.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "06b05f078460bb0cc022223f7e6bf5d8509978b81486f2c191e241c08f38664b"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Types+Components+RequestBodies.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "3a79bacb276382b5f534e3a02a5a50297f67c53832e30b31e7afd9afbc6275bd"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Types+Components+Responses.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "8b243eb7012a5949f3818188cd64cc40021b87061be2b9de50a611f2ab9ab776"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Types+Components+Schemas.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "32387184915fdb5b5c4059f85a50c9078d2a2efbbb1d20f7f68fb588288576c8"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Types+Components.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "6ea69a3694541e5a67e2e3fe774048b7e0e3706ba7957ddefedd4e9e136b04e7"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Types+Operations.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "f8602a95927884b2f60fc75a7c55cf8901ad5c75042e77dc031d33a24c4b882e"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/Generated/Types.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "b73c8bbaa0002e65f9b619e0b4f57e171f3e69309c40f7d16a7b1a61190c6d92"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/MemoryClientConfiguration.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "3088bab954be24d7fdda0c5815822feb846b772e6d4dc299889cdfd29e4f6d82"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJAPI/ProbeConnection.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "e78a03f68abafeb8c559b99e669d04cb9e98a5c4ffe9f7bb8cfb4ace83ed9e1a"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJProbe/main.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "59d0ac90be38554507637ce38e40e4a447cacf79a13a0c36d24b82493eb53991"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Sources/CJProbeUI/ProbeView.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "47c4b5d03c82ecd8e6a2c23b4f590d36fd80f9dc53938704f85cc007265f4282"
+    },
+    "ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation/Tests/CJAPITests/ContractTests.swift": {
+      "owner": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+      "sha256": "dd16b31dac10eeb1459d5263b69a824404546e7dec4c682ab612c371c8e07cac"
+    }
+  },
+  "sdk_input_count": 16
+}

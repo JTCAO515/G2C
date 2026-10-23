@@ -6,11 +6,13 @@ mkdir -p "$output_dir/CJShellDemo.app" "$output_dir/module-cache"
 sdk_path="$(xcrun --sdk iphonesimulator --show-sdk-path)"
 # Build the real package graph, including canonical CJAPI/CJMessageHTTP modules.
 # Uses only previously prepared exact generated exports; no source generation here.
-swift_args=(--disable-sandbox --package-path "$package_dir" --scratch-path "$output_dir/package-build" --cache-path "${CJ_SPM_CACHE:-/tmp/cj006-spm-cache}" --triple arm64-apple-ios17.0-simulator --sdk "$sdk_path")
+swift_args=(--disable-sandbox --disable-automatic-resolution --package-path "$package_dir" --scratch-path "$output_dir/package-build" --cache-path "${CJ_SPM_CACHE:-/tmp/cj006-spm-cache}" --triple arm64-apple-ios17.0-simulator --sdk "$sdk_path")
 env -u SDKROOT CLANG_MODULE_CACHE_PATH="$output_dir/module-cache" SWIFTPM_MODULECACHE_OVERRIDE="$output_dir/module-cache" swift build "${swift_args[@]}" --target CJShell
 products="$(env -u SDKROOT CLANG_MODULE_CACHE_PATH="$output_dir/module-cache" SWIFTPM_MODULECACHE_OVERRIDE="$output_dir/module-cache" swift build "${swift_args[@]}" --show-bin-path)"
 test -f "$products/CJShell.o"
-SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -parse-as-library -swift-version 6 -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" -I "$products" "$package_dir/Demo/DemoApp.swift" "$products"/*.o -o "$output_dir/CJShellDemo.app/CJShellDemo"
+# Match SwiftPM's local macro subprocess mode; nested sandbox-exec can be denied
+# when this standalone entry is linked inside an already sandboxed build task.
+SDKROOT="$sdk_path" xcrun --sdk iphonesimulator swiftc -disable-sandbox -parse-as-library -swift-version 6 -target arm64-apple-ios17.0-simulator -sdk "$sdk_path" -module-cache-path "$output_dir/module-cache" -I "$products" "$package_dir/Demo/DemoApp.swift" "$products"/*.o -o "$output_dir/CJShellDemo.app/CJShellDemo"
 # SwiftPM's Bundle.module resource bundle must accompany the manually linked executable.
 test -d "$products/CJShell_CJShell.bundle"
 cp -R "$products/CJShell_CJShell.bundle" "$output_dir/CJShellDemo.app/"

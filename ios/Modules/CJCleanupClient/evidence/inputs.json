@@ -1,0 +1,13 @@
+{
+  "baseline": "b33184fdc14c55098f2f21cd7e33d05b8a5d01f0",
+  "source_commit": "aa5368ef4b0f551a464cb44a761d0f46608d4759",
+  "shared": "5075bcf604e959d5c4592071a1e9de39d8687395",
+  "root": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+  "root_document_sha256": {
+    "backend/cj_api/CLEANUP-PROGRESS-WIRE.md": "891c65fbaf8992b43bcce7d52e442fa8f32104540faf2ba01361674e611b00c1",
+    "contracts/api/openapi.json": "8929ea5270b5a92966a106b06c6e817105b1a79aa65eab254107ddb50caef8da"
+  },
+  "cleanup_source": "514aba717dd0e0a7f7783b6d9072d347cdb0a623",
+  "cleanup_evidence": "6635bb9b301b567edeef91689c0097b25c576ba9",
+  "author_environment": "Apple Swift 6.4; iPhoneSimulator27.1 SDK; arm64 macOS / generic iOS Simulator target; no simulator boot"
+}

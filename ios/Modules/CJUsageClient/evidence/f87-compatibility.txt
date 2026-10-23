@@ -1,0 +1,8 @@
+PASS graph CJFoundation refs 2 unique paths 1
+PASS all 83 prepared inputs still exact after package graph
+PASS preserved 25 old operations paths / 90 old schemas
+PASS SDK unchanged ios/Package.swift
+PASS SDK unchanged ios/Package.resolved
+PASS SDK unchanged ios/Sources/CJAPI/MemoryClientConfiguration.swift
+PASS original module lock unchanged
+PASS no sibling/shared/root/Auth/App tracked edits
