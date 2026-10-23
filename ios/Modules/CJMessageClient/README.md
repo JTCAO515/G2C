@@ -190,3 +190,9 @@ Next current-account cleanup progress export: fixedf87a78a9 at the ONE
 checks pass, old exports/Transport94 stay intact. blocked/unknown/unavailable are not
 delete completion; no cleanup or postlogout capability is enabled. See
 evidence/CLEANUP-PROGRESS-API-PIN.md; current App graph remains unchanged.
+
+Next MEMORY lifecycle SDK candidate: fixed20aa50ed at the single
+.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation path. Six targeted
+checks pass; pause/resume bytes and historical receipt/null semantics remain exact.
+No new source authority or real write/factory activation; current f87 App input and
+all old exports preserved. See evidence/MEMORY-MANAGEMENT-API-PIN.md.

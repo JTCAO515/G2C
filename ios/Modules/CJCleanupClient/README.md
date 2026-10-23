@@ -1,5 +1,10 @@
 # CJCleanupClient — current-account original progress
 
+Current dependency-only increment: base `6d5e318e95ab5f2be25b21569f26b37df23546f9`
+→ shared cc9e2c3 / official SDK20aa. No business source changes. The old f87
+candidate remains fixed at that base for its independent Shell 0d1e publication
+and review gates; do not substitute this moving increment into that graph.
+
 Issue #27 client component only. No CJShell/shared/root/backend writes. Default UI
 is unavailable until the trusted host supplies provenance for an existing original
 operation, current account/environment/session binding and current ALLOWED bearer.
@@ -9,13 +14,13 @@ into this component. A UI viewed flag or arbitrary UI ID is not provenance.
 ## Fixed inputs
 
 - Baseline: `b33184fdc14c55098f2f21cd7e33d05b8a5d01f0`.
-- Shared export: `5075bcf604e959d5c4592071a1e9de39d8687395` (parent 6936a63).
-- Official single CJAPI: `f87a78a9d8984c59905e385483f17dddd8144d8a`,
+- Shared export: `cc9e2c3ba1fb8fe7582e5e4664a924b1c6b93f71`.
+- Official single CJAPI: `20aa50ed5c8449e6026155a6151f22041dee7fd4`,
   `CJMessageClient/.generated/<pin>/CJFoundation`.
 - `CLEANUP-PROGRESS-WIRE@0.1.0-rc.1`, producer source 514aba7/evidence 6635bb9;
   source-of-truth document: producer `backend/cj_api/CLEANUP-PROGRESS-WIRE.md`.
 - Canonical Transport94 / CJSession are exported byte-for-byte from shared, not
-  reimplemented. `evidence/dependency-pin.json` records every exported SHA256.
+  reimplemented. `evidence/sdk20aa/dependency-pin.json` records every exported SHA256.
   `StrictCleanupJSON` derives only generic JSON grammar from the existing usage
   consumer; wire shape/enums remain the official generated types.
 
@@ -65,10 +70,13 @@ errors retain only safe typed classification; no request/bearer/error payload is
 logged or stored.
 
 The normal Package manifest uses canonical sibling CJMessageClient/CJAuth and
-single official f87 CJFoundation, so host integration does not create duplicate
-package identities. Main/Publish must first admit pending producer/shared gates,
-align the accepted shared graph to f87, then add this module through the CJShell
-owner and a real trusted source. This owner does not change that graph or factory.
+single official 20aa CJFoundation, so host integration does not create duplicate
+package identities. Root20aa/cohost82f are merged in PR109 per Main's fixed input.
+The accepted
+shared/consumer/Shell graph must still be aligned to 20aa before host integration;
+this module's compile is not proof that the whole App graph has passed. Add this
+module only through the CJShell owner and a real trusted original-operation source.
+This owner does not change that graph or factory.
 
 ## Local reproduction
 
@@ -78,11 +86,13 @@ From repository root (source trees read-only):
 python3 ios/Modules/CJCleanupClient/scripts/prepare_dependencies.py \
   /Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin \
   /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation
-CJ_CLEANUP_ISOLATED_DEPS=1 swift test --package-path ios/Modules/CJCleanupClient
+CJ_CLEANUP_ISOLATED_DEPS=1 swift test --package-path ios/Modules/CJCleanupClient \
+  --filter 'explicitReadUsesOriginalGETOnceAndPreservesBlocked|unknownInProgressFailedAndLimitedCompleteRemainDistinct|unavailableNotFoundDeniedAndRedirectAreNotSuccess|oldResultCannotClearNewLoadedGeneration'
 ```
 
 For this isolated lease only, `CJ_CLEANUP_ISOLATED_DEPS=1` selects the fixed exports
-under `.deps/ios/Modules`; it is a build-time verification switch, not runtime
+under `.deps/20aa50ed5c8449e6026155a6151f22041dee7fd4/ios/Modules`;
+it is a build-time verification switch, not runtime
 configuration or a second SDK. Unset it for canonical host integration once the
 approved sibling graph is ready; do not combine isolated exports with host siblings.
 
@@ -93,9 +103,11 @@ CJ_CLEANUP_ISOLATED_DEPS=1 xcodebuild -scheme CJCleanupClient \
   -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/ios \
   CODE_SIGNING_ALLOWED=NO build
 CJ_CLEANUP_ISOLATED_DEPS=1 swift package show-dependencies --format json \
-  > evidence/package-graph.json
+  > evidence/sdk20aa/package-graph.json
 ```
 
-Author test/compile/graph results: `evidence/RESULTS.md`. Independent review,
+Current dependency increment: `evidence/sdk20aa/RESULTS.md`. Original f87
+19-function behavior evidence and initial FAILs remain unchanged in `evidence/RESULTS.md`;
+the original `file-manifest.json` belongs to that old fixed snapshot. Independent review,
 Testing, CI, host App wiring/rendering, real account/API/database/device/cleanup,
 postlogout restricted query and Issue #27 closure remain separate gates.

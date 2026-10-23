@@ -1,3 +1,9 @@
+# Independent lifecycle candidate
+
+Current follow-up adds gated pause/resume/original-action recovery on SDK20aa. See
+[MEMORY-MANAGEMENT.md](MEMORY-MANAGEMENT.md) for exact pins, host limits and checks.
+The accepted f87 candidate `1734971` and earlier documents below remain preserved.
+
 # CJMemoryClient — CJ011 iOS consumer
 
 Independent domain package for Issue #12. Own source is only this directory. The

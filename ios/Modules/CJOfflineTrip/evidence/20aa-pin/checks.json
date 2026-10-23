@@ -1,0 +1,20 @@
+{
+  "unique_foundation_paths": [
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/20aa-validation-cc9e2c3-b3485ef/ios/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
+  ],
+  "references": 4,
+  "sdk_input_count": 16,
+  "equivalent_f87_20aa_schemas": [
+    "TripRecord",
+    "TripDetailResponse",
+    "TripDocument",
+    "TripDocumentItem"
+  ],
+  "getTrip_path_unchanged": true,
+  "business_sources_tests_lock_unchanged": true,
+  "network": "outer sandbox denies network",
+  "whole_App_graph": "UNRUN",
+  "candidate_gate": "pending",
+  "public_compile_exit_code": 0,
+  "mirror_hashes_after_validation": "PASS"
+}

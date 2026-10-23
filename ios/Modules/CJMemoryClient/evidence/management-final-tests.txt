@@ -1,0 +1,31 @@
+Private fixed input graph: management-20aa-09facf21
+Command: swift test --package-path Modules/CJMemoryClient --scratch-path artifacts/swift-build --force-resolved-versions --filter MemoryManagementTests
+Build complete! (1.80秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite MemoryManagementTests started.
+◇ Test pauseResumeAndHistoricalQueryNeverRollbackCurrentRead() started.
+◇ Test wrongHashAndMalformedNonNullNeverSettle() started.
+◇ Test directoryReplacementAtManagementKeyLookupNeverDispatches() started.
+◇ Test capturedSourceVersionIsNotDefaultedAndDisabledDoesNotAuthorizeResume() started.
+◇ Test credentialSwitchKeepsOriginalWithoutDispatch() started.
+◇ Test selectionChangedAtCredentialAwaitRejectsBeforePost() started.
+◇ Test unknownReopenAndNullQueryDoNotAuthorizeResend() started.
+◇ Test lifecycleCiphertextCannotBeReadAsManualSaveLedger() started.
+◇ Test defaultPublicManagementIsUnavailableBeforeCredentialsOrJournal() started.
+◇ Test cannotCaptureUnacceptedOrCrossClientSelection() started.
+◇ Test actualCancelledPostKeepsOriginalAndOnlyFreshQuerySettles() started.
+✔ Test credentialSwitchKeepsOriginalWithoutDispatch() passed after 0.023 seconds.
+✔ Test defaultPublicManagementIsUnavailableBeforeCredentialsOrJournal() passed after 0.024 seconds.
+✔ Test selectionChangedAtCredentialAwaitRejectsBeforePost() passed after 0.024 seconds.
+✔ Test directoryReplacementAtManagementKeyLookupNeverDispatches() passed after 0.025 seconds.
+✔ Test lifecycleCiphertextCannotBeReadAsManualSaveLedger() passed after 0.026 seconds.
+✔ Test cannotCaptureUnacceptedOrCrossClientSelection() passed after 0.027 seconds.
+✔ Test wrongHashAndMalformedNonNullNeverSettle() passed after 0.033 seconds.
+✔ Test actualCancelledPostKeepsOriginalAndOnlyFreshQuerySettles() passed after 0.035 seconds.
+✔ Test capturedSourceVersionIsNotDefaultedAndDisabledDoesNotAuthorizeResume() passed after 0.039 seconds.
+✔ Test unknownReopenAndNullQueryDoNotAuthorizeResend() passed after 0.040 seconds.
+✔ Test pauseResumeAndHistoricalQueryNeverRollbackCurrentRead() passed after 0.041 seconds.
+✔ Suite MemoryManagementTests passed after 0.041 seconds.
+✔ Test run with 11 tests in 1 suite passed after 0.041 seconds.

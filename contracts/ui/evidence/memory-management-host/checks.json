@@ -1,0 +1,20 @@
+{
+  "base": "0d1e7b76217ea1325ad3dbc694282aa65308cf47",
+  "host_tests": "PASS localized synthetic Shell 17 methods (9 existing + 8 new)",
+  "ios_compile": "PASS localized arm64 and x86_64 Simulator SDK",
+  "public_api_macos": "PASS",
+  "public_api_ios": "PASS arm64 Simulator SDK",
+  "canonical_app": "UNRUN; original owner dependency migrations pending",
+  "real_services_and_keychain": "UNRUN",
+  "prior_failures_preserved": true,
+  "owned_sha256": {
+    "ios/Modules/CJShell/Sources/CJShell/MemoryContainerHost.swift": "506100c82cfd868afed9eab175dbd33cb5fc5b3e9a3408f83ae78d3a3278d76a",
+    "ios/Modules/CJShell/Sources/CJShell/MemoryManagementHostViews.swift": "5e5a24ec3cfb82cb281656baca0c26af7c0a223a32d996ef99f810a4d88f8a1d",
+    "ios/Modules/CJShell/Sources/CJShell/MemoryContainerViews.swift": "5128f309ea7fe45fa54ae197fcef000d8151ba932d6ef1b3f1e4b8fa7a7174d1",
+    "ios/Modules/CJShell/Package.swift": "bd64f8ca752c485c34557f9fc3da65fd71f70f46f088ce7807405f7fc11a2f06",
+    "ios/Modules/CJShell/Tests/CJShellTests/MemoryManagementHostTests.swift": "7458b2db9d84b842f80cfc46e6c4402d99df02708bbe4ce3422e8735d30b483d",
+    "scripts/prepare_memory_management_host.py": "eb2a01a4b6fac0271eb37ba9bae2ba5f27bc8a3b01bbaf6e9647d9ede51cc929",
+    "contracts/ui/evidence/memory-management-host/PublicConsumer.swift": "fa02f2319c874e46cbe6ec57fe5ad68ef790585c47c03a440055657de9738a63",
+    "contracts/ui/evidence/memory-management-host/SyntheticShell.swift": "5864d18099e106bf49d6f5f37bb766c1f1f6a3860cd60e40c3b1791dbe08dc8d"
+  }
+}

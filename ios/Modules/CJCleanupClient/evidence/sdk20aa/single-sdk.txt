@@ -1,0 +1,4 @@
+PASS: one 20aa CJFoundation, one shared CJMessageClient and CJAuth; no f87 path in selected graph.
+cjfoundation: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup-client/ios/Modules/CJCleanupClient/.deps/20aa50ed5c8449e6026155a6151f22041dee7fd4/ios/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation
+cjmessageclient: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup-client/ios/Modules/CJCleanupClient/.deps/20aa50ed5c8449e6026155a6151f22041dee7fd4/ios/Modules/CJMessageClient
+cjauth: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup-client/ios/Modules/CJCleanupClient/.deps/20aa50ed5c8449e6026155a6151f22041dee7fd4/ios/Modules/CJAuth

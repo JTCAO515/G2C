@@ -1,0 +1,9 @@
+{
+  "passed_graph": "c1f68f21a5e680c5",
+  "ios_final_graph": "303ec949a053f5db",
+  "changed_files": [
+    "Modules/MemoryHostHarness/Sources/CJShell/MemoryContainerViews.swift",
+    "Modules/MemoryHostHarness/Sources/CJShell/MemoryManagementHostViews.swift"
+  ],
+  "reason": "Only iOS-conditional view files changed after passing macOS host tests; host implementation, fixtures and test bytes unchanged. Test result reused; final iOS build separately validates changed views."
+}
