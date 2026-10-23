@@ -160,3 +160,35 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                       _usage_status_configuration=usage_status_configuration,_usage_status_dependencies=usage_status_dependencies,
                       _original_usage_reader=original_usage_reader,_original_usage_configuration=original_usage_configuration,_original_usage_modules=original_usage_modules,
                       _cleanup_progress_configuration=cleanup_progress_configuration,_cleanup_progress_dependencies=cleanup_progress_dependencies)
+
+
+def build_verified_session_checker(*, environment, jwt_configuration, verification_keys,
+                                   session_access_provider):
+    """Explicit local opt-in; no real authority/target/provider is supplied by root.
+
+    None keys/provider stays canonical UNKNOWN. A principal-only access provider
+    is not a session provider and cannot be silently adapted into one.
+    """
+    modules = _pinned_modules(manifest_name='session_auth_pins.json')
+    auth = modules['cj_auth.jwt_adapter']
+    if (environment != 'local' or not isinstance(jwt_configuration, auth.JWTConfiguration)
+            or jwt_configuration.profile is not auth.JWTProfile.SUPABASE_ACCESS_RC1
+            or verification_keys is not None and not callable(getattr(verification_keys, 'resolve', None))
+            or session_access_provider is not None and not callable(getattr(session_access_provider, 'evaluate_session', None))):
+        raise CompositionUnavailable('Explicit canonical Supabase session profile/keys/session provider required')
+    return modules['cj_auth.session_admission'].SessionAdmissionChecker(
+        auth.PyJWTVerifier(jwt_configuration, verification_keys), session_access_provider)
+
+
+def with_verified_session_read(*, checker, token, max_response_bytes, project):
+    """Trusted host read only: encode final bytes in the canonical original lifetime.
+
+    This adds no route, scope, token or authority. Existing business factories and
+    legacy checker defaults are not changed. Never use it as a write/retry permit.
+    """
+    modules = _pinned_modules(manifest_name='session_auth_pins.json')
+    if (type(checker) is not modules['cj_auth.session_admission'].SessionAdmissionChecker
+            or type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 1048576):
+        raise CompositionUnavailable('Explicit canonical session checker and bounded read required')
+    return modules['cj_auth.read_context'].ProtectedReadBoundary(
+        checker, max_response_bytes=max_response_bytes).with_read_context(token, project)
