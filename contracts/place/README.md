@@ -6,6 +6,9 @@ This is an **internal Python consumption contract**, not published PLACE@1.0,
 not an HTTP schema and not a second API. Root `contracts/api/openapi.json` remains
 owned by CJ005. Consumers pin the candidate commit, not only this version string.
 
+高德必接入决定、当前官方四 API 核对、非秘密资料/安全 key 交接与五票真实最小链见
+[高德接入清单](GAODE-INTEGRATION-CHECKLIST.md)。该资料核对不替代原审验或放行 dispatch。
+
 ## Public surface
 
 Import `cj_place` with `backend/place` on `PYTHONPATH`. The single definitions are
