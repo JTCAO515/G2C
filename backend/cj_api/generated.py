@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, StrEnum
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import (
@@ -1398,3 +1398,99 @@ class MemoryManagementReceiptResponse(BaseModel):
     )
     request_id: RequestId
     receipt: MemoryManagementReceipt | Receipt
+
+
+class ActionId(Enum):
+    NoneType_None = None
+
+
+class OriginalInputSha256(Enum):
+    NoneType_None = None
+
+
+class FeasibilityCurrentEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: constr(max_length=4096)
+    declaration: Any
+    revision: conint(ge=1, le=128) | Revision
+    action_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$') | ActionId
+    original_input_sha256: constr(pattern=r'^[0-9a-f]{64}$') | OriginalInputSha256
+
+
+class Status10(StrEnum):
+    PASS = 'PASS'
+    CONFLICT = 'CONFLICT'
+    UNKNOWN = 'UNKNOWN'
+    INVALID = 'INVALID'
+    NOT_APPLICABLE = 'NOT_APPLICABLE'
+
+
+class Detail(RootModel[constr(max_length=4096)]):
+    root: constr(max_length=4096)
+
+
+class FeasibilityCurrentCheck(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    code: constr(min_length=1, max_length=96)
+    status: Status10
+    missing: list[constr(max_length=4096)]
+    zh: constr(max_length=4096)
+    en: constr(max_length=4096)
+    details: list[list[Detail]]
+    evidence: list[FeasibilityCurrentEvidence]
+
+
+class FeasibilityCurrentSource(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    revision: conint(ge=1, le=128)
+    action_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    original_input_utf8: constr(max_length=131072)
+    original_input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+
+
+class Version(StrEnum):
+    CJ_FEASIBILITY_CURRENT_READ_0_1_0_candidate_1 = (
+        'CJ-FEASIBILITY-CURRENT-READ@0.1.0-candidate.1'
+    )
+
+
+class EvaluatorVersion(StrEnum):
+    CJ_FEASIBILITY_NEEDS_0_1_0_candidate_1 = 'CJ-FEASIBILITY-NEEDS@0.1.0-candidate.1'
+
+
+class Status11(StrEnum):
+    CONFLICT = 'CONFLICT'
+    UNKNOWN = 'UNKNOWN'
+
+
+class Overall(StrEnum):
+    UNKNOWN = 'UNKNOWN'
+
+
+class FeasibilityCurrentReport(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Version
+    evaluator_version: EvaluatorVersion
+    status: Status11
+    needs_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$')
+    revision: conint(ge=1, le=128)
+    content_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+    overall: Overall
+    checks: list[FeasibilityCurrentCheck] = Field(..., min_length=1)
+    sources: list[FeasibilityCurrentSource] = Field(..., max_length=128, min_length=1)
+
+
+class FeasibilityCurrentResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    evaluation: FeasibilityCurrentReport

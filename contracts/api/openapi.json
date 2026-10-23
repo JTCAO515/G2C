@@ -1875,6 +1875,66 @@
         ],
         "description": "Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates."
       }
+    },
+    "/v1/needs-feasibility": {
+      "get": {
+        "operationId": "evaluateCurrentNeedsFeasibility",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "needs_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected existing operation progress only for current valid account; final BASE bytes/close/domain/outer AUTH guards pass.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeasibilityCurrentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE current-AUTH/input/unavailable error. No null/empty/complete fallback, no postlogout privilege restoration or hook retry.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Read-only evaluation of current authorized NEEDS and exact original history; only needs_id selector. Candidate factory hard closed pending independent gates; no solver/candidate/routes/write authority."
+      }
     }
   },
   "components": {
@@ -4848,6 +4908,247 @@
           }
         },
         "description": "Required null receipt means not observed in this scoped lifecycle ledger; never proves noncommit or authorizes resend."
+      },
+      "FeasibilityCurrentEvidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "declaration",
+          "revision",
+          "action_id",
+          "original_input_sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "declaration": {},
+          "revision": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 128
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
+          "action_id": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          },
+          "original_input_sha256": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "description": "Unmodified original declared JSON value and associated revision/action/hash. Declaration is any JSON value, including null; no external fact or approval asserted."
+      },
+      "FeasibilityCurrentCheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "status",
+          "missing",
+          "zh",
+          "en",
+          "details",
+          "evidence"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 96
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "CONFLICT",
+              "UNKNOWN",
+              "INVALID",
+              "NOT_APPLICABLE"
+            ]
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          "zh": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "en": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeasibilityCurrentEvidence"
+            }
+          }
+        },
+        "description": "Original local deterministic check; PASS does not establish overall or route feasibility."
+      },
+      "FeasibilityCurrentSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "action_id",
+          "original_input_utf8",
+          "original_input_sha256"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 128
+          },
+          "action_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "original_input_utf8": {
+            "type": "string",
+            "maxLength": 131072
+          },
+          "original_input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "description": "Private original stored UTF8 history, no normalization or regeneration; hash is original source bytes."
+      },
+      "FeasibilityCurrentReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "evaluator_version",
+          "status",
+          "needs_id",
+          "revision",
+          "content_sha256",
+          "overall",
+          "checks",
+          "sources"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "enum": [
+              "CJ-FEASIBILITY-CURRENT-READ@0.1.0-candidate.1"
+            ]
+          },
+          "evaluator_version": {
+            "type": "string",
+            "enum": [
+              "CJ-FEASIBILITY-NEEDS@0.1.0-candidate.1"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CONFLICT",
+              "UNKNOWN"
+            ]
+          },
+          "needs_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 128
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "overall": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeasibilityCurrentCheck"
+            },
+            "minItems": 1
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeasibilityCurrentSource"
+            },
+            "minItems": 1,
+            "maxItems": 128
+          }
+        },
+        "description": "Exact original NEEDS-only projected report. Protected source withholds INVALID input; it is explicit BASE503 FEASIBILITY_INPUT_INVALID, never a fabricated success Report. Overall always UNKNOWN, no write/route/provider authority."
+      },
+      "FeasibilityCurrentResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "evaluation"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "evaluation": {
+            "$ref": "#/components/schemas/FeasibilityCurrentReport"
+          }
+        },
+        "description": "Full BASE envelope encoded inside original canonical protected NEEDS/AUTH lifetime. Original report bytes embedded unchanged. Candidate factory closed."
       }
     },
     "securitySchemes": {
@@ -4869,5 +5170,6 @@
   "x-usage-status-wire-version": "USAGE-STATUS-WIRE@0.1.0-rc.1",
   "x-original-usage-wire-version": "ORIGINAL-USAGE-WIRE@0.1.0-rc.1",
   "x-cleanup-progress-wire-version": "CLEANUP-PROGRESS-WIRE@0.1.0-rc.1",
-  "x-memory-management-wire-version": "MEMORY-MANAGEMENT-WIRE@0.1.0-rc.1"
+  "x-memory-management-wire-version": "MEMORY-MANAGEMENT-WIRE@0.1.0-rc.1",
+  "x-feasibility-current-wire-version": "FEASIBILITY-CURRENT-WIRE@0.1.0-rc.1"
 }

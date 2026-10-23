@@ -99,6 +99,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/memory-management-receipts`.
     /// - Remark: Generated from `#/paths//v1/memory-management-receipts/get(queryMemoryManagementReceipt)`.
     func queryMemoryManagementReceipt(_ input: Operations.queryMemoryManagementReceipt.Input) async throws -> Operations.queryMemoryManagementReceipt.Output
+    /// Read-only evaluation of current authorized NEEDS and exact original history; only needs_id selector. Candidate factory hard closed pending independent gates; no solver/candidate/routes/write authority.
+    ///
+    /// - Remark: HTTP `GET /v1/needs-feasibility`.
+    /// - Remark: Generated from `#/paths//v1/needs-feasibility/get(evaluateCurrentNeedsFeasibility)`.
+    func evaluateCurrentNeedsFeasibility(_ input: Operations.evaluateCurrentNeedsFeasibility.Input) async throws -> Operations.evaluateCurrentNeedsFeasibility.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -423,6 +428,19 @@ extension APIProtocol {
         headers: Operations.queryMemoryManagementReceipt.Input.Headers = .init()
     ) async throws -> Operations.queryMemoryManagementReceipt.Output {
         try await queryMemoryManagementReceipt(Operations.queryMemoryManagementReceipt.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Read-only evaluation of current authorized NEEDS and exact original history; only needs_id selector. Candidate factory hard closed pending independent gates; no solver/candidate/routes/write authority.
+    ///
+    /// - Remark: HTTP `GET /v1/needs-feasibility`.
+    /// - Remark: Generated from `#/paths//v1/needs-feasibility/get(evaluateCurrentNeedsFeasibility)`.
+    public func evaluateCurrentNeedsFeasibility(
+        query: Operations.evaluateCurrentNeedsFeasibility.Input.Query,
+        headers: Operations.evaluateCurrentNeedsFeasibility.Input.Headers = .init()
+    ) async throws -> Operations.evaluateCurrentNeedsFeasibility.Output {
+        try await evaluateCurrentNeedsFeasibility(Operations.evaluateCurrentNeedsFeasibility.Input(
             query: query,
             headers: headers
         ))

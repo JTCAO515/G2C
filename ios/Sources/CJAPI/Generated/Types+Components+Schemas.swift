@@ -6788,5 +6788,522 @@ extension Components {
                 ])
             }
         }
+        /// Unmodified original declared JSON value and associated revision/action/hash. Declaration is any JSON value, including null; no external fact or approval asserted.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence`.
+        public struct FeasibilityCurrentEvidence: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/path`.
+            public var path: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/declaration`.
+            public var declaration: OpenAPIRuntime.OpenAPIValueContainer
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/revision`.
+            @frozen public enum revisionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/revision/case1`.
+                case case1(Swift.Int)
+                /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/revision/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/revision`.
+            public var revision: Components.Schemas.FeasibilityCurrentEvidence.revisionPayload
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/action_id`.
+            @frozen public enum action_idPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/action_id/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/action_id/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/action_id`.
+            public var action_id: Components.Schemas.FeasibilityCurrentEvidence.action_idPayload
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/original_input_sha256`.
+            @frozen public enum original_input_sha256Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/original_input_sha256/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/original_input_sha256/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentEvidence/original_input_sha256`.
+            public var original_input_sha256: Components.Schemas.FeasibilityCurrentEvidence.original_input_sha256Payload
+            /// Creates a new `FeasibilityCurrentEvidence`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - declaration:
+            ///   - revision:
+            ///   - action_id:
+            ///   - original_input_sha256:
+            public init(
+                path: Swift.String,
+                declaration: OpenAPIRuntime.OpenAPIValueContainer,
+                revision: Components.Schemas.FeasibilityCurrentEvidence.revisionPayload,
+                action_id: Components.Schemas.FeasibilityCurrentEvidence.action_idPayload,
+                original_input_sha256: Components.Schemas.FeasibilityCurrentEvidence.original_input_sha256Payload
+            ) {
+                self.path = path
+                self.declaration = declaration
+                self.revision = revision
+                self.action_id = action_id
+                self.original_input_sha256 = original_input_sha256
+            }
+            public enum CodingKeys: String, CodingKey {
+                case path
+                case declaration
+                case revision
+                case action_id
+                case original_input_sha256
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.path = try container.decode(
+                    Swift.String.self,
+                    forKey: .path
+                )
+                self.declaration = try container.decode(
+                    OpenAPIRuntime.OpenAPIValueContainer.self,
+                    forKey: .declaration
+                )
+                self.revision = try container.decode(
+                    Components.Schemas.FeasibilityCurrentEvidence.revisionPayload.self,
+                    forKey: .revision
+                )
+                self.action_id = try container.decode(
+                    Components.Schemas.FeasibilityCurrentEvidence.action_idPayload.self,
+                    forKey: .action_id
+                )
+                self.original_input_sha256 = try container.decode(
+                    Components.Schemas.FeasibilityCurrentEvidence.original_input_sha256Payload.self,
+                    forKey: .original_input_sha256
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "path",
+                    "declaration",
+                    "revision",
+                    "action_id",
+                    "original_input_sha256"
+                ])
+            }
+        }
+        /// Original local deterministic check; PASS does not establish overall or route feasibility.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck`.
+        public struct FeasibilityCurrentCheck: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck/code`.
+            public var code: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case PASS = "PASS"
+                case CONFLICT = "CONFLICT"
+                case UNKNOWN = "UNKNOWN"
+                case INVALID = "INVALID"
+                case NOT_APPLICABLE = "NOT_APPLICABLE"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck/status`.
+            public var status: Components.Schemas.FeasibilityCurrentCheck.statusPayload
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck/missing`.
+            public var missing: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck/zh`.
+            public var zh: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck/en`.
+            public var en: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck/details`.
+            public var details: [[Swift.String]]
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentCheck/evidence`.
+            public var evidence: [Components.Schemas.FeasibilityCurrentEvidence]
+            /// Creates a new `FeasibilityCurrentCheck`.
+            ///
+            /// - Parameters:
+            ///   - code:
+            ///   - status:
+            ///   - missing:
+            ///   - zh:
+            ///   - en:
+            ///   - details:
+            ///   - evidence:
+            public init(
+                code: Swift.String,
+                status: Components.Schemas.FeasibilityCurrentCheck.statusPayload,
+                missing: [Swift.String],
+                zh: Swift.String,
+                en: Swift.String,
+                details: [[Swift.String]],
+                evidence: [Components.Schemas.FeasibilityCurrentEvidence]
+            ) {
+                self.code = code
+                self.status = status
+                self.missing = missing
+                self.zh = zh
+                self.en = en
+                self.details = details
+                self.evidence = evidence
+            }
+            public enum CodingKeys: String, CodingKey {
+                case code
+                case status
+                case missing
+                case zh
+                case en
+                case details
+                case evidence
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.code = try container.decode(
+                    Swift.String.self,
+                    forKey: .code
+                )
+                self.status = try container.decode(
+                    Components.Schemas.FeasibilityCurrentCheck.statusPayload.self,
+                    forKey: .status
+                )
+                self.missing = try container.decode(
+                    [Swift.String].self,
+                    forKey: .missing
+                )
+                self.zh = try container.decode(
+                    Swift.String.self,
+                    forKey: .zh
+                )
+                self.en = try container.decode(
+                    Swift.String.self,
+                    forKey: .en
+                )
+                self.details = try container.decode(
+                    [[Swift.String]].self,
+                    forKey: .details
+                )
+                self.evidence = try container.decode(
+                    [Components.Schemas.FeasibilityCurrentEvidence].self,
+                    forKey: .evidence
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "code",
+                    "status",
+                    "missing",
+                    "zh",
+                    "en",
+                    "details",
+                    "evidence"
+                ])
+            }
+        }
+        /// Private original stored UTF8 history, no normalization or regeneration; hash is original source bytes.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentSource`.
+        public struct FeasibilityCurrentSource: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentSource/revision`.
+            public var revision: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentSource/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentSource/original_input_utf8`.
+            public var original_input_utf8: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentSource/original_input_sha256`.
+            public var original_input_sha256: Swift.String
+            /// Creates a new `FeasibilityCurrentSource`.
+            ///
+            /// - Parameters:
+            ///   - revision:
+            ///   - action_id:
+            ///   - original_input_utf8:
+            ///   - original_input_sha256:
+            public init(
+                revision: Swift.Int,
+                action_id: Swift.String,
+                original_input_utf8: Swift.String,
+                original_input_sha256: Swift.String
+            ) {
+                self.revision = revision
+                self.action_id = action_id
+                self.original_input_utf8 = original_input_utf8
+                self.original_input_sha256 = original_input_sha256
+            }
+            public enum CodingKeys: String, CodingKey {
+                case revision
+                case action_id
+                case original_input_utf8
+                case original_input_sha256
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.revision = try container.decode(
+                    Swift.Int.self,
+                    forKey: .revision
+                )
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.original_input_utf8 = try container.decode(
+                    Swift.String.self,
+                    forKey: .original_input_utf8
+                )
+                self.original_input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .original_input_sha256
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "revision",
+                    "action_id",
+                    "original_input_utf8",
+                    "original_input_sha256"
+                ])
+            }
+        }
+        /// Exact original NEEDS-only projected report. Protected source withholds INVALID input; it is explicit BASE503 FEASIBILITY_INPUT_INVALID, never a fabricated success Report. Overall always UNKNOWN, no write/route/provider authority.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport`.
+        public struct FeasibilityCurrentReport: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case CJ_hyphen_FEASIBILITY_hyphen_CURRENT_hyphen_READ_commat_0_period_1_period_0_hyphen_candidate_period_1 = "CJ-FEASIBILITY-CURRENT-READ@0.1.0-candidate.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/version`.
+            public var version: Components.Schemas.FeasibilityCurrentReport.versionPayload
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/evaluator_version`.
+            @frozen public enum evaluator_versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case CJ_hyphen_FEASIBILITY_hyphen_NEEDS_commat_0_period_1_period_0_hyphen_candidate_period_1 = "CJ-FEASIBILITY-NEEDS@0.1.0-candidate.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/evaluator_version`.
+            public var evaluator_version: Components.Schemas.FeasibilityCurrentReport.evaluator_versionPayload
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case CONFLICT = "CONFLICT"
+                case UNKNOWN = "UNKNOWN"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/status`.
+            public var status: Components.Schemas.FeasibilityCurrentReport.statusPayload
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/needs_id`.
+            public var needs_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/revision`.
+            public var revision: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/content_sha256`.
+            public var content_sha256: Swift.String
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/overall`.
+            @frozen public enum overallPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case UNKNOWN = "UNKNOWN"
+            }
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/overall`.
+            public var overall: Components.Schemas.FeasibilityCurrentReport.overallPayload
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/checks`.
+            public var checks: [Components.Schemas.FeasibilityCurrentCheck]
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentReport/sources`.
+            public var sources: [Components.Schemas.FeasibilityCurrentSource]
+            /// Creates a new `FeasibilityCurrentReport`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - evaluator_version:
+            ///   - status:
+            ///   - needs_id:
+            ///   - revision:
+            ///   - content_sha256:
+            ///   - overall:
+            ///   - checks:
+            ///   - sources:
+            public init(
+                version: Components.Schemas.FeasibilityCurrentReport.versionPayload,
+                evaluator_version: Components.Schemas.FeasibilityCurrentReport.evaluator_versionPayload,
+                status: Components.Schemas.FeasibilityCurrentReport.statusPayload,
+                needs_id: Swift.String,
+                revision: Swift.Int,
+                content_sha256: Swift.String,
+                overall: Components.Schemas.FeasibilityCurrentReport.overallPayload,
+                checks: [Components.Schemas.FeasibilityCurrentCheck],
+                sources: [Components.Schemas.FeasibilityCurrentSource]
+            ) {
+                self.version = version
+                self.evaluator_version = evaluator_version
+                self.status = status
+                self.needs_id = needs_id
+                self.revision = revision
+                self.content_sha256 = content_sha256
+                self.overall = overall
+                self.checks = checks
+                self.sources = sources
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case evaluator_version
+                case status
+                case needs_id
+                case revision
+                case content_sha256
+                case overall
+                case checks
+                case sources
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.FeasibilityCurrentReport.versionPayload.self,
+                    forKey: .version
+                )
+                self.evaluator_version = try container.decode(
+                    Components.Schemas.FeasibilityCurrentReport.evaluator_versionPayload.self,
+                    forKey: .evaluator_version
+                )
+                self.status = try container.decode(
+                    Components.Schemas.FeasibilityCurrentReport.statusPayload.self,
+                    forKey: .status
+                )
+                self.needs_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .needs_id
+                )
+                self.revision = try container.decode(
+                    Swift.Int.self,
+                    forKey: .revision
+                )
+                self.content_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .content_sha256
+                )
+                self.overall = try container.decode(
+                    Components.Schemas.FeasibilityCurrentReport.overallPayload.self,
+                    forKey: .overall
+                )
+                self.checks = try container.decode(
+                    [Components.Schemas.FeasibilityCurrentCheck].self,
+                    forKey: .checks
+                )
+                self.sources = try container.decode(
+                    [Components.Schemas.FeasibilityCurrentSource].self,
+                    forKey: .sources
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "evaluator_version",
+                    "status",
+                    "needs_id",
+                    "revision",
+                    "content_sha256",
+                    "overall",
+                    "checks",
+                    "sources"
+                ])
+            }
+        }
+        /// Full BASE envelope encoded inside original canonical protected NEEDS/AUTH lifetime. Original report bytes embedded unchanged. Candidate factory closed.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentResponse`.
+        public struct FeasibilityCurrentResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/FeasibilityCurrentResponse/evaluation`.
+            public var evaluation: Components.Schemas.FeasibilityCurrentReport
+            /// Creates a new `FeasibilityCurrentResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - evaluation:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                evaluation: Components.Schemas.FeasibilityCurrentReport
+            ) {
+                self.request_id = request_id
+                self.evaluation = evaluation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case evaluation
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.evaluation = try container.decode(
+                    Components.Schemas.FeasibilityCurrentReport.self,
+                    forKey: .evaluation
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "evaluation"
+                ])
+            }
+        }
     }
 }

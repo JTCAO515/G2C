@@ -1,5 +1,5 @@
 {
-  "version": "1.11.0",
+  "version": "1.12.0",
   "stores": [
     {
       "id": "business",
@@ -131,7 +131,17 @@
           ],
           "retention": "UNDECIDED; revisions/receipts retained by candidate, not an infinite dedupe promise; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no cleanup/deletion API for current records, revisions or original source bytes; no automatic Memory/Trip promotion",
-          "restore_fence": "UNIMPLEMENTED; source/scope/account revocations and deletion replay required before restored reads"
+          "restore_fence": "UNIMPLEMENTED; source/scope/account revocations and deletion replay required before restored reads",
+          "feasibility_current_candidate": {
+            "owner": "CJ-035 / CJ-005",
+            "source": "2df1fe0d0a363ee24f3f372405dd2f31f57b3fbb",
+            "producer": "4cc9c815293a4e03225b26adfa228fdd0b50b2e7",
+            "wire": "FEASIBILITY-CURRENT-WIRE@0.1.0-rc.1",
+            "persistence": "NONE; report and complete BASE bytes in original read lifetime only; no table/cache/log/queue",
+            "private_output": "Current content hash plus exact original input UTF8/revision/action hashes and declarations; authenticated private read only",
+            "status": "factory_hard_closed_pending_consumer_gates; old c821 pin unchanged; no cohost approval",
+            "authority": "NEEDS-only local CONFLICT/UNKNOWN, overall always UNKNOWN; INVALID input withheld; no solver/routes/provider/write permission"
+          }
         },
         {
           "id": "feedback-private-actions",
@@ -334,6 +344,7 @@
     "original_usage_association": "0685dbf8ad9622ad56c4435cb2fc47c3096046d1",
     "cleanup_progress": "514aba717dd0e0a7f7783b6d9072d347cdb0a623",
     "memory_management": "a7e706ce44095d43ab0b80c2e75a2bf81927ce76",
-    "memory_lifecycle_adapter": "0045e423f004f873e2786aa98b2600b70772a921"
+    "memory_lifecycle_adapter": "0045e423f004f873e2786aa98b2600b70772a921",
+    "feasibility_current": "2df1fe0d0a363ee24f3f372405dd2f31f57b3fbb"
   }
 }
