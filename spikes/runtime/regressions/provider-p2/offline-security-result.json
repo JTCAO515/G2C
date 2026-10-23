@@ -1,0 +1,10 @@
+{
+  "scope": "OFFLINE_SECURITY_PROBES_ONLY",
+  "real_provider": "UNRUN",
+  "ambient_TLS_keylog_enabled": true,
+  "keylog_file_created_without_network": true,
+  "uninspectable_escaped_echo_detected": true,
+  "provider_step_outcome": "UNKNOWN",
+  "response_with_encoded_secret_returned": false,
+  "encoded_secret_found_in_own_DBOS_persistence": false
+}

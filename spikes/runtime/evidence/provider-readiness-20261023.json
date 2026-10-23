@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-10-23 Asia/Shanghai",
+  "base": "edb72fffbf87614dd0dafba3570725be004d1ccb",
+  "scope": "PREPARATION_ONLY_NO_PROVIDER_REQUEST",
+  "approved_billing_policy": "JT: 测试费用不设上限，由百炼余额控制",
+  "configured_resource": {
+    "workspace": "UNKNOWN",
+    "region": "UNKNOWN",
+    "endpoint": "UNKNOWN",
+    "requested_candidate_model": "qwen3.8-flash",
+    "actual_provider_model": "UNRUN"
+  },
+  "configuration_presence_only": {
+    "CJ_MODEL_ID": false,
+    "CJ_MODEL_API_BASE_URL": false,
+    "CJ_MODEL_REGION": false,
+    "CJ_MODEL_WORKSPACE_ID": false,
+    "CJ_MODEL_API_KEY": false,
+    "DASHSCOPE_API_KEY": false,
+    "CJ002_NEW_MODEL_API_KEY": false
+  },
+  "preflight": {
+    "provider": "UNRUN",
+    "ready_for_authorized_run": false,
+    "missing": [
+      "MISSING_WORKSPACE_ID",
+      "MISSING_BASE_URL",
+      "AUTHORIZATION_EXPIRED_OR_INVALID",
+      "DEDICATED_NEW_KEY_NOT_INJECTED"
+    ],
+    "versions": {
+      "agentscope": "2.0.10",
+      "dbos": "3.3.0",
+      "openai": "3.35.1",
+      "httpx": "0.28.1",
+      "pydantic": "2.14.1"
+    },
+    "key_presence_only": false
+  },
+  "blocked_run_exit": 2,
+  "read_only_inspect": {
+    "provider": "UNRUN",
+    "attempts": []
+  },
+  "created_provider_database": false,
+  "new_entry_offline_check_groups": 7,
+  "existing_17_plus_3": "UNCHANGED_REUSED_NO_RERUN",
+  "source_sha256": {
+    "provider_acceptance.py": "62d438fdf1927b9926cdf98991ab1cca34b4ecafdc13a22e0f4e72c812d28e22",
+    "test_provider_acceptance.py": "05222f825ddcbfbd30ba5371945a80f16c390cb605ce3257b79b2af219387f66",
+    "provider-approval.example.json": "2e1c8efa6d05fc3fba9bcb66de25a0ed0530810918f90adc538348fce9213b53",
+    "REAL-ACCEPTANCE.md": "97d2dd02dc70db282b1485a478857fbe0a29c7d7f4d3e9ccb1b79344dfe3492c",
+    "README.md": "b45fa362793b0719520245e5e8e6d6a88f85d2be90c20c147b4ddb1cf380acae",
+    "REPORT.md": "f8bac849b08ea43edc5c9d961af9e445f92ecf0341fffa3b6b3d93d7f23dcc54"
+  },
+  "process_only_legacy_routing_exclusion": "PASS; sentinel variable names excluded before SDK import; no inherited values read"
+}
