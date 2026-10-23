@@ -1,0 +1,19 @@
+{
+  "data": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-progress-20261023/data",
+  "socket": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24p",
+  "port": 55459,
+  "role": "cj024progress",
+  "read_role": "cj024progress_read",
+  "listen_addresses": "",
+  "driver": "3.2.10",
+  "ambient_dsn": "NOT_READ",
+  "stopped": true,
+  "postgres": "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit",
+  "tests_run": 12,
+  "failures": 0,
+  "errors": 0,
+  "sensitive_log_payloads": "ABSENT",
+  "pid_exists": false,
+  "socket_exists": false,
+  "socket_lock_exists": false
+}

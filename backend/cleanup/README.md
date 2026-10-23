@@ -29,3 +29,16 @@ intent 必须 COMMIT 成功返回后，未来获准 host 才可能调用 hook；
 本地 runner 使用已安装 psycopg3.2.10（局部 pin：tests/pg_requirements.lock），显式 `--pg-bin`/`--driver`。`tests/private_pg.py` 拒绝复用已存在路径；已保留实例不得再次自动启动。首次实际运行的资源和结果见后置 evidence/PG-RESULT.md。
 
 P2 close 后最终围栏返修：最终 captured guard/context 检查在最后外部 `close()` 正常完成后；原 body/COMMITunknown 结果优先，close/rollback 错误不能遮盖原失败。新55458空cluster的原两probe + 8项相关txn控制10PASS，原55457/Testing实例未重启。详见 evidence/PG-CLOSE-REPAIR.md。
+
+## 当前认证原进度读取（083后新切片）
+
+`protected_progress.ProgressReader` 消费 canonical AUTH8b 的 ProtectedReadBoundary；
+只读自身已有 operation 的有限白名单结果。只调用旧 PG query，不写恢复/receipt或删除。
+完整返回bytes在原AUTH寿命内生成，最末AUTH回调之后以callback-free字段核对完成绑定。
+接口、限量、原因枚举、final-envelope接缝见 [PROTECTED-PROGRESS](../../contracts/cleanup/PROTECTED-PROGRESS.md)。
+本目录原base的AUTH没有read_context：消费测试必须显式使用canonical8b源，不能回退假AUTH。
+新正式集成由Main/CJ005带已合AUTH一起接，不把忽略目录的临时导出作为第二AUTH来源。
+
+2026-10-23作者使用新私有PG16.15/Unix55459、canonical AUTH8b + synthetic verifier/accessfacts、
+SELECT-only runtime role执行12定向组合检查PASS，旧14/strict/PG/close门复用、不重跑。
+实际账号/真实撤权provider/注销后凭据和Issue27 I仍UNRUN；core.public_query和destructive入口保持关闭。
