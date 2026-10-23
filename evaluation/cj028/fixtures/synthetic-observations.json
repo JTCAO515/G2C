@@ -1,0 +1,42 @@
+[
+  {
+    "candidate_id": "synthetic-a",
+    "scenario_id": "synthetic-one",
+    "language": "zh",
+    "network_id": "synthetic-network",
+    "attempt": 1,
+    "purpose": "evaluation",
+    "status": "success",
+    "attempt_source": "synthetic:unit-test-generator",
+    "observed_at": "synthetic-not-a-real-timestamp",
+    "source_as_of": "synthetic-no-real-source",
+    "raw_evidence_ref": "synthetic:raw-test-record",
+    "judgment": {
+      "kind": "program",
+      "independent": true,
+      "outcome": "PASS",
+      "ref": "synthetic:external-test-assertion"
+    },
+    "first_body_seconds": 2,
+    "draft_seconds": 7,
+    "tool_observations": [
+      {
+        "name": "synthetic-tool",
+        "status": "not-called",
+        "source": "synthetic:test-only"
+      }
+    ],
+    "serious_errors": [],
+    "cost": {
+      "complete": true,
+      "components": [
+        {
+          "name": "synthetic-total-including-retries-tools-memory",
+          "amount": "0.03",
+          "currency": "USD",
+          "source": "synthetic:not-a-bill"
+        }
+      ]
+    }
+  }
+]

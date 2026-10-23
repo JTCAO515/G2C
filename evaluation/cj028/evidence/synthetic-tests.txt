@@ -1,0 +1,25 @@
+test_bad_cost_latency_and_provenance_rejected (test_evaluate.SyntheticRecordsTests) ... ok
+test_candidate_versions_not_pooled (test_evaluate.SyntheticRecordsTests) ... ok
+test_cli_explicit_files_and_invalid_records_retained (test_evaluate.SyntheticRecordsTests) ... ok
+test_conflicting_candidate_fingerprint_rejected (test_evaluate.SyntheticRecordsTests) ... ok
+test_duplicate_attempt_rejected (test_evaluate.SyntheticRecordsTests) ... ok
+test_duplicate_json_fields_and_nonfinite_numbers_rejected (test_evaluate.SyntheticRecordsTests) ... ok
+test_external_serious_errors_separate_by_language (test_evaluate.SyntheticRecordsTests) ... ok
+test_failure_timeout_unknown_missing_are_not_discarded (test_evaluate.SyntheticRecordsTests) ... ok
+test_holdout_tuning_history_and_observed_leakage_rejected (test_evaluate.SyntheticRecordsTests) ... ok
+test_independent_count_and_bilingual_missing_denominators (test_evaluate.SyntheticRecordsTests) ... ok
+test_latency_percentiles_keep_missing_and_timeout_context (test_evaluate.SyntheticRecordsTests) ... ok
+test_network_and_language_measurements_not_pooled (test_evaluate.SyntheticRecordsTests) ... ok
+test_no_success_certification_from_label_or_model_judge (test_evaluate.SyntheticRecordsTests) ... ok
+test_one_third_hard_gate_uses_product_scenarios (test_evaluate.SyntheticRecordsTests) ... ok
+test_pass_requires_independent_raw_evidence (test_evaluate.SyntheticRecordsTests) ... ok
+test_repeated_holdout_visible_without_cherry_picking (test_evaluate.SyntheticRecordsTests) ... ok
+test_task_kinds_not_pooled_for_latency (test_evaluate.SyntheticRecordsTests) ... ok
+test_unconfirmed_thresholds_never_release (test_evaluate.SyntheticRecordsTests) ... ok
+test_unknown_cost_not_zero_and_currency_not_converted (test_evaluate.SyntheticRecordsTests) ... ok
+test_unknown_ids_and_language_pairing_rejected (test_evaluate.SyntheticRecordsTests) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.037s
+
+OK
