@@ -1,0 +1,18 @@
+test_actual_parent_legacy_verifier_and_checker_remain_compatible (test_session_binding.SessionBindingTests.test_actual_parent_legacy_verifier_and_checker_remain_compatible) ... ok
+test_binding_result_invariants_reject_nonvalid_payloads (test_session_binding.SessionBindingTests.test_binding_result_invariants_reject_nonvalid_payloads) ... ok
+test_current_session_does_not_bypass_existing_membership_email_invitation (test_session_binding.SessionBindingTests.test_current_session_does_not_bypass_existing_membership_email_invitation) ... ok
+test_existing_read_context_accepts_checker_and_original_session_cannot_revive (test_session_binding.SessionBindingTests.test_existing_read_context_accepts_checker_and_original_session_cannot_revive) ... ok
+test_expires_during_session_lookup_never_grants (test_session_binding.SessionBindingTests.test_expires_during_session_lookup_never_grants) ... ok
+test_invalid_host_clock_does_not_authorize_session_access (test_session_binding.SessionBindingTests.test_invalid_host_clock_does_not_authorize_session_access) ... ok
+test_late_facts_for_other_session_subject_audience_or_refresh_are_rejected (test_session_binding.SessionBindingTests.test_late_facts_for_other_session_subject_audience_or_refresh_are_rejected) ... ok
+test_missing_claim_wrong_audience_and_unsupported_profile (test_session_binding.SessionBindingTests.test_missing_claim_wrong_audience_and_unsupported_profile) ... ok
+test_only_verified_original_session_claim_becomes_binding (test_session_binding.SessionBindingTests.test_only_verified_original_session_claim_becomes_binding) ... ok
+test_recheck_revocation_and_no_cache (test_session_binding.SessionBindingTests.test_recheck_revocation_and_no_cache) ... ok
+test_refresh_keeps_session_id_but_does_not_create_a_partition (test_session_binding.SessionBindingTests.test_refresh_keeps_session_id_but_does_not_create_a_partition) ... ok
+test_same_subject_distinct_sessions_have_independent_current_access (test_session_binding.SessionBindingTests.test_same_subject_distinct_sessions_have_independent_current_access) ... ok
+test_unknown_missing_or_failed_session_provider_never_grants (test_session_binding.SessionBindingTests.test_unknown_missing_or_failed_session_provider_never_grants) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.070s
+
+OK

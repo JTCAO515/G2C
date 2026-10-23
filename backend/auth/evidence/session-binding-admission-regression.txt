@@ -1,0 +1,11 @@
+test_each_negative_fact_blocks_even_with_valid_identity (test_admission.AdmissionTests.test_each_negative_fact_blocks_even_with_valid_identity) ... ok
+test_expires_during_lookup (test_admission.AdmissionTests.test_expires_during_lookup) ... ok
+test_invalid_unknown_skip_policy_and_are_distinct (test_admission.AdmissionTests.test_invalid_unknown_skip_policy_and_are_distinct) ... ok
+test_mismatched_binding_exception_or_bool_cannot_authorize (test_admission.AdmissionTests.test_mismatched_binding_exception_or_bool_cannot_authorize) ... ok
+test_missing_provider_and_every_unknown_deny_permission (test_admission.AdmissionTests.test_missing_provider_and_every_unknown_deny_permission) ... ok
+test_rechecks_provider_at_each_boundary (test_admission.AdmissionTests.test_rechecks_provider_at_each_boundary) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.000s
+
+OK

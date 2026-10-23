@@ -99,3 +99,5 @@ SERVER-INTERFACE.md，仍待原 owner 更新其固定消费引用/运行说明�
 可选固定 HTTPX HTTPS transport 与真实 loopback TLS 分层证据见 [HTTPS-JWKS-TRANSPORT](../../contracts/auth/HTTPS-JWKS-TRANSPORT.md)。默认仍不联网，真实外网 DNS/provider 未验。
 
 独立于 MESSAGE 仓库的同步读取寿命候选见 [PROTECTED-READ-CONTEXT](../../contracts/auth/PROTECTED-READ-CONTEXT.md)，复用原准入且只返回限界 bytes。
+
+具体 session 可信绑定与可选受限查询接点见 [VERIFIED-SESSION-BINDING](../../contracts/auth/VERIFIED-SESSION-BINDING.md)。原 principal/checker 字段保持；真实 session access provider 尚未配置。
