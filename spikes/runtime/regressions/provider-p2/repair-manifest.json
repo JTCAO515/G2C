@@ -1,0 +1,20 @@
+{
+  "base": "50cd98fc200f21d81e9ff90bba7c91e82aa2b949",
+  "real_provider": "UNRUN_PROHIBITED_PENDING_INDEPENDENT_GATES",
+  "prior_evidence": "17+3 and 7 groups retained unchanged, not rerun",
+  "original_testing_sha256": {
+    "REPORT.md": "10a435e4f4848c1736bc58d3cab20b7d9d367ac5efb354d347c38117be6f89e8",
+    "offline_security_probe.py": "03311aa4162286c7c9320d2a69c50fdbef1f277c0b1dc4cb9ac45541ec87e2b5",
+    "offline-security-probe.log": "1c9751bd1c09c6245b75669616e0afe2ef7309bdfc524a9520bb44262d43885d",
+    "offline-security-result.json": "5f394e6e90b32bd62ab31d8fe4ba7b91ce7ce939e54cf4ff706bec7ed00d53de",
+    "results.json": "d945e7c9f19d4158c2826a77c56a084c7c866a0c3f989babb8f006d641aa86d4"
+  },
+  "source_sha256": {
+    "provider_acceptance.py": "7adaba6ac21dca6b09e8de188fcad8976f692d77b8d592ab83776ee6cd8331a7",
+    "REPORT.md": "aeed8699e25cb7605b2433b9dbc50a48fa3835440da7155439ccab30081d8688",
+    "regressions/provider-p2/REPORT.md": "fac56e52cecbec2ddff8b80a5cf79c7b67cbac11c9d0fe84b261de2552bd048f",
+    "regressions/provider-p2/entry_security_regression.py": "dd8f138e3cc9f4c78ffc792c5ebf342ca4ca03309c9f4650bfc0f2000c88a4d6"
+  },
+  "targeted_groups": "3 PASS; original raw-upstream constructor observation stays positive",
+  "original_probe_exit_code": 1
+}

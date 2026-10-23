@@ -1,5 +1,19 @@
 # CJ-002 local candidate evidence
 
+## 2026-10-23 provider-entry P2 返修
+
+独立 Testing 对 `50cd98f` 的两项 P2 已在原 owner 范围修复：显式 certifi TLS 验证上下文在 transport 构造前禁用环境 keylog 路径；对截断 JSON 的普通 Unicode 转义做有界保守识别，返回/持久化前拒绝可恢复 key。作者定向 3 组 PASS，待原双门复审；真实调用仍禁止。原逐字探针的 raw-HTTPX keylog 观察仍为 true/aggregate exit 1，实际修复入口另测无 keylog 文件；不把上游观察改报绿。准确原探针归因、结果与复现见 [P2 报告](regressions/provider-p2/REPORT.md)。原 FAIL、17+3 与原新增 7 组均保留，未重跑旧套件。
+
+## 2026-10-23 真实验收续作
+
+本段原固定 head `edb72ff` 的局部 Review/Testing 已接受并进入主线。Main 本次只授权原 owner 准备/执行原 Issue #2 最短真实验收；最新 JT 百炼测试费用授权已接受：费用不设上限，由百炼余额控制。下方原报告中的“费用上限待明确”是历史状态，现已覆盖，不再作为等待事项。
+
+新增独立真实验收入口及配置模板、7 组新增代码离线检查；原 runtime/ledger/SDK probe/validate/锁文件逐字节保全，17+3 未重跑。入口真实发送需要精确 CJ workspace、region、官方 base URL 与专用新 key 的临时安全注入，当前均未配置；仅核存在性，未读取秘密/旧账号/Keychain。真实 provider UNRUN，不能关闭原票。准确安全步骤、命令与范围见 [REAL-ACCEPTANCE.md](REAL-ACCEPTANCE.md)，准备证据见 `evidence/provider-readiness-20261023.json`。
+
+本次 requested `gpt-6.1-sol / medium`（Main 官方调用）；effective UNKNOWN。原 `candidate-sources.json` 对应旧 head，不重写历史 hash；新增候选源码 hash 由 readiness 文件记录。本票无 App/Auth/DB 整票前置，本轮不追加 PostgreSQL 门槛。
+
+## 2026-10-21 原本地段（保留）
+
 - taskID：CJ-002；Issue：[#2](https://github.com/JTCAO515/Go2China/issues/2)
 - status：本地选型段 code-ready；整票未完成，待 Main 路由 Review/Testing。
 - repository：`https://github.com/JTCAO515/Go2China.git`

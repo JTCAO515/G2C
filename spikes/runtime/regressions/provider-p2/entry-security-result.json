@@ -1,0 +1,24 @@
+{
+  "scope": "OFFLINE_P2_REGRESSION_ONLY",
+  "real_provider": "UNRUN",
+  "checks": [
+    {
+      "case": "explicit-verifying-context-no-ambient-keylog-file",
+      "status": "PASS"
+    },
+    {
+      "case": "truncated-complete-nested-mixed-escape-and-safe-controls",
+      "status": "PASS"
+    },
+    {
+      "case": "actual-provider-step-escape-rejection-safe-output-and-pretransport-tls-control",
+      "status": "PASS",
+      "rejected_responses": 4,
+      "safe_completed": 1,
+      "verified_context_constructions": 5
+    }
+  ],
+  "original_probe_sha256": "03311aa4162286c7c9320d2a69c50fdbef1f277c0b1dc4cb9ac45541ec87e2b5",
+  "candidate_source_sha256": "7adaba6ac21dca6b09e8de188fcad8976f692d77b8d592ab83776ee6cd8331a7",
+  "prior_17_plus_3_and_7_groups": "REUSED_NOT_RERUN"
+}
