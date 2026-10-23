@@ -1,0 +1,9 @@
+{
+  "parent": "fca5b6c3259355a097b4ee06e7ea4285a927cb13",
+  "new_tests": "2 methods / 3 cases; stale same-binding row exit with/without B appearance; same-row new appearance",
+  "result": "PASS 19 methods / 28 cases localized synthetic-Shell graph",
+  "host_tests_sha256": "e46d5903e7225d262607de4ccea523659a6cdac84f97c83acc340f7d6c7550f2",
+  "review_repro_sha256": "122cee3bf744dc4b180534a810b3f6e8a8da062cf33c1656f2e167e7ae203574",
+  "public_api_macos": "PASS",
+  "canonical_graph": "UNRUN at this repair commit"
+}

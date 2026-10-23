@@ -26,10 +26,17 @@ import CJAPI
     fileprivate let epoch: UUID
 }
 
+/// Opaque UI lifetime only; confers no source or write permission.
+public struct MemoryManagementPresentationLifetime {
+    fileprivate let bindingID: UUID
+    fileprivate let presentationID: UUID
+}
+
 @MainActor @Observable public final class MemoryContainerHost {
     private let shell: ShellState
     private var binding: MemoryContainerBinding?
     private var epoch = UUID()
+    private var presentationEpoch = UUID()
     public private(set) var busy = false
     private var groupsValue: MemoryLoad<[Components.Schemas.MemoryGroup]> = .unconfigured
     private var itemsValue: MemoryLoad<[Components.Schemas.MemoryItem]> = .unconfigured
@@ -40,6 +47,50 @@ import CJAPI
     private var group: Components.Schemas.MemoryGroup?
     private var itemID: String?
     private var queriedID: String?
+    private var managementSelectionValue: MemoryManagementSelection?
+    private var managementPendingValue: MemoryLoad<[MemoryManagementPending]> = .unconfigured
+    public private(set) var managementIdentity = UUID()
+    public var managementSelection: MemoryManagementSelection? { current ? managementSelectionValue : nil }
+    public var managementPending: MemoryLoad<[MemoryManagementPending]> { current ? managementPendingValue : .unconfigured }
+    // Capture one validated binding for each child view, avoiding mixed inputs if
+    // the trusted callback synchronously replaces the host binding.
+    var managementPresentation: (client: MemoryClient, binding: MemoryBinding, selection: MemoryManagementSelection?)? {
+        guard current, let binding else { return nil }
+        return (binding.client, binding.memory, managementSelectionValue)
+    }
+
+    private func retireManagement() {
+        managementSelectionValue = nil; managementPendingValue = .unconfigured
+        managementIdentity = UUID()
+        binding?.client.invalidate()
+    }
+    /// Each actual appearance owns a lifetime, retained by that view in State.
+    /// Selection changes also retire it before the next view can appear.
+    public func beginManagementPresentation() -> MemoryManagementPresentationLifetime? {
+        guard current, let binding else { return nil }
+        presentationEpoch = UUID()
+        return MemoryManagementPresentationLifetime(bindingID: binding.id, presentationID: presentationEpoch)
+    }
+    /// A delayed exit from A must not retire B, even under the same binding.
+    public func leaveManagementPresentation(_ lifetime: MemoryManagementPresentationLifetime?) {
+        guard let lifetime, current, binding?.id == lifetime.bindingID,
+              presentationEpoch == lifetime.presentationID else { return }
+        presentationEpoch = UUID()
+        retireManagement(); epoch = UUID(); busy = false
+        detailValue = .unconfigured
+    }
+    public func loadManagementPending(context: MemoryContainerAction?) {
+        guard let context, accepts(context) else { return }
+        retireManagement()
+        let token = UUID(); epoch = token; busy = true; managementPendingValue = .loading
+        do {
+            let records = try context.binding.client.managementPending(binding: context.binding.memory)
+            guard owns(context.binding, token) else { return }
+            managementPendingValue = .loaded(records); busy = false
+        } catch {
+            if owns(context.binding, token) { managementPendingValue = .failed; busy = false }
+        }
+    }
     public var isConfigured: Bool { current }
     public var isSynthetic: Bool { current && binding?.synthetic == true }
     public var groups: MemoryLoad<[Components.Schemas.MemoryGroup]> { current ? groupsValue : .unconfigured }
@@ -61,16 +112,22 @@ import CJAPI
     }
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
     private var current: Bool {
-        guard let binding, !shell.messageBindingBlocked, binding.shellGeneration == shell.generation else { return false }
+        guard let binding else { return false }
+        guard !shell.messageBindingBlocked, binding.shellGeneration == shell.generation else {
+            invalidate(); return false
+        }
         let observed = binding.current()
-        return self.binding?.id == binding.id && observed == binding.memory
-            && binding.shellGeneration == shell.generation && !shell.messageBindingBlocked
+        guard self.binding?.id == binding.id else { return false }
+        guard observed == binding.memory, binding.shellGeneration == shell.generation, !shell.messageBindingBlocked else {
+            invalidate(); return false
+        }
+        return true
     }
     @discardableResult public func bind(_ value: MemoryContainerBinding) -> Bool {
         guard binding == nil, (1...100).contains(value.pageSize), !shell.messageBindingBlocked,
               value.shellGeneration == shell.generation, value.current() == value.memory,
               binding == nil, !shell.messageBindingBlocked, value.shellGeneration == shell.generation else { return false }
-        binding = value; epoch = UUID()
+        binding = value; epoch = UUID(); presentationEpoch = UUID()
         return true
     }
     public func captureAction() -> MemoryContainerAction? {
@@ -84,16 +141,18 @@ import CJAPI
         current && binding?.id == original.id && epoch == token
     }
     public func invalidate() {
-        let previous = binding?.client
+        presentationEpoch = UUID()
+        retireManagement()
         binding = nil; epoch = UUID(); busy = false
         groupsValue = .unconfigured; itemsValue = .unconfigured; detailValue = .unconfigured
         pendingValue = .unconfigured; saveValue = .unconfigured
         pages = []; group = nil; itemID = nil; queriedID = nil
-        previous?.invalidate() // canonical method only rotates local generation; no resource callback
     }
     public func suspendForBackground() { invalidate() } // no automatic rebind/GET on foreground
     public func loadGroups(context: MemoryContainerAction?) async {
         guard let context, accepts(context) else { return }
+        presentationEpoch = UUID()
+        retireManagement()
         let token = UUID(); epoch = token; busy = true; groupsValue = .loading
         group = nil; itemID = nil; pages = []; itemsValue = .unconfigured; detailValue = .unconfigured
         do {
@@ -105,6 +164,8 @@ import CJAPI
     @discardableResult public func selectGroup(_ value: Components.Schemas.MemoryGroup, context: MemoryContainerAction?) -> Bool {
         guard let context, accepts(context), case .loaded(let rows) = groupsValue,
               let selected = rows.first(where: { Data($0.subject.utf8) == Data(value.subject.utf8) && $0.status == value.status }) else { return false }
+        presentationEpoch = UUID()
+        retireManagement()
         epoch = UUID(); group = selected; pages = []; itemID = nil; itemsValue = .unconfigured; detailValue = .unconfigured
         return true
     }
@@ -114,6 +175,8 @@ import CJAPI
         guard let context, accepts(context), let group, !more || hasMore, accepts(context) else { return }
         let after = more ? pages.last?.next : nil
         if !more { pages = [] }
+        presentationEpoch = UUID()
+        retireManagement()
         let token = UUID(); epoch = token; busy = true; itemsValue = .loading
         itemID = nil; detailValue = .unconfigured
         do {
@@ -129,19 +192,28 @@ import CJAPI
     @discardableResult public func selectItem(_ value: String, context: MemoryContainerAction?) -> Bool {
         guard let context, accepts(context), case .loaded(let rows) = itemsValue,
               rows.contains(where: { Data($0.command.item_id.utf8) == Data(value.utf8) }) else { return false }
+        presentationEpoch = UUID()
+        retireManagement()
         epoch = UUID(); itemID = value; detailValue = .unconfigured; return true
     }
     public func loadDetail(context: MemoryContainerAction?) async {
         guard let context, accepts(context), let itemID else { return }
+        retireManagement()
         let token = UUID(); epoch = token; busy = true; detailValue = .loading
         do {
             let value = try await context.binding.client.detail(itemID:itemID,binding:context.binding.memory)
             guard owns(context.binding,token) else { return }
+            if value != nil {
+                let selection = try context.binding.client.managementSelection(itemID: itemID, binding: context.binding.memory)
+                guard owns(context.binding, token) else { return }
+                managementSelectionValue = selection
+            }
             detailValue = .loaded(value); busy = false
         } catch { if owns(context.binding,token) { detailValue = .failed; busy = false } }
     }
     public func loadPending(context: MemoryContainerAction?) {
         guard let context, accepts(context) else { return }
+        retireManagement()
         let token = UUID(); epoch = token; busy = true; pendingValue = .loading
         queriedID = nil; saveValue = .unconfigured
         do {
@@ -153,6 +225,7 @@ import CJAPI
     public func queryOriginal(_ operationID: String, context: MemoryContainerAction?) async {
         guard let context, accepts(context), case .loaded(let records) = pendingValue,
               records.contains(where: { Data($0.operationID.utf8) == Data(operationID.utf8) }) else { return }
+        retireManagement()
         let token = UUID(); epoch = token; busy = true
         queriedID = operationID; saveValue = .unconfigured
         do {

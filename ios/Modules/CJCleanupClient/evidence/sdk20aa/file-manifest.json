@@ -1,0 +1,14 @@
+{
+  "Package.resolved": "05415a5de3cd277ba45f6cbc5e113f47fe089876ceb4a755af3e2d812ceeb58f",
+  "Package.swift": "105706a2ce3a53a4691ea34236ffb153523886783e44206e22807088dde3626c",
+  "README.md": "43db10edd4e1b1d91245fde853e3fa98c32f6cfb0b52998822f5e681ce33ecb7",
+  "evidence/sdk20aa/RESULTS.md": "1604037fb044bb691d5e09d95222f09014e9f89f3bd5952dec62ead6588162f9",
+  "evidence/sdk20aa/compatibility.json": "e46bae24735ea9ea77110fd748f70d31a6f1a0909b8531c26e835bd272286591",
+  "evidence/sdk20aa/dependency-pin.json": "396a38c8a31a17b94b12e21c9aa088d4531e0b5663fdb2e470271ae130d77bb2",
+  "evidence/sdk20aa/ios-compile.txt.gz": "791956766cc9b3bc110c40097a2870e13bfe5d8c11c295c8cc742693a7e360c8",
+  "evidence/sdk20aa/package-graph.json": "258b2863a6954cfc6a42c8066f41d4449a9409aa4cc93b592c199ee3c87b1a02",
+  "evidence/sdk20aa/prepare.txt": "5ad687ef913369b9e057dbd713f0a181130003dfe4691d37f8c8f7f90e1b96e5",
+  "evidence/sdk20aa/selected-tests.txt.gz": "e90bd16910a448b0c054e6a301b5c84242bf0866ae8a6e0672f40c7c73ff4199",
+  "evidence/sdk20aa/single-sdk.txt": "c172f86f90f64160b53d05598b39bed11cedbfaf70bd9625d6362a214df3afa8",
+  "scripts/prepare_dependencies.py": "0daf675514b21866c77fc80c76096c05a2eddd9c8997da45f9fe09fb5fed0513"
+}

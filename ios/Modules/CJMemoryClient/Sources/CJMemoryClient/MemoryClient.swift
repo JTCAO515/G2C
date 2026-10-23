@@ -14,11 +14,11 @@ struct MemoryTransport: ClientTransport {
     let writeEnabled: Bool
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        let paths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items"]
+        let paths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items", "applyMemoryManagementAction": "/v1/memory-management-actions", "queryMemoryManagementReceipt": "/v1/memory-management-receipts"]
         guard baseURL == endpoint.url, let path = paths[operationID],
               request.path?.split(separator: "?", maxSplits: 1).first.map(String.init) == path,
-              request.method == (operationID == "saveMemory" ? .post : .get),
-              operationID != "saveMemory" || writeEnabled else { throw MemoryFailure.liveWriteUnavailable }
+              request.method == (["saveMemory", "applyMemoryManagementAction"].contains(operationID) ? .post : .get),
+              !["saveMemory", "applyMemoryManagementAction", "queryMemoryManagementReceipt"].contains(operationID) || writeEnabled else { throw MemoryFailure.liveWriteUnavailable }
         var request = request
         request.headerFields[.authorization] = "Bearer " + bearer
         let data: Data?
@@ -27,6 +27,9 @@ struct MemoryTransport: ClientTransport {
         let (response, body) = try await underlying.send(request, body: data.map(HTTPBody.init), baseURL: baseURL, operationID: operationID)
         try await validate()
         guard !(300..<400).contains(response.status.code), let body else { throw MemoryFailure.invalidResponse }
+        if ["applyMemoryManagementAction", "queryMemoryManagementReceipt"].contains(operationID) {
+            guard response.headerFields[.cacheControl] == "no-store" else { throw MemoryFailure.invalidResponse }
+        }
         let bytes = try await Data(collecting: body, upTo: endpoint.maximumResponseBytes)
         try await validate()
         var strict = StrictMemoryJSON(bytes: Array(bytes)); try strict.check()
@@ -60,21 +63,26 @@ public enum MemorySaveResult: Sendable {
     private let transport: any ClientTransport
     private let store: MemoryPendingStore?
     private let writeEnabled: Bool
+    private let managementStore: MemoryManagementPendingStore?
+    private var acceptedManagementItems: [Data: MemoryAcceptedItem] = [:]
+    private var managementConfirmed: Set<Data> = []
+    private var usedManagementSelections: Set<UUID> = []
+    private var managementIDsBySelection: [UUID: String] = [:]
     private let owner = UUID()
     private var generation = UUID()
     private var confirmed: Set<Data> = []
     public init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore?,
-                liveReadTransport: NoRedirectTransport) {
+                liveReadTransport: NoRedirectTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
         self.endpoint = endpoint; self.credentials = credentials; current = currentBinding
-        store = pendingStore; transport = liveReadTransport; writeEnabled = false
+        store = pendingStore; transport = liveReadTransport; writeEnabled = false; managementStore = managementPendingStore
     }
     /// Internal capability: tests can intercept POST, public consumers cannot enable live writes.
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
          currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore?,
-         interceptedTransport: any ClientTransport) {
+         interceptedTransport: any ClientTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
         self.endpoint = endpoint; self.credentials = credentials; current = currentBinding
-        store = pendingStore; transport = interceptedTransport; writeEnabled = true
+        store = pendingStore; transport = interceptedTransport; writeEnabled = true; managementStore = managementPendingStore
     }
     private func check(_ binding: MemoryBinding, _ token: UUID) throws {
         guard generation == token else { throw MemoryFailure.staleBinding }
@@ -87,8 +95,8 @@ public enum MemorySaveResult: Sendable {
         try check(binding, token)
         return token
     }
-    public func invalidate() { generation = UUID(); confirmed.removeAll() }
-    private func api(_ binding: MemoryBinding, _ token: UUID, original: MemoryPending? = nil) async throws -> Client {
+    public func invalidate() { generation = UUID(); confirmed.removeAll(); acceptedManagementItems.removeAll(); managementConfirmed.removeAll(); usedManagementSelections.removeAll(); managementIDsBySelection.removeAll() }
+    private func api(_ binding: MemoryBinding, _ token: UUID, original: MemoryPending? = nil, managementOriginal: MemoryManagementPending? = nil, managementTarget: MemoryManagementSelection? = nil) async throws -> Client {
         try check(binding, token)
         let bearer: String?
         do { bearer = try await credentials(binding) }
@@ -104,6 +112,13 @@ public enum MemorySaveResult: Sendable {
                                 try store.requireOriginal(original)
                                 try check(binding, token)
                                 try store.validateDirectory()
+                            }
+                            if let managementOriginal {
+                                guard let managementStore else { throw MemoryFailure.unconfigured }
+                                try managementStore.requireOriginal(managementOriginal)
+                                try check(binding, token)
+                                if let managementTarget { try validateManagementSelection(managementTarget, binding: binding, token: token) }
+                                try managementStore.validateDirectory()
                             }
                         }))
     }
@@ -200,6 +215,7 @@ public enum MemorySaveResult: Sendable {
             case .case2(let null):
                 guard null.value == nil, body.items.isEmpty else { throw MemoryFailure.invalidResponse }; next = nil
             }
+            try rememberManagementItems(body.items, binding: binding, token: token)
             return MemoryPage(items: body.items, next: next)
         case .default(let status, let value): throw MemoryFailure.rejected(status, try value.body.json.error.code)
         }
@@ -214,8 +230,13 @@ public enum MemorySaveResult: Sendable {
             switch try value.body.json.item {
             case .MemoryItem(let item):
                 try validateItem(item)
-                guard same(item.command.item_id, itemID) else { throw MemoryFailure.invalidResponse }; return item
-            case .case2(let null): guard null.value == nil else { throw MemoryFailure.invalidResponse }; return nil
+                guard same(item.command.item_id, itemID) else { throw MemoryFailure.invalidResponse }
+                try rememberManagementItems([item], binding: binding, token: token)
+                return item
+            case .case2(let null):
+                guard null.value == nil else { throw MemoryFailure.invalidResponse }
+                acceptedManagementItems.removeValue(forKey: Data(itemID.utf8))
+                return nil
             }
         case .default(let status, let value): throw MemoryFailure.rejected(status, try value.body.json.error.code)
         }
@@ -229,5 +250,110 @@ public enum MemorySaveResult: Sendable {
         case .case1(let id): guard c.extent == .current, !id.isEmpty else { throw MemoryFailure.invalidResponse }
         case .case2(let null): guard c.extent == .long_term, null.value == nil else { throw MemoryFailure.invalidResponse }
         }
+    }
+}
+
+extension MemoryClient {
+    /// Public live composition is unavailable while the root lifecycle factory is closed.
+    public var managementAvailable: Bool { writeEnabled && managementStore != nil && endpoint.maximumRequestBytes <= 32768 && endpoint.maximumResponseBytes <= 65536 }
+    func managementPresentationIsCurrent(_ binding: MemoryBinding) -> Bool {
+        do { try check(binding, generation); return true } catch { return false }
+    }
+    func managementActionID(for selection: MemoryManagementSelection, binding: MemoryBinding) -> String? {
+        guard selection.owner == owner, selection.binding == binding, managementPresentationIsCurrent(binding) else { return nil }
+        return managementIDsBySelection[selection.readStamp]
+    }
+    private func requireManagement() throws {
+        guard managementAvailable else { throw MemoryFailure.unconfigured }
+    }
+    private func rememberManagementItems(_ items: [Components.Schemas.MemoryItem], binding: MemoryBinding, token: UUID) throws {
+        try check(binding, token)
+        for item in items {
+            if let old = acceptedManagementItems[Data(item.command.item_id.utf8)], old.binding == binding {
+                guard item.version >= old.item.version else { throw MemoryFailure.invalidResponse }
+            }
+        }
+        for item in items { acceptedManagementItems[Data(item.command.item_id.utf8)] = MemoryAcceptedItem(item: item, binding: binding) }
+    }
+    /// No raw-item/version constructor: the original accepted reader provides both versions.
+    public func managementSelection(itemID: String, binding: MemoryBinding) throws -> MemoryManagementSelection {
+        let token = try begin(binding)
+        guard let accepted = acceptedManagementItems[Data(itemID.utf8)], accepted.binding == binding,
+              accepted.item.version > 0, accepted.item.version < Int64.max, accepted.item.command.source_version > 0 else { throw MemoryFailure.staleBinding }
+        return MemoryManagementSelection(itemID: accepted.item.command.item_id, expectedVersion: accepted.item.version,
+            expectedSourceVersion: accepted.item.command.source_version, sourceID: accepted.item.command.source_id,
+            owner: owner, binding: binding, readStamp: accepted.stamp)
+    }
+    private func validateManagementSelection(_ selection: MemoryManagementSelection, binding: MemoryBinding, token: UUID) throws {
+        try check(binding, token)
+        guard selection.owner == owner, selection.binding == binding,
+              let accepted = acceptedManagementItems[Data(selection.itemID.utf8)], accepted.binding == binding,
+              accepted.stamp == selection.readStamp, accepted.item.version == selection.expectedVersion,
+              accepted.item.command.source_version == selection.expectedSourceVersion,
+              same(accepted.item.command.source_id, selection.sourceID) else { throw MemoryFailure.staleBinding }
+    }
+    public func managementPending(binding: MemoryBinding) throws -> [MemoryManagementPending] {
+        let token = try begin(binding)
+        guard let managementStore else { throw MemoryFailure.unconfigured }
+        try managementStore.validate(binding)
+        let records = try managementStore.pending(); try check(binding, token)
+        return records
+    }
+    public func applyManagement(_ operation: Components.Schemas.MemoryManagementAction.operationPayload,
+                                selection: MemoryManagementSelection, binding: MemoryBinding) async throws -> MemoryManagementResult {
+        let token = try begin(binding); try requireManagement()
+        try validateManagementSelection(selection, binding: binding, token: token)
+        guard let managementStore else { throw MemoryFailure.unconfigured }
+        try managementStore.validate(binding)
+        guard try managementStore.pending().allSatisfy({ managementConfirmed.contains(Data($0.actionID.utf8)) }),
+              !usedManagementSelections.contains(selection.readStamp) else { throw MemoryFailure.pendingRequiresQuery }
+        try validateManagementSelection(selection, binding: binding, token: token)
+        let original = try MemoryManagementPending(operation: operation, selection: selection)
+        guard original.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
+        usedManagementSelections.insert(selection.readStamp)
+        managementIDsBySelection[selection.readStamp] = original.actionID
+        try managementStore.append(original) { try validateManagementSelection(selection, binding: binding, token: token) }
+        try validateManagementSelection(selection, binding: binding, token: token)
+        let client = try await api(binding, token, managementOriginal: original, managementTarget: selection)
+        let response = try await exchange(binding, token) {
+            try await client.applyMemoryManagementAction(.init(body: .binary(HTTPBody(original.originalUTF8))))
+        }
+        switch response {
+        case .ok(let value):
+            let result = try settleManagement(value.body.json.receipt, original: original, binding: binding, token: token)
+            // Invalidate this view snapshot, never mutate it to the historical receipt's state.
+            acceptedManagementItems.removeValue(forKey: Data(selection.itemID.utf8))
+            return result
+        case .default(let status, let value): throw MemoryFailure.rejected(status, try value.body.json.error.code)
+        }
+    }
+    public func queryManagement(actionID: String, binding: MemoryBinding) async throws -> MemoryManagementResult {
+        let token = try begin(binding); try requireManagement()
+        guard let managementStore else { throw MemoryFailure.unconfigured }
+        try managementStore.validate(binding)
+        guard let original = try managementStore.pending().first(where: { same($0.actionID, actionID) }) else { throw MemoryFailure.invalidInput }
+        try check(binding, token)
+        let client = try await api(binding, token, managementOriginal: original)
+        let response = try await exchange(binding, token) {
+            try await client.queryMemoryManagementReceipt(.init(query: .init(action_id: original.actionID)))
+        }
+        switch response {
+        case .ok(let value):
+            switch try value.body.json.receipt {
+            case .MemoryManagementReceipt(let receipt): return try settleManagement(receipt, original: original, binding: binding, token: token)
+            case .case2(let null): guard null.value == nil else { throw MemoryFailure.invalidResponse }; return .notObserved
+            }
+        case .default(let status, let value): throw MemoryFailure.rejected(status, try value.body.json.error.code)
+        }
+    }
+    private func settleManagement(_ receipt: Components.Schemas.MemoryManagementReceipt, original: MemoryManagementPending,
+                                  binding: MemoryBinding, token: UUID) throws -> MemoryManagementResult {
+        try check(binding, token)
+        let command = try original.command
+        guard same(receipt.action_id, original.actionID), same(receipt.item_id, command.item_id),
+              same(receipt.input_sha256, original.expectedSHA256), receipt.version == command.expected_version + 1,
+              receipt.status == (command.operation == .pause ? .disabled : .active) else { throw MemoryFailure.invalidResponse }
+        managementConfirmed.insert(Data(original.actionID.utf8))
+        return .historicalReceipt(receipt)
     }
 }

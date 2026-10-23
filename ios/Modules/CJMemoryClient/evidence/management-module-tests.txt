@@ -1,0 +1,99 @@
+Private fixed input graph: management-20aa-09facf21
+Command: swift test --package-path Modules/CJMemoryClient --scratch-path artifacts/swift-build --force-resolved-versions
+Build complete! (3.05秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentOpaqueViewIdentityTests started.
+◇ Suite MemoryClientTests started.
+◇ Suite IndependentContractAndStoreTests started.
+◇ Suite MemoryManagementTests started.
+◇ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() started.
+◇ Test originalBytesPersistBeforeCredentialAwaitAndSurviveReopen() started.
+◇ Test officialProviderPurposeExpectedIDAndInvalidation() started.
+◇ Test opaqueDetailRequiresExactBytes() started.
+◇ Test encryptedReopenRejectsWrongKeyIDCorruptionAndUnknownFiles() started.
+◇ Test optionalOccurrenceCannotEmitServerRejectedBlankValue() started.
+◇ Test directoryReplacementInsideKeyCallbackCannotLoseDurableOriginalBeforePOST() started.
+◇ Test inferenceStillCannotSettleAsActive() started.
+◇ Test opaquePendingIDsPreserveNFDAndReadLegacyUUIDFiles() started.
+◇ Test malformedDuplicateResponseAndWrongItemDoNotPublish() started.
+◇ Test lateResponseFromOldBindingIsRejected() started.
+◇ Test storageMissingKeyAndBindingChangeBeforeAppendFailClosed() started.
+◇ Test capturedSourceVersionIsNotDefaultedAndDisabledDoesNotAuthorizeResume() started.
+◇ Test semanticCandidateForExplicitPreferenceIsAValidReceipt() started.
+◇ Test selectionChangedAtCredentialAwaitRejectsBeforePost() started.
+◇ Test credentialCallbackReplacementRejectsDispatchAndRetainsOriginalCiphertext() started.
+◇ Test officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test unknownReopenAndNullQueryDoNotAuthorizeResend() started.
+◇ Test actualCancellationAfterDispatchDoesNotConfirm() started.
+◇ Test liveWriteIsUnavailableBeforeStorageAndCredentials() started.
+◇ Test expiredCredentialsAreNotEmptyGroups() started.
+◇ Test unknownFileAndDirectoryReplacementFailClosed() started.
+◇ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() started.
+◇ Test sameKeyCannotDecryptAnotherAccountAssociatedData() started.
+◇ Test nonNullMalformedReceiptIsNotAbsence() started.
+◇ Test badHashCannotSettleAndCandidateIsDistinct() started.
+◇ Test groupsAndEmptyListUseOfficialClient() started.
+◇ Test wrongHashAndMalformedNonNullNeverSettle() started.
+◇ Test cannotCaptureUnacceptedOrCrossClientSelection() started.
+◇ Test credentialSwitchKeepsOriginalWithoutDispatch() started.
+◇ Test nullAfterUnknownAndReopenNeverResends() started.
+◇ Test credentialReentryInvalidatesOlderRead() started.
+◇ Test pauseResumeAndHistoricalQueryNeverRollbackCurrentRead() started.
+◇ Test cancellationRetainsOriginal() started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00.123456Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test defaultPublicManagementIsUnavailableBeforeCredentialsOrJournal() started.
+◇ Test lifecycleCiphertextCannotBeReadAsManualSaveLedger() started.
+◇ Test originalQuerySettlesPersistedHashOnly() started.
+◇ Test directoryReplacementAtManagementKeyLookupNeverDispatches() started.
+◇ Test actualCancelledPostKeepsOriginalAndOnlyFreshQuerySettles() started.
+◇ Test blankManualFieldsFailBeforePersistenceOrCredentials() started.
+◇ Test credentialAccountSwitchDoesNotSend() started.
+✔ Test directoryReplacementInsideKeyCallbackCannotLoseDurableOriginalBeforePOST() passed after 0.037 seconds.
+✔ Test liveWriteIsUnavailableBeforeStorageAndCredentials() passed after 0.037 seconds.
+✔ Test officialProviderPurposeExpectedIDAndInvalidation() passed after 0.042 seconds.
+✔ Test encryptedReopenRejectsWrongKeyIDCorruptionAndUnknownFiles() passed after 0.042 seconds.
+✔ Test opaquePendingIDsPreserveNFDAndReadLegacyUUIDFiles() passed after 0.042 seconds.
+✔ Test optionalOccurrenceCannotEmitServerRejectedBlankValue() passed after 0.042 seconds.
+✔ Test unknownFileAndDirectoryReplacementFailClosed() passed after 0.042 seconds.
+✔ Test sameKeyCannotDecryptAnotherAccountAssociatedData() passed after 0.042 seconds.
+✔ Test storageMissingKeyAndBindingChangeBeforeAppendFailClosed() passed after 0.042 seconds.
+✔ Test credentialAccountSwitchDoesNotSend() passed after 0.043 seconds.
+✔ Test cancellationRetainsOriginal() passed after 0.044 seconds.
+✔ Test credentialCallbackReplacementRejectsDispatchAndRetainsOriginalCiphertext() passed after 0.046 seconds.
+✔ Test acceptedOpaqueRowsHaveUniqueCurrentViewIDs() passed after 0.050 seconds.
+✔ Suite IndependentOpaqueViewIdentityTests passed after 0.051 seconds.
+✔ Test blankManualFieldsFailBeforePersistenceOrCredentials() passed after 0.052 seconds.
+✔ Test lateResponseFromOldBindingIsRejected() passed after 0.052 seconds.
+✔ Test nonNullMalformedReceiptIsNotAbsence() passed after 0.053 seconds.
+✔ Test originalBytesPersistBeforeCredentialAwaitAndSurviveReopen() passed after 0.053 seconds.
+✔ Test inferenceStillCannotSettleAsActive() passed after 0.054 seconds.
+✔ Test expiredCredentialsAreNotEmptyGroups() passed after 0.054 seconds.
+✔ Test originalQuerySettlesPersistedHashOnly() passed after 0.056 seconds.
+✔ Test opaqueDetailRequiresExactBytes() passed after 0.059 seconds.
+✔ Test selectionChangedAtCredentialAwaitRejectsBeforePost() passed after 0.059 seconds.
+✔ Test credentialSwitchKeepsOriginalWithoutDispatch() passed after 0.060 seconds.
+✔ Test defaultPublicManagementIsUnavailableBeforeCredentialsOrJournal() passed after 0.060 seconds.
+✔ Test directoryReplacementAtManagementKeyLookupNeverDispatches() passed after 0.061 seconds.
+✔ Test actualCancellationAfterDispatchDoesNotConfirm() passed after 0.063 seconds.
+✔ Test groupsAndEmptyListUseOfficialClient() passed after 0.063 seconds.
+✔ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() passed after 0.064 seconds.
+✔ Test semanticCandidateForExplicitPreferenceIsAValidReceipt() passed after 0.065 seconds.
+✔ Suite IndependentContractAndStoreTests passed after 0.066 seconds.
+✔ Test lifecycleCiphertextCannotBeReadAsManualSaveLedger() passed after 0.065 seconds.
+✔ Test badHashCannotSettleAndCandidateIsDistinct() passed after 0.066 seconds.
+✔ Test nullAfterUnknownAndReopenNeverResends() passed after 0.066 seconds.
+✔ Test credentialReentryInvalidatesOlderRead() passed after 0.067 seconds.
+✔ Test malformedDuplicateResponseAndWrongItemDoNotPublish() passed after 0.067 seconds.
+✔ Test cannotCaptureUnacceptedOrCrossClientSelection() passed after 0.067 seconds.
+✔ Test officialDateDecoderAndKeysetPage(timestamp:) with 2 test cases passed after 0.071 seconds.
+✔ Suite MemoryClientTests passed after 0.071 seconds.
+✔ Test wrongHashAndMalformedNonNullNeverSettle() passed after 0.074 seconds.
+✔ Test actualCancelledPostKeepsOriginalAndOnlyFreshQuerySettles() passed after 0.075 seconds.
+✔ Test unknownReopenAndNullQueryDoNotAuthorizeResend() passed after 0.080 seconds.
+✔ Test pauseResumeAndHistoricalQueryNeverRollbackCurrentRead() passed after 0.081 seconds.
+✔ Test capturedSourceVersionIsNotDefaultedAndDisabledDoesNotAuthorizeResume() passed after 0.081 seconds.
+✔ Suite MemoryManagementTests passed after 0.081 seconds.
+✔ Test run with 41 tests in 4 suites passed after 0.082 seconds.

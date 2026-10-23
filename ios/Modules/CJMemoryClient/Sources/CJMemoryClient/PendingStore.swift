@@ -52,21 +52,30 @@ func validateManual(_ command: Components.Schemas.MemoryManualSaveCommand) throw
 func same(_ a: String, _ b: String) -> Bool { Data(a.utf8) == Data(b.utf8) }
 func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 
+protocol MemoryJournalRecord: Codable {
+    var journalID: String { get }
+    var originalUTF8: Data { get }
+    var expectedSHA256: String { get }
+    func validate() throws
+}
+extension MemoryPending: MemoryJournalRecord { var journalID: String { operationID } }
+
 /// Immutable, exclusive encrypted records. Reopening grants query only; no resend/delete API.
-@MainActor public final class MemoryPendingStore {
+@MainActor final class MemoryEncryptedRecords<Record: MemoryJournalRecord> {
     private let root: URL
     private let directory: Int32
     private let maximumBytes: Int
     private let maximumRecords: Int
     private let namespace: MessageKeyNamespace
+    private let domain: String
     private let keyID: UUID
     private let key: () throws -> SymmetricKey
-    private var ad: Data { Data("CJMemoryPending|1|\(namespace.environment.uuidString)|\(namespace.account.uuidString)|\(namespace.purpose.rawValue)|\(keyID.uuidString)".utf8) }
-    public convenience init(directory: URL, maximumBytes: Int, maximumRecords: Int, binding: MemoryBinding,
-                            expectedKeyID: UUID, provider: any MessageEncryptionKeyProvider) throws {
+    private var ad: Data { Data("\(domain)|1|\(namespace.environment.uuidString)|\(namespace.account.uuidString)|\(namespace.purpose.rawValue)|\(keyID.uuidString)".utf8) }
+    convenience init(directory: URL, maximumBytes: Int, maximumRecords: Int, binding: MemoryBinding,
+                            expectedKeyID: UUID, provider: any MessageEncryptionKeyProvider, domain: String) throws {
         let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localMemoryPendingV1)
         guard provider.namespace == namespace else { throw MemoryFailure.keyUnavailable }
-        try self.init(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords, namespace: namespace, keyID: expectedKeyID) {
+        try self.init(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords, namespace: namespace, keyID: expectedKeyID, domain: domain) {
             guard provider.namespace == namespace else { throw MemoryFailure.keyUnavailable }
             let op = try provider.begin(.lookup)
             guard let key = try provider.existing(expectedID: expectedKeyID, for: op), provider.isCurrent(op),
@@ -75,7 +84,7 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         }
     }
     // Package-only test seam; no public raw key initializer and no platform key calls in tests.
-    init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID,
+    init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID, domain: String,
          key: @escaping () throws -> SymmetricKey) throws {
         guard maximumBytes > 0, maximumBytes <= Int.max - 28, maximumRecords > 0, directory.isFileURL,
               directory.standardizedFileURL.path == directory.resolvingSymlinksInPath().path else { throw MemoryFailure.storageUnavailable }
@@ -84,7 +93,7 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         var st = stat()
         guard fstat(fd, &st) == 0, st.st_uid == getuid(), st.st_mode & 0o077 == 0 else { close(fd); throw MemoryFailure.storageUnavailable }
         root = directory; self.directory = fd; self.maximumBytes = maximumBytes; self.maximumRecords = maximumRecords
-        self.namespace = namespace; self.keyID = keyID; self.key = key
+        self.namespace = namespace; self.keyID = keyID; self.key = key; self.domain = domain
     }
     deinit { close(directory) }
     func validate(_ binding: MemoryBinding) throws {
@@ -95,9 +104,9 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         guard memoryText(id) else { throw MemoryFailure.invalidInput }
         return digest(Data(id.utf8)) + ".memory"
     }
-    func append(_ pending: MemoryPending, validateBinding: () throws -> Void = {}) throws {
+    func append(_ pending: Record, validateBinding: () throws -> Void = {}) throws {
         let existing = try self.pending()
-        guard existing.count < maximumRecords, !existing.contains(where: { same($0.operationID, pending.operationID) }) else { throw MemoryFailure.storageUnavailable }
+        guard existing.count < maximumRecords, !existing.contains(where: { same($0.journalID, pending.journalID) }) else { throw MemoryFailure.storageUnavailable }
         try pending.validate()
         let plain = try JSONEncoder().encode(pending)
         guard plain.count <= maximumBytes else { throw MemoryFailure.invalidInput }
@@ -106,7 +115,7 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         try validateDirectory()
         try validateBinding()
         try validateDirectory()
-        let fd = openat(directory, try name(pending.operationID), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        let fd = openat(directory, try name(pending.journalID), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
         guard fd >= 0 else { throw MemoryFailure.storageUnavailable }
         defer { close(fd) }
         let count = bytes.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
@@ -121,12 +130,12 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
               current.st_mode & S_IFMT == S_IFDIR, current.st_uid == getuid(), current.st_mode & 0o077 == 0,
               root.path == root.resolvingSymlinksInPath().path else { throw MemoryFailure.storageUnavailable }
     }
-    func requireOriginal(_ expected: MemoryPending) throws {
-        guard let observed = try pending().first(where: { same($0.operationID, expected.operationID) }),
+    func requireOriginal(_ expected: Record) throws {
+        guard let observed = try pending().first(where: { same($0.journalID, expected.journalID) }),
               observed.originalUTF8 == expected.originalUTF8, same(observed.expectedSHA256, expected.expectedSHA256) else { throw MemoryFailure.storageUnavailable }
         try validateDirectory()
     }
-    public func pending() throws -> [MemoryPending] {
+    func pending() throws -> [Record] {
         try validateDirectory()
         let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
         guard names.count <= maximumRecords else { throw MemoryFailure.storageUnavailable }
@@ -146,14 +155,34 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
             let material = try key()
             try validateDirectory()
             let plain = try AES.GCM.open(AES.GCM.SealedBox(combined: bytes), using: material, authenticating: ad)
-            let pending = try JSONDecoder().decode(MemoryPending.self, from: plain)
+            let pending = try JSONDecoder().decode(Record.self, from: plain)
             try pending.validate()
-            let legacyName = UUID(uuidString: pending.operationID).map { $0.uuidString + ".memory" }
-            guard try name(pending.operationID) == filename || legacyName == filename else { throw MemoryFailure.storageUnavailable }
+            let legacyName = UUID(uuidString: pending.journalID).map { $0.uuidString + ".memory" }
+            guard try name(pending.journalID) == filename || legacyName == filename else { throw MemoryFailure.storageUnavailable }
             return pending
         }
         try validateDirectory()
-        guard Set(result.map { Data($0.operationID.utf8) }).count == result.count else { throw MemoryFailure.storageUnavailable }
+        guard Set(result.map { Data($0.journalID.utf8) }).count == result.count else { throw MemoryFailure.storageUnavailable }
         return result
     }
+}
+
+/// Manual-save journal. Its existing ciphertext format and public API remain unchanged.
+@MainActor public final class MemoryPendingStore {
+    private let storage: MemoryEncryptedRecords<MemoryPending>
+    public init(directory: URL, maximumBytes: Int, maximumRecords: Int, binding: MemoryBinding,
+                expectedKeyID: UUID, provider: any MessageEncryptionKeyProvider) throws {
+        storage = try MemoryEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
+            binding: binding, expectedKeyID: expectedKeyID, provider: provider, domain: "CJMemoryPending")
+    }
+    init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID,
+         key: @escaping () throws -> SymmetricKey) throws {
+        storage = try MemoryEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
+            namespace: namespace, keyID: keyID, domain: "CJMemoryPending", key: key)
+    }
+    func validate(_ binding: MemoryBinding) throws { try storage.validate(binding) }
+    func validateDirectory() throws { try storage.validateDirectory() }
+    func append(_ pending: MemoryPending, validateBinding: () throws -> Void = {}) throws { try storage.append(pending, validateBinding: validateBinding) }
+    func requireOriginal(_ expected: MemoryPending) throws { try storage.requireOriginal(expected) }
+    public func pending() throws -> [MemoryPending] { try storage.pending() }
 }

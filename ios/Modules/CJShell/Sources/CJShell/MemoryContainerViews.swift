@@ -58,20 +58,29 @@ struct MemoryContainerItems: View {
 struct MemoryContainerDetail: View {
     let host: MemoryContainerHost
     let language: ShellLanguage
+    @State private var presentation: MemoryManagementPresentationLifetime?
     var body: some View {
         let action = host.captureAction()
         List {
             MemoryDetailView(state: host.detail, language: language.memoryLanguage)
+            MemoryManagementHostControls(host: host, language: language)
+                .id(host.managementIdentity)
             Button(language.text("Load current detail", "读取当前详情")) {
                 Task { await host.loadDetail(context: action) }
             }.disabled(action == nil)
         }.navigationTitle(language.text("Memory detail", "记忆详情"))
+            .onAppear { presentation = host.beginManagementPresentation() }
+            .onDisappear {
+                host.leaveManagementPresentation(presentation)
+                presentation = nil
+            }
     }
 }
 
 struct MemoryContainerManual: View {
     let host: MemoryContainerHost
     let language: ShellLanguage
+    @State private var presentation: MemoryManagementPresentationLifetime?
     var body: some View {
         let action = host.captureAction()
         ScrollView {
@@ -87,6 +96,8 @@ struct MemoryContainerManual: View {
                 } else {
                     Text(language.text("Memory is not configured.", "记忆尚未配置。"))
                 }
+                MemoryManagementHostRecovery(host: host, language: language)
+                    .id(host.managementIdentity)
                 Divider()
                 Text(language.text("Previous save operations", "此前的保存操作")).font(.headline)
                 Button(language.text("Read original operations", "读取原操作")) { host.loadPending(context: action) }
@@ -118,6 +129,11 @@ struct MemoryContainerManual: View {
                     .font(.caption)
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }.navigationTitle(language.text("Add memory", "新增记忆"))
+            .onAppear { presentation = host.beginManagementPresentation() }
+            .onDisappear {
+                host.leaveManagementPresentation(presentation)
+                presentation = nil
+            }
     }
 }
 #endif

@@ -4,7 +4,7 @@ let package = Package(name: "CJOfflineTrip", platforms: [.iOS(.v17), .macOS(.v14
     products: [.library(name: "CJOfflineTrip", targets: ["CJOfflineTrip"])],
     dependencies: [
         .package(path: "../CJAuth"), .package(path: "../CJTripClient"), .package(path: "../CJMessageClient"),
-        .package(path: "../CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"),
+        .package(path: "../CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")
     ],

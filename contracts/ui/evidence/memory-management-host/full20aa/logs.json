@@ -1,0 +1,32 @@
+{
+  "graph.log": {
+    "sha256": "2792393466e0d76e76e069cfbce39f58a08486adc75bc28a58122c0086e8ac0e",
+    "bytes": 3236,
+    "archive": "graph.log.gz"
+  },
+  "host-tests-frozen.log": {
+    "sha256": "911c882c52c96b6a846825d085d56f0e63b48825e90eba9c868699ce8fb04e5e",
+    "bytes": 6322,
+    "archive": "host-tests-frozen.log.gz"
+  },
+  "demo-link.log": {
+    "sha256": "7ccd1fa5a72a8ae34ee1d716212cc2f5f263d62556c5b7deb7b14592787b0da8",
+    "bytes": 1331,
+    "archive": "demo-link.log.gz"
+  },
+  "ios-shell-frozen.log": {
+    "sha256": "d117758388c777629942a7961038e0ff5f37612fd9913d3768fd81b6fd0c7a32",
+    "bytes": 32361,
+    "archive": "ios-shell-frozen.log.gz"
+  },
+  "ios-shell-resolution-drift.log": {
+    "sha256": "ab23ed94c0ade2451b0bc110b425212d6b117e623d0fe817a5afc5749657036a",
+    "bytes": 3031995,
+    "archive": "ios-shell-resolution-drift.log.gz"
+  },
+  "host-tests-resolution-drift.log": {
+    "sha256": "2e7ad3e8c6b0c197b18b112a95709dd23bc08cd54ab812d9027ca49af98146ba",
+    "bytes": 212716,
+    "archive": "host-tests-resolution-drift.log.gz"
+  }
+}
