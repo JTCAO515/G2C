@@ -1,0 +1,10 @@
+{
+  "source": "8b6abb236cf10c1865a9cc8c6155bd8ac732c07e",
+  "interface": "CJ-AUTH-READ-CONTEXT@0.1.0-rc.1",
+  "files": {
+    "cj_auth/__init__.py": "6921fa11f3bdb1cefb618f0e067581fa22385cf1e0836e479f989a84dcb6374a",
+    "cj_auth/interfaces.py": "39711c9511c942274162fc4d32986a554147f8f32067ffd1e49e5aa94c9a0b9c",
+    "cj_auth/admission.py": "5e9fab7cea50a260622896cb7aeba76ebe1ba511d63a87a69e83fe7bdea526dc",
+    "cj_auth/read_context.py": "c74e64fc2667d89beebab49d832804510894e84701416d38b3849238b02b3f2c"
+  }
+}
