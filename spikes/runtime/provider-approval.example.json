@@ -1,10 +1,10 @@
 {
   "authorization_ref": "JT via CJ Main, 2026-10-23: 测试费用不设上限，由百炼余额控制",
   "expires_at": "",
-  "workspace_id": "",
-  "region": "ap-southeast-1",
-  "base_url": "",
-  "model_id": "qwen3.8-flash",
+  "workspace_id": "ws-obkc0qqp3gynaeiu",
+  "region": "cn-beijing",
+  "base_url": "https://ws-obkc0qqp3gynaeiu.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+  "model_id": "",
   "max_requests": 6,
   "max_output_tokens": 256,
   "billing_policy": "bailian_balance_no_test_spend_ceiling"

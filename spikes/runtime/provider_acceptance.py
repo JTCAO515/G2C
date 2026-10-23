@@ -329,7 +329,7 @@ def preflight(config):
     from importlib.metadata import version
     versions = {p: version(p) for p in PINNED}
     missing = []
-    for name in ('workspace_id', 'region', 'base_url'):
+    for name in ('workspace_id', 'region', 'base_url', 'model_id'):
         if not config.get(name):
             missing.append('MISSING_' + name.upper())
     try:

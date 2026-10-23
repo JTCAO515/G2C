@@ -1,5 +1,9 @@
 # CJ-002 local candidate evidence
 
+## 北京非秘密目标接入
+
+续作 base `d581235dd513e8eec838c5e05e025b04be2359f6`。已接入 JT 指定北京 workspace/兼容端点，DashScope 端点仅记录，不新增协议实现；实际 model ID/key 未给，模板 model 留空，preflight 明确不就绪。首写 `provider-approval.example.json`，代码增量仅预检缺项枚举增加 model_id。仅离线请求形状和预检差额 PASS，未重跑既有探针、未建 DB/访问资源或读取秘密。见 `REAL-ACCEPTANCE.md` 最新目标与 `evidence/beijing-profile-20261023.json`。真实 provider 仍 UNRUN，原双门限制保留。
+
 ## 2026-10-23 provider-entry P2 返修
 
 独立 Testing 对 `50cd98f` 的两项 P2 已在原 owner 范围修复：显式 certifi TLS 验证上下文在 transport 构造前禁用环境 keylog 路径；对截断 JSON 的普通 Unicode 转义做有界保守识别，返回/持久化前拒绝可恢复 key。作者定向 3 组 PASS，待原双门复审；真实调用仍禁止。原逐字探针的 raw-HTTPX keylog 观察仍为 true/aggregate exit 1，实际修复入口另测无 keylog 文件；不把上游观察改报绿。准确原探针归因、结果与复现见 [P2 报告](regressions/provider-p2/REPORT.md)。原 FAIL、17+3 与原新增 7 组均保留，未重跑旧套件。
