@@ -6,7 +6,9 @@
 
 JT 经 Main 已明确提供非秘密目标：workspace `ws-obkc0qqp3gynaeiu`，region `cn-beijing`，兼容 base `https://ws-obkc0qqp3gynaeiu.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，DashScope base `https://ws-obkc0qqp3gynaeiu.cn-beijing.maas.aliyuncs.com/api/v1`。这些是人类给定的目标，不是本轮访问控制台或请求 provider 的结果。已接入现有 `provider-approval.example.json`，不再等待地域/工作空间/端点决定；原新加坡建议已被覆盖。
 
-JT 尚未提供本次实际 model ID 和新 key。配置中的 `model_id` 已留空，preflight 显式报 `MISSING_MODEL_ID`；原公开候选 `qwen3.8-flash` 不能冒充该工作空间已选择/已开放模型。key 仍仅通过既定临时安全入口注入，不入聊天。`expires_at` 为 owner 在实际获准执行前填写的短期本地执行窗口，不是额外预算审批。
+JT 后续已确认模型名 `qwen3.8-flash`，现填入配置 `model_id` 并用于兼容请求 JSON 的 `model` 字段；同消息中的误发数字经 JT 明确更正为“无用”，已忽略，不写入配置、认证头或其他请求字段。官方[文本生成模型表](https://help.aliyun.com/zh/model-studio/text-generation-model)把 `qwen3.8-flash` 列为模型 ID，[兼容接口参数说明](https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope)要求 `model` 使用所选模型名称。公开 ID 与本次人类选择一致，仍不证明该工作空间的真实鉴权或返回结果已验收。
+
+当前仍缺新 key 的安全临时注入，无本次安全配置授权，不读取旧 key、不配置秘密、不发真实请求；原 DEFERRED / 双门限制保持。`expires_at` 为 owner 在实际获准执行前填写的短期本地执行窗口，不是额外预算审批。模型增量离线证据见 `evidence/beijing-model-profile-20261023.json`。
 
 现有 runner 只消费兼容 base 并构造 `/chat/completions`；DashScope base 在此保留为给定事实，未新增第二协议路径、框架或字段。离线请求形状/预检证据见 `evidence/beijing-profile-20261023.json`；未构造真实 transport、未建 DB、未读取秘密、未触网。真实验收继续禁止，待 model/key 与原独立门齐全后由 Main 路由。
 
@@ -24,7 +26,7 @@ JT 尚未提供本次实际 model ID 和新 key。配置中的 `model_id` 已留
 ## JT 只需完成的资源与安全交接
 
 1. JT 已确定本页最新北京 workspace 和端点，已写入模板，不需再次选择地域、交 endpoint 或创建资源。
-2. 在[百炼官方控制台](https://modelstudio.console.alibabacloud.com/)该 workspace 的模型列表确认本次实际使用的 model ID，并只把这个**非秘密 ID**交给 Main。现入口仍限制既有候选 `qwen3.8-flash`；该候选不能替代 JT 的实际模型选择，若不同由 Main 核定路线和最小适配。
+2. 模型 ID 现已由 JT 确认为 `qwen3.8-flash` 并填入，不需重复交模型信息。真实可用性在获准调用后按实际响应确认。
 3. 通过官方 API Key 页面准备仅用于本次 CJ 测试的新 key，按官方支持的自定义模型 scope 仅授本候选所需范围。**不在聊天粘贴 key**，不需要 Keychain 权限，不复用旧 key。由 JT 在自己控制的运行终端隐藏输入，或经另行允许的安全运行器临时注入 `CJ002_NEW_MODEL_API_KEY`。终端隐藏输入示例（只影响该 shell，运行后 unset）：
 
    ```sh
@@ -40,7 +42,7 @@ JT 尚未提供本次实际 model ID 和新 key。配置中的 `model_id` 已留
 
 ## owner 可自行完成的配置与执行
 
-当实际 model ID 与临时 key 可用后，由原 owner 把已填北京目标的 `provider-approval.example.json` 复制为本目录忽略的 `provider-approval.private.json`，填入已核 model ID，设置短期验收执行窗口 `expires_at`。授权引用、余额控制策略、最大 6 次请求/每次最多 256 输出 token 已固定，不需 JT 再决定技术参数或批准测试金额。真实配置与新 key 没有齐全前只运行 preflight。
+当具体安全临时注入获准且 key 可用后，由原 owner 把已填北京目标和模型的 `provider-approval.example.json` 复制为本目录忽略的 `provider-approval.private.json`，设置短期验收执行窗口 `expires_at`。授权引用、余额控制策略、最大 6 次请求/每次最多 256 输出 token 已固定，不需 JT 再决定技术参数或批准测试金额。真实配置与新 key 没有齐全前只运行 preflight。
 
 ```sh
 cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime

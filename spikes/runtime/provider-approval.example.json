@@ -4,7 +4,7 @@
   "workspace_id": "ws-obkc0qqp3gynaeiu",
   "region": "cn-beijing",
   "base_url": "https://ws-obkc0qqp3gynaeiu.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
-  "model_id": "",
+  "model_id": "qwen3.8-flash",
   "max_requests": 6,
   "max_output_tokens": 256,
   "billing_policy": "bailian_balance_no_test_spend_ceiling"
