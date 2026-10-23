@@ -1,0 +1,123 @@
+"""NEEDS current-record projection inside canonical NEEDS + AUTH read lifetimes.
+
+This is a real consumer projector, NOT a token entry/factory or close guarantee.
+The fixed NEEDS boundary lacks strict close/current-environment settlement; see
+CURRENT-READ-SEAM.md. Root publication remains closed pending that owner seam.
+"""
+from dataclasses import dataclass
+from hashlib import sha256
+import json
+
+from cj_auth.read_context import ProtectedReadContext
+from cj_needs.boundary import Operation
+from cj_needs.domain import Revision, Snapshot, identifier
+from .validator import evaluate
+
+VERSION = 'CJ-FEASIBILITY-CURRENT-READ@0.1.0-candidate.1'
+
+
+class ReadWithheld(RuntimeError):
+    """Safe local refusal; does not reveal owner, resource existence or private data."""
+    def __init__(self, code):
+        super().__init__('current NEEDS evaluation unavailable')
+        self.code = code
+
+
+@dataclass(frozen=True)
+class ReadLimits:
+    max_revisions: int
+    max_input_bytes: int
+    max_output_bytes: int
+
+    def __post_init__(self):
+        if any(type(x) is not int or x <= 0 for x in
+               (self.max_revisions, self.max_input_bytes, self.max_output_bytes)):
+            raise ValueError('explicit positive read bounds required')
+
+
+def project_current(operation: Operation, context: ProtectedReadContext, needs_id: str, *, limits: ReadLimits) -> bytes:
+    """Only caller-selected input is needs_id; no snapshot, owner, scope or callback.
+
+    Return stays INSIDE the canonical contexts. This function cannot itself attest
+    successful connection cleanup or settle the trusted host environment binding.
+    Never publish these bytes outside a future owner-provided strict read seam.
+    """
+    if type(operation) is not Operation or type(context) is not ProtectedReadContext or type(limits) is not ReadLimits:
+        raise ReadWithheld('CANONICAL_CONTEXT_REQUIRED')
+    try:
+        identifier(needs_id)
+        context.require_current()
+        principal = context.principal
+        metadata = operation.metadata
+        if metadata.principal != principal:
+            raise ReadWithheld('PRINCIPAL_BINDING_MISMATCH')
+        first = operation.detail(needs_id)
+        context.require_current()
+        if type(first) is not Snapshot or first.needs_id != needs_id:
+            raise ReadWithheld('RECORD_UNAVAILABLE')
+        if type(first.version) is not int or not 1 <= first.version <= limits.max_revisions:
+            raise ReadWithheld('REVISION_BOUND_EXCEEDED')
+        if type(first.content) is not bytes or len(first.content) > limits.max_input_bytes:
+            raise ReadWithheld('INPUT_BOUND_EXCEEDED')
+        consumed = len(first.content)
+        revisions = []
+        for version in range(1, first.version + 1):
+            context.require_current()
+            revision = operation.revision(needs_id, version)
+            context.require_current()
+            if (type(revision) is not Revision or revision.needs_id != needs_id
+                    or type(revision.version) is not int or revision.version != version):
+                raise ReadWithheld('REVISION_CHAIN_UNAVAILABLE')
+            if type(revision.content) is not bytes or type(revision.original_input) is not bytes:
+                raise ReadWithheld('REVISION_CHAIN_UNAVAILABLE')
+            consumed += len(revision.content) + len(revision.original_input)
+            if consumed > limits.max_input_bytes:
+                raise ReadWithheld('INPUT_BOUND_EXCEEDED')
+            revisions.append(revision)
+        # Reuse the existing fixed evaluator; do not replay history a second way.
+        report = evaluate(first, tuple(revisions))
+        if report.status == 'INVALID':
+            raise ReadWithheld('EVALUATION_INPUT_INVALID')
+        if report.status not in ('CONFLICT', 'UNKNOWN'):
+            raise ReadWithheld('UNSUPPORTED_EVALUATION_VERDICT')
+        context.require_current()
+        # Compact immutable projection. Original source bytes remain in memory
+        # and their authorized declaration JSON is included, never lossy coerced.
+        checks = []
+        for check in report.checks:
+            checks.append(dict(code=check.code, status=check.status, missing=check.missing,
+                               zh=check.zh, en=check.en, details=check.details,
+                               evidence=[dict(path=e.path, declaration=json.loads(e.declaration),
+                                              revision=e.revision, action_id=e.action_id,
+                                              original_input_sha256=sha256(e.original_input).hexdigest()
+                                              if e.original_input is not None else None)
+                                         for e in check.evidence]))
+        body = dict(version=VERSION, evaluator_version=report.version, status=report.status,
+                    needs_id=first.needs_id, revision=first.version, content_sha256=report.content_sha256,
+                    overall='UNKNOWN', checks=checks,
+                    sources=[dict(revision=r.version, action_id=r.action_id,
+                                  original_input_utf8=r.original_input.decode('utf-8'),
+                                  original_input_sha256=sha256(r.original_input).hexdigest())
+                             for r in revisions])
+        # Iterative encoding enforces the output bound during projection, rather
+        # than allocating an unbounded serialized result before checking length.
+        output = bytearray()
+        for chunk in json.JSONEncoder(ensure_ascii=False, separators=(',', ':'), allow_nan=False).iterencode(body):
+            encoded = chunk.encode('utf-8')
+            if len(output) + len(encoded) > limits.max_output_bytes:
+                raise ReadWithheld('OUTPUT_BOUND_EXCEEDED')
+            output.extend(encoded)
+        frozen = bytes(output)
+        context.require_current()
+        last = operation.detail(needs_id)
+        context.require_current()
+        if (type(last) is not Snapshot or last != first
+                or operation.metadata != metadata or context.principal != principal):
+            raise ReadWithheld('CURRENT_RECORD_OR_BINDING_CHANGED')
+        return frozen
+    except ReadWithheld:
+        context.invalidate()
+        raise
+    except Exception:
+        context.invalidate()
+        raise ReadWithheld('READ_OR_LIFETIME_UNAVAILABLE') from None
