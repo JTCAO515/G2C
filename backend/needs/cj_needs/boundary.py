@@ -46,6 +46,8 @@ class Operation:
         self.__check()
         s = self.__state
         try:
+            if s.get('read_only', False) and method not in ('detail', 'revision'):
+                raise Denied('protected projection is read-only')
             if method == 'act':
                 if s['write_started']: raise ValueError('one action per operation')
                 if type(args[0]) is not Command: raise ValueError('validated command required')
