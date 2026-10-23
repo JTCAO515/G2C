@@ -1,0 +1,9 @@
+test_expiry_during_call_drops_late_response (https_transport_checks.LoopbackTLSTests.test_expiry_during_call_drops_late_response) ... ok
+test_expired_missing_credentials_and_stale_future_time_do_not_dial (https_transport_checks.LoopbackTLSTests.test_expired_missing_credentials_and_stale_future_time_do_not_dial) ... ok
+test_total_deadline_stops_slow_drip_and_no_retry (https_transport_checks.LoopbackTLSTests.test_total_deadline_stops_slow_drip_and_no_retry) ... ok
+test_late_connect_return_after_timeout_cannot_send_request (https_transport_checks.LoopbackTLSTests.test_late_connect_return_after_timeout_cannot_send_request) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.387s
+
+OK

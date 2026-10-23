@@ -1,0 +1,6 @@
+test_actual_tls_bytes_parse_for_all_four_fixed_endpoints (https_transport_checks.LoopbackTLSTests.test_actual_tls_bytes_parse_for_all_four_fixed_endpoints) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.103s
+
+OK

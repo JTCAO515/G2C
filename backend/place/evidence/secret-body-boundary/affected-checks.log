@@ -1,0 +1,9 @@
+test_actual_tls_bytes_parse_for_all_four_fixed_endpoints (https_transport_checks.LoopbackTLSTests.test_actual_tls_bytes_parse_for_all_four_fixed_endpoints) ... ok
+test_literal_and_json_escaped_secret_echo_are_not_returned_or_logged (https_transport_checks.LoopbackTLSTests.test_literal_and_json_escaped_secret_echo_are_not_returned_or_logged) ... ok
+test_redirect_and_http_failure_are_received_without_follow_or_secret (https_transport_checks.LoopbackTLSTests.test_redirect_and_http_failure_are_received_without_follow_or_secret) ... ok
+test_malformed_actual_body_fails_closed_before_response_boundary (https_transport_checks.LoopbackTLSTests.test_malformed_actual_body_fails_closed_before_response_boundary) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.058s
+
+OK
