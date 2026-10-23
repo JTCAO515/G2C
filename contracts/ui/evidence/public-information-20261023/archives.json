@@ -1,0 +1,20 @@
+[
+  {
+    "original": "ios-build-final.txt",
+    "archive": "ios-build-final.txt.xz",
+    "bytes": 28326,
+    "sha256": "78846b0c320466e47a657f30d9ef850f44bdcf16dcb2112b1aed45f8e88655af"
+  },
+  {
+    "original": "tests-final.txt",
+    "archive": "tests-final.txt.xz",
+    "bytes": 30762,
+    "sha256": "5ce8bcd077a3459a165f96e48966c3cfc03de9debd154f796109f46967c38330"
+  },
+  {
+    "original": "inputs.json",
+    "archive": "inputs.json.xz",
+    "bytes": 41760,
+    "sha256": "da756b491b8b293c946f55a8866c892773b1faf8d51450e7d8268b08f4b507e6"
+  }
+]

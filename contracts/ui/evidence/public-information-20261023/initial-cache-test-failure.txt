@@ -1,0 +1,36 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Fetching https://github.com/pointfreeco/swift-issue-reporting
+Fetching https://github.com/apple/swift-crypto.git
+Fetching https://github.com/pointfreeco/swift-clocks
+Fetching https://github.com/pointfreeco/swift-concurrency-extras
+Fetching https://github.com/supabase/supabase-swift
+Fetching https://github.com/apple/swift-openapi-urlsession
+Fetching https://github.com/pointfreeco/xctest-dynamic-overlay
+Fetching https://github.com/apple/swift-http-types
+Fetching https://github.com/apple/swift-collections
+Fetching https://github.com/apple/swift-asn1.git
+Fetching https://github.com/apple/swift-openapi-runtime
+Fetching https://github.com/apple/swift-openapi-runtime
+Fetching https://github.com/pointfreeco/swift-issue-reporting
+Fetching https://github.com/supabase/supabase-swift
+Fetching https://github.com/apple/swift-http-types
+Fetching https://github.com/pointfreeco/swift-clocks
+Fetching https://github.com/pointfreeco/swift-concurrency-extras
+Fetching https://github.com/apple/swift-openapi-urlsession from cache
+Fetching https://github.com/pointfreeco/xctest-dynamic-overlay
+Fetching https://github.com/apple/swift-asn1.git
+Fetching https://github.com/apple/swift-collections
+Fetching https://github.com/apple/swift-crypto.git
+error: 'swift-openapi-urlsession': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-openapi-urlsession-03c02701 config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-openapi-urlsession-03c02701': No such file or directory
+error: 'swift-http-types': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-http-types-ddff8b60 config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-http-types-ddff8b60': No such file or directory
+error: 'swift-issue-reporting': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-issue-reporting-0855ec26 config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-issue-reporting-0855ec26': No such file or directory
+error: 'xctest-dynamic-overlay': Git command 'git -C /tmp/cj006-spm-cache/repositories/xctest-dynamic-overlay-05ffcdf0 config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/xctest-dynamic-overlay-05ffcdf0': No such file or directory
+error: 'supabase-swift': Git command 'git -C /tmp/cj006-spm-cache/repositories/supabase-swift-a07f8e78 config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/supabase-swift-a07f8e78': No such file or directory
+error: 'swift-concurrency-extras': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-concurrency-extras-f87c839b config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-concurrency-extras-f87c839b': No such file or directory
+error: 'swift-asn1': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-asn1-7065ad2c config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-asn1-7065ad2c': No such file or directory
+error: 'swift-clocks': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-clocks-f9bfe872 config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-clocks-f9bfe872': No such file or directory
+error: 'swift-openapi-runtime': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-openapi-runtime-c68fe40f config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-openapi-runtime-c68fe40f': No such file or directory
+error: 'swift-collections': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-collections-9a58d5cf config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-collections-9a58d5cf': No such file or directory
+error: 'swift-crypto': Git command 'git -C /tmp/cj006-spm-cache/repositories/swift-crypto-7e0614ea config --get remote.origin.url' failed: fatal: cannot change to '/tmp/cj006-spm-cache/repositories/swift-crypto-7e0614ea': No such file or directory
+error: fatalError

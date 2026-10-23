@@ -22,10 +22,11 @@ struct MemoryShell: View {
                 }
                 Section(language.text("Information", "说明")) {
                     NavigationLink(language.text("Help", "帮助"), value: MemoryRoute.help)
-                    NavigationLink(language.text("Privacy", "隐私"), value: MemoryRoute.privacy)
+                    NavigationLink(language.text("Privacy facts draft", "隐私事实草稿"), value: MemoryRoute.privacy)
                     NavigationLink(language.text("Support", "支持"), value: MemoryRoute.support)
                     NavigationLink(language.text("Feedback", "问题反馈"), value: MemoryRoute.feedback(feedbackHost.captureEntry()))
                 }
+                LaunchInformationSection(language: language)
             }
             .navigationTitle(ShellTab.memory.title(language))
             .navigationDestination(for: MemoryRoute.self) { route in destination(route) }
@@ -63,16 +64,12 @@ struct MemoryShell: View {
         case .help:
             HelpView(language: language)
         case .privacy:
-            information(language.text("Privacy", "隐私"), language.text("Your language preference is saved on this device. When connected, Memory reads records and queries previous save results. Private memory views are cleared when the account changes or the app leaves the foreground. This does not delete stored records.\n\nStopping future use and cleaning associated storage are separate results. This interface does not offer memory deletion or account closure. Local session cleanup does not delete server records.\n\nData retention periods, backup cleanup periods, offline validity and reconnection cleanup rules, the privacy contact and the responsible service entity have not been confirmed here. No immediate wipe of disconnected devices is promised. This interface description is not a complete product privacy policy.", "语言偏好保存在此设备。接入后，记忆页面可以读取条目并查询此前的保存结果。账号变化或应用离开前台时会清空私密记忆页面，但不会删除已存储的记录。\n\n停止后续使用与清理关联存储是两项独立结果。此界面暂不提供记忆删除或账号注销。本机会话清理不代表删除服务端记录。\n\n数据留存时长、备份清理期限、离线有效期与重连清理规则、隐私联系方式及服务责任主体尚未在此确认。不承诺即时擦除断网设备。这份界面说明不是完整产品隐私政策。"))
+            PrivacyFactsDraftView(language: language)
         case .support:
-            information(language.text("Support", "支持"), language.text("A support contact, availability hours and response timeframe have not been confirmed. This screen cannot send a support request or promise a response.\n\nMemory → Feedback shows whether feedback submission is available. It is not a live support channel or a promise of human assistance. Help explains the currently available account, draft, offline and cleanup boundaries.", "支持联系方式、服务时段及回复期限尚未确认。此页面无法发送支持请求，也不承诺回复。\n\n记忆 → 问题反馈会说明反馈提交是否可用；它不是在线客服，也不代表已承诺人工帮助。帮助页面说明当前账号、草稿、离线及清理边界。"))
+            SupportInformationView(language: language)
         }
     }
 
-    private func information(_ title: String, _ body: String) -> some View {
-        ScrollView { Text(body).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding() }
-            .navigationTitle(title)
-    }
 }
 
 #Preview("English — not connected") {
