@@ -13,6 +13,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 from .interfaces import TrustedPrincipal, VerificationResult, VerificationStatus as V
+from .session_binding import VerifiedSessionBinding, SessionVerificationResult
 
 
 class JWTProfile(Enum):
@@ -99,6 +100,17 @@ class PyJWTVerifier:
         self._configuration, self._keys = configuration, keys
 
     def verify(self, token: str) -> VerificationResult:
+        return self._verify(token)
+
+    def verify_session(self, token: str) -> SessionVerificationResult:
+        config = self._configuration
+        if config is None or config.profile is not JWTProfile.SUPABASE_ACCESS_RC1:
+            return SessionVerificationResult(V.UNKNOWN)
+        result = self._verify(token, include_session=True)
+        if isinstance(result, SessionVerificationResult): return result
+        return SessionVerificationResult(result.status)
+
+    def _verify(self, token: str, *, include_session=False):
         config = self._configuration
         if config is None or self._keys is None:
             return VerificationResult(V.UNKNOWN)
@@ -159,6 +171,9 @@ class PyJWTVerifier:
             return VerificationResult(V.INVALID)
         except Exception:
             return VerificationResult(V.UNKNOWN)
-        return VerificationResult(V.VALID, TrustedPrincipal(
-            claims['iss'], claims['sub'], config.audience, claims['iat'],
-            claims.get('nbf', claims['iat']), claims['exp']))
+        principal = TrustedPrincipal(claims['iss'], claims['sub'], config.audience, claims['iat'],
+                                     claims.get('nbf', claims['iat']), claims['exp'])
+        if include_session:
+            # Read only the claim returned by the SAME successful signature/claim validation.
+            return SessionVerificationResult(V.VALID, VerifiedSessionBinding(principal, UUID(claims['session_id'])))
+        return VerificationResult(V.VALID, principal)

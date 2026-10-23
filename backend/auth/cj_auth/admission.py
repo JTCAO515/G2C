@@ -29,15 +29,19 @@ class AdmissionChecker:
             now = self._clock()
         except Exception:
             return AdmissionDecision(S.UNKNOWN, R.FACTS_UNKNOWN)
-        # A slow policy lookup must not extend an expired identity.
-        if now >= principal.expires_at or now < principal.not_before:
-            return AdmissionDecision(S.DENIED, R.IDENTITY_INVALID)
-        if (not isinstance(facts, CJAccessFacts) or facts.principal != principal
-                or any(not isinstance(f, Fact) or f is Fact.UNKNOWN
-                       for f in (facts.member, facts.email_verified, facts.invited))):
-            return AdmissionDecision(S.UNKNOWN, R.FACTS_UNKNOWN)
-        for fact, reason in ((facts.member, R.NOT_CJ_MEMBER),
-                             (facts.email_verified, R.EMAIL_UNVERIFIED), (facts.invited, R.NOT_INVITED)):
-            if fact is Fact.NO:
-                return AdmissionDecision(S.DENIED, reason)
-        return AdmissionDecision(S.ALLOWED, R.ACCEPTED, principal)
+        return _decide_verified_access(principal, facts, now)
+
+
+def _decide_verified_access(principal, facts, now):
+    # A slow policy lookup must not extend an expired identity.
+    if now >= principal.expires_at or now < principal.not_before:
+        return AdmissionDecision(S.DENIED, R.IDENTITY_INVALID)
+    if (not isinstance(facts, CJAccessFacts) or facts.principal != principal
+            or any(not isinstance(f, Fact) or f is Fact.UNKNOWN
+                   for f in (facts.member, facts.email_verified, facts.invited))):
+        return AdmissionDecision(S.UNKNOWN, R.FACTS_UNKNOWN)
+    for fact, reason in ((facts.member, R.NOT_CJ_MEMBER),
+                         (facts.email_verified, R.EMAIL_UNVERIFIED), (facts.invited, R.NOT_INVITED)):
+        if fact is Fact.NO:
+            return AdmissionDecision(S.DENIED, reason)
+    return AdmissionDecision(S.ALLOWED, R.ACCEPTED, principal)
