@@ -2,19 +2,25 @@
 
 Product code: `cj_fact/model.py`, `policy.py`, `acquisition.py`, `structured.py`.
 Public consumption contract: [contracts/fact](../../contracts/fact/README.md).
-Zero runtime dependencies; repository Python >=3.12,<3.15. Author verified with
+Pure evidence/policy logic uses the stdlib. The optional pinned HTTPS primitive
+uses module-local `h11==0.16.0`; repository Python >=3.12,<3.15. Author verified with
 installed CPython 3.14.7; other interpreters are UNRUN. No global configuration or
 shared lockfile change is needed.
 
 From repository root:
 
 ```sh
-PYTHONPATH=backend/fact /opt/homebrew/bin/python3.14 -B -m unittest discover -s backend/fact/tests -v
-PYTHONPATH=backend/fact /opt/homebrew/bin/python3.14 -B backend/fact/tests/check_examples.py
+uv sync --offline --frozen --project backend/fact --python /opt/homebrew/bin/python3.14
+PYTHONPATH=backend/fact:backend/fact/tests backend/fact/.venv/bin/python -B -m unittest test_https_transport -v
+PYTHONPATH=backend/fact:backend/fact/tests backend/fact/.venv/bin/python -B -m unittest discover -s backend/fact/tests -v
+PYTHONPATH=backend/fact backend/fact/.venv/bin/python -B backend/fact/tests/check_examples.py
 ```
 
-All test DNS answers and bodies are synthetic. No socket, server, real resolver,
-provider call, credential, database, cost or model call occurs.
+All test DNS answers and bodies are synthetic. The HTTPS test alone starts
+private loopback TLS/raw handshake fixtures, generates an ephemeral self-signed
+test certificate/key inside a0700 task tempdir and removes only that tempdir on
+exit. No public DNS/provider, user credential, system trust/config change,
+database, cost or model call occurs. Baseline pure suites need no servers.
 
 ## Restricted acquisition
 
@@ -41,7 +47,8 @@ protection claim.** Injected Python is trusted synthetic fixture code, not a
 sandbox. It must cooperate with asyncio cancellation and close its own resources
 if cancelled before returning a response. A peer assertion cannot prove DNS/socket
 pinning or TLS SNI/certificate validation. Consequently production fetch is always
-disabled; there is no resolver or networking library fallback. The existing JWKS
+disabled. The separate optional `https_transport.py` now implements a numeric
+socket/TLS primitive, but no resolver/production dispatcher is registered. The existing JWKS
 client is purpose-specific and was not copied into a second generic HTTP framework.
 
 Streaming enforces byte and chunk counts even without Content-Length, exact length
@@ -67,3 +74,12 @@ place or eligibility from missing metadata or search summaries.
 
 See [evidence/REPORT.md](evidence/REPORT.md) for fixed-source hashes, author checks,
 known limitations and UNRUN layers. Independent Review/Testing remain pending.
+
+
+## Low-level TLS candidate evidence
+
+[HTTPS report](evidence/https/REPORT.md) records actual loopback socket, SNI,
+certificate/hostname rejection, peer association, framed streaming and bounded
+close/cancel tests. The original policy still rejects loopback at the public
+transport boundary; tests invoke only its private numeric-socket primitive.
+No production boolean/grant bypass or second authenticated exit was added.

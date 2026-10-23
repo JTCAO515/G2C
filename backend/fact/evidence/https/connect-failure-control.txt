@@ -1,0 +1,6 @@
+test_actual_connect_failure_is_safe_and_attempted_once (test_https_transport.HTTPSLoopbackTests.test_actual_connect_failure_is_safe_and_attempted_once) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.115s
+
+OK

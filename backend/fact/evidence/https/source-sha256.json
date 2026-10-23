@@ -1,0 +1,29 @@
+{
+  "parent": "611c39814f7f8cd2c017de60be20a746237e6266",
+  "python": "3.14.7",
+  "openssl": "OpenSSL 3.6.4 25 Aug 2026",
+  "h11": "0.16.0",
+  "time_model_byte_identical": true,
+  "fixture_tempdirs_remaining": 0,
+  "files": {
+    "backend/fact/README.md": "5b80fcdbe8a3f9f68eb7dc6849fcf51101052a2bd408b5039691b3a3de46a182",
+    "backend/fact/cj_fact/__init__.py": "2053cb5cdd266b136ddbe82a0851c90142ce15ce4bd644cb39b693548e0f1788",
+    "backend/fact/cj_fact/acquisition.py": "3a43292ce730176a8d4215a58c3c558fa2446d8d2ac0249f1a336936369a5e1e",
+    "backend/fact/cj_fact/https_transport.py": "f2c745449b35099c66ea7076bf1330c0f0ad0aca70793801ae393a328982ffa4",
+    "backend/fact/cj_fact/model.py": "2432dd5b12807a869410b79e930a83e20dbebe272d55a8cad5b66dc4b4d7c972",
+    "backend/fact/cj_fact/policy.py": "06d1e8477932406d999c7133b3830eef33b399ef040e9bf625c3315de9abc299",
+    "backend/fact/cj_fact/structured.py": "23ff66adec0d129e30c4572481c310512ea70f92eaacf69fb8dee884d431f70c",
+    "backend/fact/pyproject.toml": "ced94b1be1599b572caf00f17002a13688100bb8c895733601ebdd113263b311",
+    "backend/fact/tests/check_examples.py": "f3f2058498bfe75df0a3cdea06f140b397c7ad1d085bc2277ca53d5a9f6b1921",
+    "backend/fact/tests/independent_overflow_checks.py": "99305e18fef33028df2488955038f187bd80974fc77c96ebff59608260e0990c",
+    "backend/fact/tests/independent_time_checks.py": "c13bf0a7deb63825a2ccaf585417314d7ac9183b01562e056e9d37be1027b04e",
+    "backend/fact/tests/test_fact.py": "9072862ba17c77e62c32cd7002208d4339323b09ba560f39443c5cb566462e07",
+    "backend/fact/tests/test_https_transport.py": "78366d0cdde3deb2b3273cf49083f70a96c18febd8072c1334a0867c19e59f5e",
+    "backend/fact/tests/test_instant_ranges.py": "8f7cbae360faeb3168cc29027e98a22075c0c4601a3e588c7434867a76213034",
+    "backend/fact/tests/test_structured.py": "d679f99d5a7a0a17a0492716471d7abe5ab99fa0d16f9f5d357ca348c81511b4",
+    "backend/fact/tests/test_time_instants.py": "aa1f56a7c0873af9942749bd4ebebdd97d01aefa4bc34b9e67cb839bfa4ad93e",
+    "backend/fact/uv.lock": "5e36c8948a18832e8b4555261d127777408bf37de497aa900b10a9e5e2b0521c",
+    "contracts/fact/README.md": "44345fae653bde29513fc5c1baeba17a0a89fb8bbc0fa86beb3d50fb48aa6371",
+    "contracts/fact/synthetic-cases.json": "7d478249b105027e4cdfeb6a3628152bc8e576dd778bf162bac416ca28235709"
+  }
+}
