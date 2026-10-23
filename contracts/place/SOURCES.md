@@ -19,5 +19,6 @@ Adapter-specific conservative policy (not represented as provider guarantees):
 UTF-8 input bytes, positive explicit limits, narrow string numeric/status profile,
 32-level JSON nesting maximum, exact required structure/count checks, no redirect
 support, per-page bound 25/page end 200, optional unsupported values retained as
-invalid/null, explicit-time requests refused. Final outbound signed URL/streaming
-limits and authenticated dispatch remain future host responsibilities.
+invalid/null, explicit-time requests refused. The later low-level HTTPS candidate
+adds credentialed URL/streaming limits; authenticated dispatch remains a future
+host responsibility. See [transport source record](HTTPS-TRANSPORT.md#primary-sources).

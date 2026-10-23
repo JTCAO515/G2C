@@ -101,9 +101,12 @@ No parser failure returns provider prose, body, URL query or exception detail.
 ## Real execution boundary and minimal missing integration
 
 `execute(query, *, config=None) -> Result` always returns unavailable. It takes
-no token, caller owner, allow flag, fake budget or credentials. There is no HTTP
-client, socket, environment lookup, retry, cache, persistent storage or Trip write.
-Pure parsing never claims user authentication or usage settlement.
+no token, caller owner, allow flag, fake budget or credentials. This entry performs
+no HTTP/socket operation, environment lookup, retry, cache, persistent storage or
+Trip write. Pure parsing never claims user authentication or usage settlement.
+The separate unregistered [fixed-provider HTTPS candidate](HTTPS-TRANSPORT.md)
+implements bounded low-level I/O and private loopback tests; it is not called by
+execute or registered in any root/RUN/USAGE path.
 
 Read-only references at the fixed base: `AdmissionChecker.check(token)`, canonical
 `Meter.reserve/claim/settle`, `UsageBinding(command_bytes, input_bytes)`, and
@@ -113,10 +116,12 @@ trusted exit/receipt provenance. PLACE does not copy or weaken those boundaries.
 
 Minimal host seam still needed: CJ005/original domain owners must route one
 **accepted canonical dispatch context + exact original bound input/attempt** to
-an approved credential-injecting bounded HTTP transport. It must associate the
-prepared request and response, enforce final URL bytes and response streaming
-limits, timeout/TLS/host/no redirects, recheck current AUTH/cancellation under the
-accepted fence, and reconcile unknown usage through the original attempt/receipt.
+an approved credential-injecting bounded HTTP transport. The new low-level
+candidate associates the prepared request/response and enforces credentialed URL
+bytes, response streaming caps and timeout/TLS/host/no redirects. That alone does
+not supply accepted dispatch ownership: the real host must recheck current
+AUTH/cancellation under the accepted fence and reconcile unknown usage through
+the original attempt/receipt.
 Those public dispatch-context/exit signatures are **not available at this base**;
 this module does not invent a new Protocol/guard/token or infer them from IDs.
 CJ005 may wire the pure functions after that seam is fixed; root API remains its
