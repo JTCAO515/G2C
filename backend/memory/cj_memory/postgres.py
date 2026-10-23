@@ -1,7 +1,7 @@
 """DB-API adapter. Factory supplies fresh non-autocommit connections; no DSN defaults."""
 from contextlib import contextmanager
 import hashlib
-from .domain import Command, Receipt, Item, Conflict, Unavailable, CommitUnknown
+from .domain import Command, Receipt, Item, Conflict, Unavailable, CommitUnknown, current_context
 
 class Repository:
     def __init__(self, connect, scope):
@@ -76,12 +76,8 @@ class Transaction:
     def require_current(self, context, subject, context_id=None):
         # Caller retains this transaction/lock through RUN publication. Expiry must
         # be checked as well as epochs: wall-clock passage does not bump an epoch.
-        if self.lock_scope() != context.epoch: raise Conflict("context changed")
-        rows = self.effective(subject, context_id)
-        selected = {i.command.slot: i for i in rows if i.command.extent == "long_term"}
-        selected.update({i.command.slot: i for i in rows if i.command.extent == "current"})
-        if tuple(selected[k] for k in sorted(selected)) != context.items:
-            raise Conflict("source validity changed")
+        if current_context(self, subject, context_id) != context:
+            raise Conflict("context or source validity changed")
 
     def effective(self, subject, context_id):
         self.cur.execute('''SELECT i.original_input,i.version,i.status,i.recorded_at

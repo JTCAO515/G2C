@@ -22,7 +22,8 @@ class OperationContext:
 
     def _check(self):
         s = self._state
-        if not s['active'] or s['blocked'] or threading.get_ident() != s['thread']:
+        if (not s['active'] or s['blocked'] or s.get('consuming', False)
+                or threading.get_ident() != s['thread']):
             raise RuntimeError('memory context expired or used outside request thread')
 
     def save(self, raw):
@@ -66,6 +67,13 @@ class OperationContext:
     def detail(self, item_id):
         self._check()
         return self._service.detail(item_id)
+
+    def consume_current(self, subject, context_id, consumer, *, max_result_bytes):
+        """Synchronously consume current memory under its original scope lock."""
+        self._check()
+        from .consumption import consume_current
+        return consume_current(self._service, self._state, subject, context_id,
+                               consumer, max_result_bytes=max_result_bytes)
 
     def effective(self, subject, context_id=None):
         self._check()
@@ -118,6 +126,9 @@ def with_operation(service, guard, operation):
                     yield tx
                     # Inside the DB transaction, after domain work and BEFORE commit.
                     check('precommit')
+                    fence = state.get('consumption_fence')
+                    if fence is not None:
+                        fence(tx)  # After fresh AUTH, still inside the original lock/transaction.
                     if state['writing']:
                         state['commit_possible'] = True
                 check('private_return')
