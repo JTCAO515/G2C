@@ -79,6 +79,15 @@ struct TripShell: View {
                 } else {
                     Text(language.text("Trips are not connected. No records have been loaded.", "行程尚未连接，未读取任何记录。"))
                 }
+                Section(language.text("Map", "地图")) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(language.text("Map unavailable", "地图暂不可用")).font(.headline)
+                        Text(language.text("Amap verification has not been completed. Map and location-based actions are not available here.", "高德认证尚未完成，地图及定位相关操作暂未开放。"))
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("trips.map.unavailable")
+                }
             }
             .navigationTitle(ShellTab.trips.title(language))
             .sheet(item: $manualEntry) { entry in
