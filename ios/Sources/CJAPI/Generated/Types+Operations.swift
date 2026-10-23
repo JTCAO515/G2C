@@ -5935,4 +5935,421 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `POST /v1/memory-management-actions`.
+    /// - Remark: Generated from `#/paths//v1/memory-management-actions/post(applyMemoryManagementAction)`.
+    public enum applyMemoryManagementAction {
+        public static let id: Swift.String = "applyMemoryManagementAction"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.applyMemoryManagementAction.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.applyMemoryManagementAction.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.applyMemoryManagementAction.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/requestBody/content/application\/octet-stream`.
+                case binary(OpenAPIRuntime.HTTPBody)
+            }
+            public var body: Operations.applyMemoryManagementAction.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.applyMemoryManagementAction.Input.Headers = .init(),
+                body: Operations.applyMemoryManagementAction.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/responses/200/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.applyMemoryManagementAction.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.MemoryManagementApplyResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MemoryManagementApplyResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.applyMemoryManagementAction.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.applyMemoryManagementAction.Output.Ok.Headers,
+                    body: Operations.applyMemoryManagementAction.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Authorized MEMORY wire candidate response; no production channel enabled.
+            ///
+            /// - Remark: Generated from `#/paths//v1/memory-management-actions/post(applyMemoryManagementAction)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.applyMemoryManagementAction.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.applyMemoryManagementAction.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Default: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/responses/default/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/responses/default/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.applyMemoryManagementAction.Output.Default.Headers
+                /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/responses/default/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/memory-management-actions/POST/responses/default/content/application\/json`.
+                    case json(Components.Schemas.ErrorResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ErrorResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.applyMemoryManagementAction.Output.Default.Body
+                /// Creates a new `Default`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.applyMemoryManagementAction.Output.Default.Headers,
+                    body: Operations.applyMemoryManagementAction.Output.Default.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Unified BASE error; see composition-proposal.md for conservative recovery mapping
+            ///
+            /// - Remark: Generated from `#/paths//v1/memory-management-actions/post(applyMemoryManagementAction)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Operations.applyMemoryManagementAction.Output.Default)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Operations.applyMemoryManagementAction.Output.Default {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates.
+    ///
+    /// - Remark: HTTP `GET /v1/memory-management-receipts`.
+    /// - Remark: Generated from `#/paths//v1/memory-management-receipts/get(queryMemoryManagementReceipt)`.
+    public enum queryMemoryManagementReceipt {
+        public static let id: Swift.String = "queryMemoryManagementReceipt"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/query/action_id`.
+                public var action_id: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - action_id:
+                public init(action_id: Swift.String) {
+                    self.action_id = action_id
+                }
+            }
+            public var query: Operations.queryMemoryManagementReceipt.Input.Query
+            /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.queryMemoryManagementReceipt.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.queryMemoryManagementReceipt.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.queryMemoryManagementReceipt.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.queryMemoryManagementReceipt.Input.Query,
+                headers: Operations.queryMemoryManagementReceipt.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/responses/200/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.queryMemoryManagementReceipt.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.MemoryManagementReceiptResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MemoryManagementReceiptResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.queryMemoryManagementReceipt.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.queryMemoryManagementReceipt.Output.Ok.Headers,
+                    body: Operations.queryMemoryManagementReceipt.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Authorized MEMORY wire candidate response; no production channel enabled.
+            ///
+            /// - Remark: Generated from `#/paths//v1/memory-management-receipts/get(queryMemoryManagementReceipt)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.queryMemoryManagementReceipt.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.queryMemoryManagementReceipt.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Default: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/responses/default/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/responses/default/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.queryMemoryManagementReceipt.Output.Default.Headers
+                /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/responses/default/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/memory-management-receipts/GET/responses/default/content/application\/json`.
+                    case json(Components.Schemas.ErrorResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ErrorResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.queryMemoryManagementReceipt.Output.Default.Body
+                /// Creates a new `Default`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.queryMemoryManagementReceipt.Output.Default.Headers,
+                    body: Operations.queryMemoryManagementReceipt.Output.Default.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Unified BASE error; see composition-proposal.md for conservative recovery mapping
+            ///
+            /// - Remark: Generated from `#/paths//v1/memory-management-receipts/get(queryMemoryManagementReceipt)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Operations.queryMemoryManagementReceipt.Output.Default)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Operations.queryMemoryManagementReceipt.Output.Default {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
 }

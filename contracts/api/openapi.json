@@ -1754,6 +1754,127 @@
           }
         }
       }
+    },
+    "/v1/memory-management-actions": {
+      "post": {
+        "operationId": "applyMemoryManagementAction",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryManagementApplyResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact original UTF8 JSON conforming to MemoryManagementAction; application/octet-stream. Retain original action_id and bytes. Canonical same-transaction guarded lifecycle adapter only; factory closed pending dependency independent gates.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory-management-receipts": {
+      "get": {
+        "operationId": "queryMemoryManagementReceipt",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryManagementReceiptResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        ],
+        "description": "Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates."
+      }
     }
   },
   "components": {
@@ -3960,7 +4081,7 @@
           "message_zh": {
             "type": "string",
             "enum": [
-              "反馈已提交。"
+              "\u53cd\u9988\u5df2\u63d0\u4ea4\u3002"
             ]
           },
           "source": {
@@ -4603,6 +4724,130 @@
             "$ref": "#/components/schemas/CurrentAccountCleanupProgress"
           }
         }
+      },
+      "MemoryManagementAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "operation",
+          "item_id",
+          "expected_version",
+          "expected_source_version"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "pause",
+              "resume"
+            ]
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "expected_source_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          }
+        },
+        "description": "Exact five-key immutable UTF8 JSON; no trimming/normalization/re-encoding; pause/resume only. Existing source approval remains canonical; no text edit, candidate promotion or new approval."
+      },
+      "MemoryManagementReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "item_id",
+          "version",
+          "status",
+          "input_sha256"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "disabled"
+            ]
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "description": "Historical original lifecycle receipt. action_id is canonical Receipt.operation_id; hash comes from persisted original action bytes, not request recomputation."
+      },
+      "MemoryManagementApplyResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/MemoryManagementReceipt"
+          }
+        },
+        "description": "Receipt after canonical guarded commit and final fences only. Unknown outcome must query original action ID, never automatic resend/new ID."
+      },
+      "MemoryManagementReceiptResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemoryManagementReceipt"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "description": "Required null receipt means not observed in this scoped lifecycle ledger; never proves noncommit or authorizes resend."
       }
     },
     "securitySchemes": {
@@ -4623,5 +4868,6 @@
   "x-manual-preview-wire-version": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1",
   "x-usage-status-wire-version": "USAGE-STATUS-WIRE@0.1.0-rc.1",
   "x-original-usage-wire-version": "ORIGINAL-USAGE-WIRE@0.1.0-rc.1",
-  "x-cleanup-progress-wire-version": "CLEANUP-PROGRESS-WIRE@0.1.0-rc.1"
+  "x-cleanup-progress-wire-version": "CLEANUP-PROGRESS-WIRE@0.1.0-rc.1",
+  "x-memory-management-wire-version": "MEMORY-MANAGEMENT-WIRE@0.1.0-rc.1"
 }

@@ -1350,3 +1350,51 @@ class CurrentAccountCleanupProgressResponse(BaseModel):
     )
     request_id: RequestId
     progress: CurrentAccountCleanupProgress
+
+
+class Operation1(StrEnum):
+    pause = 'pause'
+    resume = 'resume'
+
+
+class MemoryManagementAction(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(min_length=1, max_length=4096)
+    operation: Operation1
+    item_id: constr(min_length=1, max_length=4096)
+    expected_version: conint(ge=1, le=9223372036854775807)
+    expected_source_version: conint(ge=1, le=9223372036854775807)
+
+
+class Status9(StrEnum):
+    active = 'active'
+    disabled = 'disabled'
+
+
+class MemoryManagementReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(min_length=1, max_length=4096)
+    item_id: constr(min_length=1, max_length=4096)
+    version: conint(ge=1, le=9223372036854775807)
+    status: Status9
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+
+
+class MemoryManagementApplyResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: MemoryManagementReceipt
+
+
+class MemoryManagementReceiptResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: MemoryManagementReceipt | Receipt

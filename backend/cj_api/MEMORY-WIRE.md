@@ -3,8 +3,11 @@
 Source base main `23e12f28435ab0ddc685d544670564e3fa79db41`. Sole wire
 source: `contracts/api/openapi.json`; Python models and Swift types/client are
 unmodified official generator output. Existing operations/schemas are unchanged.
-Producer public API pinned by `memory_pins.json` to
-`426d337b0647d7770f1716fad83f2e5e724d28e4` (core1ca / guarded f410 / first-manual9b / cancellation and ledger-hash426d); AUTH remains f3c8e507. Internal.1 is not a
+Original public API pin was `426d337b0647d7770f1716fad83f2e5e724d28e4`
+(core1ca / guarded f410 / first-manual9b / cancellation and ledger-hash426d).
+Current `memory_pins.json` is the reversible cohost upgrade candidate to fixed
+`0045e423f004f873e2786aa98b2600b70772a921`; see the cohost evidence below.
+AUTH remains f3c8e507 core files (byte-identical to8b). Internal.1 is not a
 MEMORY@1.0 product freeze. No backend/memory or CJShell writes.
 
 | Operation | Path | Result |
@@ -142,3 +145,25 @@ decode a valid microsecond recorded_at; the detail landed in a nonnull oneOf
 fallback, which the consumer correctly rejected. Keep that explicit fallback
 check after enabling the date configuration. The helper is the single reusable
 MEMORY configuration for future clients, not a second generated client.
+
+
+## Fixed0045 cohost upgrade candidate
+
+`evidence/memory-cohost/REPORT.md` records exact delta analysis, three affected old
+consumer checks and two NEW real-private-PG/in-process-ASGI cohost scenarios.
+Old and management consumers load the SAME canonical0045 domain/postgres modules,
+use the same root checker and repository, and retain distinct original save/action
+ledgers. No dynamic alias, second package, compatibility wrapper or producer edit.
+`prepare-memory-deps.py` already follows the fixed pin manifest; it needs no new
+fallback. Previous426 exports remain untouched; an old package at runtime fails
+hash verification. MEMORY schema/manual bytes and existing wire/generator bytes
+are unchanged. No data migration, grant/RLS or production application occurred.
+
+Held-lock consume_current is unchanged from the fixed cf6 source and is exercised
+via its existing public guarded native seam in the cohost fixture. It is not an
+old426 HTTP operation, new root route, RUN publication permit or proof of real
+model/UI use. No source approval/expiry is renewed by pause/resume or this pin.
+The management public factory remains unconditionally CLOSED and old-only app
+management routes503. New producer/dependency/cohost independent gates and an
+explicit Main activation decision remain required. This candidate does not itself
+approve activation, deployment or close Issue12/17/5.

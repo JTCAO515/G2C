@@ -1,0 +1,6 @@
+{
+  "backend/cj_api/memory_pins.json": "57f242540dbd3d29539ea0ea01130a94c85339742def12915f71a3cac717c3e2",
+  "backend/cj_api/tests/memory_cohost_checks.py": "51bf1d2ea311f704bc11edfb9a8a7ccbd43722c7253f7164836d335af891fefe",
+  "backend/cj_api/tests/memory_cohost_private_postgres.py": "3b414ef0b5ea3f6c8f62381d5cea52cde2859fdc5bd84b9b483c6b490ab8e22e",
+  "scripts/analyze-memory-cohost.py": "58d74abb95a3c7e393af6ed614cadce93f81f48ed2f204607f2aa03531b32b8a"
+}
