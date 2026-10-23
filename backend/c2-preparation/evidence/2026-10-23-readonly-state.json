@@ -1,0 +1,19 @@
+{
+  "checked_on": "2026-10-23 Asia/Shanghai",
+  "root_head": "dc29bb3634e63d8f065c38d39a7a0059f76cfa53",
+  "method": "Official connected Supabase list_projects/list_organizations on both visible links, get_organization for Go2China; GitHub PR62/Issue5 read; local source and authorization-document reads only",
+  "visible_connections": [
+    {"name":"Go2China","organization":{"id":"ppfsagymaozpbkbarhes","name":"Go2China","plan":"pro","plan_live_read":true},"projects":[{"id":"dzqdzetcctkhbrhlxxgn","name":"VP - V4","region":"ap-southeast-1","status":"ACTIVE_HEALTHY","approved_for_C2":false}]},
+    {"name":"Supabase","organization":{"id":"qmputptgowrbdpmidxth","name":"JT-C","plan":"UNKNOWN_NOT_QUERIED"},"projects":[{"id":"kvrcgketysnlmweecxbu","name":"VP-Final-V2","region":"ap-northeast-1","status":"ACTIVE_HEALTHY","approved_for_C2":false}]}
+  ],
+  "new_CJ_project_in_visible_results": false,
+  "other_accounts": "UNKNOWN; this inventory is not proof that no other resource exists",
+  "approval_evidence_reviewed": ["Current Main dispatch", "task-5/HANDOFF.md current C2 entry", "backend/c2-preparation/resource-request.json"],
+  "approved_target": {"auth_project_ref":null,"database":null,"cloud_project_id":null,"billing_account":null,"https_origin":null,"smtp_domain":null,"test_accounts_secure_reference":null,"device_secure_reference":null,"monthly_incremental_budget":null},
+  "pr62": {"url":"https://github.com/JTCAO515/G2C/pull/62","merged":true,"merge_sha":"c181b7fc22b37605c2bd7b629a337a54105c6fb8","apply":"BLOCKED","registered":"foundation v1 only","candidate_domain_apply":"NOT_AUTHORIZED","target_checker":"explicit task-private Unix-only PG; not managed Supabase admission"},
+  "original_local_evidence": "backend/cj_api/tests/evidence/initialization-admission/REPORT.md and result.json",
+  "read_errors": [{"operation":"GitHub fetch PR62 via old Go2China repository name","result":"HTTP301 canonical repository G2C; followed with read-only canonical name, no retrying mutation"},{"operation":"web open supabase.com/changelog.md","result":"tool unsupported text/markdown; read HTML changelog instead"}],
+  "external_mutations": false,
+  "business_rows_or_old_secrets_read": false,
+  "current_C2": "BLOCKED; resource approval, real provider/facts/callback and managed migration/runtime/device evidence not established"
+}

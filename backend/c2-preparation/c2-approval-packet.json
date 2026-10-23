@@ -1,0 +1,28 @@
+{
+  "version":"CJ-C2-APPROVAL-PROPOSAL@2026-10-23",
+  "status":"PROPOSAL_ONLY_NOT_RUNTIME_CONFIG",
+  "approved":false,
+  "actual_resource_ids_assigned":false,
+  "recommendation": {
+    "supabase":{"organization_candidate_id":"ppfsagymaozpbkbarhes","organization_candidate_name":"Go2China","project_label_candidate":"cj-c2-dev","region_candidate":"ap-southeast-1","database_engine":"standard PostgreSQL","compute_candidate":"Micro","is_new_project":true,"use_old_database":false,"migrate_old_accounts_or_data":false},
+    "api":{"provider":"Google Cloud Run","cloud_project":"NEW CJ-only test project; exact ID/billing account unassigned","service_label_candidate":"cj-c2-api","region_candidate":"asia-southeast1","https":"platform-provided actual service origin read back after approved deployment; no purchased domain or local CA","public_invocation":"requires explicit approval for this new test service only; business routes still canonical JWT/facts scoped","initial_capacity_proposal":{"cpu":1,"memory":"512MiB","min_instances":0,"max_service_instances":1,"concurrency":8,"timeout_seconds":30},"existing_service_changes":false},
+    "database_connection":{"candidate":"Supavisor session pooler over TLS verify-full, fresh idle connection per domain transaction","actual_host":"UNASSIGNED; read Connect dialog, never construct from region","use_admin_as_runtime":false},
+    "smtp":{"provider_candidate":"Resend Free","host":"smtp.resend.com","port":465,"tls":"implicit TLS","actual_provider_account":null,"sender_domain":"auth subdomain of JT-approved existing owned domain, exact name unassigned","sender":"no-reply at approved sender domain","paid_upgrade_allowed":false,"test_recipient_scope":"only two JT-designated account emails via secure official entry"},
+    "native":{"existing_bundle_source":"space.go2china.foundation.local; unsigned current project","c2_bundle_candidate":"space.go2china.c2.dev","callback_candidate":"space.go2china.c2.dev://auth/callback","callback_status":"PROPOSED_ONLY; original AUTH/native owner must accept exact scheme policy and implement PKCE/purpose/generation handling; current adapter https-only and verify/reset unavailable","device_and_network_scope":"JT-designated physical iPhone, approved Wi-Fi plus cellular; IDs not yet approved"},
+    "minimal_data_probe":{"existing_domain":"NEEDS manual current planning record","routes":["POST /v1/needs-actions","GET /v1/needs","GET /v1/needs-action-receipts"],"tables":["cj_needs_scope","cj_needs_record","cj_needs_revision"],"private_namespace_candidate":"cj_private; not approved or created","authority_objects":"existing AUTH user/session authority plus one approved private CJ membership/invitation/stable scope mapping; exact owner contract/DDL pending","new_dummy_business_table":false}
+  },
+  "budget_proposal":{"currency":"USD","incremental_monthly_envelope":50,"is_approved":false,"is_hard_cap":false,"supabase_public_additional_project_floor_per_month":10,"supabase_exact_org_quote":"UNRUN; get_cost requires human-selected organization before quote; historical Main USD10 receipt not independently read","smtp_free_public_limit":{"per_month":3000,"per_day":100},"cloud_run_artifact_logs_egress_and_tax_quote":"UNKNOWN; actual calculator/billing readback required before creation","paid_model_calls":false,"domain_purchase":false,"stop_on_unexpected_quote_or_bill":true,"stop_note":"Stop new tests/public service traffic and notify Main. Compute/storage charges may continue; do not silently delete a project or claim budget alerts cap billing."},
+  "human_authorization_required":[
+    "Confirm Go2China organization ID above for the new project and official quote; authorize the new isolated Supabase target within the accepted actual cost",
+    "Authorize a new CJ-only GCP project on the selected owned billing account, platform HTTPS public invocation, narrowly scoped runtime/secret permissions and test logging policy",
+    "Accept exact actual costs within the proposed incremental budget; no auto upgrade, credits/free tier assumptions or model payments",
+    "Authorize Resend Free account/domain verification and exact SPF/DKIM records on the selected owned auth subdomain, without changing existing MX/NS; two email recipient scope",
+    "Provide official secure login/2FA/account-owner actions when required, never passwords/API keys/private keys in chat",
+    "Authorize designated physical test device installation/signing for the new C2 bundle, callback registration and the two test accounts; A/B invitation grant/revoke limited to the test matrix",
+    "For Google/Apple, authorize only new CJ client/App identifiers/capabilities under owned accounts; no old keys or account migration; membership fees or additional terms need separate explicit approval"
+  ],
+  "technical_work_owned_by_main_and_existing_owners":["AUTH verified session binding/current facts seam","C2 explicit approved-manifest factory/profile/origin wiring","reviewed versioned managed-namespace initialization/runtime privileges","native callback and secure SDK host material/real transport","minimal typed NEEDS device binding and two-account matrix"],
+  "apply_enabled":false,
+  "old_pr62_plan_unchanged":true,
+  "actual_creation_deploy_email_dns_certificate_database_permissions_actions":"NONE"
+}

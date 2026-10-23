@@ -11,7 +11,7 @@
     "JT_invitation_list",
     "google_sign_in",
     "apple_sign_in",
-    "VP-V4_readonly_evaluation_first"
+    "new_isolated_C2_only_no_old_database_or_account_migration_current_scope"
   ],
   "choice": {
     "https_plan": null,
@@ -22,8 +22,8 @@
     "stop_owner": null
   },
   "supabase": {
-    "candidate_label": "cj-dev",
-    "candidate_organization": "Go2China Pro (suggested only)",
+    "candidate_label": "cj-c2-dev",
+    "candidate_organization": "Go2China / ppfsagymaozpbkbarhes (recommended only, not human-approved)",
     "organization_id": null,
     "project_ref": null,
     "project_url": null,
@@ -40,7 +40,7 @@
       "bill_total_verified": false
     },
     "reuse_old_VP": false,
-    "reuse_old_VP_note": "No reuse executed. Read-only feasibility assessment is first priority; any settings/data/permission action remains unapproved."
+    "reuse_old_VP_note": "Excluded by current scope: no old database, account/data migration, credentials or resource mutation. Historical metadata retained only."
   },
   "smtp": {
     "provider": null,
@@ -95,9 +95,9 @@
     "device and network verification"
   ],
   "acceptance": "UNRUN; this file is not consumed by current runtime",
-  "latest_preparation_base": "5ccc8043c8e9791f83775b06c60e56bbd7bf7d3e",
+  "latest_preparation_base": "dc29bb3634e63d8f065c38d39a7a0059f76cfa53",
   "legacy_evaluation": {
-    "priority": 1,
+    "priority": null,
     "expected_name": "VP - V4",
     "expected_project_ref_from_dispatch": "dzqdzetcctkhbrhlxxgn",
     "official_identity_verified_by_this_owner": true,
@@ -137,13 +137,14 @@
     "object_assessment_file": "vp-v4-object-assessment.json",
     "proposed_schema": "cj_private (proposal, existence/conflicts and creation not authorized)",
     "public_authenticated_execute_count": 61,
-    "current_go_no_go": "NO_GO for real CJ user activation pending old authenticated RPC/provider/session compatibility audit; local code preparation allowed",
+    "current_go_no_go": "EXCLUDED_FROM_CURRENT_C2_TARGET; historical assessment only",
     "new_identity_direct_rpc_risk": "61 public functions executable by authenticated; CJ API membership gate cannot constrain direct PostgREST/RPC use of same-project JWT"
   },
   "new_project_fallback": {
-    "priority": 2,
+    "priority": 1,
     "creation_approved": false,
-    "cost_confirmed": false
+    "cost_confirmed": false,
+    "note": "Current recommendation; historical field name retained. Creation/cost remain unapproved."
   },
   "providers": {
     "google": {
@@ -163,5 +164,7 @@
     },
     "secrets_recorded": false
   },
-  "human_steps": "SKIP-pending-human; user away, continue independent preparation/code planning within lease"
+  "human_steps": "PENDING explicit target/budget/device/DNS permissions; official secure login when required; do not infer current user availability",
+  "current_review": "C2-CLOSURE-PLAN.md; evidence/2026-10-23-readonly-state.json",
+  "current_approval_proposal": "c2-approval-packet.json"
 }
