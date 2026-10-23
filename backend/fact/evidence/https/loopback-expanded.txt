@@ -1,0 +1,22 @@
+test_actual_tls_sni_peer_host_and_no_dns_or_ambient_credentials (test_https_transport.HTTPSLoopbackTests.test_actual_tls_sni_peer_host_and_no_dns_or_ambient_credentials) ... ok
+test_body_timeout_cancel_and_abandoned_response_close (test_https_transport.HTTPSLoopbackTests.test_body_timeout_cancel_and_abandoned_response_close) ... ok
+test_checked_peer_mismatch_blocks_http (test_https_transport.HTTPSLoopbackTests.test_checked_peer_mismatch_blocks_http) ... ok
+test_chunked_and_close_delimited_frames (test_https_transport.HTTPSLoopbackTests.test_chunked_and_close_delimited_frames) ... ok
+test_compressed_oversize_ambiguous_and_malformed_headers (test_https_transport.HTTPSLoopbackTests.test_compressed_oversize_ambiguous_and_malformed_headers) ... ok
+test_expired_deadline_does_not_open_socket (test_https_transport.HTTPSLoopbackTests.test_expired_deadline_does_not_open_socket) ... ok
+test_handshake_timeout_and_native_cancel_close_numeric_socket (test_https_transport.HTTPSLoopbackTests.test_handshake_timeout_and_native_cancel_close_numeric_socket) ... ok
+test_header_timeout_and_no_retry (test_https_transport.HTTPSLoopbackTests.test_header_timeout_and_no_retry) ... ok
+test_public_callable_uses_first_validated_address_once (test_https_transport.HTTPSLoopbackTests.test_public_callable_uses_first_validated_address_once) ... ok
+test_public_policy_rejects_fixture_private_address_before_socket (test_https_transport.HTTPSLoopbackTests.test_public_policy_rejects_fixture_private_address_before_socket) ... ok
+test_public_target_policy_and_configuration_guards (test_https_transport.HTTPSLoopbackTests.test_public_target_policy_and_configuration_guards) ... ok
+test_redirect_returns_without_second_request_and_closes_unstarted_body (test_https_transport.HTTPSLoopbackTests.test_redirect_returns_without_second_request_and_closes_unstarted_body) ... ok
+test_streaming_body_limit_and_chunk_limit_close (test_https_transport.HTTPSLoopbackTests.test_streaming_body_limit_and_chunk_limit_close) ... ok
+test_truncated_body_and_trailers_are_rejected (test_https_transport.HTTPSLoopbackTests.test_truncated_body_and_trailers_are_rejected) ... ok
+test_untrusted_certificate_rejected_before_http (test_https_transport.HTTPSLoopbackTests.test_untrusted_certificate_rejected_before_http) ... ok
+test_wire_limits_and_read_limit (test_https_transport.HTTPSLoopbackTests.test_wire_limits_and_read_limit) ... ok
+test_wrong_hostname_certificate_rejected_before_http (test_https_transport.HTTPSLoopbackTests.test_wrong_hostname_certificate_rejected_before_http) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.365s
+
+OK

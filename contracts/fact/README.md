@@ -7,7 +7,9 @@ Review/Testing are pending. Only CJ-005 may wire the root API afterward.
 
 ## Public calls and data
 
-Import `cj_fact` with `PYTHONPATH=backend/fact`. No external dependencies.
+Import `cj_fact` with `PYTHONPATH=backend/fact`. Pure evidence/policy modules
+remain stdlib-only. The optional HTTPS primitive uses module-local pinned
+`h11==0.16.0`; see `backend/fact/uv.lock`. No root dependency change.
 
 - `parse_document(*, source_url, retrieved_at, content_type, body: bytes,
   policy: SourcePolicy, synthetic: bool) -> Document`: bounded UTF-8 plain text or
@@ -21,7 +23,8 @@ Import `cj_fact` with `PYTHONPATH=backend/fact`. No external dependencies.
   raises `FactFailure('production_integration_unavailable')`, even with a policy.
 - `RestrictedAcquisition(policy).fetch_synthetic(url, *, resolve, transport,
   retrieved_at, cancelled: asyncio.Event) -> Document`: async, explicit synthetic
-  injection only. No production resolver/client exists. All returned documents
+  injection only. No production resolver/dispatch is registered. The separate
+  low-level HTTPS candidate below is not automatically connected here. All returned documents
   are marked synthetic. See acquisition details in the module README.
 
 `Document` holds source URL, aware retrieval/query timestamp, media type, **exact
@@ -135,8 +138,56 @@ the fixed Result/FactFailure through the sole official API. Do not invent those
 types or substitute sequential caller booleans. Until then fetch stays disabled.
 
 Independent blockers: (1) production source selection, permitted regions/scenarios,
-licensing/cache/retention policy; (2) pinned-socket/TLS live adapter proof; (3)
+licensing/cache/retention policy; (2) public-target pinned-socket/TLS validation beyond task-local fixtures; (3)
 canonical AUTH/USAGE/RUN exit and unknown/cancel behavior; (4) root official wire,
 chat/citation UI, real source and Issue16 I acceptance. All remain UNRUN/UNKNOWN as
 applicable. No caching/persistence, user data, credential or new resource exists
 in this slice. Consumer confirmation remains pending; do not close Issue16.
+
+## Optional pinned HTTPS primitive (local TLS candidate)
+
+`from cj_fact.https_transport import PinnedHTTPSTransport` is an explicit opt-in
+import, not part of the existing `cj_fact.__all__` or a registered agent tool.
+Constructor: `(policy: SourcePolicy, *, tls_context: ssl.SSLContext,
+max_header_bytes: int, max_wire_bytes: int, max_reads: int)`; all three limits are
+explicit positive integers. Context must require hostname/certificate verification
+and have no TLS keylog file. It is host-owned configuration, never source data;
+no ambient credentials, proxies, cookies or client credential discovery occurs.
+
+`await transport(target: PinnedTarget) -> InjectedResponse` reuses the original
+response shape. It validates canonical allowed HTTPS origin/hostname, every public
+DNS-answer IP already carried by the target, target byte bound and finite deadline.
+Exactly the first validated numeric address is attempted, once, on443. An already
+connected numeric socket is handed to asyncio TLS with `server_hostname` set to
+the original hostname. Both actual TCP/TLS peers are checked; Host and URL stay
+bound to that original hostname. There is no DNS call/fallback in this primitive,
+second-address retry, redirect follow, connection reuse or authority grant.
+
+Request is GET only with fixed Host/Accept/identity encoding/Connection-close
+headers. h11 owns HTTP/1 framing. Header/wire bytes, wire reads, decoded body bytes,
+body data-event chunks and one total monotonic deadline are bounded; 1xx/upgrade,
+ambiguous TE+CL, invalid framing, trailers, unsupported200 content/encoding,
+truncation and oversize are rejected. Header/status returns do not consume or
+follow redirects: the existing acquisition layer owns per-hop policy validation.
+Response.close works before body iteration. Errors/cancellation/deadline abort
+the socket; an unread response also has a deadline close timer. Callers must close
+responses. Body iteration and connection use the same deadline. No TLS shutdown
+wait extends that deadline.
+
+FactFailure safe codes include `tls_certificate_invalid`, `timeout`,
+`peer_not_pinned`, `https_exchange_failed`, `https_body_failed` and bounded
+HTTP-policy codes. Native task cancellation propagates. Failure/timeout/cancel
+after request transmission means delivery or result can be UNKNOWN; it is not a
+claim that the source never received GET, zero cost, a usage receipt, RUN terminal
+state or permission to retry. No receipt/settlement is invented here.
+
+Private `_exchange` is used directly only by the task's127.0.0.1 ephemeral-port
+TLS fixtures. There is no loopback override parameter on the public constructor,
+callable, SourcePolicy or production fetch. The fixture's self-signed certificate
+is trusted only by its explicit test SSLContext; system trust is unchanged. This
+is trusted test Python, not a sandbox. Actual loopback TLS/SNI/peer/cancel evidence
+is in `backend/fact/evidence/https/REPORT.md`; no public source/DNS/provider call
+has been made. IPv6 live transport, public networking and provider readiness remain
+UNRUN. Production `RestrictedAcquisition.fetch` still unconditionally rejects.
+The canonical AUTH/USAGE/RUN exit and accepted source selection are still required
+before this primitive may be wired to a real business dispatch.

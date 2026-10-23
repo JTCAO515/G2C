@@ -1,0 +1,43 @@
+test_acquisition_event_cancellation_closes_actual_fixture_socket (test_https_transport.HTTPSLoopbackTests.test_acquisition_event_cancellation_closes_actual_fixture_socket) ... ok
+test_actual_connect_refusal_is_safe_and_attempted_once (test_https_transport.HTTPSLoopbackTests.test_actual_connect_refusal_is_safe_and_attempted_once) ... FAIL
+test_actual_tls_sni_peer_host_and_no_dns_or_ambient_credentials (test_https_transport.HTTPSLoopbackTests.test_actual_tls_sni_peer_host_and_no_dns_or_ambient_credentials) ... ok
+test_body_timeout_cancel_and_abandoned_response_close (test_https_transport.HTTPSLoopbackTests.test_body_timeout_cancel_and_abandoned_response_close) ... ok
+test_checked_peer_mismatch_blocks_http (test_https_transport.HTTPSLoopbackTests.test_checked_peer_mismatch_blocks_http) ... ok
+test_chunked_and_close_delimited_frames (test_https_transport.HTTPSLoopbackTests.test_chunked_and_close_delimited_frames) ... ok
+test_compressed_oversize_ambiguous_and_malformed_headers (test_https_transport.HTTPSLoopbackTests.test_compressed_oversize_ambiguous_and_malformed_headers) ... ok
+test_expired_deadline_does_not_open_socket (test_https_transport.HTTPSLoopbackTests.test_expired_deadline_does_not_open_socket) ... ok
+test_handshake_timeout_and_native_cancel_close_numeric_socket (test_https_transport.HTTPSLoopbackTests.test_handshake_timeout_and_native_cancel_close_numeric_socket) ... ok
+test_header_timeout_and_no_retry (test_https_transport.HTTPSLoopbackTests.test_header_timeout_and_no_retry) ... ok
+test_public_callable_uses_first_validated_address_once (test_https_transport.HTTPSLoopbackTests.test_public_callable_uses_first_validated_address_once) ... ok
+test_public_policy_rejects_fixture_private_address_before_socket (test_https_transport.HTTPSLoopbackTests.test_public_policy_rejects_fixture_private_address_before_socket) ... ok
+test_public_target_policy_and_configuration_guards (test_https_transport.HTTPSLoopbackTests.test_public_target_policy_and_configuration_guards) ... ok
+test_redirect_returns_without_second_request_and_closes_unstarted_body (test_https_transport.HTTPSLoopbackTests.test_redirect_returns_without_second_request_and_closes_unstarted_body) ... ok
+test_streaming_body_limit_and_chunk_limit_close (test_https_transport.HTTPSLoopbackTests.test_streaming_body_limit_and_chunk_limit_close) ... ok
+test_truncated_body_and_trailers_are_rejected (test_https_transport.HTTPSLoopbackTests.test_truncated_body_and_trailers_are_rejected) ... ok
+test_untrusted_certificate_rejected_before_http (test_https_transport.HTTPSLoopbackTests.test_untrusted_certificate_rejected_before_http) ... ok
+test_wire_limits_and_read_limit (test_https_transport.HTTPSLoopbackTests.test_wire_limits_and_read_limit) ... ok
+test_wrong_hostname_certificate_rejected_before_http (test_https_transport.HTTPSLoopbackTests.test_wrong_hostname_certificate_rejected_before_http) ... ok
+
+======================================================================
+FAIL: test_actual_connect_refusal_is_safe_and_attempted_once (test_https_transport.HTTPSLoopbackTests.test_actual_connect_refusal_is_safe_and_attempted_once)
+----------------------------------------------------------------------
+cj_fact.policy.FactFailure: timeout
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/test_https_transport.py", line 362, in test_actual_connect_refusal_is_safe_and_attempted_once
+    with self.assertRaisesRegex(FactFailure, '^https_exchange_failed$'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "^https_exchange_failed$" does not match "timeout"
+
+----------------------------------------------------------------------
+Ran 19 tests in 1.461s
+
+FAILED (failures=1)

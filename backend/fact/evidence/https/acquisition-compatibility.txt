@@ -1,0 +1,22 @@
+test_bounded_utf8_stream_success (test_fact.AcquisitionTests.test_bounded_utf8_stream_success) ... ok
+test_cancel_at_final_chunk_is_not_success (test_fact.AcquisitionTests.test_cancel_at_final_chunk_is_not_success) ... ok
+test_cancel_during_resolve_blocks_transport (test_fact.AcquisitionTests.test_cancel_during_resolve_blocks_transport) ... ok
+test_cancel_stream_closes_and_never_returns_late_data (test_fact.AcquisitionTests.test_cancel_stream_closes_and_never_returns_late_data) ... ok
+test_limit_failure_closes_body (test_fact.AcquisitionTests.test_limit_failure_closes_body) ... ok
+test_parent_task_cancellation_propagates_and_closes (test_fact.AcquisitionTests.test_parent_task_cancellation_propagates_and_closes) ... ok
+test_precancel_no_io (test_fact.AcquisitionTests.test_precancel_no_io) ... ok
+test_private_dns_rejected_before_transport (test_fact.AcquisitionTests.test_private_dns_rejected_before_transport) ... ok
+test_production_always_disabled (test_fact.AcquisitionTests.test_production_always_disabled) ... ok
+test_redirect_forbidden_never_dispatched (test_fact.AcquisitionTests.test_redirect_forbidden_never_dispatched) ... ok
+test_redirect_limit_cycle_and_implicit_follow (test_fact.AcquisitionTests.test_redirect_limit_cycle_and_implicit_follow) ... ok
+test_redirect_private_dns_and_rebind_peer (test_fact.AcquisitionTests.test_redirect_private_dns_and_rebind_peer) ... ok
+test_redirect_validates_every_hop (test_fact.AcquisitionTests.test_redirect_validates_every_hop) ... ok
+test_resolver_returning_after_deadline_does_not_dispatch (test_fact.AcquisitionTests.test_resolver_returning_after_deadline_does_not_dispatch) ... ok
+test_status_headers_compression_size_and_malformed (test_fact.AcquisitionTests.test_status_headers_compression_size_and_malformed) ... ok
+test_timeout_stalled_resolver_and_stream (test_fact.AcquisitionTests.test_timeout_stalled_resolver_and_stream) ... ok
+test_transport_failure_redacted_no_retry (test_fact.AcquisitionTests.test_transport_failure_redacted_no_retry) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.111s
+
+OK

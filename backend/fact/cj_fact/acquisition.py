@@ -1,8 +1,9 @@
 """Bounded injected acquisition and plain/JSON parser. Production dispatch is disabled.
 
 Resolver/transport are trusted synthetic fixture code, never source-provided code.
-No live adapter exists: peer_ip is an assertion from an injected test response,
-not proof of a socket binding, TLS certificate or AUTH/USAGE/RUN admission.
+Injected peer_ip alone is not proof of a socket binding or TLS certificate.
+The separate https_transport candidate provides that low-level mechanism but is
+not registered here; neither response metadata nor TLS grants AUTH/USAGE/RUN admission.
 """
 import asyncio
 import json
@@ -26,7 +27,11 @@ class PinnedTarget:
 
 @dataclass(repr=False)
 class InjectedResponse:
-    """Only a synthetic response carrier, not a network-client wrapper."""
+    """Response carrier. Peer assurance belongs to its transport, not this datatype.
+
+    Synthetic fixture fields are assertions only. The optional pinned HTTPS
+    primitive reuses this shape after checking the actual numeric socket/TLS.
+    """
     url: str
     peer_ip: str
     status: int
