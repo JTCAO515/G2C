@@ -1,0 +1,7 @@
+External consumer typecheck: exit 0.
+Command:
+xcrun swiftc -typecheck -swift-version 6 -target arm64-apple-macos14.0 -package-name CJ007ExternalCallbackConsumer -I /private/tmp/cj007-sdk-build/out/Products/Debug -module-cache-path /private/tmp/cj007-external-callback-cache ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/ExternalEmailCallbackConsumer.swift
+Observed stderr:
+sandbox-exec: sandbox_apply: Operation not permitted
+sandbox-exec: sandbox_apply: Operation not permitted
+No consumer runtime, network, signing, Keychain or system-security changes.
