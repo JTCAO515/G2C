@@ -1,6 +1,28 @@
 """Trusted domain-only lifecycle entry. HTTP/AUTH composition is not wired here."""
 from cj_memory.domain import CommitUnknown, Conflict, InvalidInput
 from .domain import Action
+from .postgres import Transaction
+
+
+def apply_in_transaction(transaction, action):
+    """Consume the provided public transaction; never connect or commit here."""
+    tx = Transaction(transaction.cur, transaction.scope)
+    tx.lock_scope()
+    stored = tx.action(action.action_id)
+    if stored is not None:
+        if stored[0] != action.raw:
+            raise Conflict('action bytes differ')
+        return stored[1]
+    return tx.change_status(action)
+
+
+def query_in_transaction(transaction, action_id):
+    if type(action_id) is not str or not action_id.strip() or len(action_id) > 4096:
+        raise InvalidInput('invalid action ID')
+    tx = Transaction(transaction.cur, transaction.scope)
+    tx.lock_scope()
+    stored = tx.action(action_id)
+    return stored[1] if stored is not None else None
 
 
 class ActionUnknown(CommitUnknown):
@@ -20,14 +42,7 @@ class Service:
         action = Action.parse(original_utf8)
         try:
             with self.repository.transaction() as tx:
-                tx.lock_scope()
-                stored = tx.action(action.action_id)
-                if stored is not None:
-                    if stored[0] != original_utf8:
-                        raise Conflict('action bytes differ')
-                    result = stored[1]
-                else:
-                    result = tx.change_status(action)
+                result = apply_in_transaction(tx, action)
         except CommitUnknown:
             raise ActionUnknown(action.action_id) from None
         return result
@@ -36,6 +51,5 @@ class Service:
         if type(action_id) is not str or not action_id.strip() or len(action_id) > 4096:
             raise InvalidInput('invalid action ID')
         with self.repository.transaction() as tx:
-            tx.lock_scope()
-            stored = tx.action(action_id)
-        return stored[1] if stored is not None else None
+            result = query_in_transaction(tx, action_id)
+        return result

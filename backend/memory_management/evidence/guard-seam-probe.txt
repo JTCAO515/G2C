@@ -1,0 +1,6 @@
+PASS probe: valid CJ019 action; original save/save_manual reject its shape before DB
+PASS probe: public context exposes no lifecycle apply/query extension
+PASS probe: original with_operation callback completes using existing TrustedPrincipal
+BLOCKED seam: guarded lifecycle write/receipt reconciliation not exposed by producer
+UNRUN guarded pause/resume/query, precommit/postcommit/close/final identity cases
+No database, private context fields, new AUTH policy, install, network or PG rerun

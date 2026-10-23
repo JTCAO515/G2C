@@ -78,9 +78,10 @@ def current_context(tx, subject, context_id=None):
 
 
 class Service:
-    def __init__(self, repository, *, manual_policy=None):
+    def __init__(self, repository, *, manual_policy=None, lifecycle_adapter=None):
         self.repository = repository
         self.manual_policy = manual_policy
+        self.lifecycle_adapter = lifecycle_adapter
 
     def with_operation(self, guard, operation):
         """Trusted request entry: guard and JSON projection stay in one lifetime."""
