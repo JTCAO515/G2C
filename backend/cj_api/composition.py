@@ -76,7 +76,8 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         feedback_configuration=None, resolve_feedback=None, resolve_feedback_run=None,
                         run_display_configuration=None, resolve_run_display=None,manual_preview_configuration=None,
                         usage_status_configuration=None,resolve_usage_status=None,
-                        original_usage_configuration=None,resolve_original_usage_run=None):
+                        original_usage_configuration=None,resolve_original_usage_run=None,
+                        cleanup_progress_configuration=None,resolve_cleanup_progress=None):
     """No zero-argument/public production configuration exists."""
     if type(max_body_bytes) is not int or max_body_bytes <= 0:
         raise CompositionUnavailable('Explicit positive body byte limit required')
@@ -142,6 +143,11 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
     if original_usage_configuration is not None or resolve_original_usage_run is not None:
         from .original_usage_composition import _attach_original_usage
         original_usage_reader,original_usage_modules = _attach_original_usage(boundary,resolve_original_usage_run,original_usage_configuration)
+    cleanup_progress_dependencies = None
+    if cleanup_progress_configuration is not None or resolve_cleanup_progress is not None:
+        from .cleanup_progress_composition import _cleanup_progress_from_checker
+        cleanup_progress_dependencies = _cleanup_progress_from_checker(boundary.checker,resolve_cleanup_progress,cleanup_progress_configuration,
+            environment=environment,issuer=jwt_configuration.issuer,audience=jwt_configuration.audience)
     from .app import create_app
     return create_app(_message_boundary=boundary, _max_body_bytes=max_body_bytes,
                       _history_configuration=history_configuration, _history_environment=environment,
@@ -152,4 +158,5 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                       _run_display_reader=run_display_reader, _run_display_configuration=run_display_configuration, _run_display_modules=run_display_modules,
                       _manual_preview_boundary=preview_boundary,_manual_preview_configuration=manual_preview_configuration,_manual_preview_modules=preview_modules,
                       _usage_status_configuration=usage_status_configuration,_usage_status_dependencies=usage_status_dependencies,
-                      _original_usage_reader=original_usage_reader,_original_usage_configuration=original_usage_configuration,_original_usage_modules=original_usage_modules)
+                      _original_usage_reader=original_usage_reader,_original_usage_configuration=original_usage_configuration,_original_usage_modules=original_usage_modules,
+                      _cleanup_progress_configuration=cleanup_progress_configuration,_cleanup_progress_dependencies=cleanup_progress_dependencies)

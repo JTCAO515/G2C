@@ -1,0 +1,25 @@
+/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+test_close_failure_and_revocation_withhold_all_progress (cleanup_progress_wire_checks.CleanupProgressChecks.test_close_failure_and_revocation_withhold_all_progress) ... ok
+test_complete_is_only_original_frozen_operation (cleanup_progress_wire_checks.CleanupProgressChecks.test_complete_is_only_original_frozen_operation) ... ok
+test_composed_read_uses_message_checker (cleanup_progress_wire_checks.CleanupProgressChecks.test_composed_read_uses_message_checker) ... FAIL
+test_concurrent_http_gets_have_independent_native_read_contexts (cleanup_progress_wire_checks.CleanupProgressChecks.test_concurrent_http_gets_have_independent_native_read_contexts) ... ok
+test_current_account_only_and_original_operation_only (cleanup_progress_wire_checks.CleanupProgressChecks.test_current_account_only_and_original_operation_only) ... ok
+test_final_outer_auth_same_principal_binding_swap_is_rejected (cleanup_progress_wire_checks.CleanupProgressChecks.test_final_outer_auth_same_principal_binding_swap_is_rejected) ... ok
+test_resolver_wrong_scope_and_guard_rejected (cleanup_progress_wire_checks.CleanupProgressChecks.test_resolver_wrong_scope_and_guard_rejected) ... ok
+test_unavailable_hooks_gaps_and_bounded_whole_envelope (cleanup_progress_wire_checks.CleanupProgressChecks.test_unavailable_hooks_gaps_and_bounded_whole_envelope) ... ok
+test_whitelist_original_revision_states_and_select_only (cleanup_progress_wire_checks.CleanupProgressChecks.test_whitelist_original_revision_states_and_select_only) ... ok
+
+======================================================================
+FAIL: test_composed_read_uses_message_checker (cleanup_progress_wire_checks.CleanupProgressChecks.test_composed_read_uses_message_checker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/backend/cj_api/tests/cleanup_progress_wire_checks.py", line 145, in test_composed_read_uses_message_checker
+    self.assertEqual(self.get(c).status_code,200)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 503 != 200
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.433s
+
+FAILED (failures=1)

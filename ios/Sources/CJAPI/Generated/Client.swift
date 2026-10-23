@@ -2750,4 +2750,102 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// - Remark: HTTP `GET /v1/account-cleanup-progress`.
+    /// - Remark: Generated from `#/paths//v1/account-cleanup-progress/get(getCurrentAccountCleanupProgress)`.
+    public func getCurrentAccountCleanupProgress(_ input: Operations.getCurrentAccountCleanupProgress.Input) async throws -> Operations.getCurrentAccountCleanupProgress.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getCurrentAccountCleanupProgress.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/v1/account-cleanup-progress",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "operation_id",
+                    value: input.query.operation_id
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let headers: Operations.getCurrentAccountCleanupProgress.Output.Ok.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getCurrentAccountCleanupProgress.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.CurrentAccountCleanupProgressResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(
+                        headers: headers,
+                        body: body
+                    ))
+                default:
+                    let headers: Operations.getCurrentAccountCleanupProgress.Output.Default.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getCurrentAccountCleanupProgress.Output.Default.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .`default`(
+                        statusCode: response.status.code,
+                        .init(
+                            headers: headers,
+                            body: body
+                        )
+                    )
+                }
+            }
+        )
+    }
 }

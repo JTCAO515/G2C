@@ -88,6 +88,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/message-usage-association`.
     /// - Remark: Generated from `#/paths//v1/message-usage-association/get(getOriginalUsageAssociation)`.
     func getOriginalUsageAssociation(_ input: Operations.getOriginalUsageAssociation.Input) async throws -> Operations.getOriginalUsageAssociation.Output
+    /// - Remark: HTTP `GET /v1/account-cleanup-progress`.
+    /// - Remark: Generated from `#/paths//v1/account-cleanup-progress/get(getCurrentAccountCleanupProgress)`.
+    func getCurrentAccountCleanupProgress(_ input: Operations.getCurrentAccountCleanupProgress.Input) async throws -> Operations.getCurrentAccountCleanupProgress.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -377,6 +380,17 @@ extension APIProtocol {
         headers: Operations.getOriginalUsageAssociation.Input.Headers = .init()
     ) async throws -> Operations.getOriginalUsageAssociation.Output {
         try await getOriginalUsageAssociation(Operations.getOriginalUsageAssociation.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/account-cleanup-progress`.
+    /// - Remark: Generated from `#/paths//v1/account-cleanup-progress/get(getCurrentAccountCleanupProgress)`.
+    public func getCurrentAccountCleanupProgress(
+        query: Operations.getCurrentAccountCleanupProgress.Input.Query,
+        headers: Operations.getCurrentAccountCleanupProgress.Input.Headers = .init()
+    ) async throws -> Operations.getCurrentAccountCleanupProgress.Output {
+        try await getCurrentAccountCleanupProgress(Operations.getCurrentAccountCleanupProgress.Input(
             query: query,
             headers: headers
         ))

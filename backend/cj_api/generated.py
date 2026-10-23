@@ -1286,3 +1286,67 @@ class OriginalUsageAssociationResponse(BaseModel):
     )
     request_id: RequestId
     association: OriginalUsageAssociation
+
+
+class State14(StrEnum):
+    pending = 'pending'
+    in_progress = 'in_progress'
+    unknown = 'unknown'
+    failed = 'failed'
+    confirmed = 'confirmed'
+
+
+class Reason(StrEnum):
+    original_result_confirmed = 'original_result_confirmed'
+    original_result_unknown = 'original_result_unknown'
+    original_result_failed = 'original_result_failed'
+    hook_unavailable = 'hook_unavailable'
+    original_call_in_progress = 'original_call_in_progress'
+    revocation_unconfirmed = 'revocation_unconfirmed'
+    task_stop_unconfirmed = 'task_stop_unconfirmed'
+    pending_original_result = 'pending_original_result'
+
+
+class CleanupProgressStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    target: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,191}$')
+    state: State14
+    reason: Reason
+
+
+class Status8(StrEnum):
+    blocked = 'blocked'
+    unknown = 'unknown'
+    failed = 'failed'
+    complete = 'complete'
+    awaiting_revocation = 'awaiting_revocation'
+    in_progress = 'in_progress'
+
+
+class Reason1(StrEnum):
+    coverage_incomplete = 'coverage_incomplete'
+    registry_review_required = 'registry_review_required'
+    hook_unavailable = 'hook_unavailable'
+    original_result_unknown = 'original_result_unknown'
+    original_result_failed = 'original_result_failed'
+
+
+class CurrentAccountCleanupProgress(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    operation_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,159}$')
+    revision: conint(ge=0, le=9223372036854775807)
+    status: Status8
+    steps: list[CleanupProgressStep] = Field(..., max_length=128, min_length=1)
+    reasons: list[Reason1]
+
+
+class CurrentAccountCleanupProgressResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    progress: CurrentAccountCleanupProgress

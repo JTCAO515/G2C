@@ -1,0 +1,5 @@
+{
+  "backend/cj_api/tests/cleanup_progress_loopback_postgres.py": "7e8e2dd3d4d82ee5ee0c855fe436a5457fd4eb6a913e4734976cadee4e3326a7",
+  "backend/cj_api/tests/cleanup_progress_loopback_client.swift": "65e4117b87326e02ddeab44008723a7609c15021ae240e1928ebf2a01a0db269",
+  "scripts/build-cleanup-progress-loopback-client.sh": "f337d84f32ea8e9733c71884c12bbe472e3006c4a825a468c98bfeee5a856b28"
+}
