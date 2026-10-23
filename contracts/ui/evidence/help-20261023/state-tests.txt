@@ -1,0 +1,33 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 990]
+[Planning deferred tasks]
+[1 / 2] swift-crypto_Crypto
+[1 / 71] Clocks
+[7 / 15] CJShell
+[12 / 20] CJShell
+[21 / 26] CJShellTests-product
+[40 / 45] CJShellTests-product
+[42 / 45] CJShellTests-product
+[44 / 48] CJShellTests-product
+Build complete! (6.69秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite ShellStateTests started.
+◇ Test languagePreservesNavigationDraftAndReferences() started.
+◇ Test unknownWireValuesAreRejected() started.
+◇ Test invalidPreferenceIsVisibleAndNotSilentlyRewritten() started.
+◇ Test identityInvalidationClearsAllPrivatePresentationAndRejectsLateWork() started.
+◇ Test unavailableSendNeverClaimsSuccess() started.
+◇ Test tabSwitchPreservesDraftAndMemoryPath() started.
+✔ Test languagePreservesNavigationDraftAndReferences() passed after 0.004 seconds.
+✔ Test invalidPreferenceIsVisibleAndNotSilentlyRewritten() passed after 0.004 seconds.
+✔ Test unavailableSendNeverClaimsSuccess() passed after 0.006 seconds.
+✔ Test unknownWireValuesAreRejected() passed after 0.006 seconds.
+✔ Test identityInvalidationClearsAllPrivatePresentationAndRejectsLateWork() passed after 0.006 seconds.
+✔ Test tabSwitchPreservesDraftAndMemoryPath() passed after 0.006 seconds.
+✔ Suite ShellStateTests passed after 0.006 seconds.
+✔ Test run with 6 tests in 1 suite passed after 0.006 seconds.

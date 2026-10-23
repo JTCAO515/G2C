@@ -1,0 +1,3 @@
+Working directory: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/f87-consumer-7690a5-c4d624f8/Modules/CJMemoryClient
+Command: xcodebuild -scheme CJMemoryClient -destination generic/platform=iOS Simulator -derivedDataPath ../../artifacts/ios-build -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO build
+** BUILD SUCCEEDED **

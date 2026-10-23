@@ -1,0 +1,54 @@
+{
+  "base": "e6e949e8fbd2aa57c5a9b14954aade68f1240229",
+  "shared_fixed_input": "5075bcf604e959d5c4592071a1e9de39d8687395",
+  "official_sdk": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+  "unchanged_paths": 25,
+  "unchanged_schemas": 90,
+  "unchanged_sdk_sha256": {
+    "ios/Package.swift": "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0",
+    "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
+    "ios/Sources/CJAPI/MemoryClientConfiguration.swift": "3088bab954be24d7fdda0c5815822feb846b772e6d4dc299889cdfd29e4f6d82"
+  },
+  "transport94_sha256": "fe1b002d25e56290e7518b96110ff5a17440d304436bfca4842a4a4be6c76472",
+  "unchanged_business_test_lock_sha256": {
+    "Sources/CJNeedsClient/NeedsClient.swift": "8b7a7eeec772104e964af035463654591eaad2e7f92d6d40f6b7b6542574bf32",
+    "Sources/CJNeedsClient/NeedsViews.swift": "003832e012996b1ba517c92fd2b2f5d3130de5c3b3748b87879faae8733fbb2b",
+    "Sources/CJNeedsClient/NeedsTypes.swift": "aad88927fdc94b02ac5c29a26e48ddfc4bb6e9572003062e74569e91ef5ac36d",
+    "Sources/CJNeedsClient/NeedsPendingStore.swift": "17a199ae596fd9b826051645bf2a834876ca5cae036ff35b7b0da1b6b50a00f5",
+    "Sources/CJNeedsClient/NeedsDraft.swift": "27fee810ce022bbfa05b1c9da565c8fc6fe77d57b6f51a47bf39ce2c6220ed4d",
+    "Sources/CJNeedsClient/NeedsPresentation.swift": "eb26087aaf73a95d0e4caf6b19cfc760cf8be878d53f5596b24e66aeb3861abd",
+    "Sources/CJNeedsClient/NeedsValidation.swift": "807c219fc36f804ffabd6d76d39f965ef3e84360b6653d8a0b14f78a38a66cb9",
+    "Tests/CJNeedsClientTests/BoundaryTests.swift": "fd65acbf43a8e496ec6e32c9bdcd111aed25d8dbdaf52d7ea167b39e55016757",
+    "Tests/CJNeedsClientTests/ClientTests.swift": "4dbef8d820c10a0462c64fecf1d3fff61ac8489e81d02bb08d0f262c0c28443d",
+    "Tests/CJNeedsClientTests/TimezoneAliasTests.swift": "34809812b915b5c1c800dab4603a6ad3a924893699d43f9cf34869d149850cc4",
+    "Tests/CJNeedsClientTests/KeyProviderTests.swift": "74d8bff46aa7ab4b567854a4a5b5c83945dd2a1fd90e6826f15c45643c6cf92b",
+    "Tests/CJNeedsClientTests/ContractTests.swift": "1f4381a87a5d5295c67495ca891179f4dacba844f61a203963036a8eabb8ebeb",
+    "Tests/CJNeedsClientTests/Support.swift": "2c9781d450f7fe6fd5f14445f83102fea9f33c01421976e4fc04c7b8c31f1e8a",
+    "Tests/CJNeedsClientTests/PendingDirectoryTests.swift": "cf2065ef20470ebcd41e1a61c8777d9a9440622a287ca16346d10e04e8613f4e",
+    "Package.resolved": "5a9f37e37a12ca4b8eb9f59fa036d66e9cc1a646efe5fe63c438b1bc609296aa"
+  },
+  "old_exports_preserved": {
+    "d688c01dc0fb18488a1e9c49414a039ce0126204": 16,
+    "201156c9bf9850f9b8e87dc1f986452ce1ae789f": 16,
+    "c02cf08e52a0d8ffc2fefac99226654a7e01539c": 16,
+    "c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a": 16,
+    "9d0f4b4c1e89b28d01de18092b5bf695de5bcde7": 16,
+    "33cec5ba71d74820cb0acd3c89ecbe39ba125590": 16
+  },
+  "prepared_shared_files": 121,
+  "sibling_writes": false,
+  "unprepared_original_tree_graph": "UNRUN: original sibling CJMessageClient Package remains33 and original canonical f87 export is absent; owner/Main dependency preparation required",
+  "scope": "only ios/Modules/CJNeedsClient/**",
+  "prepared_graph": {
+    "status": "PASS",
+    "logical_sdk_paths": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/.build/f87-validation/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
+    ],
+    "physical_sdk_paths": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
+    ],
+    "CJTripClient_dependency": false,
+    "sdk_copied": false
+  },
+  "prepared_consumer_manifest_sha256": "6c006cd21954a1b86449917fe9aba4e6e3aefc155d9b916990594ea4da496406"
+}

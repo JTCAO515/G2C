@@ -13,9 +13,15 @@ import CJMessageClient
     private let arguments = ProcessInfo.processInfo.arguments
 
     init() {
-        let shell = ShellState()
-        self._state = State(initialValue: shell)
         let args = ProcessInfo.processInfo.arguments
+        let shell: ShellState
+        if args.contains("--help-preview"), let defaults = UserDefaults(suiteName: "cj006.demo.help") {
+            shell = ShellState(preferences: defaults)
+            shell.selectLanguage(args.contains("--chinese") ? .chinese : .english)
+            shell.selectedTab = .memory
+            shell.memoryPath = [.help]
+        } else { shell = ShellState() }
+        self._state = State(initialValue: shell)
         if args.contains("--message-demo") {
             do {
                 self.messageHost = try makeMessageDemo(shell, args: args)
@@ -38,7 +44,10 @@ import CJMessageClient
 
     var body: some Scene {
         WindowGroup {
-            if arguments.contains("--gallery") {
+            if arguments.contains("--help-preview") {
+                ShellView(state: state)
+                    .dynamicTypeSize(arguments.contains("--large-text") ? .accessibility3 : .large)
+            } else if arguments.contains("--gallery") {
                 Gallery()
             } else {
                 VStack(spacing: 0) {

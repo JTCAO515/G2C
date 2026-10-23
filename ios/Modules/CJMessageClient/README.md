@@ -184,3 +184,9 @@ Next original-usage association export: fixed33cec5ba at the single
 checks pass; required association and unavailable503 never become successful null or
 execution evidence. Transport94 and all old exports stay intact. See
 evidence/ORIGINAL-USAGE-API-PIN.md; current App and USAGE client are not changed here.
+
+Next current-account cleanup progress export: fixedf87a78a9 at the ONE
+.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation path. Five targeted
+checks pass, old exports/Transport94 stay intact. blocked/unknown/unavailable are not
+delete completion; no cleanup or postlogout capability is enabled. See
+evidence/CLEANUP-PROGRESS-API-PIN.md; current App graph remains unchanged.

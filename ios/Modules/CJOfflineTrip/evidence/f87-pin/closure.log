@@ -1,0 +1,45 @@
+warning: '--skip-update' option is deprecated and will be removed in a future release
+Fetching https://github.com/pointfreeco/swift-issue-reporting from cache
+Fetching https://github.com/apple/swift-openapi-urlsession from cache
+Fetching https://github.com/apple/swift-openapi-runtime from cache
+Fetching https://github.com/pointfreeco/xctest-dynamic-overlay from cache
+Fetching https://github.com/apple/swift-crypto.git from cache
+Fetching https://github.com/apple/swift-collections from cache
+Fetching https://github.com/pointfreeco/swift-clocks from cache
+Fetching https://github.com/apple/swift-http-types from cache
+Fetching https://github.com/pointfreeco/swift-concurrency-extras from cache
+Fetching https://github.com/apple/swift-asn1.git from cache
+Fetching https://github.com/supabase/supabase-swift from cache
+Fetched https://github.com/pointfreeco/swift-concurrency-extras from cache (0.04s)
+Fetched https://github.com/pointfreeco/swift-clocks from cache (0.04s)
+Fetched https://github.com/apple/swift-asn1.git from cache (0.04s)
+Fetched https://github.com/apple/swift-http-types from cache (0.04s)
+Fetched https://github.com/pointfreeco/xctest-dynamic-overlay from cache (0.04s)
+Fetched https://github.com/apple/swift-openapi-runtime from cache (0.04s)
+Fetched https://github.com/pointfreeco/swift-issue-reporting from cache (0.04s)
+Fetched https://github.com/apple/swift-openapi-urlsession from cache (0.04s)
+Fetched https://github.com/apple/swift-crypto.git from cache (0.11s)
+Fetched https://github.com/apple/swift-collections from cache (0.15s)
+Fetched https://github.com/supabase/supabase-swift from cache (0.15s)
+Creating working copy for https://github.com/apple/swift-openapi-runtime
+Creating working copy for https://github.com/apple/swift-http-types
+Creating working copy for https://github.com/apple/swift-crypto.git
+Creating working copy for https://github.com/pointfreeco/xctest-dynamic-overlay
+Creating working copy for https://github.com/apple/swift-openapi-urlsession
+Creating working copy for https://github.com/pointfreeco/swift-issue-reporting
+Creating working copy for https://github.com/apple/swift-asn1.git
+Creating working copy for https://github.com/pointfreeco/swift-concurrency-extras
+Creating working copy for https://github.com/supabase/supabase-swift
+Creating working copy for https://github.com/pointfreeco/swift-clocks
+Creating working copy for https://github.com/apple/swift-collections
+Working copy of https://github.com/pointfreeco/swift-clocks resolved at 1.1.1
+Working copy of https://github.com/apple/swift-openapi-runtime resolved at 1.13.3
+Working copy of https://github.com/pointfreeco/xctest-dynamic-overlay resolved at 1.13.1
+Working copy of https://github.com/pointfreeco/swift-issue-reporting resolved at 2.1.2
+Working copy of https://github.com/apple/swift-http-types resolved at 1.8.0
+Working copy of https://github.com/supabase/supabase-swift resolved at 2.55.4
+Working copy of https://github.com/apple/swift-openapi-urlsession resolved at 1.3.2
+Working copy of https://github.com/pointfreeco/swift-concurrency-extras resolved at 1.4.3
+Working copy of https://github.com/apple/swift-asn1.git resolved at 1.7.3
+Working copy of https://github.com/apple/swift-collections resolved at 1.7.3
+Working copy of https://github.com/apple/swift-crypto.git resolved at 4.5.2

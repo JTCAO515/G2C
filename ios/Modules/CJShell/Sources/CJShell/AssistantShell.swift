@@ -53,6 +53,12 @@ struct AssistantShell: View {
             draftFocused = false
             panel = nil; feedbackEntry = nil
         }
+        .onChange(of: state.selectedTab) { _, tab in
+            if tab != .assistant { draftFocused = false }
+        }
+        .onChange(of: panel) { _, selected in
+            if selected != nil { draftFocused = false }
+        }
         .sheet(item: $panel) { selectedPanel in
             NavigationStack {
                 Group {

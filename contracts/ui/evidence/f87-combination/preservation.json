@@ -1,0 +1,70 @@
+{
+  "sdk": "f87a78a9d8984c59905e385483f17dddd8144d8a",
+  "sdk_files": 16,
+  "modules": {
+    "CJMessageClient": {
+      "checkout": "cj-009-memory-api-pin",
+      "fixed": "5075bcf604e959d5c4592071a1e9de39d8687395",
+      "tree": "b7d309fd52f3695a300908413baa83800e0f1c02"
+    },
+    "CJAuth": {
+      "checkout": "cj-007-auth",
+      "fixed": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+      "tree": "6d801d30c070792ae6346a13e3421d4ee0aefe81"
+    },
+    "CJMemoryClient": {
+      "checkout": "cj-011-memory-client",
+      "fixed": "1734971c7606a346cfb73609eab6a06c16e8791a",
+      "tree": "8ffe1447e79201208dea9d973c074c400b2f302e"
+    },
+    "CJTripClient": {
+      "checkout": "cj-015-trip-client",
+      "fixed": "a5cc42005c69811ccb05754793107141fb4a9f02",
+      "tree": "ad80b3e9fc0cc0acf78d91442cae712065c25de1"
+    },
+    "CJNeedsClient": {
+      "checkout": "cj-013-needs-client",
+      "fixed": "f8ce99b916f1fd15f06ad534e44d3d2ce55dc1a6",
+      "tree": "1bcda34260df6ac53bef722be21f2b4942799c5f"
+    },
+    "CJFeedbackClient": {
+      "checkout": "cj-023-feedback-client",
+      "fixed": "978df94db9c452fc0d24e50514ba1e4295e8a1ea",
+      "tree": "2d7d881bf23c2f146441dd68a53196ea59929f62"
+    },
+    "CJRunClient": {
+      "checkout": "cj-010-run-client",
+      "fixed": "a09fa5cdf229a21d5f51fa22d437a5164b57732e",
+      "tree": "1cef6c168590f19f12b318b8b08eb13e7937adbb"
+    },
+    "CJUsageClient": {
+      "checkout": "cj-008-usage-client",
+      "fixed": "7a1d4783d434fe69c62e954db93157a54f6e4182",
+      "tree": "3f81104478834c9375f1014eddf40cf9a947be98"
+    },
+    "CJManualPreviewClient": {
+      "checkout": "cj-017-manual-preview-client",
+      "fixed": "46581fc954771ad9b388b0c600aee4dc74524730",
+      "tree": "971f1dea6ecc72ead4cf4312d7c190bb4ff9300a"
+    },
+    "CJOfflineTrip": {
+      "checkout": "cj-022-offline-trip",
+      "fixed": "2772d896db33344126eae2d025cd7d378dff1c8e",
+      "tree": "18d33fa4e46aced0643a114b79ef0b9c2bc28c51"
+    },
+    "CJCleanupClient": {
+      "checkout": "cj-024-cleanup-client",
+      "fixed": "6d5e318e95ab5f2be25b21569f26b37df23546f9",
+      "tree": "d590f3071107378dfba27956bd26610d0f1d0222"
+    }
+  },
+  "exported_files": 184,
+  "all_prepared_hashes_match": true,
+  "auth_sources": "616635d39995013bc5b7efb77647c6db9a47d57e",
+  "published_b331_auth_sources": "616635d39995013bc5b7efb77647c6db9a47d57e",
+  "source_changes_since_3f": [],
+  "tracked_sibling_changes": [
+    "ios/Modules/CJShell/.gitignore",
+    "ios/Modules/CJShell/Package.swift"
+  ]
+}

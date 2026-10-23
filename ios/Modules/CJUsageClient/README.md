@@ -1,8 +1,10 @@
 # CJ-008 original-attempt usage client
 
 Current official accepted-MESSAGE source path: [ORIGINAL-USAGE-SOURCE.md](ORIGINAL-USAGE-SOURCE.md).
-It uses SDK33/shared693 in an independent module graph; the original host-string
-UsageSource API below remains compatibility-only and proves no official provenance.
+Current dependency candidate uses SDK f87/shared5075, verified in an own-module
+isolated graph (see evidence/F87-CONSUMPTION.md); source behavior introduced on33
+is unchanged. The original host-string UsageSource API below remains compatibility-only
+and proves no official provenance.
 
 Standalone, read-only iOS/macOS module. No CJShell/App wiring; not a charge,
 balance, quota/reset, provider dispatch or retry implementation. Issue9 remains open.
