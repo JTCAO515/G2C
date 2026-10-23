@@ -1,0 +1,67 @@
+{
+  "base": "8ea1b35756726f60727f10deaf157c40b8df1072",
+  "repository": "JTCAO515/G2C",
+  "issue": "https://github.com/JTCAO515/G2C/issues/23",
+  "fixed_git_inputs": [
+    {
+      "path": "AGENTS.md",
+      "git_blob": "ea82f225f320e5dc259b14a7bba9de55106f97bb",
+      "sha256": "d41df6e4f1b9db39544db0305612bcf7f2d7ca8347f41a45e56051a912964062"
+    },
+    {
+      "path": "README.md",
+      "git_blob": "90c50f3725b3a0c73a31aa5d8633f40a12f71a87",
+      "sha256": "db6d05fde56ff2e84769a26a88c667fb2ac8c11a867316dba50cd1af123e3f01"
+    },
+    {
+      "path": "docs/readiness.md",
+      "git_blob": "157d70ff298b594aaa10a0dbb5575656930114fa",
+      "sha256": "4ea2ebd16afb9dc603a59a1fd4f1d104cc64569eb03cf68ba7df8942fb5078b2"
+    },
+    {
+      "path": "docs/engineering.md",
+      "git_blob": "33f21790acaedd90f205219c2dbd75ab3a13e82d",
+      "sha256": "a552ab30809e5e13c07b6fb04d1e125209e76f1e9f582db78ad8ac2bdede9718"
+    },
+    {
+      "path": "docs/contracts.md",
+      "git_blob": "d2f7d50dd39e154a9577bb2af88fb7c6a0accebb",
+      "sha256": "6bbbbf89c8ea2b4747fa37d8878044c6c5277102adb8054ae64c3dca23b7e5b8"
+    },
+    {
+      "path": "docs/memory.md",
+      "git_blob": "f15f321afb912daf081db4ba295a13e7a044faa4",
+      "sha256": "6143e1390b6bf334e74e4dd6781a57819b364c9ff9eb88796767afe97bfbf6d0"
+    },
+    {
+      "path": "backend/message/cj_message/domain.py",
+      "git_blob": "27c69d943b94989c72fc235efc1e3073a1a45fa3",
+      "sha256": "6d732990d62717e84f50edfe035e05f3c91dae93b47f03bd26c8240938ddb22a"
+    },
+    {
+      "path": "backend/message/HISTORY-CONTEXT.md",
+      "git_blob": "ab0bf1ceb6148d6daa252da6d9aafe760a196191",
+      "sha256": "aab27e895a376d7690620696bddfb50d704e66e887f5033c303dd3da2441a9a2"
+    },
+    {
+      "path": "backend/message/CONTEXT-QUERY-MESSAGE.md",
+      "git_blob": "046cd7bdcd6555181fb24365ecb0bc209f7d905a",
+      "sha256": "f5d6fa75743b603134e6c76f90fc302839695290806dc4d669b40456fd1a0c6e"
+    },
+    {
+      "path": "backend/memory/cj_memory/domain.py",
+      "git_blob": "923f10b69226abfd13fffa80f767b89283659a1f",
+      "sha256": "61ba54e243903dcd56b8c2c9fbb4340434c4ae2d7fa74d460353b0a3bd08850a"
+    },
+    {
+      "path": "backend/memory/cj_memory/lifecycle.py",
+      "git_blob": "9bcf4ba677cc80562fc9e6a57faca46d25de9cc3",
+      "sha256": "fbb2829e077bf1793f1a5f7dabf7ddc80469127244729bae49ec90033fb2d60d"
+    },
+    {
+      "path": "backend/memory/schema.sql",
+      "git_blob": "ffc76832499b6d5596c50869d8581a7163290feb",
+      "sha256": "156bbfc72d3983c03de97410c9867448be34796a149e7f736ee3ab8ea45605de"
+    }
+  ]
+}
