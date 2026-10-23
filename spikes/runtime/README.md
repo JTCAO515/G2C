@@ -1,6 +1,6 @@
 # CJ-002：AgentScope + DBOS 本地选型段
 
-2026-10-23 真实验收续作入口见 [REAL-ACCEPTANCE.md](REAL-ACCEPTANCE.md)：JT 已授权百炼测试费用由余额控制，北京 workspace/端点已接入；当前仍缺实际 model ID 和新 key 的安全注入。独立 `provider_acceptance.py` 明确报告不就绪，原 17+3 证据保留并复用，真实 provider 仍 UNRUN。
+2026-10-23 真实验收续作入口见 [REAL-ACCEPTANCE.md](REAL-ACCEPTANCE.md)：JT 已授权百炼测试费用由余额控制，北京 workspace/端点和模型 `qwen3.8-flash` 已接入；当前仍缺新 key 的安全临时注入。独立 `provider_acceptance.py` 明确报告不就绪，原 17+3 证据保留并复用，真实 provider 仍 UNRUN，原 DEFERRED 门保持。
 
 本段建议继续 **AgentScope 2.0.10 + DBOS 3.3.0** 作为唯一主候选，进入后续获准的真实 provider 验证。已证明本地持久边界可实现；没有发现必须切换 Pydantic AI 的硬语义失败，因此不引入第二套主框架。
 

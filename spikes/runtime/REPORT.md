@@ -1,5 +1,9 @@
 # CJ-002 local candidate evidence
 
+## 已确认模型接入（非秘密配置）
+
+续作 base `f48aaf8aa60a1c36712dc43f6ae05712d7f06938`。JT 确认 `qwen3.8-flash` 后，现有模板 `model_id` 填入该模型名，映射兼容请求 `model`；误发数字已由 JT 撤回为无用，不映射任何字段。官方模型表/兼容参数与现有契约一致。仅配置与文档增量，无新增运行时代码；离线预检/请求构造 PASS。缺 key 时仍 not-ready，实际运行窗口留待 owner 在获准执行前填写；无秘密配置授权、未读取秘密、未发真实请求，原 DEFERRED 门不变。证据：`evidence/beijing-model-profile-20261023.json`。
+
 ## 北京非秘密目标接入
 
 续作 base `d581235dd513e8eec838c5e05e025b04be2359f6`。已接入 JT 指定北京 workspace/兼容端点，DashScope 端点仅记录，不新增协议实现；实际 model ID/key 未给，模板 model 留空，preflight 明确不就绪。首写 `provider-approval.example.json`，代码增量仅预检缺项枚举增加 model_id。仅离线请求形状和预检差额 PASS，未重跑既有探针、未建 DB/访问资源或读取秘密。见 `REAL-ACCEPTANCE.md` 最新目标与 `evidence/beijing-profile-20261023.json`。真实 provider 仍 UNRUN，原双门限制保留。
