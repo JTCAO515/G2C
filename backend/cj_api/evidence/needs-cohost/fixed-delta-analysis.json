@@ -1,0 +1,24 @@
+{
+  "old": "c821b34d607016c6dbc1020c203621841f1a60e8",
+  "new": "4cc9c815293a4e03225b26adfa228fdd0b50b2e7",
+  "checks": {
+    "backend/needs/cj_needs/domain.py": "UNCHANGED_BYTES",
+    "backend/needs/cj_needs/__init__.py": "UNCHANGED_BYTES",
+    "backend/needs/sql/candidate.sql": "UNCHANGED_BYTES",
+    "boundary.py:Boundary": "UNCHANGED_AST",
+    "boundary.py:Metadata": "UNCHANGED_AST",
+    "boundary.py:Operation.act": "UNCHANGED_AST",
+    "boundary.py:Operation.query_action": "UNCHANGED_AST",
+    "boundary.py:Operation.detail": "UNCHANGED_AST",
+    "boundary.py:Operation.revision": "UNCHANGED_AST",
+    "postgres.py:Repository._receipt": "UNCHANGED_AST",
+    "postgres.py:Repository._snapshot": "UNCHANGED_AST",
+    "postgres.py:Repository.act": "UNCHANGED_AST",
+    "postgres.py:Repository.query_action": "UNCHANGED_AST",
+    "postgres.py:Repository.detail": "UNCHANGED_AST",
+    "postgres.py:Repository.revision": "UNCHANGED_AST",
+    "postgres.py:Repository.__init__": "ADDITIVE kw-only strict_close=False, original 3 positional args retained",
+    "postgres.py:Repository.transaction": "REVIEWED strict_close opt-in raises ordinary close failure and calls closed guard only when True; legacy default False path retained",
+    "boundary.py:Operation.__run": "REVIEWED additive read_only flag denies methods other than detail/revision; legacy state has no flag, default False"
+  }
+}

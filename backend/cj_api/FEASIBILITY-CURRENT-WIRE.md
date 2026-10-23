@@ -74,14 +74,16 @@ or prove real feasibility from local PASS checks. No new authority or data store
 
 ## NEEDS package compatibility and validation
 
-Existing root NEEDS pin remains c821. Domain/init/schema bytes are identical to
-4cc9; original Boundary adds only read_only method restriction, Repository adds
-strict_close=False default plus opt-in strict close and post-close settlement.
-Legacy ordinary-close semantics remain original, including old known failures.
-New4cc9 package does NOT satisfy old c821 boundary/postgres file hashes: actual
-legacy root factory refuses it. Candidate tests/export use a separate process;
-no alias/second NEEDS/hash bypass and NO cohost approval. Later cohost requires
-an explicit accepted root pin-upgrade/compatibility gate.
+The original dc29 delivery retained c821 and proved that its legacy hash refused
+4cc9 in a separate candidate process. Subsequent root consumption candidate now
+aligns NEEDS/AUTH pins to the SAME fixed4cc9/8b graph for both entry types; see
+`evidence/needs-cohost/REPORT.md`. Domain/init/schema bytes and public ABI remain
+compatible; legacy strict_close=False retains original ordinary-close behavior
+and known FAILs, while protected reads explicitly opt into strict close. Each
+lifetime owns its fresh canonical Repository/guard; shared class/checker/connect/
+scope identity is tested, without forcing shared mutable repository instances.
+No second package/alias/hash bypass. Author cohost PASS does not grant independent
+compatibility or factory activation approval. Factory still hard CLOSED.
 
 `evidence/feasibility-current-wire/REPORT.md`: five new real-private-PG/in-process
 ASGI scoped root cases, official Swift fixture consumer, affected foundation4,

@@ -1,0 +1,6 @@
+{
+  "backend/cj_api/needs_pins.json": "85b62f15a3f979007ba2d083fb68aba543ab9f60f89a450cdc3d2f1cd4647754",
+  "scripts/analyze-needs-cohost.py": "5b604bc71ff7884d6f2b861c10089a32bf5c3934bf1548204c6637f6c6da10bf",
+  "backend/cj_api/tests/needs_cohost_checks.py": "6fe0881f6946a7cd76e3a06b00f455e9f8a248f7460c3e12eda84da1a2f228ec",
+  "backend/cj_api/tests/needs_cohost_private_postgres.py": "a40aa0dc473946f8a882def9eec8366ff9de70a021ae3d6c4a50fcfbb8732be1"
+}
