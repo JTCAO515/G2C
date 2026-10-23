@@ -68,6 +68,15 @@ class Context:
     # Entire scope epoch must be rechecked by RUN before publishing results.
     epoch: int
 
+def current_context(tx, subject, context_id=None):
+    """Canonical selection shared by read, validation and held-lock consumption."""
+    epoch = tx.lock_scope()
+    rows = tx.effective(subject, context_id)
+    selected = {i.command.slot: i for i in rows if i.command.extent == 'long_term'}
+    selected.update({i.command.slot: i for i in rows if i.command.extent == 'current'})
+    return Context(tuple(selected[k] for k in sorted(selected)), epoch)
+
+
 class Service:
     def __init__(self, repository, *, manual_policy=None):
         self.repository = repository
@@ -141,12 +150,8 @@ class Service:
     def effective(self, subject, context_id=None):
         if type(subject) is not str or not subject: raise InvalidInput('subject')
         with self.repository.transaction() as tx:
-            epoch = tx.lock_scope()
-            rows = tx.effective(subject, context_id)
-            # Explicit current constraints override the same canonical slot for this request only.
-            selected = {i.command.slot: i for i in rows if i.command.extent == 'long_term'}
-            selected.update({i.command.slot: i for i in rows if i.command.extent == 'current'})
-        return Context(tuple(selected[k] for k in sorted(selected)), epoch)
+            result = current_context(tx, subject, context_id)
+        return result
 
     def check_fence(self, epoch):
         with self.repository.transaction() as tx:
