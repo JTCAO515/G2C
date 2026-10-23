@@ -1,0 +1,68 @@
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 654]
+[Planning deferred tasks]
+[3 / 43] CJSessionTests-product
+[13 / 24] CJAuthSupabaseTests-product
+[16 / 27] CJAuthSupabaseTests-product
+[20 / 26] CJAuthSupabaseTests-product
+[22 / 26] CJAuthSupabaseTests-product
+Build complete! (2.13秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite HostEmailCallbackTests started.
+◇ Suite SupabaseSDKAdapterTests started.
+◇ Test legacyHTTPSAndDefaultOffRemainCompatible() started.
+◇ Test explicitNativeCallbacksUseOnlyHTTPSServiceAndExactDistinctDestinations() started.
+◇ Test explicitHTTPSCallbackIsPurposeSpecificWithoutFallback() started.
+◇ Test configuredRouteDoesNotEnableVerificationResetOrLongLivedCallback() started.
+◇ Test callbackContextRequiresOriginalPurposeAttemptAndAdapter() started.
+◇ Test wrongPurposeConflictingSourcesAndNativeServiceEndpointFailClosed() started.
+◇ Test nativeProviderAndClientIDMustMatchOriginalAttempt() started.
+◇ Test malformedWildcardEncodedAndReservedCallbacksAreRejected() started.
+◇ Test cancelledSDKResponseCannotOverwriteNewAttempt() started.
+◇ Test legacyHTTPSRedirectPreservesEncodedPathExactly() started.
+◇ Test sdkAutomaticPostRetryCannotRepeatUnknownWrite() started.
+◇ Test networkUnknownAndDefaultTransportNeverGrantAccess() started.
+◇ Test missingConfigurationAndCallbacksNeverReachSDKTransport() started.
+◇ Test sameAttemptCancelledReplayAndDifferentAttemptsAreIsolated() started.
+◇ Test missingNonceOrWrongAttemptMaterialSendsNothing() started.
+◇ Test badConfigurationDoesNotFallBack() started.
+◇ Test unverifiedEmailIsNotGenericRejection() started.
+◇ Test officialSDKBuildsGoogleAppleExchangesButNeverRealOAuth() started.
+◇ Test cancelledDuringMaterialAcquisitionSendsNothing() started.
+◇ Test sameAttemptConcurrentReplaySharesOneDispatch() started.
+◇ Test sameAttemptSequentialReplayReturnsOriginalWithoutRedispatch() started.
+◇ Test sameAttemptUnknownReplayDoesNotRetryOriginalWrite() started.
+◇ Test officialSDKBuildsEmailRequestsAndRecoveryAcknowledgement() started.
+◇ Test sameAttemptAcrossAdaptersCannotRedispatch() started.
+✔ Test missingConfigurationAndCallbacksNeverReachSDKTransport() passed after 0.002 seconds.
+✔ Test badConfigurationDoesNotFallBack() passed after 0.002 seconds.
+✔ Test legacyHTTPSAndDefaultOffRemainCompatible() passed after 0.002 seconds.
+✔ Test callbackContextRequiresOriginalPurposeAttemptAndAdapter() passed after 0.002 seconds.
+✔ Test explicitHTTPSCallbackIsPurposeSpecificWithoutFallback() passed after 0.002 seconds.
+✔ Test configuredRouteDoesNotEnableVerificationResetOrLongLivedCallback() passed after 0.002 seconds.
+✔ Test malformedWildcardEncodedAndReservedCallbacksAreRejected() passed after 0.002 seconds.
+✔ Test legacyHTTPSRedirectPreservesEncodedPathExactly() passed after 0.002 seconds.
+✔ Test wrongPurposeConflictingSourcesAndNativeServiceEndpointFailClosed() passed after 0.002 seconds.
+✔ Test cancelledDuringMaterialAcquisitionSendsNothing() passed after 0.002 seconds.
+✔ Test missingNonceOrWrongAttemptMaterialSendsNothing() passed after 0.002 seconds.
+✔ Test nativeProviderAndClientIDMustMatchOriginalAttempt() passed after 0.003 seconds.
+✔ Test sameAttemptSequentialReplayReturnsOriginalWithoutRedispatch() passed after 0.006 seconds.
+✔ Test cancelledSDKResponseCannotOverwriteNewAttempt() passed after 0.006 seconds.
+✔ Test sameAttemptAcrossAdaptersCannotRedispatch() passed after 0.006 seconds.
+✔ Test sameAttemptConcurrentReplaySharesOneDispatch() passed after 0.006 seconds.
+✔ Test sameAttemptCancelledReplayAndDifferentAttemptsAreIsolated() passed after 0.006 seconds.
+✔ Test explicitNativeCallbacksUseOnlyHTTPSServiceAndExactDistinctDestinations() passed after 0.007 seconds.
+✔ Suite HostEmailCallbackTests passed after 0.007 seconds.
+✔ Test unverifiedEmailIsNotGenericRejection() passed after 0.007 seconds.
+✔ Test officialSDKBuildsGoogleAppleExchangesButNeverRealOAuth() passed after 0.007 seconds.
+✔ Test officialSDKBuildsEmailRequestsAndRecoveryAcknowledgement() passed after 0.007 seconds.
+✔ Test sdkAutomaticPostRetryCannotRepeatUnknownWrite() passed after 1.014 seconds.
+✔ Test networkUnknownAndDefaultTransportNeverGrantAccess() passed after 1.014 seconds.
+✔ Test sameAttemptUnknownReplayDoesNotRetryOriginalWrite() passed after 1.014 seconds.
+✔ Suite SupabaseSDKAdapterTests passed after 1.014 seconds.
+✔ Test run with 24 tests in 2 suites passed after 1.014 seconds.

@@ -9,11 +9,25 @@ public struct SupabaseAdapterConfiguration: Sendable {
     public let emailRedirect: URL?
     public let googleClientID: String?
     public let appleClientID: String?
+    public let emailVerificationCallback: HostEmailCallback?
+    public let passwordRecoveryCallback: HostEmailCallback?
 
     public init(authURL: URL? = nil, publicKey: String? = nil, emailRedirect: URL? = nil,
-                googleClientID: String? = nil, appleClientID: String? = nil) {
+                googleClientID: String? = nil, appleClientID: String? = nil,
+                emailVerificationCallback: HostEmailCallback? = nil, passwordRecoveryCallback: HostEmailCallback? = nil) {
         self.authURL = authURL; self.publicKey = publicKey; self.emailRedirect = emailRedirect
         self.googleClientID = googleClientID; self.appleClientID = appleClientID
+        self.emailVerificationCallback = emailVerificationCallback; self.passwordRecoveryCallback = passwordRecoveryCallback
+    }
+
+    func emailCallback(for purpose: EmailCallbackPurpose) -> HostEmailCallback? {
+        // Never silently choose between two host configuration sources.
+        if emailRedirect != nil && (emailVerificationCallback != nil || passwordRecoveryCallback != nil) { return nil }
+        let explicit = purpose == .verifyEmail ? emailVerificationCallback : passwordRecoveryCallback
+        if let explicit { return explicit.purpose == purpose ? explicit : nil }
+        guard let emailRedirect else { return nil }
+        // Legacy emailRedirect retains its original HTTPS-only, shared-route behavior.
+        return try? HostEmailCallback(exactDestination: emailRedirect, kind: .https, purpose: purpose)
     }
 }
 
@@ -30,6 +44,7 @@ public typealias AuthFetch = @Sendable (URLRequest) async throws -> (Data, URLRe
 
 @MainActor public final class SupabaseSDKAdapter: AuthSDKAdapter {
     private let configuration: SupabaseAdapterConfiguration
+    private let callbackOwner = UUID()
     private let fetch: AuthFetch
     private let material: @MainActor (AuthAttempt) async -> SDKMaterial?
     private let isCurrent: @MainActor (AuthAttempt) -> Bool
@@ -50,8 +65,10 @@ public typealias AuthFetch = @Sendable (URLRequest) async throws -> (Data, URLRe
               let key = configuration.publicKey, !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               key.hasPrefix("sb_publishable_"), key.count > "sb_publishable_".count else { return .missingConfiguration }
         switch action {
-        case .emailRegister, .emailRecovery:
-            guard let redirect = configuration.emailRedirect, validEndpoint(redirect) else { return .missingConfiguration }
+        case .emailRegister:
+            guard configuration.emailCallback(for: .verifyEmail) != nil else { return .missingConfiguration }
+        case .emailRecovery:
+            guard configuration.emailCallback(for: .resetPassword) != nil else { return .missingConfiguration }
         case .googleSignIn:
             guard nonempty(configuration.googleClientID) else { return .missingConfiguration }
         case .appleSignIn:
@@ -63,6 +80,22 @@ public typealias AuthFetch = @Sendable (URLRequest) async throws -> (Data, URLRe
         case .emailSignIn: break
         }
         return nil
+    }
+
+    /// Read explicit outbound configuration only while its original request is current.
+    /// Does not accept an incoming URL or enable verify/reset/code exchange.
+    public func emailCallbackContext(for attempt: AuthAttempt, purpose: EmailCallbackPurpose) -> AuthEmailCallbackContext? {
+        guard isCurrent(attempt), unavailableReason(for: attempt.action) == nil else { return nil }
+        switch (attempt.action, purpose) {
+        case (.emailRegister, .verifyEmail), (.emailRecovery, .resetPassword): break
+        default: return nil
+        }
+        guard let callback = configuration.emailCallback(for: purpose), isCurrent(attempt) else { return nil }
+        return AuthEmailCallbackContext(callback: callback, attempt: attempt, owner: callbackOwner)
+    }
+
+    public func isEmailCallbackContextCurrent(_ context: AuthEmailCallbackContext) -> Bool {
+        context.owner == callbackOwner && emailCallbackContext(for: context.attempt, purpose: context.callback.purpose) == context
     }
 
     public func perform(_ attempt: AuthAttempt) async -> SDKEvent {
@@ -120,11 +153,11 @@ public typealias AuthFetch = @Sendable (URLRequest) async throws -> (Data, URLRe
                 outcome = .identityNeedsServerCheck
             case (.emailRegister, .email(let bound, let address, let password)):
                 guard bound == attempt, nonempty(address), let password, nonempty(password) else { return .unavailable(.missingRuntimeMaterial) }
-                _ = try await client.signUp(email: address, password: password, redirectTo: configuration.emailRedirect)
+                _ = try await client.signUp(email: address, password: password, redirectTo: configuration.emailCallback(for: .verifyEmail)?.destination)
                 outcome = .verificationPending
             case (.emailRecovery, .email(let bound, let address, _)):
                 guard bound == attempt, nonempty(address) else { return .unavailable(.missingRuntimeMaterial) }
-                try await client.resetPasswordForEmail(address, redirectTo: configuration.emailRedirect)
+                try await client.resetPasswordForEmail(address, redirectTo: configuration.emailCallback(for: .resetPassword)?.destination)
                 outcome = .recoveryRequestAcknowledged
             case (.googleSignIn, .native(let bound, let provider, let clientID, let token, let nonce, let access)),
                  (.appleSignIn, .native(let bound, let provider, let clientID, let token, let nonce, let access)):

@@ -56,3 +56,5 @@ Apple 能力、nonce/state/PKCE 校验、邮件、真实注册/恢复、服务�
 不使用 SessionMaterial/token 作为密钥，不默认自动创建或轮换。
 
 官方 SDK Session 编码/再验证与显式安全保存桥接候选见 [SESSION-BRIDGE](SESSION-BRIDGE.md)；默认无验证 hook、不自动激活。
+
+C2 email callback 的显式配置分离及尚未启用的 PKCE/host 接点见 [EMAIL-CALLBACK-CONFIGURATION](EMAIL-CALLBACK-CONFIGURATION.md)。
