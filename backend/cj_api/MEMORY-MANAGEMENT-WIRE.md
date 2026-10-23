@@ -91,7 +91,10 @@ both fixed candidate schemas; that fixture is not production registration.
 See `evidence/memory-management-wire/REPORT.md`: six new canonical real-PG /
 in-process-ASGI wire checks with synthetic strict JWT and approved source fixture,
 two old426 boundary regressions, official generated Swift fixture consumer and
-exact old-contract/generation checks. No live HTTP listener, real account C2,
-actual model/RUN publication, UI/device, text edit or independent acceptance is
-established. Reuse e5ff's unrelated accepted evidence without claiming it verifies
-this new action flow. Factory and independent gates remain closed/pending.
+exact old-contract/generation checks. Later `evidence/memory-management-network/REPORT.md`
+adds actual official Swift URLSession -> numeric loopback HTTP -> canonical0045/a7
+-> new private PG evidence with explicit synthetic identities/source fixture.
+The short-lived HTTP listener and PG were stopped. This is not real account C2,
+model/RUN publication, UI/device, text edit or independent acceptance. Reuse
+unrelated e5ff/20aa/82f evidence only within its original scope. Factory and
+independent gates remain closed/pending.
