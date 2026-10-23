@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "contract": "MEMORY-internal.1",
-  "consumption_document_commit": "426d337b0647d7770f1716fad83f2e5e724d28e4",
+  "consumption_document_commit": "0045e423f004f873e2786aa98b2600b70772a921",
   "sources": [
     {
       "name": "auth",
@@ -16,15 +16,19 @@
     },
     {
       "name": "memory",
-      "commit": "426d337b0647d7770f1716fad83f2e5e724d28e4",
+      "commit": "0045e423f004f873e2786aa98b2600b70772a921",
       "prefix": "backend/memory/cj_memory/",
       "files": {
         "backend/memory/cj_memory/__init__.py": "8adc2a0b636874f2c6e6664d3b4a51f8cf2a87a1767e9f92009b9fe6bf0d60d6",
-        "backend/memory/cj_memory/domain.py": "93f6243d46ff2ea63364f40dc1de6a93c8ebd5d29eda0bb1357ef5ca82982ce0",
-        "backend/memory/cj_memory/postgres.py": "2908c1b60cbfa88b983e7128c19d290777362c8bbfa4fdf45e2db7c7dea453c5",
-        "backend/memory/cj_memory/operation.py": "01ca8f8bdd88868ee84415dc9710acac0e0aa13e8638f064691d7808b11d7e37",
-        "backend/memory/cj_memory/manual.py": "e9552bcc692d2a1c4c1f5777967f1c169034be66536dbb34f881f0094afc484d"
+        "backend/memory/cj_memory/consumption.py": "fbe03ff03029871cd195bfcb4652e4b4d85e39dc14596bb0a73470dac4f28f06",
+        "backend/memory/cj_memory/domain.py": "61ba54e243903dcd56b8c2c9fbb4340434c4ae2d7fa74d460353b0a3bd08850a",
+        "backend/memory/cj_memory/lifecycle.py": "fbb2829e077bf1793f1a5f7dabf7ddc80469127244729bae49ec90033fb2d60d",
+        "backend/memory/cj_memory/manual.py": "e9552bcc692d2a1c4c1f5777967f1c169034be66536dbb34f881f0094afc484d",
+        "backend/memory/cj_memory/operation.py": "bcbdc72b04e9437dc43c07f62388f3b5031f364ae9d7ce162a71db72c34092ad",
+        "backend/memory/cj_memory/postgres.py": "a5ca6e8e0d9e45f1f957361b7b4e76c03a50b30f24f64fe619d375f49c5f0e06"
       }
     }
-  ]
+  ],
+  "upgrade_candidate_from": "426d337b0647d7770f1716fad83f2e5e724d28e4",
+  "compatibility_report": "evidence/memory-cohost/REPORT.md"
 }

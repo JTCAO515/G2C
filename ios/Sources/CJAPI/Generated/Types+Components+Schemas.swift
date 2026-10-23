@@ -6517,5 +6517,276 @@ extension Components {
                 ])
             }
         }
+        /// Exact five-key immutable UTF8 JSON; no trimming/normalization/re-encoding; pause/resume only. Existing source approval remains canonical; no text edit, candidate promotion or new approval.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementAction`.
+        public struct MemoryManagementAction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementAction/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementAction/operation`.
+            @frozen public enum operationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pause = "pause"
+                case resume = "resume"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementAction/operation`.
+            public var operation: Components.Schemas.MemoryManagementAction.operationPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementAction/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementAction/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementAction/expected_source_version`.
+            public var expected_source_version: Swift.Int
+            /// Creates a new `MemoryManagementAction`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - operation:
+            ///   - item_id:
+            ///   - expected_version:
+            ///   - expected_source_version:
+            public init(
+                action_id: Swift.String,
+                operation: Components.Schemas.MemoryManagementAction.operationPayload,
+                item_id: Swift.String,
+                expected_version: Swift.Int,
+                expected_source_version: Swift.Int
+            ) {
+                self.action_id = action_id
+                self.operation = operation
+                self.item_id = item_id
+                self.expected_version = expected_version
+                self.expected_source_version = expected_source_version
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case operation
+                case item_id
+                case expected_version
+                case expected_source_version
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.operation = try container.decode(
+                    Components.Schemas.MemoryManagementAction.operationPayload.self,
+                    forKey: .operation
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.expected_source_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_source_version
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "operation",
+                    "item_id",
+                    "expected_version",
+                    "expected_source_version"
+                ])
+            }
+        }
+        /// Historical original lifecycle receipt. action_id is canonical Receipt.operation_id; hash comes from persisted original action bytes, not request recomputation.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementReceipt`.
+        public struct MemoryManagementReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceipt/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceipt/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceipt/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceipt/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case disabled = "disabled"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceipt/status`.
+            public var status: Components.Schemas.MemoryManagementReceipt.statusPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceipt/input_sha256`.
+            public var input_sha256: Swift.String
+            /// Creates a new `MemoryManagementReceipt`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - item_id:
+            ///   - version:
+            ///   - status:
+            ///   - input_sha256:
+            public init(
+                action_id: Swift.String,
+                item_id: Swift.String,
+                version: Swift.Int,
+                status: Components.Schemas.MemoryManagementReceipt.statusPayload,
+                input_sha256: Swift.String
+            ) {
+                self.action_id = action_id
+                self.item_id = item_id
+                self.version = version
+                self.status = status
+                self.input_sha256 = input_sha256
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case item_id
+                case version
+                case status
+                case input_sha256
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.status = try container.decode(
+                    Components.Schemas.MemoryManagementReceipt.statusPayload.self,
+                    forKey: .status
+                )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "item_id",
+                    "version",
+                    "status",
+                    "input_sha256"
+                ])
+            }
+        }
+        /// Receipt after canonical guarded commit and final fences only. Unknown outcome must query original action ID, never automatic resend/new ID.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementApplyResponse`.
+        public struct MemoryManagementApplyResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementApplyResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementApplyResponse/receipt`.
+            public var receipt: Components.Schemas.MemoryManagementReceipt
+            /// Creates a new `MemoryManagementApplyResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryManagementReceipt
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryManagementReceipt.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// Required null receipt means not observed in this scoped lifecycle ledger; never proves noncommit or authorizes resend.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptResponse`.
+        public struct MemoryManagementReceiptResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptResponse/receipt/case1`.
+                case MemoryManagementReceipt(Components.Schemas.MemoryManagementReceipt)
+                /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptResponse/receipt/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryManagementReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryManagementReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptResponse/receipt`.
+            public var receipt: Components.Schemas.MemoryManagementReceiptResponse.receiptPayload
+            /// Creates a new `MemoryManagementReceiptResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryManagementReceiptResponse.receiptPayload
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryManagementReceiptResponse.receiptPayload.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
     }
 }

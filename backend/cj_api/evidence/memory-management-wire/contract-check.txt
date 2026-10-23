@@ -1,0 +1,2 @@
+PASS every e5ff schema/operation definition unchanged
+PASS OpenAPI, positive/failure/unknown/conflict examples, negative schema, compatibility guard, storage registry

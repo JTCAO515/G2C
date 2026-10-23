@@ -40,10 +40,24 @@ class MemoryBoundary:
         self.checker, self.resolve_binding = checker, resolve_binding
         self.source_policy, self.modules = source_policy, modules
 
+    def _service_type(self):
+        return self.modules['cj_memory.domain'].Service
+
+    def _command(self, kind, argument):
+        return self.modules['cj_memory.manual'].parse_manual(argument) if kind == 'save' else None
+
+    def _context_value(self, context, kind, argument):
+        if kind == 'save': return context.save_manual(argument)
+        if kind == 'query': return context.query(argument)
+        if kind == 'detail': return context.detail(argument)
+        if kind == 'groups': return context.groups()
+        if kind == 'list': return context.list_items(*argument)
+        raise ValueError('Unsupported memory operation')
+
     def invoke(self, token, kind, argument, project):
         from cj_auth.interfaces import AdmissionStatus, TrustedPrincipal
         domain = self.modules['cj_memory.domain']
-        command = self.modules['cj_memory.manual'].parse_manual(argument) if kind == 'save' else None
+        command = self._command(kind, argument)
         last_fault = None
         captured = None
 
@@ -59,7 +73,7 @@ class MemoryBoundary:
                 captured = principal
             binding = self.resolve_binding(principal)
             if (type(binding) is not MemoryBinding or type(binding.scope) is not str
-                    or not binding.scope.strip() or type(binding.service) is not domain.Service):
+                    or not binding.scope.strip() or type(binding.service) is not self._service_type()):
                 raise CompositionUnavailable('Explicit principal-bound public Memory Service required')
             return principal, binding
 
@@ -86,12 +100,7 @@ class MemoryBoundary:
                 raise
 
         def operation(context):
-            if kind == 'save': value = context.save_manual(argument)
-            elif kind == 'query': value = context.query(argument)
-            elif kind == 'detail': value = context.detail(argument)
-            elif kind == 'groups': value = context.groups()
-            elif kind == 'list': value = context.list_items(*argument)
-            else: raise ValueError('Unsupported memory operation')
+            value = self._context_value(context, kind, argument)
             return project(value)  # fully encoded bytes; no private object escapes
 
         try:

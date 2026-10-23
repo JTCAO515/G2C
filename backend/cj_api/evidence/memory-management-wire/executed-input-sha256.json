@@ -1,0 +1,14 @@
+{
+  "contracts/api/openapi.json": "e85dbe58539cc1bb774fef477c21e2ea3fa78bd881f40aec2ddef533eaa36204",
+  "backend/cj_api/generated.py": "08358937e400103987156ba389b0553611f336a44790172d94190c42ddcb5580",
+  "backend/cj_api/app.py": "0add7d35f9c2ed72739c2dccd9efa0657c48ef53411187543ac5ab0c68d8614c",
+  "backend/cj_api/memory_boundary.py": "bfbdd2da932af44cda9991f99f67b485366a105f4ee0c4f6095e0dd501103c46",
+  "backend/cj_api/memory_management_boundary.py": "cd243cf3bcd79bb3347de2cc23428bb38c5b5a16e6c00636862ffc879a00454d",
+  "backend/cj_api/memory_management_routes.py": "52135eaf607ae03ee4a0c4f0cc0f73bea342fa41ca9a0b9ae58084aa73621772",
+  "backend/cj_api/memory_management_pins.json": "633af8efed06516b130a116d16b7f2eb604a5e90c5b19579752fdbff5a2be67a",
+  "backend/cj_api/tests/memory_management_wire_checks.py": "b5006cfcc8322ef05987b25a8d70a4e03f52c0ebc67fe503ca3db5116eefef0e",
+  "backend/cj_api/tests/memory_management_private_postgres.py": "3e2792e071d83a1eae54b61a8f7dbd6660559b92e7c8ea452e0059716febb841",
+  "backend/cj_api/tests/memory_management_generated_consumer.swift": "a33726b5882d0c9787bb8ca493a5c9e02718534c66e9ae28fdd3e543b59e8953",
+  "scripts/prepare-memory-management-deps.py": "342191747d35d9d2209a9542f9e7c69b8714147a0290167906b2f95a23dbcb57",
+  "scripts/check-generated-memory-management.sh": "d1289680a760b3eb879c632792dad7e5b0f583dc2e585265bc02d99e00a05c38"
+}

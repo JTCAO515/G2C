@@ -1,0 +1,19 @@
+{
+  "contracts/api/openapi.json": "e85dbe58539cc1bb774fef477c21e2ea3fa78bd881f40aec2ddef533eaa36204",
+  "backend/cj_api/generated.py": "08358937e400103987156ba389b0553611f336a44790172d94190c42ddcb5580",
+  "backend/cj_api/memory_management_boundary.py": "cd243cf3bcd79bb3347de2cc23428bb38c5b5a16e6c00636862ffc879a00454d",
+  "backend/cj_api/memory_management_pins.json": "633af8efed06516b130a116d16b7f2eb604a5e90c5b19579752fdbff5a2be67a",
+  "backend/cj_api/memory_management_routes.py": "52135eaf607ae03ee4a0c4f0cc0f73bea342fa41ca9a0b9ae58084aa73621772",
+  "backend/cj_api/memory_boundary.py": "bfbdd2da932af44cda9991f99f67b485366a105f4ee0c4f6095e0dd501103c46",
+  "backend/cj_api/app.py": "0add7d35f9c2ed72739c2dccd9efa0657c48ef53411187543ac5ab0c68d8614c",
+  "scripts/prepare-memory-deps.py": "28ae038e8beb4e5bf9220a4bfdc62ed32a9ff28b7a1c91a345f581abc66bbe08",
+  "ios/Sources/CJAPI/Generated/Client.swift": "653f9f55f52a00ccfc6476fe67798a4ba34eec6e713fe10650b85fc9d25aa8e0",
+  "ios/Sources/CJAPI/Generated/Types+Components+Headers.swift": "b920e1a8ad3af618f10823dfd9ead2ac7a2833dcd9e06f84973789d7b578e1e2",
+  "ios/Sources/CJAPI/Generated/Types+Components+Parameters.swift": "06b05f078460bb0cc022223f7e6bf5d8509978b81486f2c191e241c08f38664b",
+  "ios/Sources/CJAPI/Generated/Types+Components+RequestBodies.swift": "3a79bacb276382b5f534e3a02a5a50297f67c53832e30b31e7afd9afbc6275bd",
+  "ios/Sources/CJAPI/Generated/Types+Components+Responses.swift": "8b243eb7012a5949f3818188cd64cc40021b87061be2b9de50a611f2ab9ab776",
+  "ios/Sources/CJAPI/Generated/Types+Components+Schemas.swift": "36c2db98538bb1810f624c76ebeefaea0b0c70277d8bb9b30eddff0c869f77ba",
+  "ios/Sources/CJAPI/Generated/Types+Components.swift": "6ea69a3694541e5a67e2e3fe774048b7e0e3706ba7957ddefedd4e9e136b04e7",
+  "ios/Sources/CJAPI/Generated/Types+Operations.swift": "616ab50732edce8b7a55b0c46ef26908a228f03fd55bdd2147dac74a86939bcd",
+  "ios/Sources/CJAPI/Generated/Types.swift": "6f880601b88c5e42d7cada73056fcbab0702d59890bb840b5fdb369e7d65e8dc"
+}

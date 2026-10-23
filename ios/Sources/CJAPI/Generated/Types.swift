@@ -91,6 +91,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/account-cleanup-progress`.
     /// - Remark: Generated from `#/paths//v1/account-cleanup-progress/get(getCurrentAccountCleanupProgress)`.
     func getCurrentAccountCleanupProgress(_ input: Operations.getCurrentAccountCleanupProgress.Input) async throws -> Operations.getCurrentAccountCleanupProgress.Output
+    /// - Remark: HTTP `POST /v1/memory-management-actions`.
+    /// - Remark: Generated from `#/paths//v1/memory-management-actions/post(applyMemoryManagementAction)`.
+    func applyMemoryManagementAction(_ input: Operations.applyMemoryManagementAction.Input) async throws -> Operations.applyMemoryManagementAction.Output
+    /// Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates.
+    ///
+    /// - Remark: HTTP `GET /v1/memory-management-receipts`.
+    /// - Remark: Generated from `#/paths//v1/memory-management-receipts/get(queryMemoryManagementReceipt)`.
+    func queryMemoryManagementReceipt(_ input: Operations.queryMemoryManagementReceipt.Input) async throws -> Operations.queryMemoryManagementReceipt.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -391,6 +399,30 @@ extension APIProtocol {
         headers: Operations.getCurrentAccountCleanupProgress.Input.Headers = .init()
     ) async throws -> Operations.getCurrentAccountCleanupProgress.Output {
         try await getCurrentAccountCleanupProgress(Operations.getCurrentAccountCleanupProgress.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/memory-management-actions`.
+    /// - Remark: Generated from `#/paths//v1/memory-management-actions/post(applyMemoryManagementAction)`.
+    public func applyMemoryManagementAction(
+        headers: Operations.applyMemoryManagementAction.Input.Headers = .init(),
+        body: Operations.applyMemoryManagementAction.Input.Body
+    ) async throws -> Operations.applyMemoryManagementAction.Output {
+        try await applyMemoryManagementAction(Operations.applyMemoryManagementAction.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates.
+    ///
+    /// - Remark: HTTP `GET /v1/memory-management-receipts`.
+    /// - Remark: Generated from `#/paths//v1/memory-management-receipts/get(queryMemoryManagementReceipt)`.
+    public func queryMemoryManagementReceipt(
+        query: Operations.queryMemoryManagementReceipt.Input.Query,
+        headers: Operations.queryMemoryManagementReceipt.Input.Headers = .init()
+    ) async throws -> Operations.queryMemoryManagementReceipt.Output {
+        try await queryMemoryManagementReceipt(Operations.queryMemoryManagementReceipt.Input(
             query: query,
             headers: headers
         ))

@@ -1,5 +1,5 @@
 {
-  "version": "1.10.0",
+  "version": "1.11.0",
   "stores": [
     {
       "id": "business",
@@ -169,6 +169,25 @@
           "cleanup_hook": "UNIMPLEMENTED; current-account progress SELECT never deletes, creates, recovers, retries or restores access",
           "restore_fence": "UNIMPLEMENTED; backups/offline/external retention remain explicit original barriers",
           "read_consumer": "GET /v1/account-cleanup-progress; current ALLOWED account and original operation only; five-field progress whitelist; no private journal or post-logout capability"
+        },
+        {
+          "id": "memory-management-actions",
+          "owner": "CJ-019 / CJ-011 / CJ-005",
+          "objects": [
+            "cj_memory_management_action"
+          ],
+          "source": "backend/memory_management/schema.sql@a7e706ce44095d43ab0b80c2e75a2bf81927ce76",
+          "status": "candidate_factory_closed_pending_independent_gates; production_not_provisioned",
+          "principal_binding": "Existing host authenticated MEMORY scope; canonical guarded Service and same cj_memory_scope/source/item transaction/row lock; no new source authority",
+          "sensitive_fields": [
+            "Exact original action UTF8 bytes and action/item IDs",
+            "Historical resulting version/status and stored original-input SHA256"
+          ],
+          "retention": "UNDECIDED; original reconciliation receipt retention/tombstone policy unresolved; no unlimited dedupe guarantee",
+          "cleanup_hook": "UNIMPLEMENTED; register this action ledger alongside original source/item/save ledgers; pause is not deletion",
+          "restore_fence": "UNIMPLEMENTED; backups/offline copies/unknown-action recovery require original IDs and exact bytes",
+          "read_consumer": "Original action receipt query only; null is absence observation, not proof of noncommit or retry authorization",
+          "candidate_sql_registration": "Documentation only; no migration manifest or application to old/production database"
         }
       ]
     },
@@ -313,6 +332,8 @@
     "manual_preview": "6944a66186800ecd26246ce7028d9c9a8767f810",
     "usage_status": "8cf6a85b56651cab9f20d056fcec2831b31f543d",
     "original_usage_association": "0685dbf8ad9622ad56c4435cb2fc47c3096046d1",
-    "cleanup_progress": "514aba717dd0e0a7f7783b6d9072d347cdb0a623"
+    "cleanup_progress": "514aba717dd0e0a7f7783b6d9072d347cdb0a623",
+    "memory_management": "a7e706ce44095d43ab0b80c2e75a2bf81927ce76",
+    "memory_lifecycle_adapter": "0045e423f004f873e2786aa98b2600b70772a921"
   }
 }
