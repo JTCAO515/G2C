@@ -1,0 +1,24 @@
+PASS generic iOS Simulator compilation, no runtime launch/signing.
+Full log: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/ios-final-full.log
+SHA256 980d264b5508c0dee693a7a5d1526da6e84098bdb503b807340ec33f1d6c1b27
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ CJShell (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 Compiling\ NeedsContainerHost.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/NeedsContainerHost.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/NeedsContainerHost.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 Compiling\ NeedsContainerView.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/NeedsContainerView.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/NeedsContainerView.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 Compiling\ FeasibilityHostView.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/FeasibilityHostView.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/FeasibilityHostView.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 Compiling\ NeedsContainerHost.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/NeedsContainerHost.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/NeedsContainerHost.swift (in target 'CJShell' from project 'CJShell')
+SwiftEmitModule normal arm64 Emitting\ module\ for\ CJShell (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 Compiling\ ShellFacts.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/ShellFacts.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/ShellFacts.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 Compiling\ ShellFacts.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/ShellFacts.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/ShellFacts.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 Compiling\ NeedsContainerView.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/NeedsContainerView.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal arm64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/NeedsContainerView.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 Compiling\ FeasibilityHostView.swift /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/FeasibilityHostView.swift (in target 'CJShell' from project 'CJShell')
+SwiftCompile normal x86_64 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell/contracts/ui/evidence/feasibility-host/.prepare/Modules/CJShell/Sources/CJShell/FeasibilityHostView.swift (in target 'CJShell' from project 'CJShell')
+** BUILD SUCCEEDED **

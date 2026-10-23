@@ -1,0 +1,26 @@
+[
+  {
+    "original": "tests.txt",
+    "archive": "tests.txt.xz",
+    "bytes": 28670,
+    "sha256": "f4d6380c556d67210d2f4faf17313853939bf2ad8ba39220fd0240ba772d7842"
+  },
+  {
+    "original": "inputs.json",
+    "archive": "inputs.json.xz",
+    "bytes": 45845,
+    "sha256": "21324fa0f6c917e51c07c9f9723b5aac8e285985215e2cf977574bdcf060c348"
+  },
+  {
+    "original": "ios-demo-build.txt",
+    "archive": "ios-demo-build.txt.xz",
+    "bytes": 28272,
+    "sha256": "3714631835b0b1404eaa5429636a7a828f8f151137fd65229f4a70c56022240d"
+  },
+  {
+    "original": "graph.json",
+    "archive": "graph.json.xz",
+    "bytes": 316449,
+    "sha256": "a0c9ccaf52e5cd64686b2bdca627c6456e163e73a8be791f4cc9a6fe4dfb9a23"
+  }
+]

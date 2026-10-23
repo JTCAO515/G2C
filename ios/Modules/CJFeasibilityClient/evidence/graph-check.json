@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "logical_sdk_paths": [
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-client/ios/Modules/CJFeasibilityClient/.prepare/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+  ],
+  "physical_sdk_paths": [
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+  ],
+  "occurrences": 2,
+  "second_sdk": false
+}

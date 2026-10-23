@@ -1,0 +1,3 @@
+Fixed-input dc29 compiler output; trailing whitespace trimmed.
+
+exit=0

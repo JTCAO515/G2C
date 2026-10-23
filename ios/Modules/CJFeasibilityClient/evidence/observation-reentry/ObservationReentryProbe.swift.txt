@@ -1,0 +1,28 @@
+
+import Observation
+@MainActor private final class ObservationProbeBox { var changed = false }
+extension FeasibilityTests {
+ @Test func testingObservationReentryMustNotPublishOldNeedsUnderNewBinding() async throws {
+  let f = try Fixture(); let model = f.model
+  let work = try model.prepare(f.selected)
+  let box = ObservationProbeBox()
+  withObservationTracking {
+   _ = model.state
+  } onChange: {
+   MainActor.assumeIsolated {
+    guard !box.changed else { return }
+    box.changed = true
+    let old = f.selected!
+    f.selected = .init(environment: old.environment, account: old.account,
+      generation: old.generation, selection: UUID(), sessionOperation: old.sessionOperation,
+      needsID: "needs-2")
+    _ = try? model.prepare(f.selected)
+   }
+  }
+  await model.read(work)
+  #expect(box.changed)
+  if case .loaded(let observation) = model.state {
+   #expect(observation.report.needs_id == f.selected.needsID)
+  }
+ }
+}

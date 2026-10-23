@@ -1,0 +1,14 @@
+{
+  "Sources/CJFeasibilityClient/FeasibilityView.swift": "28a2b361e7406632a9811832e6107288ec281ed43868907cbae9bae948aac5d0",
+  "Sources/CJFeasibilityClient/FeasibilityTransport.swift": "8318e9237a61e30eb6ad58dfabf158acf5e242406795ac16dbec8d624d6a0711",
+  "Sources/CJFeasibilityClient/StrictJSON.swift": "e4dcbc6bd2bd8a35674e25b406420a5d59dd66c53727191a446b800e983681d1",
+  "Sources/CJFeasibilityClient/FeasibilityModel.swift": "2b4e0df4719043595ac2bf490ea5c641c215c34645c7ad8dc935fad9481778d4",
+  "Sources/CJFeasibilityClient/FeasibilityTypes.swift": "e03865301653b550ef1e219f87ea251d84719bfa37e193936d273ac314f66359",
+  "Tests/CJFeasibilityClientTests/FeasibilityTests.swift": "c89d9a8e740fdb4bb49cdefd3f18466afcf5eb2ccbb360b3d49b3f4ac5a630e1",
+  "scripts/check_public_api.py": "cd1c1eaac66557e72b52b3c6ae951d95ca37e0b245aba34166fac4a006f5cd7b",
+  "scripts/prepare.py": "ecc520bdbdc7d596454bed200ca4d7cbca6e955d653f8db342d93ff346b16bd3",
+  "Package.swift": "d223b6ebbb2d0e38cba637cefbee930881ec03c9a1636b6cff247e7e0a256faa",
+  "Package.resolved": "2f248c38def5aacac0154376cd35cc3f649b9e492799d6e9bf2451b01002c967",
+  ".gitignore": "67a2c0ef708724f6a0879e425a4677ce3e70a74132f5173504f5c6c53af8f100",
+  "README.md": "1de47ebf94fbfed0d7abd5a2b23b447804c286f2144d568a1445eaf4a0da6537"
+}

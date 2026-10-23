@@ -1,0 +1,8 @@
+{
+  "source_commit": "22650bb21eaa388abeb2df8aac4b647477d5138f",
+  "parent": "c57e78d68178f0b34167eafaaa70b836c870ae24",
+  "sha256": {
+    "ios/Modules/CJShell/Sources/CJShell/NeedsContainerHost.swift": "4841b5a9e9e309d7f6a3e0ed783602e1e7c7a25022055e2129277580157a1116",
+    "ios/Modules/CJShell/Tests/FeasibilityHostHarness/FeasibilityHostTests.swift": "1fcd7dc40903bcf09f79431fa03f62b601e46244612e52d0cd30284800e1b532"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "baseline": "d749fdc3ca4a25c78e5f9cc0eba3f55113255798",
+  "shared": "9b4852dfad418d124d60366ada8efb380a8ffc1d",
+  "sdk": "dc29bb3634e63d8f065c38d39a7a0059f76cfa53",
+  "auth": "4eac0ad8db0ac33c89c7cc5b88d66b58d0fd6a7e",
+  "cleanup_path_unchanged": true,
+  "referenced_schemas_unchanged": [
+    "CleanupProgressStep",
+    "CurrentAccountCleanupProgress",
+    "CurrentAccountCleanupProgressResponse",
+    "ErrorInfo",
+    "ErrorResponse",
+    "RequestId"
+  ],
+  "unchanged_sha256": {
+    "ios/Package.swift": "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0",
+    "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
+    "ios/Sources/CJAPI/MemoryClientConfiguration.swift": "3088bab954be24d7fdda0c5815822feb846b772e6d4dc299889cdfd29e4f6d82",
+    "ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift": "fe1b002d25e56290e7518b96110ff5a17440d304436bfca4842a4a4be6c76472"
+  },
+  "auth_session_source_differs": true,
+  "auth_session_sha256": "8015d493bbe36cb4e2b9fd03e57d26b09edb0d37e10da5decd45a348f5101b21",
+  "trip_graph_input_not_dependency": "7bcab1b13bc683c205f3ff0fa4446657427a5225"
+}

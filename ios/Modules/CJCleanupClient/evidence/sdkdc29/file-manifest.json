@@ -1,0 +1,17 @@
+{
+  "Package.resolved": "05415a5de3cd277ba45f6cbc5e113f47fe089876ceb4a755af3e2d812ceeb58f",
+  "Package.swift": "74a102125f17621cbe762517b6c4e3066e86d99716321e0f010f0ecb1df0f2cc",
+  "README.md": "a1399192467747f2d89f797b6c9fb8aa92b60b2c015e6cfe31896722e6d0f5eb",
+  "evidence/sdkdc29/RESULTS.md": "c307e07db077ed1e6f9a657d3f66cbedc659719381e630e0e464819bd5b605be",
+  "evidence/sdkdc29/auth-input-delta.diff.gz": "34ccf4569a0dcb6b220f0783cc36643b87d6926508d5e81e1f94e9c0b2de23a3",
+  "evidence/sdkdc29/compatibility.json": "125ebc95fbeb92d71babf0f7ee9d06a4d17997f688b2f5b976bb65cb75b4f7ea",
+  "evidence/sdkdc29/dependency-pin.json": "02b26531875577e7b53bcd7fcea20cd02424a0f768dc6a8ecfea2c94b5ac0ef4",
+  "evidence/sdkdc29/graph-stderr.txt": "0ee832500c29ac51013fa44722972295c4052d5c64d9f6ef016ddf81abe9afaf",
+  "evidence/sdkdc29/ios-compile.txt.gz": "691fbc6a7484c0457b7ffcd8de4d74de4c0dde26f5d85a0fb17f9f12a8e095ff",
+  "evidence/sdkdc29/package-graph.json": "1885f3009bdc92857aada49c4698b4276f2c4aab2cffb3ab720d9f435df77ea6",
+  "evidence/sdkdc29/preflight-note.txt": "9791a79d4251a9e54ff9aa07c2e97965c8d036b796117d0d2916b8e9798cdc61",
+  "evidence/sdkdc29/prepare.txt": "8661cc746d0a00fa45ad4251c9853afe4d6a9c0f263ab52a6d0bb89b26371067",
+  "evidence/sdkdc29/selected-tests.txt.gz": "8c402517d52eb2e0e204f4e16f7d1ab6d4d9be75fc003166cc4d0a54753dacb5",
+  "evidence/sdkdc29/single-sdk.txt": "e89a906b2999816e939b7437747ba4b42a0ebfa6f703f2f58019a988e4cab686",
+  "scripts/prepare_dependencies.py": "7d46c7b25ac267ea1e1a3f0b2fa8c08b2d2e071705e1ec8a8038e8a9589b5d43"
+}
