@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-014-draft/backend/draft/evidence/source-fold/probe_source_fold.py", line 12, in <module>
+    result=review(req,snap,revisions,ctx,subject='self',context_id='trip-1',links=(SourceLink('item-1','original-needs',revisions[0]),SourceLink('item-1','original-memory',other)),cancelled=False,as_of=100)
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-014-draft/backend/draft/cj_draft/review.py", line 177, in review
+    raise InvalidInput('source is absent from exact bound original inputs')
+cj_draft.review.InvalidInput: source is absent from exact bound original inputs

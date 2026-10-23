@@ -1,0 +1,23 @@
+{
+  "base": "8ea1b35756726f60727f10deaf157c40b8df1072",
+  "python": "3.14.7 (main, Aug  5 2026, 10:29:49) [Clang 21.0.0 (clang-2100.3.34.2)]",
+  "input_files_sha256": {
+    "backend/auth/cj_auth/__init__.py": "6921fa11f3bdb1cefb618f0e067581fa22385cf1e0836e479f989a84dcb6374a",
+    "backend/auth/cj_auth/interfaces.py": "39711c9511c942274162fc4d32986a554147f8f32067ffd1e49e5aa94c9a0b9c",
+    "backend/feasibility/cj_feasibility/__init__.py": "0a3c42f209889aea0e910e6a2b0113c74be481ce7b6924886ef392c0b5d19bc2",
+    "backend/feasibility/cj_feasibility/validator.py": "95bf1bbb22398f02d850de777a8fa38551a516c8a4a8c5a330627a126813e488",
+    "backend/memory/cj_memory/__init__.py": "8adc2a0b636874f2c6e6664d3b4a51f8cf2a87a1767e9f92009b9fe6bf0d60d6",
+    "backend/memory/cj_memory/domain.py": "61ba54e243903dcd56b8c2c9fbb4340434c4ae2d7fa74d460353b0a3bd08850a",
+    "backend/needs/cj_needs/__init__.py": "702e49e341fa43cb40263da79cd43f53ec7f5fd683b11fa0f31ad5aab36e65e3",
+    "backend/needs/cj_needs/boundary.py": "4750a22dd6ef0a3818ee19a46b6c560b612e653fde20e595b6cc78ebd06855ed",
+    "backend/needs/cj_needs/domain.py": "19d9bf84a86e5a7918aefc641ba7f8e50c67066d43b3b944ea27f49e59883de9",
+    "backend/needs/cj_needs/postgres.py": "c9e39172fa6f09628218acd9e72a7f18cdb136587e78d835699ab4b16034cb34",
+    "backend/trip/cj_trip/__init__.py": "0c290ee504260d5514f616bf307565d00dbe7df4306f7f49f4df1ee992cc496a",
+    "backend/trip/cj_trip/domain.py": "078a5ed8962ee414f095c0c94a342d50347c794efcc4c236b77ad1389d93ce3d"
+  },
+  "candidate_files_sha256": {
+    "backend/draft/cj_draft/__init__.py": "05ff705e42c5a1437889bf6265ac46d7ac8980982b3d1cf739304d5deb592d8a",
+    "backend/draft/cj_draft/review.py": "8fa77a22a1004f3ef0b528556049cc8c51eeb555a40f9107bd2798fe2d262cf9",
+    "backend/draft/tests/test_review.py": "e1f7d20902334efbf03c4ef28b2732080e9c9c8083e021a93f37b7699a8d3a36"
+  }
+}

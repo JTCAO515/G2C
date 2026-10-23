@@ -1,0 +1,24 @@
+test_review (unittest.loader._FailedTest) ... ERROR
+
+======================================================================
+ERROR: test_review (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_review
+Traceback (most recent call last):
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-014-draft/backend/draft/tests/test_review.py", line 6, in <module>
+    from cj_trip.domain import Proposal, packed
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-014-draft/backend/trip/cj_trip/domain.py", line 81, in <module>
+    class Receipt:
+  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-014-draft/backend/trip/cj_trip/domain.py", line 87, in Receipt
+    committed_version: int | None
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)
