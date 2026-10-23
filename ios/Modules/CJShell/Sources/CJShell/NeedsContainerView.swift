@@ -9,6 +9,7 @@ struct NeedsContainerView: View {
     private var needsLanguage: NeedsLanguage { language == .english ? .en : .zh }
     var body: some View {
         let action = host.captureAction()
+        let containerID = host.viewIdentity
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text(language.text("Review or correct only what you know. Dates and budget may stay undecided.", "只查看或纠正已经明确的条件；日期和预算可以保持未定。"))
@@ -18,6 +19,18 @@ struct NeedsContainerView: View {
                     Text(model.state.message(needsLanguage)).accessibilityIdentifier("needs.container.state")
                     if let snapshot = model.snapshot {
                         NeedsDetailsView(fields: snapshot.fields, version: snapshot.version, language: needsLanguage)
+                    }
+                    if let entry = host.feasibilityPresentation {
+                        FeasibilityHostView(host: host, entry: entry, language: language)
+                            .id(entry.id)
+                    } else {
+                        Button(language.text("Review current needs evaluation", "查看当前需求评估")) {
+                            _ = host.openFeasibility(context: action)
+                        }
+                        .disabled(action == nil || model.state != .loaded || model.snapshot == nil)
+                        .accessibilityIdentifier("needs.feasibility.open")
+                        Text(language.text("Evaluation requires a current accepted source. Historical revisions and edits are not evaluation inputs.", "评估需要当前已读取的来源；历史修订和未保存编辑不作为评估输入。"))
+                            .font(.footnote)
                     }
                     if let revision = model.revision {
                         Text(language.text("Historical revision", "历史修订")).font(.headline)
@@ -80,7 +93,8 @@ struct NeedsContainerView: View {
                     Text(language.text("Journey needs are unavailable. A trusted account and current needs selection are required.", "旅行需求尚不可用，需要可信账号和当前需求选择。"))
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
-        }.navigationTitle(language.text("Journey needs", "本次旅行需求"))
+        }.onDisappear { if let containerID { host.leaveContainer(id: containerID) } }
+        .navigationTitle(language.text("Journey needs", "本次旅行需求"))
     }
 }
 #endif

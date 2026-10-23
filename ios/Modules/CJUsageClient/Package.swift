@@ -3,7 +3,7 @@ import PackageDescription
 let package = Package(name: "CJUsageClient", platforms: [.iOS(.v17), .macOS(.v14)],
  products: [.library(name: "CJUsageClient", targets: ["CJUsageClient"])],
  dependencies: [
- .package(path: "../CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"),
+ .package(path: "../CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"),
  .package(path: "../CJMessageClient"), .package(path: "../CJAuth"),
  .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
  .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")],

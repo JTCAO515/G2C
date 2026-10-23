@@ -196,3 +196,9 @@ Next MEMORY lifecycle SDK candidate: fixed20aa50ed at the single
 checks pass; pause/resume bytes and historical receipt/null semantics remain exact.
 No new source authority or real write/factory activation; current f87 App input and
 all old exports preserved. See evidence/MEMORY-MANAGEMENT-API-PIN.md.
+
+Next current NEEDS feasibility candidate: fixeddc29bb at the single
+.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation path. Five targeted
+checks pass; full UTF8/hash/decimal text and UNKNOWN limits retained. No solver or
+feasibility/write authority; factory hard CLOSED. Old exports and runtime preserved.
+See evidence/FEASIBILITY-CURRENT-API-PIN.md; current App/other consumers unchanged.

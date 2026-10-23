@@ -1,0 +1,80 @@
+[
+  {
+    "original": "graph-current.json",
+    "archive": "graph-current.json.xz",
+    "bytes": 316449,
+    "sha256": "2ede8f11c50bb0a218cd904b091ea82fb6b30eb5e2650237e0f8301c5599182e"
+  },
+  {
+    "original": "second-test-compile-failure.txt",
+    "archive": "second-test-compile-failure.txt.xz",
+    "bytes": 69910,
+    "sha256": "3f5efdac62baccb70bb9ced7ba5b7c924112fa8226f220d1a9641d4e2fcb44ac"
+  },
+  {
+    "original": "tests-final.txt",
+    "archive": "tests-final.txt.xz",
+    "bytes": 57180,
+    "sha256": "844c5312f75200e41e092351a957b9007b88f22052db9ba98028d0c35bd0e132"
+  },
+  {
+    "original": "graph-initial.json",
+    "archive": "graph-initial.json.xz",
+    "bytes": 316449,
+    "sha256": "5a3af32b8bee89074dcef876bf60f5a23656f9336f46708f0da5f80571698d3c"
+  },
+  {
+    "original": "ios-build.txt",
+    "archive": "ios-build.txt.xz",
+    "bytes": 56341,
+    "sha256": "683a41009f3e5badd880369c1e10b90dfd2ecc6b2d80609cce37ccfd5791391b"
+  },
+  {
+    "original": "graph-initial.txt",
+    "archive": "graph-initial.txt.xz",
+    "bytes": 17800,
+    "sha256": "f290a016a31870b4000d88569bf6ba3d0a60517f09d360d35104df69208c2af5"
+  },
+  {
+    "original": "initial-runtime-observer-recursion.txt",
+    "archive": "initial-runtime-observer-recursion.txt.xz",
+    "bytes": 56143,
+    "sha256": "88b6e4313005b1818bea622bcd23a60897f7c2bfa4754d89f9eae6795eece1ff"
+  },
+  {
+    "original": "initial-tests.txt",
+    "archive": "initial-tests.txt.xz",
+    "bytes": 78308,
+    "sha256": "f11feea6d7bc4dc24c9a846be999f93db5ae1bb0c4853cc9e1d970b48e31445c"
+  },
+  {
+    "original": "graph-final.json",
+    "archive": "graph-final.json.xz",
+    "bytes": 316449,
+    "sha256": "e0ab3caf854d0e5cba9025d15a70bb58e332c885aad59dd144b0a8d4f2b80390"
+  },
+  {
+    "original": "inputs.json",
+    "archive": "inputs.json.xz",
+    "bytes": 44969,
+    "sha256": "8888e742d85e7fe3f36418657a4194ab8abaf192b81c3fa61f2d40d10c3c673a"
+  },
+  {
+    "original": "graph.json",
+    "archive": "graph.json.xz",
+    "bytes": 316449,
+    "sha256": "17af239079edba1e35d7adee7e4fc43e0bac608432e2def738ac0e373efe539b"
+  },
+  {
+    "original": "probe-closed.txt",
+    "archive": "probe-closed.txt.xz",
+    "bytes": 15016,
+    "sha256": "645511a94608a23f3ab16f2b75404d70d3555921d779dfa35bd9e156dd7c4b9d"
+  },
+  {
+    "original": "affected-hosts.txt",
+    "archive": "affected-hosts.txt.xz",
+    "bytes": 19938,
+    "sha256": "f48833f0e3b77fc023a990328402bae640c6e367f8156f48b321bf96bb1ded46"
+  }
+]

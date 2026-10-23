@@ -1,0 +1,335 @@
+warning: '--skip-update' option is deprecated and will be removed in a future release
+Building for debugging...
+[Computing dependencies]
+[1 / 55]
+[4 / 40] CJMessageKeys
+[16 / 50] CJSession
+[26 / 54] CJMessageHTTP
+[35 / 63] CJMessageClient
+[35 / 63] CJFeasibilityClient
+[50 / 76] CJFeasibilityClient
+[53 / 77] CJNeedsClient
+[58 / 80] CJShell
+[63 / 85] CJNeedsClient
+[67 / 83] CJShell
+[69 / 80] CJShellTests-product
+[71 / 82] CJShellTests-product
+[74 / 80] CJShellTests-product
+[76 / 80] CJShellTests-product
+Build complete! (2.89秒)
+Test Suite 'All tests' started at 2026-10-23 14:07:39.597.
+Test Suite 'All tests' passed at 2026-10-23 14:07:39.598.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite FeasibilityHostTests started.
+◇ Test synchronousInvalidation(event:) started.
+◇ Test exactSourceAndClosedPublicModel() started.
+◇ Test draftDoesNotBecomeSourceAndLanguageDoesNotChangeIdentity() started.
+◇ Test reentrantOpenAndRefreshDoNotReplaceNewerResult() started.
+◇ Test currentIdentityChangesHideOldSource(event:) started.
+◇ Test oldExitAndCancellationCannotClearNewPresentationOrABA() started.
+◇ Test case passing 1 argument event → "refresh" to synchronousInvalidation(event:) started.
+◇ Test case passing 1 argument event → "environment" to currentIdentityChangesHideOldSource(event:) started.
+◇ Test case passing 1 argument event → "revision" to synchronousInvalidation(event:) started.
+◇ Test case passing 1 argument event → "account" to currentIdentityChangesHideOldSource(event:) started.
+◇ Test case passing 1 argument event → "identity" to synchronousInvalidation(event:) started.
+◇ Test case passing 1 argument event → "session" to currentIdentityChangesHideOldSource(event:) started.
+◇ Test case passing 1 argument event → "shell" to currentIdentityChangesHideOldSource(event:) started.
+◇ Test case passing 1 argument event → "container-exit" to synchronousInvalidation(event:) started.
+◇ Test case passing 1 argument event → "selection" to currentIdentityChangesHideOldSource(event:) started.
+◇ Test case passing 1 argument event → "query" to synchronousInvalidation(event:) started.
+◇ Test case passing 1 argument event → "background" to synchronousInvalidation(event:) started.
+✔ Test draftDoesNotBecomeSourceAndLanguageDoesNotChangeIdentity() passed after 0.008 seconds.
+✘ Test reentrantOpenAndRefreshDoNotReplaceNewerResult() recorded an issue at FeasibilityHostTests.swift:66:9: Expectation failed: host.openFeasibility(context: host.captureAction())
+↳ host.openFeasibility(context: host.captureAction()) → false
+↳   host → CJShell.NeedsContainerHost
+↳     shell → CJShell.ShellState
+↳       _generation → ShellGeneration(id: 0438E08E-53BF-45FF-9708-3202CA57C408)
+↳         id → 0438E08E-53BF-45FF-9708-3202CA57C408
+↳       _messageBindingBlocked → false
+↳       _needsContainerHost → CJShell.NeedsContainerHost
+↳         some → CJShell.NeedsContainerHost
+↳       _$observationRegistrar → ObservationRegistrar(extent: Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent)
+↳         extent → Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent
+↳           context → Context(state: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer))
+↳             state → _ManagedCriticalState<State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer)
+↳               buffer → Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer
+↳     _binding → NeedsContainerBinding(id: 89761DED-412C-45AA-A651-A9694BD7D8DA, client: CJNeedsClient.NeedsClient, needs: CJNeedsClient.NeedsBinding(environment: 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7, account: 63B61401-CCB3-4718-BC86-7A2962A8482E, generation: 1A3265ED-9D32-411F-9447-C3EB11AEC46E, selection: 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6), selectedNeedsID: "needs-A", shellGeneration: CJShell.ShellGeneration(id: 0438E08E-53BF-45FF-9708-3202CA57C408), session: CJSession.SessionLifecycle, operation: CJSession.SessionOperation(instance: 893635C6-7196-44BE-8DE0-6F860B7B9EFB, generation: C681F33D-2AE4-4252-B938-2E1C47961087, id: B5EBC8CB-A22C-4760-B9A3-E1BC4CEC2DBE, purpose: CJSession.SessionOperation.(unknown context at $10b024704).Purpose.save, sdkBridgeClaim: CJSession.SessionBridgeClaim), synthetic: true, current: (Function))
+↳       some → NeedsContainerBinding(id: 89761DED-412C-45AA-A651-A9694BD7D8DA, client: CJNeedsClient.NeedsClient, needs: CJNeedsClient.NeedsBinding(environment: 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7, account: 63B61401-CCB3-4718-BC86-7A2962A8482E, generation: 1A3265ED-9D32-411F-9447-C3EB11AEC46E, selection: 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6), selectedNeedsID: "needs-A", shellGeneration: CJShell.ShellGeneration(id: 0438E08E-53BF-45FF-9708-3202CA57C408), session: CJSession.SessionLifecycle, operation: CJSession.SessionOperation(instance: 893635C6-7196-44BE-8DE0-6F860B7B9EFB, generation: C681F33D-2AE4-4252-B938-2E1C47961087, id: B5EBC8CB-A22C-4760-B9A3-E1BC4CEC2DBE, purpose: CJSession.SessionOperation.(unknown context at $10b024704).Purpose.save, sdkBridgeClaim: CJSession.SessionBridgeClaim), synthetic: true, current: (Function))
+↳         id → 89761DED-412C-45AA-A651-A9694BD7D8DA
+↳         client → CJNeedsClient.NeedsClient
+↳           endpoint → MessageEndpoint(url: https://synthetic.invalid, maximumRequestBytes: 131072, maximumResponseBytes: 1048576)
+↳             url → https://synthetic.invalid
+↳               _url → Foundation._SwiftURL
+↳                 _parseInfo → Foundation.URLParseInfo
+↳                   urlString → "https://synthetic.invalid"
+↳                   schemeRange → 0[utf8] ..< 5[utf8]
+↳                     some → 0[utf8] ..< 5[utf8]
+↳                   userRange → nil
+↳                   passwordRange → nil
+↳                   hostRange → 8[utf8] ..< 25[utf8]
+↳                     some → 8[utf8] ..< 25[utf8]
+↳                   portRange → nil
+↳                   pathRange → 25[utf8] ..< 25[utf8]
+↳                     some → 25[utf8] ..< 25[utf8]
+↳                   queryRange → nil
+↳                   fragmentRange → nil
+↳                   isIPLiteral → false
+↳                   didPercentEncodeHost → false
+↳                   pathHasFileID → false
+↳                   encodedComponents → EncodedComponentSet(rawValue: 0)
+↳                     rawValue → 0
+↳                 _baseURL → nil
+↳                 _encoding → Unicode (UTF-8)
+↳                   rawValue → 4
+↳                 _isCanonicalFileURL → false
+↳                 _nsurlLock → ()
+↳             maximumRequestBytes → 131072
+↳             maximumResponseBytes → 1048576
+↳           transport → CJShellTests.(unknown context at $10b01afe8).Transport
+↳             $defaultActor → (Opaque Value)
+↳             bytes → 379 bytes
+↳               count → 379
+↳               pointer → 0x0000007620028780
+↳                 pointerValue → 507343177600
+↳             calls → 1
+↳           session → nil
+↳           sessionOperation → nil
+↳           testWrites → true
+↳           store → nil
+↳           owner → 748B6540-CF5A-4A3B-841F-EFE09F66DA02
+↳           generation → 9F3ED4BF-3929-4A7F-B287-5BF53B59B33E
+↳           started → nil
+↳           confirmed → []
+↳         needs → NeedsBinding(environment: 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7, account: 63B61401-CCB3-4718-BC86-7A2962A8482E, generation: 1A3265ED-9D32-411F-9447-C3EB11AEC46E, selection: 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6)
+↳           environment → 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7
+↳           account → 63B61401-CCB3-4718-BC86-7A2962A8482E
+↳           generation → 1A3265ED-9D32-411F-9447-C3EB11AEC46E
+↳           selection → 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6
+↳         selectedNeedsID → "needs-A"
+↳         shellGeneration → ShellGeneration(id: 0438E08E-53BF-45FF-9708-3202CA57C408)
+↳           id → 0438E08E-53BF-45FF-9708-3202CA57C408
+↳         session → CJSession.SessionLifecycle
+↳           persistence → Store()
+↳           instance → 893635C6-7196-44BE-8DE0-6F860B7B9EFB
+↳           generation → C681F33D-2AE4-4252-B938-2E1C47961087
+↳           current → SessionOperation(instance: 893635C6-7196-44BE-8DE0-6F860B7B9EFB, generation: C681F33D-2AE4-4252-B938-2E1C47961087, id: B5EBC8CB-A22C-4760-B9A3-E1BC4CEC2DBE, purpose: CJSession.SessionOperation.(unknown context at $10b024704).Purpose.save, sdkBridgeClaim: CJSession.SessionBridgeClaim)
+↳             some → SessionOperation(instance: 893635C6-7196-44BE-8DE0-6F860B7B9EFB, generation: C681F33D-2AE4-4252-B938-2E1C47961087, id: B5EBC8CB-A22C-4760-B9A3-E1BC4CEC2DBE, purpose: CJSession.SessionOperation.(unknown context at $10b024704).Purpose.save, sdkBridgeClaim: CJSession.SessionBridgeClaim)
+↳               instance → 893635C6-7196-44BE-8DE0-6F860B7B9EFB
+↳               generation → C681F33D-2AE4-4252-B938-2E1C47961087
+↳               id → B5EBC8CB-A22C-4760-B9A3-E1BC4CEC2DBE
+↳               purpose → .save
+↳               sdkBridgeClaim → CJSession.SessionBridgeClaim
+↳                 owner → nil
+↳           consumed → false
+↳           blocked → false
+↳           state → .idle
+↳         operation → SessionOperation(instance: 893635C6-7196-44BE-8DE0-6F860B7B9EFB, generation: C681F33D-2AE4-4252-B938-2E1C47961087, id: B5EBC8CB-A22C-4760-B9A3-E1BC4CEC2DBE, purpose: CJSession.SessionOperation.(unknown context at $10b024704).Purpose.save, sdkBridgeClaim: CJSession.SessionBridgeClaim)
+↳           instance → 893635C6-7196-44BE-8DE0-6F860B7B9EFB
+↳           generation → C681F33D-2AE4-4252-B938-2E1C47961087
+↳           id → B5EBC8CB-A22C-4760-B9A3-E1BC4CEC2DBE
+↳           purpose → .save
+↳           sdkBridgeClaim → CJSession.SessionBridgeClaim
+↳             owner → nil
+↳         synthetic → true
+↳     _value → CJNeedsClient.NeedsPresentation
+↳       some → CJNeedsClient.NeedsPresentation
+↳         _binding → NeedsBinding(environment: 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7, account: 63B61401-CCB3-4718-BC86-7A2962A8482E, generation: 1A3265ED-9D32-411F-9447-C3EB11AEC46E, selection: 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6)
+↳           some → NeedsBinding(environment: 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7, account: 63B61401-CCB3-4718-BC86-7A2962A8482E, generation: 1A3265ED-9D32-411F-9447-C3EB11AEC46E, selection: 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6)
+↳             environment → 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7
+↳             account → 63B61401-CCB3-4718-BC86-7A2962A8482E
+↳             generation → 1A3265ED-9D32-411F-9447-C3EB11AEC46E
+↳             selection → 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6
+↳         _selectedNeedsID → "needs-A"
+↳           some → "needs-A"
+↳         _selectedActionID → nil
+↳         _snapshot → nil
+↳         _revision → nil
+↳         _receipt → nil
+↳         _state → .loading
+↳         _pendingState → .unavailable
+↳         _pendingActions → []
+↳         _draft → NeedsDraft(editorID: 5A6F696D-04BF-4A03-88CD-45BAF77B0A82, needsID: "needs-A", expectedVersion: 2, sourceText: "", observations: [CJNeedsClient.NeedsField.partySize: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.destinationTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.total: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.paid: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "12.3400", note: "", items: nil), CJNeedsClient.NeedsField.basis: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.perPerson: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.overseasTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.pace: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "é", note: "", items: nil), CJNeedsClient.NeedsField.includes: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.currency: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil)], changedFields: Set([]), events: [:], changedEvents: Set([]), companions: [], fixedItems: [], conditions: [], companionsChanged: false, fixedItemsChanged: false, conditionsChanged: false)
+↳           some → NeedsDraft(editorID: 5A6F696D-04BF-4A03-88CD-45BAF77B0A82, needsID: "needs-A", expectedVersion: 2, sourceText: "", observations: [CJNeedsClient.NeedsField.partySize: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.destinationTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.total: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.paid: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "12.3400", note: "", items: nil), CJNeedsClient.NeedsField.basis: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.perPerson: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.overseasTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.pace: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "é", note: "", items: nil), CJNeedsClient.NeedsField.includes: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.currency: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil)], changedFields: Set([]), events: [:], changedEvents: Set([]), companions: [], fixedItems: [], conditions: [], companionsChanged: false, fixedItemsChanged: false, conditionsChanged: false)
+↳             editorID → 5A6F696D-04BF-4A03-88CD-45BAF77B0A82
+↳             needsID → "needs-A"
+↳             expectedVersion → 2
+↳             sourceText → ""
+↳             observations → [CJNeedsClient.NeedsField.partySize: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.destinationTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.total: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.paid: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "12.3400", note: "", items: nil), CJNeedsClient.NeedsField.basis: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.perPerson: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.overseasTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.pace: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "é", note: "", items: nil), CJNeedsClient.NeedsField.includes: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.currency: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil)]
+↳             changedFields → []
+↳             events → [:]
+↳             changedEvents → []
+↳             companions → []
+↳             fixedItems → []
+↳             conditions → []
+↳             companionsChanged → false
+↳             fixedItemsChanged → false
+↳             conditionsChanged → false
+↳         client → CJNeedsClient.NeedsClient
+↳           some → CJNeedsClient.NeedsClient
+↳             endpoint → MessageEndpoint(url: https://synthetic.invalid, maximumRequestBytes: 131072, maximumResponseBytes: 1048576)
+↳               url → https://synthetic.invalid
+↳                 _url → Foundation._SwiftURL
+↳                   _parseInfo → Foundation.URLParseInfo
+↳                     urlString → "https://synthetic.invalid"
+↳                     schemeRange → 0[utf8] ..< 5[utf8]
+↳                     userRange → nil
+↳                     passwordRange → nil
+↳                     hostRange → 8[utf8] ..< 25[utf8]
+↳                     portRange → nil
+↳                     pathRange → 25[utf8] ..< 25[utf8]
+↳                     queryRange → nil
+↳                     fragmentRange → nil
+↳                     isIPLiteral → false
+↳                     didPercentEncodeHost → false
+↳                     pathHasFileID → false
+↳                     encodedComponents → EncodedComponentSet(rawValue: 0)
+↳                   _baseURL → nil
+↳                   _encoding → Unicode (UTF-8)
+↳                     rawValue → 4
+↳                   _isCanonicalFileURL → false
+↳                   _nsurlLock → ()
+↳               maximumRequestBytes → 131072
+↳               maximumResponseBytes → 1048576
+↳             transport → CJShellTests.(unknown context at $10b01afe8).Transport
+↳               $defaultActor → (Opaque Value)
+↳               bytes → 379 bytes
+↳                 count → 379
+↳                 pointer → 0x0000007620028780
+↳                   pointerValue → 507343177600
+↳               calls → 1
+↳             session → nil
+↳             sessionOperation → nil
+↳             testWrites → true
+↳             store → nil
+↳             owner → 748B6540-CF5A-4A3B-841F-EFE09F66DA02
+↳             generation → 9F3ED4BF-3929-4A7F-B287-5BF53B59B33E
+↳             started → nil
+↳             confirmed → []
+↳         owner → BD43D2D8-F96F-4381-A906-70BC70077A50
+↳         _lifetime → 87B5A230-41AD-44B3-A496-BBBB1AD809F1
+↳         _request → 68CB1913-8ADE-4C94-9D3F-79D4B502550E
+↳         _started → nil
+↳         _pendingRequest → 45F744EB-D5A0-49CF-A06F-A4ED18C60EEE
+↳         _$observationRegistrar → ObservationRegistrar(extent: Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent)
+↳           extent → Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent
+↳             context → Context(state: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer))
+↳               state → _ManagedCriticalState<State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer)
+↳                 buffer → Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer
+↳     _epoch → C0368070-365C-4C74-B5CA-4186F9504BD7
+↳     draftEditRevision → F8D65586-5F76-4983-9AB0-1322DEDBFB53
+↳     _executing → false
+↳     _evaluation → nil
+↳     _evaluationEpoch → 9B282E3E-EA24-495F-A4F5-94DE315A5488
+↳     _busy → true
+↳     _$observationRegistrar → ObservationRegistrar(extent: Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent)
+↳       extent → Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent
+↳         context → Context(state: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer))
+↳           state → _ManagedCriticalState<State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer)
+↳             buffer → Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer
+↳   host.captureAction() → nil
+A-4027-B6D1-6F5E8CA0C8C7, account: 63B61401-CCB3-4718-BC86-7A2962A8482E, generation: 1A3265ED-9D32-411F-9447-C3EB11AEC46E, selection: 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6)
+↳           some → NeedsBinding(environment: 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7, account: 63B61401-CCB3-4718-BC86-7A2962A8482E, generation: 1A3265ED-9D32-411F-9447-C3EB11AEC46E, selection: 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6)
+↳             environment → 21FE29CE-497A-4027-B6D1-6F5E8CA0C8C7
+↳             account → 63B61401-CCB3-4718-BC86-7A2962A8482E
+↳             generation → 1A3265ED-9D32-411F-9447-C3EB11AEC46E
+↳             selection → 7A6F3C0C-BEF7-431C-925F-383F93EBB8A6
+↳         _selectedNeedsID → "needs-A"
+↳           some → "needs-A"
+↳         _selectedActionID → nil
+↳         _snapshot → nil
+↳         _revision → nil
+↳         _receipt → nil
+↳         _state → .loading
+↳         _pendingState → .unavailable
+↳         _pendingActions → []
+↳         _draft → NeedsDraft(editorID: 5A6F696D-04BF-4A03-88CD-45BAF77B0A82, needsID: "needs-A", expectedVersion: 2, sourceText: "", observations: [CJNeedsClient.NeedsField.partySize: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.destinationTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.total: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.paid: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "12.3400", note: "", items: nil), CJNeedsClient.NeedsField.basis: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.perPerson: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.overseasTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.pace: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "é", note: "", items: nil), CJNeedsClient.NeedsField.includes: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.currency: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil)], changedFields: Set([]), events: [:], changedEvents: Set([]), companions: [], fixedItems: [], conditions: [], companionsChanged: false, fixedItemsChanged: false, conditionsChanged: false)
+↳           some → NeedsDraft(editorID: 5A6F696D-04BF-4A03-88CD-45BAF77B0A82, needsID: "needs-A", expectedVersion: 2, sourceText: "", observations: [CJNeedsClient.NeedsField.partySize: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.destinationTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.total: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.paid: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "12.3400", note: "", items: nil), CJNeedsClient.NeedsField.basis: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.perPerson: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.overseasTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.pace: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "é", note: "", items: nil), CJNeedsClient.NeedsField.includes: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.currency: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil)], changedFields: Set([]), events: [:], changedEvents: Set([]), companions: [], fixedItems: [], conditions: [], companionsChanged: false, fixedItemsChanged: false, conditionsChanged: false)
+↳             editorID → 5A6F696D-04BF-4A03-88CD-45BAF77B0A82
+↳             needsID → "needs-A"
+↳             expectedVersion → 2
+↳             sourceText → ""
+↳             observations → [CJNeedsClient.NeedsField.partySize: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.destinationTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.total: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.paid: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "12.3400", note: "", items: nil), CJNeedsClient.NeedsField.basis: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.perPerson: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.overseasTimezone: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.pace: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.known, value: "é", note: "", items: nil), CJNeedsClient.NeedsField.includes: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil), CJNeedsClient.NeedsField.currency: CJNeedsClient.NeedsObservationInput(state: CJNeedsClient.NeedsObservationState.absent, value: "", note: "", items: nil)]
+↳             changedFields → []
+↳             events → [:]
+↳             changedEvents → []
+↳             companions → []
+↳             fixedItems → []
+↳             conditions → []
+↳             companionsChanged → false
+↳             fixedItemsChanged → false
+↳             conditionsChanged → false
+↳         client → CJNeedsClient.NeedsClient
+↳           some → CJNeedsClient.NeedsClient
+↳             endpoint → MessageEndpoint(url: https://synthetic.invalid, maximumRequestBytes: 131072, maximumResponseBytes: 1048576)
+↳               url → https://synthetic.invalid
+↳                 _url → Foundation._SwiftURL
+↳                   _parseInfo → Foundation.URLParseInfo
+↳                     urlString → "https://synthetic.invalid"
+↳                     schemeRange → 0[utf8] ..< 5[utf8]
+↳                     userRange → nil
+↳                     passwordRange → nil
+↳                     hostRange → 8[utf8] ..< 25[utf8]
+↳                     portRange → nil
+↳                     pathRange → 25[utf8] ..< 25[utf8]
+↳                     queryRange → nil
+↳                     fragmentRange → nil
+↳                     isIPLiteral → false
+↳                     didPercentEncodeHost → false
+↳                     pathHasFileID → false
+↳                     encodedComponents → EncodedComponentSet(rawValue: 0)
+↳                   _baseURL → nil
+↳                   _encoding → Unicode (UTF-8)
+↳                     rawValue → 4
+↳                   _isCanonicalFileURL → false
+↳                   _nsurlLock → ()
+↳               maximumRequestBytes → 131072
+↳               maximumResponseBytes → 1048576
+↳             transport → CJShellTests.(unknown context at $10b01afe8).Transport
+↳               $defaultActor → (Opaque Value)
+↳               bytes → 379 bytes
+↳                 count → 379
+↳                 pointer → 0x0000007620028780
+↳                   pointerValue → 507343177600
+↳               calls → 1
+↳             session → nil
+↳             sessionOperation → nil
+↳             testWrites → true
+↳             store → nil
+↳             owner → 748B6540-CF5A-4A3B-841F-EFE09F66DA02
+↳             generation → 9F3ED4BF-3929-4A7F-B287-5BF53B59B33E
+↳             started → nil
+↳             confirmed → []
+↳         owner → BD43D2D8-F96F-4381-A906-70BC70077A50
+↳         _lifetime → 87B5A230-41AD-44B3-A496-BBBB1AD809F1
+↳         _request → 68CB1913-8ADE-4C94-9D3F-79D4B502550E
+↳         _started → nil
+↳         _pendingRequest → 45F744EB-D5A0-49CF-A06F-A4ED18C60EEE
+↳         _$observationRegistrar → ObservationRegistrar(extent: Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent)
+↳           extent → Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent
+↳             context → Context(state: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer))
+↳               state → _ManagedCriticalState<State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer)
+↳                 buffer → Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer
+↳     _epoch → C0368070-365C-4C74-B5CA-4186F9504BD7
+↳     draftEditRevision → F8D65586-5F76-4983-9AB0-1322DEDBFB53
+↳     _executing → false
+↳     _evaluation → nil
+↳     _evaluationEpoch → 9B282E3E-EA24-495F-A4F5-94DE315A5488
+↳     _busy → true
+↳     _$observationRegistrar → ObservationRegistrar(extent: Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent)
+↳       extent → Observation.ObservationRegistrar.(unknown context at $2be4bd96c).Extent
+↳         context → Context(state: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer))
+↳           state → _ManagedCriticalState<State>(buffer: Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer)
+↳             buffer → Observation._ManagedCriticalState<Observation.ObservationRegistrar.(unknown context at $2be4bd9b0).State>.(unknown context at $2be4bd84c).LockedBuffer
+↳   feasibilityPresentation → nil
+✘ Test reentrantOpenAndRefreshDoNotReplaceNewerResult() failed after 0.023 seconds with 2 issues.
+✔ Test synchronousInvalidation(event:) with 6 test cases passed after 0.025 seconds.
+✔ Test currentIdentityChangesHideOldSource(event:) with 5 test cases passed after 0.025 seconds.
+✔ Test exactSourceAndClosedPublicModel() passed after 0.025 seconds.
+✔ Test oldExitAndCancellationCannotClearNewPresentationOrABA() passed after 0.025 seconds.
+✘ Suite FeasibilityHostTests failed after 0.025 seconds with 2 issues.
+✘ Test run with 6 tests in 1 suite failed after 0.025 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - CJShellTests (Swift Testing)

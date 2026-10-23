@@ -1,0 +1,2 @@
+Prepared exact own validation graph: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption
+Files verified: 85

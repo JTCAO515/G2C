@@ -1,0 +1,35 @@
+{
+  "parent": "c607358dc8475a1fdcc90d05ad47ef8450503a04",
+  "source": "49e2b577cf3c4cb35ba9ea4b3a16ec5264b179fc",
+  "original_47_source_prefix_sha256": "c89d9a8e740fdb4bb49cdefd3f18466afcf5eb2ccbb360b3d49b3f4ac5a630e1",
+  "probe_and_testing_fail_copied_exactly": true,
+  "original_probe_sha256": "cb1eb52f772730eb110572f1e415b2769c8e6a669178bed3724d3c927e7baaf6",
+  "testing_fail_sha256": "ee0a404b338a67293f88fab1b535a335a72e7d7315776f1b4d620ef6d66b4034",
+  "unchanged_c607_files": [
+    "Package.swift",
+    "Package.resolved",
+    "scripts/prepare.py",
+    "scripts/check_public_api.py",
+    "evidence/inputs.json",
+    "evidence/graph-check.json",
+    "evidence/package-graph.json",
+    "evidence/tests-final.log",
+    "evidence/tests.log",
+    "evidence/tests-first.log",
+    "evidence/executed-source-sha256.json"
+  ],
+  "prepared_inputs_rechecked": "PASS",
+  "tested_source_sha256": {
+    "Sources/CJFeasibilityClient/FeasibilityView.swift": "28a2b361e7406632a9811832e6107288ec281ed43868907cbae9bae948aac5d0",
+    "Sources/CJFeasibilityClient/FeasibilityTransport.swift": "8318e9237a61e30eb6ad58dfabf158acf5e242406795ac16dbec8d624d6a0711",
+    "Sources/CJFeasibilityClient/StrictJSON.swift": "e4dcbc6bd2bd8a35674e25b406420a5d59dd66c53727191a446b800e983681d1",
+    "Sources/CJFeasibilityClient/FeasibilityModel.swift": "c2cac6a1400456b82715f40d407b852bf7045b59c931d7d2472c0d61e88fcf32",
+    "Sources/CJFeasibilityClient/FeasibilityTypes.swift": "e03865301653b550ef1e219f87ea251d84719bfa37e193936d273ac314f66359",
+    "Tests/CJFeasibilityClientTests/FeasibilityTests.swift": "480995faa35119f338db27766320927c8d5add62305ed7b9f1a519efde0de711",
+    "scripts/check_public_api.py": "cd1c1eaac66557e72b52b3c6ae951d95ca37e0b245aba34166fac4a006f5cd7b",
+    "scripts/prepare.py": "ecc520bdbdc7d596454bed200ca4d7cbca6e955d653f8db342d93ff346b16bd3",
+    "Package.swift": "d223b6ebbb2d0e38cba637cefbee930881ec03c9a1636b6cff247e7e0a256faa",
+    "Package.resolved": "2f248c38def5aacac0154376cd35cc3f649b9e492799d6e9bf2451b01002c967",
+    "README.md": "553ec9ab364a63b3cc6f3949e5aaa0213baab8aec107bf7b03c5689929d1f5b8"
+  }
+}

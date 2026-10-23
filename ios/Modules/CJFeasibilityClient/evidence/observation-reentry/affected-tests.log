@@ -1,0 +1,96 @@
+warning: '--skip-update' option is deprecated and will be removed in a future release
+Building for debugging...
+[Using on-disk description]
+[1 / 4]
+[2 / 4] CJFeasibilityClientTests-product
+[4 / 6] CJFeasibilityClientTests-product
+[10 / 11] CJFeasibilityClientTests-product
+Build complete! (1.86秒)
+Test Suite 'All tests' started at 2026-10-23 14:23:39.578.
+Test Suite 'All tests' passed at 2026-10-23 14:23:39.579.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite FeasibilityTests started.
+◇ Test credentialSwitchFencesBeforeGET() started.
+◇ Test officialGETPreservesSourcesAndDecimal(_:) started.
+◇ Test everyValidationCallbackCanInvalidateWithoutPublishing() started.
+◇ Test lateResultsDoNotPublish(_:) started.
+◇ Test callbackReentryDoesNotConsumeNewWork() started.
+◇ Test oneUseAndOwnerBoundWork() started.
+◇ Test malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test observedPublicationReentryKeepsReplacementUsable(_:) started.
+◇ Test cancellationLeavesLoadingAndDoesNotRetry() started.
+◇ Test observedPrepareDoesNotExposePriorLoadedValueBeforeMutation() started.
+◇ Test snapshotRevisionAndHashAreMatched(_:) started.
+◇ Test nullDeclarationAndUnattributedEvidenceRemainVisible() started.
+◇ Test lateBodyAndCancellationCannotOverwriteNewResult(_:) started.
+◇ Test finalCallbackReentryKeepsNewPreparation() started.
+◇ Test invalidBASE503StaysExplicitFailure() started.
+◇ Test canonicalTransport94AndSessionComposeWithOfficialGET() started.
+◇ Test publicFactoryAndMissingSourceCannotRequest() started.
+◇ Test case passing 1 argument stage → "prepare-reset" to observedPublicationReentryKeepsReplacementUsable(_:) started.
+◇ Test case passing 1 argument stage → "prepare-loading" to observedPublicationReentryKeepsReplacementUsable(_:) started.
+◇ Test case passing 1 argument status → "UNKNOWN" to officialGETPreservesSourcesAndDecimal(_:) started.
+◇ Test case passing 1 argument change → "selection" to lateResultsDoNotPublish(_:) started.
+◇ Test case passing 1 argument stage → "cancelled" to observedPublicationReentryKeepsReplacementUsable(_:) started.
+◇ Test case passing 1 argument change → "session" to lateResultsDoNotPublish(_:) started.
+◇ Test case passing 1 argument stage → "loaded" to observedPublicationReentryKeepsReplacementUsable(_:) started.
+◇ Test case passing 1 argument wrongHash → false to snapshotRevisionAndHashAreMatched(_:) started.
+◇ Test case passing 1 argument stage → "invalidate" to observedPublicationReentryKeepsReplacementUsable(_:) started.
+◇ Test case passing 1 argument change → "environment" to lateResultsDoNotPublish(_:) started.
+◇ Test case passing 1 argument change → "invalidate" to lateResultsDoNotPublish(_:) started.
+◇ Test case passing 1 argument wrongHash → true to snapshotRevisionAndHashAreMatched(_:) started.
+◇ Test case passing 1 argument mutation → "overall" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "revision-float" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "hash" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "revision-bool" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "source-id" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "evidence-hash" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "mixed-null" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "invalid" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "extra" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "null" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "missing" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument cancelled → true to lateBodyAndCancellationCannotOverwriteNewResult(_:) started.
+◇ Test case passing 1 argument mutation → "empty-checks" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "collection" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument stage → "failed" to observedPublicationReentryKeepsReplacementUsable(_:) started.
+◇ Test case passing 1 argument mutation → "detail" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "trace" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "redirect" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "source-hash" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "wrong-needs" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument cancelled → false to lateBodyAndCancellationCannotOverwriteNewResult(_:) started.
+◇ Test case passing 1 argument mutation → "source-revision" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "cache" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "content-type" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "truncated" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "byte-cap" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument mutation → "duplicate" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument change → "account" to lateResultsDoNotPublish(_:) started.
+◇ Test case passing 1 argument mutation → "utf8" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test case passing 1 argument status → "CONFLICT" to officialGETPreservesSourcesAndDecimal(_:) started.
+◇ Test case passing 1 argument mutation → "version" to malformedOrMisboundWireIsNeverSuccess(_:) started.
+◇ Test testingObservationReentryMustNotPublishOldNeedsUnderNewBinding() started.
+✔ Test credentialSwitchFencesBeforeGET() passed after 0.006 seconds.
+✔ Test publicFactoryAndMissingSourceCannotRequest() passed after 0.014 seconds.
+✔ Test cancellationLeavesLoadingAndDoesNotRetry() passed after 0.016 seconds.
+✔ Test snapshotRevisionAndHashAreMatched(_:) with 2 test cases passed after 0.020 seconds.
+✔ Test lateResultsDoNotPublish(_:) with 5 test cases passed after 0.020 seconds.
+✔ Test invalidBASE503StaysExplicitFailure() passed after 0.020 seconds.
+✔ Test nullDeclarationAndUnattributedEvidenceRemainVisible() passed after 0.020 seconds.
+✔ Test oneUseAndOwnerBoundWork() passed after 0.023 seconds.
+✔ Test callbackReentryDoesNotConsumeNewWork() passed after 0.023 seconds.
+✔ Test canonicalTransport94AndSessionComposeWithOfficialGET() passed after 0.024 seconds.
+✔ Test observedPrepareDoesNotExposePriorLoadedValueBeforeMutation() passed after 0.024 seconds.
+✔ Test officialGETPreservesSourcesAndDecimal(_:) with 2 test cases passed after 0.024 seconds.
+✔ Test testingObservationReentryMustNotPublishOldNeedsUnderNewBinding() passed after 0.024 seconds.
+✔ Test malformedOrMisboundWireIsNeverSuccess(_:) with 26 test cases passed after 0.026 seconds.
+✔ Test lateBodyAndCancellationCannotOverwriteNewResult(_:) with 2 test cases passed after 0.027 seconds.
+✔ Test observedPublicationReentryKeepsReplacementUsable(_:) with 6 test cases passed after 0.028 seconds.
+✔ Test finalCallbackReentryKeepsNewPreparation() passed after 0.028 seconds.
+✔ Test everyValidationCallbackCanInvalidateWithoutPublishing() passed after 0.032 seconds.
+✔ Suite FeasibilityTests passed after 0.032 seconds.
+✔ Test run with 18 tests in 1 suite passed after 0.032 seconds.

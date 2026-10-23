@@ -1,0 +1,28 @@
+{
+  "command_prefix": [
+    "xcrun",
+    "swiftc",
+    "-swift-version",
+    "6",
+    "-target",
+    "arm64-apple-macos27.0",
+    "-typecheck",
+    "-I",
+    "/tmp/cj015-dc29-isolated-build/out/Products/Debug",
+    "-module-cache-path",
+    "/tmp/cj015-dc29-public-cache"
+  ],
+  "results": {
+    "PublicConsumer.swift": {
+      "source_sha256": "a70c45b07265fb5487b0f66562c62033de169783cb55d8d56105197e997510b8",
+      "exit": 0,
+      "expected_failure": false
+    },
+    "ForbiddenConstruction.swift": {
+      "source_sha256": "b78f166cf11c94c65dcb0ef3c693f7a88a0d661db5c9204e2b2f1ebacc9d8e21",
+      "exit": 1,
+      "expected_failure": true
+    }
+  },
+  "scope": "formal candidate compiled in fixed-input dc29 composition; original-tree/App graph not run"
+}

@@ -1,0 +1,27 @@
+Private graph: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed
+Command: swift test --package-path Modules/CJMemoryClient --scratch-path artifacts/swift-build --force-resolved-versions --filter officialDateDecoderAndKeysetPage|nonNullMalformedReceiptIsNotAbsence|serverOpaqueIDsAreReadableWithoutUUIDNarrowing|pauseResumeAndHistoricalQueryNeverRollbackCurrentRead|defaultPublicManagementIsUnavailableBeforeCredentialsOrJournal|liveWriteIsUnavailableBeforeStorageAndCredentials
+Build complete! (26.10秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IndependentContractAndStoreTests started.
+◇ Suite MemoryClientTests started.
+◇ Suite MemoryManagementTests started.
+◇ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() started.
+◇ Test officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test liveWriteIsUnavailableBeforeStorageAndCredentials() started.
+◇ Test defaultPublicManagementIsUnavailableBeforeCredentialsOrJournal() started.
+◇ Test nonNullMalformedReceiptIsNotAbsence() started.
+◇ Test pauseResumeAndHistoricalQueryNeverRollbackCurrentRead() started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+◇ Test case passing 1 argument timestamp → "2026-10-22T01:00:00.123456Z" to officialDateDecoderAndKeysetPage(timestamp:) started.
+✔ Test liveWriteIsUnavailableBeforeStorageAndCredentials() passed after 0.017 seconds.
+✔ Test nonNullMalformedReceiptIsNotAbsence() passed after 0.018 seconds.
+✔ Test defaultPublicManagementIsUnavailableBeforeCredentialsOrJournal() passed after 0.021 seconds.
+✔ Test serverOpaqueIDsAreReadableWithoutUUIDNarrowing() passed after 0.023 seconds.
+✔ Suite IndependentContractAndStoreTests passed after 0.024 seconds.
+✔ Test officialDateDecoderAndKeysetPage(timestamp:) with 2 test cases passed after 0.025 seconds.
+✔ Suite MemoryClientTests passed after 0.025 seconds.
+✔ Test pauseResumeAndHistoricalQueryNeverRollbackCurrentRead() passed after 0.031 seconds.
+✔ Suite MemoryManagementTests passed after 0.031 seconds.
+✔ Test run with 6 tests in 3 suites passed after 0.031 seconds.

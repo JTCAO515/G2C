@@ -1,0 +1,21 @@
+
+import Observation
+@MainActor private final class HostObservationProbeBox { var fired = false; var replacement: UUID? }
+extension FeasibilityHostTests {
+ @Test func testingObservedOpenMustNotOverwriteReentrantPresentation() async throws {
+  let f = try Fixture(); await f.load()
+  let box = HostObservationProbeBox()
+  withObservationTracking {
+   _ = f.host.feasibilityPresentation
+  } onChange: {
+   MainActor.assumeIsolated {
+    guard !box.fired else { return }; box.fired = true
+    #expect(f.host.openFeasibility(context: f.host.captureAction()))
+    box.replacement = f.host.feasibilityPresentation?.id
+   }
+  }
+  #expect(f.host.openFeasibility(context: f.host.captureAction()))
+  #expect(box.fired && box.replacement != nil)
+  #expect(f.host.feasibilityPresentation?.id == box.replacement)
+ }
+}

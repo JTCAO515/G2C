@@ -1,0 +1,65 @@
+{
+  "base": "205fb479b89c7252dc2ad7587d327c578475c2fc",
+  "public_command_prefix": [
+    "swiftc",
+    "-typecheck",
+    "-target",
+    "arm64-apple-macos14.0",
+    "-I",
+    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/out/Products/Debug"
+  ],
+  "public_positive_exit": 0,
+  "both_closed_source_constructors_expected_inaccessible": true,
+  "raw_public_log_sha256": "321a4828f62aeb4d6210ac967ec6c299dbb5004eb6a18b263410c419ef347ae9",
+  "raw_graph_sha256": "4b207d8b98a6d5ea572303a7cbf50c9e1d8ea2a41c57bc7ce1fd484b1d2fd038",
+  "85_inputs_exact_after_tests": true,
+  "f87_and20aa_snapshots_byte_preserved": true,
+  "all_package_identities_one_path": true,
+  "package_identities": {
+    "cjusageclient": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient"
+    ],
+    "cjfoundation": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+    ],
+    "swift-openapi-runtime": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-openapi-runtime"
+    ],
+    "swift-http-types": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-http-types"
+    ],
+    "swift-openapi-urlsession": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-openapi-urlsession"
+    ],
+    "swift-collections": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-collections"
+    ],
+    "cjmessageclient": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJMessageClient"
+    ],
+    "cjauth": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJAuth"
+    ],
+    "supabase-swift": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/supabase-swift"
+    ],
+    "swift-crypto": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-crypto"
+    ],
+    "swift-asn1": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-asn1"
+    ],
+    "swift-clocks": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-clocks"
+    ],
+    "swift-concurrency-extras": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-concurrency-extras"
+    ],
+    "swift-issue-reporting": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-issue-reporting"
+    ],
+    "xctest-dynamic-overlay": [
+      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/dc29-consumption/ios/Modules/CJUsageClient/.build/checkouts/xctest-dynamic-overlay"
+    ]
+  }
+}
