@@ -1,0 +1,11 @@
+test_extreme_finite_decimal_returns_structured_error (test_input_boundaries.SyntheticInputBoundaryTests) ... ok
+test_long_significand_sum_is_exact (test_input_boundaries.SyntheticInputBoundaryTests) ... ok
+test_schema_requires_integer_not_boolean_or_float (test_input_boundaries.SyntheticInputBoundaryTests) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.116s
+
+OK
+synthetic CLI: exit=2, stdout_bytes=4334, traceback=False
+synthetic CLI: exit=2, stdout_bytes=4265, traceback=False
+synthetic CLI: exit=2, stdout_bytes=4264, traceback=False

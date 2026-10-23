@@ -1,0 +1,595 @@
+{
+  "schema_version": 1,
+  "validation": "PASS",
+  "release_decision": "UNKNOWN",
+  "release_blockers": [
+    "offline summary has no product release authority; H/I and real acceptance remain unverified",
+    "thresholds unconfirmed",
+    "unknown or missing task evidence"
+  ],
+  "plan": {
+    "schema_version": 1,
+    "sample_set_id": "synthetic-pipeline-test-only",
+    "sample_set_version": "synthetic-v1",
+    "provenance": "Synthetic records solely for offline pipeline tests; no real travel assertions or measurements.",
+    "evidence_layer": "synthetic",
+    "approved_thresholds": null,
+    "attempts": [
+      1
+    ],
+    "candidates": [
+      {
+        "id": "synthetic-a",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "config_version": "synthetic-config-v1",
+        "model_version": "synthetic-no-model-called",
+        "source_as_of": "synthetic-no-real-source"
+      }
+    ],
+    "networks": [
+      {
+        "id": "synthetic-network",
+        "description": "Synthetic labels; no network measurement."
+      }
+    ],
+    "scenarios": [
+      {
+        "id": "synthetic-one",
+        "product": true,
+        "split": "tuning",
+        "used_for_tuning": false,
+        "history_ref": "synthetic:declared-no-prior-use",
+        "input_version": "synthetic-v1",
+        "expectation_ref": "synthetic:external-test-expectation",
+        "pairing_ref": "synthetic:paired-labels",
+        "inputs": {
+          "zh": "合成管道用例 synthetic-one；没有旅行事实。",
+          "en": "Synthetic pipeline case synthetic-one; no travel facts."
+        },
+        "task_kind": "synthetic-pipeline"
+      },
+      {
+        "id": "synthetic-two",
+        "product": true,
+        "split": "tuning",
+        "used_for_tuning": false,
+        "history_ref": "synthetic:declared-no-prior-use",
+        "input_version": "synthetic-v1",
+        "expectation_ref": "synthetic:external-test-expectation",
+        "pairing_ref": "synthetic:paired-labels",
+        "inputs": {
+          "zh": "合成管道用例 synthetic-two；没有旅行事实。",
+          "en": "Synthetic pipeline case synthetic-two; no travel facts."
+        },
+        "task_kind": "synthetic-pipeline"
+      },
+      {
+        "id": "synthetic-three",
+        "product": true,
+        "split": "holdout",
+        "used_for_tuning": false,
+        "history_ref": "synthetic:declared-no-prior-use",
+        "input_version": "synthetic-v1",
+        "expectation_ref": "synthetic:external-test-expectation",
+        "pairing_ref": "synthetic:paired-labels",
+        "inputs": {
+          "zh": "合成管道用例 synthetic-three；没有旅行事实。",
+          "en": "Synthetic pipeline case synthetic-three; no travel facts."
+        },
+        "task_kind": "synthetic-pipeline"
+      }
+    ]
+  },
+  "independent_product_scenario_n": 3,
+  "holdout_product_scenario_n": 1,
+  "holdout_fraction": {
+    "numerator": 1,
+    "denominator": 3,
+    "value": 0.3333333333333333
+  },
+  "observed_attempt_n": 1,
+  "groups": [
+    {
+      "candidate_id": "synthetic-a",
+      "candidate": {
+        "id": "synthetic-a",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "config_version": "synthetic-config-v1",
+        "model_version": "synthetic-no-model-called",
+        "source_as_of": "synthetic-no-real-source"
+      },
+      "language": "zh",
+      "network_id": "synthetic-network",
+      "network": {
+        "id": "synthetic-network",
+        "description": "Synthetic labels; no network measurement."
+      },
+      "evidence_layer": "synthetic",
+      "split": "tuning",
+      "task_kind": "synthetic-pipeline",
+      "independent_scenario_n": 2,
+      "planned_attempt_n": 2,
+      "serious_errors": [],
+      "outcomes": {
+        "PASS": 1,
+        "FAIL": 0,
+        "UNKNOWN": 0,
+        "UNRUN": 1
+      },
+      "statuses": {
+        "success": 1,
+        "missing": 1
+      },
+      "pass_rate": {
+        "numerator": 1,
+        "denominator": 1,
+        "value": 1.0
+      },
+      "failure_rate": {
+        "numerator": 0,
+        "denominator": 1,
+        "value": 0.0
+      },
+      "unknown_rate": {
+        "numerator": 0,
+        "denominator": 1,
+        "value": 0.0
+      },
+      "conservative_not_passed_rate": {
+        "numerator": 0,
+        "denominator": 1,
+        "value": 0.0
+      },
+      "coverage": {
+        "numerator": 1,
+        "denominator": 2,
+        "value": 0.5
+      },
+      "first_body_seconds": {
+        "known_n": 1,
+        "planned_n": 2,
+        "unknown_or_missing_n": 1,
+        "p50": 2,
+        "p95": 2,
+        "max": 2,
+        "threshold_decision": "UNKNOWN"
+      },
+      "draft_seconds": {
+        "known_n": 1,
+        "planned_n": 2,
+        "unknown_or_missing_n": 1,
+        "p50": 7,
+        "p95": 7,
+        "max": 7,
+        "threshold_decision": "UNKNOWN"
+      },
+      "cost": {
+        "known_subtotals_by_currency": {
+          "USD": "0.03"
+        },
+        "complete_attempt_n": 1,
+        "unknown_or_missing_attempt_n": 1,
+        "unknown_component_n": 0,
+        "planned_attempt_n": 2,
+        "total_cost_known": false,
+        "budget_decision": "UNKNOWN"
+      },
+      "attempts": [
+        {
+          "key": [
+            "synthetic-a",
+            "synthetic-one",
+            "zh",
+            "synthetic-network",
+            1
+          ],
+          "outcome": "PASS",
+          "observation": {
+            "candidate_id": "synthetic-a",
+            "scenario_id": "synthetic-one",
+            "language": "zh",
+            "network_id": "synthetic-network",
+            "attempt": 1,
+            "purpose": "evaluation",
+            "status": "success",
+            "attempt_source": "synthetic:unit-test-generator",
+            "observed_at": "synthetic-not-a-real-timestamp",
+            "source_as_of": "synthetic-no-real-source",
+            "raw_evidence_ref": "synthetic:raw-test-record",
+            "judgment": {
+              "kind": "program",
+              "independent": true,
+              "outcome": "PASS",
+              "ref": "synthetic:external-test-assertion"
+            },
+            "first_body_seconds": 2,
+            "draft_seconds": 7,
+            "tool_observations": [
+              {
+                "name": "synthetic-tool",
+                "status": "not-called",
+                "source": "synthetic:test-only"
+              }
+            ],
+            "serious_errors": [],
+            "cost": {
+              "complete": true,
+              "components": [
+                {
+                  "name": "synthetic-total-including-retries-tools-memory",
+                  "amount": "0.03",
+                  "currency": "USD",
+                  "source": "synthetic:not-a-bill"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": [
+            "synthetic-a",
+            "synthetic-two",
+            "zh",
+            "synthetic-network",
+            1
+          ],
+          "outcome": "UNRUN",
+          "observation": null
+        }
+      ]
+    },
+    {
+      "candidate_id": "synthetic-a",
+      "candidate": {
+        "id": "synthetic-a",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "config_version": "synthetic-config-v1",
+        "model_version": "synthetic-no-model-called",
+        "source_as_of": "synthetic-no-real-source"
+      },
+      "language": "zh",
+      "network_id": "synthetic-network",
+      "network": {
+        "id": "synthetic-network",
+        "description": "Synthetic labels; no network measurement."
+      },
+      "evidence_layer": "synthetic",
+      "split": "holdout",
+      "task_kind": "synthetic-pipeline",
+      "independent_scenario_n": 1,
+      "planned_attempt_n": 1,
+      "serious_errors": [],
+      "outcomes": {
+        "PASS": 0,
+        "FAIL": 0,
+        "UNKNOWN": 0,
+        "UNRUN": 1
+      },
+      "statuses": {
+        "missing": 1
+      },
+      "pass_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "failure_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "unknown_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "conservative_not_passed_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "coverage": {
+        "numerator": 0,
+        "denominator": 1,
+        "value": 0.0
+      },
+      "first_body_seconds": {
+        "known_n": 0,
+        "planned_n": 1,
+        "unknown_or_missing_n": 1,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "threshold_decision": "UNKNOWN"
+      },
+      "draft_seconds": {
+        "known_n": 0,
+        "planned_n": 1,
+        "unknown_or_missing_n": 1,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "threshold_decision": "UNKNOWN"
+      },
+      "cost": {
+        "known_subtotals_by_currency": {},
+        "complete_attempt_n": 0,
+        "unknown_or_missing_attempt_n": 1,
+        "unknown_component_n": 0,
+        "planned_attempt_n": 1,
+        "total_cost_known": false,
+        "budget_decision": "UNKNOWN"
+      },
+      "attempts": [
+        {
+          "key": [
+            "synthetic-a",
+            "synthetic-three",
+            "zh",
+            "synthetic-network",
+            1
+          ],
+          "outcome": "UNRUN",
+          "observation": null
+        }
+      ]
+    },
+    {
+      "candidate_id": "synthetic-a",
+      "candidate": {
+        "id": "synthetic-a",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "config_version": "synthetic-config-v1",
+        "model_version": "synthetic-no-model-called",
+        "source_as_of": "synthetic-no-real-source"
+      },
+      "language": "en",
+      "network_id": "synthetic-network",
+      "network": {
+        "id": "synthetic-network",
+        "description": "Synthetic labels; no network measurement."
+      },
+      "evidence_layer": "synthetic",
+      "split": "tuning",
+      "task_kind": "synthetic-pipeline",
+      "independent_scenario_n": 2,
+      "planned_attempt_n": 2,
+      "serious_errors": [],
+      "outcomes": {
+        "PASS": 0,
+        "FAIL": 0,
+        "UNKNOWN": 0,
+        "UNRUN": 2
+      },
+      "statuses": {
+        "missing": 2
+      },
+      "pass_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "failure_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "unknown_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "conservative_not_passed_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "coverage": {
+        "numerator": 0,
+        "denominator": 2,
+        "value": 0.0
+      },
+      "first_body_seconds": {
+        "known_n": 0,
+        "planned_n": 2,
+        "unknown_or_missing_n": 2,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "threshold_decision": "UNKNOWN"
+      },
+      "draft_seconds": {
+        "known_n": 0,
+        "planned_n": 2,
+        "unknown_or_missing_n": 2,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "threshold_decision": "UNKNOWN"
+      },
+      "cost": {
+        "known_subtotals_by_currency": {},
+        "complete_attempt_n": 0,
+        "unknown_or_missing_attempt_n": 2,
+        "unknown_component_n": 0,
+        "planned_attempt_n": 2,
+        "total_cost_known": false,
+        "budget_decision": "UNKNOWN"
+      },
+      "attempts": [
+        {
+          "key": [
+            "synthetic-a",
+            "synthetic-one",
+            "en",
+            "synthetic-network",
+            1
+          ],
+          "outcome": "UNRUN",
+          "observation": null
+        },
+        {
+          "key": [
+            "synthetic-a",
+            "synthetic-two",
+            "en",
+            "synthetic-network",
+            1
+          ],
+          "outcome": "UNRUN",
+          "observation": null
+        }
+      ]
+    },
+    {
+      "candidate_id": "synthetic-a",
+      "candidate": {
+        "id": "synthetic-a",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "config_version": "synthetic-config-v1",
+        "model_version": "synthetic-no-model-called",
+        "source_as_of": "synthetic-no-real-source"
+      },
+      "language": "en",
+      "network_id": "synthetic-network",
+      "network": {
+        "id": "synthetic-network",
+        "description": "Synthetic labels; no network measurement."
+      },
+      "evidence_layer": "synthetic",
+      "split": "holdout",
+      "task_kind": "synthetic-pipeline",
+      "independent_scenario_n": 1,
+      "planned_attempt_n": 1,
+      "serious_errors": [],
+      "outcomes": {
+        "PASS": 0,
+        "FAIL": 0,
+        "UNKNOWN": 0,
+        "UNRUN": 1
+      },
+      "statuses": {
+        "missing": 1
+      },
+      "pass_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "failure_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "unknown_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "conservative_not_passed_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": null
+      },
+      "coverage": {
+        "numerator": 0,
+        "denominator": 1,
+        "value": 0.0
+      },
+      "first_body_seconds": {
+        "known_n": 0,
+        "planned_n": 1,
+        "unknown_or_missing_n": 1,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "threshold_decision": "UNKNOWN"
+      },
+      "draft_seconds": {
+        "known_n": 0,
+        "planned_n": 1,
+        "unknown_or_missing_n": 1,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "threshold_decision": "UNKNOWN"
+      },
+      "cost": {
+        "known_subtotals_by_currency": {},
+        "complete_attempt_n": 0,
+        "unknown_or_missing_attempt_n": 1,
+        "unknown_component_n": 0,
+        "planned_attempt_n": 1,
+        "total_cost_known": false,
+        "budget_decision": "UNKNOWN"
+      },
+      "attempts": [
+        {
+          "key": [
+            "synthetic-a",
+            "synthetic-three",
+            "en",
+            "synthetic-network",
+            1
+          ],
+          "outcome": "UNRUN",
+          "observation": null
+        }
+      ]
+    }
+  ],
+  "serious_errors": [],
+  "repeated_uses": [],
+  "raw_observations": [
+    {
+      "candidate_id": "synthetic-a",
+      "scenario_id": "synthetic-one",
+      "language": "zh",
+      "network_id": "synthetic-network",
+      "attempt": 1,
+      "purpose": "evaluation",
+      "status": "success",
+      "attempt_source": "synthetic:unit-test-generator",
+      "observed_at": "synthetic-not-a-real-timestamp",
+      "source_as_of": "synthetic-no-real-source",
+      "raw_evidence_ref": "synthetic:raw-test-record",
+      "judgment": {
+        "kind": "program",
+        "independent": true,
+        "outcome": "PASS",
+        "ref": "synthetic:external-test-assertion"
+      },
+      "first_body_seconds": 2,
+      "draft_seconds": 7,
+      "tool_observations": [
+        {
+          "name": "synthetic-tool",
+          "status": "not-called",
+          "source": "synthetic:test-only"
+        }
+      ],
+      "serious_errors": [],
+      "cost": {
+        "complete": true,
+        "components": [
+          {
+            "name": "synthetic-total-including-retries-tools-memory",
+            "amount": "0.03",
+            "currency": "USD",
+            "source": "synthetic:not-a-bill"
+          }
+        ]
+      }
+    }
+  ],
+  "input_files": {
+    "scenarios": {
+      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-028-evaluation/evaluation/cj028/fixtures/synthetic-plan.json",
+      "sha256": "ea0ee4fe2a24e109c007708323197dd6f11b76a9c71432c372b2ea926937680b"
+    },
+    "observations": {
+      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-028-evaluation/evaluation/cj028/fixtures/synthetic-observations.json",
+      "sha256": "04f8781fbe27e718b71cc5cefd4a25f0f27cd19576652d1bd5a6dc86e2ba5848"
+    }
+  }
+}

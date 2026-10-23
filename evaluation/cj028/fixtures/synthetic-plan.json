@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "sample_set_id": "synthetic-pipeline-test-only",
+  "sample_set_version": "synthetic-v1",
+  "provenance": "Synthetic records solely for offline pipeline tests; no real travel assertions or measurements.",
+  "evidence_layer": "synthetic",
+  "approved_thresholds": null,
+  "attempts": [
+    1
+  ],
+  "candidates": [
+    {
+      "id": "synthetic-a",
+      "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "config_version": "synthetic-config-v1",
+      "model_version": "synthetic-no-model-called",
+      "source_as_of": "synthetic-no-real-source"
+    }
+  ],
+  "networks": [
+    {
+      "id": "synthetic-network",
+      "description": "Synthetic labels; no network measurement."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "synthetic-one",
+      "product": true,
+      "split": "tuning",
+      "used_for_tuning": false,
+      "history_ref": "synthetic:declared-no-prior-use",
+      "input_version": "synthetic-v1",
+      "expectation_ref": "synthetic:external-test-expectation",
+      "pairing_ref": "synthetic:paired-labels",
+      "inputs": {
+        "zh": "合成管道用例 synthetic-one；没有旅行事实。",
+        "en": "Synthetic pipeline case synthetic-one; no travel facts."
+      },
+      "task_kind": "synthetic-pipeline"
+    },
+    {
+      "id": "synthetic-two",
+      "product": true,
+      "split": "tuning",
+      "used_for_tuning": false,
+      "history_ref": "synthetic:declared-no-prior-use",
+      "input_version": "synthetic-v1",
+      "expectation_ref": "synthetic:external-test-expectation",
+      "pairing_ref": "synthetic:paired-labels",
+      "inputs": {
+        "zh": "合成管道用例 synthetic-two；没有旅行事实。",
+        "en": "Synthetic pipeline case synthetic-two; no travel facts."
+      },
+      "task_kind": "synthetic-pipeline"
+    },
+    {
+      "id": "synthetic-three",
+      "product": true,
+      "split": "holdout",
+      "used_for_tuning": false,
+      "history_ref": "synthetic:declared-no-prior-use",
+      "input_version": "synthetic-v1",
+      "expectation_ref": "synthetic:external-test-expectation",
+      "pairing_ref": "synthetic:paired-labels",
+      "inputs": {
+        "zh": "合成管道用例 synthetic-three；没有旅行事实。",
+        "en": "Synthetic pipeline case synthetic-three; no travel facts."
+      },
+      "task_kind": "synthetic-pipeline"
+    }
+  ]
+}
