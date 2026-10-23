@@ -1,0 +1,20 @@
+NEW_PRIVATE_PG=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/px4xjgm04; role=cj013_synthetic; port=56413; TCP=disabled; synthetic_only=true
+.F...............................PG_STOPPED_PRESERVED=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/px4xjgm04
+
+=================================== FAILURES ===================================
+________ test_original_close_host_environment_scope_probe_now_withheld _________
+
+reader = (<cj_needs.protected_read.ProtectedReader object at 0x10a0447d0>, <test_protected_read.Storage object at 0x10a044550>, <helpers.Identity object at 0x10a0a4fc0>, {'scope': 'different-host-scope'})
+
+    def test_original_close_host_environment_scope_probe_now_withheld(reader):
+        protected, storage, _, mapping = reader
+        storage.hook = lambda: mapping.update(scope='different-host-scope')
+        with pytest.raises(Exception): protected.read('synthetic', project)
+>       assert storage.closed == 1
+E       assert 2 == 1
+E        +  where 2 = <test_protected_read.Storage object at 0x10a044550>.closed
+
+backend/needs/tests/test_protected_read.py:69: AssertionError
+=========================== short test summary info ============================
+FAILED backend/needs/tests/test_protected_read.py::test_original_close_host_environment_scope_probe_now_withheld
+1 failed, 32 passed in 1.31s

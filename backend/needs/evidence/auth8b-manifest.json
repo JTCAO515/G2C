@@ -1,0 +1,13 @@
+{
+  "auth_head": "8b6abb236cf10c1865a9cc8c6155bd8ac732c07e",
+  "sha256": {
+    "backend/auth/cj_auth/__init__.py": "6921fa11f3bdb1cefb618f0e067581fa22385cf1e0836e479f989a84dcb6374a",
+    "backend/auth/cj_auth/admission.py": "5e9fab7cea50a260622896cb7aeba76ebe1ba511d63a87a69e83fe7bdea526dc",
+    "backend/auth/cj_auth/composition.py": "f3ca28ef38d579b23bed1e983a88bcb18373e617fbd05cb7acae42a90a03d21e",
+    "backend/auth/cj_auth/https_jwks_transport.py": "1e3e1b5bd02d276e89a7f16b1132dbe6f82533c468a0d3b52c8e20653b031b2f",
+    "backend/auth/cj_auth/interfaces.py": "39711c9511c942274162fc4d32986a554147f8f32067ffd1e49e5aa94c9a0b9c",
+    "backend/auth/cj_auth/jwks_provider.py": "a92f35294b75d812fce86a4fb2ee55f89c2b4643edc22f3d0fca26269c7027fa",
+    "backend/auth/cj_auth/jwt_adapter.py": "ede933a2af99965ecaa8e7d58b950fc51fe38232538dd825c4a23bcf6d85aad5",
+    "backend/auth/cj_auth/read_context.py": "c74e64fc2667d89beebab49d832804510894e84701416d38b3849238b02b3f2c"
+  }
+}

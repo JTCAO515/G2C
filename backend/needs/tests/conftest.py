@@ -9,7 +9,8 @@ import psycopg
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
-sys.path[:0] = [str(ROOT / 'backend/needs'), str(ROOT / 'backend/auth')]
+AUTH8B = ROOT / 'backend/needs/.local/auth8b/backend/auth'
+sys.path[:0] = [str(ROOT / 'backend/needs'), str(AUTH8B if AUTH8B.is_dir() else ROOT / 'backend/auth')]
 
 
 @pytest.fixture(scope='session')

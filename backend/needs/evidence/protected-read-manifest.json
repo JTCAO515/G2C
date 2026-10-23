@@ -1,0 +1,14 @@
+{
+  "base": "c821b34d607016c6dbc1020c203621841f1a60e8",
+  "auth": "8b6abb236cf10c1865a9cc8c6155bd8ac732c07e",
+  "sha256": {
+    "backend/needs/cj_needs/protected_read.py": "b2b710a5a348dd104c20ba8d67e44f6cbacfafa152db8b548629e5f18528ad80",
+    "backend/needs/cj_needs/boundary.py": "4750a22dd6ef0a3818ee19a46b6c560b612e653fde20e595b6cc78ebd06855ed",
+    "backend/needs/cj_needs/postgres.py": "c9e39172fa6f09628218acd9e72a7f18cdb136587e78d835699ab4b16034cb34",
+    "backend/needs/tests/test_protected_read.py": "b88773dee16b72ad5f14b80614cb3329d83cb329c8ba4d945e146ac9d8e791ca",
+    "backend/needs/tests/conftest.py": "6d433571e44a5e0b9f3f1fd32d30f07cb95ac5feb89a99a4f01f99ce3a75a286",
+    "backend/needs/tests/prepare_auth8b.py": "d15653765a84630009f90672e59d86c30d17cae84e20db68fdd3e6f68ba6e35a",
+    "contracts/needs/PROTECTED-READ.md": "e27df9d577b42660d047e8e4a44116dd26eda6729a6ddf1ab308617705fecb2b"
+  },
+  "readonly_original_failure_sha256": "209fa0d29fd1d3bf2b5fdc26b70a149d7d9145ccbd235b0525e52dc130532fc0"
+}

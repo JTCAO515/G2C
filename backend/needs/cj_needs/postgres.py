@@ -9,8 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 class Repository:
-    def __init__(self, connect, scope, guard):
+    def __init__(self, connect, scope, guard, *, strict_close=False):
         self.connect, self.scope, self.guard = connect, identifier(scope), guard
+        self.strict_close = strict_close
 
     @contextmanager
     def transaction(self):
@@ -46,9 +47,12 @@ class Repository:
             try: conn.close()
             except BaseException as exc:
                 self._warning('close')
-                if primary is None and not isinstance(exc, Exception):
+                if primary is None and (self.strict_close or not isinstance(exc, Exception)):
                     exc.commit_possible = commit_started
                     raise
+            else:
+                if self.strict_close and primary is None:
+                    self.guard('closed')
 
     @staticmethod
     def _warning(stage):
