@@ -67,6 +67,62 @@ def exact_sum(values):
         return sum(values, Decimal(0))
 
 
+# Closed record categories, not paths or permission to edit the named component.
+RECORDABLE_COMPONENTS = {'prompt_wording', 'tool_descriptions', 'context_layout', 'evaluation_diagnostics'}
+
+
+def fields(value, expected, label):
+    require(isinstance(value, dict) and set(value) == set(expected), label + ' has missing or unsupported fields')
+
+
+def string_list(value, label):
+    require(isinstance(value, list) and all(nonempty(item) for item in value), label + ' must be a string list')
+    require(len(set(value)) == len(value), label + ' has duplicates')
+
+
+def validate_change_records(plan, candidates, records):
+    policy = plan.get('modification_policy')
+    if 'modification_policy' in plan:
+        fields(policy, ('allowed_components', 'acceptance_check_refs'), 'modification_policy')
+        string_list(policy['allowed_components'], 'allowed_components')
+        require(set(policy['allowed_components']) <= RECORDABLE_COMPONENTS, 'protected or unsupported component')
+        string_list(policy['acceptance_check_refs'], 'acceptance_check_refs')
+        require(policy['acceptance_check_refs'], 'original acceptance checks must be retained')
+    for candidate in candidates.values():
+        if 'baseline_candidate_id' in candidate:
+            baseline = candidate['baseline_candidate_id']
+            require(nonempty(baseline) and baseline in candidates and baseline != candidate['id'],
+                    'baseline must identify another candidate in this evaluation')
+        if 'change_record' not in candidate:
+            continue
+        require(policy is not None, 'change_record requires modification_policy from the trusted plan')
+        change = candidate['change_record']
+        fields(change, ('components', 'redacted_refs', 'disposition'), 'change_record')
+        string_list(change['components'], 'proposed components')
+        require(set(change['components']) <= set(policy['allowed_components']), 'proposed components exceed plan allowlist')
+        refs = change['redacted_refs']
+        require(isinstance(refs, list) and refs, 'change_record needs redacted references')
+        for ref in refs:
+            fields(ref, ('kind', 'ref'), 'redacted reference')
+            require(ref['kind'] in ('diff', 'trajectory', 'artifact') and nonempty(ref['ref']), 'invalid redacted reference')
+        disposition = change['disposition']
+        fields(disposition, ('status', 'reason', 'source_ref'), 'disposition')
+        require(disposition['status'] in ('adoption', 'rejection', 'pending')
+                and nonempty(disposition['reason']) and nonempty(disposition['source_ref']),
+                'disposition needs adoption/rejection/pending, reason and source_ref')
+    for record in records:
+        if 'method_lesson' not in record:
+            continue
+        lesson = record['method_lesson']
+        fields(lesson, ('scope', 'cue', 'lesson', 'evidence_ref', 'state'), 'method_lesson')
+        require(lesson['scope'] == 'method' and lesson['state'] == 'candidate',
+                'method lessons are candidate methods only; no personal facts or automatic promotion')
+        require(nonempty(lesson['cue']) and nonempty(lesson['lesson']), 'method_lesson needs cue and method')
+        require(record['status'] != 'missing' and nonempty(lesson['evidence_ref'])
+                and lesson['evidence_ref'] == record.get('raw_evidence_ref'),
+                'method_lesson must link to raw evidence on its own evaluation attempt')
+
+
 def validate(plan, records):
     require(isinstance(plan, dict) and type(plan.get('schema_version')) is int
             and plan['schema_version'] == 1, 'plan schema_version must be integer 1')
@@ -149,6 +205,7 @@ def validate(plan, records):
                         'cost component needs name/currency/source')
                 if component.get('amount') is not None:
                     amount(component['amount'])
+    validate_change_records(plan, candidates, records)
     return scenarios, candidates, networks
 
 
