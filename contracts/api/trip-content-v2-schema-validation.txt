@@ -1,0 +1,16 @@
+base=a10ad8998fbac4e2a648dd0137f1872eb12b8239; trip grammar source=7e6a2e95021033cbe847465e18fe57977370057e; PUBLIC_ABI_PENDING
+Python=3.12.14; jsonschema=4.26.0; Draft2020-12 with date FormatChecker; no producer/runtime imports
+trip-content-v2-schema-proposal.json SHA256=600b7b066d87bcec591361574ae17c8b9847d68e2ced75043a4a9943b1f6bc85
+trip-content-v2-schema-examples.json SHA256=625620ff24844a20b33b87f3e87fb5a8479501a6b99a98dbb6bfd5e3773f7823
+test_local_refs_and_valid_metaschema (__main__.ProposalChecks.test_local_refs_and_valid_metaschema) ... ok
+test_original_v1_and_generator_registration_unchanged (__main__.ProposalChecks.test_original_v1_and_generator_registration_unchanged) ... ok
+test_producer_and_application_gates_are_not_schema_success_claims (__main__.ProposalChecks.test_producer_and_application_gates_are_not_schema_success_claims) ... ok
+test_six_place_absence_states_without_present_or_value_escape (__main__.ProposalChecks.test_six_place_absence_states_without_present_or_value_escape) ... ok
+test_structural_negative_examples (__main__.ProposalChecks.test_structural_negative_examples) ... ok
+test_structural_positive_examples_do_not_mutate_input (__main__.ProposalChecks.test_structural_positive_examples_do_not_mutate_input) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.081s
+
+OK
+case counts: {"schema_accept": 16, "schema_reject": 35, "producer_gate_only": 8, "application_gate_only": 2}
