@@ -1,0 +1,481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cj:trip-content:2:schema-proposal:1",
+  "title": "Unregistered Trip content V2 structure proposal",
+  "description": "Structural subset matched to fixed public CandidateContentV2(raw); unpublished content only. No Proposal/wire/source-currentness/permission acceptance.",
+  "x-cj-status": "UNREGISTERED_PRODUCER_ABI_FIXED_WIRE_NOT_ACCEPTED",
+  "x-cj-fixed-inputs": {
+    "main_v1_base": "a10ad8998fbac4e2a648dd0137f1872eb12b8239",
+    "trip": "7262c749fd0b81e3ff5e8ed9f3275169c49c1598",
+    "needs": "4cc9c815293a4e03225b26adfa228fdd0b50b2e7",
+    "place": "5904e37f698ceb822c16e39ae36c87552235cabb",
+    "trip_grammar_base": "7e6a2e95021033cbe847465e18fe57977370057e"
+  },
+  "$comment": "Not referenced by openapi.json, generators, dependency pins or factories. Exact raw UTF8/canonical form and strict JSON integer token types remain producer checks.",
+  "x-cj-producer-gates": [
+    "strict integer JSON token types (2.0 is not native int2)",
+    "original raw UTF8 and canonical packed bytes, duplicate keys, 1000000-byte cap",
+    "IANA ZoneInfo key existence",
+    "Day/item ID uniqueness and day references",
+    "unambiguous endpoint comparison, end>start and selected destination-local Day including overflow rejection"
+  ],
+  "x-cj-application-gates": [
+    "NEEDS reference existence/currentness and field-level original history association",
+    "current AUTH/source binding and no inferred approval",
+    "PLACE present remains unsupported; no serialization placeholder",
+    "fixed/selected edit scope and old/new affected Days",
+    "Proposal V2 acceptance/publication/confirmation and formal versioned wire remain closed"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "content_version",
+    "title",
+    "needs_basis",
+    "days",
+    "items"
+  ],
+  "properties": {
+    "content_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "title": {
+      "$ref": "#/$defs/BoundedText"
+    },
+    "needs_basis": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/NeedsBasis"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Day"
+      },
+      "uniqueItems": true
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Item"
+      },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "items": {
+            "contains": {
+              "type": "object",
+              "required": [
+                "needs_item_id"
+              ],
+              "properties": {
+                "needs_item_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "needs_basis": {
+            "$ref": "#/$defs/NeedsBasis"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "TripIdentifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}(?![\\s\\S])",
+      "maxLength": 128
+    },
+    "NeedsIdentifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}(?![\\s\\S])",
+      "maxLength": 96
+    },
+    "BoundedText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "\\S"
+    },
+    "NoValueObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "missing",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "UncertainObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "note"
+      ],
+      "properties": {
+        "state": {
+          "const": "uncertain"
+        },
+        "note": {
+          "$ref": "#/$defs/BoundedText"
+        }
+      }
+    },
+    "DateValue": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+      "format": "date"
+    },
+    "TimeValue": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?(?![\\s\\S])"
+    },
+    "ZoneValue": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^./]",
+      "description": "Original zone key, never inferred. Existence in ZoneInfo remains an original producer check."
+    },
+    "NeedsBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "needs_id",
+        "version"
+      ],
+      "properties": {
+        "needs_id": {
+          "$ref": "#/$defs/NeedsIdentifier"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        }
+      },
+      "description": "Persisted NEEDS revision, not party-size or Trip CAS version; existence/currentness not asserted."
+    },
+    "PlaceAbsence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "missing",
+            "empty_array",
+            "empty_string",
+            "null",
+            "invalid",
+            "unknown"
+          ]
+        }
+      },
+      "description": "Six distinct original PLACE no-value states. present and ALL value keys are rejected."
+    },
+    "DateObservation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/NoValueObservation"
+        },
+        {
+          "$ref": "#/$defs/UncertainObservation"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "value"
+          ],
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "$ref": "#/$defs/DateValue"
+            }
+          }
+        }
+      ]
+    },
+    "TimeObservation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/NoValueObservation"
+        },
+        {
+          "$ref": "#/$defs/UncertainObservation"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "value"
+          ],
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "$ref": "#/$defs/TimeValue"
+            }
+          }
+        }
+      ]
+    },
+    "ZoneObservation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/NoValueObservation"
+        },
+        {
+          "$ref": "#/$defs/UncertainObservation"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "value"
+          ],
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "$ref": "#/$defs/ZoneValue"
+            }
+          }
+        }
+      ]
+    },
+    "TextObservation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/NoValueObservation"
+        },
+        {
+          "$ref": "#/$defs/UncertainObservation"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "value"
+          ],
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "$ref": "#/$defs/BoundedText"
+            }
+          }
+        }
+      ]
+    },
+    "BooleanObservation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/NoValueObservation"
+        },
+        {
+          "$ref": "#/$defs/UncertainObservation"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "value"
+          ],
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "Event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "time",
+        "timezone",
+        "place"
+      ],
+      "properties": {
+        "date": {
+          "$ref": "#/$defs/DateObservation"
+        },
+        "time": {
+          "$ref": "#/$defs/TimeObservation"
+        },
+        "timezone": {
+          "$ref": "#/$defs/ZoneObservation"
+        },
+        "place": {
+          "$ref": "#/$defs/TextObservation"
+        }
+      },
+      "description": "Original NEEDS four-field Event. place is declared text, not canonical provider identity."
+    },
+    "Day": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "date",
+        "timezone"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/TripIdentifier"
+        },
+        "date": {
+          "$ref": "#/$defs/DateObservation"
+        },
+        "timezone": {
+          "$ref": "#/$defs/ZoneObservation"
+        }
+      },
+      "description": "Stable original Day ID; uniqueness/references are original producer gates."
+    },
+    "Item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "text",
+        "verification",
+        "evidence",
+        "day_id",
+        "start",
+        "end",
+        "locked",
+        "needs_item_id",
+        "place"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/TripIdentifier"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "verification": {
+          "enum": [
+            "pending",
+            "verified"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "day_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TripIdentifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "start": {
+          "$ref": "#/$defs/Event"
+        },
+        "end": {
+          "$ref": "#/$defs/Event"
+        },
+        "locked": {
+          "$ref": "#/$defs/BooleanObservation"
+        },
+        "needs_item_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NeedsIdentifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "place": {
+          "$ref": "#/$defs/PlaceAbsence"
+        }
+      },
+      "description": "Whole-content stable item identity. No implicit date/zone, edit-lock authority or source truth.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "verification": {
+                "const": "verified"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "x-cj-public-abi": {
+    "marker": "CJ-TRIP-CANDIDATE-CONTENT@0.1.0-rc.1",
+    "constructor": "from cj_trip import CandidateContentV2; CandidateContentV2(raw: bytes)",
+    "document_location": "JSON content inside candidate.raw, not a dataclass JSON wrapper",
+    "only_data_attribute": "raw",
+    "contract_path": "contracts/trip/CANDIDATE-CONTENT-ABI.md",
+    "fixed_product_sha256": {
+      "backend/trip/cj_trip/domain.py": "ed96ca76f9c0ad9a0cd70556ec841a1fbbec6f0772dbf0b1d5829c5bb37482b4",
+      "backend/trip/cj_trip/__init__.py": "a74a1726bf356da4f89633c1cae0b50691a71e3e5235d888b7d87cdc62d25923",
+      "contracts/trip/CANDIDATE-CONTENT-ABI.md": "375fa4588cd1d105e240684057811c897b136a8bb1c6866a2a7d43e5755d81c9"
+    }
+  }
+}

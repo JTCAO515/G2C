@@ -1,0 +1,19 @@
+{
+  "old_initial_schema_file_sha256": "600b7b066d87bcec591361574ae17c8b9847d68e2ced75043a4a9943b1f6bc85",
+  "current_schema_file_sha256": "2a07680b44224919d5f62ede8caa4c0776b94c789b14a207339e0708d43d9b5e",
+  "validation_keywords_unchanged": true,
+  "validation_keywords_sha256": "fb251cc39411e9f57efa8dd4d0debd8fb234eef3b6e3fec1894d12f88a5bf631",
+  "producer_fixed_abi": "7262c749fd0b81e3ff5e8ed9f3275169c49c1598",
+  "original_grammar_source": "7e6a2e95021033cbe847465e18fe57977370057e",
+  "producer_validators_and_Proposal_Action_AST_unchanged": true,
+  "public_constructor_validation_body_AST_unchanged": true,
+  "fixtures_sha256": "625620ff24844a20b33b87f3e87fb5a8479501a6b99a98dbb6bfd5e3773f7823"
+}
+
+test_local_refs_and_valid_metaschema (check_trip_content_v2_schema_proposal.ProposalChecks.test_local_refs_and_valid_metaschema) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.008s
+
+OK
+Reused initial six-method structural evidence; only changed metadata/metaschema rechecked. No producer/5525/runtime imports or execution.

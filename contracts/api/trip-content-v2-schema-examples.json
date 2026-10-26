@@ -1,0 +1,1924 @@
+{
+  "fixture_format": "base document plus local test-only replacements/deletions; not a wire patch format",
+  "base": {
+    "content_version": 2,
+    "title": "é 中国行程 🚆",
+    "needs_basis": null,
+    "days": [
+      {
+        "id": "day-1",
+        "date": {
+          "state": "known",
+          "value": "2026-11-02"
+        },
+        "timezone": {
+          "state": "known",
+          "value": "Asia/Shanghai"
+        }
+      }
+    ],
+    "items": [
+      {
+        "id": "item-1",
+        "text": "原始声明 / synthetic",
+        "verification": "pending",
+        "evidence": [],
+        "day_id": "day-1",
+        "start": {
+          "date": {
+            "state": "known",
+            "value": "2026-11-02"
+          },
+          "time": {
+            "state": "known",
+            "value": "09:00"
+          },
+          "timezone": {
+            "state": "known",
+            "value": "Asia/Shanghai"
+          },
+          "place": {
+            "state": "unknown"
+          }
+        },
+        "end": {
+          "date": {
+            "state": "known",
+            "value": "2026-11-02"
+          },
+          "time": {
+            "state": "known",
+            "value": "10:00"
+          },
+          "timezone": {
+            "state": "known",
+            "value": "Asia/Shanghai"
+          },
+          "place": {
+            "state": "unknown"
+          }
+        },
+        "locked": {
+          "state": "unknown"
+        },
+        "needs_item_id": null,
+        "place": {
+          "state": "unknown"
+        }
+      }
+    ]
+  },
+  "schema_accept": [
+    {
+      "name": "known-events-original-unicode",
+      "changes": []
+    },
+    {
+      "name": "place-missing",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "missing"
+        }
+      ]
+    },
+    {
+      "name": "place-empty_array",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "empty_array"
+        }
+      ]
+    },
+    {
+      "name": "place-empty_string",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "empty_string"
+        }
+      ]
+    },
+    {
+      "name": "place-null",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "name": "place-invalid",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "invalid"
+        }
+      ]
+    },
+    {
+      "name": "place-unknown",
+      "changes": []
+    },
+    {
+      "name": "all-observations-missing",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "date",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "timezone",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "place",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "place",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "locked",
+            "state"
+          ],
+          "value": "missing"
+        }
+      ]
+    },
+    {
+      "name": "all-observations-unknown",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "date",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "timezone",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "state"
+          ],
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "name": "all-observations-uncertain",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "date",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "date",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "timezone",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "timezone",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "place",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "place",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "place",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "place",
+            "note"
+          ],
+          "value": "未决 / original note"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "locked",
+            "state"
+          ],
+          "value": "uncertain"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "locked",
+            "note"
+          ],
+          "value": "未决 / original note"
+        }
+      ]
+    },
+    {
+      "name": "empty-days-explicit-null-reference",
+      "changes": [
+        {
+          "path": [
+            "days"
+          ],
+          "value": []
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "day_id"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "cross-midnight-one-item-one-primary-day",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "value"
+          ],
+          "value": "23:30"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "value"
+          ],
+          "value": "2026-11-03"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "value"
+          ],
+          "value": "01:00"
+        }
+      ]
+    },
+    {
+      "name": "persisted-needs-version-100001",
+      "changes": [
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "value": {
+            "needs_id": "needs-1",
+            "version": 100001
+          }
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "needs_item_id"
+          ],
+          "value": "fixed-1"
+        }
+      ]
+    },
+    {
+      "name": "persisted-needs-version-9223372036854775807",
+      "changes": [
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "value": {
+            "needs_id": "needs-1",
+            "version": 9223372036854775807
+          }
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "needs_item_id"
+          ],
+          "value": "fixed-1"
+        }
+      ]
+    },
+    {
+      "name": "known-locked-true-no-authority",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "locked",
+            "state"
+          ],
+          "value": "known"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "locked",
+            "value"
+          ],
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "verified-shape-opaque-evidence-not-truth",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "verification"
+          ],
+          "value": "verified"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "evidence"
+          ],
+          "value": [
+            "opaque-unverified-by-schema"
+          ]
+        }
+      ]
+    }
+  ],
+  "schema_reject": [
+    {
+      "name": "unsupported-content-version-1",
+      "changes": [
+        {
+          "path": [
+            "content_version"
+          ],
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "unsupported-content-version-3",
+      "changes": [
+        {
+          "path": [
+            "content_version"
+          ],
+          "value": 3
+        }
+      ]
+    },
+    {
+      "name": "unsupported-content-version-True",
+      "changes": [
+        {
+          "path": [
+            "content_version"
+          ],
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "unsupported-content-version-2",
+      "changes": [
+        {
+          "path": [
+            "content_version"
+          ],
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "name": "unsupported-content-version-None",
+      "changes": [
+        {
+          "path": [
+            "content_version"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "untagged-v1",
+      "changes": [
+        {
+          "path": [
+            "content_version"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "days"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "title"
+          ],
+          "value": "old V1"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "day_id"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "locked"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "needs_item_id"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "place"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "text"
+          ],
+          "value": "original"
+        }
+      ]
+    },
+    {
+      "name": "extra-root-owner",
+      "changes": [
+        {
+          "path": [
+            "owner"
+          ],
+          "value": "caller"
+        }
+      ]
+    },
+    {
+      "name": "missing-needs-basis-key",
+      "changes": [
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "delete": true
+        }
+      ]
+    },
+    {
+      "name": "empty-items",
+      "changes": [
+        {
+          "path": [
+            "items"
+          ],
+          "value": []
+        }
+      ]
+    },
+    {
+      "name": "blank-title",
+      "changes": [
+        {
+          "path": [
+            "title"
+          ],
+          "value": " \n"
+        }
+      ]
+    },
+    {
+      "name": "title-over-4096",
+      "changes": [
+        {
+          "path": [
+            "title"
+          ],
+          "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ]
+    },
+    {
+      "name": "extra-day-field",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "label"
+          ],
+          "value": "invented"
+        }
+      ]
+    },
+    {
+      "name": "extra-item-time",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "time"
+          ],
+          "value": "invented"
+        }
+      ]
+    },
+    {
+      "name": "identifier-newline",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "id"
+          ],
+          "value": "day-1\n"
+        }
+      ]
+    },
+    {
+      "name": "event-missing-place",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "place"
+          ],
+          "delete": true
+        }
+      ]
+    },
+    {
+      "name": "bad-wall-time-24:00",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "value"
+          ],
+          "value": "24:00"
+        }
+      ]
+    },
+    {
+      "name": "bad-wall-time-23:59:60",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "value"
+          ],
+          "value": "23:59:60"
+        }
+      ]
+    },
+    {
+      "name": "bad-wall-time-09:00+08:00",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "value"
+          ],
+          "value": "09:00+08:00"
+        }
+      ]
+    },
+    {
+      "name": "invalid-calendar-date",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "value"
+          ],
+          "value": "2026-02-30"
+        }
+      ]
+    },
+    {
+      "name": "known-date-null",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "value"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "unknown-date-with-value",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "state"
+          ],
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "name": "uncertain-date-no-note",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "state"
+          ],
+          "value": "uncertain"
+        }
+      ]
+    },
+    {
+      "name": "locked-integer-not-bool",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "locked",
+            "state"
+          ],
+          "value": "known"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "locked",
+            "value"
+          ],
+          "value": 0
+        }
+      ]
+    },
+    {
+      "name": "place-present-no-escape",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "present"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "value"
+          ],
+          "value": {
+            "id": "anything"
+          }
+        }
+      ]
+    },
+    {
+      "name": "place-missing-value-null",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "missing"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "value"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "place-empty_array-value-null",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "empty_array"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "value"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "place-empty_string-value-null",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "empty_string"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "value"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "place-null-value-null",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "null"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "value"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "place-invalid-value-null",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "state"
+          ],
+          "value": "invalid"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "value"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "place-unknown-value-null",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "place",
+            "value"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "needs-item-no-basis",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "needs_item_id"
+          ],
+          "value": "fixed-1"
+        }
+      ]
+    },
+    {
+      "name": "bad-needs-version-0",
+      "changes": [
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "value": {
+            "needs_id": "n1",
+            "version": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "bad-needs-version-True",
+      "changes": [
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "value": {
+            "needs_id": "n1",
+            "version": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "bad-needs-version-9223372036854775808",
+      "changes": [
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "value": {
+            "needs_id": "n1",
+            "version": 9223372036854775808
+          }
+        }
+      ]
+    },
+    {
+      "name": "verified-without-evidence",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "verification"
+          ],
+          "value": "verified"
+        }
+      ]
+    }
+  ],
+  "producer_gate_only": [
+    {
+      "name": "float2-is-jsonschema-integer",
+      "changes": [
+        {
+          "path": [
+            "content_version"
+          ],
+          "value": 2.0
+        }
+      ],
+      "reason": "Standard JSON Schema mathematical integer accepts2.0;7e6 strict Python token type rejects. Producer NOT executed here."
+    },
+    {
+      "name": "integral-float-needs-version",
+      "changes": [
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "value": {
+            "needs_id": "n1",
+            "version": 1.0
+          }
+        }
+      ],
+      "reason": "Same JSON Schema integer semantics; original strict persisted revision check remains mandatory."
+    },
+    {
+      "name": "unknown-zone-database-key",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "value"
+          ],
+          "value": "Not/AZone"
+        }
+      ],
+      "reason": "ZoneInfo database membership is an original producer gate, not a portable structural schema promise."
+    },
+    {
+      "name": "same-day-id-different-observation",
+      "changes": [
+        {
+          "path": [
+            "days"
+          ],
+          "value": [
+            {
+              "id": "day-1",
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              }
+            },
+            {
+              "id": "day-1",
+              "date": {
+                "state": "unknown"
+              },
+              "timezone": {
+                "state": "unknown"
+              }
+            }
+          ]
+        }
+      ],
+      "reason": "uniqueItems compares whole values, not ID identity.7e6 must reject duplicate Day ID."
+    },
+    {
+      "name": "same-item-id-different-text",
+      "changes": [
+        {
+          "path": [
+            "items"
+          ],
+          "value": [
+            {
+              "id": "item-1",
+              "text": "原始声明 / synthetic",
+              "verification": "pending",
+              "evidence": [],
+              "day_id": "day-1",
+              "start": {
+                "date": {
+                  "state": "known",
+                  "value": "2026-11-02"
+                },
+                "time": {
+                  "state": "known",
+                  "value": "09:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "place": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "date": {
+                  "state": "known",
+                  "value": "2026-11-02"
+                },
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "place": {
+                  "state": "unknown"
+                }
+              },
+              "locked": {
+                "state": "unknown"
+              },
+              "needs_item_id": null,
+              "place": {
+                "state": "unknown"
+              }
+            },
+            {
+              "id": "item-1",
+              "text": "different",
+              "verification": "pending",
+              "evidence": [],
+              "day_id": "day-1",
+              "start": {
+                "date": {
+                  "state": "known",
+                  "value": "2026-11-02"
+                },
+                "time": {
+                  "state": "known",
+                  "value": "09:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "place": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "date": {
+                  "state": "known",
+                  "value": "2026-11-02"
+                },
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "place": {
+                  "state": "unknown"
+                }
+              },
+              "locked": {
+                "state": "unknown"
+              },
+              "needs_item_id": null,
+              "place": {
+                "state": "unknown"
+              }
+            }
+          ]
+        }
+      ],
+      "reason": "Whole-content ID uniqueness belongs to the original producer."
+    },
+    {
+      "name": "orphan-day-reference",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "day_id"
+          ],
+          "value": "absent-day"
+        }
+      ],
+      "reason": "Cross-array reference membership is the original producer gate."
+    },
+    {
+      "name": "known-reversed-window",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "value"
+          ],
+          "value": "08:00"
+        }
+      ],
+      "reason": "Original unique-instant comparison rejects end<=start; schema does not compare instants."
+    },
+    {
+      "name": "selected-destination-day-overflow",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "date",
+            "value"
+          ],
+          "value": "9999-12-31"
+        },
+        {
+          "path": [
+            "days",
+            0,
+            "timezone",
+            "value"
+          ],
+          "value": "Etc/GMT-14"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "date",
+            "value"
+          ],
+          "value": "9999-12-31"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "time",
+            "value"
+          ],
+          "value": "23:30"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "start",
+            "timezone",
+            "value"
+          ],
+          "value": "UTC"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "date",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "time",
+            "state"
+          ],
+          "value": "unknown"
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "value"
+          ],
+          "delete": true
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "end",
+            "timezone",
+            "state"
+          ],
+          "value": "unknown"
+        }
+      ],
+      "reason": "7e6 controlled timezone overflow rejection remains a pure producer gate. This is not an application-currentness check."
+    }
+  ],
+  "application_gate_only": [
+    {
+      "name": "basis-structural-not-current",
+      "changes": [
+        {
+          "path": [
+            "needs_basis"
+          ],
+          "value": {
+            "needs_id": "unresolved-needs",
+            "version": 100001
+          }
+        },
+        {
+          "path": [
+            "items",
+            0,
+            "needs_item_id"
+          ],
+          "value": "unresolved-fixed"
+        }
+      ],
+      "reason": "Schema and grammar do not prove reference existence, original field history, currentness, auth or permission."
+    },
+    {
+      "name": "unknown-lock-not-unlocked",
+      "changes": [],
+      "reason": "A grammar-valid unknown lock is not edit permission; selected/fixed scope is a separate consumer contract."
+    }
+  ],
+  "v1_original": {
+    "title": "original V1",
+    "items": [
+      {
+        "id": "old-item",
+        "text": "old text",
+        "verification": "pending",
+        "evidence": []
+      }
+    ]
+  }
+}
