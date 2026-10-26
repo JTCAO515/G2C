@@ -1,0 +1,377 @@
+{
+  "fixture_kind": "synthetic_only_not_for_trip_adoption",
+  "positive": [
+    {
+      "id": "synthetic-fold-0",
+      "projection": {
+        "projection_version": "CJ-PLACE-TRIP-JSON@0.1.0-rc.1",
+        "result": {
+          "outcome": "ok",
+          "query": {
+            "keyword": "合成酒店",
+            "city": "合成城市",
+            "page": 1,
+            "page_size": 20,
+            "kind": "Search"
+          },
+          "reason": "page_results",
+          "source": {
+            "endpoint": "https://restapi.amap.com/v3/place/text",
+            "query_started_at": {
+              "iso8601": "2026-11-01T01:30:00.000000-04:00",
+              "fold": 0
+            },
+            "received_at": {
+              "iso8601": "2026-11-01T01:30:01.000000-04:00",
+              "fold": 0
+            },
+            "request_ref": "synthetic-trip-projection",
+            "binding_digest": "c7817417ecd831e65db82f00aa1e4be73bfaf5a23cf2f807c5aa32a089020fd2",
+            "evidence": "synthetic",
+            "provider": "gaode",
+            "api_version": "v3",
+            "provider_updated_at": null
+          },
+          "places": [
+            {
+              "provider_id": "SYNTH_EAST",
+              "name_zh": "合成酒店",
+              "address_zh": {
+                "state": "present",
+                "value": "合成东路一号"
+              },
+              "coordinate": {
+                "state": "present",
+                "value": {
+                  "raw": "116.100000,39.100000",
+                  "longitude": "116.100000",
+                  "latitude": "39.100000",
+                  "crs": "GCJ-02"
+                }
+              },
+              "entrance_coordinate": {
+                "state": "present",
+                "value": {
+                  "raw": "116.100100,39.100100",
+                  "longitude": "116.100100",
+                  "latitude": "39.100100",
+                  "crs": "GCJ-02"
+                }
+              },
+              "exit_coordinate": {
+                "state": "missing",
+                "value": null
+              },
+              "parent_id": {
+                "state": "empty_array",
+                "value": null
+              },
+              "navigation_id": {
+                "state": "empty_string",
+                "value": null
+              },
+              "typecode": {
+                "state": "null",
+                "value": null
+              },
+              "official_name_en": {
+                "state": "unknown",
+                "value": null
+              },
+              "official_address_en": {
+                "state": "unknown",
+                "value": null
+              },
+              "provider": "gaode"
+            },
+            {
+              "provider_id": "SYNTH_WEST",
+              "name_zh": "合成酒店",
+              "address_zh": {
+                "state": "invalid",
+                "value": null
+              },
+              "coordinate": {
+                "state": "unknown",
+                "value": null
+              },
+              "entrance_coordinate": {
+                "state": "missing",
+                "value": null
+              },
+              "exit_coordinate": {
+                "state": "empty_array",
+                "value": null
+              },
+              "parent_id": {
+                "state": "missing",
+                "value": null
+              },
+              "navigation_id": {
+                "state": "missing",
+                "value": null
+              },
+              "typecode": {
+                "state": "missing",
+                "value": null
+              },
+              "official_name_en": {
+                "state": "unknown",
+                "value": null
+              },
+              "official_address_en": {
+                "state": "unknown",
+                "value": null
+              },
+              "provider": "gaode"
+            }
+          ],
+          "provider_code": "10000",
+          "provider_count": 2,
+          "contract_version": "CJ-PLACE-GAODE@0.1.0-rc.1"
+        }
+      },
+      "expected": "format_valid_consumer_adoption_deferred"
+    },
+    {
+      "id": "synthetic-fold-1",
+      "projection": {
+        "projection_version": "CJ-PLACE-TRIP-JSON@0.1.0-rc.1",
+        "result": {
+          "outcome": "ok",
+          "query": {
+            "provider_id": "SYNTH_EAST",
+            "kind": "Detail"
+          },
+          "reason": "page_results",
+          "source": {
+            "endpoint": "https://restapi.amap.com/v3/place/detail",
+            "query_started_at": {
+              "iso8601": "2026-11-01T01:30:00.000000-05:00",
+              "fold": 1
+            },
+            "received_at": {
+              "iso8601": "2026-11-01T01:30:01.000000-05:00",
+              "fold": 1
+            },
+            "request_ref": "synthetic-trip-projection",
+            "binding_digest": "7d6a34c146642f4af1da1e1e76a4ec485e64661786c7057152a36d9ea608f640",
+            "evidence": "synthetic",
+            "provider": "gaode",
+            "api_version": "v3",
+            "provider_updated_at": null
+          },
+          "places": [
+            {
+              "provider_id": "SYNTH_EAST",
+              "name_zh": "合成酒店",
+              "address_zh": {
+                "state": "present",
+                "value": "合成东路一号"
+              },
+              "coordinate": {
+                "state": "present",
+                "value": {
+                  "raw": "116.100000,39.100000",
+                  "longitude": "116.100000",
+                  "latitude": "39.100000",
+                  "crs": "GCJ-02"
+                }
+              },
+              "entrance_coordinate": {
+                "state": "present",
+                "value": {
+                  "raw": "116.100100,39.100100",
+                  "longitude": "116.100100",
+                  "latitude": "39.100100",
+                  "crs": "GCJ-02"
+                }
+              },
+              "exit_coordinate": {
+                "state": "missing",
+                "value": null
+              },
+              "parent_id": {
+                "state": "empty_array",
+                "value": null
+              },
+              "navigation_id": {
+                "state": "empty_string",
+                "value": null
+              },
+              "typecode": {
+                "state": "null",
+                "value": null
+              },
+              "official_name_en": {
+                "state": "unknown",
+                "value": null
+              },
+              "official_address_en": {
+                "state": "unknown",
+                "value": null
+              },
+              "provider": "gaode"
+            }
+          ],
+          "provider_code": "10000",
+          "provider_count": 1,
+          "contract_version": "CJ-PLACE-GAODE@0.1.0-rc.1"
+        }
+      },
+      "expected": "format_valid_consumer_adoption_deferred"
+    },
+    {
+      "id": "unavailable-route-query-diagnostic",
+      "projection": {
+        "projection_version": "CJ-PLACE-TRIP-JSON@0.1.0-rc.1",
+        "result": {
+          "outcome": "unavailable",
+          "query": {
+            "origin": {
+              "provider_id": "SYNTH_EAST",
+              "coordinate": {
+                "raw": "116.100100,39.100100",
+                "longitude": "116.100100",
+                "latitude": "39.100100",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "entrance"
+            },
+            "destination": {
+              "provider_id": "SYNTH_WEST",
+              "coordinate": {
+                "raw": "116.2,39.2",
+                "longitude": "116.2",
+                "latitude": "39.2",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center"
+            },
+            "mode": "walking",
+            "departure": {
+              "condition": "at_query_time",
+              "at": null
+            },
+            "kind": "RouteQuery"
+          },
+          "reason": "canonical_dispatch_not_connected",
+          "source": null,
+          "places": [],
+          "provider_code": null,
+          "provider_count": null,
+          "contract_version": "CJ-PLACE-GAODE@0.1.0-rc.1"
+        }
+      },
+      "expected": "format_valid_no_place_no_adoption"
+    }
+  ],
+  "negative": [
+    {
+      "id": "decimal-number-loss",
+      "path": [
+        "result",
+        "places",
+        0,
+        "coordinate",
+        "value",
+        "longitude"
+      ],
+      "value": 116.1,
+      "expected": "reject_decimal_number"
+    },
+    {
+      "id": "coordinate-disagrees-with-raw",
+      "path": [
+        "result",
+        "places",
+        0,
+        "coordinate",
+        "value",
+        "longitude"
+      ],
+      "value": "116.2",
+      "expected": "reject_coordinate_association"
+    },
+    {
+      "id": "invented-wgs84",
+      "path": [
+        "result",
+        "places",
+        0,
+        "coordinate",
+        "value",
+        "crs"
+      ],
+      "value": "WGS84",
+      "expected": "reject_crs"
+    },
+    {
+      "id": "absent-field-zero-filled",
+      "path": [
+        "result",
+        "places",
+        0,
+        "exit_coordinate",
+        "value"
+      ],
+      "value": {
+        "raw": "0,0",
+        "longitude": "0",
+        "latitude": "0",
+        "crs": "GCJ-02"
+      },
+      "expected": "reject_nonpresent_value"
+    },
+    {
+      "id": "timestamp-without-offset",
+      "path": [
+        "result",
+        "source",
+        "query_started_at",
+        "iso8601"
+      ],
+      "value": "2026-11-01T01:30:00.000000",
+      "expected": "reject_naive_time"
+    },
+    {
+      "id": "invalid-fold",
+      "path": [
+        "result",
+        "source",
+        "received_at",
+        "fold"
+      ],
+      "value": 2,
+      "expected": "reject_fold"
+    },
+    {
+      "id": "promoted-provider-evidence",
+      "path": [
+        "result",
+        "source",
+        "evidence"
+      ],
+      "value": "verified_provider",
+      "expected": "reject_evidence_enum"
+    },
+    {
+      "id": "client-ttl-claim",
+      "path": [
+        "result",
+        "max_age_seconds"
+      ],
+      "value": 999999999,
+      "expected": "reject_extra_field_no_freshness_grant"
+    },
+    {
+      "id": "invented-acceptance",
+      "path": [
+        "result",
+        "user_accepted"
+      ],
+      "value": true,
+      "expected": "reject_extra_field_no_acceptance_grant"
+    }
+  ]
+}
