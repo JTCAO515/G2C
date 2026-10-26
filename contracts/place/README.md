@@ -9,6 +9,9 @@ owned by CJ005. Consumers pin the candidate commit, not only this version string
 高德必接入决定、当前官方四 API 核对、非秘密资料/安全 key 交接与五票真实最小链见
 [高德接入清单](GAODE-INTEGRATION-CHECKLIST.md)。该资料核对不替代原审验或放行 dispatch。
 
+给 TRIP 的内部 JSON 投影、时间/Decimal 精度与宿主新鲜度边界候选见
+[TRIP-JSON-PROJECTION](TRIP-JSON-PROJECTION.md)；原门禁和 consumer 确认前仍拒绝采用。
+
 ## Public surface
 
 Import `cj_place` with `backend/place` on `PYTHONPATH`. The single definitions are
