@@ -63,6 +63,47 @@ Fixtures 只有 **3 个 synthetic 场景（2 调优、1 留出）及 1 个 synth
 
 候选版本通过 `candidate_id` 绑定；如记录额外含 `commit/config_version/model_version`，必须与候选定义一致。额外输入字段（例如 `tool_observations`、设备、人工分歧、分摊规则、timeout 原因）原样保留。工具响应/限额/授权真实证据仍需外部采集；CLI 不产生这些证据。
 
+
+## 可选方法改进记录（仍为 schema v1）
+
+仅按 JT 已批准的 Harness² 限定边界借鉴记录方式；未取得/未阅读三份 Google 源码，不宣称实现其框架。所有下列字段均可省略；旧输入无需 baseline、新文稿或改格式，旧 CLI fixture 输出逐字节不变。
+
+| 位置 / 字段 | 内容与校验 |
+|---|---|
+| 计划 `modification_policy` | 可信调用方事前提供的对象，恰有 `allowed_components` 和 `acceptance_check_refs`。后者为非空、无重复的原验收引用字符串列表，不执行检查或改变原 AC。不能从候选内的同名对象获取政策 |
+| `allowed_components` | 无重复字符串列表，可为空；仅支持 `prompt_wording`、`tool_descriptions`、`context_layout`、`evaluation_diagnostics` 四种记录类别，不是文件路径或编辑许可 |
+| 候选 `baseline_candidate_id` | 可选；必须指向本评测另一个已声明候选 ID，复用其 commit/config/model/source 元数据；不强制 baseline，不自动比较或挑选优胜者 |
+| 候选 `change_record` | 对象恰有 `components`、`redacted_refs`、`disposition`；`components` 为计划白名单子集，不提供独立白名单或验收替代值 |
+| `redacted_refs` | 非空数组，每项恰有 `kind=diff/trajectory/artifact` 和非空 `ref`；至少提供一种已有引用，不要求为缺失材料编造引用。由提供方先脱敏；本工具不证明脱敏充分，也不打开路径、抓取 URL、执行 diff/脚本或编辑代码 |
+| `disposition` | 恰有 `status=adoption/rejection/pending`、非空 `reason`、非空 `source_ref`；只记录外部意向及其来源，adoption 不执行采纳、不授予接受/发布权限；拒绝和待定理由同样保留 |
+| 观测 `method_lesson` | 恰有 `scope=method`、非空 `cue`、非空 `lesson`、`evidence_ref`、`state=candidate`。关联当前观测的五元 attempt 键；`evidence_ref` 必须等于该观测的非空 `raw_evidence_ref`，且观测不能为 missing。失败或 UNKNOWN 观测仍可提供方法候选，不因此改判成功 |
+
+例（附在现有候选上；baseline 省略也有效）：
+
+```json
+{
+  "change_record": {
+    "components": ["prompt_wording"],
+    "redacted_refs": [{"kind": "diff", "ref": "synthetic:redacted-diff-not-executed"}],
+    "disposition": {
+      "status": "pending",
+      "reason": "Synthetic method proposal awaiting external review.",
+      "source_ref": "synthetic:review-record"
+    }
+  }
+}
+```
+
+信任边界：`--scenarios` 文件的选取和事前冻结由可信调用方负责，模型不能自行生成/改写该文件再把自己当可信方；CLI 没有签名验证或身份鉴别，不能单凭字段自报证明计划可信。新增对象严格拒绝额外字段（如自报 `allowlist/verified/execute`）；旧格式的其他元数据仍只作原文保留，绝不取得权限。
+
+安全、鉴权、用户确认、费用 UNKNOWN 语义和版本接受机制均不在可修改范围，连计划也不能把这些类别加入白名单。类别标签不能证明引用中的实际 diff 遵守语义边界；外部可信审阅仍须核实实际内容，不能将 `prompt_wording` 标签当作修改安全规则的豁免。本模块只是校验/记录，没有执行或自动采纳入口，不放宽既有门禁。
+
+方法 lesson 只描述处理方法，不登记旅客事实/偏好，不写 MEMORY；文本确属方法仍须外部核对，`scope=method` 不是模型的事实证明。本轮只接受 `candidate` 状态，不接受自报 verified/自动晋升；也不因为有 cue/证据引用便认为方法已验证。
+
+所有新增内容直接保留在既有报告的 `plan`、分组 `candidate`、`raw_observations` 及逐 attempt 观测中，不另造采纳状态库。原失败/UNKNOWN/缺测、重复尝试、调优/留出、费用未知与 `release_decision=UNRUN/UNKNOWN` 的判定不读取这些改进字段。校验失败仍 exit 2，保留已解析计划及全部原始观测。
+
+本轮验证（2026-10-26，纯 synthetic）：`python3 -m unittest discover -s evaluation/cj028/tests -p test_change_records.py -v`，**9/9 PASS**，包括旧 CLI stdout 与原存档逐字节比较。原 20/26 与历史证据不覆盖、不重复无关套件；新 head 的独立门与真实效果仍未验证。
+
 ## 汇总语义与限制
 
 计划矩阵为 `候选 × 场景 × zh/en × 网络 × 计划 attempts`。缺记录生成显式 `UNRUN` 槽位。增加候选/网络/尝试前须由样本计划明确其适用矩阵；不能用本工具后验删除失败/不可执行场景。不同候选不混算，中英独立，网络/证据层/任务类别/调优与留出独立。新修复版本另有候选 ID；重复使用记录列在 `repeated_uses`，跨候选也可见，但**无法发现未提供的历史或判断曾看过结果是否影响调优**。
