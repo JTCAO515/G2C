@@ -239,7 +239,7 @@ def build_message_boundary(*, environment, jwt_configuration, verification_keys,
 def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         access_provider, resolve_repository, new_run_id, max_body_bytes, history_configuration=None,
                         memory_configuration=None, resolve_memory_binding=None, memory_source_policy=None,
-                        trip_configuration=None, resolve_trip=None, trip_confirmation_validator=None,
+                        trip_configuration=None, resolve_trip=None, trip_confirmation_validator=None, trip_confirmation_signer=None,
                         needs_configuration=None, resolve_needs=None,
                         feedback_configuration=None, resolve_feedback=None, resolve_feedback_run=None,
                         run_display_configuration=None, resolve_run_display=None,manual_preview_configuration=None,
@@ -273,6 +273,11 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
         memory_boundary = build_memory_boundary(environment=environment,jwt_configuration=jwt_configuration,
             verification_keys=verification_keys,access_provider=access_provider,
             resolve_binding=resolve_memory_binding,source_policy=memory_source_policy)
+    if trip_confirmation_signer is not None:
+        from cj_trip.confirmation import ConfirmationSigner
+        if type(trip_confirmation_signer) is not ConfirmationSigner or trip_confirmation_validator is not None:
+            raise CompositionUnavailable("One explicit confirmation issuer/validator required")
+        trip_confirmation_validator = trip_confirmation_signer
     trip_boundary = trip_modules = None
     if any(value is not None for value in (trip_configuration,resolve_trip,trip_confirmation_validator)):
         from .trip_composition import TripWireConfiguration, build_trip_boundary
@@ -322,6 +327,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                       _history_configuration=history_configuration, _history_environment=environment,
                       _memory_boundary=memory_boundary, _memory_configuration=memory_configuration,
                       _trip_boundary=trip_boundary, _trip_configuration=trip_configuration, _trip_modules=trip_modules,
+                      _trip_confirmation_signer=trip_confirmation_signer,
                       _needs_boundary=needs_boundary, _needs_configuration=needs_configuration, _needs_modules=needs_modules,
                       _feedback_boundary=feedback_boundary, _feedback_configuration=feedback_configuration, _feedback_modules=feedback_modules,
                       _run_display_reader=run_display_reader, _run_display_configuration=run_display_configuration, _run_display_modules=run_display_modules,

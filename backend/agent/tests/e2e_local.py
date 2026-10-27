@@ -4,6 +4,9 @@ Run by scripts/pg_suites.py (group e2e), which provides CJ_E2E_CONNINFO for a fr
 private cluster with migrations 1-10 applied. FakeProvider only: no network or cost.
 """
 import json
+import base64
+import secrets
+import time
 import os
 from pathlib import Path
 import subprocess
@@ -220,6 +223,74 @@ class DraftToTrip(Harness):
             self.assertEqual((outcome.status, outcome.proposal_id), ('completed', None))
             self.assertNotEqual(client.get('/v1/trip-proposals', params={'proposal_id': 'p-' + run_id},
                                            headers=self.headers('bob')).status_code, 200)
+
+
+class SignedTripConfirmation(Harness):
+    draft = DraftToTrip.draft
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from cj_trip.confirmation import ConfirmationSigner
+        cls.signer = ConfirmationSigner(secrets.token_bytes(32))
+        cls.app = create_local_app(conninfo_path=CONNINFO, auth_dir=cls.auth, confirmation_signer=cls.signer)
+
+    def prepare(self, client, snapshot, kind='accept', subject='alice', action_id=None):
+        return client.post('/v1/trip-confirmations', json=dict(action_id=action_id or uuid.uuid4().hex,
+            kind=kind, proposal_id=snapshot['proposal_id'], candidate_hash=snapshot['candidate_hash']),
+            headers=self.headers(subject))
+
+    def post_action(self, client, raw, subject='alice'):
+        return client.post('/v1/trip-actions', content=raw,
+            headers={**self.headers(subject), 'Content-Type': 'application/octet-stream'})
+
+    def test_signed_accept_reject_replay_and_foreign_refusal(self):
+        with TestClient(self.app) as client:
+            for kind in ('accept', 'reject'):
+                _, outcome = self.draft(client, 'alice', 'Beijing please')
+                snapshot = client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id},
+                    headers=self.headers('alice')).json()['proposal']
+                self.assertEqual(self.prepare(client, snapshot, subject='bob').status_code, 503)
+                response = self.prepare(client, snapshot, kind)
+                self.assertEqual(response.status_code, 200, response.text)
+                prepared = response.json()
+                self.assertEqual(prepared['proposal'], snapshot)
+                self.assertLessEqual(prepared['expires_at'], snapshot['expires_at'])
+                raw = base64.b64decode(prepared['action_utf8_base64'], validate=True)
+                original = json.loads(raw)
+                self.assertIsNone(client.get('/v1/trip-details', params={'trip_id': snapshot['trip_id']},
+                    headers=self.headers('alice')).json()['trip'])
+                self.assertEqual(self.post_action(client, raw, 'bob').status_code, 503)
+                tampered = list(original); tampered[4] = 'caller-confirmed'
+                self.assertEqual(self.post_action(client, json.dumps(tampered, separators=(',', ':')).encode()).status_code, 503)
+                accepted = self.post_action(client, raw)
+                self.assertEqual(accepted.status_code, 200, accepted.text)
+                self.assertEqual(accepted.json()['receipt']['committed_version'], 1 if kind == 'accept' else None)
+                self.assertEqual(self.post_action(client, raw).json()['receipt'], accepted.json()['receipt'])
+                self.assertEqual(self.prepare(client, snapshot, kind, action_id=original[0]).status_code, 409)
+                detail = client.get('/v1/trip-details', params={'trip_id': snapshot['trip_id']},
+                    headers=self.headers('alice')).json()['trip']
+                if kind == 'accept': self.assertEqual(detail['document'], snapshot['document'])
+                else: self.assertIsNone(detail)
+
+    def test_issuance_withholds_if_auth_changes_during_signing(self):
+        from cj_trip.confirmation import ConfirmationSigner
+        with TestClient(self.app) as client:
+            _, outcome = self.draft(client, 'alice', 'Beijing please')
+            snapshot = client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id},
+                headers=self.headers('alice')).json()['proposal']
+        def withdraw():
+            (self.auth / 'invited.json').write_text('[]')
+            return time.time()
+        changed = create_local_app(conninfo_path=CONNINFO, auth_dir=self.auth,
+            confirmation_signer=ConfirmationSigner(secrets.token_bytes(32), clock=withdraw))
+        try:
+            with TestClient(changed) as client:
+                response = self.prepare(client, snapshot)
+                self.assertEqual(response.status_code, 503)
+                self.assertNotIn('action_utf8_base64', response.json())
+        finally:
+            (self.auth / 'invited.json').write_text(json.dumps(['alice', 'bob']))
 
 
 if __name__ == '__main__':

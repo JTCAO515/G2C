@@ -103,8 +103,14 @@ class Repository:
                 # Last potentially slow admission check has finished. The scope lock
                 # still protects the candidate/content/version checked in this txn.
                 cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
-                if p.expires_at <= cur.fetchone()[0]:
+                database_now = cur.fetchone()[0]
+                if p.expires_at <= database_now:
                     raise Conflict('candidate expired before commit')
+                # Additive expiry check; legacy validators retain their single call.
+                # The issuer hook uses DB time and performs no resource callbacks.
+                final_confirmation = getattr(self.confirm, 'check_before_commit', None)
+                if final_confirmation is not None:
+                    final_confirmation(self.scope, action, p, database_now)
         with self.transaction(before_commit=final_eligibility) as cur:
             previous = self._receipt(cur, action.action_id)
             if previous:

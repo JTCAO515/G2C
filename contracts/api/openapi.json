@@ -2064,6 +2064,65 @@
           }
         }
       }
+    },
+    "/v1/trip-confirmations": {
+      "post": {
+        "operationId": "prepareTripConfirmation",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "description": "Prepare a short-lived server-signed action bound to the authenticated owner and immutable proposal. This does not confirm or modify a Trip. Requires an explicitly configured issuer; default is unavailable.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripConfirmationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review binding and exact original action; not a committed receipt.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripConfirmationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE error. A conflict requires original-action reconciliation or a fresh review; no automatic write retry.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5303,6 +5362,69 @@
           "last_sequence": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "TripConfirmationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "kind",
+          "proposal_id",
+          "candidate_hash"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject"
+            ]
+          },
+          "proposal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "candidate_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "TripConfirmationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "action_utf8_base64",
+          "expires_at",
+          "proposal"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "action_utf8_base64": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192,
+            "description": "Exact canonical original action bytes. Persist unchanged; submit only on explicit user confirmation. Unknown outcomes require querying the original action ID, never reissuing replacement bytes."
+          },
+          "expires_at": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/TripProposalSnapshot"
           }
         }
       }
