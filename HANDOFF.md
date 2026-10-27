@@ -21,14 +21,14 @@
 | Phase | #154 本轮实现与本地验收完成；仅剩 PR 独立审查/合并与 main CI 核验，完成后按 JT 指令暂停 |
 | Accepted Issue | #154（父票 #20 / CJ-015）：DEBUG 开发会话与 iOS 17.5 行程确认端到端 |
 | Owner | JT operator；Claude 架构/任务 B 抽查；Codex 任务 A 审查返修、任务 B 开发验收 |
-| Last updated | 2026-10-27T10:57:56Z |
+| Last updated | 2026-10-27T11:05:22Z |
 
 ## Active Work
 
 - #149 已审查并合并为 137b7a80189e5ef2a25dea31535fa84731ec7a2c；iOS 17.5 启动及 runpath 实证通过。
 - #150 原 head 9f47fce 发现 P1/P1/P2 共 3 项，原 PR 返修为 f33ef1ed38419b7dbffded8c313594dc256aa399，四 CI 全绿，复审无剩余阻断，合并为 4beb505408c3ebd889811e82b259496406feb4c1。
 - feat/p2c-dev-session-e2e 从合并 #150 后 main 开始。只改 App、必要 Shell 接线、复现脚本和相关文档。
-- #144 未修改或合并；MESSAGE 写入未提前实现。
+- This task did not modify/merge PR #144. It was merged upstream into main 99f1437 by another operation; upstream V2 documents are preserved only. MESSAGE writes remain untouched.
 - Current child #154 belongs to parent #20. Merged main workflow documents at 9e78559; runtime code unchanged, so existing local runtime evidence remains applicable.
 
 ## Accepted Assumptions
@@ -48,6 +48,9 @@
 - JT current dispatch: Codex reviews/repairs and merges #149 then #150; task B remains subject to Claude review. No #144 or MESSAGE write implementation in this slice.
 - GitHub visibility read-back 2026-10-27: PUBLIC. Secret/local-path prohibitions remain. No repository settings were changed in this task.
 - JT latest instruction: finish this round, submit/review/merge its PR into main, verify main CI and then PAUSE. This supersedes the earlier task-B Claude-before-merge requirement; independent Codex review under ADR-0007 remains required. No automatic continuation.
+- JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。
+- accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).
+- accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending.
 
 ## Architecture Contracts
 
