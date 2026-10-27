@@ -18,15 +18,15 @@
 | --- | --- |
 | Objective | Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green. |
 | Status | active |
-| Phase | P2c：#148 已合并；iOS 行程确认客户端切片待 CI/独立审查；App 开发会话组装与 MESSAGE 发送许可待做 |
-| Accepted Issue | CJ-015 / GitHub #20：服务端确认凭证、准备接口与原 TRIP 事务校验 |
+| Phase | M1 主链路闭环（模拟器 L1）：Issue 已按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 进行中，S0 Part 2/2（#151）待做。 |
+| Accepted Issue | M1 队列：#151 S0 → #20 CJ-015（#154、#155）→ #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T10:01:14Z |
+| Last updated | 2026-10-27T10:49:52Z |
 
 ## Active Work
 
-- feat/p2c-ios-trip-confirm：本地入口强制签名、iOS prepare/confirm/对账与显式确认 UI（PR 待 CI 与独立审查）。
-- fix/ios-app-rpath（#149）：App 在 iOS 26 以下启动崩溃的修复，待独立审查。
+- #154（CJ-015 子票）：DEBUG 开发会话与 iOS 17.5 行程确认端到端，Codex 进行中。
+- #162（CJ-009 子票）：MESSAGE 发送许可方案，owner Claude，未开始。
 
 ## Accepted Assumptions
 
@@ -77,9 +77,9 @@
 
 ## Blockers
 
-- 此新确认凭证 PR 尚需四 job CI 与独立审查或 JT 明确同意。
-- iOS 原动作持久化、确认 UI 和写入 transport 尚未接入；TripClient 的生产写入门禁保持关闭。
-- MESSAGE 发送许可/不可回退原动作证据尚未完成；OTP、真实模型 App 联调、真机亦未验收。
+- #162 MESSAGE 发送许可方案未冻结前，#163/#164 不能开工（ACTIVATION-GATE.md 仍禁止 live POST）。
+- #159 帮助/隐私/支持文案需 JT 确认。
+- L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
 
 ## Risks
 
@@ -98,9 +98,9 @@
 
 ## Next Smallest Action
 
-- Action: 独立审查本切片（feat/p2c-ios-trip-confirm）与 #149；合并后由 App 组装开发会话：开发 token 凭证回调、钥匙串密钥提供者、TripPendingStore、TripClient(liveWrites) 与 Shell 绑定，在 iOS 17.5 模拟器跑草稿→准备→确认→正式行程；之后再固定并实现 MESSAGE 发送许可。
-- Expected observation: 模拟器上完成一次中英文的草稿确认并读回正式行程；结果未知只能查原动作。
-- Resume command: `gh pr checks feat/p2c-ios-trip-confirm --repo JTCAO515/G2C`
+- Action: 完成 #154 并合并；随后做 S0 Part 2/2（#151：iOS 测试全部进 CI、pr-lint），再按 docs/plan/issue-plan.md 的 M1 队列从 #155 继续。
+- Expected observation: #151、#154、#155 关闭后 #20 关闭；main CI 全绿且包含所有 iOS 模块测试。
+- Resume command: `gh issue view 151 --repo JTCAO515/G2C`
 
 ## Rollback
 
@@ -109,11 +109,10 @@ revert 本确认凭证切片合并提交；没有迁移、云配置或数据变�
 ## Mandatory Reading Order
 
 1. [HANDOFF.md](HANDOFF.md)
-2. [docs/dispatch/P2-walking-skeleton.md](docs/dispatch/P2-walking-skeleton.md)
-3. [docs/adr/0004-delivery-flow-and-repo-hygiene.md](docs/adr/0004-delivery-flow-and-repo-hygiene.md)
-4. [backend/README.md](backend/README.md)
+2. [docs/adr/0007-issue-closure-workflow.md](docs/adr/0007-issue-closure-workflow.md)
+3. [docs/plan/issue-plan.md](docs/plan/issue-plan.md)
+4. [AGENTS.md](AGENTS.md)
 5. [README.md](README.md)
-6. [AGENTS.md](AGENTS.md)
 
 ## Integrity Check
 

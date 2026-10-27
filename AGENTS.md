@@ -6,7 +6,7 @@
 
 1. [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成；改 JSON 后重新渲染，不手改 HANDOFF.md）
 2. [ADR-0007](docs/adr/0007-issue-closure-workflow.md)（关票流程，accepted），再按需读 [ADR 索引](docs/adr/README.md)
-3. 当前子票及其父票的正文与评论（handoff 的 `nextAction` 指明是哪一张）；`docs/dispatch/*` 已冻结为历史，只在子票引用时读
+3. [Issue 总体规划](docs/plan/issue-plan.md)，以及当前子票和父票的正文与评论（handoff 的 `nextAction` 指明是哪一张）；`docs/dispatch/*` 已冻结为历史，只在子票引用时读
 4. [README](README.md)；按改动类型再读：API/跨模块 [contracts](docs/contracts.md)、记忆 [memory](docs/memory.md)、布局 [ui](docs/ui.md)、范围 [scope](docs/scope.md)、协作与环境 [engineering](docs/engineering.md)
 
 范围与依赖索引：[CJ-005 / #5](https://github.com/JTCAO515/G2C/issues/5)。
@@ -15,7 +15,7 @@
 
 - 目标是关闭 Issue。执行单位是子票：3–6 个验收框，每个框标明证据级别 L0–L3，预计 1–2 个 PR。
 - 功能票在 L0/L1 证据全部 PASS 时关闭；只能在 L2/L3 证明的框改写为 `→ L2 #32` 或 `→ L3 #29`，并到对应验证票登记，不删除。
-- 在制上限：1 张父票、最多 2 个开着的 PR。队列与当前位置见 handoff 的 `nextAction`。
+- 在制上限：1 张父票、最多 2 个开着的 PR。队列见 [docs/plan/issue-plan.md](docs/plan/issue-plan.md)，当前位置见 handoff 的 `nextAction`。owner 为 Claude 的子票 Codex 不认领；碰到停点的子票评论阻塞后跳过，继续队列。
 - PR 正文第一行写 `Closes #<子票>`（两段式写 `Refs #<子票>` 加 `Part 1/2`）。合并后在子票勾框并附 PR 链接，同步父票。
 - 范围外发现的问题开新票记录，不顺手修。
 - 自动续作（ADR-0007 第 7 条）：合并后先确认 main CI 全绿，再按队列取下一张子票；main 变红先修复或 revert；队列做完或碰到停点就停，并在 handoff 写明原因。
