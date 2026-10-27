@@ -1,6 +1,7 @@
 """Local development identity for CJ_ENV=local only (P2a). Not a real login.
 
-  dev_auth.py init  DIR [--invite SUBJECT ...]   create an RSA key pair and invite list
+  dev_auth.py init  DIR [--invite SUBJECT ...]   create an RSA key pair, invite list and Trip confirmation key
+  dev_auth.py confirmation-key DIR               add the Trip confirmation key to an existing DIR
   dev_auth.py token DIR --subject SUBJECT [--minutes N]   print a short-lived local token
 
 The private key stays in DIR (mode 0600, git-ignored under .local/). Tokens are only
@@ -31,7 +32,18 @@ def init(directory, invited):
     (directory / 'public.pem').write_bytes(key.public_key().public_bytes(
         serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo))
     (directory / 'invited.json').write_text(json.dumps(sorted(set(invited))) + '\n')
+    confirmation_key(directory)
     print(f'initialized {directory} (invited: {", ".join(sorted(set(invited))) or "none"})')
+
+
+def confirmation_key(directory):
+    """Dedicated local Trip confirmation signing key (32 random bytes, 0600); never overwritten."""
+    path = directory / 'trip-confirmation.key'
+    if path.exists():
+        raise SystemExit(f'{path} exists; refusing to overwrite')
+    path.touch(mode=0o600)
+    path.write_bytes(os.urandom(32))
+    print(f'created {path}')
 
 
 def token(directory, subject, minutes):
@@ -47,11 +59,14 @@ def main():
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest='command', required=True)
     p = sub.add_parser('init'); p.add_argument('dir', type=Path); p.add_argument('--invite', action='append', default=[])
+    p = sub.add_parser('confirmation-key'); p.add_argument('dir', type=Path)
     p = sub.add_parser('token'); p.add_argument('dir', type=Path); p.add_argument('--subject', required=True)
     p.add_argument('--minutes', type=int, default=30, choices=range(1, 121), metavar='1-120')
     args = parser.parse_args()
     if args.command == 'init':
         init(args.dir, args.invite)
+    elif args.command == 'confirmation-key':
+        confirmation_key(args.dir)
     else:
         print(token(args.dir, args.subject, args.minutes))
 

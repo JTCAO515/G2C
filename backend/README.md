@@ -77,10 +77,11 @@ action replay returns the existing receipt even after expiry/key rotation; an un
 old proof is denied. Keep a stable key for the intended proof lifetime; provisioning,
 rotation and actual use with real identities require separate operator authorization.
 
-Compatibility: without a signer, the new endpoint returns 503. The legacy P2b
-`create_local_app`/`app_from_environment` test composition retains its old local
-confirmation callback, so existing consumers/tests remain reproducible. It is not a
-signed P2c activation path. Remove that legacy path only after callers migrate to
-explicit signer composition and original-action recovery, with rollback verified.
-The iOS production write gates are unchanged; generated SDK availability is not UI
-or durable client activation. No migration or cloud configuration was changed.
+Compatibility: without a signer, the new endpoint returns 503. `app_from_environment`
+(the runnable local entry) always uses the signed path: it loads the dedicated key
+`trip-confirmation.key` from `CJ_LOCAL_AUTH_DIR` (created by `scripts/dev_auth.py init`,
+or `dev_auth.py confirmation-key DIR` for an existing directory; mode 0600, 32 random bytes)
+and refuses to start without it. Only `create_local_app`'s default keeps the permissive P2b
+callback, for existing tests; remove it once those tests use explicit signer composition.
+iOS live writes are granted only by a host that uses this signed entry. No migration or
+cloud configuration was changed.

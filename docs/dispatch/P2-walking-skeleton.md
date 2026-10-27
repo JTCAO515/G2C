@@ -159,3 +159,12 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 - 原 API/schema 未修改；新增两个确认 envelope。生成 SDK 同时补齐正式 OpenAPI 中已有的 openConversation/streamRunEvents 声明，未新增相应服务端行为。历史 V1/V2 测试继续逐项锁定旧 schema，精确登记两个新增 envelope，仍禁止 V2 注册。
 - 兼容旧 P2b 本地入口；新签名路径不自动启用、不创建真实 key。退出旧路径的条件、未知结果与 key 生命周期见 `backend/README.md`。
 - 验证分层：签名/接口单测，TRIP 全套私有 PG，真实本地 API/PG 草稿→准备→接受/拒绝/重放/跨用户拒绝及签发时授权撤回；模型仅 FakeProvider。iOS 写入/OTP/真实模型/真机均未验收。
+
+## P2c iOS 行程确认切片（CJ-015 客户端）
+
+- base：`1a41f227c854f77b99edf9489578a75244bf49d1`（#148 合并提交）；分支 `feat/p2c-ios-trip-confirm`。
+- 服务端：`app_from_environment` 强制签名路径，从 `CJ_LOCAL_AUTH_DIR/trip-confirmation.key` 读取专用 key（0600、32 字节，由 `dev_auth.py init` 或 `confirmation-key` 生成），缺失、权限过宽或过短都拒绝启动。`create_local_app` 的默认宽松回调只为既有测试保留。
+- iOS `CJTripClient`：`prepare` 调用准备接口，严格校验响应（动作 ID、类型、提案逐字节一致、`tc1` 引用格式、过期时间一致且不超过提案有效期），用服务端原字节构造 `TripPending`；`confirm` 在过期前 60 秒外才提交，先加密落盘再原样 POST；结果未知只允许查原动作，过期加 60 秒后无回执判为 `expiredUncommitted`。写入能力由宿主通过 `TripLiveWrites` 显式授予，且必须带加密存储；只读和测试客户端的 `acceptsUserActions` 均为 false。
+- UI：`TripProposalView` 两步决定（准备 → 屏幕上显式确认 / 取消），并如实展示准备失败、已过期未保存、结果未知（只能查原动作）。
+- 未完成：App 尚未用开发 token 组装 TripClient（需要开发用 `SessionLifecycle`、钥匙串密钥提供者和 Shell 绑定），所以没有模拟器端到端；MESSAGE 发送许可未开始。
+
