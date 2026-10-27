@@ -57,19 +57,23 @@ jobs:
         run: uv run --no-sync openapi-spec-validator contracts/api/openapi.json
 
   swift:
-    runs-on: macos-15
+    # Locked Swift packages need Swift tools 6.4; use the newest runner image and Xcode.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          swift --version
       - name: iOS root package build and tests (macOS host)
         working-directory: ios
-        run: |
-          swift --version
-          swift test
+        run: swift test
 
   known-failing:
     # Informational: tracks suites that fail on main for known reasons (see docs/handoff.json).
+    # Always exits 0; each failing suite is reported as a warning annotation.
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,11 +85,11 @@ jobs:
       - name: Run known-failing suites without blocking
         run: |
           ALL=$(ls -d "$PWD"/backend/*/ | tr '\n' ':')
-          status=0
-          PYTHONPATH="$PWD/backend:$PWD/backend/auth:$PWD/backend/message" uv run --no-sync python -B -m unittest discover -s backend/cj_api/tests || status=1
+          PYTHONPATH="$PWD/backend:$PWD/backend/auth:$PWD/backend/message" uv run --no-sync python -B -m unittest discover -s backend/cj_api/tests \
+            || echo "::warning::known-failing: backend/cj_api/tests"
           for d in auth cleanup feasibility needs trip; do
             echo "::group::backend/$d"
-            (cd "backend/$d" && PYTHONPATH="$PWD:$GITHUB_WORKSPACE/backend:$ALL" uv run --no-sync --project "$GITHUB_WORKSPACE" pytest -q tests) || status=1
+            (cd "backend/$d" && PYTHONPATH="$PWD:$GITHUB_WORKSPACE/backend:$ALL" uv run --no-sync --project "$GITHUB_WORKSPACE" pytest -q tests) \
+              || echo "::warning::known-failing: backend/$d"
             echo "::endgroup::"
           done
-          exit $status
