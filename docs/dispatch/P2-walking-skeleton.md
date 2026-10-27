@@ -1,5 +1,7 @@
 # 派工单：P2 主线打通（walking skeleton）
 
+> **已冻结（ADR-0007，2026-10-27）**：本派工单只作历史记录，不再追加实施记录；后续派工写在子票正文里。
+
 - 状态：**#148、#149、#150 均已合并**；当前为 **App DEBUG 开发会话组装与 iOS 17.5 端到端切片**。本地签名确认链路已验证；MESSAGE 许可、OTP、真实模型与真机链路尚未完成。
 - 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted）、[ADR-0003](../adr/0003-state-and-recovery.md)、[scope](../scope.md)、[handoff](../handoff.json)
 - base：main `9ac8e1b`（P1 合并后）
@@ -171,6 +173,8 @@ Claude 抽查 `feat/p2c-dev-session-e2e` 的最终 head 和证据；四项 CI �
 - 未完成：App 尚未用开发 token 组装 TripClient（需要开发用 `SessionLifecycle`、钥匙串密钥提供者和 Shell 绑定），所以没有模拟器端到端；MESSAGE 发送许可未开始。
 
 ## App 开发会话与 iOS 17.5 验收（本轮任务 B）
+
+本节是 JT 本轮派工明确要求的交付记录，写于 ADR-0007 合入期间；后续进度以子票 [#154](https://github.com/JTCAO515/G2C/issues/154)（父票 #20）为准，不继续扩充历史派工单。
 
 - 基线：`4beb505408c3ebd889811e82b259496406feb4c1`（#150 合并后最新 main）；分支 `feat/p2c-dev-session-e2e`。作者 Codex，完成后由 Claude 抽查，作者不自批。
 - 任务 A：#149 head `016bf0e5e030faa0192bfdb5fc070f64b7e3db4b` 独立审查无阻断，iOS 17.5 实际启动验证通过，合并为 `137b7a80189e5ef2a25dea31535fa84731ec7a2c`。#150 原 head `9f47fcee4f2ca8e94f7a36dd9087ba7ccd652d7e` 发现 3 项：真实 POST 被只读 transport 阻止、prepared action 未绑定原客户端/代次/账号、tc1 到期段误接受前导零；已在原 PR 修复。最终 head `f33ef1ed38419b7dbffded8c313594dc256aa399` 四 CI 全绿、复审无剩余阻断后合并。审查及返修证据已写入各 PR 评论；Codex 自己的修复是自检，不冒认另一独立审查者。

@@ -1,11 +1,11 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T10:20:33Z",
-  "currentPhase": "任务 A 完成；任务 B 本地验收 PASS，待最终 PR 四 CI 与 Claude 抽查",
+  "lastUpdated": "2026-10-27T10:37:01Z",
+  "currentPhase": "#154 任务 B 本地 L0/L1 验收完成，待 PR CI 和本轮要求的 Claude 抽查",
   "status": "active",
   "objective": "完成本轮 #149/#150 审查合并与 DEBUG App 开发会话、iOS 17.5 行程确认端到端；保留正式写入、原动作恢复及外部资源授权边界。",
-  "acceptedIssue": "CJ-015 / #20 App 开发会话组装切片；以 JT 转发的本轮派工与 P2 dispatch 为范围",
+  "acceptedIssue": "#154（父票 #20 / CJ-015）：DEBUG 开发会话与 iOS 17.5 行程确认端到端",
   "owner": "JT operator；Claude 架构/任务 B 抽查；Codex 任务 A 审查返修、任务 B 开发验收",
   "fromAgent": "Codex",
   "intendedNextAgent": "Claude：抽查 feat/p2c-dev-session-e2e 的最终 head",
@@ -13,7 +13,8 @@
     "#149 已审查并合并为 137b7a80189e5ef2a25dea31535fa84731ec7a2c；iOS 17.5 启动及 runpath 实证通过。",
     "#150 原 head 9f47fce 发现 P1/P1/P2 共 3 项，原 PR 返修为 f33ef1ed38419b7dbffded8c313594dc256aa399，四 CI 全绿，复审无剩余阻断，合并为 4beb505408c3ebd889811e82b259496406feb4c1。",
     "feat/p2c-dev-session-e2e 从合并 #150 后 main 开始。只改 App、必要 Shell 接线、复现脚本和相关文档。",
-    "#144 未修改或合并；MESSAGE 写入未提前实现。"
+    "#144 未修改或合并；MESSAGE 写入未提前实现。",
+    "Current child #154 belongs to parent #20. Merged main workflow documents at 9e78559; runtime code unchanged, so existing local runtime evidence remains applicable."
   ],
   "assumptions": [
     "本轮本地 API 使用 app_from_environment 强制签名入口、私有 PG、FakeProvider 和临时开发身份；不是生产、OTP 或真实模型验收。",
@@ -23,13 +24,14 @@
     "ADR-0001 产品与用户控制边界继续有效。",
     "qwen3.8-flash 与北京端点已选定；P2b 原作者报告真实 smoke 4/4，本轮未重跑。",
     "ADR-0004 已接受；单一 Python 发行包 cj，保留领域 import 名，不恢复同仓 hash pin 或 Git 导出依赖。",
-    "当前 GitHub 实况为 PRIVATE；早先 PUBLIC 状态已过期，去本机路径和秘密规则继续有效；ADR 修订由 #144 单独处理。",
     "P2：北京、邮箱 OTP、最低 iOS 17。",
     "JT 当前指令：Codex 实现/测试/交付，Claude 架构/规划/审查，JT 决策与外部资源。",
     "JT 当前指令：python、postgres、swift、ios-app 四 job 均阻塞；合并还需 Claude 独立审查或 JT 明确同意。",
     "历史证据归档 tag evidence-archive-2026-10-27；不改写历史。",
     "JT 2026-10-27: PR #147 only uses Codex review instead of Claude; continue subsequent P2c work. This is not independent review and not blanket approval for later PRs.",
-    "JT current dispatch: Codex reviews/repairs and merges #149 then #150; task B remains subject to Claude review. No #144 or MESSAGE write implementation in this slice."
+    "JT current dispatch: Codex reviews/repairs and merges #149 then #150; task B remains subject to Claude review. No #144 or MESSAGE write implementation in this slice.",
+    "GitHub visibility read-back 2026-10-27: PUBLIC. Secret/local-path prohibitions remain. No repository settings were changed in this task.",
+    "Main 9e78559 includes accepted ADR-0007. Child #154 tracks this task; the current JT dispatch specifically retains Claude review for task B. No S0/#151 work or MESSAGE writes are added."
   ],
   "architectureContracts": [
     "contracts/api/openapi.json unchanged in P1.",
@@ -148,28 +150,30 @@
   ],
   "rollback": "revert 本任务 B 合并提交即可恢复未连接 App；保留 #149/#150 的修复。无迁移、云或生产配置变更；不自动删除模拟器中用于验证恢复的加密记录/Keychain key。",
   "nextAction": {
-    "description": "Claude 抽查 feat/p2c-dev-session-e2e 的最终 head；四 CI 全绿且抽查通过后再合并。合并后仅由 Claude 固定 MESSAGE 发送许可方案，Codex 不提前实施 MESSAGE 写入。",
-    "expectedObservation": "任务 A 两 PR 已合并；任务 B 精确 head 的四 CI 与全部本地模拟器场景可复核，Claude 抽查结论已记录。",
+    "description": "读取子票 #154 与父票 #20 的正文/评论；核对 feat/p2c-dev-session-e2e 精确 head 的全部 CI。按本轮具体派工等待 Claude 抽查，并遵守当前 ADR-0007 的独立审查合并门禁；作者不自批，本轮不自动合并。合并后由 Claude 固定 MESSAGE 发送许可，Codex 不提前实现。",
+    "expectedObservation": "#149/#150 已合并；#154 的 PR 验收表与真实本地 UI/PG 证据可核对。审查通过后合并、回写子票和父票进度，完整 P2c 仍不宣称完成。",
     "command": "gh pr checks feat/p2c-dev-session-e2e --repo JTCAO515/G2C"
   },
   "readingOrder": [
     "HANDOFF.md",
-    "docs/dispatch/P2-walking-skeleton.md",
+    "docs/adr/0007-issue-closure-workflow.md",
     "docs/adr/0004-delivery-flow-and-repo-hygiene.md",
     "backend/README.md",
+    "ios/App/README.md",
     "ios/Modules/CJTripClient/README.md",
     "AGENTS.md"
   ],
   "mandatoryReadingOrder": [
     "HANDOFF.md",
-    "docs/dispatch/P2-walking-skeleton.md",
+    "docs/adr/0007-issue-closure-workflow.md",
     "docs/adr/0004-delivery-flow-and-repo-hygiene.md",
     "backend/README.md",
+    "ios/App/README.md",
     "ios/Modules/CJTripClient/README.md",
     "AGENTS.md"
   ],
   "provenance": {
-    "baseCommit": "4beb505408c3ebd889811e82b259496406feb4c1",
+    "baseCommit": "9e78559e729f66c78622c8164c23182eb5224f50",
     "method": "本轮明确派工；原作者 Claude，Codex 审查并修复 A；B 用真实 Simulator UI/临时本地 API/PG 与 FakeProvider 验证，不依赖聊天接手。",
     "author": "Codex"
   }
