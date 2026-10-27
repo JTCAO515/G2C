@@ -1,15 +1,15 @@
 {
   "source": {
-    "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/Sources/SpikeUI/ProbeView.swift",
+    "path": "<local>/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/Sources/SpikeUI/ProbeView.swift",
     "sha256": "eb1b4fab47051d0322e7ff419da49dba1569fa010b1070374d66affb8f1f0cd0"
   },
   "binary": {
-    "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/performance-post-p2/CJIOSSpike.app/CJIOSSpike",
+    "path": "<local>/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/performance-post-p2/CJIOSSpike.app/CJIOSSpike",
     "sha256": "532860895903c76afe6e482197655885ef3ff5d42788f0085c7a91579f6966ab",
     "uuid_output": "UUID: DC77E156-7E16-38C4-88E6-1E683DD7BAD6 (arm64) spikes/ios/.cache/performance-post-p2/CJIOSSpike.app/CJIOSSpike"
   },
   "dwarf": {
-    "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/performance-post-p2/CJIOSSpike.app.dSYM/Contents/Resources/DWARF/CJIOSSpike",
+    "path": "<local>/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/performance-post-p2/CJIOSSpike.app.dSYM/Contents/Resources/DWARF/CJIOSSpike",
     "sha256": "12097a4d66da4f0379c14df8b34a63c10cb0d5f3b0a26cdf23b006ad78fb8630",
     "uuid_output": "UUID: DC77E156-7E16-38C4-88E6-1E683DD7BAD6 (arm64) spikes/ios/.cache/performance-post-p2/CJIOSSpike.app.dSYM/Contents/Resources/DWARF/CJIOSSpike"
   },

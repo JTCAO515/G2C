@@ -8,5 +8,5 @@
 2026-10-21 20:09:04 | INFO | local_file_store.py:112 | _start | cj003: embedding backfill scheduling complete: scheduled=False, elapsed=0.000s
 2026-10-21 20:09:04 | INFO | local_file_store.py:117 | _start | cj003: file store startup complete: elapsed=0.002s
 CJ003_WRITER={"event": "opened", "pid": 12990, "role": "empty", "lock_inode": 55411394, "same_pid_duplicate_rejected": false}
-2026-10-21 20:09:04 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 0 chunks to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/other-workspace/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
-2026-10-21 20:09:04 | INFO | local_file_graph.py:45 | dump | Saved 0 nodes to /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/other-workspace/metadata/file_graph/LocalFileGraph.jsonl.zst
+2026-10-21 20:09:04 | INFO | local_file_store.py:729 | _dump_owned_state | Saved 0 chunks to <local>/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/other-workspace/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 20:09:04 | INFO | local_file_graph.py:45 | dump | Saved 0 nodes to <local>/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/other-workspace/metadata/file_graph/LocalFileGraph.jsonl.zst

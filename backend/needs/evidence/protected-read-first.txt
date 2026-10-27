@@ -1,5 +1,5 @@
-NEW_PRIVATE_PG=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/px4xjgm04; role=cj013_synthetic; port=56413; TCP=disabled; synthetic_only=true
-.F...............................PG_STOPPED_PRESERVED=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/px4xjgm04
+NEW_PRIVATE_PG=<local>/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/px4xjgm04; role=cj013_synthetic; port=56413; TCP=disabled; synthetic_only=true
+.F...............................PG_STOPPED_PRESERVED=<local>/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/px4xjgm04
 
 =================================== FAILURES ===================================
 ________ test_original_close_host_environment_scope_probe_now_withheld _________

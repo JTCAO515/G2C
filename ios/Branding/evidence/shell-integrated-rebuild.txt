@@ -5,5 +5,5 @@ Building for debugging...
 [5 / 7] CJShell
 [6 / 7] CJShell
 Build complete! (1.33秒)
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/BrandShellIntegrated/CJShellDemo.app: replacing existing signature
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/BrandShellIntegrated/CJShellDemo.app
+<local>/Documents/Codex/2026-10-21/cj-brand-001/.local/BrandShellIntegrated/CJShellDemo.app: replacing existing signature
+<local>/Documents/Codex/2026-10-21/cj-brand-001/.local/BrandShellIntegrated/CJShellDemo.app

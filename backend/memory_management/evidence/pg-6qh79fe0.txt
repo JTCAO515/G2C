@@ -1,5 +1,5 @@
 CJ019 local real PostgreSQL / synthetic authority fixtures
-data=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data
+data=<local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data
 socket=/private/tmp/cj019-wyrlyz5w
 PG environment replaced; empty explicit passfile; no TCP listener
 postgres (PostgreSQL) 16.15 (Homebrew)
@@ -11,7 +11,7 @@ The default text search configuration will be set to "english".
 
 Data page checksums are disabled.
 
-creating directory /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data ... ok
+creating directory <local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data ... ok
 creating subdirectories ... ok
 selecting dynamic shared memory implementation ... posix
 selecting default max_connections ... 100
@@ -24,10 +24,10 @@ syncing data to disk ... ok
 
 Success. You can now start the database server using:
 
-    '/opt/homebrew/opt/postgresql@16/bin/pg_ctl' -D /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data -l logfile start
+    '/opt/homebrew/opt/postgresql@16/bin/pg_ctl' -D <local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data -l logfile start
 waiting for server to start.... done
 server started
-PASS private PG identity/settings: ('cj019_owner', 'postgres', '', '/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data', 'UTF8')
+PASS private PG identity/settings: ('cj019_owner', 'postgres', '', '<local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-6qh79fe0/data', 'UTF8')
 test_01_pause_resume_current_reads_and_provenance (__main__.Checks.test_01_pause_resume_current_reads_and_provenance) ... ok
 test_02_two_writers_same_version_only_one_commits (__main__.Checks.test_02_two_writers_same_version_only_one_commits) ... ok
 test_03_original_bytes_replay_and_changed_bytes_conflict (__main__.Checks.test_03_original_bytes_replay_and_changed_bytes_conflict) ... ok
@@ -57,4 +57,4 @@ waiting for server to shut down.... done
 server stopped
 final pg_ctl status=3
 PASS safe stop: no running server/PID/socket; data/logs preserved
-evidence=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/evidence/pg-6qh79fe0.txt
+evidence=<local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/evidence/pg-6qh79fe0.txt

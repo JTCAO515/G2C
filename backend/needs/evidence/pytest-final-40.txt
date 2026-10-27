@@ -1,4 +1,4 @@
-.......................NEW_PRIVATE_PG=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/pot0crglr; role=cj013_synthetic; port=56413; TCP=disabled; synthetic_only=true
-.................PG_STOPPED_PRESERVED=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/pot0crglr
+.......................NEW_PRIVATE_PG=<local>/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/pot0crglr; role=cj013_synthetic; port=56413; TCP=disabled; synthetic_only=true
+.................PG_STOPPED_PRESERVED=<local>/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.local/pot0crglr
 
 40 passed in 1.12s

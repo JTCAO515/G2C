@@ -1,8 +1,8 @@
 {
-  "validation_package": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/.build/20aa-validation/Modules/CJNeedsClient",
+  "validation_package": "<local>/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/.build/20aa-validation/Modules/CJNeedsClient",
   "shared_snapshot": "cc9e2c3ba1fb8fe7582e5e4664a924b1c6b93f71",
   "shared_files": 125,
-  "official_export": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin/ios/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation",
+  "official_export": "<local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin/ios/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation",
   "official_files": 16,
   "sdk_copied": false,
   "sibling_writes": false

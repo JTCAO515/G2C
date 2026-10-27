@@ -15,7 +15,7 @@
   },
   "cjfoundation_occurrences": 6,
   "unique_cjfoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation"
   ],
   "graph_sha256": "4b2785b9184159c57e869edcdd689312824c5a951cf7bc0a89a607d8cde3383c",
   "protected_bytes_unchanged": {

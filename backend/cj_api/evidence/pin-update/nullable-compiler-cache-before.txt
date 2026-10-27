@@ -1,2 +1,2 @@
-<unknown>:0: error: error opening '/Users/jtsm5p/.cache/clang/ModuleCache/Swift-7JL1KBZ3A6V3.swiftmodule' for output: /Users/jtsm5p/.cache/clang/ModuleCache: Operation not permitted
+<unknown>:0: error: error opening '<local>/.cache/clang/ModuleCache/Swift-7JL1KBZ3A6V3.swiftmodule' for output: <local>/.cache/clang/ModuleCache: Operation not permitted
 <unknown>:0: error: unable to load standard library for target 'arm64-apple-macos14.0'

@@ -1,6 +1,6 @@
 # Muse 风格 UI 规格
 
-布局行为已确认，角色最终资源和实现参数未定；CJ-006 [#7](https://github.com/JTCAO515/Go2China/issues/7)拥有 UI 契约，CJ-004 [#4](https://github.com/JTCAO515/Go2China/issues/4)验证渲染候选，CJ-026 [#29](https://github.com/JTCAO515/Go2China/issues/29)负责中英真机验收。这里“移除顶栏”指 App 整条顶栏，保留系统状态栏、安全区和系统交互。
+布局行为已确认，角色最终资源和实现参数未定；CJ-006 [#7](https://github.com/JTCAO515/G2C/issues/7)拥有 UI 契约，CJ-004 [#4](https://github.com/JTCAO515/G2C/issues/4)验证渲染候选，CJ-026 [#29](https://github.com/JTCAO515/G2C/issues/29)负责中英真机验收。这里“移除顶栏”指 App 整条顶栏，保留系统状态栏、安全区和系统交互。
 
 ## 助手页面
 

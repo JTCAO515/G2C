@@ -9,7 +9,7 @@ Same root/branch/sole ownership: `cj-035-feasibility-client`,
 ## Reproduction and repair
 
 Read-only independent source directory:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-035-feasibility-ios`.
+`<local>/Documents/Codex/2026-10-21/cj-testing/CJ-035-feasibility-ios`.
 Exact original [ObservationReentryProbe.swift.txt](ObservationReentryProbe.swift.txt)
 and [Testing FAIL](testing-original-fail.log) copied byte-for-byte here. The probe
 was appended verbatim to the existing fixture. [author-before.log](author-before.log)

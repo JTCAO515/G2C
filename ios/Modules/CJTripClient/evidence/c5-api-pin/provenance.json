@@ -87,7 +87,7 @@
     "ios/Sources/CJAPI/MemoryClientConfiguration.swift"
   ],
   "official_export_files_exact": 16,
-  "single_cjfoundation_path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation",
+  "single_cjfoundation_path": "<local>/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation",
   "old_export_preserved": true,
   "product_sources_tests_lock_unchanged": {
     "ios/Modules/CJTripClient/Package.resolved": "ac553d48a91768d3a170f87909966b3455a69a2cb2028ecb6da05b210fa63952",

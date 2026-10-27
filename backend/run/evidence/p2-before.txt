@@ -6,7 +6,7 @@ test_cancel_survives_hook_false_and_exception (test_reentry.ReentryTests) ... te
 FAIL: test_callback_committed_event_survives_stale_outer (test_reentry.ReentryTests)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 44, in test_callback_committed_event_survives_stale_outer
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 44, in test_callback_committed_event_survives_stale_outer
     with self.assertRaises(Conflict): self.s.apply(Event(self.b,2,'outer','completed'))
 AssertionError: Conflict not raised
 
@@ -14,7 +14,7 @@ AssertionError: Conflict not raised
 FAIL: test_cancel_during_append_and_finish_preserved (test_reentry.ReentryTests) (kind='text_delta')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 32, in test_cancel_during_append_and_finish_preserved
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 32, in test_cancel_during_append_and_finish_preserved
     with self.assertRaises(Conflict): self.s.apply(Event(self.b,2,'outer',kind,val))
 AssertionError: Conflict not raised
 
@@ -22,7 +22,7 @@ AssertionError: Conflict not raised
 FAIL: test_cancel_during_append_and_finish_preserved (test_reentry.ReentryTests) (kind='effect_committed')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 32, in test_cancel_during_append_and_finish_preserved
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 32, in test_cancel_during_append_and_finish_preserved
     with self.assertRaises(Conflict): self.s.apply(Event(self.b,2,'outer',kind,val))
 AssertionError: Conflict not raised
 
@@ -30,7 +30,7 @@ AssertionError: Conflict not raised
 FAIL: test_cancel_during_append_and_finish_preserved (test_reentry.ReentryTests) (kind='completed')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 32, in test_cancel_during_append_and_finish_preserved
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 32, in test_cancel_during_append_and_finish_preserved
     with self.assertRaises(Conflict): self.s.apply(Event(self.b,2,'outer',kind,val))
 AssertionError: Conflict not raised
 
@@ -38,7 +38,7 @@ AssertionError: Conflict not raised
 FAIL: test_cancel_during_start_preserved (test_reentry.ReentryTests)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 19, in test_cancel_during_start_preserved
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 19, in test_cancel_during_start_preserved
     with self.assertRaises(Conflict): self.s.apply(Event(self.b,1,'start','started'))
 AssertionError: Conflict not raised
 
@@ -46,7 +46,7 @@ AssertionError: Conflict not raised
 FAIL: test_cancel_survives_hook_false_and_exception (test_reentry.ReentryTests) (result='false')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 59, in test_cancel_survives_hook_false_and_exception
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 59, in test_cancel_survives_hook_false_and_exception
     self.assertEqual(self.s.snapshot(self.b).status,'cancelled')
 AssertionError: 'queued' != 'cancelled'
 - queued
@@ -57,7 +57,7 @@ AssertionError: 'queued' != 'cancelled'
 FAIL: test_cancel_survives_hook_false_and_exception (test_reentry.ReentryTests) (result='throw')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 59, in test_cancel_survives_hook_false_and_exception
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/test_reentry.py", line 59, in test_cancel_survives_hook_false_and_exception
     self.assertEqual(self.s.snapshot(self.b).status,'cancelled')
 AssertionError: 'queued' != 'cancelled'
 - queued

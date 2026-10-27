@@ -1,9 +1,9 @@
 {
   "identity": "cjofflinetrip",
   "name": "CJOfflineTrip",
-  "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip",
+  "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip",
   "version": "unspecified",
-  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip",
+  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip",
   "traits": [
     "default"
   ],
@@ -11,9 +11,9 @@
     {
       "identity": "cjauth",
       "name": "CJAuth",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
       "traits": [
         "default"
       ],
@@ -23,7 +23,7 @@
           "name": "Supabase",
           "url": "https://github.com/supabase/supabase-swift",
           "version": "2.55.4",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/supabase-swift",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/supabase-swift",
           "traits": [
 
           ],
@@ -33,7 +33,7 @@
               "name": "swift-crypto",
               "url": "https://github.com/apple/swift-crypto.git",
               "version": "4.5.2",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-crypto",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-crypto",
               "traits": [
                 "default"
               ],
@@ -43,7 +43,7 @@
                   "name": "swift-asn1",
                   "url": "https://github.com/apple/swift-asn1.git",
                   "version": "1.7.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-asn1",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-asn1",
                   "traits": [
                     "default"
                   ],
@@ -58,7 +58,7 @@
               "name": "swift-http-types",
               "url": "https://github.com/apple/swift-http-types",
               "version": "1.8.0",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
               "traits": [
                 "FoundationURL"
               ],
@@ -71,7 +71,7 @@
               "name": "swift-clocks",
               "url": "https://github.com/pointfreeco/swift-clocks",
               "version": "1.1.1",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-clocks",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-clocks",
               "traits": [
                 "default"
               ],
@@ -81,7 +81,7 @@
                   "name": "swift-concurrency-extras",
                   "url": "https://github.com/pointfreeco/swift-concurrency-extras",
                   "version": "1.4.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
                   "traits": [
                     "default"
                   ],
@@ -94,7 +94,7 @@
                   "name": "swift-issue-reporting",
                   "url": "https://github.com/pointfreeco/swift-issue-reporting",
                   "version": "2.1.2",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
                   "traits": [
                     "default"
                   ],
@@ -109,7 +109,7 @@
               "name": "swift-concurrency-extras",
               "url": "https://github.com/pointfreeco/swift-concurrency-extras",
               "version": "1.4.3",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
               "traits": [
                 "default"
               ],
@@ -122,7 +122,7 @@
               "name": "xctest-dynamic-overlay",
               "url": "https://github.com/pointfreeco/xctest-dynamic-overlay",
               "version": "1.13.1",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/xctest-dynamic-overlay",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/xctest-dynamic-overlay",
               "traits": [
                 "default"
               ],
@@ -132,7 +132,7 @@
                   "name": "swift-issue-reporting",
                   "url": "https://github.com/pointfreeco/swift-issue-reporting",
                   "version": "2.1.2",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
                   "traits": [
                     "default"
                   ],
@@ -149,9 +149,9 @@
     {
       "identity": "cjtripclient",
       "name": "CJTripClient",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJTripClient",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJTripClient",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJTripClient",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJTripClient",
       "traits": [
         "default"
       ],
@@ -159,9 +159,9 @@
         {
           "identity": "cjfoundation",
           "name": "CJFoundation",
-          "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+          "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
           "version": "unspecified",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
           "traits": [
             "default"
           ],
@@ -171,7 +171,7 @@
               "name": "swift-openapi-runtime",
               "url": "https://github.com/apple/swift-openapi-runtime",
               "version": "1.13.3",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
               "traits": [
                 "FullFoundation"
               ],
@@ -181,7 +181,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -196,7 +196,7 @@
               "name": "swift-openapi-urlsession",
               "url": "https://github.com/apple/swift-openapi-urlsession",
               "version": "1.3.2",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
               "traits": [
                 "default"
               ],
@@ -206,7 +206,7 @@
                   "name": "swift-openapi-runtime",
                   "url": "https://github.com/apple/swift-openapi-runtime",
                   "version": "1.13.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
                   "traits": [
                     "FullFoundation"
                   ],
@@ -216,7 +216,7 @@
                       "name": "swift-http-types",
                       "url": "https://github.com/apple/swift-http-types",
                       "version": "1.8.0",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                       "traits": [
                         "FoundationURL"
                       ],
@@ -231,7 +231,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -244,7 +244,7 @@
                   "name": "swift-collections",
                   "url": "https://github.com/apple/swift-collections",
                   "version": "1.7.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
                   "traits": [
 
                   ],
@@ -259,9 +259,9 @@
         {
           "identity": "cjmessageclient",
           "name": "CJMessageClient",
-          "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient",
+          "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient",
           "version": "unspecified",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient",
           "traits": [
             "default"
           ],
@@ -269,9 +269,9 @@
             {
               "identity": "cjfoundation",
               "name": "CJFoundation",
-              "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+              "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
               "version": "unspecified",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
               "traits": [
                 "default"
               ],
@@ -281,7 +281,7 @@
                   "name": "swift-openapi-runtime",
                   "url": "https://github.com/apple/swift-openapi-runtime",
                   "version": "1.13.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
                   "traits": [
                     "FullFoundation"
                   ],
@@ -291,7 +291,7 @@
                       "name": "swift-http-types",
                       "url": "https://github.com/apple/swift-http-types",
                       "version": "1.8.0",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                       "traits": [
                         "FoundationURL"
                       ],
@@ -306,7 +306,7 @@
                   "name": "swift-openapi-urlsession",
                   "url": "https://github.com/apple/swift-openapi-urlsession",
                   "version": "1.3.2",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
                   "traits": [
                     "default"
                   ],
@@ -316,7 +316,7 @@
                       "name": "swift-openapi-runtime",
                       "url": "https://github.com/apple/swift-openapi-runtime",
                       "version": "1.13.3",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
                       "traits": [
                         "FullFoundation"
                       ],
@@ -326,7 +326,7 @@
                           "name": "swift-http-types",
                           "url": "https://github.com/apple/swift-http-types",
                           "version": "1.8.0",
-                          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                           "traits": [
                             "FoundationURL"
                           ],
@@ -341,7 +341,7 @@
                       "name": "swift-http-types",
                       "url": "https://github.com/apple/swift-http-types",
                       "version": "1.8.0",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                       "traits": [
                         "FoundationURL"
                       ],
@@ -354,7 +354,7 @@
                       "name": "swift-collections",
                       "url": "https://github.com/apple/swift-collections",
                       "version": "1.7.3",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
                       "traits": [
 
                       ],
@@ -369,9 +369,9 @@
             {
               "identity": "cjauth",
               "name": "CJAuth",
-              "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
+              "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
               "version": "unspecified",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
               "traits": [
                 "default"
               ],
@@ -381,7 +381,7 @@
                   "name": "Supabase",
                   "url": "https://github.com/supabase/supabase-swift",
                   "version": "2.55.4",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/supabase-swift",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/supabase-swift",
                   "traits": [
 
                   ],
@@ -391,7 +391,7 @@
                       "name": "swift-crypto",
                       "url": "https://github.com/apple/swift-crypto.git",
                       "version": "4.5.2",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-crypto",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-crypto",
                       "traits": [
                         "default"
                       ],
@@ -401,7 +401,7 @@
                           "name": "swift-asn1",
                           "url": "https://github.com/apple/swift-asn1.git",
                           "version": "1.7.3",
-                          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-asn1",
+                          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-asn1",
                           "traits": [
                             "default"
                           ],
@@ -416,7 +416,7 @@
                       "name": "swift-http-types",
                       "url": "https://github.com/apple/swift-http-types",
                       "version": "1.8.0",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                       "traits": [
                         "FoundationURL"
                       ],
@@ -429,7 +429,7 @@
                       "name": "swift-clocks",
                       "url": "https://github.com/pointfreeco/swift-clocks",
                       "version": "1.1.1",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-clocks",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-clocks",
                       "traits": [
                         "default"
                       ],
@@ -439,7 +439,7 @@
                           "name": "swift-concurrency-extras",
                           "url": "https://github.com/pointfreeco/swift-concurrency-extras",
                           "version": "1.4.3",
-                          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
+                          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
                           "traits": [
                             "default"
                           ],
@@ -452,7 +452,7 @@
                           "name": "swift-issue-reporting",
                           "url": "https://github.com/pointfreeco/swift-issue-reporting",
                           "version": "2.1.2",
-                          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
+                          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
                           "traits": [
                             "default"
                           ],
@@ -467,7 +467,7 @@
                       "name": "swift-concurrency-extras",
                       "url": "https://github.com/pointfreeco/swift-concurrency-extras",
                       "version": "1.4.3",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
                       "traits": [
                         "default"
                       ],
@@ -480,7 +480,7 @@
                       "name": "xctest-dynamic-overlay",
                       "url": "https://github.com/pointfreeco/xctest-dynamic-overlay",
                       "version": "1.13.1",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/xctest-dynamic-overlay",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/xctest-dynamic-overlay",
                       "traits": [
                         "default"
                       ],
@@ -490,7 +490,7 @@
                           "name": "swift-issue-reporting",
                           "url": "https://github.com/pointfreeco/swift-issue-reporting",
                           "version": "2.1.2",
-                          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
+                          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
                           "traits": [
                             "default"
                           ],
@@ -509,7 +509,7 @@
               "name": "swift-openapi-runtime",
               "url": "https://github.com/apple/swift-openapi-runtime",
               "version": "1.13.3",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
               "traits": [
                 "FullFoundation"
               ],
@@ -519,7 +519,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -534,7 +534,7 @@
               "name": "swift-openapi-urlsession",
               "url": "https://github.com/apple/swift-openapi-urlsession",
               "version": "1.3.2",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
               "traits": [
                 "default"
               ],
@@ -544,7 +544,7 @@
                   "name": "swift-openapi-runtime",
                   "url": "https://github.com/apple/swift-openapi-runtime",
                   "version": "1.13.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
                   "traits": [
                     "FullFoundation"
                   ],
@@ -554,7 +554,7 @@
                       "name": "swift-http-types",
                       "url": "https://github.com/apple/swift-http-types",
                       "version": "1.8.0",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                       "traits": [
                         "FoundationURL"
                       ],
@@ -569,7 +569,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -582,7 +582,7 @@
                   "name": "swift-collections",
                   "url": "https://github.com/apple/swift-collections",
                   "version": "1.7.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
                   "traits": [
 
                   ],
@@ -597,7 +597,7 @@
               "name": "swift-http-types",
               "url": "https://github.com/apple/swift-http-types",
               "version": "1.8.0",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
               "traits": [
                 "FoundationURL"
               ],
@@ -610,9 +610,9 @@
         {
           "identity": "cjauth",
           "name": "CJAuth",
-          "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
+          "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
           "version": "unspecified",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
           "traits": [
             "default"
           ],
@@ -622,7 +622,7 @@
               "name": "Supabase",
               "url": "https://github.com/supabase/supabase-swift",
               "version": "2.55.4",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/supabase-swift",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/supabase-swift",
               "traits": [
 
               ],
@@ -632,7 +632,7 @@
                   "name": "swift-crypto",
                   "url": "https://github.com/apple/swift-crypto.git",
                   "version": "4.5.2",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-crypto",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-crypto",
                   "traits": [
                     "default"
                   ],
@@ -642,7 +642,7 @@
                       "name": "swift-asn1",
                       "url": "https://github.com/apple/swift-asn1.git",
                       "version": "1.7.3",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-asn1",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-asn1",
                       "traits": [
                         "default"
                       ],
@@ -657,7 +657,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -670,7 +670,7 @@
                   "name": "swift-clocks",
                   "url": "https://github.com/pointfreeco/swift-clocks",
                   "version": "1.1.1",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-clocks",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-clocks",
                   "traits": [
                     "default"
                   ],
@@ -680,7 +680,7 @@
                       "name": "swift-concurrency-extras",
                       "url": "https://github.com/pointfreeco/swift-concurrency-extras",
                       "version": "1.4.3",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
                       "traits": [
                         "default"
                       ],
@@ -693,7 +693,7 @@
                       "name": "swift-issue-reporting",
                       "url": "https://github.com/pointfreeco/swift-issue-reporting",
                       "version": "2.1.2",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
                       "traits": [
                         "default"
                       ],
@@ -708,7 +708,7 @@
                   "name": "swift-concurrency-extras",
                   "url": "https://github.com/pointfreeco/swift-concurrency-extras",
                   "version": "1.4.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
                   "traits": [
                     "default"
                   ],
@@ -721,7 +721,7 @@
                   "name": "xctest-dynamic-overlay",
                   "url": "https://github.com/pointfreeco/xctest-dynamic-overlay",
                   "version": "1.13.1",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/xctest-dynamic-overlay",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/xctest-dynamic-overlay",
                   "traits": [
                     "default"
                   ],
@@ -731,7 +731,7 @@
                       "name": "swift-issue-reporting",
                       "url": "https://github.com/pointfreeco/swift-issue-reporting",
                       "version": "2.1.2",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
                       "traits": [
                         "default"
                       ],
@@ -750,7 +750,7 @@
           "name": "swift-openapi-runtime",
           "url": "https://github.com/apple/swift-openapi-runtime",
           "version": "1.13.3",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
           "traits": [
             "FullFoundation"
           ],
@@ -760,7 +760,7 @@
               "name": "swift-http-types",
               "url": "https://github.com/apple/swift-http-types",
               "version": "1.8.0",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
               "traits": [
                 "FoundationURL"
               ],
@@ -775,7 +775,7 @@
           "name": "swift-http-types",
           "url": "https://github.com/apple/swift-http-types",
           "version": "1.8.0",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
           "traits": [
             "FoundationURL"
           ],
@@ -788,9 +788,9 @@
     {
       "identity": "cjmessageclient",
       "name": "CJMessageClient",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient",
       "traits": [
         "default"
       ],
@@ -798,9 +798,9 @@
         {
           "identity": "cjfoundation",
           "name": "CJFoundation",
-          "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+          "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
           "version": "unspecified",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
           "traits": [
             "default"
           ],
@@ -810,7 +810,7 @@
               "name": "swift-openapi-runtime",
               "url": "https://github.com/apple/swift-openapi-runtime",
               "version": "1.13.3",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
               "traits": [
                 "FullFoundation"
               ],
@@ -820,7 +820,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -835,7 +835,7 @@
               "name": "swift-openapi-urlsession",
               "url": "https://github.com/apple/swift-openapi-urlsession",
               "version": "1.3.2",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
               "traits": [
                 "default"
               ],
@@ -845,7 +845,7 @@
                   "name": "swift-openapi-runtime",
                   "url": "https://github.com/apple/swift-openapi-runtime",
                   "version": "1.13.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
                   "traits": [
                     "FullFoundation"
                   ],
@@ -855,7 +855,7 @@
                       "name": "swift-http-types",
                       "url": "https://github.com/apple/swift-http-types",
                       "version": "1.8.0",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                       "traits": [
                         "FoundationURL"
                       ],
@@ -870,7 +870,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -883,7 +883,7 @@
                   "name": "swift-collections",
                   "url": "https://github.com/apple/swift-collections",
                   "version": "1.7.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
                   "traits": [
 
                   ],
@@ -898,9 +898,9 @@
         {
           "identity": "cjauth",
           "name": "CJAuth",
-          "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
+          "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
           "version": "unspecified",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJAuth",
           "traits": [
             "default"
           ],
@@ -910,7 +910,7 @@
               "name": "Supabase",
               "url": "https://github.com/supabase/supabase-swift",
               "version": "2.55.4",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/supabase-swift",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/supabase-swift",
               "traits": [
 
               ],
@@ -920,7 +920,7 @@
                   "name": "swift-crypto",
                   "url": "https://github.com/apple/swift-crypto.git",
                   "version": "4.5.2",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-crypto",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-crypto",
                   "traits": [
                     "default"
                   ],
@@ -930,7 +930,7 @@
                       "name": "swift-asn1",
                       "url": "https://github.com/apple/swift-asn1.git",
                       "version": "1.7.3",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-asn1",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-asn1",
                       "traits": [
                         "default"
                       ],
@@ -945,7 +945,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -958,7 +958,7 @@
                   "name": "swift-clocks",
                   "url": "https://github.com/pointfreeco/swift-clocks",
                   "version": "1.1.1",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-clocks",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-clocks",
                   "traits": [
                     "default"
                   ],
@@ -968,7 +968,7 @@
                       "name": "swift-concurrency-extras",
                       "url": "https://github.com/pointfreeco/swift-concurrency-extras",
                       "version": "1.4.3",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
                       "traits": [
                         "default"
                       ],
@@ -981,7 +981,7 @@
                       "name": "swift-issue-reporting",
                       "url": "https://github.com/pointfreeco/swift-issue-reporting",
                       "version": "2.1.2",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
                       "traits": [
                         "default"
                       ],
@@ -996,7 +996,7 @@
                   "name": "swift-concurrency-extras",
                   "url": "https://github.com/pointfreeco/swift-concurrency-extras",
                   "version": "1.4.3",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-concurrency-extras",
                   "traits": [
                     "default"
                   ],
@@ -1009,7 +1009,7 @@
                   "name": "xctest-dynamic-overlay",
                   "url": "https://github.com/pointfreeco/xctest-dynamic-overlay",
                   "version": "1.13.1",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/xctest-dynamic-overlay",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/xctest-dynamic-overlay",
                   "traits": [
                     "default"
                   ],
@@ -1019,7 +1019,7 @@
                       "name": "swift-issue-reporting",
                       "url": "https://github.com/pointfreeco/swift-issue-reporting",
                       "version": "2.1.2",
-                      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
+                      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-issue-reporting",
                       "traits": [
                         "default"
                       ],
@@ -1038,7 +1038,7 @@
           "name": "swift-openapi-runtime",
           "url": "https://github.com/apple/swift-openapi-runtime",
           "version": "1.13.3",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
           "traits": [
             "FullFoundation"
           ],
@@ -1048,7 +1048,7 @@
               "name": "swift-http-types",
               "url": "https://github.com/apple/swift-http-types",
               "version": "1.8.0",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
               "traits": [
                 "FoundationURL"
               ],
@@ -1063,7 +1063,7 @@
           "name": "swift-openapi-urlsession",
           "url": "https://github.com/apple/swift-openapi-urlsession",
           "version": "1.3.2",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
           "traits": [
             "default"
           ],
@@ -1073,7 +1073,7 @@
               "name": "swift-openapi-runtime",
               "url": "https://github.com/apple/swift-openapi-runtime",
               "version": "1.13.3",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
               "traits": [
                 "FullFoundation"
               ],
@@ -1083,7 +1083,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -1098,7 +1098,7 @@
               "name": "swift-http-types",
               "url": "https://github.com/apple/swift-http-types",
               "version": "1.8.0",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
               "traits": [
                 "FoundationURL"
               ],
@@ -1111,7 +1111,7 @@
               "name": "swift-collections",
               "url": "https://github.com/apple/swift-collections",
               "version": "1.7.3",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
               "traits": [
 
               ],
@@ -1126,7 +1126,7 @@
           "name": "swift-http-types",
           "url": "https://github.com/apple/swift-http-types",
           "version": "1.8.0",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
           "traits": [
             "FoundationURL"
           ],
@@ -1139,9 +1139,9 @@
     {
       "identity": "cjfoundation",
       "name": "CJFoundation",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
       "traits": [
         "default"
       ],
@@ -1151,7 +1151,7 @@
           "name": "swift-openapi-runtime",
           "url": "https://github.com/apple/swift-openapi-runtime",
           "version": "1.13.3",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
           "traits": [
             "FullFoundation"
           ],
@@ -1161,7 +1161,7 @@
               "name": "swift-http-types",
               "url": "https://github.com/apple/swift-http-types",
               "version": "1.8.0",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
               "traits": [
                 "FoundationURL"
               ],
@@ -1176,7 +1176,7 @@
           "name": "swift-openapi-urlsession",
           "url": "https://github.com/apple/swift-openapi-urlsession",
           "version": "1.3.2",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-urlsession",
           "traits": [
             "default"
           ],
@@ -1186,7 +1186,7 @@
               "name": "swift-openapi-runtime",
               "url": "https://github.com/apple/swift-openapi-runtime",
               "version": "1.13.3",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
               "traits": [
                 "FullFoundation"
               ],
@@ -1196,7 +1196,7 @@
                   "name": "swift-http-types",
                   "url": "https://github.com/apple/swift-http-types",
                   "version": "1.8.0",
-                  "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+                  "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
                   "traits": [
                     "FoundationURL"
                   ],
@@ -1211,7 +1211,7 @@
               "name": "swift-http-types",
               "url": "https://github.com/apple/swift-http-types",
               "version": "1.8.0",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
               "traits": [
                 "FoundationURL"
               ],
@@ -1224,7 +1224,7 @@
               "name": "swift-collections",
               "url": "https://github.com/apple/swift-collections",
               "version": "1.7.3",
-              "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
+              "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-collections",
               "traits": [
 
               ],
@@ -1241,7 +1241,7 @@
       "name": "swift-openapi-runtime",
       "url": "https://github.com/apple/swift-openapi-runtime",
       "version": "1.13.3",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-openapi-runtime",
       "traits": [
         "FullFoundation"
       ],
@@ -1251,7 +1251,7 @@
           "name": "swift-http-types",
           "url": "https://github.com/apple/swift-http-types",
           "version": "1.8.0",
-          "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+          "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
           "traits": [
             "FoundationURL"
           ],
@@ -1266,7 +1266,7 @@
       "name": "swift-http-types",
       "url": "https://github.com/apple/swift-http-types",
       "version": "1.8.0",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJOfflineTrip/.build/checkouts/swift-http-types",
       "traits": [
         "FoundationURL"
       ],

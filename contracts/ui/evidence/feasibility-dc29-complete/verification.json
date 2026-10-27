@@ -18,7 +18,7 @@
   "all_peer_manifests_original": true,
   "peer_manifest_rewrites": [],
   "sdk_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.local/feasibility-real-shell/4854142555185106/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.local/feasibility-real-shell/4854142555185106/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
   ],
   "sdk_references": 25,
   "physical_sdk_directories": [

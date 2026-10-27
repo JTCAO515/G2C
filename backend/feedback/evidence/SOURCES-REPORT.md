@@ -2,7 +2,7 @@
 
 2026-10-22; author verification only. Base
 `8f2ff45519d1d09f178f1fa766b6829d81bda77a`, branch `cj/023-feedback`, clone
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback`.
+`<local>/Documents/Codex/2026-10-21/cj-023-feedback`.
 `fc55f6cb69cbd8d5cd2ead53165698c434c7d066` is the standalone core product commit.
 Two unchanged dependency imports are separate: MESSAGE `7182df3` (owner `bf79a948`),
 RUN `cf6aed7` (owner `eadda152`). Current FEEDBACK delta starts after `cf6aed7` and

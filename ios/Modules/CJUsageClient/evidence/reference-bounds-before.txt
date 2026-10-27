@@ -4,7 +4,7 @@ Building for debugging...
 [Planning deferred tasks]
 [1 / 1]
 [6 / 17] CJUsageClientTests-product
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:152:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
+<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:152:84: warning: '#require(_:_:)' is redundant because 'result' never equals 'nil' (from macro 'require')
 150 |             let h = try OriginalHarness(); try await h.accept()
 151 |             var source: ResolvedUsageSource?
 152 |         if statusStage { let result = try await h.resolve(); source = try #require(result) }

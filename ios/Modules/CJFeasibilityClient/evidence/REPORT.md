@@ -8,7 +8,7 @@ and executed-source manifest below are retained as historical bytes.
 Product base: `02f672605ad5521f9360e42be8f43ebfd022a0e8`.
 Tested source commit: `0c917f8267816f20eda078deb89f52d17732f856`.
 Branch/root: `cj/035-feasibility-client`,
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-client`.
+`<local>/Documents/Codex/2026-10-21/cj-035-feasibility-client`.
 Evidence-only follow-up commit is the final candidate HEAD; no product files
 change after the tested source commit. Sole owned subtree is
 `ios/Modules/CJFeasibilityClient/**`. No push, PR or external message was sent.
@@ -71,7 +71,7 @@ in these synthetic fixtures. [build.log](build.log) is the local macOS package b
 Commands executed from this repository unless noted:
 
 ```sh
-python3 ios/Modules/CJFeasibilityClient/scripts/prepare.py /Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation
+python3 ios/Modules/CJFeasibilityClient/scripts/prepare.py <local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin <local>/Documents/Codex/2026-10-21/cj-005-foundation
 swift test --package-path ios/Modules/CJFeasibilityClient/.prepare/Modules/CJFeasibilityClient --force-resolved-versions --skip-update
 swift package --package-path ios/Modules/CJFeasibilityClient/.prepare/Modules/CJFeasibilityClient show-dependencies --format json
 python3 ios/Modules/CJFeasibilityClient/scripts/check_public_api.py

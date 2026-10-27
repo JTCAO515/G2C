@@ -2,7 +2,7 @@
   "SDK_commit": "c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a",
   "SDK_inputs": 16,
   "unique_foundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-022-offline-trip/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation"
   ],
   "path_occurrences": 4,
   "unchanged_sources_tests_lock": true,

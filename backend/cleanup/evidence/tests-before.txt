@@ -17,7 +17,7 @@ test_wrong_original_receipt_bindings (test_cleanup.CleanupTests.test_wrong_origi
 ERROR: test_wrong_original_receipt_bindings (test_cleanup.CleanupTests.test_wrong_original_receipt_bindings)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/tests/test_cleanup.py", line 86, in test_wrong_original_receipt_bindings
+  File "<local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/tests/test_cleanup.py", line 86, in test_wrong_original_receipt_bindings
     with self.assertRaises(Conflict): receipt(op,'auth_revocation',self.result(op,'auth_revocation',**changes))
                                                                    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 TypeError: CleanupTests.result() got multiple values for argument 'target'

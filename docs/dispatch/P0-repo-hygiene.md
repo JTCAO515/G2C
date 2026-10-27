@@ -44,7 +44,7 @@
 ## 任务
 
 1. **文档对齐现实**：README / AGENTS.md / engineering.md 中“尚无可运行 API/schema”等陈述改为现状；`JTCAO515/Go2China` Issue 链接改为 `JTCAO515/G2C`；本机 HANDOFF 路径改为指向 `HANDOFF.md` / `docs/handoff.json`。
-2. **去本机路径**：`/Users/jtsm5p/...` 替换为 `<local>/...` 占位（遵守上方 hash 注意）。
+2. **去本机路径**：`<local>/...` 替换为 `<local>/...` 占位（遵守上方 hash 注意）。
 3. **.gitignore**：新增忽略 `**/evidence/**/*.log`、`**/evidence/**/*.xz`、`**/evidence/**/*.gz`、`**/evidence/**/*.mp4`、`.deps/`；已跟踪文件不受影响。
 4. **最小 CI**（`.github/workflows/ci.yml`，push main + pull_request）：
    - `python` job（ubuntu）：`uv sync --frozen`，`CJ_ENV=local uv run pytest -q backend/tests backend/cj_api/tests`；以实际能通过的最小集合起步，失败用例逐条记录在 PR，不跳过不删断言。
@@ -56,7 +56,7 @@
 ## 验收命令
 
 ```bash
-grep -rIl '/Users/jtsm5p' . --exclude-dir=.git | wc -l   # 期望 0，或仅剩 PR 中列明的 hash 受保护文件
+grep -rIl '<local>' . --exclude-dir=.git | wc -l   # 期望 0，或仅剩 PR 中列明的 hash 受保护文件
 git diff --stat origin/main -- backend ios spikes contracts pyproject.toml uv.lock   # 期望仅 evidence 内路径替换
 python3 -m json.tool docs/handoff.json > /dev/null
 gh pr checks <PR>   # CI 全绿，或失败项逐条在 PR 记录原因

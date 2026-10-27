@@ -5,56 +5,56 @@
     "-target",
     "arm64-apple-macos14.0",
     "-I",
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/out/Products/Debug",
+    "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/out/Products/Debug",
     "ios/Modules/CJUsageClient/Tests/PublicInterface/OriginalUsagePublic.swift"
   ],
   "exit": 0,
   "all_package_identities_have_one_path": true,
   "package_identities": {
     "cjusageclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient"
     ],
     "cjfoundation": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
     ],
     "swift-openapi-runtime": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-openapi-runtime"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-openapi-runtime"
     ],
     "swift-http-types": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-http-types"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-http-types"
     ],
     "swift-openapi-urlsession": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-openapi-urlsession"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-openapi-urlsession"
     ],
     "swift-collections": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-collections"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-collections"
     ],
     "cjmessageclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJMessageClient"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJMessageClient"
     ],
     "cjauth": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJAuth"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJAuth"
     ],
     "supabase-swift": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/supabase-swift"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/supabase-swift"
     ],
     "swift-crypto": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-crypto"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-crypto"
     ],
     "swift-asn1": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-asn1"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-asn1"
     ],
     "swift-clocks": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-clocks"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-clocks"
     ],
     "swift-concurrency-extras": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-concurrency-extras"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-concurrency-extras"
     ],
     "swift-issue-reporting": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-issue-reporting"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/swift-issue-reporting"
     ],
     "xctest-dynamic-overlay": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/xctest-dynamic-overlay"
+      "<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption/ios/Modules/CJUsageClient/.build/checkouts/xctest-dynamic-overlay"
     ]
   },
   "83_prepared_inputs_exact_after_tests": true,

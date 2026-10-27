@@ -1,5 +1,5 @@
 CJ019 guarded delta / canonical 0045 / synthetic AUTH and real private PG
-data=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-fr2ebgws/data
+data=<local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-fr2ebgws/data
 socket=/private/tmp/cj019-9tey3rzw
 PG environment replaced; empty explicit passfile; no TCP listener
 postgres (PostgreSQL) 16.15 (Homebrew)
@@ -11,7 +11,7 @@ The default text search configuration will be set to "english".
 
 Data page checksums are disabled.
 
-creating directory /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-fr2ebgws/data ... ok
+creating directory <local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-fr2ebgws/data ... ok
 creating subdirectories ... ok
 selecting dynamic shared memory implementation ... sysv
 selecting default max_connections ... 20
@@ -21,5 +21,5 @@ creating configuration files ... ok
 running bootstrap script ... 2026-10-23 09:53:59.028 CST [26635] FATAL:  could not create shared memory segment: Operation not permitted
 2026-10-23 09:53:59.028 CST [26635] DETAIL:  Failed system call was shmget(key=59771802, size=56, 03600).
 child process exited with exit code 1
-initdb: removing data directory "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-fr2ebgws/data"
+initdb: removing data directory "<local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-fr2ebgws/data"
 PASS safe stop: no running server/PID/socket; data/logs preserved

@@ -6,7 +6,7 @@ Building for debugging...
 [12 / 14] CJNeedsClient
 [15 / 18] CJNeedsClientTests-product
 [22 / 25] CJNeedsClientTests-product
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/Tests/CJNeedsClientTests/BoundaryTests.swift:109:16: warning: 'mutate' mutated after capture by sendable closure
+<local>/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/Tests/CJNeedsClientTests/BoundaryTests.swift:109:16: warning: 'mutate' mutated after capture by sendable closure
  91 |     }
  92 |     @Test func ciphertextChangedByLastCallbackCannotSettle() async throws {
  93 |         let h = try Harness(); defer { h.clean() }; let a = try original(); var keys = 0; var mutate = false; var changed = false

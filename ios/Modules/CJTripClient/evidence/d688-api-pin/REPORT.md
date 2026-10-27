@@ -73,7 +73,7 @@ swift package --package-path ios/Modules/CJTripClient \
   --scratch-path /tmp/cj015-trip-client-build --skip-update --force-resolved-versions \
   show-dependencies --format json > /tmp/cj015-d688-package-graph.json
 python3 ios/Modules/CJTripClient/evidence/d688-api-pin/check_pin.py \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation \
+  <local>/Documents/Codex/2026-10-21/cj-005-foundation \
   /tmp/cj015-d688-package-graph.json
 ```
 

@@ -1,5 +1,5 @@
-2026-10-21 20:09:07 | INFO | bm25_index.py:458 | load | Loaded 1 docs from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
-2026-10-21 20:09:07 | INFO | local_file_store.py:244 | load | Loaded 1 chunks from /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
+2026-10-21 20:09:07 | INFO | bm25_index.py:458 | load | Loaded 1 docs from <local>/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/keyword_index/bm25_BM25Index_regex_7748e1d5a050_v1.pkl
+2026-10-21 20:09:07 | INFO | local_file_store.py:244 | load | Loaded 1 chunks from <local>/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/single-writer-fe6e3bf3697940e4a33c8685edf9f0fd/workspace/metadata/file_store/file_chunks_cj003_v1.jsonl.zst
 2026-10-21 20:09:07 | INFO | local_file_store.py:247 | load | cj003: chunk store load complete: chunks=1, elapsed=0.000s
 2026-10-21 20:09:07 | INFO | local_file_store.py:254 | load | cj003: graph consistency check complete: repaired=False, elapsed=0.000s
 2026-10-21 20:09:07 | INFO | local_file_store.py:261 | load | cj003: tag index sync complete: enabled=False, healthy=True, elapsed=0.000s

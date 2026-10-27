@@ -1,7 +1,7 @@
 # CJ013 NEEDS client — local author candidate
 
 Date: 2026-10-22 Asia/Shanghai. Owner workspace:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client`, branch `cj/013-needs-client`.
+`<local>/Documents/Codex/2026-10-21/cj-013-needs-client`, branch `cj/013-needs-client`.
 Unique Main: `01a15e24-928b-7540-97a4-14b52e6ee995`.
 Requested Astra/high; fast not set; effective UNKNOWN.
 

@@ -1,4 +1,4 @@
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:92:91: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:92:91: warning: will never be executed
  90 |         h.wire["status"] = "settled"; h.wire["confirmed_units"] = "0"; h.wire["confirmed_output"] = "0"; h.wire["receipt_id"] = "r"
  91 |         try await h.read()
  92 |         guard case .loaded(let settled) = h.model.state else { fatalError("not settled"); return }
@@ -7,7 +7,7 @@
  93 |         reviewCheck(settled.confirmedUnits == "0" && settled.confirmedOutput == "0" && settled.receiptID == "r")
  94 |     }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:82:91: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:82:91: warning: will never be executed
  80 |     func exactOriginalGETAndBigIntegerUnknownThenActualZero() async throws {
  81 |         let h = try Harness(); try await h.read()
  82 |         guard case .loaded(let original) = h.model.state else { fatalError("not loaded"); return }
@@ -16,7 +16,7 @@
  83 |         reviewCheck(original.confirmedUnits == nil && original.confirmedOutput == nil && original.receiptID == nil)
  84 |         reviewCheck(original.reservedUnits == h.wire["reserved_units"] as? String)
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:102:110: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:102:110: warning: will never be executed
 100 |         if status == "settled" {
 101 |             h.wire["cancelled"] = true; h.wire["exceeded"] = true; try await h.read()
 102 |             guard case .loaded(let final) = h.model.state else { fatalError("cancelled receipt unreadable"); return }
@@ -25,7 +25,7 @@
 103 |             reviewCheck(final.cancelled && final.exceeded)
 104 |         }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:97:93: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:97:93: warning: will never be executed
  95 |     func statesAndBilingualMeaning(_ status: String) async throws {
  96 |         let h = try Harness(status: status); try await h.read()
  97 |         guard case .loaded(let result) = h.model.state else { fatalError("missing status"); return }
@@ -34,7 +34,7 @@
  98 |         reviewCheck(result.status.rawValue == status)
  99 |         reviewCheck(!result.status.label(.english).isEmpty && !result.status.label(.chinese).isEmpty)
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:127:101: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:127:101: warning: will never be executed
 125 |         }
 126 |         try await h.read()
 127 |         guard case .failed = h.model.state else { fatalError("invalid wire accepted: \(mutation)"); return }
@@ -43,7 +43,7 @@
 128 |     }
 129 |     func transportFailureIsSanitized(_ mutation: String) async throws {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:144:89: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:144:89: warning: will never be executed
 142 |         }
 143 |         try await h.read()
 144 |         guard case .failed = h.model.state else { fatalError("bad transport accepted"); return }
@@ -52,7 +52,7 @@
 145 |     }
 146 |     func missingConfigurationAndSourceNeverRequest() throws {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:171:83: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:171:83: warning: will never be executed
 169 |         reviewCheck(h.model.state == .loading)
 170 |         await h.model.read(try reviewRequire(inner))
 171 |         guard case .loaded = h.model.state else { fatalError("inner owner lost"); return }
@@ -61,7 +61,7 @@
 172 |     }
 173 |     func lifecycleFences(_ stage: String) async throws {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:203:101: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:203:101: warning: will never be executed
 201 |         try await h.read()
 202 |         if stage == "credential-reentry" {
 203 |             guard case .loaded = h.model.state else { fatalError("old error overwrote newer task"); return }
@@ -70,7 +70,7 @@
 204 |             reviewCheck(h.requests.count == 1)
 205 |         } else {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:239:93: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:239:93: warning: will never be executed
 237 |             currentBinding: { h.selected }, liveReadTransport: transport)
 238 |         let prepared = try model.prepare(h.selected); await model.read(prepared)
 239 |         guard case .loaded = model.state else { fatalError("canonical default GET failed"); return }
@@ -79,7 +79,7 @@
 240 |     }
 241 |     func missingCredentialsAndInvalidationNeverBecomeZero() async throws {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:261:101: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:261:101: warning: will never be executed
 259 |         await gate.release(try JSONSerialization.data(withJSONObject: ["request_id": h.trace, "attempt": h.wire]))
 260 |         await old.value
 261 |         guard case .loaded = h.model.state else { fatalError("old body/cancel cleared new result"); return }
@@ -88,7 +88,7 @@
 262 |         reviewCheck(h.requests.count == 2)
 263 |     }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:278:98: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:278:98: warning: will never be executed
 276 |         reviewCheck(newer != nil && h.model.state == .loading)
 277 |         await h.model.read(try reviewRequire(newer))
 278 |         guard case .loaded = h.model.state else { fatalError("final callback lost newer owner"); return }
@@ -97,7 +97,7 @@
 279 |     }
 280 | }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:394:102: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:394:102: warning: will never be executed
 392 |         let last = try reviewRequire(URLComponents(string: "https://synthetic.invalid" + h.paths[1])?.queryItems)
 393 |         reviewCheck(last.count == 1 && last[0].name == "attempt_id" && Data((last[0].value ?? "").utf8) == Data(source.attemptID.utf8))
 394 |         guard case .loaded(let result) = h.model.state else { fatalError("missing explicit status"); return }
@@ -106,7 +106,7 @@
 395 |         reviewCheck(result.confirmedUnits == nil && result.reservedUnits == "999999999999999999999999999999")
 396 |     }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:413:98: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:413:98: warning: will never be executed
 411 |         reviewCheck(try await h.resolve() == nil && h.paths.count == 1)
 412 |         if field == "503" { reviewCheck(h.model.state == .failed(.unavailable)) }
 413 |         else { guard case .failed = h.model.state else { fatalError("bad association accepted"); return } }
@@ -115,7 +115,7 @@
 414 |     }
 415 |     func stagedForeignOrReplacedCanonicalInputCannotBeCaptured() async throws {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:456:99: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:456:99: warning: will never be executed
 454 |         reviewCheck(h.model.state == .loading)
 455 |         await h.model.read(try reviewRequire(inner))
 456 |         if statusStage { guard case .loaded = h.model.state else { fatalError("new status lost"); return } }
@@ -124,7 +124,7 @@
 457 |         else { guard case .sourceReady = h.model.state else { fatalError("new association lost"); return } }
 458 |     }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:457:99: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:457:99: warning: will never be executed
 455 |         await h.model.read(try reviewRequire(inner))
 456 |         if statusStage { guard case .loaded = h.model.state else { fatalError("new status lost"); return } }
 457 |         else { guard case .sourceReady = h.model.state else { fatalError("new association lost"); return } }
@@ -133,7 +133,7 @@
 458 |     }
 459 |     func finalPublicationCallbackCannotOverwriteNewPreparation(_ statusStage: Bool) async throws {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:472:106: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:472:106: warning: will never be executed
 470 |         reviewCheck(inner != nil && h.model.state == .loading)
 471 |         await h.model.read(try reviewRequire(inner))
 472 |         if statusStage { guard case .loaded = h.model.state else { fatalError("final status overwrite"); return } }
@@ -142,7 +142,7 @@
 473 |         else { guard case .sourceReady = h.model.state else { fatalError("final association overwrite"); return } }
 474 |     }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:473:106: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:473:106: warning: will never be executed
 471 |         await h.model.read(try reviewRequire(inner))
 472 |         if statusStage { guard case .loaded = h.model.state else { fatalError("final status overwrite"); return } }
 473 |         else { guard case .sourceReady = h.model.state else { fatalError("final association overwrite"); return } }
@@ -151,7 +151,7 @@
 474 |     }
 475 |     func sourceCannotMoveToAnotherModelOrSurviveInvalidation() async throws {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:521:119: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:521:119: warning: will never be executed
 519 |             await gate.release(try JSONSerialization.data(withJSONObject: ["request_id":h.trace, statusStage ? "attempt" : "association": statusStage ? h.status : h.association]))
 520 |             await old.value
 521 |             if statusStage { guard case .loaded = h.model.state else { fatalError("old body/error overwrote status"); return } }
@@ -160,7 +160,7 @@
 522 |             else { guard case .sourceReady(let current) = h.model.state else { fatalError("old body/error overwrote source"); return }; reviewCheck(current == newSource) }
 523 |         }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:522:127: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:522:127: warning: will never be executed
 520 |             await old.value
 521 |             if statusStage { guard case .loaded = h.model.state else { fatalError("old body/error overwrote status"); return } }
 522 |             else { guard case .sourceReady(let current) = h.model.state else { fatalError("old body/error overwrote source"); return }; reviewCheck(current == newSource) }
@@ -169,7 +169,7 @@
 523 |         }
 524 |     }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:516:111: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:516:111: warning: will never be executed
 514 |             try h.switchSelection(); try h.switchSelection()
 515 |             let next = try h.model.prepareAssociation(try reviewRequire(h.selected)); await h.model.read(next)
 516 |             guard case .sourceReady(let newSource) = h.model.state else { fatalError("new source not ready"); return }
@@ -178,7 +178,7 @@
 517 |             if statusStage { let read = try h.model.prepareStatus(newSource); await h.model.read(read) }
 518 |             if cancel { old.cancel() }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:537:120: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:537:120: warning: will never be executed
 535 |         }
 536 |         let old = try source.map(h.model.prepareStatus) ?? h.model.prepareAssociation(try reviewRequire(h.selected)); await h.model.read(old)
 537 |         if statusStage { guard case .loaded = h.model.state else { fatalError("late credential error cleared status"); return } }
@@ -187,7 +187,7 @@
 538 |         else { guard case .sourceReady = h.model.state else { fatalError("late credential error cleared source"); return } }
 539 |     }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:538:115: warning: will never be executed
+<local>/Documents/Codex/2026-10-21/cj-review/CJ008-client-ae1df69/LongReferenceBoundaryProbe.swift:538:115: warning: will never be executed
 536 |         let old = try source.map(h.model.prepareStatus) ?? h.model.prepareAssociation(try reviewRequire(h.selected)); await h.model.read(old)
 537 |         if statusStage { guard case .loaded = h.model.state else { fatalError("late credential error cleared status"); return } }
 538 |         else { guard case .sourceReady = h.model.state else { fatalError("late credential error cleared source"); return } }

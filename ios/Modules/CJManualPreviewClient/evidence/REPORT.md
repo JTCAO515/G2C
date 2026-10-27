@@ -2,7 +2,7 @@
 
 Task: independent iOS editor/preview slice of original Issue #22, not the complete
 manual-save/lock/feasibility feature. Owner branch `cj/017-manual-preview-client`.
-Repository `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-017-manual-preview-client`.
+Repository `<local>/Documents/Codex/2026-10-21/cj-017-manual-preview-client`.
 Base `33ea117c00f698a29814c60b75337374121f9973`.
 Product source/test commit `e080fb7` (subsequent evidence commit does not change them).
 

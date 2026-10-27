@@ -29,7 +29,7 @@ test_valid_requires_trusted_principal (test_verification_result.VerificationResu
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='str', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -38,7 +38,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='str', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -47,7 +47,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='int', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -56,7 +56,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='int', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -65,7 +65,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='bool', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -74,7 +74,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='bool', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -83,7 +83,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='list', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -92,7 +92,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='list', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -101,7 +101,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='dict', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -110,7 +110,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='dict', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -119,7 +119,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='invalid', value_type='object', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -128,7 +128,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='str', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -137,7 +137,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='str', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -146,7 +146,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='int', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -155,7 +155,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='int', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -164,7 +164,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='bool', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -173,7 +173,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='bool', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -182,7 +182,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='list', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -191,7 +191,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='list', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -200,7 +200,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='dict', empty=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -209,7 +209,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='dict', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised
@@ -218,7 +218,7 @@ AssertionError: ValueError not raised
 FAIL: test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types (test_verification_result.VerificationResultTests.test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types) (status='unknown', value_type='object', empty=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
+  File "<local>/Documents/Codex/2026-10-21/cj-007-auth/backend/auth/tests/test_verification_result.py", line 16, in test_nonvalid_requires_exact_none_for_empty_nonempty_and_wrong_types
     with self.assertRaises(ValueError):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 AssertionError: ValueError not raised

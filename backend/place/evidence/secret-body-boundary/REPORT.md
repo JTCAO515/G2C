@@ -28,7 +28,7 @@ usage/dispatch authority are unchanged. Supported profile/limitations updated in
 
 The original file is copied byte-for-byte to
 backend/place/tests/secret_echo_checks.py and cmp-verified against:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-012-https-transport/secret_echo_checks.py`.
+`<local>/Documents/Codex/2026-10-21/cj-testing/CJ-012-https-transport/secret_echo_checks.py`.
 Its original secret-echo-probes.log remains untouched. Both tests use the actual
 private TLS response/transport boundary, not only a direct helper call.
 

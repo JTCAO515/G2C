@@ -2,7 +2,7 @@
 
 Fixed base: `8f2ff45519d1d09f178f1fa766b6829d81bda77a`.
 Candidate: the local commit containing this report; independent Review/Testing pending.
-Branch: `cj/013-needs`; clone: `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs`.
+Branch: `cj/013-needs`; clone: `<local>/Documents/Codex/2026-10-21/cj-013-needs`.
 Only `backend/needs/**` and `contracts/needs/**` changed. No source-tree mutation,
 root migration/lock/API/UI edits, push, PR, merge, deployment or Issue closure.
 

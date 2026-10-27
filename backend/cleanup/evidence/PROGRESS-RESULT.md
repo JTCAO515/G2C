@@ -4,15 +4,15 @@ Date2026-10-23 Asia/Shanghai. Base08358f79921b8a3102a2be73b40f7c9e56d5dd80 prese
 
 ## Accepted dependency prep, unchanged
 
-AUTH source8b6abb236cf10c1865a9cc8c6155bd8ac732c07e, public CJ-AUTH-READ-CONTEXT@0.1.0-rc.1; git archive original backend/auth to ignored task-owned .local/auth8b. Existing main source path read-only: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-publish/Go2China. Four actual imported canonical files (__init__/interfaces/admission/read_context) were byte-compared to git show of the exact source, SHA256 in progress-auth-pin.json. No substitute AUTH implementation or committed vendored AUTH; original branch AUTH files untouched.
+AUTH source8b6abb236cf10c1865a9cc8c6155bd8ac732c07e, public CJ-AUTH-READ-CONTEXT@0.1.0-rc.1; git archive original backend/auth to ignored task-owned .local/auth8b. Existing main source path read-only: <local>/Documents/Codex/2026-10-21/cj-publish/Go2China. Four actual imported canonical files (__init__/interfaces/admission/read_context) were byte-compared to git show of the exact source, SHA256 in progress-auth-pin.json. No substitute AUTH implementation or committed vendored AUTH; original branch AUTH files untouched.
 
 Runtime uses actual canonical AdmissionChecker+ProtectedReadBoundary; verifier/access facts are explicit synthetic test inputs, not real token/provider verification. Lifetime/reentry/identity authority remains original AUTH. Dependencies Python3.14, installed psycopg3.2.10 read-only, installed PostgreSQL16.15; no installation/new network calls.
 
 ## Resource before creation / after stop
 
 Before creation verified both new roots absent, no /tmp same-port socket and no TCP55459 listener; announced exact paths/roles before startup:
-- data /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-progress-20261023/data
-- socket /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24p
+- data <local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-progress-20261023/data
+- socket <local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24p
 - Unix55459, bootstrap/test rolecj024progress, SELECT-only rolecj024progress_read.
 
 New empty public schema verified, sole candidate cleanup table applied; new nonsuperuser/no bypass role granted SELECT only on that candidate table. has_table_privilege actual flags SELECT=true, INSERT/UPDATE/DELETE=false. No policy/permission change to any existing instance. Explicit empty passfile, PG/LIBPQ ambient cleared, explicit host/port/user/database kwargs, no ambientDSN. SHOW listen_addresses empty verified, host auth reject. No old55457/55458/Testing instance opened/restarted.
@@ -34,7 +34,7 @@ New55459 instance started once/stopped once. pg_ctl final readback: no server ru
 
 Reproduction (only newly authorized absent roots; current runner intentionally refuses preserved paths):
 ```sh
-/opt/homebrew/bin/python3.14 backend/cleanup/tests/private_progress_pg.py --pg-bin /opt/homebrew/opt/postgresql@16/bin --driver /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-pg/driver --auth-root /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/auth8b/backend/auth
+/opt/homebrew/bin/python3.14 backend/cleanup/tests/private_progress_pg.py --pg-bin /opt/homebrew/opt/postgresql@16/bin --driver <local>/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-pg/driver --auth-root <local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/auth8b/backend/auth
 ```
 
 ## Explicit incomplete gates

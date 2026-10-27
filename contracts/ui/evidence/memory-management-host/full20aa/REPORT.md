@@ -9,7 +9,7 @@ remain preserved in history and p2/.
 
 ## Actual complete graph
 
-`python3 scripts/prepare_memory_management_host.py /Users/jtsm5p/Documents/Codex/2026-10-21 --full`
+`python3 scripts/prepare_memory_management_host.py <local>/Documents/Codex/2026-10-21 --full`
 exports `.local/memory-management-host/a74b83a198f64e0d` using exact Git objects:
 
 | Module | Fixed commit |

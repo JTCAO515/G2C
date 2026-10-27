@@ -42,10 +42,10 @@
   "prepared_graph": {
     "status": "PASS",
     "logical_sdk_paths": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/.build/dc29-validation/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+      "<local>/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/.build/dc29-validation/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
     ],
     "physical_sdk_paths": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+      "<local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
     ],
     "sdk_copied": false
   },

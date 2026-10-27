@@ -4,7 +4,7 @@ Status: **CODE_READY, author checks PASS, independent Review/Testing PENDING**.
 Issue 13 remains open; this does not claim full PLACE@1.0 or real-service acceptance.
 
 - Owner scope: `backend/place/**`, `contracts/place/**` only.
-- Repository: `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-012-place`.
+- Repository: `<local>/Documents/Codex/2026-10-21/cj-012-place`.
 - Branch: `cj/012-place`.
 - Fixed base: `8deb696f8149b4f5aa70c767be6c3a263b036227`.
 - Fixed source/public-contract head: `dd4c375a731bbaef1d436bc3e88466040ac02294`.

@@ -22,14 +22,14 @@ test_original_row_bytes_and_rebuild_conflicts (__main__.BindingPgTests.test_orig
 ERROR: test_original_row_bytes_and_rebuild_conflicts (__main__.BindingPgTests.test_original_row_bytes_and_rebuild_conflicts)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/pg_binding_checks.py", line 46, in test_original_row_bytes_and_rebuild_conflicts
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/pg_binding_checks.py", line 46, in test_original_row_bytes_and_rebuild_conflicts
     with self.assertRaises(ValueError): self.adapter(replace(self.command,run_id='other'))
                                         ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/pg_binding_checks.py", line 32, in adapter
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/pg_binding_checks.py", line 32, in adapter
     return SyntheticFirstStep(run or self.run,self.meter,original_binding=self.b,original_command=command or self.command,
                               original_input_bytes=self.raw if raw is None else raw,
                               synthetic_executor=lambda c:self.calls.append(c))
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run/backend/run/cj_run/usage_fixture.py", line 31, in __init__
+  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/cj_run/usage_fixture.py", line 31, in __init__
     raise Conflict('fixed original fixture binding required')
 cj_run.core.Conflict: fixed original fixture binding required
 

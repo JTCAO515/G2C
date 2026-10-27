@@ -4,7 +4,7 @@
 
 固定源码 `ce7dd19880dffd7bc281ebb415ea71f3b4c8cd57`，base
 `b66b0c487a54f519f7b6a7f661171705b634e717`。最终候选 HEAD 是只新增本目录证据的后续提交。
-root `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility-shell`，
+root `<local>/Documents/Codex/2026-10-21/cj-035-feasibility-shell`，
 branch `cj/035-feasibility-shell`。Main 的 HANDOFF 和 Issue18/7 已读，只读未改。
 
 ## 接线与安全边界

@@ -3,7 +3,7 @@
 Scope: NEEDS-first deterministic slice, not Issue 18 closure. All data synthetic.
 Base: `8deb696f8149b4f5aa70c767be6c3a263b036227`.
 Branch: `cj/035-feasibility`.
-Owner tree: `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility`.
+Owner tree: `<local>/Documents/Codex/2026-10-21/cj-035-feasibility`.
 Only `backend/feasibility/**` and `contracts/feasibility/**` changed.
 
 ## Source and boundary checks

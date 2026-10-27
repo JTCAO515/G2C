@@ -56,8 +56,8 @@ private databases, not runtime domain writing.
 Let INPUT_EXPORT point to exact fixed NEEDS + AUTH8b export; from repository root:
 
 ```sh
-PYTHONPATH="$INPUT_EXPORT/backend/auth:$INPUT_EXPORT/backend/needs:backend/feasibility:backend/feasibility/tests" PYTHONDONTWRITEBYTECODE=1 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.venv/bin/python -B -m unittest test_current_read.PrivateReadTests -v
-PYTHONPATH="$INPUT_EXPORT/backend/auth:$INPUT_EXPORT/backend/needs:backend/feasibility:backend/feasibility/tests" PYTHONDONTWRITEBYTECODE=1 CJ035_RUN_SEAM_PROBES=1 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.venv/bin/python -B -m unittest test_current_read.UpstreamSeamProbes.test_close_failure_must_not_release_bytes test_current_read.UpstreamSeamProbes.test_environment_rebind_on_close_must_not_release_bytes -v
+PYTHONPATH="$INPUT_EXPORT/backend/auth:$INPUT_EXPORT/backend/needs:backend/feasibility:backend/feasibility/tests" PYTHONDONTWRITEBYTECODE=1 <local>/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.venv/bin/python -B -m unittest test_current_read.PrivateReadTests -v
+PYTHONPATH="$INPUT_EXPORT/backend/auth:$INPUT_EXPORT/backend/needs:backend/feasibility:backend/feasibility/tests" PYTHONDONTWRITEBYTECODE=1 CJ035_RUN_SEAM_PROBES=1 <local>/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.venv/bin/python -B -m unittest test_current_read.UpstreamSeamProbes.test_close_failure_must_not_release_bytes test_current_read.UpstreamSeamProbes.test_environment_rebind_on_close_must_not_release_bytes -v
 ```
 
 Second command intentionally reproduces two FAIL, not a passing acceptance suite.

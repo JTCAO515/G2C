@@ -141,7 +141,7 @@
       "ios/Tests/CJAPITests/ContractTests.swift": "dd16b31dac10eeb1459d5263b69a824404546e7dec4c682ab612c371c8e07cac"
     }
   },
-  "snapshot": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/f87-pin/snapshot",
+  "snapshot": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/f87-pin/snapshot",
   "remaining_original_tree_graph": {
     "state": "UNRUN",
     "reason": "sibling CJMessageClient remains33; Main/shared owner must integrate5075 and prepare canonical f87 export; no sibling write authorized"

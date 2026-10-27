@@ -1,4 +1,4 @@
-Private graph: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed
+Private graph: <local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed
 Command: swift test --package-path Modules/CJMemoryClient --scratch-path artifacts/swift-build --force-resolved-versions --filter officialDateDecoderAndKeysetPage|nonNullMalformedReceiptIsNotAbsence|serverOpaqueIDsAreReadableWithoutUUIDNarrowing|pauseResumeAndHistoricalQueryNeverRollbackCurrentRead|defaultPublicManagementIsUnavailableBeforeCredentialsOrJournal|liveWriteIsUnavailableBeforeStorageAndCredentials
 Build complete! (26.10秒)
 ◇ Test run started.

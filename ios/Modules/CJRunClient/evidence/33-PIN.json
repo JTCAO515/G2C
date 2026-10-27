@@ -17,7 +17,7 @@
   },
   "transport_unchanged_sha256": "fe1b002d25e56290e7518b96110ff5a17440d304436bfca4842a4a4be6c76472",
   "unique_cjfoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJMessageClient/.generated/33cec5ba71d74820cb0acd3c89ecbe39ba125590/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJMessageClient/.generated/33cec5ba71d74820cb0acd3c89ecbe39ba125590/CJFoundation"
   ],
   "trip_dependency_present": false,
   "unchanged_business_sources_tests_lock_sha256": {

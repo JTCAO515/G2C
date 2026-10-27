@@ -1,5 +1,5 @@
-warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
-warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
 Fetching https://github.com/pointfreeco/swift-issue-reporting
 Fetching https://github.com/apple/swift-crypto.git
 Fetching https://github.com/pointfreeco/swift-clocks

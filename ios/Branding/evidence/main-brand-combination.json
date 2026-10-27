@@ -13,5 +13,5 @@
     "ios/Modules/CJMessageClient/evidence/key-dependency-provenance.json"
   ],
   "excluded_ui_commit": "6773cb9e549dbd33a73d566613b99095ce75730a",
-  "validation_worktree": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-brand-001/.local/main-brand-validation"
+  "validation_worktree": "<local>/Documents/Codex/2026-10-21/cj-brand-001/.local/main-brand-validation"
 }

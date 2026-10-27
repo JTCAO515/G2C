@@ -15,9 +15,9 @@ test_snapshot_append_and_generation_epoch_scope_fences (test_message.DomainTests
 ERROR: test_autocommit_rejected_and_scope_parameterized (test_message.AdapterTests)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/backend/message/tests/test_message.py", line 183, in test_autocommit_rejected_and_scope_parameterized
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/backend/message/tests/test_message.py", line 183, in test_autocommit_rejected_and_scope_parameterized
     Transaction(c, attack).find(attack)
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/backend/message/cj_message/postgres.py", line 58, in find
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/backend/message/cj_message/postgres.py", line 58, in find
     return Stored(bytes(row[0]), Receipt(*row[1:])) if row else None
 TypeError: string argument without an encoding
 

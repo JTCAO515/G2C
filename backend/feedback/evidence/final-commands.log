@@ -6,7 +6,7 @@ The default text search configuration will be set to "english".
 
 Data page checksums are disabled.
 
-creating directory /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-7rzb5yv4/data ... ok
+creating directory <local>/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-7rzb5yv4/data ... ok
 creating subdirectories ... ok
 selecting dynamic shared memory implementation ... posix
 selecting default max_connections ... 100
@@ -19,7 +19,7 @@ syncing data to disk ... ok
 
 Success. You can now start the database server using:
 
-    '/opt/homebrew/Cellar/postgresql@16/16.15/bin/pg_ctl' -D /Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-7rzb5yv4/data -l logfile start
+    '/opt/homebrew/Cellar/postgresql@16/16.15/bin/pg_ctl' -D <local>/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-7rzb5yv4/data -l logfile start
 
 waiting for server to start.... done
 server started

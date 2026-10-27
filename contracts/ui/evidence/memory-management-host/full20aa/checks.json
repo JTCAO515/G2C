@@ -2,80 +2,80 @@
   "repair_head": "58c68ae2b078ebfd3cf3b800cd7e9a032ad8f1d5",
   "source_graph": "a74b83a198f64e0d",
   "scope": "complete canonical CJShell source/dependency graph, not real App runtime",
-  "sdk": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation",
+  "sdk": "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation",
   "unique_package_paths": true,
   "identities": {
     "cjshell": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJShell"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJShell"
     ],
     "cjauth": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJAuth"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJAuth"
     ],
     "supabase-swift": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/supabase-swift"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/supabase-swift"
     ],
     "swift-crypto": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-crypto"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-crypto"
     ],
     "swift-asn1": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-asn1"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-asn1"
     ],
     "swift-http-types": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-http-types"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-http-types"
     ],
     "swift-clocks": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-clocks"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-clocks"
     ],
     "swift-concurrency-extras": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-concurrency-extras"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-concurrency-extras"
     ],
     "swift-issue-reporting": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-issue-reporting"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-issue-reporting"
     ],
     "xctest-dynamic-overlay": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/xctest-dynamic-overlay"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/xctest-dynamic-overlay"
     ],
     "cjmemoryclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJMemoryClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJMemoryClient"
     ],
     "cjfoundation": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
     ],
     "swift-openapi-runtime": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-openapi-runtime"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-openapi-runtime"
     ],
     "swift-openapi-urlsession": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-openapi-urlsession"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-openapi-urlsession"
     ],
     "swift-collections": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-collections"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/full-graph-read/checkouts/swift-collections"
     ],
     "cjmessageclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJMessageClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJMessageClient"
     ],
     "cjtripclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJTripClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJTripClient"
     ],
     "cjmanualpreviewclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJManualPreviewClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJManualPreviewClient"
     ],
     "cjneedsclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJNeedsClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJNeedsClient"
     ],
     "cjfeedbackclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJFeedbackClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJFeedbackClient"
     ],
     "cjrunclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJRunClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJRunClient"
     ],
     "cjusageclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJUsageClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJUsageClient"
     ],
     "cjofflinetrip": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJOfflineTrip"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJOfflineTrip"
     ],
     "cjcleanupclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJCleanupClient"
+      "<local>/Documents/Codex/2026-10-21/cj-019-memory-shell/.local/memory-management-host/a74b83a198f64e0d/Modules/CJCleanupClient"
     ]
   },
   "resolved_versions": {

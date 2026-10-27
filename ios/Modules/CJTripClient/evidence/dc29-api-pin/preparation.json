@@ -2,7 +2,7 @@
   "base": "b3485ef02bbe4cc9bfcebfc1f9c61a1a67670ce5",
   "shared_owner": "9b4852dfad418d124d60366ada8efb380a8ffc1d",
   "api": "dc29bb3634e63d8f065c38d39a7a0059f76cfa53",
-  "assembly": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/dc29-pin-validation/assembly",
+  "assembly": "<local>/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/dc29-pin-validation/assembly",
   "candidate_package_sha256": "e5e565469dc38be842a2670dc6e9a54220c4bab03f9d58db8bea04d5a6c42ce9",
   "sdk_files_exact": {
     "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
@@ -98,6 +98,6 @@
     "ios/Modules/CJMessageClient/Tests/CJMessageHTTPTests/UsageStatusExportTests.swift": "5d2088a9676f3a9be2a3ee771c98ccb610036589155d28c8b941b28721e636ef",
     "ios/Modules/CJMessageClient/Tests/ProcessProbe/main.swift": "1325b380d74cc6234c6769f5a93d46fe27ea3c523a7f8468d98d8ee115944f83"
   },
-  "writes_only_under": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build",
+  "writes_only_under": "<local>/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build",
   "original_tree_graph": "UNRUN: sibling still33 and dc29 export absent"
 }

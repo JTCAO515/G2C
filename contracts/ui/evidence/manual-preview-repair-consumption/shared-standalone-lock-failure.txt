@@ -1,5 +1,5 @@
-warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
-warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
 Fetching https://github.com/apple/swift-openapi-runtime from cache
 Fetching https://github.com/apple/swift-openapi-urlsession from cache
 Fetching https://github.com/apple/swift-http-types from cache
@@ -16,4 +16,4 @@ Working copy of https://github.com/apple/swift-openapi-urlsession resolved at 1.
 Working copy of https://github.com/apple/swift-openapi-runtime resolved at 1.13.3
 Working copy of https://github.com/apple/swift-http-types resolved at 1.8.0
 Working copy of https://github.com/apple/swift-collections resolved at 1.7.3
-error: an out-of-date resolved file was detected at /Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/Package.resolved, which is not allowed when automatic dependency resolution is disabled; please make sure to update the file to reflect the changes in dependencies. Running resolver because the following dependencies were added: 'supabase-swift' (https://github.com/supabase/supabase-swift)
+error: an out-of-date resolved file was detected at <local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/Package.resolved, which is not allowed when automatic dependency resolution is disabled; please make sure to update the file to reflect the changes in dependencies. Running resolver because the following dependencies were added: 'supabase-swift' (https://github.com/supabase/supabase-swift)

@@ -29,7 +29,7 @@
   "old_f87_paths_unchanged": 26,
   "old_f87_schemas_unchanged": 93,
   "isolated_fixture_unique_cjfoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJRunClient/.build/20AA-pin-evidence/fixture/ios/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJRunClient/.build/20AA-pin-evidence/fixture/ios/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
   ],
   "actual_original_tree_graph": "UNRUN: sibling CJMessageClient still33; no20aa export in original sibling; full App graph belongs to host owner",
   "raw_evidence": {

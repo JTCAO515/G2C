@@ -584,11 +584,11 @@
   ],
   "input_files": {
     "scenarios": {
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-028-evaluation/evaluation/cj028/fixtures/synthetic-plan.json",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-028-evaluation/evaluation/cj028/fixtures/synthetic-plan.json",
       "sha256": "ea0ee4fe2a24e109c007708323197dd6f11b76a9c71432c372b2ea926937680b"
     },
     "observations": {
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-028-evaluation/evaluation/cj028/fixtures/synthetic-observations.json",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-028-evaluation/evaluation/cj028/fixtures/synthetic-observations.json",
       "sha256": "04f8781fbe27e718b71cc5cefd4a25f0f27cd19576652d1bd5a6dc86e2ba5848"
     }
   }

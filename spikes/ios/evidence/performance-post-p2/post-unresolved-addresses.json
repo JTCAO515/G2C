@@ -5,7 +5,7 @@
     "UUID": "DC77E156-7E16-38C4-88E6-1E683DD7BAD6",
     "arch": "arm64",
     "load-addr": "0x1043dc000",
-    "path": "/Users/jtsm5p/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data/Containers/Bundle/Application/6712A32E-45B8-47BB-A9E4-785D65115C67/CJIOSSpike.app/CJIOSSpike"
+    "path": "<local>/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data/Containers/Bundle/Application/6712A32E-45B8-47BB-A9E4-785D65115C67/CJIOSSpike.app/CJIOSSpike"
   },
   "entries": [
     {

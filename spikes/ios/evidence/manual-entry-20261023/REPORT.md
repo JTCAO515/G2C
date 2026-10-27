@@ -6,7 +6,7 @@
 
 - Available runtime inventory remains iOS17.5 and26.5; no18. Own26 device `B80AD40D-F779-4FE3-A36D-CFD4C4A19D83` remains Shutdown. Current preflight exits0 and verifies source, cached app and installed binary hashes. Full preflight exits4 for missing18 runtime/approved18 target. Both JSON files have empty `side_effects`.
 - `simctl get_app_container` on Shutdown returns SimError405, “Unable to lookup in current state: Shutdown”. This is a query limitation, not a missing-build conclusion. The helper reads only the validated device's bundle metadata and binary hash instead; no boot/reinstall is used to answer preflight.
-- Data volume `df -h /Users/jtsm5p/Documents`: 926Gi size,885Gi used,13Gi available,99% capacity. This is a snapshot, not a guarantee that download+staging+installed18 fits. Do not delete old runtimes/caches automatically.
+- Data volume `df -h <local>/Documents`: 926Gi size,885Gi used,13Gi available,99% capacity. This is a snapshot, not a guarantee that download+staging+installed18 fits. Do not delete old runtimes/caches automatically.
 - Bounded cache inspection used `find -maxdepth 4` under `/Library/Developer`, `~/Library/Caches/com.apple.dt.Xcode`, `~/Downloads`, then maxdepth5 under `/Library/Developer/CoreSimulator`, `/Library/Developer/Packages`, `~/Library/Developer/Packages` and the same cache/download roots, matching `*iOS*18*`, `*simruntime*`, `*simulator*18*`. Only17.5/26.5 dyld entries were found; both Packages directories do not exist. No18 cache was found in those locations; this is not an exhaustive whole-disk absence claim.
 
 ## Official technical preparation route — Main owns execution after JT confirmation

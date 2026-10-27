@@ -8,7 +8,7 @@ Python package installed ONLY into `.local-pg-01/venv`. No global installation.
 ## Exact target and isolation
 
 New previously nonexistent directory:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/backend/message/.local-pg-01`.
+`<local>/Documents/Codex/2026-10-21/cj-009-message/backend/message/.local-pg-01`.
 Private parent/socket directory mode 0700; data under `data`; only socket under `s`,
 port identifier 55439, explicit user `cj009`, database `postgres` in this NEW cluster.
 `listen_addresses=''`, socket mode 0700. No TCP listener, launchd or system changes.

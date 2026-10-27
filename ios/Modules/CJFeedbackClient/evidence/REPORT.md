@@ -1,7 +1,7 @@
 # CJ023 Feedback client — local candidate evidence
 
 2026-10-22, owner branch `cj/023-feedback-client`, isolated clone
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client`.
+`<local>/Documents/Codex/2026-10-21/cj-023-feedback-client`.
 Base **eeb9b9cdf11ff619494a7afd5cbef2833501df7d**. Separate original dependency
 preparation commits **888a402** and **c755f9f8bb405e89ff458939ac4608fd52ceb1b8**;
 product diff begins at the latter and is restricted to `ios/Modules/CJFeedbackClient/**`.
@@ -30,7 +30,7 @@ No generic intermediary, second SDK, handwritten wire/date codec or key provider
 Toolchain: Xcode27.1 (27A9275), Apple Swift6.4. iOS17/macOS14 module minimums.
 Working directory is clone root except xcodebuild (module directory).
 
-1. `python3 ios/Modules/CJMessageClient/scripts/prepare_generated.py /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation`
+1. `python3 ios/Modules/CJMessageClient/scripts/prepare_generated.py <local>/Documents/Codex/2026-10-21/cj-005-foundation`
    PASS: existing script exported16 unchanged official files. This ignored export
    is not another generated source tree committed by this module.
 2. `swift test --package-path ios/Modules/CJFeedbackClient`

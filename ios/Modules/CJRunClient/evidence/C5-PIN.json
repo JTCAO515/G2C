@@ -13,7 +13,7 @@
   "official_export_files_verified": 16,
   "old_c02_export_files_unchanged": 16,
   "unique_cjfoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation"
   ],
   "business_sources_tests_lock_unchanged_sha256": {
     "ios/Modules/CJRunClient/Package.resolved": "7e6dd3b7c965cb7444c96f9c4ee09d09b73ee12713d5a1cded28700982f3564c",

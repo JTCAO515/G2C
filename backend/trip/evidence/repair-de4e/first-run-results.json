@@ -1,5 +1,5 @@
 {
-  "private": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-c2f4a194e9",
+  "private": "<local>/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-c2f4a194e9",
   "socket": "/private/tmp/cj015-owner-repair-961d2a43f9",
   "port": 55435,
   "postgres": "17.11",
@@ -7,7 +7,7 @@
   "identity": [
     "cj015_private",
     "cj015_test",
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-c2f4a194e9/data",
+    "<local>/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-c2f4a194e9/data",
     "",
     "/private/tmp/cj015-owner-repair-961d2a43f9"
   ],
@@ -47,8 +47,8 @@
   "postmaster_pid_absent": true,
   "sockets_absent": true,
   "modes": {
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-c2f4a194e9": "0o700",
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-c2f4a194e9/data": "0o700",
+    "<local>/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-c2f4a194e9": "0o700",
+    "<local>/Documents/Codex/2026-10-21/cj-015-trip/backend/trip/evidence/repair-de4e/private-pg-c2f4a194e9/data": "0o700",
     "/private/tmp/cj015-owner-repair-961d2a43f9": "0o700"
   }
 }

@@ -4,7 +4,7 @@ Product source base `312a69caf0bd97ed65679cfd8ff049972c212cef`; final test-only 
 
 ## Exact environment and first connection
 
-New previously nonexistent `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-pg`, parent/socket mode0700, data retained under `data`, explicit bootstrap role cj005/database postgres. PostgreSQL16.15 Homebrew, Python3.14.7, test-only psycopg3.2.10 pure Python target-installed inside this private directory; no root lock/global dependency/service config change. Blank task pgpass and explicit connection arguments; inherited PG*/DATABASE_URL/CJ_DATABASE_URL are refused, never used or printed.
+New previously nonexistent `<local>/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-pg`, parent/socket mode0700, data retained under `data`, explicit bootstrap role cj005/database postgres. PostgreSQL16.15 Homebrew, Python3.14.7, test-only psycopg3.2.10 pure Python target-installed inside this private directory; no root lock/global dependency/service config change. Blank task pgpass and explicit connection arguments; inherited PG*/DATABASE_URL/CJ_DATABASE_URL are refused, never used or printed.
 
 Actual guard query checked data_directory, `listen_addresses=''`, private Unix socket directory and current_user before applying schema. PostgreSQL TCP is disabled; socket identifier55445 only. Real HTTP origin was `http://127.0.0.1:49864`, prebound port0 socket handed to uvicorn, proxy headers/access log disabled. No public listener or target endpoint involved.
 

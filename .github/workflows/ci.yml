@@ -1,0 +1,100 @@
+# Minimal CI per ADR-0004 (P0). Blocking jobs cover suites that pass portably on main.
+# The known-failing job is informational until P1 (pin removal, single package, migrations).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CJ_ENV: local
+  PYTHONDONTWRITEBYTECODE: "1"
+  # P0 only: domain test extras not yet in the root lock (consolidated in P1).
+  CI_EXTRA_PY: psycopg[binary]==3.2.13 ortools==9.15.6755
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Install locked dependencies
+        run: |
+          uv sync --locked
+          uv pip install $CI_EXTRA_PY
+      - name: Root API tests
+        run: PYTHONPATH="$PWD/backend:$PWD/backend/auth:$PWD/backend/message" uv run --no-sync pytest -q backend/tests
+      - name: Domain module tests
+        run: |
+          ALL=$(ls -d "$PWD"/backend/*/ | tr '\n' ':')
+          for d in draft fact feedback manual_edit memory_jobs memory_withdrawal message place run usage; do
+            echo "::group::backend/$d"
+            (cd "backend/$d" && PYTHONPATH="$PWD:$GITHUB_WORKSPACE/backend:$ALL" uv run --no-sync --project "$GITHUB_WORKSPACE" pytest -q tests)
+            echo "::endgroup::"
+          done
+      - name: Evaluation and ops tests
+        run: |
+          (cd evaluation/cj028 && PYTHONPATH=. uv run --no-sync --project "$GITHUB_WORKSPACE" pytest -q tests)
+          (cd ops/recovery-preflight && uv run --no-sync --project "$GITHUB_WORKSPACE" pytest -q .)
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Validate OpenAPI contract
+        run: uv run --no-sync openapi-spec-validator contracts/api/openapi.json
+
+  swift:
+    # Locked Swift packages need Swift tools 6.4; use the newest runner image and Xcode.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          swift --version
+      - name: Build CJAPI client target (blocking)
+        working-directory: ios
+        run: swift build --target CJAPI
+      - name: Full package tests (informational until P1)
+        # CJProbeUI fails on macOS: nested `enum State` shadows SwiftUI `@State` (ProbeView.swift).
+        working-directory: ios
+        run: |
+          swift test || echo "::warning::known-failing: ios swift test (ProbeView State shadowing)"
+
+  known-failing:
+    # Informational: tracks suites that fail on main for known reasons (see docs/handoff.json).
+    # Always exits 0; each failing suite is reported as a warning annotation.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - run: |
+          uv sync --locked
+          uv pip install $CI_EXTRA_PY
+      - name: Run known-failing suites without blocking
+        run: |
+          ALL=$(ls -d "$PWD"/backend/*/ | tr '\n' ':')
+          PYTHONPATH="$PWD/backend:$PWD/backend/auth:$PWD/backend/message" uv run --no-sync python -B -m unittest discover -s backend/cj_api/tests \
+            || echo "::warning::known-failing: backend/cj_api/tests"
+          for d in auth cleanup feasibility needs trip; do
+            echo "::group::backend/$d"
+            (cd "backend/$d" && PYTHONPATH="$PWD:$GITHUB_WORKSPACE/backend:$ALL" uv run --no-sync --project "$GITHUB_WORKSPACE" pytest -q tests) \
+              || echo "::warning::known-failing: backend/$d"
+            echo "::endgroup::"
+          done

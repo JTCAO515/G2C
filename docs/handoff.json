@@ -1,16 +1,16 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T03:00:00Z",
+  "lastUpdated": "2026-10-27T04:00:00Z",
   "currentPhase": "P0-repo-hygiene",
   "status": "active",
   "objective": "Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green.",
   "acceptedIssue": "CJ-005 (https://github.com/JTCAO515/G2C/issues/5); P0 scope per docs/dispatch/P0-repo-hygiene.md",
   "owner": "JT (operator); Claude architecture/review; Codex implementation",
-  "fromAgent": "Claude (architecture review, 2026-10-27)",
-  "intendedNextAgent": "Codex",
+  "fromAgent": "Claude (executing P0 at JT request; Codex paused)",
+  "intendedNextAgent": "Claude or Codex (P1), per JT",
   "activeWork": [
-    "P0 repo hygiene and minimal CI: docs/dispatch/P0-repo-hygiene.md (not started)"
+    "P0 repo hygiene and minimal CI on branch chore/p0-repo-hygiene (PR pending)."
   ],
   "assumptions": [
     "Static review only at main 8fac0dff5e50ce08c277b65f7322a4ea64d77e65; pytest and swift test were not run (UNRUN).",
@@ -32,67 +32,112 @@
   ],
   "changedFiles": [
     {
-      "path": "docs/adr/0004-delivery-flow-and-repo-hygiene.md",
-      "reason": "Mark accepted and record JT decisions of 2026-10-27."
+      "path": ".github/workflows/ci.yml",
+      "reason": "Minimal CI: blocking python, contracts and swift jobs; informational known-failing job."
     },
     {
-      "path": "docs/adr/README.md",
-      "reason": "ADR-0004 status accepted."
+      "path": ".gitignore",
+      "reason": "Stop adding evidence logs, archives and recordings."
     },
     {
-      "path": "docs/scope.md",
-      "reason": "City, minimum iOS and login rows confirmed per ADR-0004."
+      "path": "README.md",
+      "reason": "Current status and local check commands."
     },
     {
-      "path": "docs/dispatch/P0-repo-hygiene.md",
-      "reason": "Reflect accepted decisions; P1 next."
+      "path": "AGENTS.md",
+      "reason": "Repository-only entry point and ADR-0004 working rules."
     },
     {
-      "path": "docs/handoff.json",
-      "reason": "Decisions accepted, blockers cleared."
+      "path": "docs/engineering.md",
+      "reason": "ADR-0004 supersession note, local handoff path, tooling status rows."
     },
     {
-      "path": "HANDOFF.md",
-      "reason": "Rendered from docs/handoff.json."
+      "path": "docs/**/*.md",
+      "reason": "Issue links moved from JTCAO515/Go2China to JTCAO515/G2C."
+    },
+    {
+      "path": "545 text files (*.md and evidence/**/*.json|txt|log)",
+      "reason": "/Users/jtsm5p replaced with <local>; files whose sha256 or git blob hash is referenced anywhere in the repo were skipped (66), as were 7 non-evidence source files."
+    },
+    {
+      "path": "docs/handoff.json, HANDOFF.md",
+      "reason": "P0 state."
     }
   ],
   "verification": [
     {
-      "command": "python3 -m json.tool docs/handoff.json",
+      "command": "pytest -q backend/tests",
       "status": "pass",
-      "summary": "handoff.json is valid JSON.",
+      "summary": "4 passed (local, Python 3.14.7).",
       "artifact": null
     },
     {
-      "command": "node ~/.claude/skills/jtcoding-skills/scripts/handoff.js check --project .",
+      "command": "pytest -q tests in backend/{draft,fact,feedback,manual_edit,memory_jobs,memory_withdrawal,message,place,run,usage}",
       "status": "pass",
-      "summary": "Schema valid and HANDOFF.md current at authoring time.",
-      "artifact": "HANDOFF.md"
-    },
-    {
-      "command": "git diff --stat origin/main -- backend ios spikes contracts pyproject.toml uv.lock",
-      "status": "pass",
-      "summary": "No business code changed by this PR.",
+      "summary": "All pass locally (feedback 41 skipped without PostgreSQL); identical before and after path replacement.",
       "artifact": null
     },
     {
-      "command": "CJ_ENV=local uv run pytest -q backend/tests backend/cj_api/tests",
+      "command": "pytest evaluation/cj028/tests and ops/recovery-preflight",
+      "status": "pass",
+      "summary": "35 and 15 passed.",
+      "artifact": null
+    },
+    {
+      "command": "openapi-spec-validator contracts/api/openapi.json",
+      "status": "pass",
+      "summary": "OK.",
+      "artifact": null
+    },
+    {
+      "command": "swift test (ios root package)",
+      "status": "fail",
+      "summary": "CI macos-26 newest Xcode: toolchain OK; build fails in ios/Sources/CJProbeUI/ProbeView.swift — nested `enum State` shadows SwiftUI `@State` ('enum State cannot be used as an attribute'). Source fix is P1; CI blocks only on `swift build --target CJAPI`.",
+      "artifact": null
+    },
+    {
+      "command": "unittest discover -s backend/cj_api/tests",
+      "status": "fail",
+      "summary": "40 tests, 33 errors: CompositionUnavailable 'Pinned internal dependency content mismatch' (sibling sources differ from pinned hashes on main). P1 removes pins.",
+      "artifact": null
+    },
+    {
+      "command": "pytest backend/auth/tests",
+      "status": "fail",
+      "summary": "1 failed: test needs git object 8b6abb236cf10c1865a9cc8c6155bd8ac732c07e, absent from the repository.",
+      "artifact": null
+    },
+    {
+      "command": "pytest backend/cleanup/tests",
+      "status": "fail",
+      "summary": "2 failed: AssertionError 23 != 21.",
+      "artifact": null
+    },
+    {
+      "command": "pytest backend/{needs,trip,feasibility}/tests",
+      "status": "blocked",
+      "summary": "Need local PostgreSQL 17 installation or TRIP_TEST_SOCKET; errors without it.",
+      "artifact": null
+    },
+    {
+      "command": "backend/{memory,memory_management} *_checks.py",
       "status": "not-run",
-      "summary": "Not run during review; to be established by P0 CI.",
+      "summary": "Custom check scripts, not pytest-discoverable; fold into CI in P1.",
       "artifact": null
     },
     {
-      "command": "swift test (ios/Modules/CJShell)",
+      "command": "GitHub Actions ci.yml",
       "status": "not-run",
-      "summary": "Not run during review; to be attempted in P0 CI.",
+      "summary": "Result to be read from the P0 PR checks.",
       "artifact": null
     }
   ],
   "blockers": [],
   "risks": [
     "Repository is PUBLIC without a license; design and evidence are visible and reuse rights are undefined.",
-    "Replacing local paths inside evidence files may break hashes recorded in pins/manifests; P0 dispatch requires skipping such files until P1 removes pins.",
-    "CI may reveal failing or non-portable tests that previously passed only on the author machine.",
+    "73 tracked files still contain /Users/jtsm5p (66 hash-referenced, 7 non-evidence sources) plus possibly compressed archives; removed in P1 together with pins and evidence.",
+    "iOS root package does not build on a macOS host: ProbeView nested `enum State` shadows SwiftUI `@State`; fix in P1 (rename the enum).",
+    "main is not self-consistent: cj_api composition fails pin verification against current sibling sources.",
     "Email OTP via the candidate auth provider may face reachability limits for users inside China; verify in CJ-007."
   ],
   "operatorActions": [
@@ -101,9 +146,9 @@
   ],
   "rollback": "git revert the merge commit of this PR; documentation only, no data, credentials or external resources touched.",
   "nextAction": {
-    "description": "Codex executes docs/dispatch/P0-repo-hygiene.md on branch chore/p0-repo-hygiene and opens a PR.",
-    "expectedObservation": "PR with CI results, zero business-code diff, local paths removed, handoff refreshed.",
-    "command": "git fetch origin && git switch -c chore/p0-repo-hygiene origin/main"
+    "description": "Merge the P0 PR once CI is green, then write docs/dispatch/P1-structure.md (single cj package, remove hash pins, move existing evidence out, ordered migrations with up/down in CI, fold known-failing suites into blocking CI).",
+    "expectedObservation": "P0 merged on main with green blocking CI; P1 dispatch reviewed by JT.",
+    "command": "gh pr checks --repo JTCAO515/G2C"
   },
   "readingOrder": [
     "HANDOFF.md",
@@ -122,8 +167,8 @@
     "docs/engineering.md"
   ],
   "provenance": {
-    "baseCommit": "ebbf7e2c0da077e28bf35f33b0b29d2738f9ad51",
-    "method": "JT decisions recorded from chat on 2026-10-27; static review and git/gh read-back; no tests executed.",
+    "baseCommit": "30d4a3e3db168c294c99a1691fc5d80d391e10cd",
+    "method": "Local test runs in an isolated clone (Python 3.14.7, uv); git/gh read-back.",
     "author": "Claude Opus 5.5 via Claude Code"
   }
 }

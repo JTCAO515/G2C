@@ -21,7 +21,7 @@ test_subsecond_start_window_is_not_rounded_into_needs (test_solver.Representatio
 FAIL: test_precision_requires_exact_scale_and_overflow_is_unknown (test_solver.ActualSolverTests.test_precision_requires_exact_scale_and_overflow_is_unknown)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/tests/test_solver.py", line 99, in test_precision_requires_exact_scale_and_overflow_is_unknown
+  File "<local>/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/tests/test_solver.py", line 99, in test_precision_requires_exact_scale_and_overflow_is_unknown
     self.assertEqual(r.status,'CONDITIONAL_SOLUTION',r.reason)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: 'CONDITIONAL_UNSAT' != 'CONDITIONAL_SOLUTION'

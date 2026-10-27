@@ -1,5 +1,5 @@
-warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
-warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
 Building for debugging...
 [Computing dependencies]
 [Pre-planning 1 / 654]
@@ -15,7 +15,7 @@ Building for debugging...
 [52 / 61] CJSessionTests-product
 [52 / 61] CJAuthSupabaseTests-product
 [54 / 61] CJAuthSupabaseTests-product
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/SupabaseSessionBridgeTests.swift:79:12: warning: 'ui' mutated after capture by sendable closure
+<local>/Documents/Codex/2026-10-21/cj-007-auth/ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/SupabaseSessionBridgeTests.swift:79:12: warning: 'ui' mutated after capture by sendable closure
  72 |         let id = UUID(); let (memory, life, op, material) = try seeded(id)
  73 |         var gate: CheckedContinuation<SDKSessionCheck,Never>?
  74 |         var ui = true
@@ -31,7 +31,7 @@ Building for debugging...
  80 |         completion.resume(returning: .verified(session(UUID())))
  81 |         #expect(await task.value == .stale)
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth/ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/SupabaseSessionBridgeTests.swift:112:17: warning: 'reenter' mutated after capture by sendable closure
+<local>/Documents/Codex/2026-10-21/cj-007-auth/ios/Modules/CJAuth/Tests/CJAuthSupabaseTests/SupabaseSessionBridgeTests.swift:112:17: warning: 'reenter' mutated after capture by sendable closure
 105 |     }
 106 |     @Test func uiPredicateReentryCannotRebindOldVerifiedSessionToNewOperation() async throws {
 107 |         let id = UUID(); let (memory, life, op, material) = try seeded(id); var reenter = false

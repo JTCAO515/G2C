@@ -1,10 +1,10 @@
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/probe.py", line 205, in <module>
+  File "<local>/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/probe.py", line 205, in <module>
     main()
     ~~~~^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/probe.py", line 187, in main
+  File "<local>/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/probe.py", line 187, in main
     results += invoke(run / "A", "native", "A", "interleave")
                ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/probe.py", line 164, in invoke
+  File "<local>/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/probe.py", line 164, in invoke
     raise RuntimeError(f"{args}: exit {result.returncode}; see {log}")
-RuntimeError: ('native', 'A', 'interleave'): exit 1; see /Users/jtsm5p/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-5f78af83985f474491e46aa6f45d16b6/A/native-A-interleave.log
+RuntimeError: ('native', 'A', 'interleave'): exit 1; see <local>/Documents/Codex/2026-10-21/cj-003-memory/spikes/memory/.data/run-5f78af83985f474491e46aa6f45d16b6/A/native-A-interleave.log

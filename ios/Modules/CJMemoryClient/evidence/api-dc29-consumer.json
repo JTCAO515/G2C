@@ -1,5 +1,5 @@
 {
-  "root": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed",
+  "root": "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed",
   "inputs": {
     "shared": {
       "commit": "9b4852dfad418d124d60366ada8efb380a8ffc1d",
@@ -105,8 +105,8 @@
   "full_app": "UNRUN",
   "factory_activation": false,
   "single_sdk_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation",
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation",
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/dc29-consumer-1c8f36ed/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
   ],
   "tests": "PASS: 6 selected existing methods",
   "input_sha_preserved_after_tests": true,

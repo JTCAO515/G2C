@@ -50,7 +50,7 @@ walking/driving 选定切片仅支持显式 at_query_time；指定过去/未来�
 
 | 资料 | 当前已知 / 待提供内容 | 谁/哪里可确认 |
 |---|---|---|
-| 源 workspace | 已核路径 `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-012-place`、branch/head 如上 | 本地 Git；这不是高德控制台 application |
+| 源 workspace | 已核路径 `<local>/Documents/Codex/2026-10-21/cj-012-place`、branch/head 如上 | 本地 Git；这不是高德控制台 application |
 | 目标服务环境 | 目标 workspace/项目/测试环境名、宿主/区域、原 owner；具体值 UNKNOWN | JT/Main 的已接受环境登记，不能临时造生产标签 |
 | 高德 application | 已有地图 Key 的存在性已确认；目标高德应用真实名称、非秘密应用 ID/用途、绑定、所属环境及运营主体类别仍 UNKNOWN | 已脱敏记录或不展示秘密的目标应用元数据页；未定位安全入口，未登录/创建 |
 | 开发者认证 | 实际未认证/个人认证/企业认证等类别、审核/有效状态；这里只需类别/状态 | 目标账号控制台；不收身份证/营业执照/认证密码 |
@@ -140,7 +140,7 @@ POI 页更新日期 2026-07-15。未把旧优势页的配额示例或公开表�
 原 accepted dispatch-context/current AUTH/shared claim-cancel/trusted receipt 接缝和独立门禁仍须
 由原 owner/Main 处理，本文件不定义签名、不放行 `execute`，也不恢复 DEFERRED Review 轮。
 
-元数据续作的安全边界：在已知 `/Users/jtsm5p/Documents/Codex/2026-10-21` 做文件名定位，
+元数据续作的安全边界：在已知 `<local>/Documents/Codex/2026-10-21` 做文件名定位，
 并检查本仓库已知无秘密的工程说明/清单；命中为实现、fixture 和清单，未定位到明确的地图
 目标 App 脱敏元数据记录。未读不相干的脱敏数据库记录或未知聊天，也未猜测/打开可能展示
 秘密的 Key 列表页。因此停止在已有可见资料边界，不能填入“Web Service 已确认”、认证类别、

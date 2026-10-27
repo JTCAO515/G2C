@@ -130,12 +130,12 @@
     {
       "case": "cancel-inflight_model",
       "status": "FAIL",
-      "error": "AssertionError(('cancel-inflight_model-ack', 1, 'Traceback (most recent call last):\\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 267, in <module>\\n    main()\\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 233, in main\\n    print(json.dumps({\\'workflow_status\\': client.get_workflow_status(args.workflow).status,\\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^\\nAttributeError: \\'DBOSClient\\' object has no attribute \\'get_workflow_status\\'. Did you mean: \\'list_workflow_steps\\'?\\n'))"
+      "error": "AssertionError(('cancel-inflight_model-ack', 1, 'Traceback (most recent call last):\\n  File \"<local>/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 267, in <module>\\n    main()\\n  File \"<local>/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 233, in main\\n    print(json.dumps({\\'workflow_status\\': client.get_workflow_status(args.workflow).status,\\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^\\nAttributeError: \\'DBOSClient\\' object has no attribute \\'get_workflow_status\\'. Did you mean: \\'list_workflow_steps\\'?\\n'))"
     },
     {
       "case": "cancel-after_business_step",
       "status": "FAIL",
-      "error": "AssertionError(('cancel-after_business_step-ack', 1, 'Traceback (most recent call last):\\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 267, in <module>\\n    main()\\n  File \"/Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 233, in main\\n    print(json.dumps({\\'workflow_status\\': client.get_workflow_status(args.workflow).status,\\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^\\nAttributeError: \\'DBOSClient\\' object has no attribute \\'get_workflow_status\\'. Did you mean: \\'list_workflow_steps\\'?\\n'))"
+      "error": "AssertionError(('cancel-after_business_step-ack', 1, 'Traceback (most recent call last):\\n  File \"<local>/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 267, in <module>\\n    main()\\n  File \"<local>/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime/runtime.py\", line 233, in main\\n    print(json.dumps({\\'workflow_status\\': client.get_workflow_status(args.workflow).status,\\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^\\nAttributeError: \\'DBOSClient\\' object has no attribute \\'get_workflow_status\\'. Did you mean: \\'list_workflow_steps\\'?\\n'))"
     },
     {
       "case": "timeout",

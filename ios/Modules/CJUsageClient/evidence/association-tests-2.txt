@@ -1,7 +1,7 @@
 Building for debugging...
 [Provisioning 4 / 22]
 [2 / 13] CJUsageClientTests-product
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:149:53: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:149:53: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
 147 |         for mutation in ["actor", "ABA", "recovery", "session"] {
 148 |             let h = try OriginalHarness(); try await h.accept()
 149 |             let source = statusStage ? try #require(try await h.resolve()) : nil
@@ -9,7 +9,7 @@ Building for debugging...
 150 |             let old = h.paths.count
 151 |             h.credentialHook = {
 [5 / 16] CJUsageClientTests-product
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:149:53: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:149:53: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
 147 |         for mutation in ["actor", "ABA", "recovery", "session"] {
 148 |             let h = try OriginalHarness(); try await h.accept()
 149 |             let source = statusStage ? try #require(try await h.resolve()) : nil
@@ -17,7 +17,7 @@ Building for debugging...
 150 |             let old = h.paths.count
 151 |             h.credentialHook = {
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:168:49: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:168:49: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
 166 |     func equalRevisionPrepareAndFinalCallbackReentryKeepNewOwner(_ statusStage: Bool) async throws {
 167 |         let h = try OriginalHarness(); try await h.accept()
 168 |         let source = statusStage ? try #require(try await h.resolve()) : nil
@@ -25,7 +25,7 @@ Building for debugging...
 169 |         var inner: PreparedOriginalUsageRead?
 170 |         func prepare() throws -> PreparedOriginalUsageRead { try source.map(h.model.prepareStatus) ?? h.model.prepareAssociation(try #require(h.selected)) }
 
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:181:49: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
+<local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/Tests/CJUsageClientTests/OriginalUsageTests.swift:181:49: warning: '#require(_:_:)' is redundant because 'try await h.resolve()' never equals 'nil' (from macro 'require')
 179 |     func finalPublicationCallbackCannotOverwriteNewPreparation(_ statusStage: Bool) async throws {
 180 |         let h = try OriginalHarness(); try await h.accept()
 181 |         let source = statusStage ? try #require(try await h.resolve()) : nil

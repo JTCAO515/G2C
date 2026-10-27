@@ -11,10 +11,10 @@ test_final_auth_callback_scope_replacement_withholds_original_status (__main__.F
 FAIL: test_final_auth_callback_configuration_replacement_withholds_original_status (__main__.FinalBindingTests.test_final_auth_callback_configuration_replacement_withholds_original_status)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-be473a9/IndependentFinalBindingTests.py", line 30, in test_final_auth_callback_configuration_replacement_withholds_original_status
+  File "<local>/Documents/Codex/2026-10-21/cj-review/CJ008-be473a9/IndependentFinalBindingTests.py", line 30, in test_final_auth_callback_configuration_replacement_withholds_original_status
     def test_final_auth_callback_configuration_replacement_withholds_original_status(self):self.check_change("configuration")
                                                                                            ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-be473a9/IndependentFinalBindingTests.py", line 24, in check_change
+  File "<local>/Documents/Codex/2026-10-21/cj-review/CJ008-be473a9/IndependentFinalBindingTests.py", line 24, in check_change
     with self.assertRaises((ReadUnavailable,ReadContextViolation)):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: (<class 'cj_usage.read_status.ReadUnavailable'>, <class 'cj_auth.read_context.ReadContextViolation'>) not raised
@@ -23,10 +23,10 @@ AssertionError: (<class 'cj_usage.read_status.ReadUnavailable'>, <class 'cj_auth
 FAIL: test_final_auth_callback_scope_replacement_withholds_original_status (__main__.FinalBindingTests.test_final_auth_callback_scope_replacement_withholds_original_status)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-be473a9/IndependentFinalBindingTests.py", line 29, in test_final_auth_callback_scope_replacement_withholds_original_status
+  File "<local>/Documents/Codex/2026-10-21/cj-review/CJ008-be473a9/IndependentFinalBindingTests.py", line 29, in test_final_auth_callback_scope_replacement_withholds_original_status
     def test_final_auth_callback_scope_replacement_withholds_original_status(self):self.check_change("scope")
                                                                                    ~~~~~~~~~~~~~~~~~^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ008-be473a9/IndependentFinalBindingTests.py", line 24, in check_change
+  File "<local>/Documents/Codex/2026-10-21/cj-review/CJ008-be473a9/IndependentFinalBindingTests.py", line 24, in check_change
     with self.assertRaises((ReadUnavailable,ReadContextViolation)):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: (<class 'cj_usage.read_status.ReadUnavailable'>, <class 'cj_auth.read_context.ReadContextViolation'>) not raised

@@ -35,6 +35,6 @@
     "Package.resolved": "5a9f37e37a12ca4b8eb9f59fa036d66e9cc1a646efe5fe63c438b1bc609296aa"
   },
   "CJFoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJMessageClient/.generated/c5ffafb5524c40c6c518bb7a9c00c2e74aeeec2a/CJFoundation"
   ]
 }

@@ -1,6 +1,6 @@
-warning: /Users/jtsm5p/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
-warning: /Users/jtsm5p/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
-warning: /Users/jtsm5p/Library/Caches/org.swift.swiftpm is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+warning: <local>/Library/Caches/org.swift.swiftpm is not accessible or not writable, disabling user-level cache features.
 warning: 'cjshell': failed storing manifest for 'cjshell' in cache: attempt to write a readonly database
 Building for debugging...
 [Planning deferred tasks]

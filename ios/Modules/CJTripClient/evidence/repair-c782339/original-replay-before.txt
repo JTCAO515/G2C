@@ -9,4 +9,4 @@ FAIL POST escapes after final binding callback displaced durable pending directo
 PASS current query cancellation settles unknown, duplicate suppressed, original retained; public choice remains closed
 
 exit=0
-Synthetic retained probe directory: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/repair-probes-cbafefd1-7f69-40a5-bbe9-b7ddbc743462
+Synthetic retained probe directory: <local>/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/repair-probes-cbafefd1-7f69-40a5-bbe9-b7ddbc743462

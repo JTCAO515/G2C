@@ -40,7 +40,7 @@ First runnable suite exited signal11 with excessive recursion in the newly autho
 ## Reproduce and consume
 
 ```sh
-python3 -B ios/Modules/CJShell/scripts/prepare_feasibility_real_shell.py /Users/jtsm5p/Documents/Codex/2026-10-21
+python3 -B ios/Modules/CJShell/scripts/prepare_feasibility_real_shell.py <local>/Documents/Codex/2026-10-21
 ```
 
 Use its printed directory/Modules/CJShell as --package-path, not this owner's historical f87 root package. The new integration test must be consumed with the fixed FEAS host/client and verification package wiring, never cherry-picked alone into an older unlinked Shell. Script source contains every exact input, real-root export and the two explicit verification-manifest changes; no ambient moving head is consulted.

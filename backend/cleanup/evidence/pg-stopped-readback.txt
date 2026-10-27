@@ -1,5 +1,5 @@
 Private cluster first run completed; stop/start once, then final stop.
-pg_ctl -D /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-journal-20261022/data status
+pg_ctl -D <local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-journal-20261022/data status
 pg_ctl: no server running
 exit=3 (expected stopped)
 

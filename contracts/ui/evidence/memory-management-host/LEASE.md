@@ -1,7 +1,7 @@
 # CJ019 Memory Shell integration lease
 
 Owner: this independent integration session; Main remains 01a15e24-928b-7540-97a4-14b52e6ee995.
-Root: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell
+Root: <local>/Documents/Codex/2026-10-21/cj-019-memory-shell
 Branch: cj/019-memory-shell; base: 0d1e7b76217ea1325ad3dbc694282aa65308cf47.
 
 Exclusive write scope: ios/Modules/CJShell/Sources/CJShell/MemoryContainerHost.swift,
