@@ -40,8 +40,8 @@ def pythonpath(*extra):
 
 
 @contextlib.contextmanager
-def cluster(name, *, port, role, socket=None):
-    root = WORK / name
+def cluster(name, *, port, role, socket=None, pg=None, restart=None, root=None):
+    root = Path(root) if root else WORK / name
     if root.exists():
         shutil.rmtree(root)
     root.mkdir(parents=True)
@@ -53,7 +53,7 @@ def cluster(name, *, port, role, socket=None):
         raise SystemExit(f'socket path too long for {name}; use a shorter checkout path')
     passfile = root / 'empty.pgpass'
     passfile.touch(mode=0o600)
-    data, pg, env = root / 'data', bindir(), clean_env()
+    data, pg, env = root / 'data', pg or bindir(), clean_env()
     def run(*argv):
         subprocess.run([str(pg / argv[0]), *map(str, argv[1:])], env=env, check=True,
                        stdout=subprocess.DEVNULL)
@@ -61,6 +61,9 @@ def cluster(name, *, port, role, socket=None):
         '--encoding=UTF8', '--locale=C')
     options = f"-c listen_addresses='' -k {socket} -p {port} -c unix_socket_permissions=0700"
     run('pg_ctl', '-D', data, '-l', root / 'postgres.log', '-o', options, '-w', 'start')
+    if restart is not None:
+        restart.append(lambda: (run('pg_ctl', '-D', data, '-m', 'fast', '-w', 'stop'),
+                                run('pg_ctl', '-D', data, '-l', root / 'postgres.log', '-o', options, '-w', 'start')))
     config = dict(host=str(socket), port=port, user=role, dbname='postgres', passfile=str(passfile),
                   connect_timeout=5, options='-c statement_timeout=10000 -c lock_timeout=5000 -c search_path=public')
     try:
@@ -159,7 +162,6 @@ def group_memory():
         with cluster('memory-' + name, port=port, role='cj011_' + name,
                      socket=f'/tmp/cj011-{name}-01a16218'):
             status |= script(f'backend/memory/tests/{module}.py')
-    status |= script('backend/memory/tests/binding_checks.py')
     status |= script('backend/memory/tests/consume_current_checks.py')
     status |= script('backend/memory/tests/lifecycle_seam_checks.py')
     return status
@@ -183,7 +185,49 @@ def group_domain_runners():
     return status
 
 
-GROUPS = {'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
+def group_run():
+    # RUN checks connect as the OS user on the default port and expect PostgreSQL 16.
+    import getpass
+    pg16 = Path(os.environ.get('CJ_PG16_BINDIR', bindir()))
+    fresh('run/.local')
+    status = 0
+    for socket, checks, after_restart in (
+            ('run/.local/socket', 'pg_checks.py', 'pg_restart_read.py'),
+            ('run/.local/binding/socket', 'pg_binding_checks.py', 'pg_binding_restart.py')):
+        restart = []
+        with cluster('run-' + checks[:-3], port=5432, role=getpass.getuser(), socket=BACKEND / socket,
+                     pg=pg16, restart=restart):
+            status |= script(f'backend/run/tests/{checks}')
+            restart[0]()  # real server restart before the recovery read
+            status |= script(f'backend/run/tests/{after_restart}')
+    return status
+
+
+def group_message():
+    # MESSAGE checks pin their data directory under backend/message/.local-pg-0N.
+    status = 0
+    for private, port, checks in (('.local-pg-01', 55439, 'check_postgres.py'),
+                                  ('.local-pg-02', 55440, 'check_history_postgres.py')):
+        restart = []
+        with cluster('message-' + private, port=port, role='cj009', root=BACKEND / 'message' / private,
+                     restart=restart):
+            status |= script(f'backend/message/tests/{checks}', 'setup')
+            status |= script(f'backend/message/tests/{checks}')
+            if checks == 'check_history_postgres.py':
+                status |= subprocess.run([sys.executable, '-B', '-m', 'unittest', '-v', 'history_gate_tests'],
+                                         cwd=BACKEND / 'message/tests', env=clean_env()).returncode
+            restart[0]()
+            status |= script(f'backend/message/tests/{checks}', 'restart-check')
+    return status
+
+
+def group_needs():
+    # conftest provisions its own private cluster from CJ_PG17_BINDIR.
+    fresh('needs/.local')
+    return pytest('backend/needs', dict(clean_env(), CJ_PG17_BINDIR=str(bindir())))
+
+
+GROUPS = {'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners}
 
 

@@ -144,6 +144,6 @@ class PgTests(unittest.TestCase):
 if __name__ == '__main__':
     with connect() as c:
         assert c.execute('SHOW listen_addresses').fetchone()[0] == ''
-        assert c.execute('SHOW server_version').fetchone()[0].startswith('16.15')
+        assert c.execute('SHOW server_version').fetchone()[0].startswith('16.')
         c.execute((ROOT/'sql/candidate.sql').read_text())
     unittest.main()

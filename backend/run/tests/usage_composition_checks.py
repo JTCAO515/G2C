@@ -1,4 +1,4 @@
-"""Explicit fixed-source synthetic integration; no PG, provider or network."""
+"""Working-tree synthetic integration; no PG, provider or network."""
 import argparse
 import copy
 from contextlib import contextmanager
@@ -10,23 +10,12 @@ import sys
 from threading import RLock
 import unittest
 
-PIN = 'a6693615aa773ddcffff852a9860ec1703aa2681'
 parser=argparse.ArgumentParser()
-parser.add_argument('--usage-repo',required=True)
 parser.add_argument('--case')
 args,rest=parser.parse_known_args()
 root=Path(__file__).resolve().parents[1]
-export=root/'.local'/('usage-'+PIN)
-(export/'cj_usage').mkdir(parents=True,exist_ok=True)
-for name in ('__init__.py','core.py'):
-    blob=subprocess.check_output(['git','-C',args.usage_repo,'show',f'{PIN}:backend/usage/cj_usage/{name}'])
-    target=export/'cj_usage'/name
-    if target.exists():
-        assert target.read_bytes()==blob, 'existing export differs; refusing overwrite'
-    else:
-        target.write_bytes(blob)
-    print('fixed-source',name,hashlib.sha256(blob).hexdigest(),flush=True)
-sys.path[:0]=[str(root),str(export)]
+# Working-tree USAGE (ADR-0004: the repository commit is the pin).
+sys.path[:0]=[str(root),str(root.parent/'usage')]
 from cj_usage.core import Meter, Config, Command, Receipt, Ledger
 from cj_run.core import Binding, Event, Service, Denied, Conflict
 from cj_run.fixture import MemoryRepository

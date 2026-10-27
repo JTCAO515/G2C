@@ -1,4 +1,4 @@
-"""Pinned canonical AUTH + synthetic DB callbacks, no resource/service operations."""
+"""Working-tree AUTH + synthetic DB callbacks, no resource/service operations."""
 from pathlib import Path
 import hashlib
 import json
@@ -6,19 +6,9 @@ import subprocess
 import sys
 import unittest
 
-AUTH_HEAD='8b6abb236cf10c1865a9cc8c6155bd8ac732c07e'
 USAGE=Path(__file__).resolve().parents[1]
-# Locate sibling source from module path, independent of shell cwd.
-AUTH_REPO=USAGE.parents[2]/'cj-007-auth'
-EXPORT=USAGE/'.local'/('auth-'+AUTH_HEAD)
-for name in ('__init__.py','interfaces.py','admission.py','read_context.py'):
-    raw=subprocess.check_output(['git','-C',str(AUTH_REPO),'show',AUTH_HEAD+':backend/auth/cj_auth/'+name])
-    path=EXPORT/'cj_auth'/name
-    if path.exists() and path.read_bytes()!=raw:raise RuntimeError('fixed AUTH export mismatch')
-    path.parent.mkdir(parents=True,exist_ok=True)
-    if not path.exists():path.write_bytes(raw)
-    print('fixed-auth',name,hashlib.sha256(raw).hexdigest(),flush=True)
-sys.path.insert(0,str(EXPORT));sys.path.insert(0,str(USAGE));sys.path.insert(0,str(USAGE/'tests'))
+# Working-tree AUTH (ADR-0004: the repository commit is the pin).
+sys.path.insert(0,str(USAGE.parent/'auth'));sys.path.insert(0,str(USAGE));sys.path.insert(0,str(USAGE/'tests'))
 # Load fixed package before storage helper adds its older sibling import path.
 from cj_auth.read_context import ProtectedReadBoundary,ReadAdmissionFailure,ReadContextViolation
 from cj_auth.admission import AdmissionChecker

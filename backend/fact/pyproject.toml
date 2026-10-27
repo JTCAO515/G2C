@@ -1,5 +1,0 @@
-[project]
-name = "cj-fact-candidate"
-version = "0.1.0"
-requires-python = ">=3.12,<3.15"
-dependencies = ["h11==0.16.0"]
