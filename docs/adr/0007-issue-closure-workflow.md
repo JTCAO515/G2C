@@ -1,6 +1,6 @@
 # ADR-0007：以关闭 Issue 为中心的交付流程
 
-- 状态：**accepted**（JT 于 2026-10-27 批准第 1–4 条推荐决定；第 5–6 条为落地这四条所需的配套规则）
+- 状态：**accepted**（JT 于 2026-10-27 批准第 1–4 条推荐决定；第 5–6 条为落地这四条所需的配套规则；同日 JT 修订第 3 条为 Codex 自审，并新增第 7 条自动续作）
 - 日期：2026-10-27
 - 依据：main `4beb505`（#150 合并后）的只读审查；未运行 pytest / swift test（UNRUN）
 - 修订：[ADR-0004](0004-delivery-flow-and-repo-hygiene.md) 第 6 条的合并与审查条件由本 ADR 第 3 条替代；ADR-0004 其余各条继续有效。
@@ -42,19 +42,27 @@
 - **队列**（M1 关键路径，由 `docs/handoff.json` 的 `nextAction` 维护当前位置）：#20 CJ-015 → #8 CJ-007 → #11 CJ-010 → #19 CJ-014 → #10 CJ-009 → #12 CJ-011；其余 M1 票等这些关闭后再排。
 - 继续执行 ADR-0004 第 7 条：P2 期间不铺新领域。
 
-### 3. 审查分级
+### 3. 审查：Codex 自审，分级把关
 
-- **普通 PR**：CI 全部 job 在 PR 的精确 head 上全绿，再由 **另一个 Codex 会话**（不是写代码的会话）审查，并在 PR 评论里写 `Review: APPROVE <head SHA>`，即可合并。
-- **红线 PR**：必须由 Claude 独立审查，或由 JT 在 PR 中明确同意。只要触及下列任一项，就是红线 PR：
-  - `backend/migrations/**`，以及任何新增或修改表结构的改动；
-  - `contracts/**` 中已冻结的版本，或新冻结一个对外契约；
-  - 鉴权、权限、会话：`backend/auth/**`、各领域的 scope / owner 校验；
-  - 签名与密钥：`backend/trip/cj_trip/confirmation.py`、`scripts/dev_auth.py`，以及任何密钥加载或轮换逻辑；
-  - 删除或清理用户数据：`backend/cleanup/**`、记忆撤回与账号注销；
-  - 付费、计费、用量上限；
-  - CI 与门禁本身：`.github/**`、`scripts/test.py`、`scripts/pg_suites.py`。
-- PR 作者必须在 PR 模板里自报是否属于红线；审查者发现漏报时改判为红线，并停止合并。
-- 作者会话不能自批；审查者给出 `REQUEST CHANGES` 后，交回原作者会话返修，同一审查者在新 head 上复审。
+> 2026-10-27 JT 修订：审查改由 Codex 完成，Claude 不再是合并前的必经环节，改为按 JT 要求抽查。原“红线 PR 须 Claude 审查”的规定被本节替代。
+
+- **审查者与作者分开。** 审查必须在不继承作者上下文的 Codex 会话里进行（新会话或 Codex 自带的 review 功能），对象是 PR 的精确 head。作者会话不能直接写 APPROVE。
+- **合并条件**：CI 全部 job 在精确 head 上全绿；审查者在 PR 评论写 `Review: APPROVE <head SHA>`，并附上逐项核对结果；合并时锁定该 head（`gh pr merge --match-head-commit <SHA>`）。
+- **所有 PR 的必查项**：改动只覆盖子票范围；每个验收框都有对应测试或命令；没有删除、跳过或放宽已有测试与 CI；没有秘密、本机路径或日志文件入库；handoff 已更新。
+- **红线 PR 的追加必查项**。只要触及下列任一项，就是红线 PR，审查评论必须逐条写明对应检查的结果：
+  - `backend/migrations/**` 或表结构：新迁移的 up/down 在空库上往返通过；已应用的迁移文件未被改动；
+  - `contracts/**`：已冻结版本未改；新冻结的契约有正负样例；
+  - 鉴权、权限、会话（`backend/auth/**`、各领域的 scope / owner 校验）：有跨用户读写被拒绝的负例测试；
+  - 签名与密钥（`backend/trip/cj_trip/confirmation.py`、`scripts/dev_auth.py`、密钥加载与轮换）：有篡改、过期、错 key 的负例测试；没有把密钥写进日志或响应；
+  - 删除或清理用户数据（`backend/cleanup/**`、记忆撤回、账号注销）：有防复活和误删他人数据的负例测试；
+  - 付费、计费、用量上限：有超限拒绝的测试；
+  - CI 与门禁本身（`.github/**`、`scripts/test.py`、`scripts/pg_suites.py`）：门禁只增不减；任何排除都有 Issue 链接，并写在 PR 里。
+- **审查不通过**：审查者评论 `REQUEST CHANGES`，作者返修，再在新 head 上重新审查。
+- **以下情况必须停下来等 JT，Codex 不能自行合并：**
+  - 需要使用授权清单外的外部资源，或修改仓库设置、云端配置、密钥；
+  - 修改 ADR、`AGENTS.md`、`docs/authorizations/**`，或者放宽、删除已有门禁；
+  - 对真实环境的不可逆操作，例如删除真实用户数据、在云数据库上执行迁移；
+  - 付费、订阅、商店或任何对外公开的承诺。
 
 ### 4. 外部资源按里程碑一次性授权
 
@@ -76,13 +84,20 @@
 - `docs/dispatch/` 下的现有派工单冻结为历史，不再追加实施记录。新的派工内容写在子票正文里。
 - `docs/handoff.json` 每个 PR 只更新 `currentPhase`、`acceptedIssue`、`activeWork`、`blockers`、`nextAction`、`lastUpdated`，以及本 PR 的 `verification` 和 `changedFiles`；其余字段只在决策变化时修改。改完运行 `python3 -B scripts/handoff.py render` 与 `check`。
 
+### 7. Codex 自动续作
+
+- 一张子票合并后，Codex 不等指派，直接按 `nextAction` 和第 2 条的队列取下一张子票。父票的验收框没有对应子票时，Codex 自己按模板拆出子票再继续。
+- 每次合并后先确认 main 上的 CI 全绿。main 变红时停止取新票，先在一个 PR 里修复；修不好就 revert 引起问题的合并提交。
+- 每关闭一张父票，在该父票下评论一份小结：关闭的子票、转到 L2/L3 的框、新开的 Issue、遗留风险。
+- 队列做完，或者碰到第 3 条的停点，就停止并在 handoff 里写明原因。M1 队列以外的票，没有 JT 指派不开工。
+
 ## 已确认 / 证据 / 待决 / 推断
 
-- **已确认用户决策**：第 1–4 条（JT，2026-10-27）。
+- **已确认用户决策**：第 1–4 条；第 3 条修订与第 7 条（JT，2026-10-27）。
 - **仓库证据**：“背景”各条，均可在 main `4beb505` 和 GitHub 上复核。
 - **待决**：第 4 条 M1 清单的具体条目；是否在 main 启用分支保护。
 - **Claude 推断（待验证）**：M1 盘点后，相当一部分票的 L0/L1 框可以直接用已有代码和测试证明，从而先关闭一批。实际数量以盘点结果为准。
 
 ## 回滚
 
-revert 本 ADR、`AGENTS.md` 与模板的合并提交，即回到 ADR-0004 第 6 条的流程。CI 新增的 job 可以单独 revert。不涉及迁移、数据或外部资源。已经按 L1 关闭的票不需要重开：转到 #29 / #32 的 L2/L3 条目继续有效。
+revert 本 ADR、`AGENTS.md` 与模板的合并提交，即回到 ADR-0004 第 6 条的流程；只想收回 Codex 自审，revert 第 3 条修订与第 7 条的合并提交即可。CI 新增的 job 可以单独 revert。不涉及迁移、数据或外部资源。已经按 L1 关闭的票不需要重开：转到 #29 / #32 的 L2/L3 条目继续有效。
