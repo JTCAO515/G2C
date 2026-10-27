@@ -91,8 +91,8 @@
     },
     {
       "command": "swift test (ios root package)",
-      "status": "blocked",
-      "summary": "Local host has only CommandLineTools: library targets compile, CJAPITests fails with 'plugin for module TestingMacros not found'. Runs in CI on macos-15 with Xcode.",
+      "status": "fail",
+      "summary": "CI macos-26 newest Xcode: toolchain OK; build fails in ios/Sources/CJProbeUI/ProbeView.swift — nested `enum State` shadows SwiftUI `@State` ('enum State cannot be used as an attribute'). Source fix is P1; CI blocks only on `swift build --target CJAPI`.",
       "artifact": null
     },
     {
@@ -136,6 +136,7 @@
   "risks": [
     "Repository is PUBLIC without a license; design and evidence are visible and reuse rights are undefined.",
     "73 tracked files still contain /Users/jtsm5p (66 hash-referenced, 7 non-evidence sources) plus possibly compressed archives; removed in P1 together with pins and evidence.",
+    "iOS root package does not build on a macOS host: ProbeView nested `enum State` shadows SwiftUI `@State`; fix in P1 (rename the enum).",
     "main is not self-consistent: cj_api composition fails pin verification against current sibling sources.",
     "Email OTP via the candidate auth provider may face reachability limits for users inside China; verify in CJ-007."
   ],

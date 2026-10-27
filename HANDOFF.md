@@ -64,7 +64,7 @@
 | pass | `pytest -q tests in backend/{draft,fact,feedback,manual_edit,memory_jobs,memory_withdrawal,message,place,run,usage}` | All pass locally (feedback 41 skipped without PostgreSQL); identical before and after path replacement. | — |
 | pass | `pytest evaluation/cj028/tests and ops/recovery-preflight` | 35 and 15 passed. | — |
 | pass | `openapi-spec-validator contracts/api/openapi.json` | OK. | — |
-| blocked | `swift test (ios root package)` | Local host has only CommandLineTools: library targets compile, CJAPITests fails with 'plugin for module TestingMacros not found'. Runs in CI on macos-15 with Xcode. | — |
+| fail | `swift test (ios root package)` | CI macos-26 newest Xcode: toolchain OK; build fails in ios/Sources/CJProbeUI/ProbeView.swift — nested `enum State` shadows SwiftUI `@State` ('enum State cannot be used as an attribute'). Source fix is P1; CI blocks only on `swift build --target CJAPI`. | — |
 | fail | `unittest discover -s backend/cj_api/tests` | 40 tests, 33 errors: CompositionUnavailable 'Pinned internal dependency content mismatch' (sibling sources differ from pinned hashes on main). P1 removes pins. | — |
 | fail | `pytest backend/auth/tests` | 1 failed: test needs git object 8b6abb236cf10c1865a9cc8c6155bd8ac732c07e, absent from the repository. | — |
 | fail | `pytest backend/cleanup/tests` | 2 failed: AssertionError 23 != 21. | — |
