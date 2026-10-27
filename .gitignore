@@ -12,3 +12,6 @@ ios/.swiftpm/
 **/evidence/
 .deps/
 .local-*/
+
+# macOS / iCloud conflict copies such as "file 2.py"
+* [0-9].*

@@ -13,6 +13,7 @@ import json
 
 from cj_run.core import Binding, Conflict, Event, TERMINAL
 
+from .draft import DRAFT_SYSTEM, DraftRejected
 from .provider import ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
@@ -22,13 +23,18 @@ FLUSH_CHARS = 24
 class Outcome:
     message_id: str
     run_id: str
-    status: str  # completed | failed | unknown | waiting | skipped
+    status: str  # completed | failed | unknown | waiting
+    proposal_id: str | None = None
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider):
-        """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`."""
-        self.scope, self.messages, self.runs, self.provider = scope, messages, runs, provider
+    def __init__(self, *, scope, messages, runs, provider, drafts=None):
+        """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
+
+        `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
+        with creation_intent `consider_trip` then also get a reviewable proposal.
+        """
+        self.scope, self.messages, self.runs, self.provider, self.drafts = scope, messages, runs, provider, drafts
 
     def process(self, limit=20):
         outcomes = []
@@ -51,10 +57,19 @@ class RunWorker:
         sequence = state.sequence + 1
         return self.runs.apply(Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value))
 
-    def _finish(self, receipt, state):
+    def _finish(self, receipt, state, proposal_id=None):
         if state.status in TERMINAL:
             self.messages.acknowledge(receipt)
-        return Outcome(receipt.message_id, receipt.run_id, state.status)
+        return Outcome(receipt.message_id, receipt.run_id, state.status, proposal_id)
+
+    def _draft(self, binding, state, text):
+        """Second, non-streamed model call. A bad or unknown draft never fails the answer."""
+        try:
+            reply = ''.join(self.provider.stream([{'role': 'user', 'content': text}], system=DRAFT_SYSTEM))
+            draft = self.drafts.publish(binding.run_id, reply)
+        except (DraftRejected, ProviderFailed, ProviderUnknown):
+            return state, None
+        return self._event(binding, state, 'effect_committed', 'trip_proposal:' + draft.proposal_id), draft.proposal_id
 
     def _one(self, receipt):
         binding = self._binding(receipt)
@@ -69,7 +84,9 @@ class RunWorker:
         except Conflict:
             return Outcome(receipt.message_id, receipt.run_id, 'waiting')
         stored = self.messages.query(receipt.message_id)
-        text = json.loads(stored.raw)['text']
+        command = json.loads(stored.raw)
+        text = command['text']
+        proposal_id = None
         buffer = ''
         try:
             for chunk in self.provider.stream([{'role': 'user', 'content': text}]):
@@ -78,9 +95,11 @@ class RunWorker:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''
             if buffer:
                 state = self._event(binding, state, 'text_delta', buffer)
+            if self.drafts is not None and command['creation_intent'] == 'consider_trip':
+                state, proposal_id = self._draft(binding, state, text)
             state = self._event(binding, state, 'completed')
         except ProviderFailed:
             state = self._event(binding, self.runs.snapshot(binding), 'failed')
         except ProviderUnknown:
             state = self._event(binding, self.runs.snapshot(binding), 'unknown')
-        return self._finish(receipt, state)
+        return self._finish(receipt, state, proposal_id)

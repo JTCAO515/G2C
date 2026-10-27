@@ -35,6 +35,10 @@ TOKEN=$(uv run --locked python -B scripts/dev_auth.py token .local/dev-auth --su
 Flow: `PUT /v1/conversations?conversation_id=c1` → `POST /v1/messages` (application/octet-stream,
 MESSAGE-draft.1 JSON) → worker answers → `GET /v1/run-events?message_id=...` streams the answer.
 `conn.json` holds psycopg keyword arguments for a database you created; nothing here creates one.
+Trip draft: send with `creation_intent: "consider_trip"`; the worker publishes proposal `p-<run_id>`
+(`GET /v1/trip-proposals?proposal_id=...`), accept or reject with `POST /v1/trip-actions`
+(canonical `[action_id, kind, proposal_id, candidate_hash, confirmation_ref]`), then
+`GET /v1/trip-details?trip_id=...`. Real model check: `scripts/provider_smoke.py` (4 requests).
 `scripts/pg_suites.py e2e` runs the same flow automatically on a fresh private cluster.
 
 macOS note: Python 3.14 ignores `.pth` files carrying the `hidden` file flag. If imports

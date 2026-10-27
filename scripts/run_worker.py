@@ -18,6 +18,7 @@ if os.environ.get('CJ_ENV') != 'local':
     raise SystemExit('CJ_ENV=local is required')
 
 import psycopg
+from cj_agent.draft import DraftPublisher
 from cj_agent.provider import DashScopeConfig, DashScopeProvider, FakeProvider
 from cj_agent.worker import RunWorker
 from cj_api.local_app import LocalDatabase
@@ -49,7 +50,8 @@ def run_once(database, model):
         messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
         runs = RunService(database.run_repository(scope),
                           valid=lambda binding, m=messages: m.query(binding.message_id) is not None)
-        results += RunWorker(scope=scope, messages=messages, runs=runs, provider=model).process()
+        drafts = DraftPublisher(database.trip_repository(scope))
+        results += RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts).process()
     return results
 
 
@@ -63,7 +65,8 @@ def main():
     database, model = LocalDatabase(args.conninfo_json), provider(args.real)
     while True:
         for outcome in run_once(database, model):
-            print(f'{outcome.status} message={outcome.message_id}', flush=True)
+            print(f'{outcome.status} message={outcome.message_id}'
+                  + (f' proposal={outcome.proposal_id}' if outcome.proposal_id else ''), flush=True)
         if args.once:
             return
         time.sleep(args.interval)
