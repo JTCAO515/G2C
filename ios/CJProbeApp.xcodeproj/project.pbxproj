@@ -19,8 +19,8 @@ objects = {
 000000000000000000000013 = {isa = XCBuildConfiguration; name = Release; buildSettings = {SDKROOT = iphoneos; ALWAYS_SEARCH_USER_PATHS = NO; ONLY_ACTIVE_ARCH = YES; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 6.0; }; };
 000000000000000000000014 = {isa = XCBuildConfiguration; name = Debug; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = space.go2china.foundation.local; PRODUCT_NAME = CJProbeApp; INFOPLIST_FILE = App/Info.plist; CODE_SIGNING_ALLOWED = NO; TARGETED_DEVICE_FAMILY = "1,2"; SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor; SWIFT_APPROACHABLE_CONCURRENCY = YES; }; };
 000000000000000000000015 = {isa = XCBuildConfiguration; name = Release; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = space.go2china.foundation.local; PRODUCT_NAME = CJProbeApp; INFOPLIST_FILE = App/Info.plist; CODE_SIGNING_ALLOWED = NO; TARGETED_DEVICE_FAMILY = "1,2"; SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor; SWIFT_APPROACHABLE_CONCURRENCY = YES; }; };
-000000000000000000000020 = {isa = XCLocalSwiftPackageReference; relativePath = .; };
-000000000000000000000021 = {isa = XCSwiftPackageProductDependency; package = 000000000000000000000020; productName = CJProbeUI; };
+000000000000000000000020 = {isa = XCLocalSwiftPackageReference; relativePath = Modules/CJShell; };
+000000000000000000000021 = {isa = XCSwiftPackageProductDependency; package = 000000000000000000000020; productName = CJShell; };
 000000000000000000000022 = {isa = PBXBuildFile; productRef = 000000000000000000000021; };
 000000000000000000000100 = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Branding/Assets/AppIcon1024.png"; sourceTree = "<group>"; };
 000000000000000000000110 = {isa = PBXBuildFile; fileRef = 000000000000000000000100; };

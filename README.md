@@ -2,7 +2,7 @@
 
 面向外国来中国旅游的游客：记住已授权的事实、经历与偏好，提供有来源的旅行建议，并在持续修改中保护已经确认的安排。App 名为 **G2C**，Web 品牌为 **go2china.space**，后端为 **CJ Agent 系统**。
 
-**当前状态（2026-10-27）：** 按 [ADR-0004](docs/adr/0004-delivery-flow-and-repo-hygiene.md) 推进。P0/P1 已完成：单一 Python 发行包、无同仓 hash pin、10 版有序可回退迁移链、证据出仓、CI 全阻塞。仓库有各领域后端模块（`backend/*`）、本地 FastAPI 组合（`backend/cj_api`，仅 `CJ_ENV=local`）、OpenAPI 契约、iOS 包与探针 App（`ios/`）和技术 spike（`spikes/`）；但尚无用户可用的端到端链路：真实模型调用 UNRUN，iOS 主 App 仍为探针，下一阶段为 P2 walking skeleton。当前状态、阻塞与唯一下一步以 [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成）为准。
+**当前状态（2026-10-27）：** P0/P1、P2a（#143）与 P2b（#145）已合并：单一 Python 发行包、有序迁移、本地流式回答和草稿确认链路已有代码；P2b 原作者记录真实 provider smoke 4/4。P2c 的 [PR #146](https://github.com/JTCAO515/G2C/pull/146) 将主 App 接入四 Tab `ShellView` 并收敛同仓依赖，目前仍是未连接服务的壳。App→API、邮箱 OTP 和真机中英链路尚未验收，不能把壳构建通过当作产品闭环完成。当前状态、阻塞与唯一下一步以 [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成）为准。
 
 ## 已确认的产品边界
 
@@ -41,4 +41,6 @@ uv run --locked python -B scripts/pg_suites.py   # PostgreSQL 套件与迁移 up
 
 后端入口与约定见 [backend/README.md](backend/README.md)，迁移见 [backend/migrations/README.md](backend/migrations/README.md)；CI（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）全部阻塞，是唯一的“绿”。历史证据已出仓，见 [docs/evidence.md](docs/evidence.md)。开发授权不包含付费调用、云资源、权限/凭据变更、外联、公开发布或删除旧数据。
 
-仓库许可证与产品法律条款待定；公开仓库不等于已授予开源许可。P2 范围已确认单城市北京、邮箱一次性登录、最低 iOS 17（见 ADR-0004）；此处不预设商业收费或技术兼容性结论。
+交接更新：先改 `docs/handoff.json`，再运行 `python3 -B scripts/handoff.py render` 和 `python3 -B scripts/handoff.py check`。检查已进入 CI 的 python job，不依赖本机技能或 npm。四个 job（python、postgres、swift、ios-app）全部阻塞，合并还需 Claude 独立审查或 JT 明确同意。
+
+GitHub 当前可见性为 PRIVATE（2026-10-27 只读核实）；许可证和产品法律条款仍待定。ADR 的可见性修订由 #144 单独处理，本切片不修改已接受 ADR。P2 范围为北京、邮箱 OTP、最低 iOS 17。
