@@ -21,7 +21,7 @@
 | Phase | P0-repo-hygiene |
 | Accepted Issue | CJ-005 (https://github.com/JTCAO515/G2C/issues/5); P0 scope per docs/dispatch/P0-repo-hygiene.md |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T00:00:00Z |
+| Last updated | 2026-10-27T03:00:00Z |
 
 ## Active Work
 
@@ -37,18 +37,22 @@
 
 - accepted: ADR-0001 product and user-control boundaries.
 - accepted: model qwen3.8-flash with Beijing endpoint profile (spikes/runtime/REPORT.md); real calls still UNRUN.
-- accepted: JT authorized this PR (handoff.json, ADR-0004, P0 dispatch) and direct merge to main.
-- proposed: ADR-0004 delivery flow and repo hygiene; items 3, 5, 6 need JT confirmation.
+- accepted (JT 2026-10-27): ADR-0004 delivery flow and repo hygiene, items 1-7.
+- accepted (JT 2026-10-27): repository stays PUBLIC; local-path removal is mandatory.
+- accepted (JT 2026-10-27): evidence moves out of repo and in-repo sha256 pins are removed, both executed in P1; no history rewrite.
+- accepted (JT 2026-10-27): P2 scope Beijing single city, email OTP primary login, minimum iOS 17.
+- accepted (JT 2026-10-27): process simplification, one PR per Issue slice, CI green plus one independent review, trunk-based.
 
 ## Changed Files
 
 | Path | Reason |
 | --- | --- |
-| `docs/handoff.json` | Repository-owned machine handoff source (ADR-0004 item 1). |
+| `docs/adr/0004-delivery-flow-and-repo-hygiene.md` | Mark accepted and record JT decisions of 2026-10-27. |
+| `docs/adr/README.md` | ADR-0004 status accepted. |
+| `docs/scope.md` | City, minimum iOS and login rows confirmed per ADR-0004. |
+| `docs/dispatch/P0-repo-hygiene.md` | Reflect accepted decisions; P1 next. |
+| `docs/handoff.json` | Decisions accepted, blockers cleared. |
 | `HANDOFF.md` | Rendered from docs/handoff.json. |
-| `docs/adr/0004-delivery-flow-and-repo-hygiene.md` | Proposed delivery flow and repo hygiene decision. |
-| `docs/adr/README.md` | Index ADR-0004. |
-| `docs/dispatch/P0-repo-hygiene.md` | Codex dispatch for P0. |
 
 ## Verification Evidence
 
@@ -62,12 +66,7 @@
 
 ## Blockers
 
-| Blocker | Owner | Unblock condition |
-| --- | --- | --- |
-| Repository visibility (PUBLIC, no license, 618 files with local paths). | JT | JT chooses PUBLIC or PRIVATE. |
-| Whether to remove in-repo sha256 pins and move evidence out of the repo (ADR-0004 items 3, 5). | JT | JT accepts or rejects; required before P1. |
-| P2 values: city, primary login, minimum iOS (suggested Beijing, email OTP, iOS 17). | JT | JT confirms values; required before P2 real acceptance. |
-| Process simplification (ADR-0004 item 6). | JT | JT accepts or rejects. |
+No blockers recorded.
 
 ## Next Smallest Action
 
