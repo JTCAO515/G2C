@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import hashlib
 import json
+import uuid
 
 
 class InvalidInput(ValueError):
@@ -124,6 +125,21 @@ class Service:
         # Only leave the transaction with a receipt after commit has succeeded.
         return receipt
 
+    def open_conversation(self, conversation_id):
+        """Idempotently create an active chat for this scope; never reactivates an inactive one."""
+        if (type(conversation_id) is not str or not conversation_id.strip()
+                or len(conversation_id.encode('utf-8')) > 256 or '\x00' in conversation_id):
+            raise InvalidInput('conversation ID required')
+        with self.repository.transaction() as tx:
+            tx.lock_scope()
+            try:
+                return tx.chat(conversation_id)
+            except Unavailable:
+                created = tx.open_chat(conversation_id, uuid.uuid4().hex)
+                if created is None:
+                    raise  # exists but inactive (or recreated elsewhere)
+                return created
+
     def query(self, message_id):
         with self.repository.transaction() as tx:
             tx.lock_scope()
@@ -242,6 +258,17 @@ class Service:
             tx.lock_scope()
             return tx.pending(limit)
         # Returns stored run IDs only; RUN/AUTH/USAGE adapters must authorize actual dispatch.
+
+    def acknowledge(self, receipt):
+        """Mark one delivery handled after RUN holds its outcome. Idempotent; never deletes."""
+        if type(receipt) is not Receipt:
+            raise InvalidInput('stored receipt required')
+        with self.repository.transaction() as tx:
+            tx.lock_scope()
+            old = tx.find(receipt.message_id)
+            if old is None or old.receipt != receipt:
+                raise InputConflict()
+            tx.acknowledge(receipt.message_id, receipt.run_id)
 
 
 @dataclass(frozen=True)

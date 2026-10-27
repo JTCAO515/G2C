@@ -54,7 +54,11 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
             receipt = MessageReceipt.model_validate(asdict(value), strict=True)
             response_type = MessageReceiveResponse if write else MessageReceiptQueryResponse
             return response_type.model_validate({'request_id':request.state.request_id, 'receipt':receipt})
-        except (AccessBlocked, IdentityChanged) as exc:
+        except Exception as exc:
+            return failure(request, exc, write)
+
+    def failure(request, exc, write):
+        if isinstance(exc, (AccessBlocked, IdentityChanged)):
             # Fixed repository does not expose a proven rollback result after commit-stage denial.
             # Preserve possible prior effects before considering an ordinary identity refusal.
             if exc.commit_possible or exc.stage == 'commit':
@@ -65,15 +69,36 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
                 return _error(request, 503, 'ACCESS_UNKNOWN', 'access', 'unknown', 'retry_safe_read')
             status = 401 if exc.reason is AdmissionReason.IDENTITY_INVALID else 403
             return _error(request, status, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
-        except CommitUnknown:
+        if isinstance(exc, CommitUnknown):
             return _error(request, 503, 'MESSAGE_OUTCOME_UNKNOWN', 'dependency', 'unknown', 'reconcile_original')
-        except InvalidInput:
+        if isinstance(exc, InvalidInput):
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
-        except InputConflict:
+        if isinstance(exc, InputConflict):
             return _error(request, 409, 'INPUT_CONFLICT', 'conflict', 'failed', 'do_not_retry')
-        except Exception:
-            # Includes unavailable repositories and invalid projection after a possible commit.
-            return unavailable(request, write)
+        # Includes unavailable repositories and invalid projection after a possible commit.
+        return unavailable(request, write)
+
+    @app.put('/v1/conversations')
+    async def open_conversation(request: Request):
+        """Idempotent create of an active conversation (P2a); first message needs one."""
+        if boundary is None:
+            return unavailable(request, True)
+        token = _token(request)
+        if token is None:
+            return _error(request, 401, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
+        try:
+            pairs = parse_qsl(request.scope['query_string'].decode('ascii'), keep_blank_values=True,
+                              strict_parsing=True, encoding='utf-8', errors='strict')
+            if len(pairs) != 1 or pairs[0][0] != 'conversation_id':
+                raise ValueError('One conversation ID required')
+        except (ValueError, UnicodeError):
+            return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
+        try:
+            chat = await run_in_threadpool(boundary.open_conversation, token, pairs[0][1])
+        except Exception as exc:
+            return failure(request, exc, True)
+        return JSONResponse({'request_id': request.state.request_id, 'conversation_id': pairs[0][1],
+                             'generation': chat.generation, 'last_sequence': chat.last_sequence})
 
     @app.post('/v1/messages', response_model=MessageReceiveResponse)
     async def receive(request: Request):

@@ -230,13 +230,27 @@ def group_feasibility_domain():
     return pytest('backend/feasibility', dict(clean_env(), CJ_PG17_BINDIR=str(bindir())))
 
 
+def group_e2e():
+    # P2a end to end: fresh cluster, migrations 1-10, local app, worker, SSE (FakeProvider).
+    sys.path.insert(0, str(ROOT / 'scripts'))
+    import migrate
+    import psycopg
+    with cluster('e2e', port=55480, role='cj_e2e') as config:
+        with psycopg.connect(**config, autocommit=True) as conn:
+            migrate.up(conn, migrate.load(), migrate.load()[-1]['version'])
+        path = WORK / 'e2e' / 'conninfo.json'
+        path.write_text(json.dumps(config))
+        env = dict(clean_env(), CJ_E2E_CONNINFO=str(path))
+        return subprocess.run([sys.executable, '-B', 'e2e_local.py'], cwd=BACKEND / 'agent/tests', env=env).returncode
+
+
 def group_needs():
     # conftest provisions its own private cluster from CJ_PG17_BINDIR.
     fresh('needs/.local')
     return pytest('backend/needs', dict(clean_env(), CJ_PG17_BINDIR=str(bindir())))
 
 
-GROUPS = {'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
+GROUPS = {'e2e': group_e2e, 'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners}
 
 

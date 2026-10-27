@@ -71,6 +71,11 @@ class Transaction:
             raise Unavailable()
         return Chat(*row)
 
+    def open_chat(self, cid, generation):
+        self.cur.execute('INSERT INTO cj_message_chat (scope, conversation_id, generation, epoch) VALUES (%s,%s,%s,0) ON CONFLICT DO NOTHING RETURNING generation, epoch, last_sequence', (self.scope, cid, generation))
+        row = self.cur.fetchone()
+        return Chat(*row) if row else None
+
     def find(self, mid):
         self.cur.execute('SELECT raw_input, message_id, conversation_id, generation, sequence, run_id, input_sha256 FROM cj_message_receipt WHERE scope = %s AND message_id = %s', (self.scope, mid))
         row = self.cur.fetchone()
@@ -94,6 +99,9 @@ class Transaction:
     def pending(self, limit):
         self.cur.execute('SELECT r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256 FROM cj_message_delivery d JOIN cj_message_receipt r ON (r.scope, r.message_id, r.run_id) = (d.scope, d.message_id, d.run_id) JOIN cj_message_chat c ON (c.scope, c.conversation_id, c.generation) = (r.scope, r.conversation_id, r.generation) WHERE d.scope = %s AND c.active AND NOT d.acknowledged ORDER BY r.conversation_id, r.sequence LIMIT %s', (self.scope, limit))
         return [Receipt(*row) for row in self.cur.fetchall()]
+
+    def acknowledge(self, message_id, run_id):
+        self.cur.execute('UPDATE cj_message_delivery SET acknowledged = true WHERE scope = %s AND message_id = %s AND run_id = %s', (self.scope, message_id, run_id))
 
     def list_boundary(self):
         self.cur.execute('SELECT history_generation::text, history_epoch, (SELECT COALESCE(MAX(list_sequence),0) FROM cj_message_chat WHERE scope=%s AND active) FROM cj_message_scope WHERE scope=%s', (self.scope, self.scope))

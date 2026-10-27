@@ -178,6 +178,9 @@ class Boundary:
     def query(self, token, message_id):
         return self._service(token).query(message_id)
 
+    def open_conversation(self, token, conversation_id):
+        return self._service(token).open_conversation(conversation_id)
+
     def page(self, token, conversation_id, cursor=None, limit=20):
         return self._service(token).page(conversation_id, cursor, limit)
 

@@ -66,11 +66,13 @@ class ProposalChecks(unittest.TestCase):
         self.assertEqual(set(place['properties']),{'state'})
     def test_original_v1_and_generator_registration_unchanged(self):
         frozen=['contracts/api/openapi.json','scripts/generate.sh']
-        for name in frozen:
-            actual=(ROOT/name).read_bytes()
-            original=subprocess.check_output(['git','-C',str(ROOT),'show',BASE+':'+name])
-            self.assertEqual(actual,original,name)
+        original=subprocess.check_output(['git','-C',str(ROOT),'show',BASE+':'+frozen[1]])
+        self.assertEqual((ROOT/frozen[1]).read_bytes(),original,frozen[1])
+        # The formal contract may gain unrelated paths; every Trip schema must stay exactly as at BASE.
         formal=json.loads((ROOT/frozen[0]).read_text())
+        base=json.loads(subprocess.check_output(['git','-C',str(ROOT),'show',BASE+':'+frozen[0]]))
+        trip=lambda spec:{k:v for k,v in spec['components']['schemas'].items() if k.startswith('Trip')}
+        self.assertEqual(trip(formal),trip(base))
         v1=Draft202012Validator({'$ref':'#/components/schemas/TripDocument','components':formal['components']})
         v1.validate(self.fixtures['v1_original'])
         self.assertFalse(v1.is_valid(self.fixtures['base']))
