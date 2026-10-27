@@ -43,7 +43,7 @@
 - ADR-0004 已接受；单一 Python 发行包 cj，保留领域 import 名，不恢复同仓 hash pin 或 Git 导出依赖。
 - P2：北京、邮箱 OTP、最低 iOS 17。
 - JT 当前指令：Codex 实现/测试/交付，Claude 架构/规划/审查，JT 决策与外部资源。
-- JT 当前指令：python、postgres、swift、ios-app 四 job 均阻塞；合并还需 Claude 独立审查或 JT 明确同意。
+- Current general merge/review policy follows accepted ADR-0007; this task B also retains the explicit JT requirement for Claude review before merge.
 - 历史证据归档 tag evidence-archive-2026-10-27；不改写历史。
 - JT 2026-10-27: PR #147 only uses Codex review instead of Claude; continue subsequent P2c work. This is not independent review and not blanket approval for later PRs.
 - JT current dispatch: Codex reviews/repairs and merges #149 then #150; task B remains subject to Claude review. No #144 or MESSAGE write implementation in this slice.
