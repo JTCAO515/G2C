@@ -10,16 +10,18 @@ struct TripTransport: ClientTransport {
     let underlying: any ClientTransport
     let endpoint: TripEndpoint
     let bearer: String
-    let testWrites: Bool
+    let writes: Bool
     let detailCapture: TripDetailResponseCapture?
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let paths = ["getTripProposal": "/v1/trip-proposals", "getTrip": "/v1/trip-details", "listTrips": "/v1/trips",
-                     "queryTripAction": "/v1/trip-action-receipts", "actOnTripProposal": "/v1/trip-actions"]
+                     "queryTripAction": "/v1/trip-action-receipts", "actOnTripProposal": "/v1/trip-actions",
+                     "prepareTripConfirmation": "/v1/trip-confirmations"]
+        let isWrite = operationID == "actOnTripProposal" || operationID == "prepareTripConfirmation"
         guard baseURL == endpoint.url, let path = paths[operationID],
               request.path?.split(separator: "?", maxSplits: 1).first.map(String.init) == path,
-              request.method == (operationID == "actOnTripProposal" ? .post : .get),
-              operationID != "actOnTripProposal" || testWrites else { throw TripFailure.liveWriteUnavailable }
+              request.method == (isWrite ? .post : .get),
+              !isWrite || writes else { throw TripFailure.liveWriteUnavailable }
         var request = request; request.headerFields[.authorization] = "Bearer " + bearer
         let bytes: Data?
         if let body { bytes = try await Data(collecting: body, upTo: endpoint.maximumRequestBytes) } else { bytes = nil }

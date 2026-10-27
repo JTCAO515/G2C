@@ -13,6 +13,7 @@ import OpenAPIRuntime
     private let session: SessionLifecycle?
     private let sessionOperation: SessionOperation?
     let testWrites: Bool
+    let liveWrites: Bool
     let store: TripPendingStore?
     var confirmed = Set<Data>()
     let owner = UUID()
@@ -24,7 +25,16 @@ import OpenAPIRuntime
                 currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
                 pendingStore: TripPendingStore? = nil, liveReadTransport: NoRedirectTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
-        transport = liveReadTransport; testWrites = false; store = pendingStore
+        transport = liveReadTransport; testWrites = false; liveWrites = false; store = pendingStore
+        self.session = session; self.sessionOperation = sessionOperation
+    }
+    /// Live reads plus prepare/confirm writes. Requires the encrypted pending store, so every
+    /// confirmed action is durable before it leaves the device.
+    public init(endpoint: TripEndpoint, credentials: @escaping TripCredentialCallback,
+                currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
+                pendingStore: TripPendingStore, liveTransport: NoRedirectTransport, liveWrites: TripLiveWrites) {
+        self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
+        _ = liveWrites; transport = liveTransport; testWrites = false; self.liveWrites = true; store = pendingStore
         self.session = session; self.sessionOperation = sessionOperation
     }
     /// Internal test-only injection. Not a public capability to enable live writes.
@@ -32,11 +42,13 @@ import OpenAPIRuntime
          currentBinding: @escaping @MainActor () -> TripBinding?, pendingStore: TripPendingStore? = nil,
          session: SessionLifecycle? = nil, sessionOperation: SessionOperation? = nil, interceptedTransport: any ClientTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
-        transport = interceptedTransport; testWrites = true; store = pendingStore
+        transport = interceptedTransport; testWrites = true; liveWrites = false; store = pendingStore
         self.session = session; self.sessionOperation = sessionOperation
     }
     public func invalidate() { generation = UUID(); confirmed.removeAll(); invalidateDetailSnapshots() }
-    public var acceptsUserActions: Bool { false }
+    /// True only for a host-granted live-write client with a durable pending store.
+    public var acceptsUserActions: Bool { liveWrites && store != nil }
+    var writesEnabled: Bool { testWrites || liveWrites }
     private var sessionIsCurrent: Bool {
         if let session, let sessionOperation { return session.isCurrent(sessionOperation) }
         return testWrites && session == nil && sessionOperation == nil
@@ -66,7 +78,7 @@ import OpenAPIRuntime
         try check(binding, token)
         guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw TripFailure.unconfigured }
         return Client(serverURL: endpoint.url, configuration: .memory,
-                      transport: TripTransport(underlying: transport, endpoint: endpoint, bearer: bearer, testWrites: testWrites, detailCapture: detailCapture,
+                      transport: TripTransport(underlying: transport, endpoint: endpoint, bearer: bearer, writes: writesEnabled, detailCapture: detailCapture,
                         validate: { [self] in
                             try check(binding, token)
                             if let detailSource, detailSnapshotSource != detailSource { throw TripFailure.staleBinding }

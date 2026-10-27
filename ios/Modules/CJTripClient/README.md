@@ -132,10 +132,29 @@ Actual checks and public API examples: `evidence/accepted-detail-snapshot/REPORT
 
 ## Decisions and unknown results
 
-Public `choose` always throws `liveWriteUnavailable`; `acceptsUserActions` is false,
-and both decision buttons clearly show unavailable. The real confirmation issuer
-and account policy have not been provided. There is no public switch to enable POST,
-no `viewed` boolean, and no public confirmation-reference input.
+A decision is two explicit steps (P2c, CJ-015):
+
+1. `prepare(_:proposal:binding:)` asks `POST /v1/trip-confirmations` for one signed original
+   action. It is read-only on the server and writes nothing locally. The response must repeat
+   the exact reviewed proposal, the requested action ID and kind, and a `tc1.<expires>.<mac>`
+   reference whose expiry equals `expires_at` and does not exceed the proposal's expiry;
+   anything else is `invalidResponse`. The client generates the action ID once per
+   preparation; it never invents a confirmation reference.
+2. `confirm(_:binding:now:)` runs only after the user confirms the prepared action on screen.
+   It refuses within `confirmationClockMargin` (60 s) of expiry, encrypts and fsyncs the exact
+   server bytes, then POSTs them unchanged.
+
+Live writes need the host to grant `TripLiveWrites` through the public live initializer
+together with a `TripPendingStore`; grant it only when the API host enforces signed
+confirmations. `acceptsUserActions` is true only then; read-only and test clients report
+false. `choose` remains inert for old hosts.
+
+After an unknown outcome only `query(actionID:)` of the original action is allowed; no new
+action for that proposal can be prepared while the original is unsettled. A missing receipt
+before expiry stays `notObserved`. Once the signed expiry plus the clock margin has passed,
+a missing receipt is final (`expiredUncommitted`): signed confirmations cannot commit after
+expiry. The frozen record stays on disk, and the same proposal still cannot be decided from
+this device; other proposals are unblocked.
 
 Internal test-only `submitFixture` accepts an immutable proposal and an exact
 synthetic server-held proof reference. `TripPending` freezes five validated ASCII

@@ -30,19 +30,53 @@ public struct TripProposalCard: View {
                 }
                 decision
                 HStack {
-                    Button(language.text("Accept", "接受")) { state.choose(.accept) }
-                    Button(language.text("Reject draft", "拒绝草稿")) { state.choose(.reject) }
-                }.disabled(true)
-                Text(language.text("Confirmation is unavailable. Viewing this draft does not submit a decision.", "确认功能尚不可用。查看草稿不会提交接受或拒绝。"))
-                    .font(.footnote)
+                    Button(language.text("Accept", "接受")) { start(.accept) }
+                    Button(language.text("Reject draft", "拒绝草稿")) { start(.reject) }
+                }.disabled(!canStart)
+                if !state.acceptsUserActions {
+                    Text(language.text("Confirmation is unavailable. Viewing this draft does not submit a decision.", "确认功能尚不可用。查看草稿不会提交接受或拒绝。"))
+                        .font(.footnote)
+                } else {
+                    Text(language.text("Choosing only prepares the action. Nothing is saved until you confirm it.", "选择只会准备动作，确认之前不会保存任何内容。"))
+                        .font(.footnote)
+                }
                 Text(language.text("Rejecting a draft and stopping generation are separate actions.", "拒绝已生成草稿与停止生成是不同操作。"))
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }.accessibilityElement(children: .contain)
     }
+    private var canStart: Bool {
+        guard state.acceptsUserActions, state.proposal?.status == .pending else { return false }
+        switch state.decision {
+        case .unavailable, .prepareFailed, .expiredUncommitted: return true
+        default: return false
+        }
+    }
+    private func start(_ kind: TripActionKind) {
+        if let work = state.prepareDecision(kind) { Task { await state.perform(work) } }
+    }
     @ViewBuilder private var decision: some View {
         switch state.decision {
         case .unavailable: EmptyView()
+        case .preparing: ProgressView(language.text("Preparing the action for your confirmation", "正在准备待确认的动作"))
+        case .prepareFailed:
+            Text(language.text("The action could not be prepared. Nothing was saved; review the draft and try again.", "未能准备该动作，未保存任何内容；请重新查看草稿后再试。"))
+        case .expiredUncommitted:
+            Text(language.text("That confirmation expired and was not saved. Review the draft again before deciding.", "该确认已过期且未保存。请重新查看草稿后再决定。"))
+        case .awaitingConfirmation(let prepared):
+            VStack(alignment: .leading, spacing: 8) {
+                Text(prepared.kind == .accept ? language.text("Confirm: accept this draft as your trip", "确认：接受此草稿为你的行程")
+                                              : language.text("Confirm: reject this draft", "确认：拒绝此草稿")).font(.headline)
+                Text(prepared.proposal.document.title)
+                Text(language.text("Confirm before: ", "请在此时间前确认：") + Date(timeIntervalSince1970: Double(prepared.expiresAt)).formatted())
+                    .font(.footnote)
+                HStack {
+                    Button(language.text("Confirm", "确认")) {
+                        if let work = state.prepareConfirmation() { Task { await state.perform(work) } }
+                    }.buttonStyle(.borderedProminent)
+                    Button(language.text("Cancel", "取消")) { state.cancelConfirmation() }
+                }
+            }.accessibilityElement(children: .contain)
         case .submitting: ProgressView(language.text("Submitting original action", "正在提交原动作"))
         case .unknown:
             Text(language.text("Result unknown. Check the original action; do not submit again.", "结果未知。请查询原动作，不要再次提交。"))

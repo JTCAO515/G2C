@@ -18,16 +18,15 @@
 | --- | --- |
 | Objective | Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green. |
 | Status | active |
-| Phase | P2c：#147 已按 JT 本轮替代审查授权合并；CJ-015 服务端确认凭证切片待审 |
+| Phase | P2c：#148 已合并；iOS 行程确认客户端切片待 CI/独立审查；App 开发会话组装与 MESSAGE 发送许可待做 |
 | Accepted Issue | CJ-015 / GitHub #20：服务端确认凭证、准备接口与原 TRIP 事务校验 |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T06:54:44Z |
+| Last updated | 2026-10-27T16:00:00Z |
 
 ## Active Work
 
-- PR #147 head 2dade43da693510e0a0aad5935cf02e25bbf8d46：JT 明确跳过 Claude、指定 Codex 审查后继续；Standards 0 / Spec 0，四 CI 全绿，已正常合并为 d74e9fcf7b4c857524edf29a0c3f4c3bf6c175e7。不冒认独立审查。
-- feat/p2c-trip-confirmation 从最新 main 开始，新增签名确认准备接口，保留原动作与正式 TRIP 写入边界。
-- PR #144 保持独立 V2 文档范围，未处理。
+- feat/p2c-ios-trip-confirm：本地入口强制签名、iOS prepare/confirm/对账与显式确认 UI（PR 待 CI 与独立审查）。
+- fix/ios-app-rpath（#149）：App 在 iOS 26 以下启动崩溃的修复，待独立审查。
 
 ## Accepted Assumptions
 
@@ -56,25 +55,23 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/trip/cj_trip/confirmation.py, backend/trip/cj_trip/postgres.py` | 签名绑定原动作/内容/作用域/版本/有效期，现有事务最后使用 DB 时间重新校验；不新增迁移。 |
-| `backend/cj_api/trip_confirmation_routes.py, backend/cj_api/app.py, backend/cj_api/composition.py, backend/cj_api/local_app.py` | 新增认证准备接口，显式同一 issuer/validator；默认新接口关闭，旧本地路径保留。 |
-| `contracts/api/openapi.json, backend/cj_api/generated.py, ios/Sources/CJAPI/Generated/*` | 两个新增 envelope 与准备操作；正式来源重新生成 SDK，包含之前遗漏的既有 P2a 操作声明，旧 schema/操作不变。 |
-| `backend/cj_api/tests/test_trip_confirmation.py, backend/trip/tests/test_confirmation.py, backend/agent/tests/e2e_local.py, contracts/api/check_trip_content_v2_schema_proposal.py` | 签名、原动作并发/重放、提交前过期、授权撤回、API/PG 集成；精确登记两新增 schema，保留原 V1 与 V2 禁止注册断言。 |
-| `backend/README.md, README.md, docs/dispatch/P2-walking-skeleton.md, docs/handoff.json, HANDOFF.md` | 记录原审查授权、确认准备语义、配置与兼容退出条件、实际验证和剩余 P2c 边界。 |
+| `backend/cj_api/local_app.py, scripts/dev_auth.py` | 本地入口强制签名校验；专用确认 key 的生成与加载。 |
+| `backend/tests/test_local_entry_confirmation.py` | key 缺失/权限过宽/过短拒绝启动；签名入口可用。 |
+| `ios/Modules/CJTripClient/Sources/CJTripClient/*` | prepare/confirm、响应校验、TripLiveWrites、过期对账、两步确认 UI。 |
+| `ios/Modules/CJTripClient/Tests/CJTripClientTests/ConfirmationFlowTests.swift` | 确认流程与篡改负例。 |
+| `.github/workflows/ci.yml` | swift job 增加 CJTripClient 测试。 |
+| `ios/Modules/CJTripClient/README.md, backend/README.md, docs/dispatch/P2-walking-skeleton.md` | 切片说明、兼容与限制。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `#147 固定 base/head 审查 + 四 job CI` | Standards 0、Spec 0；按 JT 最新指令由同一 Codex 替代 Claude 审查后正常合并。该例外仅 #147，不扩展到此新 PR。 | https://github.com/JTCAO515/G2C/pull/147 |
-| pass | `uv run --locked python -B scripts/test.py` | 56/56 组通过；其后补充 issuer/validator 配置替换拒绝检查，6 个确认单测定向通过。最终 head 全量由 CI 复核。 | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py trip` | 79 项私有 PG 测试通过，含同原动作并发一次提交、拒绝不写 Trip、末次 AUTH guard 后凭证过期回滚、原回执跨 key 轮换重放。 | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py e2e` | 7 项本地真实 API/PG 测试通过；签发不写入、接受/拒绝/重放/篡改/跨用户拒绝及签发期间授权撤回。使用 FakeProvider 和临时开发身份。 | — |
-| pass | `Swift 根包测试 / arm64 Simulator App 构建` | 根包 4 项测试通过，Xcode 27.1 App 构建通过；不代表 iOS 写入 UI/真实登录已接通。 | — |
-| pass | `正式 API 生成与 exact-base 兼容比较` | Python/Swift 生成产物与生成目录相同；对 d74e9fc 的所有既有 schema/操作逐项比较无修改。初次历史测试因新增 Trip 名称失败，已精确登记两 envelope；原 V1 和 V2 禁止注册断言保留。 | — |
-| pass | `python3 -B scripts/handoff.py check; git diff --check` | JSON render/check and git diff --check passed. | — |
-| unknown | `本新 PR 最终 head 四 job CI / 独立审查` | 截至提交准备时未运行；通过分支 feat/p2c-trip-confirmation 的 PR 读取最终结果，不沿用 #147 的绿。 | — |
-| not-run | `真实确认 key 配置、云/OTP、iOS 写入 UI、真实模型、真机` | 未配置真实 key 或外部资源，未开放 iOS 写入门禁；没有云写入、付费调用、部署。 | — |
+| pass | `scripts/test.py` | 56/56（含本地入口签名 5 项）。 | — |
+| pass | `scripts/pg_suites.py e2e` | 本地 PG 端到端通过（FakeProvider）。 | — |
+| pass | `swift test（ios/Modules/CJTripClient，Xcode 27.1）` | 61 项，含新增确认流程 5 项（篡改负例 7 种）。 | — |
+| pass | `xcodebuild App（iOS Simulator arm64，Xcode 27.1）` | 整 App 构建通过。 | — |
+| not-run | `模拟器端到端（开发 token → 草稿 → 准备 → 确认 → 正式行程）` | App 尚未组装开发会话与 TripClient。 | — |
+| not-run | `GitHub Actions ci.yml` | 以本切片 PR 检查为准。 | — |
 
 ## Blockers
 
@@ -99,9 +96,9 @@
 
 ## Next Smallest Action
 
-- Action: 完成 feat/p2c-trip-confirmation 的精确 head 四 job CI 与审查；通过后从最新 main 接入 iOS 原动作持久化、准备响应校验和显式确认 UI，随后处理 MESSAGE 发送许可。
-- Expected observation: 确认准备/原动作事务有 CI 与审查证据，客户端保持旧回执兼容；真实 key/外部写入不因代码合并自动获准。
-- Resume command: `gh pr checks feat/p2c-trip-confirmation --repo JTCAO515/G2C`
+- Action: 独立审查本切片（feat/p2c-ios-trip-confirm）与 #149；合并后由 App 组装开发会话：开发 token 凭证回调、钥匙串密钥提供者、TripPendingStore、TripClient(liveWrites) 与 Shell 绑定，在 iOS 17.5 模拟器跑草稿→准备→确认→正式行程；之后再固定并实现 MESSAGE 发送许可。
+- Expected observation: 模拟器上完成一次中英文的草稿确认并读回正式行程；结果未知只能查原动作。
+- Resume command: `gh pr checks feat/p2c-ios-trip-confirm --repo JTCAO515/G2C`
 
 ## Rollback
 

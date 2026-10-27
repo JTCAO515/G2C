@@ -118,6 +118,29 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None):
         trip_confirmation_signer=confirmation_signer)
 
 
+CONFIRMATION_KEY_FILE = 'trip-confirmation.key'
+
+
+def load_confirmation_signer(auth_dir):
+    """Dedicated local signing key created by scripts/dev_auth.py; never a default or generated here."""
+    from cj_trip.confirmation import ConfirmationSigner
+    path = Path(auth_dir) / CONFIRMATION_KEY_FILE
+    try:
+        mode = path.stat().st_mode & 0o777
+        key = path.read_bytes()
+    except OSError:
+        raise CompositionUnavailable('trip confirmation key missing; run scripts/dev_auth.py confirmation-key') from None
+    if mode & 0o077 or len(key) < 32:
+        raise CompositionUnavailable('trip confirmation key must be private (0600) and at least 32 bytes')
+    return ConfirmationSigner(key)
+
+
 def app_from_environment():
-    """uvicorn factory: CJ_LOCAL_CONNINFO and CJ_LOCAL_AUTH_DIR point at local files."""
-    return create_local_app(conninfo_path=os.environ['CJ_LOCAL_CONNINFO'], auth_dir=os.environ['CJ_LOCAL_AUTH_DIR'])
+    """uvicorn factory: CJ_LOCAL_CONNINFO and CJ_LOCAL_AUTH_DIR point at local files.
+
+    Always uses the signed Trip confirmation path. The permissive P2b validator remains
+    reachable only through create_local_app's default for existing tests.
+    """
+    auth_dir = os.environ['CJ_LOCAL_AUTH_DIR']
+    return create_local_app(conninfo_path=os.environ['CJ_LOCAL_CONNINFO'], auth_dir=auth_dir,
+                            confirmation_signer=load_confirmation_signer(auth_dir))

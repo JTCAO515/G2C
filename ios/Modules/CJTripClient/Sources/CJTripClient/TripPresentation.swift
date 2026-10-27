@@ -8,6 +8,14 @@ public enum TripLoadState: Equatable, Sendable {
 public enum TripDecisionState: Sendable {
     case unavailable, submitting, unknown, reconciling
     case confirmed(Components.Schemas.TripActionReceipt)
+    /// Asking the server to prepare a signed original action; nothing is submitted.
+    case preparing
+    /// Server-prepared action shown for the user's explicit confirmation; nothing is submitted yet.
+    case awaitingConfirmation(TripPreparedAction)
+    /// Preparation was refused or failed; no action exists, so the user may review again.
+    case prepareFailed
+    /// The original action can no longer commit (no receipt, signed confirmation expired).
+    case expiredUncommitted
 }
 
 /// Opaque, one-use UI work captured synchronously before a Task is queued.
@@ -15,6 +23,7 @@ public enum TripDecisionState: Sendable {
 public struct TripPresentationWork: Sendable {
     fileprivate enum Kind: Sendable {
         case proposal(String), detail(String), list(Int, TripCursor?), reconcile(String)
+        case prepare(String, TripActionKind), confirm(TripPreparedAction)
     }
     fileprivate let owner: UUID
     fileprivate let lifetime: UUID
@@ -104,6 +113,36 @@ public struct TripPresentationWork: Sendable {
         listState = work == nil ? .unavailable : .loading
         return work
     }
+    /// True only when the host granted live writes with a durable pending store.
+    public var acceptsUserActions: Bool { client?.acceptsUserActions == true }
+    /// Step 1 of a decision: ask the server to prepare the signed original action. Read-only.
+    public func prepareDecision(_ kind: TripActionKind) -> TripPresentationWork? {
+        guard acceptsUserActions, selectedActionID == nil, let proposal, proposal.status == .pending,
+              let id = selectedProposalID, same(id, proposal.proposal_id) else { return nil }
+        switch decision {
+        case .unavailable, .prepareFailed, .expiredUncommitted: break
+        default: return nil
+        }
+        proposalRequest = UUID()
+        guard let work = work(.prepare(id, kind), request: proposalRequest) else { return nil }
+        decision = .preparing
+        return work
+    }
+    /// Step 2: the user explicitly confirmed the prepared action shown on screen.
+    public func prepareConfirmation(now: Int = Int(Date().timeIntervalSince1970)) -> TripPresentationWork? {
+        guard case .awaitingConfirmation(let prepared) = decision, selectedActionID == nil else { return nil }
+        guard prepared.expiresAt - confirmationClockMargin > now else { decision = .expiredUncommitted; return nil }
+        proposalRequest = UUID()
+        guard let work = work(.confirm(prepared), request: proposalRequest) else { return nil }
+        selectedActionID = prepared.pending.actionID
+        decision = .submitting
+        return work
+    }
+    /// Drops a prepared action before confirmation. Preparation wrote nothing, so this is safe.
+    public func cancelConfirmation() {
+        guard case .awaitingConfirmation = decision else { return }
+        proposalRequest = UUID(); decision = .unavailable
+    }
     public func prepareReconciliation() -> TripPresentationWork? {
         guard case .unknown = decision, let actionID = selectedActionID else { return nil }
         proposalRequest = UUID()
@@ -116,6 +155,8 @@ public struct TripPresentationWork: Sendable {
         switch work.kind {
         case .proposal(let id): return proposalRequest == work.request && selectedProposalID.map { same($0, id) } == true
         case .reconcile(let id): return proposalRequest == work.request && selectedActionID.map { same($0, id) } == true
+        case .prepare(let id, _): return proposalRequest == work.request && selectedActionID == nil && selectedProposalID.map { same($0, id) } == true
+        case .confirm(let prepared): return proposalRequest == work.request && selectedActionID.map { same($0, prepared.pending.actionID) } == true
         case .detail(let id):
             return detailRequest == work.request && selectedTripID.map { same($0, id) } == true
                 && work.detailSource == client?.detailSnapshotSource
@@ -128,7 +169,7 @@ public struct TripPresentationWork: Sendable {
     }
     private func claim(_ work: TripPresentationWork) -> Bool {
         switch work.kind {
-        case .proposal, .reconcile:
+        case .proposal, .reconcile, .prepare, .confirm:
             guard startedProposal != work.request else { return false }; startedProposal = work.request
         case .detail:
             guard startedDetail != work.request else { return false }; startedDetail = work.request
@@ -154,10 +195,16 @@ public struct TripPresentationWork: Sendable {
             case .reconcile(let actionID):
                 let result = try await client.query(actionID: actionID, binding: work.binding)
                 guard isCurrent(work) else { return }
-                switch result {
-                case .confirmed(let receipt): decision = .confirmed(receipt)
-                case .notObserved: decision = .unknown
-                }
+                apply(result)
+            case .prepare(_, let kind):
+                guard let proposal else { return }
+                let prepared = try await client.prepare(kind, proposal: proposal, binding: work.binding)
+                guard isCurrent(work) else { return }
+                decision = .awaitingConfirmation(prepared)
+            case .confirm(let prepared):
+                let result = try await client.confirm(prepared, binding: work.binding, now: Int(Date().timeIntervalSince1970))
+                guard isCurrent(work) else { return }
+                apply(result)
             }
         } catch {
             guard isCurrent(work) else { return }
@@ -166,6 +213,10 @@ public struct TripPresentationWork: Sendable {
             case .detail: detailState = .failed
             case .list: listState = .failed
             case .reconcile: decision = .unknown
+            // Preparation writes nothing; the user may review and try again.
+            case .prepare: decision = .prepareFailed
+            // After confirmation the outcome may be committed: only the original action may be queried.
+            case .confirm: decision = .unknown
             }
         }
     }
@@ -194,6 +245,14 @@ public struct TripPresentationWork: Sendable {
         proposalState = .loaded; decision = .unknown
     }
     /// No reviewed flag or fabricated confirmation reference can enable this operation.
+    private func apply(_ result: TripActionResult) {
+        switch result {
+        case .confirmed(let receipt): decision = .confirmed(receipt)
+        case .notObserved: decision = .unknown
+        case .expiredUncommitted: decision = .expiredUncommitted
+        }
+    }
+    /// Superseded by `prepareDecision` + `prepareConfirmation`; kept so old hosts stay inert.
     public func choose(_ kind: TripActionKind) {
         guard selectedActionID == nil else { return }
         decision = .unavailable
