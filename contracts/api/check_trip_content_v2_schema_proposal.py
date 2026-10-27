@@ -65,7 +65,7 @@ class ProposalChecks(unittest.TestCase):
         self.assertIs(place['additionalProperties'],False)
         self.assertEqual(set(place['properties']),{'state'})
     def test_original_v1_and_generator_registration_unchanged(self):
-        frozen=['contracts/api/openapi.json','scripts/generate.sh','backend/cj_api/trip_pins.json','backend/cj_api/manual_preview_pins.json']
+        frozen=['contracts/api/openapi.json','scripts/generate.sh']
         for name in frozen:
             actual=(ROOT/name).read_bytes()
             original=subprocess.check_output(['git','-C',str(ROOT),'show',BASE+':'+name])

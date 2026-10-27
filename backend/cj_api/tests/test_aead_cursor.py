@@ -162,20 +162,24 @@ class AeadCursorTests(SyntheticFixture):
             self.within(lambda c:withdrawing.encode(self.cursor(self.binding(c)),binding=self.binding(c),ttl_seconds=30))
 
     def test_same_context_identity_and_metadata_checked_after_crypto_clock(self):
+        # MESSAGE forbids nested history contexts, so the other context is captured
+        # from a separate, already-exited binding.
+        captured=[]
+        self.within(lambda c:captured.append(c) or 0)
+        second=captured[0]
         def outer(first):
+            self.assertIsNot(first,second)
             binding=self.binding(first)
             token=self.codec.encode(self.cursor(binding),binding=binding,ttl_seconds=30)
-            def inner(second):
-                self.assertIsNot(first,second)
-                # Explicit trusted-host fault; dataclass equality is insufficient.
-                def swap():object.__setattr__(binding,'context',second);return 100
-                swapping=AeadCursorCodec(**dict(self.options,clock=swap))
-                with self.assertRaises(CursorUnavailable):swapping.encode(self.cursor(binding),binding=binding,ttl_seconds=30)
-                object.__setattr__(binding,'context',first)
-                with self.assertRaises(CursorUnavailable):swapping.decode(token,binding=binding,ttl_seconds=30)
-                object.__setattr__(binding,'context',first)
-                def change_metadata():object.__setattr__(binding,'environment','changed-env');return 100
-                changing=AeadCursorCodec(**dict(self.options,clock=change_metadata))
-                with self.assertRaises(CursorUnavailable):changing.encode(self.cursor(binding),binding=binding,ttl_seconds=30)
-            self.within(inner)
+            # Explicit trusted-host fault; dataclass equality is insufficient.
+            def swap():object.__setattr__(binding,'context',second);return 100
+            swapping=AeadCursorCodec(**dict(self.options,clock=swap))
+            with self.assertRaises(CursorUnavailable):swapping.encode(self.cursor(binding),binding=binding,ttl_seconds=30)
+            object.__setattr__(binding,'context',first)
+            with self.assertRaises(CursorUnavailable):swapping.decode(token,binding=binding,ttl_seconds=30)
+            object.__setattr__(binding,'context',first)
+            def change_metadata():object.__setattr__(binding,'environment','changed-env');return 100
+            changing=AeadCursorCodec(**dict(self.options,clock=change_metadata))
+            with self.assertRaises(CursorUnavailable):changing.encode(self.cursor(binding),binding=binding,ttl_seconds=30)
+            return 0
         self.within(outer)

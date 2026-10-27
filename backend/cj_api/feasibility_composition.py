@@ -1,6 +1,6 @@
 """Closed candidate composition on canonical NEEDS/AUTH and fixed source projector."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_pinned_modules
+from .composition import CompositionUnavailable,_internal_modules
 
 @dataclass(frozen=True)
 class FeasibilityConfiguration:
@@ -23,7 +23,7 @@ class CandidateDependencies:
     modules:dict
 
 def _candidate_dependencies(*,environment,checker,resolve,configuration,issuer,audience):
-    modules=_pinned_modules(manifest_name='feasibility_pins.json')
+    modules=_internal_modules('feasibility')
     if environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker) or not callable(resolve) or type(configuration) is not FeasibilityConfiguration:
         raise CompositionUnavailable('Existing canonical checker and explicit trusted read host required')
     host=modules['cj_needs.protected_read'].ReadConfiguration(environment,issuer,audience,configuration.max_response_bytes)

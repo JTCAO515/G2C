@@ -143,6 +143,9 @@ class SessionBindingTests(unittest.TestCase):
     def test_actual_parent_legacy_verifier_and_checker_remain_compatible(self):
         # Load only two fixed parent blobs; no old dependencies/config/resources are used.
         root=Path(__file__).resolve().parents[3]
+        parent='8b6abb236cf10c1865a9cc8c6155bd8ac732c07e'
+        if subprocess.run(['git','-C',str(root),'cat-file','-e',parent+'^{commit}'],capture_output=True).returncode:
+            self.skipTest('legacy parent commit '+parent[:7]+' is not in this repository')
         with tempfile.TemporaryDirectory(prefix='cj007-legacy-binding-') as directory:
             modules=[]
             for name in ('jwt_adapter','admission'):

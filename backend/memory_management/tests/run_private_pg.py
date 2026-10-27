@@ -1,7 +1,7 @@
 """Create one fresh CJ019-only cluster, check, restart, stop and preserve it.
 
 No inherited PG environment/DSN, no TCP listener, no external services. Invoke
-with an already installed Python3.11+/psycopg3.2.10; never installs dependencies.
+with an already installed Python3.11+/psycopg 3.2.x; never installs dependencies.
 """
 import json
 import os
@@ -13,7 +13,7 @@ import tempfile
 import psycopg
 
 ROOT = Path(__file__).resolve().parents[1]
-BIN = Path('/opt/homebrew/opt/postgresql@16/bin')
+BIN = Path(os.environ.get('CJ_PG16_BINDIR', '/opt/homebrew/opt/postgresql@16/bin'))
 ROLE = 'cj019_owner'
 PORT = 56219  # Task-private Unix socket only; no TCP listener.
 
@@ -22,12 +22,12 @@ def main(*, checks_file=None, memory_input=None,
          label='CJ019 local real PostgreSQL / synthetic authority fixtures'):
     checks_file = checks_file or ROOT/'tests'/'checks.py'
     memory_input = memory_input or ROOT.parent/'memory'
-    if sys.version_info < (3, 11) or psycopg.__version__ != '3.2.10':
-        raise RuntimeError('requires Python 3.11+ and fixed psycopg 3.2.10')
+    if sys.version_info < (3, 11) or not psycopg.__version__.startswith('3.2.'):
+        raise RuntimeError('requires Python 3.11+ and psycopg 3.2.x')
     local = ROOT / '.local'
     local.mkdir(exist_ok=True)
     run = Path(tempfile.mkdtemp(prefix='pg-', dir=local))
-    socket = Path(tempfile.mkdtemp(prefix='cj019-', dir='/private/tmp'))
+    socket = Path(tempfile.mkdtemp(prefix='cj019-'))
     socket.chmod(0o700)
     data = run / 'data'
     passfile = run / 'empty.pgpass'
@@ -39,7 +39,7 @@ def main(*, checks_file=None, memory_input=None,
     config_path.write_text(json.dumps(config, indent=2))
     env = dict(PATH='/opt/homebrew/bin:/usr/bin:/bin', LANG='C', LC_ALL='C',
                PYTHONDONTWRITEBYTECODE='1')
-    report_path = ROOT / 'evidence' / (run.name + '.txt')
+    report_path = run / 'report.txt'
     running = False
     with report_path.open('x') as report:
         def record(text):

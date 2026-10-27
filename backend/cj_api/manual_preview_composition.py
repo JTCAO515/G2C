@@ -1,6 +1,6 @@
 """Readonly manual preview consumes existing authenticated TRIP operation only."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_pinned_modules
+from .composition import CompositionUnavailable,_internal_modules
 from .trip_composition import build_trip_boundary
 
 @dataclass(frozen=True)
@@ -15,7 +15,7 @@ class ManualPreviewConfiguration:
         if self.max_original_bytes>1_000_000:raise CompositionUnavailable('Original Trip bound exceeds producer format')
 
 def _attach_manual_preview(boundary,configuration):
-    modules=_pinned_modules(manifest_name='manual_preview_pins.json')
+    modules=_internal_modules('manual_preview')
     if type(boundary) is not modules['cj_trip.auth_boundary'].Boundary or type(configuration) is not ManualPreviewConfiguration:
         raise CompositionUnavailable('Existing TRIP boundary and explicit preview limits required')
     return boundary,modules

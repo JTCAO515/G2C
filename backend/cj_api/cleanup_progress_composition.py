@@ -1,6 +1,6 @@
 """Current-account read assembly; no destructive factory or credential recovery."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_pinned_modules
+from .composition import CompositionUnavailable,_internal_modules
 
 @dataclass(frozen=True)
 class CleanupProgressConfiguration:
@@ -11,7 +11,7 @@ class CleanupProgressConfiguration:
             raise CompositionUnavailable('Explicit bounded cleanup read limits required')
 
 def _cleanup_progress_from_checker(checker,resolve,configuration,*,environment,issuer,audience):
-    modules=_pinned_modules(manifest_name='cleanup_progress_pins.json')
+    modules=_internal_modules('cleanup_progress')
     if environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker) or not callable(resolve) or type(configuration) is not CleanupProgressConfiguration:
         raise CompositionUnavailable('Canonical checker/trusted current-account resolver/config required')
     host=modules['cj_cleanup.protected_progress'].Configuration(environment,issuer,audience,configuration.max_steps,configuration.max_response_bytes)
@@ -20,7 +20,7 @@ def _cleanup_progress_from_checker(checker,resolve,configuration,*,environment,i
 def create_cleanup_progress_app(*,configuration,environment,jwt_configuration,verification_keys,access_provider,resolve):
     if environment!='local' or not callable(resolve) or not callable(getattr(verification_keys,'resolve',None)) or not callable(getattr(access_provider,'evaluate',None)):
         raise CompositionUnavailable('Explicit local cleanup progress AUTH/resolver required')
-    modules=_pinned_modules(manifest_name='cleanup_progress_pins.json');auth=modules['cj_auth.jwt_adapter']
+    modules=_internal_modules('cleanup_progress');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
         raise CompositionUnavailable('Fixed strict AUTH profile required')
     checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)

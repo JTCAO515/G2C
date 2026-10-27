@@ -14,23 +14,13 @@ import unittest
 import psycopg
 
 ROOT = Path(__file__).resolve().parents[1]
-PG = Path('/opt/homebrew/opt/postgresql@17/bin')
-MANAGEMENT_REPO = ROOT.parents[2] / 'cj-019-memory-management'
-FIXED = '6e11d48815259bc3d879e63cd794e37e67694b86'
+PG = Path(os.environ.get('CJ_PG17_BINDIR', '/opt/homebrew/opt/postgresql@17/bin'))
+MANAGEMENT = ROOT.parent / 'memory_management'
+(ROOT / '.local').mkdir(exist_ok=True)
 PRIVATE = Path(tempfile.mkdtemp(prefix='lifecycle-', dir=ROOT / '.local'))
 SOCKET = Path(tempfile.mkdtemp(prefix='cj011-lifecycle-', dir='/tmp'))
-SNAPSHOT = PRIVATE / 'fixed-management'
-MODULE = SNAPSHOT / 'cj_memory_management'
-MODULE.mkdir(parents=True)
-manifest = {}
-for name in ('__init__.py', 'domain.py', 'service.py', 'postgres.py'):
-    path = 'backend/memory_management/cj_memory_management/' + name
-    data = subprocess.run(['git', '-C', str(MANAGEMENT_REPO), 'show', FIXED + ':' + path], check=True, capture_output=True).stdout
-    (MODULE / name).write_bytes(data)
-    manifest[path] = hashlib.sha256(data).hexdigest()
-management_sql = subprocess.run(['git', '-C', str(MANAGEMENT_REPO), 'show', FIXED + ':backend/memory_management/schema.sql'], check=True, capture_output=True).stdout
-(PRIVATE / 'fixed-manifest.json').write_text(json.dumps({'head': FIXED, 'sha256': manifest}, indent=2))
-sys.path[:0] = [str(ROOT), str(ROOT.parent / 'auth'), str(ROOT / 'tests'), str(SNAPSHOT)]
+management_sql = (MANAGEMENT / 'schema.sql').read_bytes()
+sys.path[:0] = [str(ROOT), str(ROOT.parent / 'auth'), str(ROOT / 'tests'), str(MANAGEMENT)]
 from cj_auth.interfaces import TrustedPrincipal
 from cj_memory.domain import Service, Conflict, InvalidInput, Unavailable
 from cj_memory.lifecycle import LifecycleAdapter, INTERFACE_VERSION
@@ -311,7 +301,7 @@ def main():
         with (PRIVATE / 'test.log').open('w') as log:
             result = unittest.TextTestRunner(stream=log, verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Checks))
         print((PRIVATE / 'test.log').read_text())
-        print(json.dumps({'private': str(PRIVATE), 'socket': str(SOCKET), 'identity': identity, 'fixedCJ019': FIXED,
+        print(json.dumps({'private': str(PRIVATE), 'socket': str(SOCKET), 'identity': identity, 'managementSource': 'working-tree',
                           'interface': INTERFACE_VERSION, 'tests': result.testsRun, 'failures': len(result.failures), 'errors': len(result.errors)}))
     finally:
         if started: run_pg('pg_ctl', '-D', str(PRIVATE / 'pg'), 'stop', '-m', 'fast')

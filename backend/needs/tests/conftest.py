@@ -24,7 +24,7 @@ def pg():
     data, socket, passfile = root / 'data', root / 's', root / 'empty.pass'
     socket.mkdir(mode=0o700)
     passfile.touch(mode=0o600)
-    bindir = Path('/opt/homebrew/opt/postgresql@17/bin')
+    bindir = Path(os.environ.get('CJ_PG17_BINDIR', '/opt/homebrew/opt/postgresql@17/bin'))
     assert (bindir / 'initdb').is_file(), 'explicit PostgreSQL 17 installation required'
     env = {'PATH': '/usr/bin:/bin', 'LC_ALL': 'C', 'LANG': 'C'}
     role, port = 'cj013_synthetic', 56413

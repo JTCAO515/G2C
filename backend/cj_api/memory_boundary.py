@@ -4,7 +4,7 @@ Fresh AUTH checks run through the producer public request-lifetime guard.
 No atomic distributed account/database revocation guarantee is claimed.
 """
 from dataclasses import dataclass
-from .composition import CompositionUnavailable, _pinned_modules
+from .composition import CompositionUnavailable, _internal_modules
 
 
 class MemoryAccessBlocked(Exception):
@@ -121,7 +121,7 @@ def build_memory_boundary(*, environment, jwt_configuration, verification_keys,
             or not callable(getattr(verification_keys, 'resolve', None))
             or not callable(getattr(access_provider, 'evaluate', None))):
         raise CompositionUnavailable('Explicit local memory AUTH/binding/source policy required')
-    modules = _pinned_modules(manifest_name='memory_pins.json')
+    modules = _internal_modules('memory')
     auth = modules['cj_auth.jwt_adapter']
     if (not isinstance(jwt_configuration, auth.JWTConfiguration)
             or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1):

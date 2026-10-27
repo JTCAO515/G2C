@@ -9,6 +9,7 @@ from cj_cleanup.core import *
 ROOT = Path(__file__).resolve().parents[3]
 INVENTORY = ('business','business/message','business/usage','business/memory-authoritative',
  'business/trip-authoritative','business/needs-current-planning','business/feedback-private-actions',
+ 'business/cleanup-metadata','business/memory-management-actions',
  'checkpoints','checkpoints/run','memory-derived','device-cache','device-cache/encrypted-message-file',
  'device-cache/sdk-session-keychain','device-cache/message-key-keychain','external-processing')
 
