@@ -1,32 +1,37 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T10:01:14Z",
-  "currentPhase": "P2c：#148 已合并；iOS 行程确认客户端切片待 CI/独立审查；App 开发会话组装与 MESSAGE 发送许可待做",
+  "lastUpdated": "2026-10-27T11:31:39Z",
+  "currentPhase": "#154 本轮实现与本地验收完成；仅剩 PR 独立审查/合并与 main CI 核验，完成后按 JT 指令暂停",
   "status": "active",
-  "objective": "Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green.",
-  "acceptedIssue": "CJ-015 / GitHub #20：服务端确认凭证、准备接口与原 TRIP 事务校验",
-  "owner": "JT (operator); Claude architecture/review; Codex implementation",
-  "fromAgent": "Claude（审查并合并 #148，实施 iOS 行程确认客户端切片）",
-  "intendedNextAgent": "Codex 或 JT（独立审查本切片）；随后 Claude/Codex 做 App 开发会话组装",
+  "objective": "完成本轮 #149/#150 审查合并与 DEBUG App 开发会话、iOS 17.5 行程确认端到端；保留正式写入、原动作恢复及外部资源授权边界。",
+  "acceptedIssue": "#154（父票 #20 / CJ-015）：DEBUG 开发会话与 iOS 17.5 行程确认端到端",
+  "owner": "JT operator；Claude 架构/任务 B 抽查；Codex 任务 A 审查返修、任务 B 开发验收",
+  "fromAgent": "Codex",
+  "intendedNextAgent": "独立 Codex 审查者；本轮合并核验完成后暂停，等待 JT 新指令",
   "activeWork": [
-    "feat/p2c-ios-trip-confirm：本地入口强制签名、iOS prepare/confirm/对账与显式确认 UI（PR 待 CI 与独立审查）。",
-    "fix/ios-app-rpath（#149）：App 在 iOS 26 以下启动崩溃的修复，待独立审查。"
+    "#149 已审查并合并为 137b7a80189e5ef2a25dea31535fa84731ec7a2c；iOS 17.5 启动及 runpath 实证通过。",
+    "#150 原 head 9f47fce 发现 P1/P1/P2 共 3 项，原 PR 返修为 f33ef1ed38419b7dbffded8c313594dc256aa399，四 CI 全绿，复审无剩余阻断，合并为 4beb505408c3ebd889811e82b259496406feb4c1。",
+    "feat/p2c-dev-session-e2e 从合并 #150 后 main 开始。只改 App、必要 Shell 接线、复现脚本和相关文档。",
+    "This task did not modify/merge PR #144. It was merged upstream into main 99f1437 by another operation; upstream V2 documents are preserved only. MESSAGE writes remain untouched.",
+    "Current child #154 belongs to parent #20. Merged main workflow documents at 9e78559; runtime code unchanged, so existing local runtime evidence remains applicable."
   ],
   "assumptions": [
-    "P2b 本地和真实 provider 结果为原作者报告，本轮未重复调用模型。",
-    "ADR-0002 组合候选状态不因壳构建通过而改变。"
+    "本轮本地 API 使用 app_from_environment 强制签名入口、私有 PG、FakeProvider 和临时开发身份；不是生产、OTP 或真实模型验收。",
+    "DEBUG 开发环境由 operator 提供；token 的本地 issuer/audience/subject 仅分区模拟器数据，不作为生产身份验证。真实业务权限仍由服务端校验。"
   ],
   "decisions": [
     "ADR-0001 产品与用户控制边界继续有效。",
     "qwen3.8-flash 与北京端点已选定；P2b 原作者报告真实 smoke 4/4，本轮未重跑。",
     "ADR-0004 已接受；单一 Python 发行包 cj，保留领域 import 名，不恢复同仓 hash pin 或 Git 导出依赖。",
-    "JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。",
     "P2：北京、邮箱 OTP、最低 iOS 17。",
     "JT 当前指令：Codex 实现/测试/交付，Claude 架构/规划/审查，JT 决策与外部资源。",
-    "ADR-0007（accepted，JT 2026-10-27）：CI 全部 job 阻塞；Codex 在不继承作者上下文的会话中审查精确 head 后合并，红线 PR 逐条写明追加必查项；JT 停点见 ADR-0007 第 3 条。",
     "历史证据归档 tag evidence-archive-2026-10-27；不改写历史。",
     "JT 2026-10-27: PR #147 only uses Codex review instead of Claude; continue subsequent P2c work. This is not independent review and not blanket approval for later PRs.",
+    "JT current dispatch: Codex reviews/repairs and merges #149 then #150; task B remains subject to Claude review. No #144 or MESSAGE write implementation in this slice.",
+    "GitHub visibility read-back 2026-10-27: PUBLIC. Secret/local-path prohibitions remain. No repository settings were changed in this task.",
+    "JT latest instruction: finish this round, submit/review/merge its PR into main, verify main CI and then PAUSE. This supersedes the earlier task-B Claude-before-merge requirement; independent Codex review under ADR-0007 remains required. No automatic continuation.",
+    "JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。",
     "accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).",
     "accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending."
   ],
@@ -37,111 +42,145 @@
   ],
   "changedFiles": [
     {
-      "path": "backend/cj_api/local_app.py, scripts/dev_auth.py",
-      "reason": "本地入口强制签名校验；专用确认 key 的生成与加载。"
+      "path": "ios/App/CJProbeApp.swift, ios/App/DevelopmentSessionConfiguration.swift, ios/App/DevelopmentTripHost.swift",
+      "reason": "DEBUG 模拟器显式 loopback/token 组装；内存会话、作用域 Keychain key、0700 加密原动作存储及失效/恢复。"
     },
     {
-      "path": "backend/tests/test_local_entry_confirmation.py",
-      "reason": "key 缺失/权限过宽/过短拒绝启动；签名入口可用。"
+      "path": "ios/App/Development.entitlements, ios/CJProbeApp.xcodeproj/project.pbxproj",
+      "reason": "仅 Debug Simulator 的 Keychain entitlements、DEBUG 编译条件及新增源文件引用；不增加仓库 target。"
     },
     {
-      "path": "ios/Modules/CJTripClient/Sources/CJTripClient/*",
-      "reason": "prepare/confirm、响应校验、TripLiveWrites、过期对账、两步确认 UI。"
+      "path": "ios/App/Package.swift, ios/App/Tests/DevelopmentConfigurationTests.swift, ios/App/.gitignore",
+      "reason": "缺配置/非 loopback/无效 token 拒绝、命名空间稳定隔离、Release 不组装测试。"
     },
     {
-      "path": "ios/Modules/CJTripClient/Tests/CJTripClientTests/ConfirmationFlowTests.swift",
-      "reason": "确认流程与篡改负例。"
+      "path": "ios/Modules/CJShell/Sources/CJShell/TripContainerHost.swift, ios/Modules/CJShell/Sources/CJShell/TripShell.swift",
+      "reason": "遵从实际客户端写能力；确认后保留卡片/结果/原动作对账，不再用草稿读取重置原动作。"
     },
     {
-      "path": ".github/workflows/ci.yml",
-      "reason": "swift job 增加 CJTripClient 测试。"
+      "path": "scripts/check_ios_trip_confirm.py",
+      "reason": "原生 XCTest UI + 真实本地签名 API/私有 PG 的可复现验收，包含受控响应丢失、一次 act、重启恢复、跨用户及 Release。"
     },
     {
-      "path": "ios/Modules/CJTripClient/README.md, backend/README.md, docs/dispatch/P2-walking-skeleton.md",
-      "reason": "切片说明、兼容与限制。"
+      "path": "ios/App/README.md, README.md, docs/dispatch/P2-walking-skeleton.md, docs/handoff.json, HANDOFF.md",
+      "reason": "纠正旧交接，记录 A 审查/返修、B 验证和明确下一步。"
+    },
+    {
+      "path": "ios/Modules/CJShell/Tests/CJShellTests/TripContainerHostTests.swift",
+      "reason": "Regression: unknown/null original blocks another proposal; verified original settlement permits reading a different proposal without deleting the original."
     }
   ],
   "verification": [
     {
-      "command": "scripts/test.py",
+      "command": "#149 独立审查、构建、iOS 17.5 启动、四 CI",
       "status": "pass",
-      "summary": "56/56（含本地入口签名 5 项）。",
+      "summary": "Standards 0 / Spec 0；head 016bf0e5e030faa0192bfdb5fc070f64b7e3db4b，正常合并。",
+      "artifact": "https://github.com/JTCAO515/G2C/pull/149#issuecomment-6436560095"
+    },
+    {
+      "command": "#150 审查/返修/复审与四 CI",
+      "status": "pass",
+      "summary": "原实现 3 项发现已修复：POST 被只读 transport 阻止、prepared action 缺原客户端/代次/账号绑定、tc1 前导零。新增反例原 head 失败，返修后 63 项通过；Codex 修复部分是自检，不冒认另一独立审查者。",
+      "artifact": "https://github.com/JTCAO515/G2C/pull/150#issuecomment-6436950630"
+    },
+    {
+      "command": "uv run --locked python -B scripts/test.py",
+      "status": "pass",
+      "summary": "56/56 组通过。",
       "artifact": null
     },
     {
-      "command": "scripts/pg_suites.py e2e",
+      "command": "uv run --locked python -B scripts/pg_suites.py",
       "status": "pass",
-      "summary": "本地 PG 端到端通过（FakeProvider）。",
+      "summary": "配置 PG17 和独立 PG16/17 bindir 后完整 11 组全通过，含迁移 up/down/up。初次 RUN 选到 PG17、并行编译时 solver 超时；正确配置及低负载复跑通过，未改断言或预算。",
       "artifact": null
     },
     {
-      "command": "swift test（ios/Modules/CJTripClient，Xcode 27.1）",
+      "command": "swift test：ios 根包 / CJTripClient / CJShell / ios/App Debug 与 Release",
       "status": "pass",
-      "summary": "61 项，含新增确认流程 5 项（篡改负例 7 种）。",
+      "summary": "根包 4 项、Trip 63 项、Shell 204 项通过；App 配置 Debug/Release 测试通过。",
       "artifact": null
     },
     {
-      "command": "xcodebuild App（iOS Simulator arm64，Xcode 27.1）",
+      "command": "xcodebuild App Debug/Release arm64 Simulator",
       "status": "pass",
-      "summary": "整 App 构建通过。",
+      "summary": "Xcode 27.1；Debug 由 Xcode 生成模拟器 entitlements/adhoc 签名。Release 不含开发激活输入，实际带变量启动仍未连接。",
       "artifact": null
     },
     {
-      "command": "模拟器端到端（开发 token → 草稿 → 准备 → 确认 → 正式行程）",
+      "command": "uv run --locked python -B scripts/check_ios_trip_confirm.py --simulator <iOS17.5-UDID> --output <external-output>",
+      "status": "pass",
+      "summary": "最终原生 UI 脚本总 PASS：中英接受及 App 正式详情 version 1/内容一致；拒绝无 Trip；提交后 API 不可达、离线重启只查原动作、恢复后仅一次 act；跨用户拒绝；token 文件检查、0700 与 Release 无组装通过。 Independent review P2 repaired: after restart and verified settlement of old action A, explicit proposal B can be read/confirmed; old records retained. Full native regression PASS.",
+      "artifact": null
+    },
+    {
+      "command": "初次模拟器与驱动验证",
+      "status": "fail",
+      "summary": "已解决：手工签名导致启动拒绝；改 Xcode 模拟器签名后通过。AXe 点击在本机 iOS17.5 未送达，改原生 XCTest；确认后卡片隐藏已修复；动态树竞争改原子快照/观察坐标。最终验收见上行。",
+      "artifact": null
+    },
+    {
+      "command": "python3 -B scripts/handoff.py render/check; git diff --check",
+      "status": "pass",
+      "summary": "JSON render/check and git diff --check passed; mandatory reading paths exist.",
+      "artifact": null
+    },
+    {
+      "command": "任务 B 最终 head 四 CI / Claude 抽查",
+      "status": "unknown",
+      "summary": "截至提交准备时 CI 尚未运行，Claude 抽查尚未进行；通过分支 PR 读取最新状态。任务 B 不自动合并。",
+      "artifact": null
+    },
+    {
+      "command": "Supabase/OTP 写入、生产 key/轮换、真实模型、真机、发布",
       "status": "not-run",
-      "summary": "App 尚未组装开发会话与 TripClient。",
-      "artifact": null
-    },
-    {
-      "command": "GitHub Actions ci.yml",
-      "status": "not-run",
-      "summary": "以本切片 PR 检查为准。",
+      "summary": "本轮均未执行；截图中的 VP-V4 CI 仅只读诊断，按 JT 选择继续 G2C，未修复 VP-V4。",
       "artifact": null
     }
   ],
   "blockers": [
-    "此新确认凭证 PR 尚需四 job CI 与独立审查或 JT 明确同意。",
-    "iOS 原动作持久化、确认 UI 和写入 transport 尚未接入；TripClient 的生产写入门禁保持关闭。",
-    "MESSAGE 发送许可/不可回退原动作证据尚未完成；OTP、真实模型 App 联调、真机亦未验收。"
+    "This delivery still requires independent exact-head review and CI/merge verification. Afterward work is explicitly paused by JT."
   ],
   "risks": [
-    "新接口只签发审阅绑定，不证明用户已确认，不改正式行程；客户端必须保留原动作字节并显式确认后提交。",
-    "旧 P2b 本地 permissive 确认路径为兼容保留，不是签名 P2c 激活路径；消费者迁移和回滚验证后再移除。",
-    "签名 key 需独立、每环境至少 32 字节，稳定保留到预期凭证过期；本轮只使用测试 key，不从 JWT/模型凭据派生。",
-    "未提交旧凭证在 key 轮换后被拒绝；原已提交精确动作可以返回原回执，未知结果不得重新签发来重试。",
-    "生成客户端补齐正式来源里已有的 openConversation/streamRunEvents 声明；没有改变原业务接口或额外开放客户端权限。",
-    "本地 API 测试使用 TestClient、真实私有 PG 和 FakeProvider，不是云或真机证据。"
+    "DEBUG 开发组装仅限 Simulator、显式 loopback 和开发 token；不是生产认证/存储激活。Release 和真机保持未连接。",
+    "确认/未知恢复使用现有冻结语义；不代表真实服务、设备、备份恢复或长期数据生命周期验收。",
+    "原动作/模拟器 Keychain key 留在隔离开发命名空间，不删除无关数据；临时 API/PG 在脚本结束关闭。",
+    "证据在仓库外及 PR 描述；运行脚本会构建并安装目标 Simulator App，不能据此发布或安装真机。",
+    "#144 独立 V2 范围继续保持不动；完整 P2c 仍缺 MESSAGE 发送许可及真实身份等阶段。"
   ],
   "operatorActions": [
-    "审查 feat/p2c-trip-confirmation 的精确 base/head；#147 的审查替代授权不视为本新 PR 自动批准。",
-    "启用真实签名路径前须明确目标环境及独立 key 的安全注入/轮换清单并由 JT 授权；当前未执行凭据变更，也不要求把秘密贴入聊天。",
-    "云 OTP/数据库、真实模型调用和真机操作按具体后续清单单独授权。"
+    "Independent Codex exact-head review, all CI checks and normal merge for this round; then verify main CI, update issue progress and PAUSE until JT resumes.",
+    "任务 B 合并后由 Claude 固定 MESSAGE 发送许可方案，Codex 不提前实现。",
+    "JT 提供 Supabase 项目 https://sajkhvjpllldfyfryalx.supabase.co，后续需要时可用 MCP；本轮未连接或写入，真实 OTP/云写入仍按具体授权处理。",
+    "生产签名 key 来源/轮换、真实模型费用、真机/发布、许可证继续由 JT 决定，本轮不处理。"
   ],
-  "rollback": "revert 本确认凭证切片合并提交；没有迁移、云配置或数据变更。已有 Trip/actions 回执格式未变；默认旧本地入口继续兼容。",
+  "rollback": "revert 本任务 B 合并提交即可恢复未连接 App；保留 #149/#150 的修复。无迁移、云或生产配置变更；不自动删除模拟器中用于验证恢复的加密记录/Keychain key。",
   "nextAction": {
-    "description": "独立审查本切片（feat/p2c-ios-trip-confirm）与 #149；合并后由 App 组装开发会话：开发 token 凭证回调、钥匙串密钥提供者、TripPendingStore、TripClient(liveWrites) 与 Shell 绑定，在 iOS 17.5 模拟器跑草稿→准备→确认→正式行程；之后再固定并实现 MESSAGE 发送许可。",
-    "expectedObservation": "模拟器上完成一次中英文的草稿确认并读回正式行程；结果未知只能查原动作。",
-    "command": "gh pr checks feat/p2c-ios-trip-confirm --repo JTCAO515/G2C"
+    "description": "按 JT 最新明确指令，只完成 #154 对应 PR 的独立 Codex 精确 head 审查、全部 CI、正常合并和 main CI 核验，再回写子票/父票进度并暂停。完成后不领取任何新票、不执行 ADR-0007 自动续作、不提前实现 MESSAGE；恢复需 JT 新指令。",
+    "expectedObservation": "PR 已审查合并，main CI 全绿，#154 进度已回写；开发队列暂停。",
+    "command": "gh pr checks feat/p2c-dev-session-e2e --repo JTCAO515/G2C"
   },
   "readingOrder": [
     "HANDOFF.md",
-    "docs/dispatch/P2-walking-skeleton.md",
+    "docs/adr/0007-issue-closure-workflow.md",
     "docs/adr/0004-delivery-flow-and-repo-hygiene.md",
     "backend/README.md",
-    "README.md",
+    "ios/App/README.md",
+    "ios/Modules/CJTripClient/README.md",
     "AGENTS.md"
   ],
   "mandatoryReadingOrder": [
     "HANDOFF.md",
-    "docs/dispatch/P2-walking-skeleton.md",
+    "docs/adr/0007-issue-closure-workflow.md",
     "docs/adr/0004-delivery-flow-and-repo-hygiene.md",
     "backend/README.md",
-    "README.md",
+    "ios/App/README.md",
+    "ios/Modules/CJTripClient/README.md",
     "AGENTS.md"
   ],
   "provenance": {
-    "baseCommit": "d74e9fcf7b4c857524edf29a0c3f4c3bf6c175e7",
-    "method": "#147 exact-head 替代审查、正常合并后从 main 开新分支；本地纯测试/私有 PG/生成检查与最终远端 CI 分层。",
+    "baseCommit": "99f14374af2baeb8a14312cc39ad3b7a04b9c26d",
+    "method": "本轮明确派工；原作者 Claude，Codex 审查并修复 A；B 用真实 Simulator UI/临时本地 API/PG 与 FakeProvider 验证，不依赖聊天接手。",
     "author": "Codex"
   }
 }

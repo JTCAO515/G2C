@@ -70,7 +70,18 @@ import CJManualPreviewClient
     public var showsSelectedDetail: Bool {
         current && selectedTripID != nil && value?.selectedTripID == selectedTripID
     }
-    public var canSubmitDecision: Bool { false }
+    public var canSubmitDecision: Bool { current && value?.acceptsUserActions == true }
+    /// A restored action blocks a different proposal only until its original
+    /// outcome is reconciled. Never reset an unknown action by reading a draft.
+    public var canReadContextProposal: Bool {
+        guard current, let id = binding?.proposalID, let value else { return false }
+        guard value.selectedActionID != nil else { return true }
+        guard value.selectedProposalID != id else { return false }
+        switch value.decision {
+        case .confirmed, .expiredUncommitted: return true
+        default: return false
+        }
+    }
     public convenience init(shell: ShellState) {
         self.init(shell: shell, makeManualEditor: { trip, source, session, operation, resources in
             try PreviewEditor(trip: trip, source: source, endpoint: resources.endpoint, session: session, operation: operation,
@@ -154,7 +165,7 @@ import CJManualPreviewClient
         return reserve(context.presentation.prepareTrip(id: id), context: context)
     }
     public func prepareProposal(context: TripContainerAction?) -> TripContainerWork? {
-        guard let context, accepts(context), let id = context.binding.proposalID else { return nil }
+        guard let context, accepts(context), canReadContextProposal, let id = context.binding.proposalID else { return nil }
         return reserve(context.presentation.prepareProposal(id: id), context: context)
     }
     public func loadPending(context: TripContainerAction?) {

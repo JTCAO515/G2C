@@ -161,13 +161,14 @@ private struct TripContainerProposal: View {
             VStack(alignment: .leading, spacing: 16) {
                 if let presentation = host.presentation {
                     let selected = original ? presentation.selectedActionID != nil
-                        : presentation.selectedActionID == nil && presentation.selectedProposalID == host.contextProposalID
+                        : presentation.selectedProposalID == host.contextProposalID
                     if selected {
-                        // Read-only canonical document/status/receipt. Its internal Task button is
-                        // disabled; the host below prepares canonical opaque work before Task.
-                        TripProposalCard(state: presentation, language: language.tripLanguage).disabled(true)
+                        // The canonical presentation captures one-use work synchronously.
+                        // Only an explicitly granted/current client can enable its decisions.
+                        TripProposalCard(state: presentation, language: language.tripLanguage)
+                            .disabled(!host.canSubmitDecision)
                     }
-                    if original {
+                    if original || (presentation.selectedActionID != nil && !host.canReadContextProposal) {
                         if let id = presentation.selectedActionID {
                             Text(language.text("Original action: ", "原动作：") + id).font(.caption).textSelection(.enabled)
                             if case .unknown = presentation.decision {
@@ -181,7 +182,7 @@ private struct TripContainerProposal: View {
                         Button(language.text("Read current draft", "读取当前草稿")) {
                             guard let work = host.prepareProposal(context: action) else { return }
                             Task { await host.perform(work) }
-                        }.disabled(action == nil || host.contextProposalID == nil)
+                        }.disabled(action == nil || !host.canReadContextProposal)
                     }
                 } else { Text(language.text("Trip connection is unavailable.", "行程连接已不可用。")) }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
