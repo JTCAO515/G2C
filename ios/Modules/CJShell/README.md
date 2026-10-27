@@ -1,23 +1,32 @@
 # CJShell — CJ006 local candidate
 
-Independent Swift package with adjacent CJAuth core dependency; no root package/Xcode changes or production entry point. UI@1.1 contract is in `contracts/ui/README.md` at repository root. iOS 17 and macOS 14 are experiment targets, not the agreed product minimum. macOS runs state tests; SwiftUI shell is iOS-only.
+Swift package linked by the G2C App target, with adjacent CJAuth and other domain modules. UI@1.1 contract is in `contracts/ui/README.md` at repository root. The accepted minimum is iOS 17 (ADR-0004); macOS 14 runs state tests; SwiftUI shell is iOS-only.
 
-Host integration (future shared engineering owner): retain `@State private var shell = ShellState()` and present `ShellView(state: shell)`. Do not recreate the state or set `.id(language)` on the root. Optional `ShellPresentation.assistantBody` is plain native text applied with a captured UI generation; no Textual or CJ004 streaming experiment is linked.
+Host integration: retain `@State private var shell = ShellState()` and present `ShellView(state: shell)`. Do not recreate the state or set `.id(language)` on the root. Optional `ShellPresentation.assistantBody` is plain native text applied with a captured UI generation; no Textual or CJ004 streaming experiment is linked.
 
-## Fixed f87 combination
+## Current App integration (PR #146)
 
-The manifest now links the fixed f87 consumer combination, including Offline and Cleanup products. Canonical integration uses sibling modules and the single official f87 Foundation export. Linking does not configure an offline cache or create an account-cleanup action, source, UI or grant; those capabilities remain unavailable without their existing trusted inputs.
+The Xcode App target now links this package directly. Package manifests use sibling
+modules and the `ios/` root package, with remote dependencies recorded in the App's
+`Package.resolved`. No same-repository Git export or hash pin is needed.
 
-Author verification can prepare immutable Git build inputs inside this module's ignored `.deps/f87a78a9d8984c59905e385483f17dddd8144d8a` directory without changing sibling worktrees:
+Build the App with `DEVELOPER_DIR` set to the installed Xcode developer directory:
 
 ```sh
-python3 -B ios/Modules/CJShell/scripts/prepare_fixed_dependencies.py /path/to/existing-cj-checkouts
-env -u CJ_CLEANUP_ISOLATED_DEPS CJ_SHELL_ISOLATED_DEPS=1 bash ios/Modules/CJShell/scripts/build-demo.sh /tmp/cj006-f87-demo
+DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -project ios/CJProbeApp.xcodeproj -scheme CJProbeApp \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath "$CJ_DERIVED_DATA" \
+  ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build
 ```
 
-The preparation script names every exact owner commit, verifies the official SDK manifest/file hashes and refuses different existing exports or symlinks. It reads no moving worktree source and performs no network access. Repeating it verifies/reuses identical bytes. `CJ_SHELL_ISOLATED_DEPS=1` is an explicit local verification mode, not an automatic fallback or global setting. Omit it only after the canonical siblings and official SDK export have been integrated at matching fixed inputs; missing canonical modules fail visibly. The separate Cleanup module's isolated-dependency flag is deliberately unset in this composition.
+The default App is a disconnected shell: sending, login, Trip confirmation and memory
+services require explicit host configuration in a later P2c slice. Four tabs and a
+successful build do not prove API, provider, OTP or device acceptance.
 
-See `contracts/ui/evidence/f87-combination/REPORT.md` for exact inputs, actual graph, compile/link results, selected host tests and retained initial preparation failures. Old UI/source evidence and real App/service/Keychain/device gates remain separate.
+The historical `prepare_fixed_dependencies.py`, isolated-dependency flags, and demo
+instructions below predate this integration. They are retained for old consumers and
+historical reproduction only; they are not the current build entry. Remove them only
+after remaining consumers and rollback needs have been checked. Evidence links below
+refer to the `evidence-archive-2026-10-27` tag where files have left the working tree.
 
 ## Local checks and display app
 

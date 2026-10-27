@@ -1,6 +1,6 @@
 # 派工单：P2 主线打通（walking skeleton）
 
-- 状态：**P2a 已合并（#143）**；**P2b 已实现，PR 待合并**；P2c 待开工（需 operator 资源）
+- 状态：**P2a #143、P2b #145 已合并**；**P2c iOS 壳切片 #146 收尾，待 Claude 独立审查**。API 联调、OTP 与真机验收仍未完成。
 - 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted）、[ADR-0003](../adr/0003-state-and-recovery.md)、[scope](../scope.md)、[handoff](../handoff.json)
 - base：main `9ac8e1b`（P1 合并后）
 
@@ -12,9 +12,9 @@
 
 | 切片 | 内容 | 对应 Issue | 本单状态 |
 |---|---|---|---|
-| **P2a** | 模型 provider adapter（Fake 与 DashScope 兼容接口）；RUN worker 消费 MESSAGE pending 并写 RUN 事件；SSE 流式端点 `GET /v1/run-events`；本地组合 app（真实 PG、本地开发签名密钥）；端到端测试 | CJ-009、CJ-010、CJ-002（真实调用除外） | **本 PR** |
-| P2b | 草稿：模型输出结构化北京行程 → 校验 → TRIP proposal；接受或拒绝走既有 `/v1/trip-actions`；正式行程读回 | CJ-014、CJ-015 | **已实现** |
-| P2c | 真实身份：Supabase 邮箱 OTP（`SUPABASE_ACCESS_RC1` profile）；iOS 17 App 主 target 接入 `ShellView` 四 Tab，调通 P2a/P2b；真机中英各跑一遍 | CJ-007、CJ-006、CJ-026 局部 | 待开工，需 operator 资源 |
+| **P2a** | 模型 provider adapter（Fake 与 DashScope 兼容接口）；RUN worker 消费 MESSAGE pending 并写 RUN 事件；SSE 流式端点 `GET /v1/run-events`；本地组合 app（真实 PG、本地开发签名密钥）；端到端测试 | CJ-009、CJ-010、CJ-002（真实调用除外） | **已合并 #143** |
+| P2b | 草稿：模型输出结构化北京行程 → 校验 → TRIP proposal；接受或拒绝走既有 `/v1/trip-actions`；正式行程读回 | CJ-014、CJ-015 | **已合并 #145** |
+| P2c | 真实身份：Supabase 邮箱 OTP（`SUPABASE_ACCESS_RC1` profile）；iOS 17 App 主 target 接入 `ShellView` 四 Tab，调通 P2a/P2b；真机中英各跑一遍 | CJ-007、CJ-006、CJ-026 局部 | **#146 仅交付 CJ-006 壳接入切片**；其余未验收 |
 
 ## 反目标（Anti-goals）
 
@@ -26,13 +26,13 @@
 
 ## 负责人（Owner）
 
-JT（operator，负责决策和外部资源）；Claude（架构、实施、审查，Codex 暂停期间）。
+JT（operator，决策和外部资源）；Codex（实现、测试、交付；JT 于 2026-10-27 明确移交 #146 写权）；Claude（架构、规划和独立审查）。原“Codex 暂停期间”安排已被本轮指令替代。
 
 ## 已确认事实与用户决策
 
 - 产品边界见 ADR-0001；P2 范围值：北京、邮箱 OTP、iOS 17（JT，2026-10-27）。
 - 模型：`qwen3.8-flash`，北京 DashScope 兼容端点（`spikes/runtime/REPORT.md`）；JT 已授权百炼测试费用（不设上限，由余额控制）。
-- 当前未配置任何真实 key；真实 provider 调用为 UNRUN。
+- JT 指明模型 key 已存入钥匙串 `g2c-dashscope`。P2b 原作者记录真实 provider smoke 4/4；本轮未读取 key 或重复调用。历史费用授权不作为本轮新增调用依据。
 
 ## 待验证假设
 
@@ -72,8 +72,8 @@ GET /v1/run-events?message_id=  ◄── DisplaySnapshotReader.read（同一 ME
 
 1. `scripts/test.py`：provider 单测（Fake；DashScope 流式解析、超时、非 200、截断、`[DONE]`，全部用 MockTransport）。
 2. `scripts/pg_suites.py e2e`：空库 → 迁移 1–10 → 本地 app（真实 PG、开发 token）→ POST 中英消息 → worker（FakeProvider）→ SSE 收到完整文本和 `completed`；断线后带 `Last-Event-ID` 续读不重复；第二个用户看不到第一个用户的消息（404）；worker 在 running 中途"崩溃"后重启，run 变为 `unknown`，provider 调用次数不增加。
-3. CI 三个 job 全绿。
-4. 真实 provider：**UNRUN**，直到 operator 注入 key 后按下方步骤执行：`CJ_ENV=local CJ_MODEL_API_BASE_URL=<北京兼容端点> CJ_MODEL_ID=qwen3.8-flash uv run --locked python -B scripts/run_worker.py --conninfo-json conn.json --once --real`。
+3. 当前 CI 的 python、postgres、swift、ios-app 四个 job 全绿；合并还需 Claude 独立审查或 JT 明确同意。
+4. 真实 provider：P2b 原作者报告 smoke 4/4；本轮 **UNRUN**，不等同 App 真实端到端。
 
 ## 验证命令
 
@@ -94,14 +94,14 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 
 ## Operator 事项（JT）
 
-1. **注入 DashScope 测试 key（P2a 真实调用验收需要）。** 不要把 key 发到聊天、写进仓库或任何文档。
+1. **DashScope key 已由 JT 指明配置在钥匙串。以下仅为历史设置/撤销说明，不要求重建或覆盖。** 不要把 key 发到聊天、写进仓库或任何文档。
    - 前置：百炼控制台已有北京地域 workspace，账户余额充足。
    - 步骤：在百炼控制台新建一个专用 API Key，名称写 `g2c-local-test`；在本机终端执行 `security add-generic-password -a "$USER" -s g2c-dashscope -w`，回车后粘贴 key。
    - 预期结果：钥匙串中出现 `g2c-dashscope` 条目；之后由 `scripts/run_worker.py --real` 在运行时读取，不落盘。
    - 验证：`security find-generic-password -s g2c-dashscope >/dev/null && echo ok` 输出 `ok`（不会显示 key 本身）。
    - 回滚：在百炼控制台删除该 key；`security delete-generic-password -s g2c-dashscope`。
    - 常见错误：key 建在了非北京地域；复制时多了空格或换行。
-2. **P2c 之前：** 决定 Supabase 项目归属和地域，按 CJ-007 新建隔离的测试项目（属于云资源，须单独授权）。
+2. **Supabase 测试项目已由 JT 提供**（ap-southeast-1，PG17），不再要求新建。只读信息不代表配置、RLS 或 OTP 验收；任何云写操作先列目标、操作、验证、回滚并等 JT 确认，不在聊天中索取秘密。
 
 ## 强制阅读顺序
 
@@ -121,4 +121,13 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 
 ## 唯一下一步
 
-P2b 合并后：P2c。需要 operator 先授权 Supabase 测试项目；不依赖它的部分（iOS App 接入 ShellView、调用 P2a/P2b 接口）可以先做。
+完成 #146 最终 head 的四 job CI 和 Claude 独立审查；反馈由 Codex 在同一分支处理，满足门禁前不合并或开新切片。后续 P2c API 联调仍按本单原验收执行，云写入另列清单取得 JT 授权。
+
+## P2c 壳接入切片（PR #146）
+
+- base：`865f6f33c1b3f813bc71bd96faf8558683dd107b`；最终 head 及检查以 PR 描述为准。
+- App 入口持有 `ShellState` 并展示 `ShellView`；包直接依赖同级模块和 `ios/` 根包，App 锁文件随实际依赖图更新。两个 Binding setter 改用闭包。
+- 验收范围：App 构建、启动、四 Tab 和双语切换，默认未连接服务状态如实呈现；不能关闭 CJ-006 整票或 P2c。
+- #146 原始 head `788b5001d97ec2c03b70a44e20b306fa94352531` 的四 job 已通过；后续 head 须重新读取 CI，最终证据见 PR 与 handoff。
+- 首次本地构建因依赖克隆 TLS 失败；改用系统 Git/已有缓存后构建通过。真实 API、OTP、provider 和真机均未在本切片重跑。
+- handoff 改由仓库内 `python3 -B scripts/handoff.py render/check` 生成/检查，不再依赖不存在的 npm 入口。

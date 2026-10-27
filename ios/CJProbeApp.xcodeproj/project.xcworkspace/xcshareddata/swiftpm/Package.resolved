@@ -1,31 +1,31 @@
 {
-  "originHash" : "d628373d7d7c1a66f668e4bb231a000ce99ad0936bb539d406c681051c3aacc0",
+  "originHash" : "adcfb4b1ace3c8e16e052fa4d0c07a23040466958402fd6197164b215a657ac9",
   "pins" : [
     {
-      "identity" : "openapikit",
+      "identity" : "supabase-swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/mattpolzin/OpenAPIKit",
+      "location" : "https://github.com/supabase/supabase-swift",
       "state" : {
-        "revision" : "5b72eb9a6b23b1fec439d9a0bf38f115400421f9",
-        "version" : "6.4.0"
+        "revision" : "fee4bd78997f8b4e919c1c9711e0cfb346fd7a55",
+        "version" : "2.55.4"
       }
     },
     {
-      "identity" : "swift-algorithms",
+      "identity" : "swift-asn1",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-algorithms",
+      "location" : "https://github.com/apple/swift-asn1.git",
       "state" : {
-        "revision" : "87e50f483c54e6efd60e885f7f5aa946cee68023",
-        "version" : "1.2.1"
+        "revision" : "3b6410f7dee09eb33cdd26260c5fd47fda19b0e2",
+        "version" : "1.7.3"
       }
     },
     {
-      "identity" : "swift-argument-parser",
+      "identity" : "swift-clocks",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-argument-parser",
+      "location" : "https://github.com/pointfreeco/swift-clocks",
       "state" : {
-        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
-        "version" : "1.8.2"
+        "revision" : "82440fa0a8b1c381a6d1e8e0fc7bbba53ec63204",
+        "version" : "1.1.1"
       }
     },
     {
@@ -38,6 +38,24 @@
       }
     },
     {
+      "identity" : "swift-concurrency-extras",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-concurrency-extras",
+      "state" : {
+        "revision" : "8a4260f7373493435bd21194585c95b72bfdd401",
+        "version" : "1.4.3"
+      }
+    },
+    {
+      "identity" : "swift-crypto",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-crypto.git",
+      "state" : {
+        "revision" : "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
+        "version" : "4.5.2"
+      }
+    },
+    {
       "identity" : "swift-http-types",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
@@ -47,21 +65,12 @@
       }
     },
     {
-      "identity" : "swift-numerics",
+      "identity" : "swift-issue-reporting",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-numerics.git",
+      "location" : "https://github.com/pointfreeco/swift-issue-reporting",
       "state" : {
-        "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
-        "version" : "1.1.1"
-      }
-    },
-    {
-      "identity" : "swift-openapi-generator",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-openapi-generator",
-      "state" : {
-        "revision" : "164dfbcf1f78e2ddc719ab9d85c50d1157fa8d7d",
-        "version" : "1.14.2"
+        "revision" : "b23bb4493c439d3e05152bc167014235ba3d47fc",
+        "version" : "2.1.2"
       }
     },
     {
@@ -83,12 +92,12 @@
       }
     },
     {
-      "identity" : "yams",
+      "identity" : "xctest-dynamic-overlay",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jpsim/Yams",
+      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "state" : {
-        "revision" : "a27b21e0c81c5bf42049b897a62aaf387e80f279",
-        "version" : "6.2.2"
+        "revision" : "d9308ad679143c26a30dec52daefe82f54af2b82",
+        "version" : "1.13.1"
       }
     }
   ],
