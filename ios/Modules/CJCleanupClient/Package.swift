@@ -1,20 +1,18 @@
 // swift-tools-version: 6.1
 import PackageDescription
-import Foundation
-// Verification-only export stays inside this leased module. Integration uses
-// canonical sibling packages, so the host graph cannot acquire duplicate SDKs.
-let modules = ProcessInfo.processInfo.environment["CJ_CLEANUP_ISOLATED_DEPS"] == "1"
-    ? ".deps/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/ios/Modules" : ".."
+
+// Sibling packages and the ios/ root package from this repository (ADR-0004: the commit is the pin).
+let modules = ".."
 let package = Package(name: "CJCleanupClient", platforms: [.iOS(.v17), .macOS(.v14)],
     products: [.library(name: "CJCleanupClient", targets: ["CJCleanupClient"])],
     dependencies: [
-        .package(path: "\(modules)/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"),
+        .package(path: "../.."),
         .package(path: "\(modules)/CJMessageClient"),
         .package(path: "\(modules)/CJAuth"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")],
     targets: [.target(name: "CJCleanupClient", dependencies: [
-        .product(name: "CJAPI", package: "CJFoundation"),
+        .product(name: "CJAPI", package: "ios"),
         .product(name: "CJMessageHTTP", package: "CJMessageClient"),
         .product(name: "CJSession", package: "CJAuth"),
         .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),

@@ -1,9 +1,13 @@
 import SwiftUI
-import CJProbeUI
+import CJShell
 
+/// G2C App entry: the four-tab Muse shell (P2c). The state lives for the window lifetime;
+/// no `.id(language)` or recreation on language change (CJShell README).
 @main
 struct CJProbeApp: App {
+    @State private var shell = ShellState()
+
     var body: some Scene {
-        WindowGroup { ProbeView(environment: ProcessInfo.processInfo.environment) }
+        WindowGroup { ShellView(state: shell) }
     }
 }
