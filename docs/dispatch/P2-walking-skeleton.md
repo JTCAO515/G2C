@@ -1,6 +1,6 @@
 # 派工单：P2 主线打通（walking skeleton）
 
-- 状态：**P2a #143、P2b #145、P2c 壳 #146、SSE #147 已合并**。#147 按 JT 本轮明确指令由 Codex 替代审查后合并。当前为 **CJ-015 / #20 服务端确认凭证切片**；客户端写入激活、消息发送许可、OTP 和真机链路未完成。
+- 状态：**#148、#149、#150 均已合并**；当前为 **App DEBUG 开发会话组装与 iOS 17.5 端到端切片**。本地签名确认链路已验证；MESSAGE 许可、OTP、真实模型与真机链路尚未完成。
 - 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted）、[ADR-0003](../adr/0003-state-and-recovery.md)、[scope](../scope.md)、[handoff](../handoff.json)
 - base：main `9ac8e1b`（P1 合并后）
 
@@ -121,7 +121,7 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 
 ## 唯一下一步
 
-完成 `feat/p2c-trip-confirmation` 的四 job CI 与审查，再接入 iOS 原动作持久化/确认 UI。#147 的替代审查授权仅适用于 #147；本新 PR 仍按原门禁处理。不得以服务端凭证或 SDK 生成宣布 P2c 完成。
+Claude 抽查 `feat/p2c-dev-session-e2e` 的最终 head 和证据；四项 CI 全绿且审查通过后再合并。随后由 Claude 固定 MESSAGE 发送许可方案，Codex 不提前实现 MESSAGE 写入。本单不授权真实 Supabase/OTP 写操作、生产 key、付费模型或真机/发布。
 
 ## P2c 壳接入切片（PR #146）
 
@@ -162,9 +162,22 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 
 ## P2c iOS 行程确认切片（CJ-015 客户端）
 
+更新：#150 已经 Codex 独立审查原实现、按本派工返修并复审后合并；下方“未完成”描述的是该切片交付时的边界，App 组装进展见后一节。
+
 - base：`1a41f227c854f77b99edf9489578a75244bf49d1`（#148 合并提交）；分支 `feat/p2c-ios-trip-confirm`。
 - 服务端：`app_from_environment` 强制签名路径，从 `CJ_LOCAL_AUTH_DIR/trip-confirmation.key` 读取专用 key（0600、32 字节，由 `dev_auth.py init` 或 `confirmation-key` 生成），缺失、权限过宽或过短都拒绝启动。`create_local_app` 的默认宽松回调只为既有测试保留。
 - iOS `CJTripClient`：`prepare` 调用准备接口，严格校验响应（动作 ID、类型、提案逐字节一致、`tc1` 引用格式、过期时间一致且不超过提案有效期），用服务端原字节构造 `TripPending`；`confirm` 在过期前 60 秒外才提交，先加密落盘再原样 POST；结果未知只允许查原动作，过期加 60 秒后无回执判为 `expiredUncommitted`。写入能力由宿主通过 `TripLiveWrites` 显式授予，且必须带加密存储；只读和测试客户端的 `acceptsUserActions` 均为 false。
 - UI：`TripProposalView` 两步决定（准备 → 屏幕上显式确认 / 取消），并如实展示准备失败、已过期未保存、结果未知（只能查原动作）。
 - 未完成：App 尚未用开发 token 组装 TripClient（需要开发用 `SessionLifecycle`、钥匙串密钥提供者和 Shell 绑定），所以没有模拟器端到端；MESSAGE 发送许可未开始。
+
+## App 开发会话与 iOS 17.5 验收（本轮任务 B）
+
+- 基线：`4beb505408c3ebd889811e82b259496406feb4c1`（#150 合并后最新 main）；分支 `feat/p2c-dev-session-e2e`。作者 Codex，完成后由 Claude 抽查，作者不自批。
+- 任务 A：#149 head `016bf0e5e030faa0192bfdb5fc070f64b7e3db4b` 独立审查无阻断，iOS 17.5 实际启动验证通过，合并为 `137b7a80189e5ef2a25dea31535fa84731ec7a2c`。#150 原 head `9f47fcee4f2ca8e94f7a36dd9087ba7ccd652d7e` 发现 3 项：真实 POST 被只读 transport 阻止、prepared action 未绑定原客户端/代次/账号、tc1 到期段误接受前导零；已在原 PR 修复。最终 head `f33ef1ed38419b7dbffded8c313594dc256aa399` 四 CI 全绿、复审无剩余阻断后合并。审查及返修证据已写入各 PR 评论；Codex 自己的修复是自检，不冒认另一独立审查者。
+- App 仅在 DEBUG 模拟器且显式提供 `G2C_DEV_API_BASE_URL`、`G2C_DEV_TOKEN` 时组装行程宿主；URL 仅允许指定 loopback。缺配置、无效配置、Release、真机均保持未连接。可选 `G2C_DEV_PROPOSAL_ID` 只用于预选本地提案，不新增生产导航。
+- token 通过 `SIMCTL_CHILD_` 注入，SessionPersistence 仅内存；随机加密 key 由 ScopedMessageKeyProvider 放在模拟器 Keychain，原动作目录位于 App Application Support、0700。身份/会话失效会停用旧宿主；重启只恢复原动作对账。
+- Shell 只做必要接线：读取实际客户端的写入能力，并在确认产生 action ID 后保留提案卡/结果/对账，禁止此时用“读取当前草稿”重置原动作状态。其他 Tab 保持未连接。
+- 复现：`scripts/check_ios_trip_confirm.py`。用原生 XCTest 临时测试工程操作真实 UI（仓库外，不增加仓库 Xcode target），私有 PG → 已登记迁移 → 强制签名 app_from_environment → FakeProvider 草稿 → 中英接受/显式确认/正式详情版本 1；拒绝不生成 Trip；提交后截断响应并终止 API，App 离线重启仅可查原动作，恢复后端后对账且只收到一次 act；另一个用户不能读取原提案。配置负例、Release 无组装、token 未落 App 文件与目录权限亦检查。
+- 已解决的验证失败：初次手工签名不适用于模拟器，改由 Xcode 生成 simulator entitlements；AXe 在本机 iOS 17.5 未送达输入，改用 XCTest；旧卡片显示条件导致确认后隐藏结果，已修复；UI 驱动改用原子快照与观察坐标避免动态树竞争/同名按钮；PG16 入口配置修正，编译高负载造成的 solver timeout 在不改断言/预算的情况下复跑通过。
+- 最终验证结果及精确 head 见本 PR 表和 handoff；截图、日志、xcresult、report 留在仓库外，不提交。完整 P2c、真实 OTP/provider/真机与发布仍未验收。JT 提供的 Supabase URL 可在后续需要时通过 MCP 接入，本轮未连接或写入该项目。#144 未修改、未合并。
 

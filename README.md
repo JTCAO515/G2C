@@ -2,7 +2,7 @@
 
 面向外国来中国旅游的游客：记住已授权的事实、经历与偏好，提供有来源的旅行建议，并在持续修改中保护已经确认的安排。App 名为 **G2C**，Web 品牌为 **go2china.space**，后端为 **CJ Agent 系统**。
 
-**当前状态（2026-10-27）：** P0/P1、P2a（#143）、P2b（#145）、四 Tab 壳（#146）与 SSE 读取（#147）已合并；#147 由 JT 指定 Codex 替代审查后合并。当前切片为 CJ-015 服务端签名确认凭证：准备接口不写行程，原 TRIP 事务核对内容/版本/用户及有效期。尚待本切片 CI/审查及 iOS 原动作持久化、显式确认 UI 接入；客户端写入门禁未开放。MESSAGE 发送许可、OTP、真实模型 App 联调和真机链路仍未完成。当前状态与下一步见 [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成）。
+**当前状态（2026-10-27）：** #149、#150 已审查、返修并合并。当前候选接入 DEBUG 模拟器开发会话：真实 UI 完成中英提案接受、显式确认和正式详情读取；拒绝、结果未知后的离线重启/原动作对账、跨用户隔离及 Release 不组装验证通过。后端是私有本地 PG、强制签名入口和 FakeProvider，不是云或真实模型验收。候选待四 CI 与 Claude 抽查，不自动合并；MESSAGE 写入仍未实现。复现见 [App README](ios/App/README.md)，当前状态与唯一下一步见 [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成）。
 
 ## 已确认的产品边界
 

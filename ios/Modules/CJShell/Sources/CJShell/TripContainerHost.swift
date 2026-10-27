@@ -70,7 +70,7 @@ import CJManualPreviewClient
     public var showsSelectedDetail: Bool {
         current && selectedTripID != nil && value?.selectedTripID == selectedTripID
     }
-    public var canSubmitDecision: Bool { false }
+    public var canSubmitDecision: Bool { current && value?.acceptsUserActions == true }
     public convenience init(shell: ShellState) {
         self.init(shell: shell, makeManualEditor: { trip, source, session, operation, resources in
             try PreviewEditor(trip: trip, source: source, endpoint: resources.endpoint, session: session, operation: operation,
