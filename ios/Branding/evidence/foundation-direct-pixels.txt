@@ -1,6 +1,0 @@
-PASS decoded RGBA pixels: AppIcon1024.png
-PASS decoded RGBA pixels: AppIcon60x60@2x.png
-PASS decoded RGBA pixels: AppIcon60x60@3x.png
-PASS decoded RGBA pixels: AppIcon76x76.png
-PASS decoded RGBA pixels: AppIcon76x76@2x.png
-PASS decoded RGBA pixels: AppIcon83.5x83.5@2x.png

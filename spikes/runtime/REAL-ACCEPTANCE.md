@@ -45,7 +45,7 @@ JT 后续已确认模型名 `qwen3.8-flash`，现填入配置 `model_id` 并用�
 当具体安全临时注入获准且 key 可用后，由原 owner 把已填北京目标和模型的 `provider-approval.example.json` 复制为本目录忽略的 `provider-approval.private.json`，设置短期验收执行窗口 `expires_at`。授权引用、余额控制策略、最大 6 次请求/每次最多 256 输出 token 已固定，不需 JT 再决定技术参数或批准测试金额。真实配置与新 key 没有齐全前只运行 preflight。
 
 ```sh
-cd /Users/jtsm5p/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime
+cd <local>/Documents/Codex/2026-10-21/cj-002-runtime/spikes/runtime
 .venv/bin/python -B provider_acceptance.py preflight --config provider-approval.private.json
 .venv/bin/python -B provider_acceptance.py run --config provider-approval.private.json --case zh
 .venv/bin/python -B provider_acceptance.py run --config provider-approval.private.json --case en

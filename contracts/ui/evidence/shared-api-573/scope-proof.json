@@ -1,8 +1,0 @@
-{
-  "package_source_commit": "03063cd752863af8cb6fd01da0984c826a03f479",
-  "producer": "d0f396ceaff5a7d51ddc3a623b35e3eef9191412",
-  "api": "57336d501e5691302a3d5e9770f07666d1c57d4a",
-  "exact_export_count": 16,
-  "single_path_replacement": true,
-  "auth_brand_lock_preserved": true
-}

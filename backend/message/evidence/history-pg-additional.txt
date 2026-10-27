@@ -1,7 +1,0 @@
-test_draft_reopen_revision_conflict_and_no_message_side_effect (__main__.HistoryTests.test_draft_reopen_revision_conflict_and_no_message_side_effect) ... ok
-test_concurrent_draft_revision_and_missing_generation (__main__.HistoryTests.test_concurrent_draft_revision_and_missing_generation) ... ok
-
-----------------------------------------------------------------------
-Ran 2 tests in 0.057s
-
-OK

@@ -1,3 +1,0 @@
-Private graph: management-20aa-09facf21/Modules/CJMemoryClient
-Command: xcodebuild -scheme CJMemoryClient -destination generic/platform=iOS Simulator -derivedDataPath ../../artifacts/ios-build -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO build
-** BUILD SUCCEEDED **

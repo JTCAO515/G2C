@@ -9,9 +9,9 @@ test_unknown_expired_and_foreign_cursor_explicit_resync (__main__.ListCursorChec
 FAIL: test_changed_ownership_does_not_leak_entry (__main__.ListCursorChecks)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 55, in test_changed_ownership_does_not_leak_entry
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 55, in test_changed_ownership_does_not_leak_entry
     self.resync(self.token)
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 21, in resync
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 21, in resync
     self.m.conversations(self.a, token)
 AssertionError: Rejected not raised
 
@@ -19,9 +19,9 @@ AssertionError: Rejected not raised
 FAIL: test_deleted_unread_entry_rejects_old_snapshot (__main__.ListCursorChecks)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 27, in test_deleted_unread_entry_rejects_old_snapshot
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 27, in test_deleted_unread_entry_rejects_old_snapshot
     self.resync(self.token)
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 21, in resync
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 21, in resync
     self.m.conversations(self.a, token)
 AssertionError: Rejected not raised
 
@@ -29,9 +29,9 @@ AssertionError: Rejected not raised
 FAIL: test_epoch_change_without_delete_rejects (__main__.ListCursorChecks)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 33, in test_epoch_change_without_delete_rejects
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 33, in test_epoch_change_without_delete_rejects
     self.resync(self.token)
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 21, in resync
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 21, in resync
     self.m.conversations(self.a, token)
 AssertionError: Rejected not raised
 
@@ -39,9 +39,9 @@ AssertionError: Rejected not raised
 FAIL: test_recreated_id_does_not_revive_old_cursor (__main__.ListCursorChecks)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 38, in test_recreated_id_does_not_revive_old_cursor
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 38, in test_recreated_id_does_not_revive_old_cursor
     self.resync(self.token)
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 21, in resync
+  File "<local>/Documents/Codex/2026-10-21/cj-009-message/contracts/message/check_list_cursor.py", line 21, in resync
     self.m.conversations(self.a, token)
 AssertionError: Rejected not raised
 

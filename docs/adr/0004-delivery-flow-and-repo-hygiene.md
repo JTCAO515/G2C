@@ -40,6 +40,18 @@
 3. **接受** P2 范围值：单城市 **北京**、主登录 **邮箱一次性登录（OTP）**、最低 **iOS 17**。真实可达性、SDK 能力与设备覆盖仍按 CJ-004/007/026 验证。
 4. **接受**第 6 条流程精简。
 
+## 实施记录
+
+- **P0（PR #141，2026-10-27）**：仓库内交接、最小 CI、文档对齐、清理本机路径、.gitignore。
+- **P1（2026-10-27）**：
+  - 删除同仓 sha256 pin：`cj_api` 直接 import（`MODULE_SETS`），删除 `*_pins.json`、`prepare-*-deps`、`check-*-wire.sh` 和 loopback HTTP+PG harness。去掉 pin 后暴露出两处真实漂移（aead cursor 测试嵌套 history context；cleanup 测试清单落后于 storage registry），均已修正。
+  - 单一发行包：根 `pyproject.toml` 加 `uv.lock`，由 hatchling 打包各领域。**实施细节**：保留原 import 名（`cj_auth` 等），没有改名为 `cj.*` 子包，以免大规模重写 import；发行包名为 `cj`。
+  - 统一入口：`scripts/test.py`（无数据库）、`scripts/pg_suites.py`（私有集群）、`scripts/migrate.py`、`scripts/check.sh`；CI 的 python / postgres / swift 三个 job 全部阻塞。
+  - 迁移：10 版有序链，每版有 down 和 sha256，CI 跑 up → down → up。领域表暂留 public schema，`cj` schema 只放迁移台账；角色、授权、RLS 未定。
+  - 证据出仓：1836 个文件移出跟踪，归档在 tag `evidence-archive-2026-10-27`（见 [evidence](../evidence.md)）；evaluation 的 golden 报告移到 `fixtures/`。
+  - 修复 `ProbeView` 的 `enum State` 遮蔽 SwiftUI `@State` 的问题。
+  - 已知未覆盖：真实 uvicorn + 生成 Swift 客户端的 loopback 端到端随 harness 一起删除，留到 P2 在迁移链上重建；`scripts/check-generated-*.sh` 和 iOS 模块中 pin 时代的准备脚本（`ios/Modules/*/scripts/prepare_*`、`check_pin.py`，依赖已出仓的 evidence）尚未纳入 CI 或清理。
+
 ## 取舍
 
 - 失去逐文件 hash 的运行时防篡改；以 CI、分支保护与 Review 代替。若需供应链完整性，应针对外部依赖（`uv.lock` 哈希）而非同仓源码。

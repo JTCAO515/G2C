@@ -1,1 +1,0 @@
-{"reproduced_nonoriginal_fold_source_accepted": true, "original_recorded_at": "2026-11-01T01:30:00-04:00", "accepted_recorded_at": "2026-11-01T01:30:00-05:00", "different_instants": true, "can_publish": false}

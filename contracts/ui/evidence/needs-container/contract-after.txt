@@ -1,1 +1,0 @@
-PASS: BASE probe boundary; 7 positive and 5 negative UI presentation samples

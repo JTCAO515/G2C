@@ -1,2 +1,0 @@
-Command: xcodebuild -scheme CJMemoryClient -destination generic/platform=iOS Simulator -derivedDataPath .build/ios-validation -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO build
-** BUILD SUCCEEDED **

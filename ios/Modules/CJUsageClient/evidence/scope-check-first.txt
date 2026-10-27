@@ -1,6 +1,0 @@
-An initial author sanity command compared the WHOLE CJAuth subtree at HEAD to 8b.
-Result: AssertionError (exit 1), retained here. Diagnosis by git diff --stat:
-only eight pre-existing docs/keychain evidence paths differ (174 deleted lines).
-All actual runtime Sources, manifest and lock at base match canonical 8b.
-This task does not add/remove/change any AUTH path. Final check uses the exact
-runtime input scope and independently confirms the entire tree unchanged from base.

@@ -1,5 +1,0 @@
-{
-  "backend/trip/cj_trip/postgres.py": "27d142a3608a7d0b5bd728bf1689c8d8b6fe1667bbb6422f19858436aa6e0ab1",
-  "backend/trip/tests/test_transaction_faults.py": "811e7944c720a2d90abab0a1d819b2a389b13f8ffea9e3f8ee8285617f07494e",
-  "backend/trip/evidence/repair-de4e/pg-runner.py": "09cbb9d2dd84c235318598ee1d4a930fa0fa7f59af405a6d1b0e492e81e29e40"
-}

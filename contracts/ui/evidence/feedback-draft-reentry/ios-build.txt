@@ -1,8 +1,0 @@
-warning: <local>/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
-warning: <local>/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
-Building for debugging...
-[Computing dependencies]
-[2 / 4] CJFeedbackClient
-[4 / 6] CJFeedbackClient
-[7 / 50] IssueReporting
-Build complete! (1.46秒)

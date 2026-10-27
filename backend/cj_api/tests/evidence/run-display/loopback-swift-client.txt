@@ -1,1 +1,0 @@
-PASS generated protected RUN display, exact text/opaque message ID, read-time state/highwater and BASE header trace

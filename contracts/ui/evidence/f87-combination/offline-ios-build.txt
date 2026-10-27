@@ -1,6 +1,0 @@
-warning: <local>/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
-warning: <local>/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
-Building for debugging...
-[Constructing description]
-[Planning deferred tasks]
-Build complete! (0.60秒)

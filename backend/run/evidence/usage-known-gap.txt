@@ -1,8 +1,0 @@
-fixed-source __init__.py fcb091dc25c846fe642333af9b4cc43603b12fde528763c4b2cd45d267ce5bac
-fixed-source core.py 149b0af63bdca59e7bf5ecfc7cf7b9857193a0761df5b0e20c860b3f1076ebfa
-known-gap: replacement executor calls= 1
-Traceback (most recent call last):
-  File "<local>/Documents/Codex/2026-10-21/cj-010-run/backend/run/tests/usage_boundary_probe.py", line 31, in <module>
-    assert len(case.calls)==0, 'UNIMPLEMENTED durable run-to-original-attempt fence; production composition HOLD'
-           ^^^^^^^^^^^^^^^^^^
-AssertionError: UNIMPLEMENTED durable run-to-original-attempt fence; production composition HOLD

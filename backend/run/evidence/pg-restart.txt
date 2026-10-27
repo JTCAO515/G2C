@@ -1,8 +1,0 @@
-waiting for server to shut down.... done
-server stopped
-waiting for server to start.... done
-server started
-PASS: original binding, cancelled terminal, partial text and committed receipt after clean PostgreSQL restart
-UNRUN: worker crash, abrupt database crash, machine power loss, real provider or AUTH
-waiting for server to shut down.... done
-server stopped

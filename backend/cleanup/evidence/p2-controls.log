@@ -1,8 +1,0 @@
-test_invalid_input_leaves_operation_and_journal_unchanged (test_receipt_decode.ReceiptDecodeControls.test_invalid_input_leaves_operation_and_journal_unchanged) ... ok
-test_rebuild_rejects_old_invalid_stored_original_receipts (test_receipt_decode.ReceiptDecodeControls.test_rebuild_rejects_old_invalid_stored_original_receipts) ... ok
-test_valid_noncanonical_original_bytes_and_terminal_conflict_preserved (test_receipt_decode.ReceiptDecodeControls.test_valid_noncanonical_original_bytes_and_terminal_conflict_preserved) ... ok
-
-----------------------------------------------------------------------
-Ran 3 tests in 0.009s
-
-OK

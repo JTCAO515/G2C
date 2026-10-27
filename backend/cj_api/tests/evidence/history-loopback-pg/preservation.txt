@@ -1,1 +1,0 @@
-PASS owned HTTP port no longer accepts connections; no task postmaster.pid/socket; new data directory retained

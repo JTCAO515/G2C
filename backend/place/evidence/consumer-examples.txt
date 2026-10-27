@@ -1,1 +1,0 @@
-6 synthetic consumer examples PASS; real provider/auth/usage UNRUN

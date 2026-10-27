@@ -1,9 +1,0 @@
-warning: '--skip-update' option is deprecated and will be removed in a future release
-Building for debugging...
-[Computing dependencies]
-[Pre-planning 1 / 423]
-[Planning deferred tasks]
-[1 / 38]
-[2 / 7] CJOfflineTrip
-[4 / 9] CJOfflineTrip
-Build complete! (1.14秒)

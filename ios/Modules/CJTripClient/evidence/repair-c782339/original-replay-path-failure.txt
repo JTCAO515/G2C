@@ -1,4 +1,0 @@
-Swift/ErrorType.swift:254: Fatal error: Error raised at top level: main.TripFailure.storageUnavailable
-
-exit=-5
-Synthetic retained probe directory: /private/var/folders/d6/67d7jxn91td3yd6hjtgqh78h0000gn/T/cj015-replay-parent-mxc8n44k/probes

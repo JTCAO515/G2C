@@ -1,8 +1,0 @@
-fixed-source __init__.py fcb091dc25c846fe642333af9b4cc43603b12fde528763c4b2cd45d267ce5bac
-fixed-source core.py 149b0af63bdca59e7bf5ecfc7cf7b9857193a0761df5b0e20c860b3f1076ebfa
-test_original_row_bytes_and_rebuild_conflicts (__main__.BindingPgTests.test_original_row_bytes_and_rebuild_conflicts) ... ok
-
-----------------------------------------------------------------------
-Ran 1 test in 0.035s
-
-OK

@@ -1,7 +1,0 @@
-test_fixed_nonvalid_principal_invariant (auth_consumption.AuthConsumption.test_fixed_nonvalid_principal_invariant) ... ok
-test_unknown_invalid_not_invited_unverified_never_resolve (auth_consumption.AuthConsumption.test_unknown_invalid_not_invited_unverified_never_resolve) ... ok
-
-----------------------------------------------------------------------
-Ran 2 tests in 0.000s
-
-OK

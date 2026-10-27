@@ -1,3 +1,0 @@
-warning: <local>/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
-warning: <local>/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
-error: the package at '<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/312a69caf0bd97ed65679cfd8ff049972c212cef/CJFoundation' cannot be accessed (<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/312a69caf0bd97ed65679cfd8ff049972c212cef/CJFoundation doesn't exist in file system)

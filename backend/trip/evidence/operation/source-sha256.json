@@ -1,5 +1,0 @@
-{
-  "backend/trip/cj_trip/operation.py": "239d0062d667905a3ac2a898476baa6fa2745389be12a7ad7ec8d0a296a3ba5c",
-  "backend/trip/cj_trip/auth_boundary.py": "15d7c495e5de11fb90f641a63235d1196dc8277fdb8b726f1ac3e6217a3beeab",
-  "backend/trip/tests/test_operation.py": "33279123e7e024736a5748423552fb86e61e55619f90b1a0b04db5d105fcf427"
-}

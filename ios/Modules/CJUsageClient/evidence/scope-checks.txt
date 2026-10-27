@@ -1,5 +1,0 @@
-PASS: all 11 accepted lock entries match CJShell by identity
-PASS: AUTH entire tree unchanged from base
-PASS: AUTH Sources/manifest/lock byte exact canonical8b
-PASS: shared exact e450 prep tree
-PASS: 7 exact fixed SDK exports and hashes retained

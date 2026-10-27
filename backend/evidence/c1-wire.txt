@@ -1,4 +1,0 @@
-PASS Swift→HTTP→Python /v1/probe exit=0: {"contract_version": "1.0.0", "status": "ok", "request_id": "984b5fa4-0947-4e1a-b2fa-e263a56c17de"}
-PASS Swift→HTTP→Python /missing exit=1: {"error": {"outcome": "failed", "recovery": "do_not_retry", "message_zh": "\u8bf7\u6c42\u4e0d\u53ef\u7528", "code": "NOT_FOUND", "category": "routing", "message_en": "Request unavailable"}, "request_id": "25a3bd03-faef-426f-b3f3-befba708e462"}
-PASS Swift missing/external configuration fails before network
-PASS Swift missing/external configuration fails before network

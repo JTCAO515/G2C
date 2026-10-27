@@ -1,3 +1,0 @@
-Isolated20aa fixed-input compiler output; trailing whitespace trimmed.
-
-exit=0

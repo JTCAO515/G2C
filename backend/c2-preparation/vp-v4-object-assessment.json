@@ -1,6 +1,6 @@
 {
   "source": {
-    "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/task-6/vpv4-readonly-inventory.json",
+    "path": "<local>/Documents/Codex/2026-10-21/task-6/vpv4-readonly-inventory.json",
     "sha256": "8195bcc9821c97d287d4f336f0a6a8e8937f7b183cbd01ef477f897af9ecf57c",
     "checked_at_utc": "2026-10-21T13:54:00Z",
     "scope": "read-only metadata; no approved deletion"
