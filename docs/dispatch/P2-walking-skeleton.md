@@ -1,6 +1,6 @@
 # 派工单：P2 主线打通（walking skeleton）
 
-- 状态：**P2a #143、P2b #145 已合并**；**P2c iOS 壳切片 #146 收尾，待 Claude 独立审查**。API 联调、OTP 与真机验收仍未完成。
+- 状态：**P2a #143、P2b #145、P2c 壳 #146 已合并**；#146 由 JT 明确同意后合并。当前推进 **CJ-010 / #11 的 P2c SSE 读取切片**；发送、确认凭证、OTP 和真机完整链路未完成。
 - 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted）、[ADR-0003](../adr/0003-state-and-recovery.md)、[scope](../scope.md)、[handoff](../handoff.json)
 - base：main `9ac8e1b`（P1 合并后）
 
@@ -121,7 +121,7 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 
 ## 唯一下一步
 
-完成 #146 最终 head 的四 job CI 和 Claude 独立审查；反馈由 Codex 在同一分支处理，满足门禁前不合并或开新切片。后续 P2c API 联调仍按本单原验收执行，云写入另列清单取得 JT 授权。
+完成本轮 SSE 读取切片的四 job CI 和 Claude 独立审查；Claude 同时明确下述写入激活方案，再由 Codex 接续发送/确认切片。不得以只读链路通过宣布 P2c 完成。
 
 ## P2c 壳接入切片（PR #146）
 
@@ -131,3 +131,19 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 - #146 原始 head `788b5001d97ec2c03b70a44e20b306fa94352531` 的四 job 已通过；后续 head 须重新读取 CI，最终证据见 PR 与 handoff。
 - 首次本地构建因依赖克隆 TLS 失败；改用系统 Git/已有缓存后构建通过。真实 API、OTP、provider 和真机均未在本切片重跑。
 - handoff 改由仓库内 `python3 -B scripts/handoff.py render/check` 生成/检查，不再依赖不存在的 npm 入口。
+
+## P2c 流式读取切片（CJ-010 / #11）
+
+- base：`15020fb1630488df243824d64c7e8801e0a14219`（#146 合并提交）。
+- 复用 RunDisplayModel、原消息回执、SessionOperation 和 NoRedirectTransport；新增显式 SSE GET/续读，不更改服务端接口或正式数据。
+- 按 UTF-8 字节续读；身份失效清空展示，断流保留已验证的部分正文并标未知，终态后必须读回受保护快照。冻结的 MESSAGE/TRIP 写入门禁保持关闭。
+- 验收：RUN 模块全套测试、App 构建；本地真实 Swift HTTP → FastAPI → 全新私有 PG 的中英文读取和跨用户拒绝。模型是 FakeProvider，真实 OTP/provider/真机仍 UNRUN。复现入口见 `ios/Modules/CJRunClient/README.md`。
+
+## 写入激活待决（交 Claude，不是已批准方案）
+
+源码与旧模块说明的实际阻塞必须先解决，不能当成普通按钮接线：
+
+1. `ios/Modules/CJMessageClient/ACTIVATION-GATE.md` 明确禁止 live POST；`MessageHTTPClient` 的生产入口和 `NoRedirectTransport` 均拒绝写入。已恢复的 staged、receipt 查询的 null、新 key 或新 ID 都不是首次发送许可。需要 Claude 固定服务端不可回退的原动作/epoch 证据、账号/环境绑定、保留期、首次许可和重启/备份恢复/unknown 对账语义；不得把 live transport 塞进 test interceptor。
+2. `TripClient.acceptsUserActions` 仍为 false，`TripPending` 只允许模块内部测试构造。需要 Claude 固定服务端确认凭证的签发、绑定和校验：已认证用户、原 proposal/content hash、expected version、accept/reject、有效期及原 action ID；同事务校验和幂等回执继续由 TRIP 执行。客户端读取草稿不等于确认，不能自行造 confirmation_ref。
+3. 建议在既有 PostgreSQL 业务权威内完成，新增版本迁移和必要的增量 API；不引入第二份正式状态，不改已应用迁移。具体字段/接口、迁移范围和兼容策略尚未批准，当前切片不实现这些写入。
+4. 方案验收至少覆盖：未知提交先查原动作且不换 ID、旧快照不能恢复发送许可、同动作并发一次提交、错误账号/内容/版本/过期确认拒绝、退出后晚到结果不回填。云数据库、OTP 邮件及真实模型调用另列操作清单取得 JT 授权。

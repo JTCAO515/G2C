@@ -62,6 +62,8 @@ jobs:
       - name: iOS root package build and tests (macOS host)
         working-directory: ios
         run: swift test
+      - name: RUN snapshot and SSE client tests (macOS host)
+        run: swift test --package-path ios/Modules/CJRunClient
 
   ios-app:
     # The App target with the CJShell four-tab shell and all iOS modules, built for the simulator.
