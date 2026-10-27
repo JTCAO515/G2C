@@ -149,6 +149,12 @@ together with a `TripPendingStore`; grant it only when the API host enforces sig
 confirmations. `acceptsUserActions` is true only then; read-only and test clients report
 false. `choose` remains inert for old hosts.
 
+Review repair: the explicit live initializer owns a private no-redirect HTTP path for
+only the two Trip POST operations; the shared read-only transport and MESSAGE gate
+remain unchanged. Prepared actions are also bound to the original client instance,
+generation and TripBinding, and fail before persistence after replacement/invalidation.
+The `tc1` decimal expiry follows the server grammar exactly (no leading zero).
+
 After an unknown outcome only `query(actionID:)` of the original action is allowed; no new
 action for that proposal can be prepared while the original is unsettled. A missing receipt
 before expiry stays `notObserved`. Once the signed expiry plus the clock margin has passed,
@@ -189,8 +195,9 @@ traversal. No cross-page snapshot or complete-inventory claim is made.
 
 Local files alone cannot prove absence of an old entirely deleted/rolled-back ledger.
 Append-only persistence and directory fences do not solve hostile same-UID races,
-backup rollback or authoritative cleanup. This is an additional reason live writes
-remain disabled. No migration, production storage activation, product API network call, SQL,
+backup rollback or authoritative cleanup. This remains a limit of host-granted live
+writes; signed preparation is not a backup restore policy. Historical candidate checks
+did not perform migration, production storage activation, product API network call, SQL,
 Keychain access, paid provider, permission change or deployment was performed.
 
 ## Verification
