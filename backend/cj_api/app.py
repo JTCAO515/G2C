@@ -28,7 +28,7 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
                _original_usage_reader=None, _original_usage_configuration=None, _original_usage_modules=None,
                _cleanup_progress_configuration=None, _cleanup_progress_dependencies=None,
                _memory_management_boundary=None, _memory_management_configuration=None,
-               _feasibility_dependencies=None):
+               _feasibility_dependencies=None, _run_events_configuration=None):
     if os.environ.get("CJ_ENV") != "local":
         raise RuntimeError("CJ_ENV must explicitly be local; other environments are not configured")
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -88,4 +88,6 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
     register_memory_management(app, _memory_management_boundary, _memory_management_configuration)
     from .feasibility_routes import register_feasibility
     register_feasibility(app, _feasibility_dependencies)
+    from .run_events_routes import register_run_events_route
+    register_run_events_route(app, _run_display_reader, _run_display_configuration, _run_events_configuration)
     return app

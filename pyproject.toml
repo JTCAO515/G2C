@@ -31,6 +31,7 @@ build-backend = "hatchling.build"
 # Editable installs expose every domain directory, so no PYTHONPATH is needed.
 dev-mode-dirs = [
     "backend",
+    "backend/agent",
     "backend/auth",
     "backend/cleanup",
     "backend/draft",
@@ -54,6 +55,7 @@ dev-mode-dirs = [
 # One distribution; each domain keeps its import name (cj_auth, cj_message, ...).
 packages = [
     "backend/cj_api",
+    "backend/agent/cj_agent",
     "backend/auth/cj_auth",
     "backend/cleanup/cj_cleanup",
     "backend/draft/cj_draft",

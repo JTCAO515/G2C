@@ -240,6 +240,65 @@
             }
           }
         }
+      },
+      "put": {
+        "operationId": "openConversation",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "description": "Client-chosen opaque conversation ID within the caller's server-derived scope."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent: creates the active conversation or returns the existing one. Never reactivates an inactive conversation (503).",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationOpenResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE error envelope; access, input, conflict or unavailable. No automatic retry of writes.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/message-history": {
@@ -1934,6 +1993,76 @@
           }
         },
         "description": "Read-only evaluation of current authorized NEEDS and exact original history; only needs_id selector. Candidate factory hard closed pending independent gates; no solver/candidate/routes/write authority."
+      }
+    },
+    "/v1/run-events": {
+      "get": {
+        "operationId": "streamRunEvents",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exact original opaque message ID, as for /v1/run-display."
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,12}$"
+            },
+            "description": "UTF-8 byte offset of answer text already received; the stream resumes after it."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-sent events over the protected RUN display snapshot. `event: delta` data {\"text\"} with id = cumulative UTF-8 byte offset; `event: status` data {\"status\": queued|running|completed|failed|cancelled|context_invalid|unknown|unavailable}. Closes after a terminal status or the server stream bound; reconnect with Last-Event-ID.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE error envelope; access, input, conflict or unavailable. No automatic retry of writes.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -4141,7 +4270,7 @@
           "message_zh": {
             "type": "string",
             "enum": [
-              "\u53cd\u9988\u5df2\u63d0\u4ea4\u3002"
+              "反馈已提交。"
             ]
           },
           "source": {
@@ -5149,6 +5278,33 @@
           }
         },
         "description": "Full BASE envelope encoded inside original canonical protected NEEDS/AUTH lifetime. Original report bytes embedded unchanged. Candidate factory closed."
+      },
+      "ConversationOpenResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "conversation_id",
+          "generation",
+          "last_sequence"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "last_sequence": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
       }
     },
     "securitySchemes": {

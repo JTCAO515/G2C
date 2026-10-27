@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / 'backend'
 
 # Domain pytest suites that need no database (feasibility/needs/trip run in pg_suites.py).
-DOMAINS = ('auth', 'cleanup', 'draft', 'fact', 'feedback', 'manual_edit', 'memory_jobs',
+DOMAINS = ('agent', 'auth', 'cleanup', 'draft', 'fact', 'feedback', 'manual_edit', 'memory_jobs',
            'memory_withdrawal', 'message', 'place', 'run', 'usage')
 # cj_api wire checks that need a PostgreSQL config run in pg_suites.py.
 PG_WIRE_CHECKS = {'feasibility_wire_checks.py', 'needs_cohost_checks.py',

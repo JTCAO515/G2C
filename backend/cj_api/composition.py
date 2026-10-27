@@ -245,7 +245,8 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         run_display_configuration=None, resolve_run_display=None,manual_preview_configuration=None,
                         usage_status_configuration=None,resolve_usage_status=None,
                         original_usage_configuration=None,resolve_original_usage_run=None,
-                        cleanup_progress_configuration=None,resolve_cleanup_progress=None):
+                        cleanup_progress_configuration=None,resolve_cleanup_progress=None,
+                        run_events_configuration=None):
     """No zero-argument/public production configuration exists."""
     if type(max_body_bytes) is not int or max_body_bytes <= 0:
         raise CompositionUnavailable('Explicit positive body byte limit required')
@@ -327,7 +328,8 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                       _manual_preview_boundary=preview_boundary,_manual_preview_configuration=manual_preview_configuration,_manual_preview_modules=preview_modules,
                       _usage_status_configuration=usage_status_configuration,_usage_status_dependencies=usage_status_dependencies,
                       _original_usage_reader=original_usage_reader,_original_usage_configuration=original_usage_configuration,_original_usage_modules=original_usage_modules,
-                      _cleanup_progress_configuration=cleanup_progress_configuration,_cleanup_progress_dependencies=cleanup_progress_dependencies)
+                      _cleanup_progress_configuration=cleanup_progress_configuration,_cleanup_progress_dependencies=cleanup_progress_dependencies,
+                      _run_events_configuration=run_events_configuration)
 
 
 def build_verified_session_checker(*, environment, jwt_configuration, verification_keys,

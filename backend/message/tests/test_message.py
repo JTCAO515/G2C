@@ -3,7 +3,7 @@ import json
 import unittest
 from contextlib import contextmanager
 from dataclasses import replace
-from cj_message.domain import (Service, Chat, Cursor, Command, InvalidInput,
+from cj_message.domain import (Service, Chat, Cursor, Command, InvalidInput, Receipt,
                                InputConflict, CommitUnknown, ResyncRequired, Unavailable)
 from cj_message.postgres import Repository, Transaction
 
@@ -62,7 +62,20 @@ class FakeRepository:
                        and after < s.receipt.sequence <= through], key=lambda r:r.sequence)[:limit]
 
     def pending(self, limit):
-        return list(self.jobs.values())[:limit]
+        return [r for r in self.jobs.values() if r.run_id not in self.acked][:limit]
+
+    acked = frozenset()
+
+    def acknowledge(self, mid, run_id):
+        self.acked = self.acked | {run_id}
+
+    inactive = frozenset()
+
+    def open_chat(self, cid, generation):
+        if cid in self.chats or cid in self.inactive:
+            return None
+        self.chats[cid] = Chat(generation, 0, 0)
+        return self.chats[cid]
 
 
 class DomainTests(unittest.TestCase):
@@ -122,6 +135,25 @@ class DomainTests(unittest.TestCase):
         _, cursor = self.service.page('c1', limit=1)
         del self.repo.rows['m2']
         with self.assertRaises(ResyncRequired): self.service.page('c1', cursor)
+
+    def test_open_conversation_is_idempotent_and_never_reactivates(self):
+        first = self.service.open_conversation('new-chat')
+        self.assertEqual(self.service.open_conversation('new-chat'), first)
+        receipt = self.service.receive(wire(cid='new-chat'))
+        self.assertEqual((receipt.conversation_id, receipt.generation, receipt.sequence), ('new-chat', first.generation, 1))
+        self.repo.inactive = frozenset({'archived'})
+        with self.assertRaises(Unavailable): self.service.open_conversation('archived')
+        for bad in ('', '  ', 'a\x00b', 'x' * 257, None):
+            with self.assertRaises(InvalidInput): self.service.open_conversation(bad)
+
+    def test_acknowledge_removes_only_the_exact_delivery(self):
+        receipt = self.service.receive(wire())
+        self.assertEqual(self.service.pending(), [receipt])
+        with self.assertRaises(InputConflict):
+            self.service.acknowledge(Receipt(receipt.message_id, 'c1', 'g1', 1, 'other-run', receipt.input_sha256))
+        self.service.acknowledge(receipt)
+        self.service.acknowledge(receipt)  # idempotent
+        self.assertEqual(self.service.pending(), [])
 
     def test_missing_chat_and_stale_receipt_unavailable(self):
         with self.assertRaises(Unavailable): self.service.receive(wire(cid='foreign'))

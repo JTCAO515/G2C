@@ -18,14 +18,14 @@
 | --- | --- |
 | Objective | Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green. |
 | Status | active |
-| Phase | P1-structure (PR open) -> P2-walking-skeleton |
-| Accepted Issue | CJ-005 (https://github.com/JTCAO515/G2C/issues/5); P0 scope per docs/dispatch/P0-repo-hygiene.md |
+| Phase | P2a walking skeleton (PR open) -> P2b draft to formal Trip |
+| Accepted Issue | CJ-009 / CJ-010 / CJ-002 (P2a); plan in docs/dispatch/P2-walking-skeleton.md |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T06:00:00Z |
+| Last updated | 2026-10-27T09:00:00Z |
 
 ## Active Work
 
-- P1 structure convergence on branch chore/p1-structure (PR pending CI).
+- P2a on branch feat/p2-walking-skeleton (PR pending CI).
 
 ## Accepted Assumptions
 
@@ -50,25 +50,22 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/cj_api/*.py` | Plain imports via MODULE_SETS; hash pins removed. |
-| `pyproject.toml, uv.lock` | Single cj distribution; domain pyproject/uv.lock removed. |
-| `scripts/test.py, scripts/pg_suites.py, scripts/migrate.py, scripts/check.sh` | Unified test, PostgreSQL suite and migration entry points. |
-| `backend/migrations/` | Ordered manifest 1-10 with down files; README. |
-| `backend/**/tests (selected)` | Working-tree instead of git exports; configurable PG bindir; drift fixes. |
-| `**/evidence/ (1836 files)` | Untracked; archived at tag evidence-archive-2026-10-27. |
-| `ios/Sources/CJProbeUI/ProbeView.swift` | Rename nested enum State to ProbeState. |
-| `.github/workflows/ci.yml` | python, postgres, swift jobs, all blocking. |
-| `README.md, backend/README.md, docs/engineering.md, docs/evidence.md, docs/adr/0004` | Docs for the new structure. |
+| `backend/agent/cj_agent/` | ModelProvider (Fake, DashScope-compatible streaming) and RunWorker. |
+| `backend/cj_api/run_events_routes.py` | GET /v1/run-events SSE over the protected display snapshot. |
+| `backend/cj_api/local_app.py` | Local composition on real PostgreSQL with a local dev signing key. |
+| `backend/cj_api/message_routes.py, backend/message/cj_message/*` | PUT /v1/conversations; MESSAGE open_conversation and acknowledge. |
+| `contracts/api/openapi.json` | Add PUT /v1/conversations and GET /v1/run-events. |
+| `scripts/dev_auth.py, scripts/run_worker.py, scripts/pg_suites.py` | Local identity, worker process, e2e group. |
+| `docs/dispatch/P2-walking-skeleton.md, backend/README.md` | P2 plan and local run steps. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups locally (Python 3.14.7). feasibility solver test is timing-sensitive under heavy host load. | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | All 9 groups locally on Homebrew PostgreSQL 16/17: migrations, message, run, needs, trip, feasibility, memory_management, memory, domain_runners. | — |
-| pass | `scripts/migrate.py verify` | Versions 1-10 up, down to empty, up again (24 tables) on PG16 and PG17. | — |
-| not-run | `swift test (ios root package)` | Local host has only CommandLineTools (no SwiftUI/Testing macro plugins); verified in CI swift job. | — |
-| not-run | `GitHub Actions ci.yml (python, postgres, swift)` | Read from the P1 PR checks. | — |
+| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups incl. 7 provider tests (MockTransport) and new MESSAGE open/ack tests. | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups incl. e2e: zh/en streamed answers, Last-Event-ID resume without duplication, cross-user withholding, uninvited refusal, crash mid-answer -> unknown without resend. | — |
+| not-run | `scripts/run_worker.py --real (DashScope qwen3.8-flash)` | No key provisioned; operator step in the P2 dispatch. | — |
+| not-run | `GitHub Actions ci.yml` | Read from the P2a PR checks. | — |
 
 ## Blockers
 
@@ -76,8 +73,8 @@ No blockers recorded.
 
 ## Next Smallest Action
 
-- Action: After the P1 PR is merged with green CI, write docs/dispatch/P2-walking-skeleton.md: CJ-007 email OTP -> CJ-009 message -> CJ-010 SSE stream with qwen3.8-flash -> CJ-014 draft -> CJ-015 accept into formal Trip, Beijing, zh+en, iOS 17 App wired to ShellView.
-- Expected observation: P2 dispatch reviewed by JT; real provider and auth calls scoped with explicit authorization.
+- Action: After P2a merges: P2b - structured Beijing trip draft from the model, validated into a TRIP proposal, accepted via /v1/trip-actions, formal Trip read back.
+- Expected observation: e2e extended to proposal -> accept -> GET /v1/trips shows the formal version.
 - Resume command: `gh pr checks --repo JTCAO515/G2C`
 
 ## Rollback
@@ -87,9 +84,9 @@ git revert the merge commit of this PR; documentation only, no data, credentials
 ## Mandatory Reading Order
 
 1. [HANDOFF.md](HANDOFF.md)
-2. [docs/adr/0004-delivery-flow-and-repo-hygiene.md](docs/adr/0004-delivery-flow-and-repo-hygiene.md)
-3. [backend/README.md](backend/README.md)
-4. [backend/migrations/README.md](backend/migrations/README.md)
+2. [docs/dispatch/P2-walking-skeleton.md](docs/dispatch/P2-walking-skeleton.md)
+3. [docs/adr/0004-delivery-flow-and-repo-hygiene.md](docs/adr/0004-delivery-flow-and-repo-hygiene.md)
+4. [backend/README.md](backend/README.md)
 5. [README.md](README.md)
 6. [AGENTS.md](AGENTS.md)
 
