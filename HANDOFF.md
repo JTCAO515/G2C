@@ -18,14 +18,14 @@
 | --- | --- |
 | Objective | Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green. |
 | Status | active |
-| Phase | P2a walking skeleton (PR open) -> P2b draft to formal Trip |
-| Accepted Issue | CJ-009 / CJ-010 / CJ-002 (P2a); plan in docs/dispatch/P2-walking-skeleton.md |
+| Phase | P2b draft to formal Trip (PR open) -> P2c identity and iOS |
+| Accepted Issue | CJ-014 / CJ-015 (P2b); plan in docs/dispatch/P2-walking-skeleton.md |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T09:00:00Z |
+| Last updated | 2026-10-27T11:00:00Z |
 
 ## Active Work
 
-- P2a on branch feat/p2-walking-skeleton (PR pending CI).
+- P2b on branch feat/p2b-draft-to-trip (PR pending CI).
 
 ## Accepted Assumptions
 
@@ -50,22 +50,20 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/agent/cj_agent/` | ModelProvider (Fake, DashScope-compatible streaming) and RunWorker. |
-| `backend/cj_api/run_events_routes.py` | GET /v1/run-events SSE over the protected display snapshot. |
-| `backend/cj_api/local_app.py` | Local composition on real PostgreSQL with a local dev signing key. |
-| `backend/cj_api/message_routes.py, backend/message/cj_message/*` | PUT /v1/conversations; MESSAGE open_conversation and acknowledge. |
-| `contracts/api/openapi.json` | Add PUT /v1/conversations and GET /v1/run-events. |
-| `scripts/dev_auth.py, scripts/run_worker.py, scripts/pg_suites.py` | Local identity, worker process, e2e group. |
-| `docs/dispatch/P2-walking-skeleton.md, backend/README.md` | P2 plan and local run steps. |
+| `backend/agent/cj_agent/draft.py` | Model JSON -> canonical pending TRIP document -> trusted publish. |
+| `backend/agent/cj_agent/worker.py, provider.py` | consider_trip drafts via a second model call; system prompt parameter. |
+| `backend/cj_api/local_app.py` | TRIP routes, derived TRIP scope, local confirmation. |
+| `backend/agent/tests/*, scripts/run_worker.py, scripts/provider_smoke.py` | Draft tests, e2e draft->accept/reject, real provider smoke. |
+| `docs/dispatch/P2-walking-skeleton.md, backend/README.md` | P2b record and usage. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups incl. 7 provider tests (MockTransport) and new MESSAGE open/ack tests. | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups incl. e2e: zh/en streamed answers, Last-Event-ID resume without duplication, cross-user withholding, uninvited refusal, crash mid-answer -> unknown without resend. | — |
-| not-run | `scripts/run_worker.py --real (DashScope qwen3.8-flash)` | No key provisioned; operator step in the P2 dispatch. | — |
-| not-run | `GitHub Actions ci.yml` | Read from the P2a PR checks. | — |
+| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups incl. 18 agent tests (provider + draft). | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups; e2e 5/5 incl. draft -> accept -> formal Trip v1 read back, reject -> no Trip, foreign user refused, replay idempotent, double accept 409, invalid model draft -> no proposal. | — |
+| pass | `scripts/provider_smoke.py (DashScope qwen3.8-flash, Beijing endpoint)` | 4/4 real requests: zh/en streamed answers, zh/en drafts valid as TRIP proposals (2026-10-27). | — |
+| not-run | `GitHub Actions ci.yml` | Read from the P2b PR checks. | — |
 
 ## Blockers
 
@@ -73,8 +71,8 @@ No blockers recorded.
 
 ## Next Smallest Action
 
-- Action: After P2a merges: P2b - structured Beijing trip draft from the model, validated into a TRIP proposal, accepted via /v1/trip-actions, formal Trip read back.
-- Expected observation: e2e extended to proposal -> accept -> GET /v1/trips shows the formal version.
+- Action: After P2b merges: P2c - iOS 17 App main target wired to ShellView calling P2a/P2b endpoints (local dev token first), then Supabase email OTP once the operator authorizes a test project.
+- Expected observation: Simulator: send a zh/en message, see streamed answer, accept a draft, see the formal trip.
 - Resume command: `gh pr checks --repo JTCAO515/G2C`
 
 ## Rollback

@@ -1,6 +1,6 @@
 # 派工单：P2 主线打通（walking skeleton）
 
-- 状态：**P2a 已实现，PR 待合并**（Claude 按 JT 要求执行；Codex 暂停）；P2b / P2c 待开工
+- 状态：**P2a 已合并（#143）**；**P2b 已实现，PR 待合并**；P2c 待开工（需 operator 资源）
 - 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted）、[ADR-0003](../adr/0003-state-and-recovery.md)、[scope](../scope.md)、[handoff](../handoff.json)
 - base：main `9ac8e1b`（P1 合并后）
 
@@ -13,7 +13,7 @@
 | 切片 | 内容 | 对应 Issue | 本单状态 |
 |---|---|---|---|
 | **P2a** | 模型 provider adapter（Fake 与 DashScope 兼容接口）；RUN worker 消费 MESSAGE pending 并写 RUN 事件；SSE 流式端点 `GET /v1/run-events`；本地组合 app（真实 PG、本地开发签名密钥）；端到端测试 | CJ-009、CJ-010、CJ-002（真实调用除外） | **本 PR** |
-| P2b | 草稿：模型输出结构化北京行程 → 校验 → TRIP proposal；接受或拒绝走既有 `/v1/trip-actions`；正式行程读回 | CJ-014、CJ-015 | 待开工 |
+| P2b | 草稿：模型输出结构化北京行程 → 校验 → TRIP proposal；接受或拒绝走既有 `/v1/trip-actions`；正式行程读回 | CJ-014、CJ-015 | **已实现** |
 | P2c | 真实身份：Supabase 邮箱 OTP（`SUPABASE_ACCESS_RC1` profile）；iOS 17 App 主 target 接入 `ShellView` 四 Tab，调通 P2a/P2b；真机中英各跑一遍 | CJ-007、CJ-006、CJ-026 局部 | 待开工，需 operator 资源 |
 
 ## 反目标（Anti-goals）
@@ -111,6 +111,14 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 4. `backend/run/cj_run/core.py`、`backend/message/cj_message/domain.py`、`backend/run/cj_run/display_snapshot.py`
 5. `backend/README.md`
 
+## P2b 实施记录
+
+- `cj_agent/draft.py`：模型用第二次调用（`DRAFT_SYSTEM`）返回严格 JSON `{title, items[]}`，服务端规范化成 TRIP 文档。所有条目都是 `pending` 且没有 evidence，模型文本一律不算已核实。不合法就整份拒绝，不做"修复"。
+- 只有消息的 `creation_intent` 为 `consider_trip` 时才生成草稿。`proposal_id = p-<run_id>`，客户端从消息回执里的 run_id 就能直接查到；`trip_id = trip-<run_id>`（每份草稿是一个新行程，expected_version 为 0）；有效期 7 天。
+- 草稿通过受信的 `publish` 入口写入，并在 RUN 里记一条 `effect_committed: trip_proposal:<id>`，之后才写 `completed`。草稿失败或结果未知不影响回答本身。
+- 本地确认校验：在本地环境下，已登录本人发起的接受或拒绝动作即视为确认；候选 hash、有效期和期望版本仍由 TRIP 校验。服务端签发、在 UI 中展示的确认凭证属于 P2c。
+- 真实 provider 验收（`scripts/provider_smoke.py`，2026-10-27）：中英文的回答和草稿 4/4 通过，两份草稿都通过 Proposal 校验。
+
 ## 唯一下一步
 
-P2a 合并后：P2b（草稿到正式行程）。
+P2b 合并后：P2c。需要 operator 先授权 Supabase 测试项目；不依赖它的部分（iOS App 接入 ShellView、调用 P2a/P2b 接口）可以先做。
