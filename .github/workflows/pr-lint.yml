@@ -26,4 +26,3 @@ jobs:
               raise SystemExit("PR body must contain Closes/Fixes/Resolves/Refs #<issue number>")
           print("Issue reference present")
           PYTHON
-

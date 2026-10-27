@@ -75,6 +75,7 @@
 | pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups，PG16/17 私有集群与迁移 up/down/up。 | — |
 | pass | `swift test --package-path <.github/swift-packages.json 中每个包>; ios/App -c release` | 16/16 包成功；App Debug/Release 各 4 tests；CJShell 204、独立 FeasibilityHostHarness 10、CJTripClient 63。 | — |
 | pass | `GitHub Actions pr-lint（故意缺引用）` | 预期失败：缺少 Issue 关联时 pr-lint exit 1；此失败是负例，不是全 CI 通过。 | https://github.com/JTCAO515/G2C/actions/runs/40514287589/job/122224804417 |
+| pass | `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild App generic iOS Simulator arm64` | CJProbeApp build succeeded；本票无产品修改，未重复交互验收。 | — |
 | not-run | `GitHub Actions final head; independent review` | 等待 PR #174 最终 head 的全部阻塞检查与独立 Codex 审查；合并后核验 main。Swift 原基线 268 秒，矩阵耗时见 PR。 | https://github.com/JTCAO515/G2C/pull/174 |
 
 ## Blockers

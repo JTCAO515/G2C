@@ -89,6 +89,12 @@
       "artifact": "https://github.com/JTCAO515/G2C/actions/runs/40514287589/job/122224804417"
     },
     {
+      "command": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild App generic iOS Simulator arm64",
+      "status": "pass",
+      "summary": "CJProbeApp build succeeded；本票无产品修改，未重复交互验收。",
+      "artifact": null
+    },
+    {
       "command": "GitHub Actions final head; independent review",
       "status": "not-run",
       "summary": "等待 PR #174 最终 head 的全部阻塞检查与独立 Codex 审查；合并后核验 main。Swift 原基线 268 秒，矩阵耗时见 PR。",
