@@ -18,18 +18,17 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1：#151 PR #174 第三轮候选；前两轮测试全绿但 Swift 调度墙钟超过增幅阈值，改为单 runner 顺序跑全包，待最终 CI 与独立复审。 |
-| Accepted Issue | M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md |
+| Phase | M1：#157 四 Tab 结构与语言验收候选完成，本地原生 iOS 17.5 四项 UI 检查通过，待 PR CI 与独立审查。#156 挂起待范围授权。 |
+| Accepted Issue | #7 CJ-006 / #157：iOS 17.5 四 Tab、记忆入口、语言保留和插件占位；#156 获授权后优先恢复。 |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T14:30:53+00:00 |
+| Last updated | 2026-10-27T15:53:56+00:00 |
 
 ## Active Work
 
-- #154 已关闭（PR #172）；#20 剩余 #155。
-- #151 PR #174：单个 Swift job 顺序跑 16 包 + App Release；Shell 先构建共享依赖，Cleanup 最后运行避免锁版本切换；强制锁定版本，保留全部检查。
-- #174 已连续两轮 REQUEST CHANGES，均因耗时：第一轮 582 秒（+314），第二轮 599 秒（+331），已报告且未合并。第三轮若仍审查不通过，按 ADR-0007 记录子票阻塞并跳过。
-- #162 owner Claude，PR #173 待 JT 批准；#159 文案待 JT。
-- #175 记录入口 README 旧暂停文案，不属于本 CI 切片。
+- #151 已关闭（PR #174），#155 与父票 #20 经独立核验关闭；main 56c7153 CI 全绿。
+- #157：新增外部 XCTest 验收入口，普通 App 验证中英四 Tab、语言/导航/草稿与重启；标记为 synthetic 的 readonly Memory 宿主覆盖未配置/空/失败入口、标识保留和插件无额外请求。4 个原生测试全部通过。
+- #156 缺 TripPendingStore 中央登记，目标文件超出允许范围；待 JT 授权仅补登记或 Claude 安排，父票 #5 挂起。首次冷环境求解器超时保留为 #176，独立及串行完整复跑通过。
+- #162 owner Claude，PR #173 待 JT；#159 文案待 JT；#175 为旧 README 暂停文案。
 
 ## Accepted Assumptions
 
@@ -62,29 +61,26 @@
 
 | Path | Reason |
 | --- | --- |
-| `.github/workflows/ci.yml, .github/workflows/pr-lint.yml, .github/swift-packages.json, .github/scripts/swift_packages.py, .github/scripts/test_swift_packages.py` | 单个 Swift job 全覆盖 16 包并复用锁定编译；遗漏、完整执行和失败传播检查；独立最小权限 pr-lint。 |
-| `ios/Modules/CJShell/Tests/FeasibilityHostHarness` | 历史测试包直接依赖当前模块，失效负例使用真实 Shell 入口；保留所有断言，锁定依赖。 |
-| `ios/Modules/CJMessageClient/Package.resolved` | 补齐现有测试图缺失的依赖锁项，版本与既有 CJShell 锁一致，无产品源码修改。 |
-| `docs/handoff.json, HANDOFF.md` | #151 当前状态、验证与下一步。 |
+| `ios/App/Acceptance/ShellStructureUITests.swift` | 四个原生 UI 测试：普通 App、双语记忆状态入口、语言/标识保留、插件无请求与权限弹窗。 |
+| `ios/App/Acceptance/ShellFixtureApp.swift, ios/App/Acceptance/check_shell_structure.py, ios/App/Acceptance/README.md` | 外部测试工程复用真实 Shell 和只读客户端；隔离 bundle、loopback 合成响应、请求审计与外部证据目录；不进入正式 App target。 |
+| `ios/App/Package.swift` | 验收目录与 macOS 开发配置 target 分离；原 4 个配置测试完整保留。 |
+| `docs/handoff.json, HANDOFF.md` | 同步已关闭 #151/#155/#20、#156 挂起及 #157 验证和下一步。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 56/56 suites。 | — |
-| pass | `Swift inventory + pr-lint local negative/positive checks` | 完整清单通过；遗漏嵌套包/陈旧项/重复项失败；Issue 引用正负与 shell 字面内容不执行。 | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups，PG16/17 私有集群与迁移 up/down/up。 | — |
-| pass | `swift test --package-path <.github/swift-packages.json 中每个包>; ios/App -c release` | 16/16 包成功；App Debug/Release 各 4 tests；CJShell 204、独立 FeasibilityHostHarness 10、CJTripClient 63。 | — |
-| pass | `GitHub Actions pr-lint（故意缺引用）` | 预期失败：缺少 Issue 关联时 pr-lint exit 1；此失败是负例，不是全 CI 通过。 | https://github.com/JTCAO515/G2C/actions/runs/40514287589/job/122224804417 |
-| pass | `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild App generic iOS Simulator arm64` | CJProbeApp build succeeded；本票无产品修改，未重复交互验收。 | — |
-| fail | `#174 initial CI / independent review aa006782` | 20/20 测试 job 成功，但 Swift 墙钟 582 秒比 268 秒增加 314 秒；性能要求未通过，不合并。 | https://github.com/JTCAO515/G2C/pull/174#issuecomment-6443908168 |
-| pass | `.github/scripts/test_swift_packages.py; swift_packages.py --shard 0/1/2` | 4 个门禁编排测试通过；实际 Swift 三组包含 16 包 + App Release 全通过，使用 --force-resolved-versions 后无锁文件变化。测试替身只用于编排负例，不替代实际 Swift。 | — |
-| fail | `#174 second CI / independent review 801211ca` | 7/7 CI + pr-lint 成功，17 次实际 Swift 测试完整；首组启动到完成 599 秒，增幅 331 秒；含首次排队 903 秒，耗时要求仍未通过。 | https://github.com/JTCAO515/G2C/pull/174#issuecomment-6444599873 |
-| pass | `.github/scripts/test_swift_packages.py; swift_packages.py --run` | 4 个门禁编排测试通过；单 runner 原型全 17 次运行 109 秒；正式脚本再次全部通过，无锁文件变化。真实 CI 耗时仍待核验。 | — |
-| not-run | `GitHub Actions final head; independent review` | 等待 PR #174 最终 head 的全部阻塞检查与独立 Codex 审查；合并后核验 main。Swift 原基线 268 秒，矩阵耗时见 PR。 | https://github.com/JTCAO515/G2C/pull/174 |
+| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups。 | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 私有 PG16/17，11/11 groups，含迁移 up/down/up。 | — |
+| pass | `swift test --package-path ios/Modules/CJShell` | 204 tests。 | — |
+| pass | `swift test --package-path ios/App; swift test --package-path ios/App -c release` | Debug/Release 各 4 tests，验收宿主不进入该包的正式 target。 | — |
+| pass | `python3 -B ios/App/Acceptance/check_shell_structure.py --simulator <iOS-17.5-UDID> --output <external-directory>` | 普通 App 1 test + 标记合成宿主 3 tests，全通过无跳过；截图与 xcresult 在仓库外。实际原生点击、输入、语言重启、6 种状态/语言入口、标识不变与请求审计。 | — |
+| not-run | `PR exact-head CI + independent Codex review` | 待 PR 全部 CI 与独立审查；无自批。 | — |
+| not-run | `Real services / device / VoiceOver / final privacy-support wording` | 本票只关闭 #157 结构与语言，未代替 #158/#159、真实认证/存储或 L2/L3 验收。 | — |
 
 ## Blockers
 
+- #156：中央存储登记缺 TripPendingStore；backend/storage-registry.json 不在允许修改范围，待 JT 授权仅补现状登记（不改政策/行为）或 Claude 安排。父票 #5 挂起，先继续 #157。
 - #162 OPEN：Claude PR #173 待 JT 批准；#163 等 #162，#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。
 - #159 帮助/隐私/支持文案需 JT 确认（子票级停点）。
 - L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
@@ -107,9 +103,9 @@
 
 ## Next Smallest Action
 
-- Action: 完成 #151 PR #174 第三轮精确 head CI 与独立复审：单 Swift job 相对原 268 秒增幅不超过 300 秒。通过后合并并核验 main、关闭 #151，再做 #155；若连续第三轮审查不通过，评论并记入 blockers，跳过 #151 继续队列。
-- Expected observation: #151 全部验收框有 L0 证据，main CI 全绿；随后推进 #155。
-- Resume command: `gh issue view 151 --repo JTCAO515/G2C --comments`
+- Action: 为 #157 提交 PR，等待精确 head 全部 CI 与独立 Codex APPROVE 后正常合并并核验 main、回写 #7；然后 #158。若 JT 先解除 #156 范围阻塞，优先恢复 #156。
+- Expected observation: #157 四框有 L1 证据且通过交付门禁；#156/#159/#162 相关阻塞保持明确。
+- Resume command: `gh issue view 157 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 
