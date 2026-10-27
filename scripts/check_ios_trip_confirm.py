@@ -370,7 +370,8 @@ class Check:
                 with psycopg.connect(**config, autocommit=True) as connection:
                     chain = migrate.load(); migrate.up(connection, chain, chain[-1]['version'])
                 config_file = root / 'connection.json'; config_file.write_text(json.dumps(config))
-                subjects = {case: 'ui-' + uuid.uuid4().hex for case in ('en', 'zh', 'reject', 'unknown', 'foreign')}
+                subjects = {case: 'ui-' + uuid.uuid4().hex for case in ('en', 'zh', 'reject', 'unknown', 'foreign', 'en-next')}
+                subjects['en-next'] = subjects['en']
                 auth = root / 'auth'; dev_auth.init(auth, list(subjects.values()))
                 env = dict(os.environ, CJ_ENV='local', CJ_LOCAL_CONNINFO=str(config_file), CJ_LOCAL_AUTH_DIR=str(auth))
                 os.environ.update({k: env[k] for k in ('CJ_ENV', 'CJ_LOCAL_CONNINFO', 'CJ_LOCAL_AUTH_DIR')})
@@ -379,7 +380,7 @@ class Check:
                 database = LocalDatabase(config_file)
                 proposals = {}
                 with TestClient(app_from_environment()) as api:
-                    for case in ('en', 'zh', 'reject', 'unknown'):
+                    for case in ('en', 'zh', 'reject', 'unknown', 'en-next'):
                         subject, token = subjects[case], tokens[case]
                         headers = {'Authorization': 'Bearer ' + token}
                         conversation, message = uuid.uuid4().hex, uuid.uuid4().hex
@@ -459,6 +460,22 @@ class Check:
                             self.capture(case + '-formal-detail')
                             assert act_count() == before + 1
                         self.results[case] = 'PASS'
+                        if case == 'en':
+                            print('Simulator UI: same account next proposal after restart', flush=True)
+                            self.launch(tokens['en-next'], proposals['en-next']['proposal_id'], 'en', endpoint)
+                            self.tap('Check original action')
+                            self.wait(lambda: self.has_label('Accepted'), 'old receipt did not reconcile')
+                            self.tap('Trips'); self.tap('View current draft'); self.tap('Read current draft')
+                            self.wait(lambda: self.has_label(proposals['en-next']['document']['title']), 'next proposal not displayed')
+                            next_before = act_count()
+                            self.tap('Accept'); self.wait(lambda: self.has_label('Confirm'), 'next confirmation missing')
+                            assert read('en-next') is None
+                            self.tap('Confirm'); self.wait(lambda: self.has_label('Accepted'), 'next proposal not acknowledged')
+                            next_trip = read('en-next')
+                            assert next_trip['version'] == 1 and next_trip['content_utf8_base64'] == proposals['en-next']['content_utf8_base64']
+                            assert act_count() == next_before + 1 and read('en')['version'] == 1
+                            self.capture('same-account-next-proposal')
+                            self.results['same_account_next_proposal'] = 'PASS'
 
                     print('Simulator UI: committed response loss and restart', flush=True)
                     open_proposal('unknown', 'en'); self.tap('Accept')
@@ -554,7 +571,7 @@ def main():
             check.results['driver_failure'] = check.redact(str(error))
             raise
         finally:
-            required = ('configuration_debug_release', 'missing_environment', 'en', 'zh', 'reject', 'unknown', 'cross_user', 'token_memory_and_private_storage', 'release_no_assembly')
+            required = ('configuration_debug_release', 'missing_environment', 'en', 'zh', 'reject', 'unknown', 'cross_user', 'token_memory_and_private_storage', 'release_no_assembly', 'same_account_next_proposal')
             check.results['status'] = 'PASS' if all(check.results.get(k) == 'PASS' for k in required) and 'failure' not in check.results and 'driver_failure' not in check.results else 'FAIL'
             (check.output / 'report.json').write_text(json.dumps(check.results, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps(check.results, ensure_ascii=False), flush=True)

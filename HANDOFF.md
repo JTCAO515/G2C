@@ -21,7 +21,7 @@
 | Phase | #154 本轮实现与本地验收完成；仅剩 PR 独立审查/合并与 main CI 核验，完成后按 JT 指令暂停 |
 | Accepted Issue | #154（父票 #20 / CJ-015）：DEBUG 开发会话与 iOS 17.5 行程确认端到端 |
 | Owner | JT operator；Claude 架构/任务 B 抽查；Codex 任务 A 审查返修、任务 B 开发验收 |
-| Last updated | 2026-10-27T11:05:22Z |
+| Last updated | 2026-10-27T11:31:39Z |
 
 ## Active Work
 
@@ -68,6 +68,7 @@
 | `ios/Modules/CJShell/Sources/CJShell/TripContainerHost.swift, ios/Modules/CJShell/Sources/CJShell/TripShell.swift` | 遵从实际客户端写能力；确认后保留卡片/结果/原动作对账，不再用草稿读取重置原动作。 |
 | `scripts/check_ios_trip_confirm.py` | 原生 XCTest UI + 真实本地签名 API/私有 PG 的可复现验收，包含受控响应丢失、一次 act、重启恢复、跨用户及 Release。 |
 | `ios/App/README.md, README.md, docs/dispatch/P2-walking-skeleton.md, docs/handoff.json, HANDOFF.md` | 纠正旧交接，记录 A 审查/返修、B 验证和明确下一步。 |
+| `ios/Modules/CJShell/Tests/CJShellTests/TripContainerHostTests.swift` | Regression: unknown/null original blocks another proposal; verified original settlement permits reading a different proposal without deleting the original. |
 
 ## Verification Evidence
 
@@ -77,9 +78,9 @@
 | pass | `#150 审查/返修/复审与四 CI` | 原实现 3 项发现已修复：POST 被只读 transport 阻止、prepared action 缺原客户端/代次/账号绑定、tc1 前导零。新增反例原 head 失败，返修后 63 项通过；Codex 修复部分是自检，不冒认另一独立审查者。 | https://github.com/JTCAO515/G2C/pull/150#issuecomment-6436950630 |
 | pass | `uv run --locked python -B scripts/test.py` | 56/56 组通过。 | — |
 | pass | `uv run --locked python -B scripts/pg_suites.py` | 配置 PG17 和独立 PG16/17 bindir 后完整 11 组全通过，含迁移 up/down/up。初次 RUN 选到 PG17、并行编译时 solver 超时；正确配置及低负载复跑通过，未改断言或预算。 | — |
-| pass | `swift test：ios 根包 / CJTripClient / CJShell / ios/App Debug 与 Release` | 根包 4 项、Trip 63 项、Shell 203 项通过；App 配置 Debug/Release 测试通过。 | — |
+| pass | `swift test：ios 根包 / CJTripClient / CJShell / ios/App Debug 与 Release` | 根包 4 项、Trip 63 项、Shell 204 项通过；App 配置 Debug/Release 测试通过。 | — |
 | pass | `xcodebuild App Debug/Release arm64 Simulator` | Xcode 27.1；Debug 由 Xcode 生成模拟器 entitlements/adhoc 签名。Release 不含开发激活输入，实际带变量启动仍未连接。 | — |
-| pass | `uv run --locked python -B scripts/check_ios_trip_confirm.py --simulator <iOS17.5-UDID> --output <external-output>` | 最终原生 UI 脚本总 PASS：中英接受及 App 正式详情 version 1/内容一致；拒绝无 Trip；提交后 API 不可达、离线重启只查原动作、恢复后仅一次 act；跨用户拒绝；token 文件检查、0700 与 Release 无组装通过。 | — |
+| pass | `uv run --locked python -B scripts/check_ios_trip_confirm.py --simulator <iOS17.5-UDID> --output <external-output>` | 最终原生 UI 脚本总 PASS：中英接受及 App 正式详情 version 1/内容一致；拒绝无 Trip；提交后 API 不可达、离线重启只查原动作、恢复后仅一次 act；跨用户拒绝；token 文件检查、0700 与 Release 无组装通过。 Independent review P2 repaired: after restart and verified settlement of old action A, explicit proposal B can be read/confirmed; old records retained. Full native regression PASS. | — |
 | fail | `初次模拟器与驱动验证` | 已解决：手工签名导致启动拒绝；改 Xcode 模拟器签名后通过。AXe 点击在本机 iOS17.5 未送达，改原生 XCTest；确认后卡片隐藏已修复；动态树竞争改原子快照/观察坐标。最终验收见上行。 | — |
 | pass | `python3 -B scripts/handoff.py render/check; git diff --check` | JSON render/check and git diff --check passed; mandatory reading paths exist. | — |
 | unknown | `任务 B 最终 head 四 CI / Claude 抽查` | 截至提交准备时 CI 尚未运行，Claude 抽查尚未进行；通过分支 PR 读取最新状态。任务 B 不自动合并。 | — |

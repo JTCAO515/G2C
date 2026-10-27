@@ -26,6 +26,8 @@ The explicit host grants `TripLiveWrites` for the signed `app_from_environment`
 fixture. Other tabs stay unconfigured. The existing proposal screen keeps its
 decision/result card after an action ID is assigned; an original action cannot be
 replaced by re-reading the draft while its outcome is unknown.
+After that original reaches a verified terminal outcome, a different explicitly
+selected proposal can be read and decided without removing the historical record.
 
 ## Reproduce on iOS 17.5
 
@@ -48,6 +50,8 @@ rejection without a Trip, committed-response loss followed by offline restart an
 original-action reconciliation (exactly one `act`), and foreign-user refusal.
 It also audits token absence in App files, pending-directory permissions, and a
 Release App launched with all development variables that still remains disconnected.
+The same-account regression also confirms a new proposal after restart and original
+receipt reconciliation, while retaining the old action and formal Trip.
 
 Xcode supplies **simulator** embedded entitlements and ad-hoc signing for Debug;
 do not manually sign the host process with restricted iOS entitlements. The

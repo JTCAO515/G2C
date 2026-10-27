@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T11:05:22Z",
+  "lastUpdated": "2026-10-27T11:31:39Z",
   "currentPhase": "#154 本轮实现与本地验收完成；仅剩 PR 独立审查/合并与 main CI 核验，完成后按 JT 指令暂停",
   "status": "active",
   "objective": "完成本轮 #149/#150 审查合并与 DEBUG App 开发会话、iOS 17.5 行程确认端到端；保留正式写入、原动作恢复及外部资源授权边界。",
@@ -64,6 +64,10 @@
     {
       "path": "ios/App/README.md, README.md, docs/dispatch/P2-walking-skeleton.md, docs/handoff.json, HANDOFF.md",
       "reason": "纠正旧交接，记录 A 审查/返修、B 验证和明确下一步。"
+    },
+    {
+      "path": "ios/Modules/CJShell/Tests/CJShellTests/TripContainerHostTests.swift",
+      "reason": "Regression: unknown/null original blocks another proposal; verified original settlement permits reading a different proposal without deleting the original."
     }
   ],
   "verification": [
@@ -94,7 +98,7 @@
     {
       "command": "swift test：ios 根包 / CJTripClient / CJShell / ios/App Debug 与 Release",
       "status": "pass",
-      "summary": "根包 4 项、Trip 63 项、Shell 203 项通过；App 配置 Debug/Release 测试通过。",
+      "summary": "根包 4 项、Trip 63 项、Shell 204 项通过；App 配置 Debug/Release 测试通过。",
       "artifact": null
     },
     {
@@ -106,7 +110,7 @@
     {
       "command": "uv run --locked python -B scripts/check_ios_trip_confirm.py --simulator <iOS17.5-UDID> --output <external-output>",
       "status": "pass",
-      "summary": "最终原生 UI 脚本总 PASS：中英接受及 App 正式详情 version 1/内容一致；拒绝无 Trip；提交后 API 不可达、离线重启只查原动作、恢复后仅一次 act；跨用户拒绝；token 文件检查、0700 与 Release 无组装通过。",
+      "summary": "最终原生 UI 脚本总 PASS：中英接受及 App 正式详情 version 1/内容一致；拒绝无 Trip；提交后 API 不可达、离线重启只查原动作、恢复后仅一次 act；跨用户拒绝；token 文件检查、0700 与 Release 无组装通过。 Independent review P2 repaired: after restart and verified settlement of old action A, explicit proposal B can be read/confirmed; old records retained. Full native regression PASS.",
       "artifact": null
     },
     {
