@@ -225,13 +225,18 @@ def group_migrations():
     return subprocess.run([sys.executable, '-B', str(ROOT / 'scripts/migrate.py'), 'verify'], env=clean_env()).returncode
 
 
+def group_feasibility_domain():
+    # test_current_read provisions its own private cluster from CJ_PG17_BINDIR.
+    return pytest('backend/feasibility', dict(clean_env(), CJ_PG17_BINDIR=str(bindir())))
+
+
 def group_needs():
     # conftest provisions its own private cluster from CJ_PG17_BINDIR.
     fresh('needs/.local')
     return pytest('backend/needs', dict(clean_env(), CJ_PG17_BINDIR=str(bindir())))
 
 
-GROUPS = {'migrations': group_migrations, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
+GROUPS = {'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners}
 
 

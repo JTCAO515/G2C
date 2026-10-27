@@ -21,7 +21,7 @@ from cj_needs import Boundary, Command
 from cj_feasibility.current_read import ReadLimits, ReadWithheld, project_current
 
 ROOT=Path(__file__).resolve().parents[3]
-BIN=Path('/opt/homebrew/opt/postgresql@17/bin')
+BIN=Path(os.environ.get('CJ_PG17_BINDIR','/opt/homebrew/opt/postgresql@17/bin'))
 LIMITS=ReadLimits(10,1024*1024,128*1024)
 
 
