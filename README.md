@@ -41,6 +41,6 @@ uv run --locked python -B scripts/pg_suites.py   # PostgreSQL 套件与迁移 up
 
 后端入口与约定见 [backend/README.md](backend/README.md)，迁移见 [backend/migrations/README.md](backend/migrations/README.md)；CI（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）全部阻塞，是唯一的“绿”。历史证据已出仓，见 [docs/evidence.md](docs/evidence.md)。开发授权不包含付费调用、云资源、权限/凭据变更、外联、公开发布或删除旧数据。
 
-交接更新：先改 `docs/handoff.json`，再运行 `python3 -B scripts/handoff.py render` 和 `python3 -B scripts/handoff.py check`。检查已进入 CI 的 python job，不依赖本机技能或 npm。四个 job（python、postgres、swift、ios-app）全部阻塞，合并还需 Claude 独立审查或 JT 明确同意。
+交接更新：先改 `docs/handoff.json`，再运行 `python3 -B scripts/handoff.py render` 和 `python3 -B scripts/handoff.py check`。检查已进入 CI 的 python job，不依赖本机技能或 npm。CI 全部 job 阻塞；合并与审查条件见 [ADR-0007](docs/adr/0007-issue-closure-workflow.md)。
 
-GitHub 当前可见性为 PRIVATE（2026-10-27 只读核实）；许可证和产品法律条款仍待定。ADR 的可见性修订由 #144 单独处理，本切片不修改已接受 ADR。P2 范围为北京、邮箱 OTP、最低 iOS 17。
+GitHub 当前可见性为 PUBLIC（2026-10-27 只读核实）；许可证和产品法律条款仍待定，公开不等于授予开源许可。P2 范围为北京、邮箱 OTP、最低 iOS 17。

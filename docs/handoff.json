@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T16:00:00Z",
+  "lastUpdated": "2026-10-27T10:01:14Z",
   "currentPhase": "P2c：#148 已合并；iOS 行程确认客户端切片待 CI/独立审查；App 开发会话组装与 MESSAGE 发送许可待做",
   "status": "active",
   "objective": "Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green.",
@@ -21,12 +21,14 @@
     "ADR-0001 产品与用户控制边界继续有效。",
     "qwen3.8-flash 与北京端点已选定；P2b 原作者报告真实 smoke 4/4，本轮未重跑。",
     "ADR-0004 已接受；单一 Python 发行包 cj，保留领域 import 名，不恢复同仓 hash pin 或 Git 导出依赖。",
-    "当前 GitHub 实况为 PRIVATE；早先 PUBLIC 状态已过期，去本机路径和秘密规则继续有效；ADR 修订由 #144 单独处理。",
+    "JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。",
     "P2：北京、邮箱 OTP、最低 iOS 17。",
     "JT 当前指令：Codex 实现/测试/交付，Claude 架构/规划/审查，JT 决策与外部资源。",
-    "JT 当前指令：python、postgres、swift、ios-app 四 job 均阻塞；合并还需 Claude 独立审查或 JT 明确同意。",
+    "ADR-0007（accepted，JT 2026-10-27）：CI 全部 job 阻塞；Codex 在不继承作者上下文的会话中审查精确 head 后合并，红线 PR 逐条写明追加必查项；JT 停点见 ADR-0007 第 3 条。",
     "历史证据归档 tag evidence-archive-2026-10-27；不改写历史。",
-    "JT 2026-10-27: PR #147 only uses Codex review instead of Claude; continue subsequent P2c work. This is not independent review and not blanket approval for later PRs."
+    "JT 2026-10-27: PR #147 only uses Codex review instead of Claude; continue subsequent P2c work. This is not independent review and not blanket approval for later PRs.",
+    "accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).",
+    "accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending."
   ],
   "architectureContracts": [
     "contracts/api/openapi.json unchanged in P1.",
