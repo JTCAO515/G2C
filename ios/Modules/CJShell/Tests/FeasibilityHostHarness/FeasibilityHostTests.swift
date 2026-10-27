@@ -107,7 +107,7 @@ private actor Transport: ClientTransport {
         let f = try Fixture(); await f.load(); let entry = try f.open()
         switch event {
         case "session": _ = try f.session.beginTrustedSDKSave()
-        case "shell": f.shell.generation = ShellGeneration()
+        case "shell": f.shell.invalidateIdentity()
         default:
             let old = f.needs
             f.current = .init(environment: event == "environment" ? UUID() : old.environment,

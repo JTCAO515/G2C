@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T12:30:00Z",
-  "currentPhase": "M1 主链路闭环（模拟器 L1）：Issue 按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 已关闭（PR #172），下一张为 #151 S0 Part 2/2。",
+  "lastUpdated": "2026-10-27T14:30:53+00:00",
+  "currentPhase": "M1：#151 PR #174 第三轮候选；前两轮测试全绿但 Swift 调度墙钟超过增幅阈值，改为单 runner 顺序跑全包，待最终 CI 与独立复审。",
   "status": "active",
   "objective": "M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。",
   "acceptedIssue": "M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md",
@@ -10,9 +10,11 @@
   "fromAgent": "Claude（Issue 总体规划，PR #171）",
   "intendedNextAgent": "Codex：按 docs/plan/issue-plan.md 队列连续关票，自审自合并（ADR-0007 第 3、7 条）",
   "activeWork": [
-    "#154 已关闭：PR #172 合并为 715fd00，main CI 全绿；#20 框 4 已勾，框 1、7 的 App 部分已附证据，服务端部分待 #155。",
-    "#151 S0 Part 2/2（iOS 测试全部进 CI、pr-lint）未开始，为下一张。",
-    "#162（CJ-009 子票）：MESSAGE 发送许可方案，owner Claude，未开始；#163、#164 依赖它。"
+    "#154 已关闭（PR #172）；#20 剩余 #155。",
+    "#151 PR #174：单个 Swift job 顺序跑 16 包 + App Release；Shell 先构建共享依赖，Cleanup 最后运行避免锁版本切换；强制锁定版本，保留全部检查。",
+    "#174 已连续两轮 REQUEST CHANGES，均因耗时：第一轮 582 秒（+314），第二轮 599 秒（+331），已报告且未合并。第三轮若仍审查不通过，按 ADR-0007 记录子票阻塞并跳过。",
+    "#162 owner Claude，PR #173 待 JT 批准；#159 文案待 JT。",
+    "#175 记录入口 README 旧暂停文案，不属于本 CI 切片。"
   ],
   "assumptions": [
     "本轮本地 API 使用 app_from_environment 强制签名入口、私有 PG、FakeProvider 和临时开发身份；不是生产、OTP 或真实模型验收。",
@@ -40,44 +42,92 @@
   ],
   "changedFiles": [
     {
-      "path": "docs/plan/issue-plan.md",
-      "reason": "新增：里程碑 M0–M5、M1 队列与子票、依赖、停点与跳过、M2 拆分预案。"
+      "path": ".github/workflows/ci.yml, .github/workflows/pr-lint.yml, .github/swift-packages.json, .github/scripts/swift_packages.py, .github/scripts/test_swift_packages.py",
+      "reason": "单个 Swift job 全覆盖 16 包并复用锁定编译；遗漏、完整执行和失败传播检查；独立最小权限 pr-lint。"
     },
     {
-      "path": "docs/adr/0007-issue-closure-workflow.md",
-      "reason": "第 2 条队列改指规划文档、框数 2–6、挂起父票不占在制名额；第 7 条停点分子票级与仓库级。"
+      "path": "ios/Modules/CJShell/Tests/FeasibilityHostHarness",
+      "reason": "历史测试包直接依赖当前模块，失效负例使用真实 Shell 入口；保留所有断言，锁定依赖。"
     },
     {
-      "path": "AGENTS.md, .github/ISSUE_TEMPLATE/slice.md",
-      "reason": "阅读顺序加入规划文档；框数 2–6；停点分级。"
+      "path": "ios/Modules/CJMessageClient/Package.resolved",
+      "reason": "补齐现有测试图缺失的依赖锁项，版本与既有 CJShell 锁一致，无产品源码修改。"
     },
     {
       "path": "docs/handoff.json, HANDOFF.md",
-      "reason": "切换到 M1 队列状态。"
+      "reason": "#151 当前状态、验证与下一步。"
     }
   ],
   "verification": [
     {
-      "command": "python3 -B scripts/handoff.py check",
+      "command": "uv run --locked python -B scripts/test.py",
       "status": "pass",
-      "summary": "handoff 结构与阅读顺序一致。",
+      "summary": "56/56 suites。",
       "artifact": null
     },
     {
-      "command": "GitHub Issue 规划核对",
+      "command": "Swift inventory + pr-lint local negative/positive checks",
       "status": "pass",
-      "summary": "M0–M5 里程碑；#155–#170 为 M1 子票并已挂到父票；父票验收框均标明 → #子票 / → L2 #32；L2 转记已登记到 #32。",
-      "artifact": "https://github.com/JTCAO515/G2C/pull/171"
+      "summary": "完整清单通过；遗漏嵌套包/陈旧项/重复项失败；Issue 引用正负与 shell 字面内容不执行。",
+      "artifact": null
     },
     {
-      "command": "GitHub Actions ci.yml",
+      "command": "uv run --locked python -B scripts/pg_suites.py",
+      "status": "pass",
+      "summary": "11/11 groups，PG16/17 私有集群与迁移 up/down/up。",
+      "artifact": null
+    },
+    {
+      "command": "swift test --package-path <.github/swift-packages.json 中每个包>; ios/App -c release",
+      "status": "pass",
+      "summary": "16/16 包成功；App Debug/Release 各 4 tests；CJShell 204、独立 FeasibilityHostHarness 10、CJTripClient 63。",
+      "artifact": null
+    },
+    {
+      "command": "GitHub Actions pr-lint（故意缺引用）",
+      "status": "pass",
+      "summary": "预期失败：缺少 Issue 关联时 pr-lint exit 1；此失败是负例，不是全 CI 通过。",
+      "artifact": "https://github.com/JTCAO515/G2C/actions/runs/40514287589/job/122224804417"
+    },
+    {
+      "command": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild App generic iOS Simulator arm64",
+      "status": "pass",
+      "summary": "CJProbeApp build succeeded；本票无产品修改，未重复交互验收。",
+      "artifact": null
+    },
+    {
+      "command": "#174 initial CI / independent review aa006782",
+      "status": "fail",
+      "summary": "20/20 测试 job 成功，但 Swift 墙钟 582 秒比 268 秒增加 314 秒；性能要求未通过，不合并。",
+      "artifact": "https://github.com/JTCAO515/G2C/pull/174#issuecomment-6443908168"
+    },
+    {
+      "command": ".github/scripts/test_swift_packages.py; swift_packages.py --shard 0/1/2",
+      "status": "pass",
+      "summary": "4 个门禁编排测试通过；实际 Swift 三组包含 16 包 + App Release 全通过，使用 --force-resolved-versions 后无锁文件变化。测试替身只用于编排负例，不替代实际 Swift。",
+      "artifact": null
+    },
+    {
+      "command": "#174 second CI / independent review 801211ca",
+      "status": "fail",
+      "summary": "7/7 CI + pr-lint 成功，17 次实际 Swift 测试完整；首组启动到完成 599 秒，增幅 331 秒；含首次排队 903 秒，耗时要求仍未通过。",
+      "artifact": "https://github.com/JTCAO515/G2C/pull/174#issuecomment-6444599873"
+    },
+    {
+      "command": ".github/scripts/test_swift_packages.py; swift_packages.py --run",
+      "status": "pass",
+      "summary": "4 个门禁编排测试通过；单 runner 原型全 17 次运行 109 秒；正式脚本再次全部通过，无锁文件变化。真实 CI 耗时仍待核验。",
+      "artifact": null
+    },
+    {
+      "command": "GitHub Actions final head; independent review",
       "status": "not-run",
-      "summary": "以 PR #171 精确 head 检查为准（文档改动）。",
-      "artifact": null
+      "summary": "等待 PR #174 最终 head 的全部阻塞检查与独立 Codex 审查；合并后核验 main。Swift 原基线 268 秒，矩阵耗时见 PR。",
+      "artifact": "https://github.com/JTCAO515/G2C/pull/174"
     }
   ],
   "blockers": [
-    "#162 未关闭前，#163、#164 不能开工；#167 依赖 #164（子票级停点，跳过继续）。",
+    "#162 OPEN：Claude PR #173 待 JT 批准；#163 等 #162，#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。",
     "#159 帮助/隐私/支持文案需 JT 确认（子票级停点）。",
     "L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。"
   ],
@@ -97,9 +147,9 @@
   ],
   "rollback": "revert PR #171 合并提交即可恢复原队列写法；GitHub 上的子票、里程碑与父票正文按 Issue 编辑历史（edited 记录）手工回退。无代码、迁移或配置变更。",
   "nextAction": {
-    "description": "开始 #151 S0 Part 2/2：iOS 测试全部进 CI（ios/Modules/**/Package.swift 全覆盖并检查遗漏）、新增 pr-lint；合并后按 docs/plan/issue-plan.md 从 #155 继续。",
-    "expectedObservation": "#151 关闭；main CI 包含全部 iOS 模块测试与 pr-lint 且全绿。",
-    "command": "gh issue view 151 --repo JTCAO515/G2C"
+    "description": "完成 #151 PR #174 第三轮精确 head CI 与独立复审：单 Swift job 相对原 268 秒增幅不超过 300 秒。通过后合并并核验 main、关闭 #151，再做 #155；若连续第三轮审查不通过，评论并记入 blockers，跳过 #151 继续队列。",
+    "expectedObservation": "#151 全部验收框有 L0 证据，main CI 全绿；随后推进 #155。",
+    "command": "gh issue view 151 --repo JTCAO515/G2C --comments"
   },
   "readingOrder": [
     "HANDOFF.md",
