@@ -1,6 +1,6 @@
 # ADR-0004：交付流程收敛与仓库卫生
 
-- 状态：**proposed**（Claude 架构审查提议；第 4 节决策点需 JT 逐项确认后改为 accepted）
+- 状态：**accepted**（JT 于 2026-10-27 逐项确认，见“JT 决定”一节；技术效果仍按各 Issue 验证）
 - 日期：2026-10-27
 - 依据：main `8fac0dff5e50ce08c277b65f7322a4ea64d77e65` 的静态审查；未运行 pytest / swift test（UNRUN）
 - 关联：[ADR-0002](0002-runtime-candidates.md)、[ADR-0003](0003-state-and-recovery.md)、[CJ-005](https://github.com/JTCAO515/G2C/issues/5)、[交接](../handoff.json)、[P0 派工单](../dispatch/P0-repo-hygiene.md)
@@ -23,23 +23,22 @@
 2. **CI 是唯一的“绿”**：新增最小 GitHub Actions（pytest、OpenAPI 校验与生成一致性、PG16 迁移 up/down、macOS `swift build/test`）。作者自报 PASS 只作补充，不替代 CI。
 3. **证据出仓**：新增运行日志、进程记录、压缩包、录屏不再入库，改为 CI artifact 与 PR 描述中的 PASS / FAIL / UNRUN / UNKNOWN 表；仓库只保留精简 `evidence/INDEX.md`。**不改写 Git 历史、不 force push**；既有证据文件的清理另行确认。
 4. **公开仓库去本机路径**：本机绝对路径替换为占位（如 `<local-handoff>`、`<repo>`）。
-5. **（P1，待确认）删除同仓 hash pin**：合并为单一 Python package `cj` + 单一 `pyproject`/`uv.lock`，由契约测试与 CI 保证组合一致；Git commit 即不可变 pin。
-6. **（P1，待确认）流程精简**：一个 PR 对应一个 Issue 切片，CI 绿 + 一次独立 Review 即合并；trunk-based，不再经 `cj/integration-c0` 中转。STOP 规则、UNKNOWN 纪律、未知写入先读回保持不变。
+5. **（P1）删除同仓 hash pin**：合并为单一 Python package `cj` + 单一 `pyproject`/`uv.lock`，由契约测试与 CI 保证组合一致；Git commit 即不可变 pin。
+6. **（P1）流程精简**：一个 PR 对应一个 Issue 切片，CI 绿 + 一次独立 Review 即合并；trunk-based，不再经 `cj/integration-c0` 中转。STOP 规则、UNKNOWN 纪律、未知写入先读回保持不变。
 7. **路线**：P0 仓库卫生 → P1 结构收敛 → P2 walking skeleton（CJ-007→009→010→014→015 + 011 最小记忆，单城市、中英、真机）→ P3 加厚至内测。P2 期间暂停新领域铺宽（离线、手动编辑、反馈、清理进度、用量展示）。
 
 ## 已确认 / 证据 / 待决 / 推断
 
-- **已确认用户决策**：ADR-0001 全部内容；`qwen3.8-flash` 与北京端点（见 `spikes/runtime/REPORT.md`）；JT 授权本 PR（handoff.json、ADR-0004、P0 派工单）并直接合并 main。
+- **已确认用户决策**：ADR-0001 全部内容；本 ADR 第 1–7 条及下节 JT 决定；`qwen3.8-flash` 与北京端点（见 `spikes/runtime/REPORT.md`）；JT 授权本 PR（handoff.json、ADR-0004、P0 派工单）并直接合并 main。
 - **仓库证据**：“背景”各条，均可在上述 main commit 复核。
-- **待 JT 决定**：见下节。
 - **Claude 推断（待验证）**：交付慢的主因是流程与组合开销而非技术难度；竖切 walking skeleton 能显著提升可验收产出。
 
-## 待 JT 决定（operatorActions）
+## JT 决定（2026-10-27）
 
-1. 仓库可见性：保持 PUBLIC 或改 PRIVATE（建议许可证未定前改 PRIVATE）。
-2. 是否接受第 3 条（证据出仓）与第 5 条（删除 hash pin）——两者修改既有组合/证据流程。
-3. P2 范围值：城市、主登录方式、最低 iOS。建议：单城市北京、邮箱 OTP、iOS 17（均为候选）。
-4. 是否接受第 6 条流程精简。
+1. 仓库可见性：**保持 PUBLIC**。因此去本机路径（第 4 条）为必做项；许可证与产品法律条款仍待定，公开不等于授予开源许可。
+2. **接受**第 3 条（证据出仓）与第 5 条（删除同仓 hash pin）。既有已跟踪证据的清理与 pin 删除一并在 P1 执行（pin 删除后 hash 约束随之解除），仍不改写 Git 历史。
+3. **接受** P2 范围值：单城市 **北京**、主登录 **邮箱一次性登录（OTP）**、最低 **iOS 17**。真实可达性、SDK 能力与设备覆盖仍按 CJ-004/007/026 验证。
+4. **接受**第 6 条流程精简。
 
 ## 取舍
 

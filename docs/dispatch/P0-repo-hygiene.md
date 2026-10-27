@@ -1,7 +1,7 @@
 # Codex 派工单：P0 仓库卫生与最小 CI
 
 - 派工方：Claude（架构/审查）；执行方：Codex
-- 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（proposed）、[交接](../handoff.json)
+- 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted 2026-10-27）、[交接](../handoff.json)
 - base：main（以开工时 `git rev-parse origin/main` 为准并写入 PR）
 - 分支：`chore/p0-repo-hygiene`，经 PR 合并；禁止直推 main、force push、改写历史
 
@@ -12,8 +12,8 @@
 ## 反目标
 
 - 不改 `backend/**`、`ios/**`、`spikes/**`、`contracts/**` 的源码、测试、SQL、pins 或 OpenAPI。
-- 不删除、移动既有 `evidence/` 文件（是否清理既有证据待 JT 决定）。
-- 不删除 hash pin 机制（P1，待 JT 决定）。
+- 不删除、移动既有 `evidence/` 文件（JT 已同意证据出仓，既有证据清理随 P1 pin 删除一并执行）。
+- 不删除 hash pin 机制（JT 已同意，属 P1）。
 - 不调用付费 provider、不创建云资源、不配置或读取任何秘密。
 
 ## 强制阅读顺序
@@ -69,10 +69,10 @@ gh pr checks <PR>   # CI 全绿，或失败项逐条在 PR 记录原因
 - `docs/handoff.json` 与 `HANDOFF.md` 同步。
 - 由 Claude 按固定 head 独立审查后合并；Codex 不自批。
 
-## 仍需 JT 决定（不在本单执行）
+## JT 已决定（2026-10-27）
 
-仓库可见性；既有证据是否清理；是否删除 hash pin（P1）；P2 城市/登录/最低 iOS；流程精简。
+仓库保持 PUBLIC（去本机路径必做）；证据出仓与删除 hash pin 已接受（P1）；P2 为北京 / 邮箱 OTP / iOS 17；流程精简已接受。仍待定：许可证与产品法律条款（不在本单处理）。
 
 ## 唯一下一步
 
-完成本单 P0 PR → Claude 审查合并 → 根据 JT 决策派 P1（结构收敛）。
+完成本单 P0 PR → Claude 审查合并 → 派 P1（单一 package、删除 hash pin、既有证据出仓、迁移落地）。

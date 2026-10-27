@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T00:00:00Z",
+  "lastUpdated": "2026-10-27T03:00:00Z",
   "currentPhase": "P0-repo-hygiene",
   "status": "active",
   "objective": "Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green.",
@@ -20,43 +20,84 @@
   "decisions": [
     "accepted: ADR-0001 product and user-control boundaries.",
     "accepted: model qwen3.8-flash with Beijing endpoint profile (spikes/runtime/REPORT.md); real calls still UNRUN.",
-    "accepted: JT authorized this PR (handoff.json, ADR-0004, P0 dispatch) and direct merge to main.",
-    "proposed: ADR-0004 delivery flow and repo hygiene; items 3, 5, 6 need JT confirmation."
+    "accepted (JT 2026-10-27): ADR-0004 delivery flow and repo hygiene, items 1-7.",
+    "accepted (JT 2026-10-27): repository stays PUBLIC; local-path removal is mandatory.",
+    "accepted (JT 2026-10-27): evidence moves out of repo and in-repo sha256 pins are removed, both executed in P1; no history rewrite.",
+    "accepted (JT 2026-10-27): P2 scope Beijing single city, email OTP primary login, minimum iOS 17.",
+    "accepted (JT 2026-10-27): process simplification, one PR per Issue slice, CI green plus one independent review, trunk-based."
   ],
   "architectureContracts": [
     "Frozen for P0: contracts/api/openapi.json, all backend domain code and *_pins.json, backend/migrations/manifest.json.",
     "Single business authority and recovery semantics per ADR-0003 (proposed) remain the target for P2."
   ],
   "changedFiles": [
-    { "path": "docs/handoff.json", "reason": "Repository-owned machine handoff source (ADR-0004 item 1)." },
-    { "path": "HANDOFF.md", "reason": "Rendered from docs/handoff.json." },
-    { "path": "docs/adr/0004-delivery-flow-and-repo-hygiene.md", "reason": "Proposed delivery flow and repo hygiene decision." },
-    { "path": "docs/adr/README.md", "reason": "Index ADR-0004." },
-    { "path": "docs/dispatch/P0-repo-hygiene.md", "reason": "Codex dispatch for P0." }
+    {
+      "path": "docs/adr/0004-delivery-flow-and-repo-hygiene.md",
+      "reason": "Mark accepted and record JT decisions of 2026-10-27."
+    },
+    {
+      "path": "docs/adr/README.md",
+      "reason": "ADR-0004 status accepted."
+    },
+    {
+      "path": "docs/scope.md",
+      "reason": "City, minimum iOS and login rows confirmed per ADR-0004."
+    },
+    {
+      "path": "docs/dispatch/P0-repo-hygiene.md",
+      "reason": "Reflect accepted decisions; P1 next."
+    },
+    {
+      "path": "docs/handoff.json",
+      "reason": "Decisions accepted, blockers cleared."
+    },
+    {
+      "path": "HANDOFF.md",
+      "reason": "Rendered from docs/handoff.json."
+    }
   ],
   "verification": [
-    { "command": "python3 -m json.tool docs/handoff.json", "status": "pass", "summary": "handoff.json is valid JSON.", "artifact": null },
-    { "command": "node ~/.claude/skills/jtcoding-skills/scripts/handoff.js check --project .", "status": "pass", "summary": "Schema valid and HANDOFF.md current at authoring time.", "artifact": "HANDOFF.md" },
-    { "command": "git diff --stat origin/main -- backend ios spikes contracts pyproject.toml uv.lock", "status": "pass", "summary": "No business code changed by this PR.", "artifact": null },
-    { "command": "CJ_ENV=local uv run pytest -q backend/tests backend/cj_api/tests", "status": "not-run", "summary": "Not run during review; to be established by P0 CI.", "artifact": null },
-    { "command": "swift test (ios/Modules/CJShell)", "status": "not-run", "summary": "Not run during review; to be attempted in P0 CI.", "artifact": null }
+    {
+      "command": "python3 -m json.tool docs/handoff.json",
+      "status": "pass",
+      "summary": "handoff.json is valid JSON.",
+      "artifact": null
+    },
+    {
+      "command": "node ~/.claude/skills/jtcoding-skills/scripts/handoff.js check --project .",
+      "status": "pass",
+      "summary": "Schema valid and HANDOFF.md current at authoring time.",
+      "artifact": "HANDOFF.md"
+    },
+    {
+      "command": "git diff --stat origin/main -- backend ios spikes contracts pyproject.toml uv.lock",
+      "status": "pass",
+      "summary": "No business code changed by this PR.",
+      "artifact": null
+    },
+    {
+      "command": "CJ_ENV=local uv run pytest -q backend/tests backend/cj_api/tests",
+      "status": "not-run",
+      "summary": "Not run during review; to be established by P0 CI.",
+      "artifact": null
+    },
+    {
+      "command": "swift test (ios/Modules/CJShell)",
+      "status": "not-run",
+      "summary": "Not run during review; to be attempted in P0 CI.",
+      "artifact": null
+    }
   ],
-  "blockers": [
-    { "description": "Repository visibility (PUBLIC, no license, 618 files with local paths).", "owner": "JT", "unblockCondition": "JT chooses PUBLIC or PRIVATE." },
-    { "description": "Whether to remove in-repo sha256 pins and move evidence out of the repo (ADR-0004 items 3, 5).", "owner": "JT", "unblockCondition": "JT accepts or rejects; required before P1." },
-    { "description": "P2 values: city, primary login, minimum iOS (suggested Beijing, email OTP, iOS 17).", "owner": "JT", "unblockCondition": "JT confirms values; required before P2 real acceptance." },
-    { "description": "Process simplification (ADR-0004 item 6).", "owner": "JT", "unblockCondition": "JT accepts or rejects." }
-  ],
+  "blockers": [],
   "risks": [
-    "Replacing local paths inside evidence files may break hashes recorded in pins/manifests; dispatch requires skipping such files.",
+    "Repository is PUBLIC without a license; design and evidence are visible and reuse rights are undefined.",
+    "Replacing local paths inside evidence files may break hashes recorded in pins/manifests; P0 dispatch requires skipping such files until P1 removes pins.",
     "CI may reveal failing or non-portable tests that previously passed only on the author machine.",
-    "Removing pins (P1) changes an established composition contract; needs explicit acceptance."
+    "Email OTP via the candidate auth provider may face reachability limits for users inside China; verify in CJ-007."
   ],
   "operatorActions": [
-    "Decide repository visibility.",
-    "Accept or reject ADR-0004 items 3, 5, 6.",
-    "Confirm P2 city, login method and minimum iOS.",
-    "If CI is added, confirm GitHub Actions usage is acceptable for this repository."
+    "Decide repository license and product legal terms (repository stays PUBLIC).",
+    "Confirm GitHub Actions usage is acceptable once the P0 CI PR is opened."
   ],
   "rollback": "git revert the merge commit of this PR; documentation only, no data, credentials or external resources touched.",
   "nextAction": {
@@ -81,8 +122,8 @@
     "docs/engineering.md"
   ],
   "provenance": {
-    "baseCommit": "8fac0dff5e50ce08c277b65f7322a4ea64d77e65",
-    "method": "Static repository review plus git and gh read-back by Claude; no tests executed.",
+    "baseCommit": "ebbf7e2c0da077e28bf35f33b0b29d2738f9ad51",
+    "method": "JT decisions recorded from chat on 2026-10-27; static review and git/gh read-back; no tests executed.",
     "author": "Claude Opus 5.5 via Claude Code"
   }
 }
