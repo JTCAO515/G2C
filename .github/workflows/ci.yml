@@ -5,7 +5,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, edited, synchronize, reopened]
 
 permissions:
   contents: read
@@ -52,22 +51,6 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked
       - run: uv run --locked python -B scripts/pg_suites.py
-
-  pr-lint:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Require an Issue reference in the PR body
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          python3 - <<'PYTHON'
-          import os, re
-          if not re.search(r"(?i)\b(closes|fixes|resolves|refs)\s+#\d+", os.environ["PR_BODY"]):
-              raise SystemExit("PR body must contain Closes/Fixes/Resolves/Refs #<issue number>")
-          print("Issue reference present")
-          PYTHON
 
   swift-packages:
     runs-on: ubuntu-latest

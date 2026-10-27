@@ -26,7 +26,7 @@
 ## Active Work
 
 - #154 已关闭（PR #172）；#20 剩余 #155。
-- #151 PR #174：16 包全覆盖（含 App Debug/Release 和嵌套 FeasibilityHostHarness）；无 test target 排除。pr-lint 真实 CI 缺引用负例已失败，恢复引用后的正例待运行。
+- #151 PR #174：16 包全覆盖（含 App Debug/Release 和嵌套 FeasibilityHostHarness）；无 test target 排除。pr-lint 真实 CI 缺引用负例已失败，恢复引用后的正例待运行。 pr-lint 独立 workflow，仅正文编辑时不重跑构建。
 - #162 owner Claude，仍 OPEN；#159 文案尚无 JT 确认。
 - 范围外文档漂移记录为 #175：README 与 App README 仍含 #172 后暂停的旧指令；以当前 handoff / ADR-0007 为准。
 
@@ -61,7 +61,7 @@
 
 | Path | Reason |
 | --- | --- |
-| `.github/workflows/ci.yml, .github/swift-packages.json, .github/scripts/swift_packages.py` | 全部 Swift 包阻塞矩阵、显式清单与遗漏检查；PR 正文经 env 的最小权限 pr-lint。 |
+| `.github/workflows/ci.yml, .github/workflows/pr-lint.yml, .github/swift-packages.json, .github/scripts/swift_packages.py` | 全部 Swift 包阻塞矩阵、显式清单与遗漏检查；PR 正文经 env 的最小权限 pr-lint。 |
 | `ios/Modules/CJShell/Tests/FeasibilityHostHarness` | 历史测试包直接依赖当前模块，失效负例使用真实 Shell 入口；保留所有断言，锁定依赖。 |
 | `ios/Modules/CJMessageClient/Package.resolved` | 补齐现有测试图缺失的依赖锁项，版本与既有 CJShell 锁一致，无产品源码修改。 |
 | `docs/handoff.json, HANDOFF.md` | #151 当前状态、验证与下一步。 |
