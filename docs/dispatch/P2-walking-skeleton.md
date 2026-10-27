@@ -1,5 +1,7 @@
 # 派工单：P2 主线打通（walking skeleton）
 
+> **已冻结（ADR-0007，2026-10-27）**：本派工单只作历史记录，不再追加实施记录；后续派工写在子票正文里。
+
 - 状态：**P2a #143、P2b #145、P2c 壳 #146、SSE #147 已合并**。#147 按 JT 本轮明确指令由 Codex 替代审查后合并。当前为 **CJ-015 / #20 服务端确认凭证切片**；客户端写入激活、消息发送许可、OTP 和真机链路未完成。
 - 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted）、[ADR-0003](../adr/0003-state-and-recovery.md)、[scope](../scope.md)、[handoff](../handoff.json)
 - base：main `9ac8e1b`（P1 合并后）
