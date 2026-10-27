@@ -44,3 +44,43 @@ Trip draft: send with `creation_intent: "consider_trip"`; the worker publishes p
 macOS note: Python 3.14 ignores `.pth` files carrying the `hidden` file flag. If imports
 such as `cj_api` suddenly fail after `uv sync`, run
 `chflags nohidden .venv/lib/python3.*/site-packages/_cj.pth`.
+
+## P2c signed Trip confirmation preparation
+
+`POST /v1/trip-confirmations` is additive. With an authenticated owner, send JSON
+`{action_id, kind, proposal_id, candidate_hash}` (`kind` is `accept` or `reject`).
+It returns the canonical proposal, `expires_at`, and `action_utf8_base64`: the exact
+original five-field TRIP action, containing a server-issued confirmation reference.
+Issuance does not write a Trip or record acceptance. The client must show that proposal,
+retain those exact action bytes, and submit them to the existing `/v1/trip-actions`
+only after the explicit user action. Unknown outcomes use `/v1/trip-action-receipts`
+with the original action ID; do not regenerate bytes or replace the ID to retry.
+
+The trusted host must explicitly supply the same `ConfirmationSigner` as issuer and
+TRIP transaction validator. Use a dedicated random key of at least 32 bytes per
+environment, supplied through an operator-approved secret mechanism, never a JWT,
+client session token or model key. No key is created/read by this implementation.
+
+```python
+from cj_trip.confirmation import ConfirmationSigner
+from cj_api.local_app import create_local_app
+
+signer = ConfirmationSigner(key=confirmation_key, lifetime_seconds=300)
+app = create_local_app(conninfo_path=conninfo_path, auth_dir=auth_dir,
+                       confirmation_signer=signer)
+```
+
+References bind the verified scope, original action ID/kind, proposal ID/content hash,
+expected version and expiry. The existing scope-locked transaction checks the proof,
+and rechecks expiry using database time after its final AUTH guard. A committed exact
+action replay returns the existing receipt even after expiry/key rotation; an uncommitted
+old proof is denied. Keep a stable key for the intended proof lifetime; provisioning,
+rotation and actual use with real identities require separate operator authorization.
+
+Compatibility: without a signer, the new endpoint returns 503. The legacy P2b
+`create_local_app`/`app_from_environment` test composition retains its old local
+confirmation callback, so existing consumers/tests remain reproducible. It is not a
+signed P2c activation path. Remove that legacy path only after callers migrate to
+explicit signer composition and original-action recovery, with rollback verified.
+The iOS production write gates are unchanged; generated SDK availability is not UI
+or durable client activation. No migration or cloud configuration was changed.

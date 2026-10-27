@@ -1,6 +1,6 @@
 # 派工单：P2 主线打通（walking skeleton）
 
-- 状态：**P2a #143、P2b #145、P2c 壳 #146 已合并**；#146 由 JT 明确同意后合并。当前推进 **CJ-010 / #11 的 P2c SSE 读取切片**；发送、确认凭证、OTP 和真机完整链路未完成。
+- 状态：**P2a #143、P2b #145、P2c 壳 #146、SSE #147 已合并**。#147 按 JT 本轮明确指令由 Codex 替代审查后合并。当前为 **CJ-015 / #20 服务端确认凭证切片**；客户端写入激活、消息发送许可、OTP 和真机链路未完成。
 - 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted）、[ADR-0003](../adr/0003-state-and-recovery.md)、[scope](../scope.md)、[handoff](../handoff.json)
 - base：main `9ac8e1b`（P1 合并后）
 
@@ -121,7 +121,7 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 
 ## 唯一下一步
 
-完成本轮 SSE 读取切片的四 job CI 和 Claude 独立审查；Claude 同时明确下述写入激活方案，再由 Codex 接续发送/确认切片。不得以只读链路通过宣布 P2c 完成。
+完成 `feat/p2c-trip-confirmation` 的四 job CI 与审查，再接入 iOS 原动作持久化/确认 UI。#147 的替代审查授权仅适用于 #147；本新 PR 仍按原门禁处理。不得以服务端凭证或 SDK 生成宣布 P2c 完成。
 
 ## P2c 壳接入切片（PR #146）
 
@@ -141,9 +141,21 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 
 ## 写入激活待决（交 Claude，不是已批准方案）
 
+本节是前轮阻塞清单。JT 本轮要求 Codex 审查 #147 并继续后续工作；以下确认凭证的服务端部分已在本轮实现为待审切片，客户端激活与 MESSAGE 许可仍未完成，不代表所有方案已批准或已上线。
+
 源码与旧模块说明的实际阻塞必须先解决，不能当成普通按钮接线：
 
 1. `ios/Modules/CJMessageClient/ACTIVATION-GATE.md` 明确禁止 live POST；`MessageHTTPClient` 的生产入口和 `NoRedirectTransport` 均拒绝写入。已恢复的 staged、receipt 查询的 null、新 key 或新 ID 都不是首次发送许可。需要 Claude 固定服务端不可回退的原动作/epoch 证据、账号/环境绑定、保留期、首次许可和重启/备份恢复/unknown 对账语义；不得把 live transport 塞进 test interceptor。
 2. `TripClient.acceptsUserActions` 仍为 false，`TripPending` 只允许模块内部测试构造。需要 Claude 固定服务端确认凭证的签发、绑定和校验：已认证用户、原 proposal/content hash、expected version、accept/reject、有效期及原 action ID；同事务校验和幂等回执继续由 TRIP 执行。客户端读取草稿不等于确认，不能自行造 confirmation_ref。
 3. 建议在既有 PostgreSQL 业务权威内完成，新增版本迁移和必要的增量 API；不引入第二份正式状态，不改已应用迁移。具体字段/接口、迁移范围和兼容策略尚未批准，当前切片不实现这些写入。
 4. 方案验收至少覆盖：未知提交先查原动作且不换 ID、旧快照不能恢复发送许可、同动作并发一次提交、错误账号/内容/版本/过期确认拒绝、退出后晚到结果不回填。云数据库、OTP 邮件及真实模型调用另列操作清单取得 JT 授权。
+
+## P2c 服务端确认凭证（CJ-015 / #20）
+
+- base：`d74e9fcf7b4c857524edf29a0c3f4c3bf6c175e7`；分支 `feat/p2c-trip-confirmation`。
+- 最小实现使用独立 key 的 HMAC-SHA256，凭证引用保持现有 Action 五字符串格式。绑定 scope、原 action ID/kind、proposal/hash、expected version 和有效期（默认 300 秒，最多 600 秒，不超过 proposal 到期）。不新增账本或迁移；正式状态仍只在既有 TRIP 事务写入。
+- 新增 `POST /v1/trip-confirmations`，读取认证作用域下的原 proposal，返回审阅快照、到期时间及原动作字节。准备不等于确认，不执行 `act`；同 action ID 已有回执时拒绝签发替代字节。
+- 必须显式配置同一个 issuer/validator。签发后授权撤回会挡住响应；提交末尾在 AUTH guard 后用 DB 时间再次验凭证过期；原已提交动作仍返回原回执。
+- 原 API/schema 未修改；新增两个确认 envelope。生成 SDK 同时补齐正式 OpenAPI 中已有的 openConversation/streamRunEvents 声明，未新增相应服务端行为。历史 V1/V2 测试继续逐项锁定旧 schema，精确登记两个新增 envelope，仍禁止 V2 注册。
+- 兼容旧 P2b 本地入口；新签名路径不自动启用、不创建真实 key。退出旧路径的条件、未知结果与 key 生命周期见 `backend/README.md`。
+- 验证分层：签名/接口单测，TRIP 全套私有 PG，真实本地 API/PG 草稿→准备→接受/拒绝/重放/跨用户拒绝及签发时授权撤回；模型仅 FakeProvider。iOS 写入/OTP/真实模型/真机均未验收。

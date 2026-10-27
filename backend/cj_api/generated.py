@@ -1494,3 +1494,45 @@ class FeasibilityCurrentResponse(BaseModel):
     )
     request_id: RequestId
     evaluation: FeasibilityCurrentReport
+
+
+class ConversationOpenResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    last_sequence: conint(ge=0)
+
+
+class Kind6(StrEnum):
+    accept = 'accept'
+    reject = 'reject'
+
+
+class TripConfirmationRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(
+        pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$', min_length=1, max_length=128
+    )
+    kind: Kind6
+    proposal_id: constr(
+        pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$', min_length=1, max_length=128
+    )
+    candidate_hash: constr(pattern=r'^[0-9a-f]{64}$')
+
+
+class TripConfirmationResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    action_utf8_base64: constr(min_length=1, max_length=8192) = Field(
+        ...,
+        description='Exact canonical original action bytes. Persist unchanged; submit only on explicit user confirmation. Unknown outcomes require querying the original action ID, never reissuing replacement bytes.',
+    )
+    expires_at: conint(ge=1)
+    proposal: TripProposalSnapshot

@@ -19,6 +19,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/conversations`.
     /// - Remark: Generated from `#/paths//v1/conversations/get(listConversations)`.
     func listConversations(_ input: Operations.listConversations.Input) async throws -> Operations.listConversations.Output
+    /// - Remark: HTTP `PUT /v1/conversations`.
+    /// - Remark: Generated from `#/paths//v1/conversations/put(openConversation)`.
+    func openConversation(_ input: Operations.openConversation.Input) async throws -> Operations.openConversation.Output
     /// - Remark: HTTP `GET /v1/message-history`.
     /// - Remark: Generated from `#/paths//v1/message-history/get(readMessageHistory)`.
     func readMessageHistory(_ input: Operations.readMessageHistory.Input) async throws -> Operations.readMessageHistory.Output
@@ -104,6 +107,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/needs-feasibility`.
     /// - Remark: Generated from `#/paths//v1/needs-feasibility/get(evaluateCurrentNeedsFeasibility)`.
     func evaluateCurrentNeedsFeasibility(_ input: Operations.evaluateCurrentNeedsFeasibility.Input) async throws -> Operations.evaluateCurrentNeedsFeasibility.Output
+    /// - Remark: HTTP `GET /v1/run-events`.
+    /// - Remark: Generated from `#/paths//v1/run-events/get(streamRunEvents)`.
+    func streamRunEvents(_ input: Operations.streamRunEvents.Input) async throws -> Operations.streamRunEvents.Output
+    /// Prepare a short-lived server-signed action bound to the authenticated owner and immutable proposal. This does not confirm or modify a Trip. Requires an explicitly configured issuer; default is unavailable.
+    ///
+    /// - Remark: HTTP `POST /v1/trip-confirmations`.
+    /// - Remark: Generated from `#/paths//v1/trip-confirmations/post(prepareTripConfirmation)`.
+    func prepareTripConfirmation(_ input: Operations.prepareTripConfirmation.Input) async throws -> Operations.prepareTripConfirmation.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -144,6 +155,17 @@ extension APIProtocol {
         headers: Operations.listConversations.Input.Headers = .init()
     ) async throws -> Operations.listConversations.Output {
         try await listConversations(Operations.listConversations.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PUT /v1/conversations`.
+    /// - Remark: Generated from `#/paths//v1/conversations/put(openConversation)`.
+    public func openConversation(
+        query: Operations.openConversation.Input.Query,
+        headers: Operations.openConversation.Input.Headers = .init()
+    ) async throws -> Operations.openConversation.Output {
+        try await openConversation(Operations.openConversation.Input(
             query: query,
             headers: headers
         ))
@@ -443,6 +465,30 @@ extension APIProtocol {
         try await evaluateCurrentNeedsFeasibility(Operations.evaluateCurrentNeedsFeasibility.Input(
             query: query,
             headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/run-events`.
+    /// - Remark: Generated from `#/paths//v1/run-events/get(streamRunEvents)`.
+    public func streamRunEvents(
+        query: Operations.streamRunEvents.Input.Query,
+        headers: Operations.streamRunEvents.Input.Headers = .init()
+    ) async throws -> Operations.streamRunEvents.Output {
+        try await streamRunEvents(Operations.streamRunEvents.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Prepare a short-lived server-signed action bound to the authenticated owner and immutable proposal. This does not confirm or modify a Trip. Requires an explicitly configured issuer; default is unavailable.
+    ///
+    /// - Remark: HTTP `POST /v1/trip-confirmations`.
+    /// - Remark: Generated from `#/paths//v1/trip-confirmations/post(prepareTripConfirmation)`.
+    public func prepareTripConfirmation(
+        headers: Operations.prepareTripConfirmation.Input.Headers = .init(),
+        body: Operations.prepareTripConfirmation.Input.Body
+    ) async throws -> Operations.prepareTripConfirmation.Output {
+        try await prepareTripConfirmation(Operations.prepareTripConfirmation.Input(
+            headers: headers,
+            body: body
         ))
     }
 }

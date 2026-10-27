@@ -80,7 +80,7 @@ class InvitedSubjects:
         return CJAccessFacts(principal, Fact.YES, Fact.YES, Fact.YES if invited else Fact.NO)
 
 
-def create_local_app(*, conninfo_path, auth_dir):
+def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -114,7 +114,8 @@ def create_local_app(*, conninfo_path, auth_dir):
         run_events_configuration=RunEventsConfiguration(poll_interval_seconds=0.2, max_stream_seconds=120),
         trip_configuration=TripWireConfiguration(max_action_bytes=4096, max_page_limit=50,
                                                  max_private_response_bytes=1_000_000),
-        resolve_trip=trip, trip_confirmation_validator=local_confirmation)
+        resolve_trip=trip, trip_confirmation_validator=local_confirmation if confirmation_signer is None else None,
+        trip_confirmation_signer=confirmation_signer)
 
 
 def app_from_environment():
