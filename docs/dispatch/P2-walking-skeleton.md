@@ -123,7 +123,7 @@ revert 本 PR 的合并提交。不涉及迁移变更（P2a 不新增表），�
 
 ## 唯一下一步
 
-Claude 抽查 `feat/p2c-dev-session-e2e` 的最终 head 和证据；四项 CI 全绿且审查通过后再合并。随后由 Claude 固定 MESSAGE 发送许可方案，Codex 不提前实现 MESSAGE 写入。本单不授权真实 Supabase/OTP 写操作、生产 key、付费模型或真机/发布。
+JT 最新指令替代本轮先等 Claude 抽查的安排：完成 `feat/p2c-dev-session-e2e` 的独立 Codex 精确 head 审查与全部 CI，正常合并、核验 main CI、回写子票后暂停；不自动取下一票。后续 MESSAGE 设计须等 JT 恢复，Codex 不提前实现。本单不授权真实 Supabase/OTP 写操作、生产 key、付费模型或真机/发布。
 
 ## P2c 壳接入切片（PR #146）
 
@@ -176,7 +176,7 @@ Claude 抽查 `feat/p2c-dev-session-e2e` 的最终 head 和证据；四项 CI �
 
 本节是 JT 本轮派工明确要求的交付记录，写于 ADR-0007 合入期间；后续进度以子票 [#154](https://github.com/JTCAO515/G2C/issues/154)（父票 #20）为准，不继续扩充历史派工单。
 
-- 基线：`4beb505408c3ebd889811e82b259496406feb4c1`（#150 合并后最新 main）；分支 `feat/p2c-dev-session-e2e`。作者 Codex，完成后由 Claude 抽查，作者不自批。
+- 基线：`4beb505408c3ebd889811e82b259496406feb4c1`（#150 合并后最新 main）；分支 `feat/p2c-dev-session-e2e`。作者 Codex；JT 后续明确要求本轮独立审查、合并并核验 main CI 后暂停，作者不自批。
 - 任务 A：#149 head `016bf0e5e030faa0192bfdb5fc070f64b7e3db4b` 独立审查无阻断，iOS 17.5 实际启动验证通过，合并为 `137b7a80189e5ef2a25dea31535fa84731ec7a2c`。#150 原 head `9f47fcee4f2ca8e94f7a36dd9087ba7ccd652d7e` 发现 3 项：真实 POST 被只读 transport 阻止、prepared action 未绑定原客户端/代次/账号、tc1 到期段误接受前导零；已在原 PR 修复。最终 head `f33ef1ed38419b7dbffded8c313594dc256aa399` 四 CI 全绿、复审无剩余阻断后合并。审查及返修证据已写入各 PR 评论；Codex 自己的修复是自检，不冒认另一独立审查者。
 - App 仅在 DEBUG 模拟器且显式提供 `G2C_DEV_API_BASE_URL`、`G2C_DEV_TOKEN` 时组装行程宿主；URL 仅允许指定 loopback。缺配置、无效配置、Release、真机均保持未连接。可选 `G2C_DEV_PROPOSAL_ID` 只用于预选本地提案，不新增生产导航。
 - token 通过 `SIMCTL_CHILD_` 注入，SessionPersistence 仅内存；随机加密 key 由 ScopedMessageKeyProvider 放在模拟器 Keychain，原动作目录位于 App Application Support、0700。身份/会话失效会停用旧宿主；重启只恢复原动作对账。

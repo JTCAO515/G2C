@@ -72,5 +72,7 @@ Do not change version assertions or solver budgets to make tests pass.
 
 This proves the local simulator fixture flow, not real OTP, real-model quality,
 physical-device, cloud, backup restoration or release acceptance. MESSAGE sending
-remains unavailable. After this PR's Claude review and merge, Claude owns the next
-MESSAGE send-permission design; this slice must not implement it early.
+remains unavailable. JT's latest instruction is independent Codex review, green CI,
+normal merge and main-CI verification, then PAUSE. No automatic continuation is
+authorized after this round. The later MESSAGE design remains separate and must
+not be implemented before JT resumes the work.
