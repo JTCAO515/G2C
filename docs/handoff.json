@@ -1,14 +1,14 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T10:37:01Z",
-  "currentPhase": "#154 任务 B 本地 L0/L1 验收完成，待 PR CI 和本轮要求的 Claude 抽查",
+  "lastUpdated": "2026-10-27T10:57:56Z",
+  "currentPhase": "#154 本轮实现与本地验收完成；仅剩 PR 独立审查/合并与 main CI 核验，完成后按 JT 指令暂停",
   "status": "active",
   "objective": "完成本轮 #149/#150 审查合并与 DEBUG App 开发会话、iOS 17.5 行程确认端到端；保留正式写入、原动作恢复及外部资源授权边界。",
   "acceptedIssue": "#154（父票 #20 / CJ-015）：DEBUG 开发会话与 iOS 17.5 行程确认端到端",
   "owner": "JT operator；Claude 架构/任务 B 抽查；Codex 任务 A 审查返修、任务 B 开发验收",
   "fromAgent": "Codex",
-  "intendedNextAgent": "Claude：抽查 feat/p2c-dev-session-e2e 的最终 head",
+  "intendedNextAgent": "独立 Codex 审查者；本轮合并核验完成后暂停，等待 JT 新指令",
   "activeWork": [
     "#149 已审查并合并为 137b7a80189e5ef2a25dea31535fa84731ec7a2c；iOS 17.5 启动及 runpath 实证通过。",
     "#150 原 head 9f47fce 发现 P1/P1/P2 共 3 项，原 PR 返修为 f33ef1ed38419b7dbffded8c313594dc256aa399，四 CI 全绿，复审无剩余阻断，合并为 4beb505408c3ebd889811e82b259496406feb4c1。",
@@ -26,12 +26,11 @@
     "ADR-0004 已接受；单一 Python 发行包 cj，保留领域 import 名，不恢复同仓 hash pin 或 Git 导出依赖。",
     "P2：北京、邮箱 OTP、最低 iOS 17。",
     "JT 当前指令：Codex 实现/测试/交付，Claude 架构/规划/审查，JT 决策与外部资源。",
-    "Current general merge/review policy follows accepted ADR-0007; this task B also retains the explicit JT requirement for Claude review before merge.",
     "历史证据归档 tag evidence-archive-2026-10-27；不改写历史。",
     "JT 2026-10-27: PR #147 only uses Codex review instead of Claude; continue subsequent P2c work. This is not independent review and not blanket approval for later PRs.",
     "JT current dispatch: Codex reviews/repairs and merges #149 then #150; task B remains subject to Claude review. No #144 or MESSAGE write implementation in this slice.",
     "GitHub visibility read-back 2026-10-27: PUBLIC. Secret/local-path prohibitions remain. No repository settings were changed in this task.",
-    "Main 9e78559 includes accepted ADR-0007. Child #154 tracks this task; the current JT dispatch specifically retains Claude review for task B. No S0/#151 work or MESSAGE writes are added."
+    "JT latest instruction: finish this round, submit/review/merge its PR into main, verify main CI and then PAUSE. This supersedes the earlier task-B Claude-before-merge requirement; independent Codex review under ADR-0007 remains required. No automatic continuation."
   ],
   "architectureContracts": [
     "contracts/api/openapi.json unchanged in P1.",
@@ -133,7 +132,7 @@
     }
   ],
   "blockers": [
-    "任务 B 的 PR 待四 CI 与 Claude 抽查，作者不自批；本地验收已完成。"
+    "This delivery still requires independent exact-head review and CI/merge verification. Afterward work is explicitly paused by JT."
   ],
   "risks": [
     "DEBUG 开发组装仅限 Simulator、显式 loopback 和开发 token；不是生产认证/存储激活。Release 和真机保持未连接。",
@@ -143,15 +142,15 @@
     "#144 独立 V2 范围继续保持不动；完整 P2c 仍缺 MESSAGE 发送许可及真实身份等阶段。"
   ],
   "operatorActions": [
-    "Claude 抽查任务 B 的精确 base/head、UI/后端证据及 Release 边界，通过后依门禁合并。",
+    "Independent Codex exact-head review, all CI checks and normal merge for this round; then verify main CI, update issue progress and PAUSE until JT resumes.",
     "任务 B 合并后由 Claude 固定 MESSAGE 发送许可方案，Codex 不提前实现。",
     "JT 提供 Supabase 项目 https://sajkhvjpllldfyfryalx.supabase.co，后续需要时可用 MCP；本轮未连接或写入，真实 OTP/云写入仍按具体授权处理。",
     "生产签名 key 来源/轮换、真实模型费用、真机/发布、许可证继续由 JT 决定，本轮不处理。"
   ],
   "rollback": "revert 本任务 B 合并提交即可恢复未连接 App；保留 #149/#150 的修复。无迁移、云或生产配置变更；不自动删除模拟器中用于验证恢复的加密记录/Keychain key。",
   "nextAction": {
-    "description": "读取子票 #154 与父票 #20 的正文/评论；核对 feat/p2c-dev-session-e2e 精确 head 的全部 CI。按本轮具体派工等待 Claude 抽查，并遵守当前 ADR-0007 的独立审查合并门禁；作者不自批，本轮不自动合并。合并后由 Claude 固定 MESSAGE 发送许可，Codex 不提前实现。",
-    "expectedObservation": "#149/#150 已合并；#154 的 PR 验收表与真实本地 UI/PG 证据可核对。审查通过后合并、回写子票和父票进度，完整 P2c 仍不宣称完成。",
+    "description": "按 JT 最新明确指令，只完成 #154 对应 PR 的独立 Codex 精确 head 审查、全部 CI、正常合并和 main CI 核验，再回写子票/父票进度并暂停。完成后不领取任何新票、不执行 ADR-0007 自动续作、不提前实现 MESSAGE；恢复需 JT 新指令。",
+    "expectedObservation": "PR 已审查合并，main CI 全绿，#154 进度已回写；开发队列暂停。",
     "command": "gh pr checks feat/p2c-dev-session-e2e --repo JTCAO515/G2C"
   },
   "readingOrder": [
