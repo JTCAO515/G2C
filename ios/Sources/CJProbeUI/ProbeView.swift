@@ -4,8 +4,8 @@ import CJAPI
 @MainActor
 public struct ProbeView: View {
     private let environment: [String: String]
-    @State private var state: State = .loading
-    private enum State {
+    @State private var state: ProbeState = .loading
+    private enum ProbeState {
         case loading
         case connected(String)
         case rejected(Int, String, String)

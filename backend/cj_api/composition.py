@@ -1,41 +1,209 @@
-"""Explicit local-only composition of pinned AUTH and MESSAGE internal modules.
+"""Explicit local-only composition of AUTH and MESSAGE internal modules.
 
 No public routes, environment credentials, identity defaults, policy cache, database
 provisioning, implicit repository partition or paid/provider dispatch is created here.
 """
-import hashlib
 import importlib
-import importlib.util
-import json
-from pathlib import Path
 
 
 class CompositionUnavailable(RuntimeError):
     pass
 
 
-def _pinned_modules(*, manifest_name='composition_pins.json'):
-    manifest = json.loads(Path(__file__).with_name(manifest_name).read_text())
+# Internal modules each composition consumes. Plain imports from this repository:
+# the Git commit is the pin; CI verifies the combination (ADR-0004).
+MODULE_SETS = {
+    'cleanup_progress': (
+        'cj_auth',
+        'cj_auth.interfaces',
+        'cj_auth.admission',
+        'cj_auth.jwt_adapter',
+        'cj_auth.read_context',
+        'cj_cleanup',
+        'cj_cleanup.core',
+        'cj_cleanup.postgres',
+        'cj_cleanup.protected_progress',
+    ),
+    'composition': (
+        'cj_auth',
+        'cj_auth.admission',
+        'cj_auth.interfaces',
+        'cj_auth.jwt_adapter',
+        'cj_message',
+        'cj_message.auth_boundary',
+        'cj_message.domain',
+        'cj_message.postgres',
+    ),
+    'feasibility': (
+        'cj_auth',
+        'cj_auth.interfaces',
+        'cj_auth.admission',
+        'cj_auth.jwt_adapter',
+        'cj_auth.read_context',
+        'cj_needs',
+        'cj_needs.boundary',
+        'cj_needs.domain',
+        'cj_needs.postgres',
+        'cj_needs.protected_read',
+        'cj_feasibility',
+        'cj_feasibility.current_read',
+        'cj_feasibility.protected_current',
+        'cj_feasibility.validator',
+    ),
+    'feedback': (
+        'cj_auth',
+        'cj_auth.admission',
+        'cj_auth.interfaces',
+        'cj_auth.jwt_adapter',
+        'cj_message',
+        'cj_message.auth_boundary',
+        'cj_message.domain',
+        'cj_message.postgres',
+        'cj_run',
+        'cj_run.usage_binding',
+        'cj_run.core',
+        'cj_run.postgres',
+        'cj_run.diagnostics',
+        'cj_feedback.domain',
+        'cj_feedback.postgres',
+        'cj_feedback.sources',
+        'cj_feedback.boundary',
+        'cj_feedback',
+    ),
+    'manual_preview': (
+        'cj_auth',
+        'cj_auth.admission',
+        'cj_auth.interfaces',
+        'cj_auth.jwt_adapter',
+        'cj_trip',
+        'cj_trip.domain',
+        'cj_trip.auth_boundary',
+        'cj_trip.postgres',
+        'cj_trip.operation',
+        'cj_manual_edit',
+        'cj_manual_edit.core',
+    ),
+    'memory_management': (
+        'cj_auth',
+        'cj_auth.interfaces',
+        'cj_auth.admission',
+        'cj_auth.jwt_adapter',
+        'cj_auth.read_context',
+        'cj_memory',
+        'cj_memory.consumption',
+        'cj_memory.domain',
+        'cj_memory.lifecycle',
+        'cj_memory.manual',
+        'cj_memory.operation',
+        'cj_memory.postgres',
+        'cj_memory_management',
+        'cj_memory_management.domain',
+        'cj_memory_management.guarded',
+        'cj_memory_management.postgres',
+        'cj_memory_management.service',
+    ),
+    'memory': (
+        'cj_auth',
+        'cj_auth.admission',
+        'cj_auth.interfaces',
+        'cj_auth.jwt_adapter',
+        'cj_memory',
+        'cj_memory.consumption',
+        'cj_memory.domain',
+        'cj_memory.lifecycle',
+        'cj_memory.manual',
+        'cj_memory.operation',
+        'cj_memory.postgres',
+    ),
+    'needs': (
+        'cj_auth',
+        'cj_auth.interfaces',
+        'cj_auth.admission',
+        'cj_auth.jwt_adapter',
+        'cj_auth.read_context',
+        'cj_needs',
+        'cj_needs.boundary',
+        'cj_needs.domain',
+        'cj_needs.postgres',
+        'cj_needs.protected_read',
+    ),
+    'original_usage': (
+        'cj_auth',
+        'cj_auth.admission',
+        'cj_auth.interfaces',
+        'cj_auth.jwt_adapter',
+        'cj_message',
+        'cj_message.auth_boundary',
+        'cj_message.domain',
+        'cj_message.postgres',
+        'cj_run',
+        'cj_run.usage_binding',
+        'cj_run.core',
+        'cj_run.postgres',
+        'cj_run.diagnostics',
+        'cj_run.display_snapshot',
+        'cj_run.original_usage_read',
+    ),
+    'run_display': (
+        'cj_auth',
+        'cj_auth.admission',
+        'cj_auth.interfaces',
+        'cj_auth.jwt_adapter',
+        'cj_message',
+        'cj_message.auth_boundary',
+        'cj_message.domain',
+        'cj_message.postgres',
+        'cj_run',
+        'cj_run.usage_binding',
+        'cj_run.core',
+        'cj_run.postgres',
+        'cj_run.diagnostics',
+        'cj_run.display_snapshot',
+    ),
+    'session_auth': (
+        'cj_auth',
+        'cj_auth.interfaces',
+        'cj_auth.admission',
+        'cj_auth.jwt_adapter',
+        'cj_auth.composition',
+        'cj_auth.read_context',
+        'cj_auth.session_binding',
+        'cj_auth.session_admission',
+    ),
+    'trip': (
+        'cj_auth',
+        'cj_auth.admission',
+        'cj_auth.interfaces',
+        'cj_auth.jwt_adapter',
+        'cj_trip',
+        'cj_trip.domain',
+        'cj_trip.auth_boundary',
+        'cj_trip.postgres',
+        'cj_trip.operation',
+    ),
+    'usage_status': (
+        'cj_auth',
+        'cj_auth.interfaces',
+        'cj_auth.admission',
+        'cj_auth.jwt_adapter',
+        'cj_auth.read_context',
+        'cj_usage',
+        'cj_usage.core',
+        'cj_usage.codec',
+        'cj_usage.postgres',
+        'cj_usage.read_status',
+        'cj_usage.protected_status',
+    ),
+}
+
+
+def _internal_modules(set_name='composition'):
     loaded = {}
-    for source in manifest['sources']:
-        prefix = Path(source['prefix'])
-        package = prefix.name
-        spec = importlib.util.find_spec(package)
-        if spec is None or spec.origin is None:
-            raise CompositionUnavailable('Pinned internal dependencies are required')
-        package_root = Path(spec.origin).parent
-        for filename, expected in source['files'].items():
-            relative = Path(filename).relative_to(prefix)
-            try:
-                data = (package_root / relative).read_bytes()
-            except OSError:
-                raise CompositionUnavailable('Pinned internal dependencies are required') from None
-            if hashlib.sha256(data).hexdigest() != expected:
-                raise CompositionUnavailable('Pinned internal dependency content mismatch')
-        for filename in source['files']:
-            relative = Path(filename).relative_to(prefix)
-            module = package if relative.name == '__init__.py' else package + '.' + relative.stem
+    for module in MODULE_SETS[set_name]:
+        try:
             loaded[module] = importlib.import_module(module)
+        except ImportError:
+            raise CompositionUnavailable('Internal dependencies are required') from None
     return loaded
 
 
@@ -53,11 +221,11 @@ def build_message_boundary(*, environment, jwt_configuration, verification_keys,
             or not callable(resolve_repository) or not callable(new_run_id)):
         raise CompositionUnavailable('Explicit local JWT, policy and repository configuration required')
     try:
-        modules = _pinned_modules()
+        modules = _internal_modules()
     except CompositionUnavailable:
         raise
     except (ImportError, OSError, ValueError):
-        raise CompositionUnavailable('Pinned internal dependencies are unavailable') from None
+        raise CompositionUnavailable('Internal dependencies are unavailable') from None
     auth = modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration, auth.JWTConfiguration):
         raise CompositionUnavailable('Fixed AUTH JWTConfiguration required')
@@ -169,7 +337,7 @@ def build_verified_session_checker(*, environment, jwt_configuration, verificati
     None keys/provider stays canonical UNKNOWN. A principal-only access provider
     is not a session provider and cannot be silently adapted into one.
     """
-    modules = _pinned_modules(manifest_name='session_auth_pins.json')
+    modules = _internal_modules('session_auth')
     auth = modules['cj_auth.jwt_adapter']
     if (environment != 'local' or not isinstance(jwt_configuration, auth.JWTConfiguration)
             or jwt_configuration.profile is not auth.JWTProfile.SUPABASE_ACCESS_RC1
@@ -186,7 +354,7 @@ def with_verified_session_read(*, checker, token, max_response_bytes, project):
     This adds no route, scope, token or authority. Existing business factories and
     legacy checker defaults are not changed. Never use it as a write/retry permit.
     """
-    modules = _pinned_modules(manifest_name='session_auth_pins.json')
+    modules = _internal_modules('session_auth')
     if (type(checker) is not modules['cj_auth.session_admission'].SessionAdmissionChecker
             or type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 1048576):
         raise CompositionUnavailable('Explicit canonical session checker and bounded read required')

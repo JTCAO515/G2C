@@ -1,5 +1,0 @@
-PASS one official dc29 CJFoundation, one shared9b485 CJMessageClient, one fixed Auth4eac.
-cjfoundation: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup-client/ios/Modules/CJCleanupClient/.deps/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation
-cjmessageclient: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup-client/ios/Modules/CJCleanupClient/.deps/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/ios/Modules/CJMessageClient
-cjauth: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup-client/ios/Modules/CJCleanupClient/.deps/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/ios/Modules/CJAuth
-Zero f87/20aa paths in selected graph.

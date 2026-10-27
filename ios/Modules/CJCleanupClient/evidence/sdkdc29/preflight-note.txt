@@ -1,1 +1,0 @@
-Initial read-only comparison assertion stopped before any write: fixed Auth4eac SessionLifecycle differs from old sharedcc9 snapshot. Inspected exact delta (auth-input-delta.diff.gz); export canonical fixed Auth4eac instead of stale shared copy. Add existing logout/clear consumption tests to selected verification. No source/lock rewrite.

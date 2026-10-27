@@ -1,3 +1,0 @@
-PASS: exit 0, no compiler diagnostics.
-Typechecked CJSession + CJMessageKeys + SessionProbe/MessageKeyProbe for arm64-apple-ios17.0-simulator with installed iPhoneSimulator27.1 SDK.
-Typecheck only: no app rebuilt, re-signed, installed, launched, or Keychain calls executed.

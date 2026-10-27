@@ -1,9 +1,0 @@
-PASS fresh private PG exact identity/empty schema; SELECT-only nonsuperuser runtime; no RLS or product authority added
-PASS real HTTP/PG exact original unknown, blocked missing-hook, in-flight revision, finite complete and missing original unavailable; refreshed JWT stable partition
-PASS account/environment scope isolation in actual PG; caller owner/env forbidden; current denied/unknown never resolve storage
-PASS actual HTTP returns exact full BASE bytes encoded inside native protected lifetime
-PASS real PG connection-close revocation/failure withholds all already-read original progress
-PASS after real PG close, final outer canonical AUTH changed verified identity or same-principal binding swap withholds all bytes
-PASS official generated Swift GET over real loopback HTTP/PG preserves original unknown, request ID and pending hook barriers
-PASS all original journal/state/scope bytes and revisions unchanged; runtime SELECT-only SQL, no recover, write or hook
-PASS HTTP thread and exact new private PostgreSQL stopped; data retained

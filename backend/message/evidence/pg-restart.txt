@@ -1,1 +1,0 @@
-PASS real PG restart readback: original receipt/run/pending, no new run

@@ -1,7 +1,0 @@
-{
-  "backend/cj_api/composition.py": "5394257fb80bd143c5d93e53c5d3c2f9932be4b261a9b3c70cd89563b5d305d1",
-  "backend/cj_api/session_auth_pins.json": "59c1c6773bbf5cfd7aa77a07292985008297e415835d5779c4fa27a818e438a3",
-  "backend/cj_api/tests/verified_session_wire_checks.py": "c4a9c74ad5b81c2283d6a51cd9c26ca30796cd25017391c3a56fc77595a033f6",
-  "scripts/check-verified-session-wire.sh": "9528c9f858db0c79e4962404dbc5b5a262e82d27b1257442e9f1fa47d1db480e",
-  "scripts/prepare-session-auth-deps.py": "603cff1f66b002701092f38e406375f5d1d16376b6a1aa05fe49f91e5c1b81b9"
-}

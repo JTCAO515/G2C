@@ -1,9 +1,0 @@
-Transcript of the first tool-observed dependency export failure (not a test run).
-Input: prepare-composition-deps.py --auth-repository ../cj-007-auth --message-repository ../cj-009-message
-Observed Git stderr:
-fatal: path 'backend/message/cj_message/__init__.py' exists on disk, but not in 'bf79a948c36a7c5cecf40d840cb9623c2d2e9d7c'
-The required MESSAGE fixed blob could not be supplied by that selected Git input.
-No actual legacy unit method executed. The owned root repository contains the
-same immutable bf79 blobs; all four source files matched the unchanged original
-manifest SHA. Export succeeded using --message-repository . without changing pins.
-A separate subsequent runner import failure is retained in initial-legacy-import-failure.txt.

@@ -1,7 +1,0 @@
-2026-10-23
-PASS syntax of five changed/new Python implementation/driver/check files
-PASS canonical MEMORY-lifecycle-adapter.1 import and fixed ADAPTER construction
-PASS invalid direct query rejected before transaction (compatibility behavior)
-PASS final guarded-run PID/socket absence
-PASS diff whitespace check
-Original14 PG tests not rerun; new12 guarded delta and restart evidence separate

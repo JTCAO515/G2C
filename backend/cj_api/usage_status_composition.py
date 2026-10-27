@@ -1,6 +1,6 @@
 """Trusted historical read assembly; creates canonical AUTH lifetime per invocation."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_pinned_modules
+from .composition import CompositionUnavailable,_internal_modules
 
 @dataclass(frozen=True)
 class UsageStatusConfiguration:
@@ -14,7 +14,7 @@ class UsageStatusConfiguration:
             raise CompositionUnavailable('Explicit historical period and positive read limits required')
 
 def _usage_status_from_checker(checker,resolve,configuration,*,environment,issuer,audience):
-    modules=_pinned_modules(manifest_name='usage_status_pins.json')
+    modules=_internal_modules('usage_status')
     if (environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker)
             or not callable(resolve) or type(configuration) is not UsageStatusConfiguration):
         raise CompositionUnavailable('Canonical checker, trusted historical resolver and explicit config required')
@@ -26,7 +26,7 @@ def build_usage_status_dependencies(*,environment,jwt_configuration,verification
     if (environment!='local' or not callable(resolve) or not callable(getattr(verification_keys,'resolve',None))
             or not callable(getattr(access_provider,'evaluate',None))):
         raise CompositionUnavailable('Explicit local read AUTH and resolver required')
-    modules=_pinned_modules(manifest_name='usage_status_pins.json');auth=modules['cj_auth.jwt_adapter']
+    modules=_internal_modules('usage_status');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
         raise CompositionUnavailable('Fixed strict AUTH profile required')
     checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)

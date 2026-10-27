@@ -1,9 +1,0 @@
-Relevant output; raw log under ignored .build/usage-status-pin-evidence/full-tests.txt.
-Build complete! (4.39秒)
-◇ Test actualOfficialUsageGETCompilesWithoutRequest() started.
-◇ Test missingAttemptMissingConfirmedAndInvalidFallbackAreExplicit() started.
-◇ Test hugeCountsStayStringsAndUnknownIsNotConfirmedZero() started.
-✔ Test hugeCountsStayStringsAndUnknownIsNotConfirmedZero() passed after 0.001 seconds.
-✔ Test actualOfficialUsageGETCompilesWithoutRequest() passed after 0.001 seconds.
-✔ Test missingAttemptMissingConfirmedAndInvalidFallbackAreExplicit() passed after 0.001 seconds.
-✔ Test run with 6 tests in 4 suites passed after 0.004 seconds.

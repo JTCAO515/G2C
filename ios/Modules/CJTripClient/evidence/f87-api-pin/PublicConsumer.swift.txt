@@ -1,3 +1,0 @@
-Isolated fixed-input module compiler output; trailing whitespace trimmed.
-
-exit=0

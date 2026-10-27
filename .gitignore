@@ -7,10 +7,8 @@ ios/.build/
 ios/.swiftpm/
 .DS_Store
 
-# ADR-0004: new run artifacts go to CI artifacts / PR descriptions, not the repo.
-# Already-tracked files are unaffected; existing evidence moves out in P1.
-**/evidence/**/*.log
-**/evidence/**/*.xz
-**/evidence/**/*.gz
-**/evidence/**/*.mp4
+# ADR-0004: run artifacts and evidence live in CI artifacts / PR descriptions, not the repo.
+# Historical evidence: tag evidence-archive-2026-10-27 (see docs/evidence.md).
+**/evidence/
 .deps/
+.local-*/

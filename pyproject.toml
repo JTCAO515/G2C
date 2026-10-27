@@ -1,10 +1,15 @@
 [project]
-name = "cj-foundation"
+name = "cj"
 version = "0.1.0"
+description = "G2C / CJ Agent backend: API composition and domain modules (single distribution, ADR-0004)"
 requires-python = ">=3.12,<3.15"
 dependencies = [
     "cryptography==50.0.2",
     "fastapi>=0.156.8",
+    "h11==0.16.0",
+    "httpx==0.28.1",
+    "ortools==9.15.6755",
+    "psycopg[binary]==3.2.13",
     "pydantic>=2.14.1",
     "pyjwt[crypto]==2.15.1",
     "uvicorn>=0.54.0",
@@ -13,8 +18,57 @@ dependencies = [
 [dependency-groups]
 dev = [
     "datamodel-code-generator>=0.86.0",
-    "httpx>=0.28.1",
     "jsonschema>=4.26.0",
     "openapi-spec-validator>=0.9.0",
     "pytest>=9.1.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+# Editable installs expose every domain directory, so no PYTHONPATH is needed.
+dev-mode-dirs = [
+    "backend",
+    "backend/auth",
+    "backend/cleanup",
+    "backend/draft",
+    "backend/fact",
+    "backend/feasibility",
+    "backend/feedback",
+    "backend/manual_edit",
+    "backend/memory",
+    "backend/memory_jobs",
+    "backend/memory_management",
+    "backend/memory_withdrawal",
+    "backend/message",
+    "backend/needs",
+    "backend/place",
+    "backend/run",
+    "backend/trip",
+    "backend/usage",
+]
+
+[tool.hatch.build.targets.wheel]
+# One distribution; each domain keeps its import name (cj_auth, cj_message, ...).
+packages = [
+    "backend/cj_api",
+    "backend/auth/cj_auth",
+    "backend/cleanup/cj_cleanup",
+    "backend/draft/cj_draft",
+    "backend/fact/cj_fact",
+    "backend/feasibility/cj_feasibility",
+    "backend/feedback/cj_feedback",
+    "backend/manual_edit/cj_manual_edit",
+    "backend/memory/cj_memory",
+    "backend/memory_jobs/cj_memory_jobs",
+    "backend/memory_management/cj_memory_management",
+    "backend/memory_withdrawal/cj_memory_withdrawal",
+    "backend/message/cj_message",
+    "backend/needs/cj_needs",
+    "backend/place/cj_place",
+    "backend/run/cj_run",
+    "backend/trip/cj_trip",
+    "backend/usage/cj_usage",
 ]

@@ -1,6 +1,0 @@
-PASS all previous90e schemas and operations definition-identical
-PASS candidate4cc9 process refuses legacy c821 hash; no accidental cohost or alias
-PASS byte-identical c821/4cc9: backend/needs/cj_needs/domain.py
-PASS byte-identical c821/4cc9: backend/needs/cj_needs/__init__.py
-PASS byte-identical c821/4cc9: backend/needs/sql/candidate.sql
-PASS original af52 two-FAIL evidence retained at2df: 209fa0d29fd1d3bf2b5fdc26b70a149d7d9145ccbd235b0525e52dc130532fc0

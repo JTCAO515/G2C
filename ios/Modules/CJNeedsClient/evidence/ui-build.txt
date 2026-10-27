@@ -1,8 +1,0 @@
-warning: 'cjneedsclient': Source files for target CJNeedsClientTests should be located under 'Tests/CJNeedsClientTests', 'Tests', or a custom sources path can be set with the 'path' property in Package.swift
-warning: 'cjneedsclient': Source files for target CJNeedsClientTests should be located under 'Tests/CJNeedsClientTests', 'Tests', or a custom sources path can be set with the 'path' property in Package.swift
-Building for debugging...
-[Using on-disk description]
-[2 / 11] CJNeedsClient
-[6 / 15] CJNeedsClient
-[11 / 14] CJNeedsClient
-Build complete! (2.21秒)

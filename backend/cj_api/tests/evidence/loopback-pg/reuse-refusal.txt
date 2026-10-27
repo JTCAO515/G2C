@@ -1,1 +1,0 @@
-Refusing existing CJ005 PG directory; preserve data and use an explicitly authorized fresh checkout.

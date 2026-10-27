@@ -1,3 +1,0 @@
-# Test-only pure Python driver, target-installed into this task's new private directory.
-# Existing pinned root runtime supplies AUTH/API dependencies; no root lock change.
-psycopg==3.2.10

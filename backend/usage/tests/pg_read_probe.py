@@ -11,7 +11,7 @@ from cj_usage.codec import encode
 from cj_usage.postgres import PostgresRepository,CommitUnknown,RepositoryUnavailable
 from cj_usage.read_status import ReadUnavailable
 
-BIN=Path('/opt/homebrew/opt/postgresql@17/bin')
+BIN = Path(os.environ.get('CJ_PG17_BINDIR', '/opt/homebrew/opt/postgresql@17/bin'))
 ROOT=Path(tempfile.mkdtemp(prefix='cj008-read-',dir='/tmp'))
 DATA,SOCKET,PASS=ROOT/'data',ROOT/'socket',ROOT/'empty.pgpass'
 SOCKET.mkdir(mode=0o700);PASS.touch(mode=0o600)

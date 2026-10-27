@@ -1,6 +1,0 @@
-test_normal_projection_receives_only_bytes_and_old_read_compatible (display_projected_checks.ProjectedTests.test_normal_projection_receives_only_bytes_and_old_read_compatible) ... ok
-
-----------------------------------------------------------------------
-Ran 1 test in 0.001s
-
-OK

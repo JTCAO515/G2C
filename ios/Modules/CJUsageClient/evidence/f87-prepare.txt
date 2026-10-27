@@ -1,2 +1,0 @@
-Prepared exact own validation graph: <local>/Documents/Codex/2026-10-21/cj-008-usage-client/ios/Modules/CJUsageClient/.build/f87-consumption
-Files verified: 83

@@ -1,7 +1,7 @@
 # CJ-002 provider-entry P2 targeted repair
 
 Parent fixed head: `50cd98fc200f21d81e9ff90bba7c91e82aa2b949`.
-Original independent Testing: `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-002-provider-entry/REPORT.md`.
+Original independent Testing: `<local>/Documents/Codex/2026-10-21/cj-testing/CJ-002-provider-entry/REPORT.md`.
 This is author repair/self-test evidence, pending original independent gates. Real provider execution remains prohibited and UNRUN; workspace/region/endpoint/new credential handoff remains missing. JT Bailian balance-controlled test-spend authorization is unchanged.
 
 ## Changes

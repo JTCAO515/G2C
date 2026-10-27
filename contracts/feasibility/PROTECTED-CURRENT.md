@@ -93,7 +93,7 @@ No original NEEDS/AUTH/producer/root/SQL changes or copied DTOs.
 Let INPUT_EXPORT contain exact NEEDS4cc9 + AUTH8b, from repository root:
 
 ```sh
-PYTHONPATH="$INPUT_EXPORT/backend/auth:$INPUT_EXPORT/backend/needs:backend/feasibility:backend/feasibility/tests" PYTHONDONTWRITEBYTECODE=1 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.venv/bin/python -B -m unittest test_protected_current.ProtectedCurrentTests -v
+PYTHONPATH="$INPUT_EXPORT/backend/auth:$INPUT_EXPORT/backend/needs:backend/feasibility:backend/feasibility/tests" PYTHONDONTWRITEBYTECODE=1 <local>/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.venv/bin/python -B -m unittest test_protected_current.ProtectedCurrentTests -v
 ```
 
 Existing CJ013 Python/psycopg runtime is used read-only with -B; no dependency

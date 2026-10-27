@@ -1,11 +1,87 @@
 {
   "dialect": "postgresql",
+  "schema_note": "Domain tables live in schema public for now; cj holds the migration ledger (ADR-0004 P1). Moving domain tables into cj is a later decision.",
+  "ledger": "cj.schema_migrations",
   "migrations": [
     {
       "version": 1,
-      "file": "0001_foundation.sql",
+      "name": "foundation",
+      "file": "backend/migrations/0001_foundation.sql",
       "sha256": "d4a30e7d14dac428a9c09c3a16c9543427330085f5d066d278d9e7a0bdda58d7",
-      "rollback": "Before any subsequent migration: DROP SCHEMA cj CASCADE only in an approved empty disposable database; never automatic."
+      "down": "backend/migrations/down/0001_foundation.down.sql",
+      "down_sha256": "02cb7cb618a472c89348752eccac1a90584f8edfe4fac409a5a484a982250fc6"
+    },
+    {
+      "version": 2,
+      "name": "message",
+      "file": "backend/message/sql/candidate.sql",
+      "sha256": "4060541a06fdd1233b787b212917ecd69728aa272f2e9ce46b34d48d44b1107b",
+      "down": "backend/migrations/down/0002_message.down.sql",
+      "down_sha256": "f36c32454140997776c9d0a441e3a5232332ef1e113be82e1bef4654b189c6ae"
+    },
+    {
+      "version": 3,
+      "name": "run",
+      "file": "backend/run/sql/candidate.sql",
+      "sha256": "f0ae02165372c0381e9932f226ed515266c81886650cbd206020900f45da03e7",
+      "down": "backend/migrations/down/0003_run.down.sql",
+      "down_sha256": "99339b3ebc88b6a5bd224e85dd075cb10ec2cad31efc600d4e47ee11ebe69c54"
+    },
+    {
+      "version": 4,
+      "name": "usage",
+      "file": "backend/usage/sql/001_candidate.sql",
+      "sha256": "d5950f6fb28fa7f60e4a2955818124b671b55be08016fd85e619e2e54cd726a6",
+      "down": "backend/migrations/down/0004_usage.down.sql",
+      "down_sha256": "575d9f6fa67a4c6edbf471344b476e5c4774ee6c64f1788509b00f8cc76444b8"
+    },
+    {
+      "version": 5,
+      "name": "trip",
+      "file": "backend/trip/sql/candidate.sql",
+      "sha256": "aa96145bda85efa92eaa6ed73d9eac7915ad336e76cb5ebfa3162f0da96722f2",
+      "down": "backend/migrations/down/0005_trip.down.sql",
+      "down_sha256": "55d4ac934b6ccf1123476c66d3cd5773cb8717ed8feb943a5636bf4337e25616"
+    },
+    {
+      "version": 6,
+      "name": "needs",
+      "file": "backend/needs/sql/candidate.sql",
+      "sha256": "e363ccd71efa1c1837a56335042ec09605b3bea9eaa45d10ee9d84b6d47d2113",
+      "down": "backend/migrations/down/0006_needs.down.sql",
+      "down_sha256": "38165a50890fb8702fcbd852df48934e90ebd5597628c95193a632357ef511d7"
+    },
+    {
+      "version": 7,
+      "name": "feedback",
+      "file": "backend/feedback/sql/candidate.sql",
+      "sha256": "1b6b56251cafa4b57719c5d4d8147c98fb5d49963b9b79f001a21e89b31c1a7c",
+      "down": "backend/migrations/down/0007_feedback.down.sql",
+      "down_sha256": "54aeede13e13734cd206d493010dddcd8e63f476bb9e977cd04a0db96d7085bd"
+    },
+    {
+      "version": 8,
+      "name": "cleanup",
+      "file": "backend/cleanup/sql/candidate.sql",
+      "sha256": "17681217eceae11d6b9439c504d6b7dc7bb1242213af8ccbf1dc55be28c8e45b",
+      "down": "backend/migrations/down/0008_cleanup.down.sql",
+      "down_sha256": "c6e0ce49378a2403e10029c2ef2ba6630922f8ee02be593a910f47b58d31d9b8"
+    },
+    {
+      "version": 9,
+      "name": "memory",
+      "file": "backend/memory/schema.sql",
+      "sha256": "156bbfc72d3983c03de97410c9867448be34796a149e7f736ee3ab8ea45605de",
+      "down": "backend/migrations/down/0009_memory.down.sql",
+      "down_sha256": "52337c829280df61bafbf0fcab5589d706e2574d5c43460e57235aa4ae8f2f04"
+    },
+    {
+      "version": 10,
+      "name": "memory_management",
+      "file": "backend/memory_management/schema.sql",
+      "sha256": "e8147819f94799f17344f8cd56e9bc200d030253334de5c12f41b49c18f8c1bc",
+      "down": "backend/migrations/down/0010_memory_management.down.sql",
+      "down_sha256": "5cb6f3795b4ab1653b87b32725904d8521a2b118c54a77ebc4ca9eb2f8698322"
     }
   ]
 }

@@ -4,7 +4,7 @@
 
 ## 当前事实和缺口
 
-支持线程官方只读盘点已复用：[原始metadata](</Users/jtsm5p/Documents/Codex/2026-10-21/task-6/vpv4-readonly-inventory.json>)，时间 `2026-10-21T13:54:00Z`，SHA256 `8195bcc9821c97d287d4f336f0a6a8e8937f7b183cbd01ef477f897af9ecf57c`。文件确认 `VP - V4 / dzqdzetcctkhbrhlxxgn`，organization显示 `Go2China`、plan `pro`（Main称Go2China Pro），region `ap-southeast-1`、`ACTIVE_HEALTHY`。本owner只读取这份本地metadata，不重复远端扫描、不读业务行/函数正文/密钥。
+支持线程官方只读盘点已复用：[原始metadata](<<local>/Documents/Codex/2026-10-21/task-6/vpv4-readonly-inventory.json>)，时间 `2026-10-21T13:54:00Z`，SHA256 `8195bcc9821c97d287d4f336f0a6a8e8937f7b183cbd01ef477f897af9ecf57c`。文件确认 `VP - V4 / dzqdzetcctkhbrhlxxgn`，organization显示 `Go2China`、plan `pro`（Main称Go2China Pro），region `ap-southeast-1`、`ACTIVE_HEALTHY`。本owner只读取这份本地metadata，不重复远端扫描、不读业务行/函数正文/密钥。
 
 真实数量：123表/视图，其中80业务清理审查候选；263函数，其中160应用函数候选；67非内部触发器、7事件触发器、134FK、71策略；EdgeFunctions=0、buckets=0不能推出Auth为空。runtime metadata有PostgREST14.5、pg_cron、pg_net等连接；public有61个authenticated可执行函数。Main另转交当日12:58UTC多旧表扫描和近1h活动，调用方UNKNOWN（原JSON未列逐表扫描时间，本owner不补造映射）。不能称旧业务已停止。
 

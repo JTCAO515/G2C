@@ -1,9 +1,0 @@
-test_commit_and_close_after_yield (test_message.AdapterTests.test_commit_and_close_after_yield) ... ok
-test_failure_rollback_not_commit (test_message.AdapterTests.test_failure_rollback_not_commit) ... ok
-test_commit_unknown_never_retries (test_message.AdapterTests.test_commit_unknown_never_retries) ... ok
-test_delivery_sql_failure_rolls_back_whole_connection (test_message.AdapterTests.test_delivery_sql_failure_rolls_back_whole_connection) ... ok
-
-----------------------------------------------------------------------
-Ran 4 tests in 0.000s
-
-OK

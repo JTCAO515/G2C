@@ -1,4 +1,0 @@
-Command: xcodebuild -scheme CJNeedsClient -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/ios CODE_SIGNING_ALLOWED=NO build
-Working directory: ios/Modules/CJNeedsClient
-Result: ** BUILD SUCCEEDED **
-Full original output losslessly archived in ios-full.txt.xz. No launch or signing.

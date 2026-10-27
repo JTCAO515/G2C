@@ -1,6 +1,6 @@
 """Explicit local NEEDS factory; existing AUTH and producer public lifetime only."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_pinned_modules
+from .composition import CompositionUnavailable,_internal_modules
 
 @dataclass(frozen=True)
 class NeedsWireConfiguration:
@@ -15,7 +15,7 @@ def build_needs_boundary(*,environment,jwt_configuration,verification_keys,acces
     if (environment!='local' or not callable(resolve) or not callable(getattr(verification_keys,'resolve',None))
             or not callable(getattr(access_provider,'evaluate',None))):
         raise CompositionUnavailable('Explicit local NEEDS AUTH and trusted resolver required')
-    modules=_pinned_modules(manifest_name='needs_pins.json');auth=modules['cj_auth.jwt_adapter']
+    modules=_internal_modules('needs');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
         raise CompositionUnavailable('Fixed strict AUTH profile required')
     checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)

@@ -1,9 +1,0 @@
-Relevant output; raw log under ignored .build/run-display-pin-evidence/full-tests.txt.
-Build complete! (4.07秒)
-◇ Test sevenStatusesAndTextStateUseOfficialTypes() started.
-◇ Test officialGETUsesOriginalQueryAndRequiresHeader() started.
-◇ Test requiredSnapshotAndStrictGeneratedFieldsDoNotBecomeEmpty() started.
-✔ Test sevenStatusesAndTextStateUseOfficialTypes() passed after 0.001 seconds.
-✔ Test requiredSnapshotAndStrictGeneratedFieldsDoNotBecomeEmpty() passed after 0.002 seconds.
-✔ Test officialGETUsesOriginalQueryAndRequiresHeader() passed after 0.011 seconds.
-✔ Test run with 41 tests in 8 suites passed after 0.023 seconds.

@@ -1,6 +1,0 @@
-Building for debugging...
-[Pre-planning 1 / 243]
-[Planning deferred tasks]
-[1 / 21]
-Build complete! (1.71秒)
-{"contract_version":"1.0.0","request_id":"acde1c46-3ccb-49fc-b8c4-a2978a305745","status":"ok"}

@@ -1,6 +1,0 @@
-Building for debugging...
-[1 / 5] CJAPI
-Build complete! (0.27秒)
-PASS generated Trip historical accept/version, reject/null, absent receipt, missing/future invalid fallback
-PASS generated formal Trip exact UTF8 content and accepted pending evidence state
-PASS Swift exact canonical five-string Action UTF8 representation

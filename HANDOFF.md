@@ -18,14 +18,14 @@
 | --- | --- |
 | Objective | Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green. |
 | Status | active |
-| Phase | P0-repo-hygiene |
+| Phase | P1-structure (PR open) -> P2-walking-skeleton |
 | Accepted Issue | CJ-005 (https://github.com/JTCAO515/G2C/issues/5); P0 scope per docs/dispatch/P0-repo-hygiene.md |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T04:00:00Z |
+| Last updated | 2026-10-27T06:00:00Z |
 
 ## Active Work
 
-- P0 repo hygiene and minimal CI on branch chore/p0-repo-hygiene (PR pending).
+- P1 structure convergence on branch chore/p1-structure (PR pending CI).
 
 ## Accepted Assumptions
 
@@ -42,35 +42,33 @@
 - accepted (JT 2026-10-27): evidence moves out of repo and in-repo sha256 pins are removed, both executed in P1; no history rewrite.
 - accepted (JT 2026-10-27): P2 scope Beijing single city, email OTP primary login, minimum iOS 17.
 - accepted (JT 2026-10-27): process simplification, one PR per Issue slice, CI green plus one independent review, trunk-based.
+- implemented (P1): single distribution `cj` keeps per-domain import names (cj_auth, ...) instead of renaming to cj.* subpackages.
+- implemented (P1): domain tables stay in schema public; cj holds the migration ledger. Moving tables into cj is open.
+- implemented (P1): historical evidence archived at tag evidence-archive-2026-10-27 (87120f9).
 
 ## Changed Files
 
 | Path | Reason |
 | --- | --- |
-| `.github/workflows/ci.yml` | Minimal CI: blocking python, contracts and swift jobs; informational known-failing job. |
-| `.gitignore` | Stop adding evidence logs, archives and recordings. |
-| `README.md` | Current status and local check commands. |
-| `AGENTS.md` | Repository-only entry point and ADR-0004 working rules. |
-| `docs/engineering.md` | ADR-0004 supersession note, local handoff path, tooling status rows. |
-| `docs/**/*.md` | Issue links moved from JTCAO515/Go2China to JTCAO515/G2C. |
-| `545 text files (*.md and evidence/**/*.json\|txt\|log)` | /Users/jtsm5p replaced with <local>; files whose sha256 or git blob hash is referenced anywhere in the repo were skipped (66), as were 7 non-evidence source files. |
-| `docs/handoff.json, HANDOFF.md` | P0 state. |
+| `backend/cj_api/*.py` | Plain imports via MODULE_SETS; hash pins removed. |
+| `pyproject.toml, uv.lock` | Single cj distribution; domain pyproject/uv.lock removed. |
+| `scripts/test.py, scripts/pg_suites.py, scripts/migrate.py, scripts/check.sh` | Unified test, PostgreSQL suite and migration entry points. |
+| `backend/migrations/` | Ordered manifest 1-10 with down files; README. |
+| `backend/**/tests (selected)` | Working-tree instead of git exports; configurable PG bindir; drift fixes. |
+| `**/evidence/ (1836 files)` | Untracked; archived at tag evidence-archive-2026-10-27. |
+| `ios/Sources/CJProbeUI/ProbeView.swift` | Rename nested enum State to ProbeState. |
+| `.github/workflows/ci.yml` | python, postgres, swift jobs, all blocking. |
+| `README.md, backend/README.md, docs/engineering.md, docs/evidence.md, docs/adr/0004` | Docs for the new structure. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `pytest -q backend/tests` | 4 passed (local, Python 3.14.7). | — |
-| pass | `pytest -q tests in backend/{draft,fact,feedback,manual_edit,memory_jobs,memory_withdrawal,message,place,run,usage}` | All pass locally (feedback 41 skipped without PostgreSQL); identical before and after path replacement. | — |
-| pass | `pytest evaluation/cj028/tests and ops/recovery-preflight` | 35 and 15 passed. | — |
-| pass | `openapi-spec-validator contracts/api/openapi.json` | OK. | — |
-| fail | `swift test (ios root package)` | CI macos-26 newest Xcode: toolchain OK; build fails in ios/Sources/CJProbeUI/ProbeView.swift — nested `enum State` shadows SwiftUI `@State` ('enum State cannot be used as an attribute'). Source fix is P1; CI blocks only on `swift build --target CJAPI`. | — |
-| fail | `unittest discover -s backend/cj_api/tests` | 40 tests, 33 errors: CompositionUnavailable 'Pinned internal dependency content mismatch' (sibling sources differ from pinned hashes on main). P1 removes pins. | — |
-| fail | `pytest backend/auth/tests` | 1 failed: test needs git object 8b6abb236cf10c1865a9cc8c6155bd8ac732c07e, absent from the repository. | — |
-| fail | `pytest backend/cleanup/tests` | 2 failed: AssertionError 23 != 21. | — |
-| blocked | `pytest backend/{needs,trip,feasibility}/tests` | Need local PostgreSQL 17 installation or TRIP_TEST_SOCKET; errors without it. | — |
-| not-run | `backend/{memory,memory_management} *_checks.py` | Custom check scripts, not pytest-discoverable; fold into CI in P1. | — |
-| not-run | `GitHub Actions ci.yml` | Result to be read from the P0 PR checks. | — |
+| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups locally (Python 3.14.7). feasibility solver test is timing-sensitive under heavy host load. | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | All 9 groups locally on Homebrew PostgreSQL 16/17: migrations, message, run, needs, trip, feasibility, memory_management, memory, domain_runners. | — |
+| pass | `scripts/migrate.py verify` | Versions 1-10 up, down to empty, up again (24 tables) on PG16 and PG17. | — |
+| not-run | `swift test (ios root package)` | Local host has only CommandLineTools (no SwiftUI/Testing macro plugins); verified in CI swift job. | — |
+| not-run | `GitHub Actions ci.yml (python, postgres, swift)` | Read from the P1 PR checks. | — |
 
 ## Blockers
 
@@ -78,8 +76,8 @@ No blockers recorded.
 
 ## Next Smallest Action
 
-- Action: Merge the P0 PR once CI is green, then write docs/dispatch/P1-structure.md (single cj package, remove hash pins, move existing evidence out, ordered migrations with up/down in CI, fold known-failing suites into blocking CI).
-- Expected observation: P0 merged on main with green blocking CI; P1 dispatch reviewed by JT.
+- Action: After the P1 PR is merged with green CI, write docs/dispatch/P2-walking-skeleton.md: CJ-007 email OTP -> CJ-009 message -> CJ-010 SSE stream with qwen3.8-flash -> CJ-014 draft -> CJ-015 accept into formal Trip, Beijing, zh+en, iOS 17 App wired to ShellView.
+- Expected observation: P2 dispatch reviewed by JT; real provider and auth calls scoped with explicit authorization.
 - Resume command: `gh pr checks --repo JTCAO515/G2C`
 
 ## Rollback
@@ -90,10 +88,10 @@ git revert the merge commit of this PR; documentation only, no data, credentials
 
 1. [HANDOFF.md](HANDOFF.md)
 2. [docs/adr/0004-delivery-flow-and-repo-hygiene.md](docs/adr/0004-delivery-flow-and-repo-hygiene.md)
-3. [docs/dispatch/P0-repo-hygiene.md](docs/dispatch/P0-repo-hygiene.md)
-4. [README.md](README.md)
-5. [AGENTS.md](AGENTS.md)
-6. [docs/engineering.md](docs/engineering.md)
+3. [backend/README.md](backend/README.md)
+4. [backend/migrations/README.md](backend/migrations/README.md)
+5. [README.md](README.md)
+6. [AGENTS.md](AGENTS.md)
 
 ## Integrity Check
 

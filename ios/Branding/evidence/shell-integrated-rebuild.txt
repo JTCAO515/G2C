@@ -1,9 +1,0 @@
-Building for debugging...
-[Using on-disk description]
-[2 / 4] CJShell
-[4 / 6] CJShell
-[5 / 7] CJShell
-[6 / 7] CJShell
-Build complete! (1.33秒)
-<local>/Documents/Codex/2026-10-21/cj-brand-001/.local/BrandShellIntegrated/CJShellDemo.app: replacing existing signature
-<local>/Documents/Codex/2026-10-21/cj-brand-001/.local/BrandShellIntegrated/CJShellDemo.app

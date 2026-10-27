@@ -53,7 +53,7 @@ def main():
     versions = [item["version"] for item in manifest["migrations"]]
     assert versions == list(range(1, len(versions) + 1))
     for item in manifest["migrations"]:
-        assert hashlib.sha256((ROOT / "backend/migrations" / item["file"]).read_bytes()).hexdigest() == item["sha256"]
+        assert hashlib.sha256((ROOT / item["file"]).read_bytes()).hexdigest() == item["sha256"]
     registry = json.loads((ROOT / "backend/storage-registry.json").read_text())
     required = {"id", "owner", "status", "principal_binding", "sensitive_fields", "retention", "cleanup_hook", "restore_fence"}
     assert all(required <= set(item) for item in registry["stores"])

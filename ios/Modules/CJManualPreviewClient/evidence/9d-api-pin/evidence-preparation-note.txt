@@ -1,4 +1,0 @@
-Evidence preparation diagnostics (not consumer/runtime failures):
-- Initial removal of the tool-created .build directory reported OSError: [Errno 66] Directory not empty. Its remaining .buildSystem_debug tool marker was inspected, then removed with that otherwise empty directory. No pre-existing user file was removed.
-- Initial literal-block extractor used a schema declaration marker without Codable conformance and raised ValueError: substring not found before writing block results/archives. Marker corrected to the actual official declaration; all 12 intended generated blocks subsequently passed literal preservation checks.
-- First staged whitespace check reported a new blank line at EOF in raw graph-attempt.json. Original graph bytes were losslessly archived rather than edited; final product diff check passes.

@@ -86,9 +86,9 @@ From repository root (source trees read-only):
 
 ```sh
 python3 ios/Modules/CJCleanupClient/scripts/prepare_dependencies.py \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth
+  <local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin \
+  <local>/Documents/Codex/2026-10-21/cj-005-foundation \
+  <local>/Documents/Codex/2026-10-21/cj-007-auth
 CJ_CLEANUP_ISOLATED_DEPS=1 swift test --package-path ios/Modules/CJCleanupClient \
   --filter 'explicitReadUsesOriginalGETOnceAndPreservesBlocked|unknownInProgressFailedAndLimitedCompleteRemainDistinct|unavailableNotFoundDeniedAndRedirectAreNotSuccess|oldResultCannotClearNewLoadedGeneration|credentialsAwaitSwitchAndLogoutFenceBeforeNetwork|loadedProjectionClearsOnLogoutWithoutAnotherRequest'
 ```

@@ -1,9 +1,0 @@
-{
-  "paths": [
-    "<local>/Documents/Codex/2026-10-21/cj-017-manual-preview-client/ios/Modules/CJManualPreviewClient/.build/f87-5075-a5cc/modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
-  ],
-  "references": 4,
-  "identity_conflict": false,
-  "result": "PASS",
-  "scope": "isolated feature module closure only"
-}

@@ -1,16 +1,16 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T04:00:00Z",
-  "currentPhase": "P0-repo-hygiene",
+  "lastUpdated": "2026-10-27T06:00:00Z",
+  "currentPhase": "P1-structure (PR open) -> P2-walking-skeleton",
   "status": "active",
   "objective": "Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green.",
   "acceptedIssue": "CJ-005 (https://github.com/JTCAO515/G2C/issues/5); P0 scope per docs/dispatch/P0-repo-hygiene.md",
   "owner": "JT (operator); Claude architecture/review; Codex implementation",
-  "fromAgent": "Claude (executing P0 at JT request; Codex paused)",
-  "intendedNextAgent": "Claude or Codex (P1), per JT",
+  "fromAgent": "Claude (executing P0 and P1 at JT request; Codex paused)",
+  "intendedNextAgent": "Claude or Codex (P2), per JT",
   "activeWork": [
-    "P0 repo hygiene and minimal CI on branch chore/p0-repo-hygiene (PR pending)."
+    "P1 structure convergence on branch chore/p1-structure (PR pending CI)."
   ],
   "assumptions": [
     "Static review only at main 8fac0dff5e50ce08c277b65f7322a4ea64d77e65; pytest and swift test were not run (UNRUN).",
@@ -24,151 +24,122 @@
     "accepted (JT 2026-10-27): repository stays PUBLIC; local-path removal is mandatory.",
     "accepted (JT 2026-10-27): evidence moves out of repo and in-repo sha256 pins are removed, both executed in P1; no history rewrite.",
     "accepted (JT 2026-10-27): P2 scope Beijing single city, email OTP primary login, minimum iOS 17.",
-    "accepted (JT 2026-10-27): process simplification, one PR per Issue slice, CI green plus one independent review, trunk-based."
+    "accepted (JT 2026-10-27): process simplification, one PR per Issue slice, CI green plus one independent review, trunk-based.",
+    "implemented (P1): single distribution `cj` keeps per-domain import names (cj_auth, ...) instead of renaming to cj.* subpackages.",
+    "implemented (P1): domain tables stay in schema public; cj holds the migration ledger. Moving tables into cj is open.",
+    "implemented (P1): historical evidence archived at tag evidence-archive-2026-10-27 (87120f9)."
   ],
   "architectureContracts": [
-    "Frozen for P0: contracts/api/openapi.json, all backend domain code and *_pins.json, backend/migrations/manifest.json.",
+    "contracts/api/openapi.json unchanged in P1.",
+    "backend/migrations/manifest.json: versions 1-10, sha256-checked up/down; applied versions must never be edited.",
     "Single business authority and recovery semantics per ADR-0003 (proposed) remain the target for P2."
   ],
   "changedFiles": [
     {
+      "path": "backend/cj_api/*.py",
+      "reason": "Plain imports via MODULE_SETS; hash pins removed."
+    },
+    {
+      "path": "pyproject.toml, uv.lock",
+      "reason": "Single cj distribution; domain pyproject/uv.lock removed."
+    },
+    {
+      "path": "scripts/test.py, scripts/pg_suites.py, scripts/migrate.py, scripts/check.sh",
+      "reason": "Unified test, PostgreSQL suite and migration entry points."
+    },
+    {
+      "path": "backend/migrations/",
+      "reason": "Ordered manifest 1-10 with down files; README."
+    },
+    {
+      "path": "backend/**/tests (selected)",
+      "reason": "Working-tree instead of git exports; configurable PG bindir; drift fixes."
+    },
+    {
+      "path": "**/evidence/ (1836 files)",
+      "reason": "Untracked; archived at tag evidence-archive-2026-10-27."
+    },
+    {
+      "path": "ios/Sources/CJProbeUI/ProbeView.swift",
+      "reason": "Rename nested enum State to ProbeState."
+    },
+    {
       "path": ".github/workflows/ci.yml",
-      "reason": "Minimal CI: blocking python, contracts and swift jobs; informational known-failing job."
+      "reason": "python, postgres, swift jobs, all blocking."
     },
     {
-      "path": ".gitignore",
-      "reason": "Stop adding evidence logs, archives and recordings."
-    },
-    {
-      "path": "README.md",
-      "reason": "Current status and local check commands."
-    },
-    {
-      "path": "AGENTS.md",
-      "reason": "Repository-only entry point and ADR-0004 working rules."
-    },
-    {
-      "path": "docs/engineering.md",
-      "reason": "ADR-0004 supersession note, local handoff path, tooling status rows."
-    },
-    {
-      "path": "docs/**/*.md",
-      "reason": "Issue links moved from JTCAO515/Go2China to JTCAO515/G2C."
-    },
-    {
-      "path": "545 text files (*.md and evidence/**/*.json|txt|log)",
-      "reason": "/Users/jtsm5p replaced with <local>; files whose sha256 or git blob hash is referenced anywhere in the repo were skipped (66), as were 7 non-evidence source files."
-    },
-    {
-      "path": "docs/handoff.json, HANDOFF.md",
-      "reason": "P0 state."
+      "path": "README.md, backend/README.md, docs/engineering.md, docs/evidence.md, docs/adr/0004",
+      "reason": "Docs for the new structure."
     }
   ],
   "verification": [
     {
-      "command": "pytest -q backend/tests",
+      "command": "uv run --locked python -B scripts/test.py",
       "status": "pass",
-      "summary": "4 passed (local, Python 3.14.7).",
+      "summary": "56/56 groups locally (Python 3.14.7). feasibility solver test is timing-sensitive under heavy host load.",
       "artifact": null
     },
     {
-      "command": "pytest -q tests in backend/{draft,fact,feedback,manual_edit,memory_jobs,memory_withdrawal,message,place,run,usage}",
+      "command": "uv run --locked python -B scripts/pg_suites.py",
       "status": "pass",
-      "summary": "All pass locally (feedback 41 skipped without PostgreSQL); identical before and after path replacement.",
+      "summary": "All 9 groups locally on Homebrew PostgreSQL 16/17: migrations, message, run, needs, trip, feasibility, memory_management, memory, domain_runners.",
       "artifact": null
     },
     {
-      "command": "pytest evaluation/cj028/tests and ops/recovery-preflight",
+      "command": "scripts/migrate.py verify",
       "status": "pass",
-      "summary": "35 and 15 passed.",
-      "artifact": null
-    },
-    {
-      "command": "openapi-spec-validator contracts/api/openapi.json",
-      "status": "pass",
-      "summary": "OK.",
+      "summary": "Versions 1-10 up, down to empty, up again (24 tables) on PG16 and PG17.",
       "artifact": null
     },
     {
       "command": "swift test (ios root package)",
-      "status": "fail",
-      "summary": "CI macos-26 newest Xcode: toolchain OK; build fails in ios/Sources/CJProbeUI/ProbeView.swift — nested `enum State` shadows SwiftUI `@State` ('enum State cannot be used as an attribute'). Source fix is P1; CI blocks only on `swift build --target CJAPI`.",
-      "artifact": null
-    },
-    {
-      "command": "unittest discover -s backend/cj_api/tests",
-      "status": "fail",
-      "summary": "40 tests, 33 errors: CompositionUnavailable 'Pinned internal dependency content mismatch' (sibling sources differ from pinned hashes on main). P1 removes pins.",
-      "artifact": null
-    },
-    {
-      "command": "pytest backend/auth/tests",
-      "status": "fail",
-      "summary": "1 failed: test needs git object 8b6abb236cf10c1865a9cc8c6155bd8ac732c07e, absent from the repository.",
-      "artifact": null
-    },
-    {
-      "command": "pytest backend/cleanup/tests",
-      "status": "fail",
-      "summary": "2 failed: AssertionError 23 != 21.",
-      "artifact": null
-    },
-    {
-      "command": "pytest backend/{needs,trip,feasibility}/tests",
-      "status": "blocked",
-      "summary": "Need local PostgreSQL 17 installation or TRIP_TEST_SOCKET; errors without it.",
-      "artifact": null
-    },
-    {
-      "command": "backend/{memory,memory_management} *_checks.py",
       "status": "not-run",
-      "summary": "Custom check scripts, not pytest-discoverable; fold into CI in P1.",
+      "summary": "Local host has only CommandLineTools (no SwiftUI/Testing macro plugins); verified in CI swift job.",
       "artifact": null
     },
     {
-      "command": "GitHub Actions ci.yml",
+      "command": "GitHub Actions ci.yml (python, postgres, swift)",
       "status": "not-run",
-      "summary": "Result to be read from the P0 PR checks.",
+      "summary": "Read from the P1 PR checks.",
       "artifact": null
     }
   ],
   "blockers": [],
   "risks": [
-    "Repository is PUBLIC without a license; design and evidence are visible and reuse rights are undefined.",
-    "73 tracked files still contain /Users/jtsm5p (66 hash-referenced, 7 non-evidence sources) plus possibly compressed archives; removed in P1 together with pins and evidence.",
-    "iOS root package does not build on a macOS host: ProbeView nested `enum State` shadows SwiftUI `@State`; fix in P1 (rename the enum).",
-    "main is not self-consistent: cj_api composition fails pin verification against current sibling sources.",
+    "Repository is PUBLIC without a license; design is visible and reuse rights are undefined.",
+    "Real uvicorn + generated Swift client loopback end-to-end coverage was removed with the pin-era harnesses; rebuild in P2.",
+    "iOS module pin-era preparation scripts (ios/Modules/*/scripts/prepare_*, check_pin.py) read evidence that left the repo; they are not in CI.",
+    "scripts/check-generated-*.sh (generated Swift client consistency) are not yet in CI.",
     "Email OTP via the candidate auth provider may face reachability limits for users inside China; verify in CJ-007."
   ],
   "operatorActions": [
-    "Decide repository license and product legal terms (repository stays PUBLIC).",
-    "Confirm GitHub Actions usage is acceptable once the P0 CI PR is opened."
+    "Decide repository license and product legal terms (repository stays PUBLIC)."
   ],
   "rollback": "git revert the merge commit of this PR; documentation only, no data, credentials or external resources touched.",
   "nextAction": {
-    "description": "Merge the P0 PR once CI is green, then write docs/dispatch/P1-structure.md (single cj package, remove hash pins, move existing evidence out, ordered migrations with up/down in CI, fold known-failing suites into blocking CI).",
-    "expectedObservation": "P0 merged on main with green blocking CI; P1 dispatch reviewed by JT.",
+    "description": "After the P1 PR is merged with green CI, write docs/dispatch/P2-walking-skeleton.md: CJ-007 email OTP -> CJ-009 message -> CJ-010 SSE stream with qwen3.8-flash -> CJ-014 draft -> CJ-015 accept into formal Trip, Beijing, zh+en, iOS 17 App wired to ShellView.",
+    "expectedObservation": "P2 dispatch reviewed by JT; real provider and auth calls scoped with explicit authorization.",
     "command": "gh pr checks --repo JTCAO515/G2C"
   },
   "readingOrder": [
     "HANDOFF.md",
     "docs/adr/0004-delivery-flow-and-repo-hygiene.md",
-    "docs/dispatch/P0-repo-hygiene.md",
+    "backend/README.md",
+    "backend/migrations/README.md",
     "README.md",
-    "AGENTS.md",
-    "docs/engineering.md"
+    "AGENTS.md"
   ],
   "mandatoryReadingOrder": [
     "HANDOFF.md",
     "docs/adr/0004-delivery-flow-and-repo-hygiene.md",
-    "docs/dispatch/P0-repo-hygiene.md",
+    "backend/README.md",
+    "backend/migrations/README.md",
     "README.md",
-    "AGENTS.md",
-    "docs/engineering.md"
+    "AGENTS.md"
   ],
   "provenance": {
-    "baseCommit": "30d4a3e3db168c294c99a1691fc5d80d391e10cd",
-    "method": "Local test runs in an isolated clone (Python 3.14.7, uv); git/gh read-back.",
+    "baseCommit": "87120f9d7f2246579fff9f0cf196363f63127994",
+    "method": "Local runs in a checkout at a short path (Python 3.14.7, uv, Homebrew PostgreSQL 16.x/17.11); git/gh read-back.",
     "author": "Claude Opus 5.5 via Claude Code"
   }
 }

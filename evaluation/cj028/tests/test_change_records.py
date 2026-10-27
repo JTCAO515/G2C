@@ -48,7 +48,7 @@ class SyntheticChangeRecordTests(unittest.TestCase):
         return evaluate.summarize(self.plan, self.records)
 
     def test_legacy_cli_stdout_byte_identical(self):
-        golden = (ROOT / 'evidence/synthetic-cli-report.json').read_bytes()
+        golden = (ROOT / 'fixtures/synthetic-cli-report.json').read_bytes()
         stored_inputs = json.loads(golden)['input_files']
         with tempfile.TemporaryDirectory() as directory:
             for input_dir in (ROOT / 'fixtures', Path(directory) / 'snapshot-a',

@@ -1,6 +1,0 @@
-test_source_timestamp_conversion_does_not_escape_raw_overflow (__main__.IndependentInstantBoundary.test_source_timestamp_conversion_does_not_escape_raw_overflow) ... ok
-
-----------------------------------------------------------------------
-Ran 1 test in 0.000s
-
-OK

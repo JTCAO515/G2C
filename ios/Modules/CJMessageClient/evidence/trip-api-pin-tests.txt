@@ -1,7 +1,0 @@
-Relevant output; full log retained under ignored .build/trip-pin-evidence/full-tests.txt.
-Build complete! (3.27秒)
-◇ Test fixedOfficialMemoryConfigurationCompilesInSharedCJAPI() started.
-◇ Test fixedOfficialTripOperationsAreInTheSameCJAPI() started.
-✔ Test fixedOfficialMemoryConfigurationCompilesInSharedCJAPI() passed after 0.001 seconds.
-✔ Test fixedOfficialTripOperationsAreInTheSameCJAPI() passed after 0.001 seconds.
-✔ Test run with 32 tests in 5 suites passed after 0.028 seconds.

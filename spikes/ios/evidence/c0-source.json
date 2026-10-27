@@ -1,7 +1,0 @@
-{
-  "head": "db9c040f262032acaf5375db43d7169b3217e504",
-  "path": "contracts/api/openapi.json",
-  "sha256": "f0a6db18850a58baab6c4ecb703eb6a54d3159b5af93885ab59fe78f8d3f436c",
-  "generator": "1.14.2",
-  "snapshot": "ignored .cache/c0-consumer; never formal source"
-}

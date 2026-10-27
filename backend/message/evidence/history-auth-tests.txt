@@ -1,7 +1,0 @@
-test_allowed_reads_and_denied_unknown_never_resolve (history_gate_tests.HistoryGateTests.test_allowed_reads_and_denied_unknown_never_resolve) ... ok
-test_commit_boundary_revocation_rolls_back_actual_draft (history_gate_tests.HistoryGateTests.test_commit_boundary_revocation_rolls_back_actual_draft) ... ok
-
-----------------------------------------------------------------------
-Ran 2 tests in 0.026s
-
-OK

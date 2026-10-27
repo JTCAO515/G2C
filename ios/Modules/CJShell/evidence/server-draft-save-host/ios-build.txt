@@ -1,7 +1,0 @@
-Building for debugging...
-[Using on-disk description]
-[2 / 4] CJShell
-[5 / 7] CJShell
-Build complete! (0.99秒)
-/tmp/cj006-draft-save-demo/CJShellDemo.app: replacing existing signature
-/tmp/cj006-draft-save-demo/CJShellDemo.app

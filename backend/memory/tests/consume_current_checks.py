@@ -24,8 +24,9 @@ from cj_memory.operation import OperationWithheld
 from cj_memory.postgres import Repository
 from pg_checks import command
 
-PG = Path('/opt/homebrew/opt/postgresql@17/bin')
+PG = Path(os.environ.get('CJ_PG17_BINDIR', '/opt/homebrew/opt/postgresql@17/bin'))
 ENV = {k: v for k, v in os.environ.items() if not k.startswith('PG')}
+(ROOT / '.local').mkdir(exist_ok=True)
 PRIVATE = Path(tempfile.mkdtemp(prefix='consume-', dir=ROOT / '.local'))
 SOCKET = Path(tempfile.mkdtemp(prefix='cj011-consume-', dir='/tmp'))
 PASSFILE = PRIVATE / 'empty.pgpass'

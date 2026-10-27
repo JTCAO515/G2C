@@ -1,9 +1,0 @@
-test_stale_timeout_and_invalid_time (test_gaode.FailureTests.test_stale_timeout_and_invalid_time) ... ok
-test_binding_covers_query_role_mode_ids_limits_and_time (test_gaode.RequestAndRouteTests.test_binding_covers_query_role_mode_ids_limits_and_time) ... ok
-test_timeout_cancels_cooperative_fixture_without_retry (test_gaode.SyntheticTests.test_timeout_cancels_cooperative_fixture_without_retry) ... ok
-test_caller_cancellation_propagates (test_gaode.SyntheticTests.test_caller_cancellation_propagates) ... ok
-
-----------------------------------------------------------------------
-Ran 4 tests in 0.019s
-
-OK

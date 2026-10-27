@@ -69,8 +69,8 @@ H 是整票起工/完整验证的原生硬门槛；C 是固定契约后可并行
 | 准备项 | PR #36 文档基线状态 / 后续 owner（进展见 HANDOFF） |
 |---|---|
 | Swift/Xcode、Python、依赖管理与锁定、最低系统矩阵 | 待 CJ-004/005 初始化；本轮未安装/构建/检查兼容性 |
-| iOS/API 启动、构建、测试、lint、生成客户端命令 | 部分可用：根 API 测试、领域模块测试、OpenAPI 校验与 iOS 根包测试由 `.github/workflows/ci.yml` 执行，命令见 README；生成客户端一致性与统一入口待 P1 |
-| 空库 schema / 后续迁移 / 回退检查 | 仅 foundation v1 已登记；领域候选 SQL 升为有序迁移并在 CI 跑 up/down 属 P1 |
+| iOS/API 启动、构建、测试、lint、生成客户端命令 | `scripts/test.py`、`scripts/pg_suites.py`、`scripts/check.sh`；CI 跑 python / postgres / swift 三个阻塞 job，见 README 与 backend/README.md；生成 Swift 客户端一致性脚本（`scripts/check-generated-*.sh`）尚未进 CI |
+| 空库 schema / 后续迁移 / 回退检查 | 10 版有序迁移链（`backend/migrations/manifest.json`），每版有 down 与 sha256，CI 跑 up → down → up；表仍在 public schema，角色/授权/RLS 待定 |
 | 隔离 Auth/数据空间、设备可达 HTTPS、私有存储/日志登记 | 未创建；CJ-005/CJ-027 在实际授权范围内准备并验证 |
 | 主模型/地图/事实来源端点、预算与地域网络 | 未调用；对应验证票与 JT 预算决定 |
 | 测试/正式配置隔离、恢复、备份、留存/清理 | 未验证；CJ-024/027 与各域 hook 组合，缺配置不得静默连旧资源 |

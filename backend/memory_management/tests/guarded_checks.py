@@ -12,8 +12,7 @@ import unittest
 import psycopg
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUT = ROOT/'.local/canonical-0045'
-sys.path[:0] = [str(ROOT), str(INPUT/'backend/memory'), str(INPUT/'backend/auth')]
+sys.path[:0] = [str(ROOT), str(ROOT.parent/'memory'), str(ROOT.parent/'auth')]
 from cj_auth.interfaces import TrustedPrincipal
 from cj_memory.domain import Service as MemoryService, Conflict, InvalidInput
 from cj_memory.operation import OperationWithheld

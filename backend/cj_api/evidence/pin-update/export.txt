@@ -1,4 +1,0 @@
-PASS fixed auth f3c8e5074eb27de0de6fef6dd7558763cbcf4291 (4 runtime blobs)
-PASS fixed message cec92299aa77e74baafba473ecf9db7b926fbe4e (4 runtime blobs)
-Export root: <local>/Documents/Codex/2026-10-21/cj-005-foundation/.local/composition-deps/f3c8e5074eb27de0de6fef6dd7558763cbcf4291-cec92299aa77e74baafba473ecf9db7b926fbe4e
-Use only the printed fixed export via PYTHONPATH for owner tests; production integration must contain the original commits.

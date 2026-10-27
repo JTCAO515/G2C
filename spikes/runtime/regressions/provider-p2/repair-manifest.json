@@ -12,7 +12,7 @@
   "source_sha256": {
     "provider_acceptance.py": "7adaba6ac21dca6b09e8de188fcad8976f692d77b8d592ab83776ee6cd8331a7",
     "REPORT.md": "aeed8699e25cb7605b2433b9dbc50a48fa3835440da7155439ccab30081d8688",
-    "regressions/provider-p2/REPORT.md": "fac56e52cecbec2ddff8b80a5cf79c7b67cbac11c9d0fe84b261de2552bd048f",
+    "regressions/provider-p2/REPORT.md": "df25f9015e8938a7479cd04a976829467d8e5bb66a2a87b1bacab590bd4cf629",
     "regressions/provider-p2/entry_security_regression.py": "dd8f138e3cc9f4c78ffc792c5ebf342ca4ca03309c9f4650bfc0f2000c88a4d6"
   },
   "targeted_groups": "3 PASS; original raw-upstream constructor observation stays positive",

@@ -1,7 +1,0 @@
-[project]
-name = "cj-trip-candidate"
-version = "0.1.0"
-requires-python = ">=3.12,<3.15"
-dependencies = []
-[dependency-groups]
-dev = ["psycopg[binary]==3.2.13", "pytest==9.0.2"]

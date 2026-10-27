@@ -1,6 +1,0 @@
-{
-  "backend/cj_api/tests/memory_management_loopback_postgres.py": "f33ff2752c822e2450dd515c134f1915ad2156147f37e7c80e20b64f04b88bc9",
-  "backend/cj_api/tests/memory_management_loopback_client.swift": "7328befe9490b2f7804d5e708f095a6a9656e6feac1122d4a68fdcfd5a609aa2",
-  "scripts/build-memory-management-loopback-client.sh": "f754926222f9a82d3da8886dd6e0ca0ebdb3f7ec58927556771903b27a9eaaa6",
-  ".local/memory-management-loopback-client": "416418236cbeca0cbcfc650e416a373ba38e9e389021b70d7531da1da7b1d18a"
-}
