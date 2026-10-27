@@ -1,0 +1,18 @@
+[
+  "ios",
+  "ios/App",
+  "ios/Modules/CJAuth",
+  "ios/Modules/CJCleanupClient",
+  "ios/Modules/CJFeasibilityClient",
+  "ios/Modules/CJFeedbackClient",
+  "ios/Modules/CJManualPreviewClient",
+  "ios/Modules/CJMemoryClient",
+  "ios/Modules/CJMessageClient",
+  "ios/Modules/CJNeedsClient",
+  "ios/Modules/CJOfflineTrip",
+  "ios/Modules/CJRunClient",
+  "ios/Modules/CJShell",
+  "ios/Modules/CJShell/Tests/FeasibilityHostHarness",
+  "ios/Modules/CJTripClient",
+  "ios/Modules/CJUsageClient"
+]

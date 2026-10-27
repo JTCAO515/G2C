@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, edited, synchronize, reopened]
 
 permissions:
   contents: read
@@ -52,21 +53,51 @@ jobs:
       - run: uv sync --locked
       - run: uv run --locked python -B scripts/pg_suites.py
 
+  pr-lint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require an Issue reference in the PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python3 - <<'PYTHON'
+          import os, re
+          if not re.search(r"(?i)\b(closes|fixes|resolves|refs)\s+#\d+", os.environ["PR_BODY"]):
+              raise SystemExit("PR body must contain Closes/Fixes/Resolves/Refs #<issue number>")
+          print("Issue reference present")
+          PYTHON
+
+  swift-packages:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.inventory.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject missing or stale Swift package entries
+        id: inventory
+        run: python3 -B .github/scripts/swift_packages.py >> "$GITHUB_OUTPUT"
+
   swift:
-    # Locked Swift packages need Swift tools 6.4; use the newest runner image and Xcode.
+    # Every package has an independent blocking job on the standard runner.
+    needs: swift-packages
     runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.swift-packages.outputs.packages) }}
     steps:
       - uses: actions/checkout@v4
       - name: Verify Xcode toolchain
         run: swift --version
-      - name: iOS root package build and tests (macOS host)
-        working-directory: ios
-        run: swift test
-      - name: CJTripClient tests (confirmation, pending store, recovery)
-        working-directory: ios/Modules/CJTripClient
-        run: swift test
-      - name: RUN snapshot and SSE client tests (macOS host)
-        run: swift test --package-path ios/Modules/CJRunClient
+      - name: Package tests (macOS host)
+        env:
+          SWIFT_PACKAGE: ${{ matrix.package }}
+        run: swift test --package-path "$SWIFT_PACKAGE"
+      - name: App Release configuration tests
+        if: matrix.package == 'ios/App'
+        run: swift test --package-path ios/App -c release
 
   ios-app:
     # The App target with the CJShell four-tab shell and all iOS modules, built for the simulator.

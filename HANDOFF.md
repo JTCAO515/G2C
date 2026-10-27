@@ -18,16 +18,16 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 主链路闭环（模拟器 L1）：Issue 按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 已关闭（PR #172），下一张为 #151 S0 Part 2/2。 |
+| Phase | M1：#151 S0 Part 2/2 实施中；全 Swift 包矩阵、遗漏检查与 pr-lint 待本地/CI 验证和独立审查。 |
 | Accepted Issue | M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T12:30:00Z |
+| Last updated | 2026-10-27T13:39:21+00:00 |
 
 ## Active Work
 
-- #154 已关闭：PR #172 合并为 715fd00，main CI 全绿；#20 框 4 已勾，框 1、7 的 App 部分已附证据，服务端部分待 #155。
-- #151 S0 Part 2/2（iOS 测试全部进 CI、pr-lint）未开始，为下一张。
-- #162（CJ-009 子票）：MESSAGE 发送许可方案，owner Claude，未开始；#163、#164 依赖它。
+- #154 已关闭（PR #172）；#20 剩余 #155。
+- #151：覆盖 ios 根包、App 与全部 Modules（包括嵌套 FeasibilityHostHarness），无 test target 排除；CI 门禁只增加。
+- #162 owner Claude，仍 OPEN；#159 文案尚无 JT 确认。
 
 ## Accepted Assumptions
 
@@ -60,18 +60,18 @@
 
 | Path | Reason |
 | --- | --- |
-| `docs/plan/issue-plan.md` | 新增：里程碑 M0–M5、M1 队列与子票、依赖、停点与跳过、M2 拆分预案。 |
-| `docs/adr/0007-issue-closure-workflow.md` | 第 2 条队列改指规划文档、框数 2–6、挂起父票不占在制名额；第 7 条停点分子票级与仓库级。 |
-| `AGENTS.md, .github/ISSUE_TEMPLATE/slice.md` | 阅读顺序加入规划文档；框数 2–6；停点分级。 |
-| `docs/handoff.json, HANDOFF.md` | 切换到 M1 队列状态。 |
+| `.github/workflows/ci.yml, .github/swift-packages.json, .github/scripts/swift_packages.py` | 全部 Swift 包阻塞矩阵、显式清单与遗漏检查；PR 正文经 env 的最小权限 pr-lint。 |
+| `ios/Modules/CJShell/Tests/FeasibilityHostHarness` | 历史测试包直接依赖当前模块，失效负例使用真实 Shell 入口；保留所有断言，锁定依赖。 |
+| `docs/handoff.json, HANDOFF.md` | #151 当前状态、验证与下一步。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `python3 -B scripts/handoff.py check` | handoff 结构与阅读顺序一致。 | — |
-| pass | `GitHub Issue 规划核对` | M0–M5 里程碑；#155–#170 为 M1 子票并已挂到父票；父票验收框均标明 → #子票 / → L2 #32；L2 转记已登记到 #32。 | https://github.com/JTCAO515/G2C/pull/171 |
-| not-run | `GitHub Actions ci.yml` | 以 PR #171 精确 head 检查为准（文档改动）。 | — |
+| pass | `uv run --locked python -B scripts/test.py` | 56/56 suites。 | — |
+| pass | `Swift inventory + pr-lint local negative/positive checks` | 完整清单通过；遗漏嵌套包/陈旧项/重复项失败；Issue 引用正负与 shell 字面内容不执行。 | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups，PG16/17 私有集群与迁移 up/down/up。 | — |
+| not-run | `Swift package matrix; GitHub Actions` | 本地全部 Swift 包执行中；待 PR 正反 pr-lint、精确 head CI 与独立审查。 | — |
 
 ## Blockers
 
@@ -97,9 +97,9 @@
 
 ## Next Smallest Action
 
-- Action: 开始 #151 S0 Part 2/2：iOS 测试全部进 CI（ios/Modules/**/Package.swift 全覆盖并检查遗漏）、新增 pr-lint；合并后按 docs/plan/issue-plan.md 从 #155 继续。
-- Expected observation: #151 关闭；main CI 包含全部 iOS 模块测试与 pr-lint 且全绿。
-- Resume command: `gh issue view 151 --repo JTCAO515/G2C`
+- Action: 完成 #151 的全部本地测试、pr-lint 正反 CI 和独立 Codex 精确 head 审查；全绿合并并核验 main 后，开始 #155：读子票/父票全部评论并映射服务端负例证据。
+- Expected observation: #151 全部验收框有 L0 证据，main CI 全绿；随后推进 #155。
+- Resume command: `gh issue view 151 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 
