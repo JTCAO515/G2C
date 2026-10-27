@@ -2,6 +2,7 @@
 
 - 状态：**accepted**（JT 于 2026-10-27 逐项确认，见“JT 决定”一节；技术效果仍按各 Issue 验证）
 - 日期：2026-10-27
+- 修订：第 6 条的合并与审查条件已由 [ADR-0007](0007-issue-closure-workflow.md) 第 3 条替代（2026-10-27）；其余各条继续有效。
 - 依据：main `8fac0dff5e50ce08c277b65f7322a4ea64d77e65` 的静态审查；未运行 pytest / swift test（UNRUN）
 - 关联：[ADR-0002](0002-runtime-candidates.md)、[ADR-0003](0003-state-and-recovery.md)、[CJ-005](https://github.com/JTCAO515/G2C/issues/5)、[交接](../handoff.json)、[P0 派工单](../dispatch/P0-repo-hygiene.md)
 

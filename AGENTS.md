@@ -5,17 +5,28 @@
 ## 强制阅读顺序
 
 1. [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成；改 JSON 后重新渲染，不手改 HANDOFF.md）
-2. [ADR 索引](docs/adr/README.md)，尤其 [ADR-0004](docs/adr/0004-delivery-flow-and-repo-hygiene.md)（交付流程，accepted）
-3. 当前派工单 `docs/dispatch/*`（handoff 的 `nextAction` 指明哪一份）
+2. [ADR-0007](docs/adr/0007-issue-closure-workflow.md)（关票流程，accepted），再按需读 [ADR 索引](docs/adr/README.md)
+3. 当前子票及其父票的正文与评论（handoff 的 `nextAction` 指明是哪一张）；`docs/dispatch/*` 已冻结为历史，只在子票引用时读
 4. [README](README.md)；按改动类型再读：API/跨模块 [contracts](docs/contracts.md)、记忆 [memory](docs/memory.md)、布局 [ui](docs/ui.md)、范围 [scope](docs/scope.md)、协作与环境 [engineering](docs/engineering.md)
 
 范围与依赖索引：[CJ-005 / #5](https://github.com/JTCAO515/G2C/issues/5)。
 
+## 关票规则（ADR-0007）
+
+- 目标是关闭 Issue。执行单位是子票：3–6 个验收框，每个框标明证据级别 L0–L3，预计 1–2 个 PR。
+- 功能票在 L0/L1 证据全部 PASS 时关闭；只能在 L2/L3 证明的框改写为 `→ L2 #32` 或 `→ L3 #29`，并到对应验证票登记，不删除。
+- 在制上限：1 张父票、最多 2 个开着的 PR。队列与当前位置见 handoff 的 `nextAction`。
+- PR 正文第一行写 `Closes #<子票>`（两段式写 `Refs #<子票>` 加 `Part 1/2`）。合并后在子票勾框并附 PR 链接，同步父票。
+- 范围外发现的问题开新票记录，不顺手修。
+
 ## 工作规则
 
-- 一个 PR 对应一个 Issue 切片；从最新 `main` 开分支，经 PR 合并；禁止直推 main、force push、改写历史。
-- 合并条件：CI 绿 + 一次独立 Review（作者不自批）。PR 描述含精确 base/head 与 PASS / FAIL / UNRUN / UNKNOWN 表。
+- 从最新 `main` 开分支，经 PR 合并；禁止直推 main、force push、改写历史。
+- 合并条件：PR 精确 head 上 CI 全部 job 全绿，并完成审查（作者会话不自批）：
+  - 普通 PR：另一个 Codex 会话在 PR 评论写 `Review: APPROVE <head SHA>`；
+  - 红线 PR（迁移/表结构、已冻结或新冻结契约、鉴权权限、签名密钥、删除用户数据、付费计费、`.github/**` 与测试入口脚本）：Claude 独立审查或 JT 在 PR 中明确同意。清单见 ADR-0007 第 3 条。
+- PR 描述含精确 base/head、是否红线、验收框 → 证据表（PASS / FAIL / UNRUN / UNKNOWN）。
 - 新的运行日志、进程记录、压缩包、录屏不入库；放 CI artifact 或 PR 描述。仓库内不写本机绝对路径、秘密或个人凭据。
-- 改技术方案先读 ADR，改行为读对应规格；变更后同步 `docs/handoff.json` 与 `HANDOFF.md`。
-- 未知写入先只读核原动作再决定重试；被平台拒绝不换路径、身份或工具绕过。mock、合并、真实服务与真机证据分层报告。
-- 开发授权不扩大到付费调用、云资源、权限/凭据变更、外联、公开发布或旧数据删除；这些需 JT 另行明确授权。
+- 改技术方案先读 ADR，改行为读对应规格。每个 PR 只更新 handoff 的当前状态字段（ADR-0007 第 6 条），并重新渲染 `HANDOFF.md`。
+- 未知写入先只读核原动作再决定重试；被平台拒绝不换路径、身份或工具绕过。mock、本地、真实服务与真机证据分层报告。
+- 外部资源只在 JT 已批准的 `docs/authorizations/<里程碑>.md` 清单内使用；清单外的付费调用、云资源、权限/凭据变更、外联、公开发布或旧数据删除，先停下来问 JT。

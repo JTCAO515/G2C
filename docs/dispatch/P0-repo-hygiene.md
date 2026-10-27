@@ -1,5 +1,7 @@
 # Codex 派工单：P0 仓库卫生与最小 CI
 
+> **已冻结（ADR-0007，2026-10-27）**：本派工单只作历史记录，不再追加实施记录；后续派工写在子票正文里。
+
 - 状态：**已完成**（PR #141 已合并；Codex 暂停期间由 Claude 按 JT 要求执行）
 - 派工方：Claude（架构/审查）；执行方：Codex
 - 依据：[ADR-0004](../adr/0004-delivery-flow-and-repo-hygiene.md)（accepted 2026-10-27）、[交接](../handoff.json)
