@@ -103,6 +103,29 @@ private actor TripHostTransport: ClientTransport {
         #expect(!h.selectTrip("invented", context: h.captureAction()))
         #expect(await t.calls.isEmpty); #expect(f.credentials == 0)
     }
+    @Test func anotherContextProposalRequiresOriginalSettlementThenBecomesReadable() async throws {
+        let s = try shell(), h = TripContainerHost(shell: s), f = try TripHostFixture()
+        let dir = try directory(); defer { try? FileManager.default.removeItem(at: dir) }
+        let key = SymmetricKey(size: .bits256)
+        let storage = try store(f, directory: dir, key: { key })
+        let old = try original(); try storage.append(old)
+        var next = try proposal(); next.proposal_id = "p-next"; next.trip_id = "t-next"
+        let transport = TripHostTransport([try json(["receipt": NSNull()]),
+            try response("receipt", receipt(old)), try response("proposal", next)])
+        try f.bind(h, shell: s, transport: transport, store: storage, proposalID: next.proposal_id)
+        h.loadPending(context: h.captureAction())
+        #expect(h.selectPending(old.actionID, context: h.captureAction()))
+        #expect(!h.canReadContextProposal && h.prepareProposal(context: h.captureAction()) == nil)
+        await h.perform(h.prepareReconciliation(context: h.captureAction()))
+        #expect(!h.canReadContextProposal) // null remains unknown, not permission to replace it
+        await h.perform(h.prepareReconciliation(context: h.captureAction()))
+        #expect(h.canReadContextProposal)
+        await h.perform(h.prepareProposal(context: h.captureAction()))
+        #expect(h.presentation?.selectedProposalID == next.proposal_id)
+        #expect(h.presentation?.selectedActionID == nil)
+        #expect(try storage.pending().map(\.actionID) == [old.actionID])
+        #expect(await transport.calls.allSatisfy { $0.1 == .get })
+    }
     @Test func canonicalListPagesDetailAndProposalStayReadOnly() async throws {
         let p = try proposal()
         let t = TripHostTransport([try json(["trips": [object(record())], "next_after": "trip1"]),

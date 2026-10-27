@@ -1,32 +1,35 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T10:49:52Z",
-  "currentPhase": "M1 主链路闭环（模拟器 L1）：Issue 已按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 进行中，S0 Part 2/2（#151）待做。",
+  "lastUpdated": "2026-10-27T12:30:00Z",
+  "currentPhase": "M1 主链路闭环（模拟器 L1）：Issue 按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 已关闭（PR #172），下一张为 #151 S0 Part 2/2。",
   "status": "active",
-  "objective": "Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green.",
-  "acceptedIssue": "M1 队列：#151 S0 → #20 CJ-015（#154、#155）→ #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md",
-  "owner": "JT (operator); Claude architecture/review; Codex implementation",
-  "fromAgent": "Claude（审查并合并 #148，实施 iOS 行程确认客户端切片）",
-  "intendedNextAgent": "Codex 或 JT（独立审查本切片）；随后 Claude/Codex 做 App 开发会话组装",
+  "objective": "完成本轮 #149/#150 审查合并与 DEBUG App 开发会话、iOS 17.5 行程确认端到端；保留正式写入、原动作恢复及外部资源授权边界。",
+  "acceptedIssue": "M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md",
+  "owner": "JT operator；Claude 架构/任务 B 抽查；Codex 任务 A 审查返修、任务 B 开发验收",
+  "fromAgent": "Claude（Issue 总体规划，PR #171）",
+  "intendedNextAgent": "Codex：按 docs/plan/issue-plan.md 队列连续关票，自审自合并（ADR-0007 第 3、7 条）",
   "activeWork": [
-    "#154（CJ-015 子票）：DEBUG 开发会话与 iOS 17.5 行程确认端到端，Codex 进行中。",
-    "#162（CJ-009 子票）：MESSAGE 发送许可方案，owner Claude，未开始。"
+    "#154 已关闭：PR #172 合并为 715fd00，main CI 全绿；#20 框 4 已勾，框 1、7 的 App 部分已附证据，服务端部分待 #155。",
+    "#151 S0 Part 2/2（iOS 测试全部进 CI、pr-lint）未开始，为下一张。",
+    "#162（CJ-009 子票）：MESSAGE 发送许可方案，owner Claude，未开始；#163、#164 依赖它。"
   ],
   "assumptions": [
-    "P2b 本地和真实 provider 结果为原作者报告，本轮未重复调用模型。",
-    "ADR-0002 组合候选状态不因壳构建通过而改变。"
+    "本轮本地 API 使用 app_from_environment 强制签名入口、私有 PG、FakeProvider 和临时开发身份；不是生产、OTP 或真实模型验收。",
+    "DEBUG 开发环境由 operator 提供；token 的本地 issuer/audience/subject 仅分区模拟器数据，不作为生产身份验证。真实业务权限仍由服务端校验。"
   ],
   "decisions": [
     "ADR-0001 产品与用户控制边界继续有效。",
     "qwen3.8-flash 与北京端点已选定；P2b 原作者报告真实 smoke 4/4，本轮未重跑。",
     "ADR-0004 已接受；单一 Python 发行包 cj，保留领域 import 名，不恢复同仓 hash pin 或 Git 导出依赖。",
-    "JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。",
     "P2：北京、邮箱 OTP、最低 iOS 17。",
     "JT 当前指令：Codex 实现/测试/交付，Claude 架构/规划/审查，JT 决策与外部资源。",
-    "ADR-0007（accepted，JT 2026-10-27）：CI 全部 job 阻塞；Codex 在不继承作者上下文的会话中审查精确 head 后合并，红线 PR 逐条写明追加必查项；JT 停点见 ADR-0007 第 3 条。",
     "历史证据归档 tag evidence-archive-2026-10-27；不改写历史。",
     "JT 2026-10-27: PR #147 only uses Codex review instead of Claude; continue subsequent P2c work. This is not independent review and not blanket approval for later PRs.",
+    "JT current dispatch: Codex reviews/repairs and merges #149 then #150; task B remains subject to Claude review. No #144 or MESSAGE write implementation in this slice.",
+    "GitHub visibility read-back 2026-10-27: PUBLIC. Secret/local-path prohibitions remain. No repository settings were changed in this task.",
+    "JT latest instruction: finish this round, submit/review/merge its PR into main, verify main CI and then PAUSE. This supersedes the earlier task-B Claude-before-merge requirement; independent Codex review under ADR-0007 remains required. No automatic continuation.",
+    "JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。",
     "accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).",
     "accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending."
   ],
@@ -37,90 +40,65 @@
   ],
   "changedFiles": [
     {
-      "path": "backend/cj_api/local_app.py, scripts/dev_auth.py",
-      "reason": "本地入口强制签名校验；专用确认 key 的生成与加载。"
+      "path": "docs/plan/issue-plan.md",
+      "reason": "新增：里程碑 M0–M5、M1 队列与子票、依赖、停点与跳过、M2 拆分预案。"
     },
     {
-      "path": "backend/tests/test_local_entry_confirmation.py",
-      "reason": "key 缺失/权限过宽/过短拒绝启动；签名入口可用。"
+      "path": "docs/adr/0007-issue-closure-workflow.md",
+      "reason": "第 2 条队列改指规划文档、框数 2–6、挂起父票不占在制名额；第 7 条停点分子票级与仓库级。"
     },
     {
-      "path": "ios/Modules/CJTripClient/Sources/CJTripClient/*",
-      "reason": "prepare/confirm、响应校验、TripLiveWrites、过期对账、两步确认 UI。"
+      "path": "AGENTS.md, .github/ISSUE_TEMPLATE/slice.md",
+      "reason": "阅读顺序加入规划文档；框数 2–6；停点分级。"
     },
     {
-      "path": "ios/Modules/CJTripClient/Tests/CJTripClientTests/ConfirmationFlowTests.swift",
-      "reason": "确认流程与篡改负例。"
-    },
-    {
-      "path": ".github/workflows/ci.yml",
-      "reason": "swift job 增加 CJTripClient 测试。"
-    },
-    {
-      "path": "ios/Modules/CJTripClient/README.md, backend/README.md, docs/dispatch/P2-walking-skeleton.md",
-      "reason": "切片说明、兼容与限制。"
+      "path": "docs/handoff.json, HANDOFF.md",
+      "reason": "切换到 M1 队列状态。"
     }
   ],
   "verification": [
     {
-      "command": "scripts/test.py",
+      "command": "python3 -B scripts/handoff.py check",
       "status": "pass",
-      "summary": "56/56（含本地入口签名 5 项）。",
+      "summary": "handoff 结构与阅读顺序一致。",
       "artifact": null
     },
     {
-      "command": "scripts/pg_suites.py e2e",
+      "command": "GitHub Issue 规划核对",
       "status": "pass",
-      "summary": "本地 PG 端到端通过（FakeProvider）。",
-      "artifact": null
-    },
-    {
-      "command": "swift test（ios/Modules/CJTripClient，Xcode 27.1）",
-      "status": "pass",
-      "summary": "61 项，含新增确认流程 5 项（篡改负例 7 种）。",
-      "artifact": null
-    },
-    {
-      "command": "xcodebuild App（iOS Simulator arm64，Xcode 27.1）",
-      "status": "pass",
-      "summary": "整 App 构建通过。",
-      "artifact": null
-    },
-    {
-      "command": "模拟器端到端（开发 token → 草稿 → 准备 → 确认 → 正式行程）",
-      "status": "not-run",
-      "summary": "App 尚未组装开发会话与 TripClient。",
-      "artifact": null
+      "summary": "M0–M5 里程碑；#155–#170 为 M1 子票并已挂到父票；父票验收框均标明 → #子票 / → L2 #32；L2 转记已登记到 #32。",
+      "artifact": "https://github.com/JTCAO515/G2C/pull/171"
     },
     {
       "command": "GitHub Actions ci.yml",
       "status": "not-run",
-      "summary": "以本切片 PR 检查为准。",
+      "summary": "以 PR #171 精确 head 检查为准（文档改动）。",
       "artifact": null
     }
   ],
   "blockers": [
-    "#162 MESSAGE 发送许可方案未冻结前，#163/#164 不能开工（ACTIVATION-GATE.md 仍禁止 live POST）。",
-    "#159 帮助/隐私/支持文案需 JT 确认。",
+    "#162 未关闭前，#163、#164 不能开工；#167 依赖 #164（子票级停点，跳过继续）。",
+    "#159 帮助/隐私/支持文案需 JT 确认（子票级停点）。",
     "L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。"
   ],
   "risks": [
-    "新接口只签发审阅绑定，不证明用户已确认，不改正式行程；客户端必须保留原动作字节并显式确认后提交。",
-    "旧 P2b 本地 permissive 确认路径为兼容保留，不是签名 P2c 激活路径；消费者迁移和回滚验证后再移除。",
-    "签名 key 需独立、每环境至少 32 字节，稳定保留到预期凭证过期；本轮只使用测试 key，不从 JWT/模型凭据派生。",
-    "未提交旧凭证在 key 轮换后被拒绝；原已提交精确动作可以返回原回执，未知结果不得重新签发来重试。",
-    "生成客户端补齐正式来源里已有的 openConversation/streamRunEvents 声明；没有改变原业务接口或额外开放客户端权限。",
-    "本地 API 测试使用 TestClient、真实私有 PG 和 FakeProvider，不是云或真机证据。"
+    "DEBUG 开发组装仅限 Simulator、显式 loopback 和开发 token；不是生产认证/存储激活。Release 和真机保持未连接。",
+    "确认/未知恢复使用现有冻结语义；不代表真实服务、设备、备份恢复或长期数据生命周期验收。",
+    "原动作/模拟器 Keychain key 留在隔离开发命名空间，不删除无关数据；临时 API/PG 在脚本结束关闭。",
+    "证据在仓库外及 PR 描述；运行脚本会构建并安装目标 Simulator App，不能据此发布或安装真机。",
+    "#144 独立 V2 范围继续保持不动；完整 P2c 仍缺 MESSAGE 发送许可及真实身份等阶段。"
   ],
   "operatorActions": [
-    "审查 feat/p2c-trip-confirmation 的精确 base/head；#147 的审查替代授权不视为本新 PR 自动批准。",
-    "启用真实签名路径前须明确目标环境及独立 key 的安全注入/轮换清单并由 JT 授权；当前未执行凭据变更，也不要求把秘密贴入聊天。",
-    "云 OTP/数据库、真实模型调用和真机操作按具体后续清单单独授权。"
+    "JT 决定：是否启用 main 分支保护（仓库已 public，可免费启用）。",
+    "JT 确认 #159 帮助/隐私/支持文案。",
+    "JT 按需在 docs/authorizations/M1.md 批准 L2 外部资源；目前为空。",
+    "Claude 负责 #162 MESSAGE 发送许可方案。",
+    "生产签名 key 来源/轮换、真实模型费用、真机/发布、许可证继续由 JT 决定。"
   ],
-  "rollback": "revert 本确认凭证切片合并提交；没有迁移、云配置或数据变更。已有 Trip/actions 回执格式未变；默认旧本地入口继续兼容。",
+  "rollback": "revert PR #171 合并提交即可恢复原队列写法；GitHub 上的子票、里程碑与父票规划块需另行手工回退（原正文备份在 Claude 会话 scratchpad，非仓库）。无代码、迁移或配置变更。",
   "nextAction": {
-    "description": "完成 #154 并合并；随后做 S0 Part 2/2（#151：iOS 测试全部进 CI、pr-lint），再按 docs/plan/issue-plan.md 的 M1 队列从 #155 继续。",
-    "expectedObservation": "#151、#154、#155 关闭后 #20 关闭；main CI 全绿且包含所有 iOS 模块测试。",
+    "description": "开始 #151 S0 Part 2/2：iOS 测试全部进 CI（ios/Modules/**/Package.swift 全覆盖并检查遗漏）、新增 pr-lint；合并后按 docs/plan/issue-plan.md 从 #155 继续。",
+    "expectedObservation": "#151 关闭；main CI 包含全部 iOS 模块测试与 pr-lint 且全绿。",
     "command": "gh issue view 151 --repo JTCAO515/G2C"
   },
   "readingOrder": [
@@ -128,18 +106,22 @@
     "docs/adr/0007-issue-closure-workflow.md",
     "docs/plan/issue-plan.md",
     "AGENTS.md",
-    "README.md"
+    "README.md",
+    "backend/README.md",
+    "ios/App/README.md"
   ],
   "mandatoryReadingOrder": [
     "HANDOFF.md",
     "docs/adr/0007-issue-closure-workflow.md",
     "docs/plan/issue-plan.md",
     "AGENTS.md",
-    "README.md"
+    "README.md",
+    "backend/README.md",
+    "ios/App/README.md"
   ],
   "provenance": {
-    "baseCommit": "d74e9fcf7b4c857524edf29a0c3f4c3bf6c175e7",
-    "method": "#147 exact-head 替代审查、正常合并后从 main 开新分支；本地纯测试/私有 PG/生成检查与最终远端 CI 分层。",
+    "baseCommit": "99f14374af2baeb8a14312cc39ad3b7a04b9c26d",
+    "method": "本轮明确派工；原作者 Claude，Codex 审查并修复 A；B 用真实 Simulator UI/临时本地 API/PG 与 FakeProvider 验证，不依赖聊天接手。",
     "author": "Codex"
   }
 }

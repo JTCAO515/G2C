@@ -1,0 +1,82 @@
+# DEBUG simulator Trip host
+
+This App keeps the ordinary disconnected shell in Release, on physical devices, or
+when either explicit development input is missing/invalid. Only a DEBUG simulator
+build reads:
+
+- `G2C_DEV_API_BASE_URL`: exactly `http://127.0.0.1:<port>` (no credentials, query,
+  fragment or non-root path), checked with `MessageEndpoint.allowLoopbackHTTP`.
+- `G2C_DEV_TOKEN`: a local token from `scripts/dev_auth.py token`, supplied via
+  `SIMCTL_CHILD_`; memory only, never persisted or written to Keychain/logs.
+- Optional `G2C_DEV_PROPOSAL_ID`: preselects an existing local fixture proposal.
+
+This is a trusted operator fixture root, not a production identity verifier. Local
+dev issuer/audience/subject metadata only partitions simulator storage; the actual
+API verifies the JWT and ownership on every request. Renewing a token for the same
+local subject preserves the namespace; another subject gets a separate namespace.
+No Supabase session or production CJAuth path is changed.
+
+`SessionPersistence` is memory-only. `ScopedMessageKeyProvider` manages a random
+simulator-Keychain key, separate from the token. `TripPendingStore` lives under the
+App's Application Support `G2CDevelopmentTrip/<environment>/<account>` directory
+(0700). Missing keys with existing data fail closed; keys/records are never erased
+to recover availability. Restart restores original actions for query only.
+
+The explicit host grants `TripLiveWrites` for the signed `app_from_environment`
+fixture. Other tabs stay unconfigured. The existing proposal screen keeps its
+decision/result card after an action ID is assigned; an original action cannot be
+replaced by re-reading the draft while its outcome is unknown.
+After that original reaches a verified terminal outcome, a different explicitly
+selected proposal can be read and decided without removing the historical record.
+
+## Reproduce on iOS 17.5
+
+Choose an available iOS 17.5 simulator UDID and a build/evidence directory outside
+the repository. The script uses Xcode's native XCTest input, so Simulator.app and
+AXe are not required. It generates an external UI-test project referencing the
+actual App sources/packages; it does not add a test target to the repository project.
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+CJ_PG_BINDIR=/opt/homebrew/opt/postgresql@17/bin \
+uv run --locked python -B scripts/check_ios_trip_confirm.py \
+  --simulator '<iOS-17.5-UDID>' --output '<external-output-directory>'
+```
+
+The harness runs Debug/Release configuration tests and builds, then uses a fresh
+private PG cluster, migrations, dedicated temporary signing keys and FakeProvider.
+Actual UI clicks cover English/Chinese acceptance and formal detail version 1,
+rejection without a Trip, committed-response loss followed by offline restart and
+original-action reconciliation (exactly one `act`), and foreign-user refusal.
+It also audits token absence in App files, pending-directory permissions, and a
+Release App launched with all development variables that still remains disconnected.
+The same-account regression also confirms a new proposal after restart and original
+receipt reconciliation, while retaining the old action and formal Trip.
+
+Xcode supplies **simulator** embedded entitlements and ad-hoc signing for Debug;
+do not manually sign the host process with restricted iOS entitlements. The
+entitlements setting applies only to the Debug simulator SDK. No Apple account,
+certificate, provisioning profile or system setting is changed.
+
+Output includes `report.json`, build/test logs, `.xcresult` and screenshots such as
+`en-formal-detail.png`, `zh-formal-detail.png`, `unknown-offline-restart.png` and
+`release-disconnected.png`. A failed/incomplete driver or scenario makes the script
+fail; previous reports are retained. Evidence stays outside Git and is summarized
+in the PR. No screenshots, tokens, keys or runtime databases belong in the repo.
+
+The API/PG fixtures stop at the end. The simulator App is terminated; its encrypted
+test records/Keychain keys remain in isolated development namespaces for inspection.
+The harness does not delete unrelated App data or clear the simulator Keychain.
+
+For the complete PG suite, also set `CJ_PG16_BINDIR` and `CJ_PG17_BINDIR` to the
+installed major-specific binaries: the RUN suite deliberately requires PG16.
+Do not change version assertions or solver budgets to make tests pass.
+
+## Remaining gates
+
+This proves the local simulator fixture flow, not real OTP, real-model quality,
+physical-device, cloud, backup restoration or release acceptance. MESSAGE sending
+remains unavailable. JT's latest instruction is independent Codex review, green CI,
+normal merge and main-CI verification, then PAUSE. No automatic continuation is
+authorized after this round. The later MESSAGE design remains separate and must
+not be implemented before JT resumes the work.
