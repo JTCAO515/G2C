@@ -1,75 +1,40 @@
-# CJ-005 empty-database initialization admission candidate
+# Migrations
 
-`initialization-plan.json` is `CJ-EMPTY-INIT-PLAN@0.1.0-rc.1`. It pins the
-accepted tree `3c52f72daf1d8e2304c0c569b47e68d92a4b323e` and exact Git
-revisions, SHA256 bytes, table inventory and intra-file references of foundation,
-MESSAGE, RUN and USAGE. `manifest.json` remains the sole registered migration
-list: foundation v1 only. The three domain files remain candidates, new empty
-private PostgreSQL only, never existing-database upgrades.
+`manifest.json` is the single ordered migration chain (ADR-0004). Each entry names its
+up file, a down file under `down/`, and the sha256 of both; `scripts/migrate.py`
+refuses any file whose bytes differ from the manifest.
 
-From the repository root, using the existing Python environment:
+| Version | Name | Up file |
+|---|---|---|
+| 1 | foundation | `backend/migrations/0001_foundation.sql` (schema `cj`, ledger `cj.schema_migrations`) |
+| 2 | message | `backend/message/sql/candidate.sql` |
+| 3 | run | `backend/run/sql/candidate.sql` |
+| 4 | usage | `backend/usage/sql/001_candidate.sql` |
+| 5 | trip | `backend/trip/sql/candidate.sql` |
+| 6 | needs | `backend/needs/sql/candidate.sql` |
+| 7 | feedback | `backend/feedback/sql/candidate.sql` |
+| 8 | cleanup | `backend/cleanup/sql/candidate.sql` |
+| 9 | memory | `backend/memory/schema.sql` |
+| 10 | memory_management | `backend/memory_management/schema.sql` (depends on 9) |
 
-```sh
-.venv/bin/python -B scripts/check-empty-db-init.py --source-repo .
+Domain SQL stays in each domain directory so tests and the chain use the same bytes.
+Changing a registered file requires updating its manifest sha256 in the same PR; once a
+version has been applied to any shared database, add a new version instead of editing it.
+
+```bash
+uv run --locked python -B scripts/migrate.py verify          # fresh private cluster: up, down to empty, up
+uv run --locked python -B scripts/migrate.py up --conninfo-json conn.json
+uv run --locked python -B scripts/migrate.py status --conninfo-json conn.json
 ```
 
-The source repository must contain the pinned Git objects (an accepted Publish
-clone can also be supplied explicitly). This command is offline: it validates
-artifact ancestry, equality with the fixed accepted tree, hashes, SQL inventory
-and registered foundation hash. It does not use moving main or working-copy SQL.
-The reference inventory is a check of these exact files, not a general SQL parser
-or a proof of runtime privileges. No cross-file SQL FK was found; RUN's original
-MESSAGE receipt/USAGE bytes, canonical scope, provisioning and concurrency fences
-are runtime obligations and do not establish an apply order. PostgreSQL16 is the
-local validation baseline; no extension, role or grant is installed by this tool.
+`conn.json` holds explicit psycopg connection keyword arguments; ambient `PG*` variables
+are refused. PostgreSQL binaries for `verify` come from `CJ_PG_BINDIR` or `pg_config`.
 
-The result reports source validation and target admission separately, with
-`apply: BLOCKED` even when validation passes. There is no apply option. Blockers:
+Known limits (decisions still open, not solved by this chain):
 
-- Domain candidates lack an accepted composite migration/rollback protocol.
-- Unqualified candidate tables lack an accepted product namespace/search_path
-  and trusted scope provisioning contract.
-- Product runtime roles/RLS/grants remain unresolved. Preserve USAGE ENABLE/FORCE
-  RLS, PUBLIC revoke and no-policy denial; do not add bypass grants/policies.
-- Cross-domain original association and dispatch fences remain domain work.
-
-Optional **read-only point-in-time** target admission requires every explicit
-argument below. It accepts only a newly provisioned task-private directory named
-`.local-cj005-init-*` directly under this checkout, with real `data` and `s`
-directories. It refuses symlink paths, inherited PG*/DATABASE_URL/CJ_DATABASE_URL,
-TCP listeners, mismatched actual data/socket/user/database/read-only settings,
-existing initialization ledger and user schema/relation/function/type/extension/
-event-trigger objects. No DSN, network fallback, credential lookup or SQL apply.
-An admission PASS is not a lock/reservation for a later apply.
-
-```sh
-.venv/bin/python -B scripts/check-empty-db-init.py --source-repo . \
-  --inspect-target --target-root "$PWD/.local-cj005-init-new" \
-  --pg-bin /opt/homebrew/Cellar/postgresql@16/16.15/bin \
-  --user EXPLICIT_TASK_USER --port EXPLICIT_SOCKET_IDENTIFIER
-```
-
-`new`, user and identifier are placeholders, not existing targets or provisioned
-resources. Missing configuration/rejected targets return 2; dry-run success
-returns 0 without suggesting apply success. This checker does not create or
-start a database. Existing-target upgrade, restore, cleanup and production
-activation remain unimplemented. Storage ownership/retention/deletion boundaries
-are registered in `backend/storage-registry.json` (v1.1.0).
-
-Targeted verification:
-
-```sh
-.venv/bin/python -B -m unittest discover -s backend/cj_api/tests -p test_initialization_plan.py -v
-# Only with explicit fresh private-PG execution authorization; refuses existing root:
-.venv/bin/python -B backend/cj_api/tests/initialization_admission_postgres.py \
-  --target-name .local-cj005-init-new
-```
-
-Use a fresh lowercase suffix matching the validator, never reuse retained test
-data. The one-shot test uses installed PostgreSQL16.15, bootstrap role `cj005i`,
-database `postgres`, Unix socket identifier55447 and TCP disabled. It seeds only
-registered foundation v1 to prove repeated/nonempty target refusal, then stops
-its exact instance in finally. No candidate SQL, drivers, cloud or old DB needed.
-The absolute Homebrew binary path is the tested machine dependency, not a portable
-installer. New private output directories need a clone-local exclusion, never
-commit database files. See the evidence report for actual executed targets.
+- Domain tables live in schema `public`; moving them into `cj` needs a search_path and
+  provisioning decision across all domains.
+- No runtime roles, grants or RLS beyond what each domain file already declares
+  (USAGE keeps ENABLE/FORCE RLS and PUBLIC revoke; FEEDBACK revokes PUBLIC).
+- `down` files drop tables and their data. Use them only on disposable databases; any
+  rollback on a database holding user data needs explicit operator approval.
