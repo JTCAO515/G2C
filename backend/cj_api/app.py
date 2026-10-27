@@ -19,7 +19,7 @@ def error_body(request_id, code, category, en, zh, recovery="do_not_retry"):
 
 def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configuration=None, _history_environment=None,
                _memory_boundary=None, _memory_configuration=None,
-               _trip_boundary=None, _trip_configuration=None, _trip_modules=None,
+               _trip_boundary=None, _trip_configuration=None, _trip_modules=None, _trip_confirmation_signer=None,
                _needs_boundary=None, _needs_configuration=None, _needs_modules=None,
                _feedback_boundary=None, _feedback_configuration=None, _feedback_modules=None,
                _run_display_reader=None, _run_display_configuration=None, _run_display_modules=None,
@@ -70,6 +70,8 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
     register_memory_routes(app, _memory_boundary, _memory_configuration)
     from .trip_routes import register_trip_routes
     register_trip_routes(app, _trip_boundary, _trip_configuration, _trip_modules)
+    from .trip_confirmation_routes import register_trip_confirmations
+    register_trip_confirmations(app, _trip_boundary, _trip_configuration, _trip_modules, _trip_confirmation_signer)
     from .needs_routes import register_needs_routes
     register_needs_routes(app, _needs_boundary, _needs_configuration, _needs_modules)
     from .feedback_routes import register_feedback_routes

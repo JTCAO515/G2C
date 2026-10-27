@@ -23,7 +23,7 @@ class ProviderUnknown(Exception):
 
 
 class ModelProvider(Protocol):
-    def stream(self, messages: list[dict]) -> Iterator[str]: ...
+    def stream(self, messages: list[dict], system: str | None = None) -> Iterator[str]: ...
 
 
 SYSTEM_PROMPT = (
@@ -39,10 +39,17 @@ class FakeProvider:
         self.calls = 0
         self.chunks_per_reply = chunks_per_reply
 
-    def stream(self, messages):
+    def stream(self, messages, system=None):
         self.calls += 1
         text = messages[-1]['content']
         chinese = any('一' <= ch <= '鿿' for ch in text)
+        if system is not None:  # structured draft request
+            items = (['第一天上午：故宫', '第一天下午：景山公园', '第二天：八达岭长城', '第三天上午：天坛']
+                     if chinese else ['Day 1 morning: Forbidden City', 'Day 1 afternoon: Jingshan Park',
+                                      'Day 2: Badaling Great Wall', 'Day 3 morning: Temple of Heaven'])
+            yield json.dumps({'title': '北京三日游' if chinese else 'Three days in Beijing', 'items': items},
+                             ensure_ascii=False)
+            return
         reply = (f'（本地模拟回复）收到：{text}。北京行程建议需要核实开放时间。' if chinese
                  else f'(local simulated reply) Received: {text}. Beijing plans need opening hours checked.')
         size = max(1, len(reply) // self.chunks_per_reply)
@@ -99,9 +106,9 @@ class DashScopeProvider:
             return httpx.Client(transport=self.transport, **options)
         return httpx.Client(verify=tls_context(), **options)
 
-    def stream(self, messages):
+    def stream(self, messages, system=None):
         body = {'model': self.config.model_id, 'stream': True, 'max_tokens': self.config.max_output_tokens,
-                'messages': [{'role': 'system', 'content': SYSTEM_PROMPT}, *messages]}
+                'messages': [{'role': 'system', 'content': system or SYSTEM_PROMPT}, *messages]}
         headers = {'Authorization': 'Bearer ' + self.config.api_key, 'Content-Type': 'application/json'}
         url = self.config.base_url + '/chat/completions'
         produced = 0

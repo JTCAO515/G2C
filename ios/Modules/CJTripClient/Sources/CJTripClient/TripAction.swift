@@ -5,7 +5,32 @@ public typealias TripActionKind = Components.Schemas.TripActionReceipt.kindPaylo
 public enum TripActionResult: Sendable {
     case confirmed(Components.Schemas.TripActionReceipt)
     case notObserved // Still unknown; never permission to resend.
+    /// No server receipt and the server-signed confirmation is past its expiry plus clock
+    /// margin, so this original action can never commit. Still not permission to resend it.
+    case expiredUncommitted
 }
+
+/// Host-granted capability for live Trip writes. Grant it only when the API host enforces
+/// server-signed confirmations (`POST /v1/trip-confirmations`); it carries no credential.
+public struct TripLiveWrites: Sendable {
+    public init() {}
+}
+
+/// Server-prepared original action awaiting the user's explicit confirmation.
+/// Preparing never writes a Trip; only `TripClient.confirm` submits these exact bytes.
+public struct TripPreparedAction: Sendable {
+    public let pending: TripPending
+    public let expiresAt: Int
+    let owner: UUID
+    let generation: UUID
+    let binding: TripBinding
+    public var proposal: Components.Schemas.TripProposalSnapshot { pending.proposal }
+    public var kind: TripActionKind { pending.kind }
+}
+
+/// Seconds of client/server clock difference tolerated before treating an expired
+/// confirmation as unable to commit, and kept free before expiry when confirming.
+let confirmationClockMargin = 60
 
 /// Frozen original action. No public initializer or confirmation-reference input exists.
 public struct TripPending: Codable, Sendable {
@@ -21,6 +46,24 @@ public struct TripPending: Codable, Sendable {
         self.actionID = actionID; self.kind = kind; self.proposal = proposal
         let encoder = JSONEncoder(); encoder.outputFormatting = [.withoutEscapingSlashes]
         originalUTF8 = try encoder.encode([actionID, kind.rawValue, proposal.proposal_id, proposal.candidate_hash, confirmationReference])
+    }
+    /// Exact server-prepared bytes (`[action_id, kind, proposal_id, candidate_hash, confirmation_ref]`).
+    init(serverBytes: Data, proposal: Components.Schemas.TripProposalSnapshot) throws {
+        let fields = try JSONDecoder().decode([String].self, from: serverBytes)
+        guard fields.count == 5, let kind = TripActionKind(rawValue: fields[1]) else { throw TripFailure.invalidResponse }
+        actionID = fields[0]; self.kind = kind; self.proposal = proposal; originalUTF8 = serverBytes
+        do { try validate() } catch { throw TripFailure.invalidResponse }
+    }
+    /// Expiry signed into a `tc1.<expires_at>.<mac>` confirmation reference, if any.
+    var confirmationExpiry: Int? {
+        guard let fields = try? JSONDecoder().decode([String].self, from: originalUTF8), fields.count == 5 else { return nil }
+        let parts = fields[4].split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 3, parts[0] == "tc1", (1...12).contains(parts[1].count),
+              let first = parts[1].utf8.first, (49...57).contains(first),
+              parts[1].utf8.allSatisfy({ (48...57).contains($0) }), parts[2].count == 64,
+              parts[2].utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+              let value = Int(parts[1]), value > 0 else { return nil }
+        return value
     }
     func validate() throws {
         try validateProposal(proposal)

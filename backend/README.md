@@ -35,8 +35,53 @@ TOKEN=$(uv run --locked python -B scripts/dev_auth.py token .local/dev-auth --su
 Flow: `PUT /v1/conversations?conversation_id=c1` → `POST /v1/messages` (application/octet-stream,
 MESSAGE-draft.1 JSON) → worker answers → `GET /v1/run-events?message_id=...` streams the answer.
 `conn.json` holds psycopg keyword arguments for a database you created; nothing here creates one.
+Trip draft: send with `creation_intent: "consider_trip"`; the worker publishes proposal `p-<run_id>`
+(`GET /v1/trip-proposals?proposal_id=...`), accept or reject with `POST /v1/trip-actions`
+(canonical `[action_id, kind, proposal_id, candidate_hash, confirmation_ref]`), then
+`GET /v1/trip-details?trip_id=...`. Real model check: `scripts/provider_smoke.py` (4 requests).
 `scripts/pg_suites.py e2e` runs the same flow automatically on a fresh private cluster.
 
 macOS note: Python 3.14 ignores `.pth` files carrying the `hidden` file flag. If imports
 such as `cj_api` suddenly fail after `uv sync`, run
 `chflags nohidden .venv/lib/python3.*/site-packages/_cj.pth`.
+
+## P2c signed Trip confirmation preparation
+
+`POST /v1/trip-confirmations` is additive. With an authenticated owner, send JSON
+`{action_id, kind, proposal_id, candidate_hash}` (`kind` is `accept` or `reject`).
+It returns the canonical proposal, `expires_at`, and `action_utf8_base64`: the exact
+original five-field TRIP action, containing a server-issued confirmation reference.
+Issuance does not write a Trip or record acceptance. The client must show that proposal,
+retain those exact action bytes, and submit them to the existing `/v1/trip-actions`
+only after the explicit user action. Unknown outcomes use `/v1/trip-action-receipts`
+with the original action ID; do not regenerate bytes or replace the ID to retry.
+
+The trusted host must explicitly supply the same `ConfirmationSigner` as issuer and
+TRIP transaction validator. Use a dedicated random key of at least 32 bytes per
+environment, supplied through an operator-approved secret mechanism, never a JWT,
+client session token or model key. No key is created/read by this implementation.
+
+```python
+from cj_trip.confirmation import ConfirmationSigner
+from cj_api.local_app import create_local_app
+
+signer = ConfirmationSigner(key=confirmation_key, lifetime_seconds=300)
+app = create_local_app(conninfo_path=conninfo_path, auth_dir=auth_dir,
+                       confirmation_signer=signer)
+```
+
+References bind the verified scope, original action ID/kind, proposal ID/content hash,
+expected version and expiry. The existing scope-locked transaction checks the proof,
+and rechecks expiry using database time after its final AUTH guard. A committed exact
+action replay returns the existing receipt even after expiry/key rotation; an uncommitted
+old proof is denied. Keep a stable key for the intended proof lifetime; provisioning,
+rotation and actual use with real identities require separate operator authorization.
+
+Compatibility: without a signer, the new endpoint returns 503. `app_from_environment`
+(the runnable local entry) always uses the signed path: it loads the dedicated key
+`trip-confirmation.key` from `CJ_LOCAL_AUTH_DIR` (created by `scripts/dev_auth.py init`,
+or `dev_auth.py confirmation-key DIR` for an existing directory; mode 0600, 32 random bytes)
+and refuses to start without it. Only `create_local_app`'s default keeps the permissive P2b
+callback, for existing tests; remove it once those tests use explicit signer composition.
+iOS live writes are granted only by a host that uses this signed entry. No migration or
+cloud configuration was changed.

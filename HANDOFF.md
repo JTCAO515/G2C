@@ -1,16 +1,16 @@
 # Project Handoff
 
-> Generated from `docs/handoff.json`. Edit the JSON source, then run
-> `npm run handoff:render` or the installed Skill's `scripts/handoff.js render --project .`.
-> This file is the fast human/agent entry point; repository files, git, and external systems remain authoritative.
+> Generated from `docs/handoff.json`; edit the JSON, not this file.
+> Run `python3 -B scripts/handoff.py render`, then `python3 -B scripts/handoff.py check`.
+> Repository files, Git, Issue and CI state remain authoritative.
 
 ## Five-Minute Takeover
 
-1. Run `pwd` and `git status --short --branch`; preserve unrelated work.
-2. Open the accepted Issue and read the mandatory files below in order.
-3. Confirm the objective, assumptions, frozen decisions, blockers, and rollback before editing.
-4. Re-run the most relevant recorded check or the resume command before extending the diff.
-5. Execute only the next action below; update the JSON, this file, and verification evidence before stopping.
+1. Run `git fetch origin` and `git status --short --branch`; preserve unrelated work.
+2. Read the mandatory files below in order.
+3. Check open PRs and their exact-head CI before extending the current slice.
+4. Execute only the next action; keep external-resource authorization separate.
+5. Update the JSON and render this file before stopping.
 
 ## Snapshot
 
@@ -18,71 +18,93 @@
 | --- | --- |
 | Objective | Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green. |
 | Status | active |
-| Phase | P2a walking skeleton (PR open) -> P2b draft to formal Trip |
-| Accepted Issue | CJ-009 / CJ-010 / CJ-002 (P2a); plan in docs/dispatch/P2-walking-skeleton.md |
+| Phase | P2c：#148 已合并；iOS 行程确认客户端切片待 CI/独立审查；App 开发会话组装与 MESSAGE 发送许可待做 |
+| Accepted Issue | CJ-015 / GitHub #20：服务端确认凭证、准备接口与原 TRIP 事务校验 |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T10:30:00Z |
+| Last updated | 2026-10-27T10:01:14Z |
 
 ## Active Work
 
-- P2a on branch feat/p2-walking-skeleton (PR pending CI).
-- V2 direction docs (ADR-0005, ADR-0006, docs/v2/shadow-mode.md) on branch docs/adr0005-proactive-fulfillment.
+- feat/p2c-ios-trip-confirm：本地入口强制签名、iOS prepare/confirm/对账与显式确认 UI（PR 待 CI 与独立审查）。
+- fix/ios-app-rpath（#149）：App 在 iOS 26 以下启动崩溃的修复，待独立审查。
 
 ## Accepted Assumptions
 
-- Static review only at main 8fac0dff5e50ce08c277b65f7322a4ea64d77e65; pytest and swift test were not run (UNRUN).
-- Inference to verify: delivery slowness comes mainly from process and in-repo composition overhead, not technical difficulty.
-- ADR-0002 technology stack (AgentScope, DBOS, ReMe, Supabase Auth) remains candidate, not verified in combination.
+- P2b 本地和真实 provider 结果为原作者报告，本轮未重复调用模型。
+- ADR-0002 组合候选状态不因壳构建通过而改变。
 
 ## Frozen Decisions
 
-- accepted: ADR-0001 product and user-control boundaries.
-- accepted: model qwen3.8-flash with Beijing endpoint profile (spikes/runtime/REPORT.md); real calls still UNRUN.
-- accepted (JT 2026-10-27): ADR-0004 delivery flow and repo hygiene, items 1-7.
-- superseded (JT 2026-10-27, later the same day): repository is now PRIVATE (switched and read back via gh); earlier public history may already be cloned or cached. Local-path removal stays in force.
-- accepted (JT 2026-10-27): evidence moves out of repo and in-repo sha256 pins are removed, both executed in P1; no history rewrite.
-- accepted (JT 2026-10-27): P2 scope Beijing single city, email OTP primary login, minimum iOS 17.
-- accepted (JT 2026-10-27): process simplification, one PR per Issue slice, CI green plus one independent review, trunk-based.
-- implemented (P1): single distribution `cj` keeps per-domain import names (cj_auth, ...) instead of renaming to cj.* subpackages.
-- implemented (P1): domain tables stay in schema public; cj holds the migration ledger. Moving tables into cj is open.
-- implemented (P1): historical evidence archived at tag evidence-archive-2026-10-27 (87120f9).
+- ADR-0001 产品与用户控制边界继续有效。
+- qwen3.8-flash 与北京端点已选定；P2b 原作者报告真实 smoke 4/4，本轮未重跑。
+- ADR-0004 已接受；单一 Python 发行包 cj，保留领域 import 名，不恢复同仓 hash pin 或 Git 导出依赖。
+- JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。
+- P2：北京、邮箱 OTP、最低 iOS 17。
+- JT 当前指令：Codex 实现/测试/交付，Claude 架构/规划/审查，JT 决策与外部资源。
+- ADR-0007（accepted，JT 2026-10-27）：CI 全部 job 阻塞；Codex 在不继承作者上下文的会话中审查精确 head 后合并，红线 PR 逐条写明追加必查项；JT 停点见 ADR-0007 第 3 条。
+- 历史证据归档 tag evidence-archive-2026-10-27；不改写历史。
+- JT 2026-10-27: PR #147 only uses Codex review instead of Claude; continue subsequent P2c work. This is not independent review and not blanket approval for later PRs.
 - accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).
 - accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending.
+
+## Architecture Contracts
+
+- contracts/api/openapi.json unchanged in P1.
+- backend/migrations/manifest.json: versions 1-10, sha256-checked up/down; applied versions must never be edited.
+- Single business authority and recovery semantics per ADR-0003 (proposed) remain the target for P2.
 
 ## Changed Files
 
 | Path | Reason |
 | --- | --- |
-| `backend/agent/cj_agent/` | ModelProvider (Fake, DashScope-compatible streaming) and RunWorker. |
-| `backend/cj_api/run_events_routes.py` | GET /v1/run-events SSE over the protected display snapshot. |
-| `backend/cj_api/local_app.py` | Local composition on real PostgreSQL with a local dev signing key. |
-| `backend/cj_api/message_routes.py, backend/message/cj_message/*` | PUT /v1/conversations; MESSAGE open_conversation and acknowledge. |
-| `contracts/api/openapi.json` | Add PUT /v1/conversations and GET /v1/run-events. |
-| `scripts/dev_auth.py, scripts/run_worker.py, scripts/pg_suites.py` | Local identity, worker process, e2e group. |
-| `docs/dispatch/P2-walking-skeleton.md, backend/README.md` | P2 plan and local run steps. |
+| `backend/cj_api/local_app.py, scripts/dev_auth.py` | 本地入口强制签名校验；专用确认 key 的生成与加载。 |
+| `backend/tests/test_local_entry_confirmation.py` | key 缺失/权限过宽/过短拒绝启动；签名入口可用。 |
+| `ios/Modules/CJTripClient/Sources/CJTripClient/*` | prepare/confirm、响应校验、TripLiveWrites、过期对账、两步确认 UI。 |
+| `ios/Modules/CJTripClient/Tests/CJTripClientTests/ConfirmationFlowTests.swift` | 确认流程与篡改负例。 |
+| `.github/workflows/ci.yml` | swift job 增加 CJTripClient 测试。 |
+| `ios/Modules/CJTripClient/README.md, backend/README.md, docs/dispatch/P2-walking-skeleton.md` | 切片说明、兼容与限制。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups incl. 7 provider tests (MockTransport) and new MESSAGE open/ack tests. | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups incl. e2e: zh/en streamed answers, Last-Event-ID resume without duplication, cross-user withholding, uninvited refusal, crash mid-answer -> unknown without resend. | — |
-| not-run | `scripts/run_worker.py --real (DashScope qwen3.8-flash)` | No key provisioned; operator step in the P2 dispatch. | — |
-| not-run | `GitHub Actions ci.yml` | Read from the P2a PR checks. | — |
+| pass | `scripts/test.py` | 56/56（含本地入口签名 5 项）。 | — |
+| pass | `scripts/pg_suites.py e2e` | 本地 PG 端到端通过（FakeProvider）。 | — |
+| pass | `swift test（ios/Modules/CJTripClient，Xcode 27.1）` | 61 项，含新增确认流程 5 项（篡改负例 7 种）。 | — |
+| pass | `xcodebuild App（iOS Simulator arm64，Xcode 27.1）` | 整 App 构建通过。 | — |
+| not-run | `模拟器端到端（开发 token → 草稿 → 准备 → 确认 → 正式行程）` | App 尚未组装开发会话与 TripClient。 | — |
+| not-run | `GitHub Actions ci.yml` | 以本切片 PR 检查为准。 | — |
 
 ## Blockers
 
-No blockers recorded.
+- 此新确认凭证 PR 尚需四 job CI 与独立审查或 JT 明确同意。
+- iOS 原动作持久化、确认 UI 和写入 transport 尚未接入；TripClient 的生产写入门禁保持关闭。
+- MESSAGE 发送许可/不可回退原动作证据尚未完成；OTP、真实模型 App 联调、真机亦未验收。
+
+## Risks
+
+- 新接口只签发审阅绑定，不证明用户已确认，不改正式行程；客户端必须保留原动作字节并显式确认后提交。
+- 旧 P2b 本地 permissive 确认路径为兼容保留，不是签名 P2c 激活路径；消费者迁移和回滚验证后再移除。
+- 签名 key 需独立、每环境至少 32 字节，稳定保留到预期凭证过期；本轮只使用测试 key，不从 JWT/模型凭据派生。
+- 未提交旧凭证在 key 轮换后被拒绝；原已提交精确动作可以返回原回执，未知结果不得重新签发来重试。
+- 生成客户端补齐正式来源里已有的 openConversation/streamRunEvents 声明；没有改变原业务接口或额外开放客户端权限。
+- 本地 API 测试使用 TestClient、真实私有 PG 和 FakeProvider，不是云或真机证据。
+
+## Operator Actions
+
+- 审查 feat/p2c-trip-confirmation 的精确 base/head；#147 的审查替代授权不视为本新 PR 自动批准。
+- 启用真实签名路径前须明确目标环境及独立 key 的安全注入/轮换清单并由 JT 授权；当前未执行凭据变更，也不要求把秘密贴入聊天。
+- 云 OTP/数据库、真实模型调用和真机操作按具体后续清单单独授权。
 
 ## Next Smallest Action
 
-- Action: After P2a merges: P2b - structured Beijing trip draft from the model, validated into a TRIP proposal, accepted via /v1/trip-actions, formal Trip read back.
-- Expected observation: e2e extended to proposal -> accept -> GET /v1/trips shows the formal version.
-- Resume command: `gh pr checks --repo JTCAO515/G2C`
+- Action: 独立审查本切片（feat/p2c-ios-trip-confirm）与 #149；合并后由 App 组装开发会话：开发 token 凭证回调、钥匙串密钥提供者、TripPendingStore、TripClient(liveWrites) 与 Shell 绑定，在 iOS 17.5 模拟器跑草稿→准备→确认→正式行程；之后再固定并实现 MESSAGE 发送许可。
+- Expected observation: 模拟器上完成一次中英文的草稿确认并读回正式行程；结果未知只能查原动作。
+- Resume command: `gh pr checks feat/p2c-ios-trip-confirm --repo JTCAO515/G2C`
 
 ## Rollback
 
-git revert the merge commit of this PR; documentation only, no data, credentials or external resources touched.
+revert 本确认凭证切片合并提交；没有迁移、云配置或数据变更。已有 Trip/actions 回执格式未变；默认旧本地入口继续兼容。
 
 ## Mandatory Reading Order
 
@@ -96,6 +118,5 @@ git revert the merge commit of this PR; documentation only, no data, credentials
 ## Integrity Check
 
 ```bash
-npm run handoff:check
-npm run docs:check
+python3 -B scripts/handoff.py check
 ```

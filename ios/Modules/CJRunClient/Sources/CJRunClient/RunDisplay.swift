@@ -4,6 +4,7 @@ import CJAPI
 import CJSession
 import CJMessageHTTP
 import OpenAPIRuntime
+import HTTPTypes
 
 public enum RunDisplayFailure: Error, Equatable, Sendable {
     case invalidConfiguration, invalidReference, unavailable, invalidResponse
@@ -53,6 +54,7 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
     fileprivate let owner: UUID
     fileprivate let epoch: UUID
     fileprivate let source: RunDisplaySource
+    fileprivate let streaming: Bool
     public nonisolated var customMirror: Mirror { Mirror(self, children: [:]) }
 }
 
@@ -70,6 +72,14 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
     private var prepared = false
     private var storedState: RunDisplayState = .unselected
     private var previous: RunDisplayValue?
+    private var storedStream: RunStreamProgress?
+
+    public var streamProgress: RunStreamProgress? {
+        guard let original = source else { return nil }
+        let token = epoch
+        guard valid(original, token) else { retireIfOwned(original, token); return nil }
+        return storedStream
+    }
 
     public convenience init(endpoint: MessageEndpoint, maximumMessageIDBytes: Int, maximumTextBytes: Int,
                             credentials: @escaping Credentials, liveReadTransport: NoRedirectTransport) throws {
@@ -105,7 +115,7 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
     /// Call synchronously for selection/source/account/auth changes, background and disappearance.
     /// Resuming requires a newly accepted source. Does not cancel the server RUN.
     public func invalidate() {
-        epoch = UUID(); source = nil; previous = nil; prepared = false; executing = false; storedState = .unselected
+        epoch = UUID(); source = nil; previous = nil; storedStream = nil; prepared = false; executing = false; storedState = .unselected
     }
     private func owns(_ original: RunDisplaySource, _ token: UUID) -> Bool { source === original && epoch == token }
     private func valid(_ original: RunDisplaySource, _ token: UUID) -> Bool {
@@ -121,14 +131,17 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
         guard valid(original, token) else { throw RunDisplayFailure.staleContext }
         guard !Task.isCancelled else { throw RunDisplayFailure.cancelled }
     }
-    public func prepareRead() -> RunDisplayWork? {
+    public func prepareRead() -> RunDisplayWork? { prepare(streaming: false) }
+    /// Explicit GET-only continuation; never resends a message or starts a model run.
+    public func prepareStream() -> RunDisplayWork? { prepare(streaming: true) }
+    private func prepare(streaming: Bool) -> RunDisplayWork? {
         guard !prepared, !executing, let original = source else { return nil }
         let token = epoch
         guard valid(original, token) else { retireIfOwned(original, token); return nil }
         // Reentrant validation may itself prepare work on the same source.
         guard !prepared, !executing, owns(original, token) else { return nil }
         epoch = UUID(); prepared = true; storedState = .loading
-        return RunDisplayWork(owner: owner, epoch: epoch, source: original)
+        return RunDisplayWork(owner: owner, epoch: epoch, source: original, streaming: streaming)
     }
     public func perform(_ work: RunDisplayWork?) async {
         guard let work, work.owner == owner, owns(work.source, work.epoch), prepared, !executing else { return }
@@ -136,11 +149,14 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
         let original = work.source, token = work.epoch
         do {
             try check(original, token)
-            let bearer = try await credentials(original.operation)
+            let bearer: String?
+            do { bearer = try await credentials(original.operation) }
+            catch { try check(original, token); throw RunDisplayFailure.credentialsUnavailable }
             try check(original, token)
             guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else {
                 throw RunDisplayFailure.credentialsUnavailable
             }
+            if work.streaming { try await receiveEvents(original, token, bearer: bearer) }
             let checked = RunReadTransport(underlying: transport, endpoint: endpoint, bearer: bearer,
                 originalMessageID: original.receipt.message_id, validate: { [self] in try check(original, token) })
             let client = Client(serverURL: endpoint.url, configuration: .memory, transport: checked)
@@ -152,8 +168,13 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
                 try validate(body.snapshot, original: original.receipt)
                 let value = RunDisplayValue(snapshot: body.snapshot, requestID: body.request_id)
                 if let previous { try validateProgress(body.snapshot, after: previous.snapshot) }
+                if work.streaming, let progress = storedStream {
+                    guard exact(body.snapshot.text, progress.text), body.snapshot.status.rawValue == progress.status else {
+                        throw RunDisplayFailure.inconsistentSnapshot
+                    }
+                }
                 try check(original, token)
-                previous = value; storedState = .loaded(value); executing = false
+                previous = value; storedStream = nil; storedState = .loaded(value); executing = false
             case .default(let status, let response):
                 _ = try response.body.json // Official BASE decoding; never publish raw server error text.
                 throw RunDisplayFailure.rejected(status: status)
@@ -164,9 +185,53 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
             let failure: RunDisplayFailure
             if Task.isCancelled || error is CancellationError { failure = .cancelled }
             else { failure = (error as? RunDisplayFailure) ?? .unavailable }
+            switch failure {
+            case .rejected, .credentialsUnavailable, .invalidResponse, .inconsistentSnapshot:
+                storedStream = nil
+            default: break // A transport interruption alone retains visibly partial text.
+            }
             storedState = .unavailable(failure); executing = false
         }
     }
+    private func receiveEvents(_ original: RunDisplaySource, _ token: UUID, bearer: String) async throws {
+        let prefix = storedStream?.text ?? previous?.snapshot.text ?? ""
+        var parser = try RunEventParser(text: prefix, maximumTextBytes: maxTextBytes,
+                                        maximumWireBytes: endpoint.maximumResponseBytes)
+        var components = URLComponents()
+        components.path = "/v1/run-events"
+        components.queryItems = [URLQueryItem(name: "message_id", value: original.receipt.message_id)]
+        // Query decoders treat a literal '+' as a space; opaque IDs must survive exactly.
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        guard let path = components.string else { throw RunDisplayFailure.invalidReference }
+        var request = HTTPRequest(method: .get, scheme: nil, authority: nil, path: path)
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.accept] = "text/event-stream"
+        request.headerFields[HTTPField.Name("Last-Event-ID")!] = String(prefix.utf8.count)
+        try check(original, token)
+        let (response, body) = try await transport.send(request, body: nil, baseURL: endpoint.url,
+                                                         operationID: "streamRunEvents")
+        try check(original, token)
+        guard response.status.code == 200 else { throw RunDisplayFailure.rejected(status: response.status.code) }
+        let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
+        let controls = response.headerFields.filter { $0.name == .cacheControl }
+        let media = response.headerFields.filter { $0.name == .contentType }
+        guard traces.count == 1, UUID(uuidString: traces[0].value) != nil,
+              controls.count == 1, controls[0].value.lowercased() == "no-store",
+              media.count == 1, media[0].value.split(separator: ";").first?.lowercased() == "text/event-stream",
+              let body else { throw RunDisplayFailure.invalidResponse }
+        for try await chunk in body {
+            try check(original, token)
+            if let progress = try parser.append(chunk) {
+                try check(original, token)
+                storedStream = progress
+            }
+        }
+        try check(original, token)
+        try parser.finish()
+        // SSE has no RUN highwater or complete receipt binding. The existing canonical
+        // snapshot GET below verifies both before any final successful display state.
+    }
+
     private func validate(_ value: Components.Schemas.RunDisplaySnapshot, original: Components.Schemas.MessageReceipt) throws {
         guard exact(value.message_id, original.message_id), exact(value.conversation_id, original.conversation_id),
               exact(value.generation, original.generation), exact(value.run_id, original.run_id),

@@ -2,6 +2,7 @@
 
 - 状态：**accepted**（JT 于 2026-10-27 逐项确认，见“JT 决定”一节；技术效果仍按各 Issue 验证）
 - 日期：2026-10-27
+- 修订：第 6 条的合并与审查条件已由 [ADR-0007](0007-issue-closure-workflow.md) 第 3 条替代（2026-10-27）；其余各条继续有效。
 - 依据：main `8fac0dff5e50ce08c277b65f7322a4ea64d77e65` 的静态审查；未运行 pytest / swift test（UNRUN）
 - 关联：[ADR-0002](0002-runtime-candidates.md)、[ADR-0003](0003-state-and-recovery.md)、[CJ-005](https://github.com/JTCAO515/G2C/issues/5)、[交接](../handoff.json)、[P0 派工单](../dispatch/P0-repo-hygiene.md)
 
@@ -36,7 +37,8 @@
 ## JT 决定（2026-10-27）
 
 1. 仓库可见性：**保持 PUBLIC**。因此去本机路径（第 4 条）为必做项；许可证与产品法律条款仍待定，公开不等于授予开源许可。
-   - **修订（JT 2026-10-27 稍后）**：仓库已改为 **PRIVATE**，用于存放 V2 商业决策（[ADR-0005](0005-proactive-fulfillment.md)、[ADR-0006](0006-membership-and-memory-retention.md)）。去本机路径仍然执行；此前公开期间的历史可能已被 clone 或缓存；Actions 分钟数开始计费。
+   - **修订（JT 2026-10-27 稍后）**：仓库已改为 **PRIVATE**，用于存放 V2 商业决策（[ADR-0005](0005-proactive-fulfillment.md)、[ADR-0006](0006-membership-and-memory-retention.md)）。去本机路径仍然执行；此前公开期间的历史可能已被 clone 或缓存。
+   - **再修订（JT 2026-10-27 更晚）**：仓库又改回 **PUBLIC**（gh 读回）。ADR-0005、ADR-0006 的 V2 商业决策因此公开可见；标准 runner 的 Actions 不再计费；去本机路径与秘密规则继续有效，许可证仍待定。
 2. **接受**第 3 条（证据出仓）与第 5 条（删除同仓 hash pin）。既有已跟踪证据的清理与 pin 删除一并在 P1 执行（pin 删除后 hash 约束随之解除），仍不改写 Git 历史。
 3. **接受** P2 范围值：单城市 **北京**、主登录 **邮箱一次性登录（OTP）**、最低 **iOS 17**。真实可达性、SDK 能力与设备覆盖仍按 CJ-004/007/026 验证。
 4. **接受**第 6 条流程精简。

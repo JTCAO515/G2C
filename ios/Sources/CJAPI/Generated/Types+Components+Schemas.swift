@@ -7305,5 +7305,192 @@ extension Components {
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/ConversationOpenResponse`.
+        public struct ConversationOpenResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConversationOpenResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/ConversationOpenResponse/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ConversationOpenResponse/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ConversationOpenResponse/last_sequence`.
+            public var last_sequence: Swift.Int
+            /// Creates a new `ConversationOpenResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - last_sequence:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                last_sequence: Swift.Int
+            ) {
+                self.request_id = request_id
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.last_sequence = last_sequence
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case conversation_id
+                case generation
+                case last_sequence
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.last_sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .last_sequence
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "conversation_id",
+                    "generation",
+                    "last_sequence"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TripConfirmationRequest`.
+        public struct TripConfirmationRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationRequest/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationRequest/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case accept = "accept"
+                case reject = "reject"
+            }
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationRequest/kind`.
+            public var kind: Components.Schemas.TripConfirmationRequest.kindPayload
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationRequest/proposal_id`.
+            public var proposal_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationRequest/candidate_hash`.
+            public var candidate_hash: Swift.String
+            /// Creates a new `TripConfirmationRequest`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - kind:
+            ///   - proposal_id:
+            ///   - candidate_hash:
+            public init(
+                action_id: Swift.String,
+                kind: Components.Schemas.TripConfirmationRequest.kindPayload,
+                proposal_id: Swift.String,
+                candidate_hash: Swift.String
+            ) {
+                self.action_id = action_id
+                self.kind = kind
+                self.proposal_id = proposal_id
+                self.candidate_hash = candidate_hash
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case kind
+                case proposal_id
+                case candidate_hash
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.kind = try container.decode(
+                    Components.Schemas.TripConfirmationRequest.kindPayload.self,
+                    forKey: .kind
+                )
+                self.proposal_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .proposal_id
+                )
+                self.candidate_hash = try container.decode(
+                    Swift.String.self,
+                    forKey: .candidate_hash
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "kind",
+                    "proposal_id",
+                    "candidate_hash"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TripConfirmationResponse`.
+        public struct TripConfirmationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// Exact canonical original action bytes. Persist unchanged; submit only on explicit user confirmation. Unknown outcomes require querying the original action ID, never reissuing replacement bytes.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationResponse/action_utf8_base64`.
+            public var action_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationResponse/expires_at`.
+            public var expires_at: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/TripConfirmationResponse/proposal`.
+            public var proposal: Components.Schemas.TripProposalSnapshot
+            /// Creates a new `TripConfirmationResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - action_utf8_base64: Exact canonical original action bytes. Persist unchanged; submit only on explicit user confirmation. Unknown outcomes require querying the original action ID, never reissuing replacement bytes.
+            ///   - expires_at:
+            ///   - proposal:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                action_utf8_base64: Swift.String,
+                expires_at: Swift.Int,
+                proposal: Components.Schemas.TripProposalSnapshot
+            ) {
+                self.request_id = request_id
+                self.action_utf8_base64 = action_utf8_base64
+                self.expires_at = expires_at
+                self.proposal = proposal
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case action_utf8_base64
+                case expires_at
+                case proposal
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.action_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_utf8_base64
+                )
+                self.expires_at = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expires_at
+                )
+                self.proposal = try container.decode(
+                    Components.Schemas.TripProposalSnapshot.self,
+                    forKey: .proposal
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "action_utf8_base64",
+                    "expires_at",
+                    "proposal"
+                ])
+            }
+        }
     }
 }

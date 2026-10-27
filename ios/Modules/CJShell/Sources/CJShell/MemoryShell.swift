@@ -37,7 +37,7 @@ struct MemoryShell: View {
         switch route {
         case .language:
             Form {
-                Picker(language.text("Language", "语言"), selection: Binding(get: { state.language }, set: state.selectLanguage)) {
+                Picker(language.text("Language", "语言"), selection: Binding(get: { state.language }, set: { state.selectLanguage($0) })) {
                     Text("English").tag(ShellLanguage.english)
                     Text("简体中文").tag(ShellLanguage.chinese)
                 }.pickerStyle(.inline)

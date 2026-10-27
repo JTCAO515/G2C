@@ -68,11 +68,15 @@ class ProposalChecks(unittest.TestCase):
         frozen=['contracts/api/openapi.json','scripts/generate.sh']
         original=subprocess.check_output(['git','-C',str(ROOT),'show',BASE+':'+frozen[1]])
         self.assertEqual((ROOT/frozen[1]).read_bytes(),original,frozen[1])
-        # The formal contract may gain unrelated paths; every Trip schema must stay exactly as at BASE.
+        # Existing V1 schemas stay byte-for-byte equivalent. P2c adds only the
+        # confirmation envelopes; this still forbids registering the V2 proposal.
         formal=json.loads((ROOT/frozen[0]).read_text())
         base=json.loads(subprocess.check_output(['git','-C',str(ROOT),'show',BASE+':'+frozen[0]]))
         trip=lambda spec:{k:v for k,v in spec['components']['schemas'].items() if k.startswith('Trip')}
-        self.assertEqual(trip(formal),trip(base))
+        original_trip=trip(base);current_trip=trip(formal)
+        self.assertEqual(set(current_trip)-set(original_trip),
+                         {'TripConfirmationRequest','TripConfirmationResponse'})
+        self.assertEqual({name:current_trip[name] for name in original_trip},original_trip)
         v1=Draft202012Validator({'$ref':'#/components/schemas/TripDocument','components':formal['components']})
         v1.validate(self.fixtures['v1_original'])
         self.assertFalse(v1.is_valid(self.fixtures['base']))

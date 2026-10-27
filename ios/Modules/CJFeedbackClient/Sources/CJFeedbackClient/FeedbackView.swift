@@ -19,7 +19,7 @@ public struct FeedbackView: View {
                 TextField(text("Expected result (optional)", "期望结果（可选）"), text: Binding(get: { model.expectation }, set: { model.edit(problem: model.problem, expectation: $0) }), axis: .vertical)
                     .lineLimit(2...6).disabled(!model.canEdit).accessibilityIdentifier("feedback.expectation")
                 if model.context != nil && model.original == nil {
-                    Toggle(text("Associate this message", "关联当前消息"), isOn: Binding(get: { model.includeContext }, set: model.associateContext))
+                    Toggle(text("Associate this message", "关联当前消息"), isOn: Binding(get: { model.includeContext }, set: { model.associateContext($0) }))
                         .disabled(!model.canEdit).accessibilityIdentifier("feedback.associate")
                     Text(text("Only message and optional run references are sent. The server checks access.", "仅传送消息与可选运行引用，由服务器核验访问权限。"))
                         .font(.footnote)

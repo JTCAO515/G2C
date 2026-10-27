@@ -4,7 +4,7 @@ JT 已授权正式开发；以下协作约定已启用。PR #36 文档基线已�
 
 ## 角色与写权
 
-> **2026-10-27 起由 [ADR-0004](adr/0004-delivery-flow-and-repo-hygiene.md) 收敛（accepted）：** 交接源改为仓库内 [docs/handoff.json](handoff.json) / [HANDOFF.md](../HANDOFF.md)；一个 PR 对应一个 Issue 切片，CI 绿 + 一次独立 Review 即合并，trunk-based，不再经 integration 分支中转。下文角色表保留为历史协作记录，与 ADR-0004 冲突处以 ADR-0004 为准。
+> **2026-10-27 起由 [ADR-0004](adr/0004-delivery-flow-and-repo-hygiene.md) 收敛（accepted）：** 交接源改为仓库内 [docs/handoff.json](handoff.json) / [HANDOFF.md](../HANDOFF.md)；一个 PR 对应一个 Issue 切片，CI 绿 + 一次独立 Review 即合并，trunk-based，不再经 integration 分支中转。合并与审查条件随后由 [ADR-0007](adr/0007-issue-closure-workflow.md) 改为审查分级与关票流程。下文角色表保留为历史协作记录，与 ADR-0004 / ADR-0007 冲突处以后者为准。
 
 职责链：**JT → Dots → 唯一 Main → 常驻 Testing / Review / Publish + 独立执行子线程**。所有新线程必须归 Codex **CJ Agent** 项目，不能在旧 VP 项目研发。
 
