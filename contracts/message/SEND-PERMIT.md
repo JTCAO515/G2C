@@ -81,7 +81,7 @@
 
 动作约束：
 
-- `resubmit_original`：只允许原 `message_id` 和原字节。从存储恢复的动作必须先经用户明确确认；本进程内已越过发送意图的动作可以自动重新提交。
+- `resubmit_original`：只允许原 `message_id` 和原字节。从存储恢复的动作必须先经用户明确确认；本进程内已越过发送意图的动作可以自动重新提交。重新提交收到 `INPUT_CONFLICT`（`message_id` 已在别的会话用过）时，按 `integrity_error` 处理。
 - `not_accepted`：之后只能由用户发起新消息，换新 `message_id`，并以当前会话头为预期值。
 - `integrity_error`、`resync_required`：停止该会话的发送。`resync_required` 只是防御性分支，不能用来检测服务端备份恢复。服务端恢复的处理见 ADR-0008 第 6 条：恢复后关闭全部旧会话。
 

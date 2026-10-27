@@ -68,7 +68,7 @@
     {
       "command": "独立对抗审查 PR #173",
       "status": "pass",
-      "summary": "第一轮 REQUEST CHANGES 9 项（状态读取原子性、head=null 来源、解析器拆分与消费影响表、服务端恢复规则、恢复动作需用户确认、预期值来源与第二道门、回执限定会话、样例、范围）已在 ADR 与契约中修正，待复审。",
+      "summary": "第一轮 REQUEST CHANGES 9 项已修正；复审 APPROVE 3d982d9；4 项非阻断建议已在后续提交补入（恢复动作确认负例、跨会话 message_id 冲突、服务端恢复文案、本记录状态）。",
       "artifact": "https://github.com/JTCAO515/G2C/pull/173"
     }
   ],
