@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T13:40:00Z",
+  "lastUpdated": "2026-10-27T14:20:00Z",
   "currentPhase": "M1 主链路闭环（模拟器 L1）：Issue 按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 已关闭（PR #172），下一张为 #151 S0 Part 2/2。",
   "status": "active",
   "objective": "M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。",
@@ -56,7 +56,7 @@
     {
       "command": "uv run --locked python -B scripts/test.py",
       "status": "pass",
-      "summary": "57/57，含 check_send_permit.py 8 项。",
+      "summary": "57/57，含 check_send_permit.py 10 项（判定表 10 条、请求体 2 正 10 负）。",
       "artifact": null
     },
     {
@@ -64,6 +64,12 @@
       "status": "pass",
       "summary": "通过。",
       "artifact": null
+    },
+    {
+      "command": "独立对抗审查 PR #173",
+      "status": "pass",
+      "summary": "第一轮 REQUEST CHANGES 9 项（状态读取原子性、head=null 来源、解析器拆分与消费影响表、服务端恢复规则、恢复动作需用户确认、预期值来源与第二道门、回执限定会话、样例、范围）已在 ADR 与契约中修正，待复审。",
+      "artifact": "https://github.com/JTCAO515/G2C/pull/173"
     }
   ],
   "blockers": [

@@ -36,9 +36,10 @@
 
 每条新消息的请求体都必须带上客户端**从服务端读到的**预期会话头，即 `expected_generation` 和 `expected_sequence`。服务端在同一事务里按下面顺序判断：
 
-1. 按 `message_id` 查已有回执。
+1. 按 `message_id` 查已有回执，不论所属会话是否仍处于活动状态。
    - 同字节：返回原回执（200）。
    - 不同字节：返回 409 `INPUT_CONFLICT`。
+   - **有意的行为变化**：现有 `Service.receive` 对已关闭会话的同字节重放返回 unavailable，改为返回原回执。
 2. 会话不存在、属于他人或已关闭：沿用现有的 unavailable 语义，不暴露是哪种情况。
 3. 当前会话头不等于预期值：返回 409 `SEQUENCE_CONFLICT`，`recovery = reconcile_original`。
 4. 等于预期值：按 `sequence = last_sequence + 1` 接收，同一事务写回执和投递义务。
@@ -49,14 +50,18 @@
 - 已在途的旧请求和新请求带着同一个预期值，只有一条能成功。
 - 会话头一旦越过 `s`，带 `s` 的请求就**永远**不会再被接受。这是判断“结果未知”终态的依据，见第 3 条。
 
-### 2. 发送状态读取：原子返回回执和会话头
+### 2. 发送状态读取：加锁后一次读出回执和会话头
 
-新增只读接口 `GET /v1/message-send-status?conversation_id=&message_id=`（`message_id` 可省）。它在**同一个读事务**里返回：
+新增只读接口 `GET /v1/message-send-status?conversation_id=&message_id=`（`message_id` 可省）。
 
-- `receipt`：按当前作用域查 `message_id`，没有则为 `null`；
-- `head`：会话头，会话不可用时为 `null`。
-
-二者必须来自同一快照。如果分两次读，“先读回执为空、再读会话头已前进”会把一条刚刚被接受的消息误判为“永不接受”。
+- **与接收互斥**：先取作用域行锁（`lock_scope()`，`FOR UPDATE`），再读回执和会话头，同一个事务内完成。
+  - 现有连接的隔离级别是 `READ COMMITTED`（`postgres.py`），同一事务里的两条语句可能看到不同快照，只靠“同一事务”不够。
+  - 如果不加锁，会出现这样的竞态：先读回执为空 → M 提交 → 再读会话头已越过 `s`。M 会被误判为“永不接受”，用户再发一次，就成了两条消息。
+- **回执**：按当前作用域查 `message_id`，并且**只有** `receipt.conversation_id` 等于所查的 `conversation_id` 时才返回，否则为 `null`。回执查询不依赖会话是否处于活动状态。
+- **会话头**：只有在加锁读取中**明确确认**该作用域没有这个 `conversation_id` 的活动会话行时，才返回 `head = null`。
+  - 作用域行缺失、行完整性失败、存储错误、身份变化等其他任何失败，都必须是非 200 响应。现有映射是 503 `MESSAGE_UNAVAILABLE` / `ACCESS_UNKNOWN`，`outcome = unknown`。
+  - 客户端收到非 200，保持“未知”，稍后重读，不能判成终态。
+- **会话关闭单向**：`active` 只能从 `true` 变为 `false`。#163 用数据库触发器（新迁移）强制这一点。现有测试中把会话重新置为活动的写法（例如 `backend/feedback/tests/test_sources.py`）要改为新建会话。
 
 ### 3. 结果未知的对账语义（客户端判定表）
 
@@ -64,20 +69,27 @@
 
 | 读取结果 | 判定 | 客户端动作 |
 |---|---|---|
-| `receipt` 非空且 `input_sha256` 与原字节一致 | **已接收** | 显示回执；后续运行状态由 RUN 查询 |
+| `receipt` 非空且 `input_sha256` 与原字节一致（`head` 为任意值，包括 `null`） | **已接收** | 显示回执；后续运行状态由 RUN 查询 |
 | `receipt` 非空但哈希不一致 | **完整性错误** | 停止该会话的发送，报告；不重发 |
 | `receipt = null`，`head = null` | **未接收（终态）**：会话已不可用，M 永远不会被接受 | 标记未发送，保留原文本供用户另行处理 |
 | `receipt = null`，`head.generation ≠ g` | **未接收（终态）** | 同上 |
 | `receipt = null`，`head.last_sequence > s` | **未接收（终态）**：位置已被别的消息占用 | 同上；先刷新历史，再由用户决定是否重新发送 |
 | `receipt = null`，`head = (g, s)` | **仍可接收** | 只允许用**原 `message_id` 和原字节**重新提交；结果只有两种，见表下 |
-| `receipt = null`，`head.last_sequence < s` | **服务端回退**（只可能来自服务端备份恢复） | 停止该会话的发送，进入 `resync_required`，按 L2 验证票 [#30](https://github.com/JTCAO515/G2C/issues/30) 处理 |
+| `receipt = null`，`head.last_sequence < s` | **服务端状态异常** | 停止该会话的发送，进入 `resync_required`。这是防御性分支，不能把它当作服务端恢复的检测手段，见第 6 条 |
 
-“仍可接收”时用原 `message_id`、原字节重新提交，结果只有两种：
+“仍可接收”时，谁可以重新提交：
+
+- **本进程内**已经越过发送意图（用户点了发送）的动作：可以自动重新提交。
+- **从存储恢复**的动作（`staged` 被改成 `queryRequired`）：必须先经用户明确确认，才能重新提交。快照可能被回滚到一个用户早已撤回或改写、但从未发出的动作，自动重新提交会把它真实发出去。
+
+用原 `message_id`、原字节重新提交，结果只有两种：
 
 - 被接受（原请求从未到达）；
 - 返回原回执（原请求已经先到达）。
 
 不存在第三种结果。这不是“换 ID 重发”，也不重建输入，与 CJ-009“不自动生成新消息 ID 重发未知请求”一致。
+
+“未接收”指在**当前 generation** 下未接收。generation 目前每个会话固定不变：主键是 `(scope, conversation_id)`，代码里没有更新它的路径，回执表外键也阻止轮换。将来如果清空历史会轮换 generation，旧预期值随之失效，CAS 仍然成立。
 
 “未接收（终态）”之后，用户可以把原文本作为**新消息**发送：这时用新的 `message_id`，以当前会话头为预期值。这是用户的新动作，不是自动重发。
 
@@ -110,7 +122,7 @@
 | App 重启，或进程内状态丢失 | 本地动作只是缓存；未结案的动作按第 3 条用发送状态对账 |
 | 客户端快照回滚或备份恢复，旧动作丢失 | 丢失的动作如果已被接受，会出现在历史里，会话头也已前进，新发送会拿到新的预期值；如果没被接受，它的在途请求最多和新请求竞争同一个位置，只有一条成功 |
 | 消息密钥丢失或轮换 | 等同于本地数据丢失，同上；密钥不参与发送权威判定 |
-| 服务端备份恢复（会话头回退） | 不在 M1 范围；客户端检测到 `head.last_sequence` 小于已知回执序号时停止发送，进入 `resync_required`（L2 → [#30](https://github.com/JTCAO515/G2C/issues/30)） |
+| 服务端备份恢复（会话头回退） | 客户端**不能**可靠检测：恢复点可能恰好等于某条在途消息的预期值。因此冻结一条运维规则：服务端从备份恢复后，在重新开放写入之前，必须关闭恢复点之前存在的全部会话（`active = false`），用户在新会话里继续。这样所有在途的预期值都会失效，CAS 继续成立。不在 M1 范围，由 L2 验证票 [#30](https://github.com/JTCAO515/G2C/issues/30) 验证 |
 
 ### 7. App 侧激活条件（替代 ACTIVATION-GATE.md 的“永不激活”）
 
@@ -119,10 +131,18 @@
 1. **构建与会话**
    - M1 阶段只在 DEBUG 模拟器、显式开发会话下可用，条件与 #172 的 Trip 宿主相同。
    - Release 和真机保持关闭，直到 CJ-007 [#8](https://github.com/JTCAO515/G2C/issues/8) 的真实账号绑定达到 L2，并由 JT 批准。
-2. **请求体**：必须是 `MESSAGE-send.1`。预期会话头来自本进程内、同一绑定下的一次发送状态读取；本地快照里的会话头不能当作预期值。
+2. **请求体与预期值**
+   - 请求体必须是 `MESSAGE-send.1`。
+   - 预期会话头只有两个合法来源，且都要在本进程内、同一绑定下取得：
+     - 一次发送状态读取；
+     - 本会话上一条消息的回执 `(generation, sequence)`，可以直接作为下一条的预期值，不需要多一次往返。
+   - 本地快照里的会话头不能当作预期值。收到 `SEQUENCE_CONFLICT` 后，必须重读发送状态。
 3. **先结旧案**：同一会话里本地已知的未结案动作，先按第 3 条结案，然后才能暂存新消息。
 4. **一次性许可**：保留 `FRESH-AUTHORIZATION.md` 的进程内一次性许可。从存储加载的 `staged` 仍然改成 `queryRequired`。`queryRequired` 和 `notObserved` 都只能先读发送状态，判定为“仍可接收”后才能用原字节重新提交。
-5. **测试通道不变**：`interceptedTestTransport` 仍只用于测试，不是生产激活路径。`liveReadTransport` 改为“带预期会话头的提交可用”，其余提交仍在取凭据之前被拒绝。
+5. **两道门都只为消息提交打开**：
+   - `liveReadTransport` 只对 `POST /v1/messages`、并且请求体是 `MESSAGE-send.1` 的提交开放，其余提交仍在取凭据之前被拒绝。
+   - `NoRedirectTransport` 是 URLSession 发出前的第二道门，并且被多个模块共用。它只能对这一个路径放行 POST，其他模块的 POST 保持拒绝。
+   - `interceptedTestTransport` 仍只用于测试，不是生产激活路径。
 
 #164 负责按本条改写 `ACTIVATION-GATE.md`，并为每个条件写负例测试。
 
@@ -130,20 +150,27 @@
 
 - **请求体版本**
   - 新增 `MESSAGE-send.1`：在 `MESSAGE-draft.1` 的字段基础上，加 `expected_generation`（字符串）和 `expected_sequence`（≥ 0 的整数）。
-  - `MESSAGE-draft.1` 的 POST 撤回：新消息和重放一律返回 400 `INVALID_INPUT`。目前没有生产数据，也没有任何客户端真实发送过（App 的 POST 门禁一直关闭），所以没有处于“结果未知”的 draft.1 动作需要兼容。
-  - 已存的 draft.1 回执照常可以通过历史和回执查询读取。
+  - **解析器分成两个**：
+    - **写入解析器**（`POST /v1/messages`）只接受 `MESSAGE-send.1`。`MESSAGE-draft.1` 的 POST 撤回，新消息和重放都返回 400 `INVALID_INPUT`。目前没有生产数据，App 的 POST 门禁也一直关闭，所以不存在处于“结果未知”的 draft.1 动作。
+    - **存储行解析器**同时接受 `MESSAGE-draft.1` 和 `MESSAGE-send.1`。它服务于历史读取、回执查询和记忆任务，这些读取必须继续解码已存的 draft.1 行和新的 send.1 行。
 - **新错误码**：409 `SEQUENCE_CONFLICT`，`category = conflict`，`outcome = failed`，`recovery = reconcile_original`。沿用现有 `ErrorInfo` 枚举，不新增枚举值。
 - **新接口**：第 2 条的发送状态读取。
-- **数据库**：不需要新迁移。`generation`、`last_sequence`、作用域行锁和关闭语义都已存在。
+- **数据库**：新增一个迁移，只加触发器，强制 `cj_message_chat.active` 只能从 `true` 变为 `false`。`generation`、`last_sequence` 和作用域行锁都已存在，不需要改表结构。
 - `contracts/api/openapi.json` 由 #163 按本 ADR 更新。#163 的允许修改范围相应加入该文件和生成的客户端代码。
 
-消费影响表：
+消费影响表（#163、#164 逐项处理，PR 里逐项列出结果）：
 
-| 消费者 | 影响 | 处理 |
+| 消费者 | 用法 | 影响与处理 |
 |---|---|---|
-| iOS `CJMessageClient`（POST 一直关闭） | 无真实流量 | #164 实现 `MESSAGE-send.1` 与发送状态读取 |
-| 后端测试与本地端到端脚本（使用 draft.1 POST） | 会失败 | #163 一并改成 `MESSAGE-send.1` |
-| `contracts/message/model.py` 草案模型 | 仍描述 draft.1 | 保留为历史草案；`MESSAGE-SEND@1` 以本 ADR 和 SEND-PERMIT.md 为准 |
+| `backend/message/cj_message/domain.py`：`Command.parse` | 写入与读取共用 | 拆成写入解析器和存储行解析器（见上） |
+| `domain.py`：`message_history` | 解码存储原字节 | 改用存储行解析器 |
+| `backend/message/cj_message/auth_boundary.py`：`query_message`（`GET /v1/message-receipts`） | 解码存储原字节 | 改用存储行解析器 |
+| `backend/memory_jobs/cj_memory_jobs/codec.py` | 解码存储原字节 | 改用存储行解析器 |
+| `scripts/check_ios_trip_confirm.py`、`scripts/check_run_stream.py` | draft.1 POST | 改为先读发送状态，再发 send.1 |
+| `contracts/message/check.py`、`schema.json`、`model.py` | draft.1 草案检查（在 `scripts/test.py` 门禁里） | 保留为 draft.1 历史草案检查，不再代表发送路径；发送路径由 `check_send_permit.py` 检查 |
+| `backend/agent`、`backend/feedback`、`backend/run`、`backend/memory_jobs`、`backend/cj_api` 下的测试 | 构造 draft.1 POST | 改为 send.1；`backend/feedback/tests/test_sources.py` 不能再把会话重新置为活动 |
+| iOS `CJMessageClient`（POST 一直关闭；`TransportTests.swift` 等） | draft.1 请求体构造 | #164 改为 send.1 和发送状态读取 |
+| iOS `CJUsageClient` 测试 | 用 draft.1 请求体作为夹具 | 更新夹具 |
 
 ## 被否决的方案
 
@@ -156,7 +183,7 @@
 - **已确认事实**：第“背景”节列出的仓库证据。
 - **用户决策**：待 JT 批准本 ADR（ADR 修改属于 ADR-0007 第 3 条的停点）。
 - **待验证假设**：
-  - 作用域锁加 CAS 在并发下只接受一条消息，由 #163 的 PG 并发测试证明；
+  - 作用域锁加 CAS 在并发下只接受一条消息，加锁的发送状态读取不会出现“回执为空、会话头已越过 s”，二者由 #163 的 PG 并发测试证明；
   - 新可选字段对旧解码器的影响，由 #163 和 #164 验证。
 - **Claude 的推断**：单个会话串行发送的限制对 M1 的聊天体验没有影响。多设备同时在同一会话发送时，后发的一方会收到冲突，需要刷新后重发；这与 `docs/contracts.md` 里“同聊天顺序”的约定一致。
 

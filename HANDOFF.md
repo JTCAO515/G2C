@@ -21,7 +21,7 @@
 | Phase | M1 主链路闭环（模拟器 L1）：Issue 按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 已关闭（PR #172），下一张为 #151 S0 Part 2/2。 |
 | Accepted Issue | M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T13:40:00Z |
+| Last updated | 2026-10-27T14:20:00Z |
 
 ## Active Work
 
@@ -68,8 +68,9 @@
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 57/57，含 check_send_permit.py 8 项。 | — |
+| pass | `uv run --locked python -B scripts/test.py` | 57/57，含 check_send_permit.py 10 项（判定表 10 条、请求体 2 正 10 负）。 | — |
 | pass | `python3 -B scripts/handoff.py check` | 通过。 | — |
+| pass | `独立对抗审查 PR #173` | 第一轮 REQUEST CHANGES 9 项（状态读取原子性、head=null 来源、解析器拆分与消费影响表、服务端恢复规则、恢复动作需用户确认、预期值来源与第二道门、回执限定会话、样例、范围）已在 ADR 与契约中修正，待复审。 | https://github.com/JTCAO515/G2C/pull/173 |
 
 ## Blockers
 

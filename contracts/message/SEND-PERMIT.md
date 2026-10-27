@@ -29,9 +29,11 @@
 
 所有拒绝都返回 400 `INVALID_INPUT`。
 
+上面是**写入解析器**的规则。**存储行解析器**（历史读取、回执查询、记忆任务）同时接受 `MESSAGE-draft.1` 和 `MESSAGE-send.1` 的已存原字节。
+
 服务端判定顺序：
 
-1. **按 `message_id` 查回执**：同字节返回 200 和原回执；不同字节返回 409 `INPUT_CONFLICT`。
+1. **按 `message_id` 查回执**，不论所属会话是否仍处于活动状态：同字节返回 200 和原回执；不同字节返回 409 `INPUT_CONFLICT`。已关闭会话的同字节重放因此也返回原回执（相对现有实现的有意变化）。
 2. **会话不可用**（不存在、他人、已关闭）：返回现有 unavailable 响应，不区分原因。
 3. **会话头不等于预期值**：返回 409 `SEQUENCE_CONFLICT`，`category = conflict`，`outcome = failed`，`recovery = reconcile_original`。
 4. **相等**：接收，`sequence = expected_sequence + 1`，回执、原字节和投递义务在同一事务内写入。
@@ -55,12 +57,13 @@
 }
 ```
 
+读取方式：先取作用域行锁（`FOR UPDATE`），再在同一事务里读回执和会话头，与接收互斥。只说“同一事务”不够：连接的隔离级别是 `READ COMMITTED`。
+
 字段语义：
 
-- `head` 为 `null`：会话不可用。他人的、不存在的、已关闭的会话都返回 `null`，不可区分。
-- `receipt`：按当前作用域查 `message_id`；未提供 `message_id` 或查不到时为 `null`。
-- `receipt` 与 `head` 必须来自**同一读事务**。
-- 认证失败按现有 401/403/503 规则处理，**不能**返回 `head = null`。
+- `receipt`：按当前作用域查 `message_id`，不依赖会话是否处于活动状态。**只有** `receipt.conversation_id` 等于所查的 `conversation_id` 时才返回；未提供 `message_id`、查不到或属于别的会话时为 `null`。
+- `head = null`：只在加锁读取中明确确认该作用域没有这个 `conversation_id` 的活动会话行时返回。他人的、不存在的、已关闭的会话都返回 `null`，三者不可区分。
+- 其他任何失败都返回非 200，客户端保持“未知”，稍后重读。这些失败包括：作用域行缺失、行完整性失败、存储错误、认证失败或认证状态未知、身份变化。现有映射为 401/403、503 `MESSAGE_UNAVAILABLE` 或 `ACCESS_UNKNOWN`。
 
 ## 3. 判定表（客户端）
 
@@ -68,7 +71,7 @@
 
 | receipt | head | 判定 |
 |---|---|---|
-| 非空，`input_sha256 == h` | 任意 | `accepted` |
+| 非空，`input_sha256 == h` | 任意，包括 null | `accepted` |
 | 非空，`input_sha256 != h` | 任意 | `integrity_error` |
 | null | null | `not_accepted` |
 | null | `generation != g` | `not_accepted` |
@@ -78,9 +81,16 @@
 
 动作约束：
 
-- `resubmit_original`：只允许原 `message_id` 和原字节。
+- `resubmit_original`：只允许原 `message_id` 和原字节。从存储恢复的动作必须先经用户明确确认；本进程内已越过发送意图的动作可以自动重新提交。
 - `not_accepted`：之后只能由用户发起新消息，换新 `message_id`，并以当前会话头为预期值。
-- `integrity_error`、`resync_required`：停止该会话的发送。
+- `integrity_error`、`resync_required`：停止该会话的发送。`resync_required` 只是防御性分支，不能用来检测服务端备份恢复。服务端恢复的处理见 ADR-0008 第 6 条：恢复后关闭全部旧会话。
+
+预期值只有两个合法来源，都要在本进程内、同一绑定下取得：
+
+- 一次发送状态读取；
+- 本会话上一条消息的回执 `(generation, sequence)`。
+
+收到 `SEQUENCE_CONFLICT` 后，必须重读发送状态。
 
 ## 4. 不变量（#163 必须用 PG 测试证明）
 
@@ -89,3 +99,7 @@
 3. 同一个请求重复 N 次（包括与它并发的重放），只产生一条回执和一个运行。
 4. 会话头越过 `s` 后，任何带 `expected_sequence = s` 的新 `message_id` 都不会再被接受。
 5. 账号 B 对账号 A 的 `conversation_id`、`message_id` 调用发送状态，得到 `receipt = null`、`head = null`，与不存在时无法区分。
+6. 并发执行“提交”和“发送状态读取”时，永远不会读到 `receipt = null` 而会话头已越过该消息的预期值。
+7. `cj_message_chat.active` 只能从 `true` 变为 `false`。由触发器强制，`UPDATE ... SET active = true` 必须失败。
+8. 已关闭会话里已接收的消息：同字节重放返回原回执；发送状态返回该回执和 `head = null`，判定为 `accepted`。
+9. 写入解析器拒绝 draft.1；存储行解析器对已存的 draft.1 行和 send.1 行都能解码，历史读取、回执查询、记忆任务都不报错。

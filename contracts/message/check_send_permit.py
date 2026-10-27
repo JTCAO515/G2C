@@ -85,7 +85,9 @@ class Server:
         chat = self.chats.get(cid)
         head = (chat[0], chat[1]) if chat and chat[2] else None
         rec = self.receipts.get(mid)
-        return (hashlib.sha256(rec[0]).hexdigest() if rec else None), head
+        if rec is None or rec[1] != cid:
+            return None, head
+        return hashlib.sha256(rec[0]).hexdigest(), head
 
 
 def body(mid, gen='g1', seq=0, cid='c1'):
@@ -165,6 +167,23 @@ class SendPermitChecks(unittest.TestCase):
         self.assertEqual(classify(('g1', 0), 'x', h, head), 'not_accepted')
         with self.assertRaises(Conflict):
             s.submit(body('a'))
+
+    def test_closed_conversation_keeps_accepted_receipt(self):
+        s = Server(); s.open('c1', 'g1')
+        raw = body('a')
+        first = s.submit(raw)
+        s.chats['c1'][2] = False
+        self.assertEqual(s.submit(raw), first)  # replay before the availability check
+        h, head = s.status('c1', 'a')
+        self.assertIsNone(head)
+        self.assertEqual(classify(('g1', 0), hashlib.sha256(raw).hexdigest(), h, head), 'accepted')
+
+    def test_status_hides_receipt_of_other_conversation(self):
+        s = Server(); s.open('c1', 'g1'); s.open('c2', 'g2')
+        s.submit(body('a'))
+        h, head = s.status('c2', 'a')
+        self.assertIsNone(h)
+        self.assertEqual(head, ('g2', 0))
 
 
 if __name__ == '__main__':
