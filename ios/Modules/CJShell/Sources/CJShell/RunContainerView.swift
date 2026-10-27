@@ -24,7 +24,7 @@ struct RunContainerView: View {
             } else {
                 Text(language.text("Original-run reading is unavailable until trusted session and read resources are connected.", "可信会话和读取资源接入前，原运行读回尚不可用。"))
             }
-            Text(language.text("Explicit read only. This does not start, resend, stream or stop a run.", "仅显式读回，不会新建、重发、流式接收或停止运行。"))
+            Text(language.text("Reads an existing answer only. This does not start, resend or stop a run.", "仅接收已有回答，不会新建、重发或停止运行。"))
                 .font(.caption)
         }
         .onAppear { host.setForeground(scenePhase == .active) }

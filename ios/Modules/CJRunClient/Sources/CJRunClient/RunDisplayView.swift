@@ -33,7 +33,7 @@ extension RunDisplayState {
     }
 }
 /// Embeddable content only. Host owns navigation/source/selection and eager invalidation.
-/// No auto-read, retries, polling, server cancellation or implied streaming capability.
+/// Explicit snapshot or SSE read. No automatic reconnect, write or server cancellation.
 @MainActor public struct RunDisplayView: View {
     private let model: RunDisplayModel
     private let language: RunDisplayLanguage
@@ -49,11 +49,20 @@ extension RunDisplayState {
                 }
                 Text(language.text("Snapshot at read time", "读取时的快照")).font(.caption)
             }
+            if let progress = model.streamProgress {
+                Text(verbatim: progress.text).textSelection(.enabled).accessibilityIdentifier("run.stream.text")
+                Text(language.text("Received text · final state not yet verified", "已接收正文 · 最终状态尚未核实"))
+                    .font(.caption)
+            }
             if case .loading = state { ProgressView() }
             Button(language.text("Read original run", "读取原运行")) {
                 let work = model.prepareRead()
                 Task { await model.perform(work) }
             }.disabled(disabled(state))
+            Button(language.text("Follow / resume this answer", "接收／继续此回答")) {
+                let work = model.prepareStream()
+                Task { await model.perform(work) }
+            }.disabled(disabled(state)).accessibilityIdentifier("run.stream.read")
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active { model.invalidate() } }
         .onDisappear { model.invalidate() }

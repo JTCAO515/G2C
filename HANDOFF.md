@@ -18,16 +18,16 @@
 | --- | --- |
 | Objective | Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green. |
 | Status | active |
-| Phase | P2b 已合并；P2c iOS 壳切片 PR #146 收尾，待独立审查 |
-| Accepted Issue | CJ-006 / #7：P2c iOS 四 Tab 壳接入切片；docs/dispatch/P2-walking-skeleton.md |
+| Phase | P2c：#146 已合并；CJ-010 SSE 读取切片待 CI/独立审查；写入激活方案待定 |
+| Accepted Issue | CJ-010 / GitHub #11：P2c 原消息 SSE 读取/续读切片 |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T05:47:37Z |
+| Last updated | 2026-10-27T06:14:26Z |
 
 ## Active Work
 
-- P2a #143、P2b #145 已合并；main 为 865f6f33c1b3f813bc71bd96faf8558683dd107b。
-- PR #146 由 Codex 接手：App 接入 ShellView、iOS 同仓依赖收敛及交接。
-- PR #144 为独立 V2 文档提案，未合并，不据此启动 V2 实现。
+- JT 明确同意 #146 后已正常合并，main 基线为 15020fb1630488df243824d64c7e8801e0a14219。
+- feat/p2c-run-events-reader：原消息显式 SSE GET、UTF-8 续读、最终快照核对及本地 HTTP/PG 验证。
+- PR #144 仍为独立 V2 文档提案；未据此启动 V2 实现。
 
 ## Accepted Assumptions
 
@@ -55,54 +55,52 @@
 
 | Path | Reason |
 | --- | --- |
-| `ios/App/CJProbeApp.swift, ios/App/Info.plist, ios/CJProbeApp.xcodeproj/project.pbxproj` | 主 App 从 ProbeView 切到保有 ShellState 的 ShellView；显示名 G2C。 |
-| `ios/Modules/*/Package.swift` | 依赖 ios/ 根包与同级模块，替代同仓导出路径。 |
-| `ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackView.swift, ios/Modules/CJShell/Sources/CJShell/MemoryShell.swift` | Binding setter 改为闭包，避开方法引用编译器崩溃。 |
-| `.github/workflows/ci.yml, scripts/handoff.py` | 阻塞 ios-app 构建和交接一致性检查；DEVELOPER_DIR 选择工具链；补仓库内交接生成入口。 |
-| `docs/handoff.json, HANDOFF.md, docs/dispatch/P2-walking-skeleton.md, README.md, ios/Modules/CJShell/README.md` | 纠正阶段、写权、验证、资源边界与唯一下一步。 |
-| `ios/CJProbeApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` | Lock the actual App dependency graph after linking CJShell. |
+| `ios/Modules/CJRunClient/Sources/CJRunClient/RunEventStream.swift` | 有界 SSE 解码，UTF-8 偏移、终态与截断校验，敏感正文不进入调试输出。 |
+| `ios/Modules/CJRunClient/Sources/CJRunClient/RunDisplay.swift, ios/Modules/CJRunClient/Sources/CJRunClient/RunDisplayView.swift` | 复用原消息/会话绑定进行显式 GET 续读，终态后核对正式快照，失效或晚到结果不回填。 |
+| `ios/Modules/CJShell/Sources/CJShell/RunContainerView.swift` | 更新已有读取容器提示；未配置服务时继续不可用。 |
+| `ios/Modules/CJRunClient/Tests/CJRunClientTests/RunEventStreamTests.swift, scripts/check_run_stream.py, .github/workflows/ci.yml` | 流式/断流/取消/隔离专项，真实本地 Swift HTTP/API/PG 复现入口，RUN 套件进入 swift CI job。 |
+| `ios/Modules/CJRunClient/README.md, docs/dispatch/P2-walking-skeleton.md, docs/handoff.json, HANDOFF.md , README.md` | 记录验证范围及 MESSAGE/TRIP 写入激活阻塞，避免将只读通过算作完整 P2c。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `gh pr checks 146 --repo JTCAO515/G2C` | 原始 head 788b5001d97ec2c03b70a44e20b306fa94352531 四 job 全通过；后续提交需读取新 head CI，不能沿用旧绿。 | https://github.com/JTCAO515/G2C/actions/runs/40455509611 |
-| pass | `gh pr view 145; gh pr checks 145` | P2b 已合并；当时 python/postgres/swift 通过，ios-app 在 #146 新增。 | https://github.com/JTCAO515/G2C/pull/145 |
-| pass | `scripts/provider_smoke.py（历史 P2b）` | 原作者记录中英文回答/草稿 4/4；本轮未访问 key 或重跑，不等同 App 端到端。 | https://github.com/JTCAO515/G2C/pull/145 |
-| pass | `本轮模拟器启动和双语四 Tab` | Xcode 27.1、iOS 26.5 arm64：App 启动成功，中英四 Tab 均切换，记忆→语言切换后导航保留，未接入服务明确不可用。首次 TLS 依赖克隆失败；系统 Git/缓存重试构建成功。 | — |
-| pass | `python3 -B scripts/handoff.py check` | JSON 渲染一致、强制阅读路径存在；临时副本验证 stale 文档会失败；git diff --check 通过。 | — |
-| unknown | `最终 head 四 job CI / Claude 独立审查` | 截至本次提交准备时，新 head CI 尚未运行、Claude 审查尚未提交；最新结果须读 PR #146 当前 head。 | https://github.com/JTCAO515/G2C/pull/146 |
-| not-run | `App→P2a/P2b API、Supabase OTP、真机中英端到端` | 当前 App 仅未连接服务的壳；云写入另需动作清单和 JT 确认。 | — |
+| pass | `gh pr view 146 / gh pr checks 146` | head 4a64d5eceded566dd10475f651e13b79a87bb4fc 四 job 全通过；JT 明确同意后合并为 15020fb1630488df243824d64c7e8801e0a14219；无 Claude 独立审查冒认。 | https://github.com/JTCAO515/G2C/pull/146 |
+| pass | `swift test --package-path ios/Modules/CJRunClient` | 30 个非网络测试通过；liveLoopback 在普通套件中显式跳过（输出总计 31），另在真实本地 harness 执行通过。覆盖 Unicode/偏移、断流、终态核对、拒绝、撤回、取消、失效、畸形与限额。 | — |
+| pass | `uv run --locked python -B scripts/check_run_stream.py --scratch-path <external-build-dir>` | 真实 Swift HTTP → FastAPI → 全新私有 PG：中英读取与跨用户拒绝通过，消息 ID 含中文、+、/、%。FakeProvider、临时开发身份；不是云/真实模型验收。 | — |
+| pass | `xcodebuild CJProbeApp arm64 Simulator` | Xcode 27.1 arm64 模拟器构建通过；未配置身份/资源的 App 仍不可发送，不声称完整 UI 链路。 | — |
+| pass | `python3 -B scripts/handoff.py check; git diff --check` | JSON 渲染一致、强制阅读路径存在、Python harness 语法与 diff 空白检查通过。 | — |
+| unknown | `本切片最终 head 四 job CI / Claude 独立审查` | 截至提交准备时尚未运行；用分支 feat/p2c-run-events-reader 的 PR 读取最终 head 结果。 | — |
+| not-run | `App 真实发送/确认、OTP、付费模型、真机端到端` | 写入激活方案尚未固定；没有云写入、真实账号/Keychain访问或付费模型调用。 | — |
 
 ## Blockers
 
-- PR #146 尚无 Claude 独立审查；作者实现与 Codex 自检不替代独立审查。
+- MESSAGE 的 ACTIVATION-GATE.md 和生产 transport 明确禁止 live POST；缺少不可回退的原动作/epoch 权威，不能用 test interceptor 绕过。
+- TRIP 未有获准的服务端确认凭证；acceptsUserActions 为 false，客户端不能自行构造 confirmation_ref。
+- 完整 P2c 还需要 OTP/App composition/真机；本只读切片不关闭 CJ-010、CJ-006 或 P2c。
 
 ## Risks
 
-- 主 App 默认 host 未连接 API，发送、真实登录与正式 Trip 确认链路未接通。
-- arm64 模拟器构建不证明 iOS 17 运行时、真机或真实服务验收。
-- 旧依赖准备脚本暂保留；当前接入方式见 CJShell README。
-- PR #144 含旧阶段 handoff，合并时不可用旧 JSON 回退本轮阶段和验证。
-- 测试项目由 JT 提供，尚未验证配置、RLS、数据库或 OTP。
-- SSE 轮询与 unknown run 对账缺口沿用 P2b；本切片不改变后端。
+- SSE 只有正文偏移，没有完整 RUN 高水位/原回执绑定，必须用现有受保护快照核对终态；中途断流保持 unknown。
+- 现有 App 默认 host 未连接身份与读取资源，新增入口不自动启用网络或写入。
+- 本地集成使用临时开发身份和 FakeProvider，不证明 Supabase、真实模型、iOS 17/真机验收。
+- 测试项目只读信息不证明 RLS/账号/数据库配置；任何云写入仍需 JT 明确操作清单授权。
+- PR #144 的旧 handoff 后续合并时不能回退当前阶段与验证。
 
 ## Operator Actions
 
-- Claude 对 #146 最终 base/head 独立审查；合并需四 job 全绿加审查，或 JT 对审查要求明确同意。
-- JT 已提供 Supabase 测试项目（ap-southeast-1，PG17）；无需重建项目。云写入前须列操作、验证和回滚并获确认。
-- 模型 key 位于 JT 指明的钥匙串 g2c-dashscope；本轮不读取、不调用、不新增凭据。
-- 许可证和产品法律条款仍待 JT 决策。
+- Claude 审查本切片最终 head，并按派工单的“写入激活待决”固定发送许可和服务端确认凭证方案。
+- JT 如需启用云端 OTP/数据库或真实模型，先审阅具体目标、动作、验证、回滚清单；当前无外部写操作待执行。
 
 ## Next Smallest Action
 
-- Action: 完成 PR #146 最终 head 四 job CI 和 Claude 独立审查；反馈由 Codex 在同一分支处理，满足门禁前不合并、不启动新切片。
-- Expected observation: #146 当前 head 的 python/postgres/swift/ios-app 全通过，存在 Claude 独立审查或 JT 明确同意；壳完成不关闭 P2c 或 CJ-006 整票。
-- Resume command: `gh pr checks 146 --repo JTCAO515/G2C`
+- Action: Claude 独立审查 feat/p2c-run-events-reader 的精确 head（四 job CI 必须通过），并固定派工单列明的 MESSAGE/TRIP 写入激活方案；Codex 随后在新切片实现获准方案。
+- Expected observation: 只读 SSE 切片有可核实 CI/审查；首次发送许可与确认凭证的接口、生命周期、兼容及负例被明确固定，才能打开产品写入链路。
+- Resume command: `gh pr checks feat/p2c-run-events-reader --repo JTCAO515/G2C`
 
 ## Rollback
 
-revert PR #146 的合并提交；本切片仅 App/依赖、CI 与交接，不涉及数据库迁移或外部资源写入。
+revert 本 SSE 切片的合并提交；保留 #146 四 Tab 壳和原快照读取。无业务迁移、云写入或用户数据变更。
 
 ## Mandatory Reading Order
 

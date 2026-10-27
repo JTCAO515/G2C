@@ -1,8 +1,47 @@
 # CJ-010 original-run display client
 
-Standalone read-only module for original MESSAGE recovery. This is the scoped client
-slice of [Issue 11](https://github.com/JTCAO515/Go2China/issues/11), not its full
-streaming/stopping/provider/App acceptance. `CJRunClient` is not connected to CJShell.
+Read-only module for original MESSAGE recovery, composed by CJShell's existing
+RunContainerHost. This is a scoped [Issue 11](https://github.com/JTCAO515/G2C/issues/11)
+slice, not full message-send, provider, login or device acceptance.
+
+## P2c: explicit SSE read and resume
+
+`prepareStream()` captures the same one-use original source/session work as
+`prepareRead()`. `perform(work)` uses the existing no-redirect transport to GET
+`/v1/run-events`, with the original message ID and received UTF-8 byte offset in
+`Last-Event-ID`. No message POST, model call, automatic reconnect or RUN cancellation
+is introduced. The App's default unconfigured host stays unavailable.
+
+Frames are bounded by the endpoint response-byte limit; text has its own byte bound.
+Split Unicode, CRLF, duplicate fields, bad offsets, invalid status, extra JSON keys
+and truncated events are handled explicitly. A disconnected/nonterminal stream is
+unknown; valid received text remains visibly partial until an explicit continuation.
+Source/account/session invalidation removes that text and rejects late chunks.
+
+SSE does not contain a RUN event highwater or a complete original receipt binding.
+After terminal EOF, the existing protected snapshot GET must match the streamed text
+and status before the model displays a final canonical snapshot. No synthetic
+highwater, optimistic completion or new formal state is created.
+
+Current dependencies are the `ios/` root package and sibling modules (ADR-0004).
+The fixed-export instructions below are historical; they are not the current entry.
+
+```sh
+DEVELOPER_DIR="$DEVELOPER_DIR" swift test --package-path ios/Modules/CJRunClient
+```
+
+Real local HTTP/API/PG verification (set `DEVELOPER_DIR`, `CJ_PG_BINDIR`, and an
+external `CJ_SWIFT_SCRATCH` directory first):
+
+```sh
+uv run --locked python -B scripts/check_run_stream.py --scratch-path "$CJ_SWIFT_SCRATCH"
+```
+
+The harness creates and tears down a private PostgreSQL cluster and a loopback-only
+API, uses disposable development identities and FakeProvider, then runs the Swift
+client's real GET path for Chinese/English and foreign-user refusal. It never reads
+Keychain or calls a cloud/model service. `liveLoopback` is explicitly skipped in the
+ordinary unit-test run; CI runs the RUN unit suites, not this opt-in PG harness.
 
 ## Fixed inputs and preparation
 
