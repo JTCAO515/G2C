@@ -41,4 +41,4 @@ uv run --locked python -B scripts/pg_suites.py   # PostgreSQL 套件与迁移 up
 
 后端入口与约定见 [backend/README.md](backend/README.md)，迁移见 [backend/migrations/README.md](backend/migrations/README.md)；CI（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）全部阻塞，是唯一的“绿”。历史证据已出仓，见 [docs/evidence.md](docs/evidence.md)。开发授权不包含付费调用、云资源、权限/凭据变更、外联、公开发布或删除旧数据。
 
-仓库许可证与产品法律条款待定；公开仓库不等于已授予开源许可。P2 范围已确认单城市北京、邮箱一次性登录、最低 iOS 17（见 ADR-0004）；此处不预设商业收费或技术兼容性结论。
+仓库自 2026-10-27 起为私有；许可证与产品法律条款待定。P2 范围已确认单城市北京、邮箱一次性登录、最低 iOS 17（见 ADR-0004）；此处不预设商业收费或技术兼容性结论。

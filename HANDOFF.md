@@ -21,11 +21,12 @@
 | Phase | P2a walking skeleton (PR open) -> P2b draft to formal Trip |
 | Accepted Issue | CJ-009 / CJ-010 / CJ-002 (P2a); plan in docs/dispatch/P2-walking-skeleton.md |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T09:00:00Z |
+| Last updated | 2026-10-27T10:30:00Z |
 
 ## Active Work
 
 - P2a on branch feat/p2-walking-skeleton (PR pending CI).
+- V2 direction docs (ADR-0005, ADR-0006, docs/v2/shadow-mode.md) on branch docs/adr0005-proactive-fulfillment.
 
 ## Accepted Assumptions
 
@@ -38,13 +39,15 @@
 - accepted: ADR-0001 product and user-control boundaries.
 - accepted: model qwen3.8-flash with Beijing endpoint profile (spikes/runtime/REPORT.md); real calls still UNRUN.
 - accepted (JT 2026-10-27): ADR-0004 delivery flow and repo hygiene, items 1-7.
-- accepted (JT 2026-10-27): repository stays PUBLIC; local-path removal is mandatory.
+- superseded (JT 2026-10-27, later the same day): repository is now PRIVATE (switched and read back via gh); earlier public history may already be cloned or cached. Local-path removal stays in force.
 - accepted (JT 2026-10-27): evidence moves out of repo and in-repo sha256 pins are removed, both executed in P1; no history rewrite.
 - accepted (JT 2026-10-27): P2 scope Beijing single city, email OTP primary login, minimum iOS 17.
 - accepted (JT 2026-10-27): process simplification, one PR per Issue slice, CI green plus one independent review, trunk-based.
 - implemented (P1): single distribution `cj` keeps per-domain import names (cj_auth, ...) instead of renaming to cj.* subpackages.
 - implemented (P1): domain tables stay in schema public; cj holds the migration ledger. Moving tables into cj is open.
 - implemented (P1): historical evidence archived at tag evidence-archive-2026-10-27 (87120f9).
+- accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).
+- accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending.
 
 ## Changed Files
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-27T09:00:00Z",
+  "lastUpdated": "2026-10-27T10:30:00Z",
   "currentPhase": "P2a walking skeleton (PR open) -> P2b draft to formal Trip",
   "status": "active",
   "objective": "Deliver G2C (foreign-visitor China travel assistant, iOS + CJ Agent backend) to invited beta via one real end-to-end path first; P0 makes the repository self-sufficient for takeover and makes CI the only source of green.",
@@ -10,7 +10,8 @@
   "fromAgent": "Claude (executing P0 and P1 at JT request; Codex paused)",
   "intendedNextAgent": "Claude or Codex (P2), per JT",
   "activeWork": [
-    "P2a on branch feat/p2-walking-skeleton (PR pending CI)."
+    "P2a on branch feat/p2-walking-skeleton (PR pending CI).",
+    "V2 direction docs (ADR-0005, ADR-0006, docs/v2/shadow-mode.md) on branch docs/adr0005-proactive-fulfillment."
   ],
   "assumptions": [
     "Static review only at main 8fac0dff5e50ce08c277b65f7322a4ea64d77e65; pytest and swift test were not run (UNRUN).",
@@ -21,13 +22,15 @@
     "accepted: ADR-0001 product and user-control boundaries.",
     "accepted: model qwen3.8-flash with Beijing endpoint profile (spikes/runtime/REPORT.md); real calls still UNRUN.",
     "accepted (JT 2026-10-27): ADR-0004 delivery flow and repo hygiene, items 1-7.",
-    "accepted (JT 2026-10-27): repository stays PUBLIC; local-path removal is mandatory.",
+    "superseded (JT 2026-10-27, later the same day): repository is now PRIVATE (switched and read back via gh); earlier public history may already be cloned or cached. Local-path removal stays in force.",
     "accepted (JT 2026-10-27): evidence moves out of repo and in-repo sha256 pins are removed, both executed in P1; no history rewrite.",
     "accepted (JT 2026-10-27): P2 scope Beijing single city, email OTP primary login, minimum iOS 17.",
     "accepted (JT 2026-10-27): process simplification, one PR per Issue slice, CI green plus one independent review, trunk-based.",
     "implemented (P1): single distribution `cj` keeps per-domain import names (cj_auth, ...) instead of renaming to cj.* subpackages.",
     "implemented (P1): domain tables stay in schema public; cj holds the migration ledger. Moving tables into cj is open.",
-    "implemented (P1): historical evidence archived at tag evidence-archive-2026-10-27 (87120f9)."
+    "implemented (P1): historical evidence archived at tag evidence-archive-2026-10-27 (87120f9).",
+    "accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).",
+    "accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending."
   ],
   "architectureContracts": [
     "contracts/api/openapi.json unchanged in P1.",
@@ -92,7 +95,7 @@
   ],
   "blockers": [],
   "risks": [
-    "Repository is PUBLIC without a license.",
+    "Repository is PRIVATE since 2026-10-27; GitHub Actions minutes are now billed (macOS jobs at a multiplier), so heavy CI use can exhaust the quota and stop the only source of green. Still no license.",
     "Real provider stream format unverified until a key is injected (MockTransport only).",
     "SSE polls the RUN snapshot every 200 ms; acceptable for invited beta, replace with push before public launch.",
     "A run left `unknown` blocks later messages in that conversation until reconciled (RUN rule); no reconciliation UI yet.",
@@ -102,7 +105,8 @@
   "operatorActions": [
     "Provision a DashScope test key into the macOS Keychain item g2c-dashscope (steps in docs/dispatch/P2-walking-skeleton.md); never paste it into chat or files.",
     "Before P2c: decide Supabase project ownership/region and authorize an isolated test project.",
-    "Decide repository license and product legal terms."
+    "Decide repository license and product legal terms.",
+    "Check GitHub Billing for Actions minutes and set a spending limit now that the repository is private."
   ],
   "rollback": "git revert the merge commit of this PR; documentation only, no data, credentials or external resources touched.",
   "nextAction": {
