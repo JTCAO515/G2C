@@ -1,0 +1,31 @@
+{
+  "contract": "MESSAGE-SEND@1",
+  "bodies": {
+    "valid": [
+      {"name": "first message in empty chat", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":0}"},
+      {"name": "chinese text with consider_trip", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m2\",\"text\":\"想去成都\",\"trip_id\":null,\"creation_intent\":\"consider_trip\",\"expected_generation\":\"g1\",\"expected_sequence\":1}"}
+    ],
+    "invalid": [
+      {"name": "withdrawn draft.1", "raw": "{\"version\":\"MESSAGE-draft.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\"}"},
+      {"name": "missing expected head", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\"}"},
+      {"name": "negative sequence", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":-1}"},
+      {"name": "float sequence", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":1.0}"},
+      {"name": "string sequence", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":\"0\"}"},
+      {"name": "boolean sequence", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":false}"},
+      {"name": "blank generation", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\" \",\"expected_sequence\":0}"},
+      {"name": "unknown field", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":0,\"retry\":true}"},
+      {"name": "duplicate key", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":0,\"expected_sequence\":1}"},
+      {"name": "non-null trip", "raw": "{\"version\":\"MESSAGE-send.1\",\"conversation_id\":\"c1\",\"message_id\":\"m1\",\"text\":\"Hello\",\"trip_id\":\"t1\",\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":0}"}
+    ]
+  },
+  "classify": [
+    {"name": "accepted", "expected": ["g1", 3], "own_sha256": "a", "receipt_sha256": "a", "head": ["g1", 4], "decision": "accepted"},
+    {"name": "accepted even after head moved further", "expected": ["g1", 3], "own_sha256": "a", "receipt_sha256": "a", "head": ["g1", 9], "decision": "accepted"},
+    {"name": "receipt hash mismatch", "expected": ["g1", 3], "own_sha256": "a", "receipt_sha256": "b", "head": ["g1", 4], "decision": "integrity_error"},
+    {"name": "conversation unavailable", "expected": ["g1", 3], "own_sha256": "a", "receipt_sha256": null, "head": null, "decision": "not_accepted"},
+    {"name": "generation changed", "expected": ["g1", 3], "own_sha256": "a", "receipt_sha256": null, "head": ["g2", 0], "decision": "not_accepted"},
+    {"name": "position taken by another message", "expected": ["g1", 3], "own_sha256": "a", "receipt_sha256": null, "head": ["g1", 4], "decision": "not_accepted"},
+    {"name": "still acceptable", "expected": ["g1", 3], "own_sha256": "a", "receipt_sha256": null, "head": ["g1", 3], "decision": "resubmit_original"},
+    {"name": "server head regressed", "expected": ["g1", 3], "own_sha256": "a", "receipt_sha256": null, "head": ["g1", 2], "decision": "resync_required"}
+  ]
+}

@@ -1,5 +1,7 @@
 # MESSAGE-draft.1 — CJ009 / Issue #10
 
+> 发送路径已由 [MESSAGE-SEND@1](SEND-PERMIT.md)（[ADR-0008](../../docs/adr/0008-message-send-permit.md)）取代：POST 请求体改为 `MESSAGE-send.1`，`MESSAGE-draft.1` 的 POST 撤回。本文其余语义仍作为草案背景。
+
 协议无关草案，目标 MESSAGE@1.0 **未冻结**。仅 `contracts/message/**`，
 基线 `59ea8aa46fed3738063b8031250367370c628cf8`；输入为本地 CJ-DOC-36
 Issue #10/#5 r3 快照、docs/contracts.md、该基线 AUTH-draft.1。

@@ -21,13 +21,13 @@
 | Phase | M1 主链路闭环（模拟器 L1）：Issue 按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 已关闭（PR #172），下一张为 #151 S0 Part 2/2。 |
 | Accepted Issue | M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T12:30:00Z |
+| Last updated | 2026-10-27T13:40:00Z |
 
 ## Active Work
 
 - #154 已关闭：PR #172 合并为 715fd00，main CI 全绿；#20 框 4 已勾，框 1、7 的 App 部分已附证据，服务端部分待 #155。
 - #151 S0 Part 2/2（iOS 测试全部进 CI、pr-lint）未开始，为下一张。
-- #162（CJ-009 子票）：MESSAGE 发送许可方案，owner Claude，未开始；#163、#164 依赖它。
+- #162（CJ-009 子票）：ADR-0008 消息发送许可方案已起草（PR docs/adr0008-message-send-permit），待独立审查与 JT 批准；#163、#164 依赖它。
 
 ## Accepted Assumptions
 
@@ -60,22 +60,20 @@
 
 | Path | Reason |
 | --- | --- |
-| `docs/plan/issue-plan.md` | 新增：里程碑 M0–M5、M1 队列与子票、依赖、停点与跳过、M2 拆分预案。 |
-| `docs/adr/0007-issue-closure-workflow.md` | 第 2 条队列改指规划文档、框数 2–6、挂起父票不占在制名额；第 7 条停点分子票级与仓库级。 |
-| `AGENTS.md, .github/ISSUE_TEMPLATE/slice.md` | 阅读顺序加入规划文档；框数 2–6；停点分级。 |
-| `docs/handoff.json, HANDOFF.md` | 切换到 M1 队列状态。 |
+| `docs/adr/0008-message-send-permit.md, docs/adr/README.md` | 新增 ADR-0008（proposed）：服务端会话头 CAS 作为发送许可。 |
+| `contracts/message/SEND-PERMIT.md, contracts/message/send-permit-samples.json, contracts/message/check_send_permit.py, contracts/message/README.md, docs/contracts.md` | MESSAGE-SEND@1 wire、判定表、正负样例与参考检查。 |
+| `scripts/test.py` | 加入 check_send_permit.py（门禁只增）。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `python3 -B scripts/handoff.py check` | handoff 结构与阅读顺序一致。 | — |
-| pass | `GitHub Issue 规划核对` | M0–M5 里程碑；#155–#170 为 M1 子票并已挂到父票；父票验收框均标明 → #子票 / → L2 #32；L2 转记已登记到 #32。 | https://github.com/JTCAO515/G2C/pull/171 |
-| not-run | `GitHub Actions ci.yml` | 以 PR #171 精确 head 检查为准（文档改动）。 | — |
+| pass | `uv run --locked python -B scripts/test.py` | 57/57，含 check_send_permit.py 8 项。 | — |
+| pass | `python3 -B scripts/handoff.py check` | 通过。 | — |
 
 ## Blockers
 
-- #162 未关闭前，#163、#164 不能开工；#167 依赖 #164（子票级停点，跳过继续）。
+- #162 待 JT 批准 ADR-0008；批准并合并前，#163、#164 不能开工；#167 依赖 #164（子票级停点，跳过继续）。
 - #159 帮助/隐私/支持文案需 JT 确认（子票级停点）。
 - L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
 
