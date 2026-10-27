@@ -34,7 +34,9 @@ import OpenAPIRuntime
                 currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
                 pendingStore: TripPendingStore, liveTransport: NoRedirectTransport, liveWrites: TripLiveWrites) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
-        _ = liveWrites; transport = liveTransport; testWrites = false; self.liveWrites = true; store = pendingStore
+        _ = liveWrites
+        transport = TripLiveTransport(reads: liveTransport, endpoint: endpoint.url)
+        testWrites = false; self.liveWrites = true; store = pendingStore
         self.session = session; self.sessionOperation = sessionOperation
     }
     /// Internal test-only injection. Not a public capability to enable live writes.

@@ -45,7 +45,7 @@ extension TripClient {
             guard same(pending.actionID, actionID), pending.kind == kind, let expiry = pending.confirmationExpiry,
                   expiry == body.expires_at, expiry <= reviewed.expires_at else { throw TripFailure.invalidResponse }
             try check(binding, token)
-            return TripPreparedAction(pending: pending, expiresAt: expiry)
+            return TripPreparedAction(pending: pending, expiresAt: expiry, owner: owner, generation: token, binding: binding)
         case .default(let status, let value): throw TripFailure.rejected(status, try value.body.json.error.code)
         }
     }
@@ -54,6 +54,9 @@ extension TripClient {
     /// reconciled with `query(actionID:)` for this same action, never by preparing a replacement.
     public func confirm(_ prepared: TripPreparedAction, binding: TripBinding, now: Int) async throws -> TripActionResult {
         guard writesEnabled else { throw TripFailure.liveWriteUnavailable }
+        guard prepared.owner == owner, prepared.generation == generation, prepared.binding == binding else {
+            throw TripFailure.staleBinding
+        }
         guard prepared.expiresAt - confirmationClockMargin > now else { throw TripFailure.invalidInput }
         return try await submit(prepared.pending, binding: binding, now: now)
     }

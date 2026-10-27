@@ -49,7 +49,7 @@ import CJAPI
         #expect(calls[1].bytes == prepared.pending.originalUTF8)
     }
 
-    @Test(arguments: ["actionID", "kind", "hash", "reference", "bodyExpires", "beyondProposal", "proposal"])
+    @Test(arguments: ["actionID", "kind", "hash", "reference", "leadingZeroExpiry", "bodyExpires", "beyondProposal", "proposal"])
     func tamperedPreparationIsRejectedAndNothingPersists(_ damage: String) async throws {
         let h = try Harness(); defer { h.clean() }
         let proposal = try fixture().proposal
@@ -62,6 +62,7 @@ import CJAPI
             case "kind": return try Self.preparedBody(bytes, expires: e, proposal: proposal, kind: "reject")
             case "hash": return try Self.preparedBody(bytes, expires: e, proposal: proposal, hash: String(repeating: "0", count: 64))
             case "reference": return try Self.preparedBody(bytes, expires: e, proposal: proposal, reference: "client-made-proof")
+            case "leadingZeroExpiry": return try Self.preparedBody(bytes, expires: e, proposal: proposal, reference: "tc1.0\(e).\(Self.mac)")
             case "bodyExpires": return try Self.preparedBody(bytes, expires: e, proposal: proposal, bodyExpires: e + 1)
             case "beyondProposal": return try Self.preparedBody(bytes, expires: proposal.expires_at + 1, proposal: proposal)
             default: return try Self.preparedBody(bytes, expires: e, proposal: changed)
@@ -113,6 +114,31 @@ import CJAPI
         await #expect(throws: TripFailure.pendingRequiresQuery) { try await client.prepare(.reject, proposal: proposal, binding: h.binding) }
         let operations = await interceptor.calls.map(\.operation)
         #expect(operations.filter { $0 == "actOnTripProposal" }.count == 1) // never resent
+    }
+
+    @Test func preparedActionCannotMoveToAnotherClientOrSurviveInvalidation() async throws {
+        let a = try Harness(); defer { a.clean() }
+        let b = try Harness(); defer { b.clean() }
+        let proposal = try fixture().proposal
+        let interceptor = Interceptor { _, bytes, operation in
+            if operation == "prepareTripConfirmation" {
+                return try Self.preparedBody(bytes, expires: 1_900_000_000, proposal: proposal)
+            }
+            Issue.record("retired/foreign prepared action dispatched")
+            throw URLError(.networkConnectionLost)
+        }
+        let aStore = try a.store(), bStore = try b.store()
+        let clientA = try a.client(interceptor, store: aStore)
+        let clientB = try b.client(interceptor, store: bStore)
+        let prepared = try await clientA.prepare(.accept, proposal: proposal, binding: a.binding)
+        await #expect(throws: TripFailure.staleBinding) {
+            try await clientB.confirm(prepared, binding: b.binding, now: 1_899_999_000)
+        }
+        clientA.invalidate()
+        await #expect(throws: TripFailure.staleBinding) {
+            try await clientA.confirm(prepared, binding: a.binding, now: 1_899_999_000)
+        }
+        #expect(try aStore.pending().isEmpty && bStore.pending().isEmpty)
     }
 
     @Test func interceptedTestClientDoesNotAdvertiseUserActions() async throws {

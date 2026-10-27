@@ -21,6 +21,9 @@ public struct TripLiveWrites: Sendable {
 public struct TripPreparedAction: Sendable {
     public let pending: TripPending
     public let expiresAt: Int
+    let owner: UUID
+    let generation: UUID
+    let binding: TripBinding
     public var proposal: Components.Schemas.TripProposalSnapshot { pending.proposal }
     public var kind: TripActionKind { pending.kind }
 }
@@ -55,7 +58,9 @@ public struct TripPending: Codable, Sendable {
     var confirmationExpiry: Int? {
         guard let fields = try? JSONDecoder().decode([String].self, from: originalUTF8), fields.count == 5 else { return nil }
         let parts = fields[4].split(separator: ".", omittingEmptySubsequences: false)
-        guard parts.count == 3, parts[0] == "tc1", parts[1].count <= 12, parts[2].count == 64,
+        guard parts.count == 3, parts[0] == "tc1", (1...12).contains(parts[1].count),
+              let first = parts[1].utf8.first, (49...57).contains(first),
+              parts[1].utf8.allSatisfy({ (48...57).contains($0) }), parts[2].count == 64,
               parts[2].utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
               let value = Int(parts[1]), value > 0 else { return nil }
         return value
