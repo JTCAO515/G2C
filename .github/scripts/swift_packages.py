@@ -1,4 +1,4 @@
-"""Validate all tracked iOS manifests, then test every package in bounded shards."""
+"""Validate all tracked iOS manifests, then test every package using one locked build directory."""
 import argparse
 import json
 import os
@@ -7,7 +7,6 @@ import subprocess
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-SHARD_COUNT = 3
 
 
 def package_inventory():
@@ -26,18 +25,17 @@ def package_inventory():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--shard", type=int, choices=range(SHARD_COUNT))
+    parser.add_argument("--run", action="store_true", help="Run every package in inventory order")
     args = parser.parse_args()
     packages = package_inventory()
-    if args.shard is None:
-        # The same count defines both the workflow matrix and the partition below.
-        print("shards=" + json.dumps(list(range(SHARD_COUNT))))
+    if not args.run:
+        print("packages=" + json.dumps(packages))
         return
 
-    # Each runner owns its scratch directory. Sequential package builds reuse only
+    # The runner owns its scratch directory. Sequential package builds reuse only
     # compiler outputs, while SwiftPM still resolves/builds/runs each package's tests.
     scratch = Path(os.environ["RUNNER_TEMP"]) / "swift-build"
-    for package in packages[args.shard::SHARD_COUNT]:
+    for package in packages:
         for configuration in (["debug", "release"] if package == "ios/App" else ["debug"]):
             print(f"::group::{package} ({configuration})", flush=True)
             start = time.monotonic()

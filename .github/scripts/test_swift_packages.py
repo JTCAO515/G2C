@@ -1,4 +1,4 @@
-"""Exercise inventory/partition/failure behavior with a disposable Git repository.
+"""Exercise inventory/coverage/failure behavior with a disposable Git repository.
 
 The fake swift command tests orchestration only; CI shards run the real Swift tests.
 """
@@ -54,24 +54,23 @@ sys.exit(17 if os.environ.get("FAIL_SWIFT") else 0)
                 self.inventory(value)
                 self.assertNotEqual(self.run_gate().returncode, 0)
 
-    def test_emitted_matrix_runs_every_package_once_and_app_release(self):
+    def test_inventory_runs_every_package_once_and_app_release(self):
         inventory = self.run_gate()
         self.assertEqual(inventory.returncode, 0, inventory.stderr)
-        shards = json.loads(inventory.stdout.removeprefix("shards="))
-        for shard in shards:
-            result = self.run_gate("--shard", str(shard))
-            self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(inventory.stdout.removeprefix("packages=")), self.packages)
+        result = self.run_gate("--run")
+        self.assertEqual(result.returncode, 0, result.stderr)
         calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
         observed = [(c[c.index("--package-path") + 1], c[c.index("-c") + 1]) for c in calls]
         self.assertCountEqual(observed, [(p, "debug") for p in self.packages] + [("ios/App", "release")])
 
-    def test_swift_failure_blocks_shard_without_running_later_packages(self):
-        result = self.run_gate("--shard", "0", FAIL_SWIFT="1")
+    def test_swift_failure_blocks_without_running_later_packages(self):
+        result = self.run_gate("--run", FAIL_SWIFT="1")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(len(self.calls.read_text().splitlines()), 1)
 
-    def test_invalid_shard_fails(self):
-        self.assertNotEqual(self.run_gate("--shard", "99").returncode, 0)
+    def test_old_partial_shard_invocation_is_rejected(self):
+        self.assertNotEqual(self.run_gate("--shard", "0").returncode, 0)
 
 
 if __name__ == "__main__":

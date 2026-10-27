@@ -18,18 +18,18 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1：#151 PR #174 返修；首次全 CI 通过但矩阵墙钟超出增幅阈值，改为三个复用编译的阻塞分组，待新 head CI 与独立复审。 |
+| Phase | M1：#151 PR #174 第三轮候选；前两轮测试全绿但 Swift 调度墙钟超过增幅阈值，改为单 runner 顺序跑全包，待最终 CI 与独立复审。 |
 | Accepted Issue | M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T14:09:02+00:00 |
+| Last updated | 2026-10-27T14:30:53+00:00 |
 
 ## Active Work
 
 - #154 已关闭（PR #172）；#20 剩余 #155。
-- #151 PR #174：保留 16 包与 App Release，改为 3 个普通 runner 分组，组内顺序复用编译；强制锁定版本，依赖锁过期即失败。无 test target 排除。
-- #162 owner Claude，仍 OPEN；#159 文案尚无 JT 确认。
-- 范围外文档漂移记录为 #175：README 与 App README 仍含 #172 后暂停的旧指令；以当前 handoff / ADR-0007 为准。
-- #174 第一轮独立审查 REQUEST CHANGES：Swift 矩阵墙钟 582 秒，原基线 268 秒，增加 314 秒，已向 JT 报告并暂停合并；需新 head 耗时满足要求再复审。
+- #151 PR #174：单个 Swift job 顺序跑 16 包 + App Release；Shell 先构建共享依赖，Cleanup 最后运行避免锁版本切换；强制锁定版本，保留全部检查。
+- #174 已连续两轮 REQUEST CHANGES，均因耗时：第一轮 582 秒（+314），第二轮 599 秒（+331），已报告且未合并。第三轮若仍审查不通过，按 ADR-0007 记录子票阻塞并跳过。
+- #162 owner Claude，PR #173 待 JT 批准；#159 文案待 JT。
+- #175 记录入口 README 旧暂停文案，不属于本 CI 切片。
 
 ## Accepted Assumptions
 
@@ -62,7 +62,7 @@
 
 | Path | Reason |
 | --- | --- |
-| `.github/workflows/ci.yml, .github/workflows/pr-lint.yml, .github/swift-packages.json, .github/scripts/swift_packages.py, .github/scripts/test_swift_packages.py` | 16 包全覆盖的 3 个阻塞分组、遗漏/分组/失败传播检查；复用编译但强制使用锁版本；PR 正文独立最小权限 lint。 |
+| `.github/workflows/ci.yml, .github/workflows/pr-lint.yml, .github/swift-packages.json, .github/scripts/swift_packages.py, .github/scripts/test_swift_packages.py` | 单个 Swift job 全覆盖 16 包并复用锁定编译；遗漏、完整执行和失败传播检查；独立最小权限 pr-lint。 |
 | `ios/Modules/CJShell/Tests/FeasibilityHostHarness` | 历史测试包直接依赖当前模块，失效负例使用真实 Shell 入口；保留所有断言，锁定依赖。 |
 | `ios/Modules/CJMessageClient/Package.resolved` | 补齐现有测试图缺失的依赖锁项，版本与既有 CJShell 锁一致，无产品源码修改。 |
 | `docs/handoff.json, HANDOFF.md` | #151 当前状态、验证与下一步。 |
@@ -79,6 +79,8 @@
 | pass | `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild App generic iOS Simulator arm64` | CJProbeApp build succeeded；本票无产品修改，未重复交互验收。 | — |
 | fail | `#174 initial CI / independent review aa006782` | 20/20 测试 job 成功，但 Swift 墙钟 582 秒比 268 秒增加 314 秒；性能要求未通过，不合并。 | https://github.com/JTCAO515/G2C/pull/174#issuecomment-6443908168 |
 | pass | `.github/scripts/test_swift_packages.py; swift_packages.py --shard 0/1/2` | 4 个门禁编排测试通过；实际 Swift 三组包含 16 包 + App Release 全通过，使用 --force-resolved-versions 后无锁文件变化。测试替身只用于编排负例，不替代实际 Swift。 | — |
+| fail | `#174 second CI / independent review 801211ca` | 7/7 CI + pr-lint 成功，17 次实际 Swift 测试完整；首组启动到完成 599 秒，增幅 331 秒；含首次排队 903 秒，耗时要求仍未通过。 | https://github.com/JTCAO515/G2C/pull/174#issuecomment-6444599873 |
+| pass | `.github/scripts/test_swift_packages.py; swift_packages.py --run` | 4 个门禁编排测试通过；单 runner 原型全 17 次运行 109 秒；正式脚本再次全部通过，无锁文件变化。真实 CI 耗时仍待核验。 | — |
 | not-run | `GitHub Actions final head; independent review` | 等待 PR #174 最终 head 的全部阻塞检查与独立 Codex 审查；合并后核验 main。Swift 原基线 268 秒，矩阵耗时见 PR。 | https://github.com/JTCAO515/G2C/pull/174 |
 
 ## Blockers
@@ -105,7 +107,7 @@
 
 ## Next Smallest Action
 
-- Action: 完成 #151 PR #174 新 head CI 与耗时核验（全 Swift 墙钟相对 268 秒增幅不超过 300 秒），交独立 Codex 复审；通过后正常合并、核验 main、关闭 #151，随后读 #155 与 #20 全部评论并核验服务端负例。
+- Action: 完成 #151 PR #174 第三轮精确 head CI 与独立复审：单 Swift job 相对原 268 秒增幅不超过 300 秒。通过后合并并核验 main、关闭 #151，再做 #155；若连续第三轮审查不通过，评论并记入 blockers，跳过 #151 继续队列。
 - Expected observation: #151 全部验收框有 L0 证据，main CI 全绿；随后推进 #155。
 - Resume command: `gh issue view 151 --repo JTCAO515/G2C --comments`
 

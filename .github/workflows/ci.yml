@@ -54,32 +54,25 @@ jobs:
 
   swift-packages:
     runs-on: ubuntu-latest
-    outputs:
-      shards: ${{ steps.inventory.outputs.shards }}
     steps:
       - uses: actions/checkout@v4
-      - name: Inventory, partition and failure propagation tests
+      - name: Inventory, full coverage and failure propagation tests
         run: python3 -B .github/scripts/test_swift_packages.py
       - name: Reject missing or stale Swift package entries
-        id: inventory
-        run: python3 -B .github/scripts/swift_packages.py >> "$GITHUB_OUTPUT"
+        run: python3 -B .github/scripts/swift_packages.py
 
   swift:
-    # Every package is tested; three blocking shards reuse compilation within each runner.
+    # Every package is tested on one runner, reusing locked compiler outputs.
+    # Inventory order builds the broad Shell graph first; Cleanup has a distinct
+    # locked swift-collections version and runs last to avoid repeated switches.
     needs: swift-packages
     runs-on: macos-26
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: ${{ fromJSON(needs.swift-packages.outputs.shards) }}
     steps:
       - uses: actions/checkout@v4
       - name: Verify Xcode toolchain
         run: swift --version
       - name: Package tests (macOS host)
-        env:
-          SWIFT_SHARD: ${{ matrix.shard }}
-        run: python3 -B .github/scripts/swift_packages.py --shard "$SWIFT_SHARD"
+        run: python3 -B .github/scripts/swift_packages.py --run
 
   ios-app:
     # The App target with the CJShell four-tab shell and all iOS modules, built for the simulator.
