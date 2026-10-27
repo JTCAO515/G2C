@@ -18,13 +18,14 @@
 - 在制上限：1 张父票、最多 2 个开着的 PR。队列与当前位置见 handoff 的 `nextAction`。
 - PR 正文第一行写 `Closes #<子票>`（两段式写 `Refs #<子票>` 加 `Part 1/2`）。合并后在子票勾框并附 PR 链接，同步父票。
 - 范围外发现的问题开新票记录，不顺手修。
+- 自动续作（ADR-0007 第 7 条）：合并后先确认 main CI 全绿，再按队列取下一张子票；main 变红先修复或 revert；队列做完或碰到停点就停，并在 handoff 写明原因。
 
 ## 工作规则
 
 - 从最新 `main` 开分支，经 PR 合并；禁止直推 main、force push、改写历史。
-- 合并条件：PR 精确 head 上 CI 全部 job 全绿，并完成审查（作者会话不自批）：
-  - 普通 PR：另一个 Codex 会话在 PR 评论写 `Review: APPROVE <head SHA>`；
-  - 红线 PR（迁移/表结构、已冻结或新冻结契约、鉴权权限、签名密钥、删除用户数据、付费计费、`.github/**` 与测试入口脚本）：Claude 独立审查或 JT 在 PR 中明确同意。清单见 ADR-0007 第 3 条。
+- 合并条件：PR 精确 head 上 CI 全部 job 全绿；不继承作者上下文的 Codex 审查会话在 PR 评论写 `Review: APPROVE <head SHA>` 并附逐项核对；合并时用 `--match-head-commit` 锁定该 head。
+- 红线 PR（迁移/表结构、契约、鉴权权限、签名密钥、删除用户数据、付费计费、CI 与门禁）由 Codex 审查，但审查评论必须逐条写明 ADR-0007 第 3 条的追加必查项结果。
+- 必须停下来等 JT、不能自行合并：授权清单外的外部资源或仓库/云/密钥设置；修改 ADR、`AGENTS.md`、`docs/authorizations/**` 或放宽门禁；真实环境的不可逆操作；付费、商店或对外承诺。
 - PR 描述含精确 base/head、是否红线、验收框 → 证据表（PASS / FAIL / UNRUN / UNKNOWN）。
 - 新的运行日志、进程记录、压缩包、录屏不入库；放 CI artifact 或 PR 描述。仓库内不写本机绝对路径、秘密或个人凭据。
 - 改技术方案先读 ADR，改行为读对应规格。每个 PR 只更新 handoff 的当前状态字段（ADR-0007 第 6 条），并重新渲染 `HANDOFF.md`。

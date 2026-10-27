@@ -25,6 +25,6 @@ L2/L3 框已转记：`→ L2 #32` / `→ L3 #29`（如无则写“无”）。
 ## 合并前核对
 
 - [ ] 精确 head 上 CI 全部 job 全绿
-- [ ] 审查：普通 PR 由另一个 Codex 会话评论 `Review: APPROVE <head SHA>`；红线 PR 由 Claude 审查或 JT 明确同意
+- [ ] 审查：不继承作者上下文的 Codex 会话评论 `Review: APPROVE <head SHA>` 并附逐项核对；红线 PR 逐条写明 ADR-0007 第 3 条追加必查项结果
 - [ ] `docs/handoff.json` 已更新当前状态字段，`HANDOFF.md` 已重新渲染
-- [ ] 合并后在子票勾框并附本 PR 链接，同步父票
+- [ ] 合并后在子票勾框并附本 PR 链接，同步父票；确认 main CI 全绿后再取下一张子票
