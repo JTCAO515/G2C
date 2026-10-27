@@ -9,10 +9,10 @@ test_last_auth_callback_configuration_replacement_withholds (__main__.Compositio
 FAIL: test_last_auth_callback_scope_replacement_withholds (__main__.CompositionChecks.test_last_auth_callback_scope_replacement_withholds)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/protected_status_checks.py", line 122, in test_last_auth_callback_scope_replacement_withholds
+  File "<local>/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/protected_status_checks.py", line 122, in test_last_auth_callback_scope_replacement_withholds
     self._last_callback_rebind('scope')
     ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/protected_status_checks.py", line 142, in _last_callback_rebind
+  File "<local>/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/protected_status_checks.py", line 142, in _last_callback_rebind
     with self.assertRaises((ReadUnavailable,ReadContextViolation)):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: (<class 'cj_usage.read_status.ReadUnavailable'>, <class 'cj_auth.read_context.ReadContextViolation'>) not raised
@@ -21,10 +21,10 @@ AssertionError: (<class 'cj_usage.read_status.ReadUnavailable'>, <class 'cj_auth
 FAIL: test_last_auth_callback_configuration_replacement_withholds (__main__.CompositionChecks.test_last_auth_callback_configuration_replacement_withholds)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/protected_status_checks.py", line 125, in test_last_auth_callback_configuration_replacement_withholds
+  File "<local>/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/protected_status_checks.py", line 125, in test_last_auth_callback_configuration_replacement_withholds
     self._last_callback_rebind('configuration')
     ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/protected_status_checks.py", line 142, in _last_callback_rebind
+  File "<local>/Documents/Codex/2026-10-21/cj-008-usage/backend/usage/tests/protected_status_checks.py", line 142, in _last_callback_rebind
     with self.assertRaises((ReadUnavailable,ReadContextViolation)):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: (<class 'cj_usage.read_status.ReadUnavailable'>, <class 'cj_auth.read_context.ReadContextViolation'>) not raised

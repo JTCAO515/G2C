@@ -5,7 +5,7 @@ source integration by [SOURCES-REPORT](SOURCES-REPORT.md). Original results pres
 
 2026-10-22, author checks only. Fixed base
 `8f2ff45519d1d09f178f1fa766b6829d81bda77a`; independent clone
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback`, branch
+`<local>/Documents/Codex/2026-10-21/cj-023-feedback`, branch
 `cj/023-feedback`. Candidate source is fixed by this report's containing Git
 commit and `source-sha256.json`. Source clone was read-only; all new tracked files
 are under `backend/feedback/**` and `contracts/feedback/**`.

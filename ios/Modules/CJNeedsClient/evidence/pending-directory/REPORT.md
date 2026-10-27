@@ -4,7 +4,7 @@ Base `cd33fd09ad4854f676e0dd70a11419960fbb6497`; candidate is the commit contain
 this report. This business repair retains the d688 shared SDK pin and the cd33
 legal-timezone repair. Only CJNeedsClient source/tests/evidence are changed.
 
-Review source: `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ013-client-8c28bcb/`
+Review source: `<local>/Documents/Codex/2026-10-21/cj-review/CJ013-client-8c28bcb/`
 `review-summary.json`, `ClientCheck.swift` empty-pending case and
 `independent-client.log`. Original review artifacts/probes remain untouched.
 

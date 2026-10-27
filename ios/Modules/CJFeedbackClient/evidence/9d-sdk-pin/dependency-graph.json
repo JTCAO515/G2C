@@ -3,8 +3,8 @@
     {
       "identity": "cjfoundation",
       "name": "CJFoundation",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
       "version": "unspecified"
     }
   ],
@@ -12,106 +12,106 @@
     {
       "identity": "cjauth",
       "name": "CJAuth",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJAuth",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJAuth",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJAuth",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJAuth",
       "version": "unspecified"
     },
     {
       "identity": "cjfeedbackclient",
       "name": "CJFeedbackClient",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient",
       "version": "unspecified"
     },
     {
       "identity": "supabase-swift",
       "name": "Supabase",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/supabase-swift",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/supabase-swift",
       "url": "https://github.com/supabase/supabase-swift",
       "version": "2.55.4"
     },
     {
       "identity": "swift-asn1",
       "name": "swift-asn1",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-asn1",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-asn1",
       "url": "https://github.com/apple/swift-asn1.git",
       "version": "1.7.3"
     },
     {
       "identity": "swift-clocks",
       "name": "swift-clocks",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-clocks",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-clocks",
       "url": "https://github.com/pointfreeco/swift-clocks",
       "version": "1.1.1"
     },
     {
       "identity": "swift-collections",
       "name": "swift-collections",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-collections",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-collections",
       "url": "https://github.com/apple/swift-collections",
       "version": "1.7.3"
     },
     {
       "identity": "swift-concurrency-extras",
       "name": "swift-concurrency-extras",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-concurrency-extras",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-concurrency-extras",
       "url": "https://github.com/pointfreeco/swift-concurrency-extras",
       "version": "1.4.3"
     },
     {
       "identity": "swift-crypto",
       "name": "swift-crypto",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-crypto",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-crypto",
       "url": "https://github.com/apple/swift-crypto.git",
       "version": "4.5.2"
     },
     {
       "identity": "swift-http-types",
       "name": "swift-http-types",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-http-types",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-http-types",
       "url": "https://github.com/apple/swift-http-types",
       "version": "1.8.0"
     },
     {
       "identity": "swift-issue-reporting",
       "name": "swift-issue-reporting",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-issue-reporting",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-issue-reporting",
       "url": "https://github.com/pointfreeco/swift-issue-reporting",
       "version": "2.1.2"
     },
     {
       "identity": "swift-openapi-runtime",
       "name": "swift-openapi-runtime",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-openapi-runtime",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-openapi-runtime",
       "url": "https://github.com/apple/swift-openapi-runtime",
       "version": "1.13.3"
     },
     {
       "identity": "swift-openapi-urlsession",
       "name": "swift-openapi-urlsession",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-openapi-urlsession",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/swift-openapi-urlsession",
       "url": "https://github.com/apple/swift-openapi-urlsession",
       "version": "1.3.2"
     },
     {
       "identity": "xctest-dynamic-overlay",
       "name": "xctest-dynamic-overlay",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/xctest-dynamic-overlay",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJFeedbackClient/.build/checkouts/xctest-dynamic-overlay",
       "url": "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "version": "1.13.1"
     },
     {
       "identity": "cjmessageclient",
       "name": "CJMessageClient",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient",
       "version": "unspecified"
     },
     {
       "identity": "cjfoundation",
       "name": "CJFoundation",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
-      "url": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+      "path": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
+      "url": "<local>/Documents/Codex/2026-10-21/cj-023-feedback-client/ios/Modules/CJMessageClient/.generated/9d0f4b4c1e89b28d01de18092b5bf695de5bcde7/CJFoundation",
       "version": "unspecified"
     }
   ],

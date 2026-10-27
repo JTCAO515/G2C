@@ -5,7 +5,7 @@ Only CJMemoryClient source/tests/docs change; Auth, shared export, CJShell and
 server wire remain untouched. Prerequisite pins from the initial candidate remain.
 
 Original independent report:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-011-ios-memory-client/REPORT.md`.
+`<local>/Documents/Codex/2026-10-21/cj-testing/CJ-011-ios-memory-client/REPORT.md`.
 The Testing source is preserved verbatim in
 [testing-original-cases.swift.txt](testing-original-cases.swift.txt).
 Before changing implementation, executing those cases on 623 reproduced **4 FAIL,

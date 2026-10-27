@@ -8,7 +8,7 @@ No source from NEEDS/PLACE, root files or other owners was edited.
 ## Fixed PLACE consumption
 
 Pinned dependency: `dd4c375a731bbaef1d436bc3e88466040ac02294` from
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-012-place`. Its observed checkout
+`<local>/Documents/Codex/2026-10-21/cj-012-place`. Its observed checkout
 HEAD had moved to ec2d0a60e28ada64ac261185452070a3593cd6dc, clean, with only two
 evidence-file additions relative to dd4. Read actual fixed files using `git show`
 and used a fresh temporary `git archive dd4 backend/place contracts/place`

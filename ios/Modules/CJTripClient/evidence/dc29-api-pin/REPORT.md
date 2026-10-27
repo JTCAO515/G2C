@@ -53,16 +53,16 @@ No old fixed head or publication input was amended or overwritten.
 
 ```sh
 python3 ios/Modules/CJTripClient/evidence/dc29-api-pin/prepare_validation.py \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation
+  <local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin \
+  <local>/Documents/Codex/2026-10-21/cj-005-foundation
 swift package --package-path ios/Modules/CJTripClient/.build/dc29-pin-validation/assembly/ios/Modules/CJTripClient \
   --scratch-path /tmp/cj015-dc29-isolated-build --skip-update --force-resolved-versions \
   show-dependencies --format json > /tmp/cj015-dc29-isolated-graph.json
 # Wait for completion, then:
 python3 ios/Modules/CJTripClient/evidence/dc29-api-pin/check_pin.py \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation \
+  <local>/Documents/Codex/2026-10-21/cj-005-foundation \
   /tmp/cj015-dc29-isolated-graph.json \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin
+  <local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin
 ```
 
 Shared dual-PASS is supplied by Main; its FEAS tests were not duplicated here.

@@ -13,7 +13,7 @@ and can ignore the repeated-hour fold. In the original independent synthetic
 New York 2026-11-01 examples, an expiry at 05:45 UTC was incorrectly supported at
 06:15 UTC, and a retrieval at 06:30 UTC was incorrectly supported at 05:45 UTC.
 The original two probes were copied byte-for-byte from:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-034-fact/independent_time_checks.py`.
+`<local>/Documents/Codex/2026-10-21/cj-testing/CJ-034-fact/independent_time_checks.py`.
 Their exact source is retained in `backend/fact/tests/independent_time_checks.py`;
 its hash is recorded in this folder's source manifest. Independent originals were
 read-only throughout.

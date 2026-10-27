@@ -12,7 +12,7 @@
 - 已登记迁移只有 `backend/migrations/0001_foundation.sql`（仅 `cj.schema_migrations`）；7 个领域 `sql/candidate.sql` 均为候选，`scripts/check-empty-db-init.py` 固定 `apply: BLOCKED`。
 - 真实模型调用 UNRUN；Agent 运行时只在 `spikes/runtime`。OpenAPI 31 个端点，无 SSE 流式端点。
 - iOS 主 target 仍为 `ProbeView`；四 Tab `ShellView` 在独立 package `ios/Modules/CJShell`，未接入 App。
-- 2877 个文件中 1837 个位于 `evidence/`（约 48MB，含 `.log/.txt/.xz/.mp4`）；618 个文件含本机路径 `/Users/jtsm5p`，仓库为 PUBLIC 且无许可证。
+- 2877 个文件中 1837 个位于 `evidence/`（约 48MB，含 `.log/.txt/.xz/.mp4`）；618 个文件含本机路径 `<local>`，仓库为 PUBLIC 且无许可证。
 - `backend/cj_api/composition.py::_pinned_modules` 在运行时校验同仓兄弟模块文件 sha256；任何领域改动都需同步 `*_pins.json` 与 `PIN-UPDATE`，产生大量 Integrate 提交。
 - 根 `pyproject.toml` 外另有十余个领域级 `pyproject`/`uv.lock`；`scripts/` 有 49 个独立 check/build 脚本；无 `.github/` CI。
 - README 仍写“尚无产品工程、可运行 API、schema”；AGENTS.md / engineering.md 指向另一台机器的本地 HANDOFF 与旧仓库 `Go2China` Issue 链接，仓库内无 `docs/handoff.json`。

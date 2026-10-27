@@ -65,16 +65,16 @@ Reproduce fixed-input preparation/checks:
 
 ```sh
 python3 ios/Modules/CJTripClient/evidence/20aa-api-pin/prepare_validation.py \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation
+  <local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin \
+  <local>/Documents/Codex/2026-10-21/cj-005-foundation
 swift package --package-path ios/Modules/CJTripClient/.build/20aa-pin-validation/assembly/ios/Modules/CJTripClient \
   --scratch-path /tmp/cj015-20aa-isolated-build --skip-update --force-resolved-versions \
   show-dependencies --format json > /tmp/cj015-20aa-isolated-graph.json
 # Wait for successful completion, then:
 python3 ios/Modules/CJTripClient/evidence/20aa-api-pin/check_pin.py \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation \
+  <local>/Documents/Codex/2026-10-21/cj-005-foundation \
   /tmp/cj015-20aa-isolated-graph.json \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin
+  <local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin
 ```
 
 Requested Sol6.1/medium/standard/default; effective model/tier not independently verified.

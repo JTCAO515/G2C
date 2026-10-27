@@ -39,7 +39,7 @@ For the new targeted checks, first export the exact AUTH object from an explicit
 read-only repository containing it (no source checkout changes or network fetch):
 
 ```sh
-python3 backend/needs/tests/prepare_auth8b.py /Users/jtsm5p/Documents/Codex/2026-10-21/cj-publish/Go2China
+python3 backend/needs/tests/prepare_auth8b.py <local>/Documents/Codex/2026-10-21/cj-publish/Go2China
 uv run --frozen --offline --project backend/needs pytest -q -s backend/needs/tests/test_protected_read.py backend/needs/tests/test_postgres.py
 ```
 

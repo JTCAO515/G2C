@@ -1,6 +1,6 @@
 {
-  "data": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-journal-20261022/data",
-  "socket": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24s",
+  "data": "<local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-journal-20261022/data",
+  "socket": "<local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24s",
   "port": 55457,
   "role": "cj024journal",
   "listen_addresses": "",

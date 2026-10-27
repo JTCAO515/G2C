@@ -7,7 +7,7 @@ test_source_start_different_fold_must_not_match_original_request (test_route_off
 FAIL: test_source_start_different_fold_must_not_match_original_request (test_route_offsets.OffsetAuditTests.test_source_start_different_fold_must_not_match_original_request)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/tests/test_route_offsets.py", line 67, in test_source_start_different_fold_must_not_match_original_request
+  File "<local>/Documents/Codex/2026-10-21/cj-035-feasibility/backend/feasibility/tests/test_route_offsets.py", line 67, in test_source_start_different_fold_must_not_match_original_request
     self.assertIn('ROUTE_SOURCE_BINDING_UNKNOWN',codes(r))
     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: 'ROUTE_SOURCE_BINDING_UNKNOWN' not found in {'ROUTE_ENDPOINT_MAPPING_DECLARED', 'ROUTE_FUTURE_APPLICABILITY_UNKNOWN', 'PROTECTED_SCOPE_UNCHANGED', 'ROUTE_QUERY_AGE_CHECKED', 'ROUTE_EVIDENCE_UNVERIFIED'}

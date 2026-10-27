@@ -2,9 +2,9 @@
   "devices-before.json": {
     "com.apple.CoreSimulator.SimRuntime.iOS-26-5": [
       {
-        "dataPath": "/Users/jtsm5p/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data",
+        "dataPath": "<local>/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data",
         "dataPathSize": 1589981184,
-        "logPath": "/Users/jtsm5p/Library/Logs/CoreSimulator/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83",
+        "logPath": "<local>/Library/Logs/CoreSimulator/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83",
         "udid": "B80AD40D-F779-4FE3-A36D-CFD4C4A19D83",
         "lastUsedAt": "2026-10-21T11:41:22Z",
         "isAvailable": true,
@@ -16,9 +16,9 @@
     ],
     "com.apple.CoreSimulator.SimRuntime.iOS-17-5": [
       {
-        "dataPath": "/Users/jtsm5p/Library/Developer/CoreSimulator/Devices/067D1D66-39AC-4DF2-960D-7031B4EE5A44/data",
+        "dataPath": "<local>/Library/Developer/CoreSimulator/Devices/067D1D66-39AC-4DF2-960D-7031B4EE5A44/data",
         "dataPathSize": 728850432,
-        "logPath": "/Users/jtsm5p/Library/Logs/CoreSimulator/067D1D66-39AC-4DF2-960D-7031B4EE5A44",
+        "logPath": "<local>/Library/Logs/CoreSimulator/067D1D66-39AC-4DF2-960D-7031B4EE5A44",
         "udid": "067D1D66-39AC-4DF2-960D-7031B4EE5A44",
         "lastUsedAt": "2026-10-21T11:41:13Z",
         "isAvailable": true,
@@ -32,9 +32,9 @@
   "devices-active.json": {
     "com.apple.CoreSimulator.SimRuntime.iOS-26-5": [
       {
-        "dataPath": "/Users/jtsm5p/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data",
+        "dataPath": "<local>/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data",
         "dataPathSize": 1602445312,
-        "logPath": "/Users/jtsm5p/Library/Logs/CoreSimulator/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83",
+        "logPath": "<local>/Library/Logs/CoreSimulator/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83",
         "udid": "B80AD40D-F779-4FE3-A36D-CFD4C4A19D83",
         "lastUsedAt": "2026-10-21T12:02:55Z",
         "isAvailable": true,
@@ -46,9 +46,9 @@
     ],
     "com.apple.CoreSimulator.SimRuntime.iOS-17-5": [
       {
-        "dataPath": "/Users/jtsm5p/Library/Developer/CoreSimulator/Devices/067D1D66-39AC-4DF2-960D-7031B4EE5A44/data",
+        "dataPath": "<local>/Library/Developer/CoreSimulator/Devices/067D1D66-39AC-4DF2-960D-7031B4EE5A44/data",
         "dataPathSize": 740696064,
-        "logPath": "/Users/jtsm5p/Library/Logs/CoreSimulator/067D1D66-39AC-4DF2-960D-7031B4EE5A44",
+        "logPath": "<local>/Library/Logs/CoreSimulator/067D1D66-39AC-4DF2-960D-7031B4EE5A44",
         "udid": "067D1D66-39AC-4DF2-960D-7031B4EE5A44",
         "lastUsedAt": "2026-10-21T12:01:37Z",
         "isAvailable": true,

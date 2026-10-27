@@ -42,9 +42,9 @@
   },
   "own_manifest_parse": "PASS",
   "own_manifest_local_dependencies": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation",
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient",
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJAuth"
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation",
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient",
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJAuth"
   ],
   "official_sdk_compile": "PASS: CJAPI target only, macOS",
   "existing_five_operation_public_call_typecheck": "PASS: no operation executed",

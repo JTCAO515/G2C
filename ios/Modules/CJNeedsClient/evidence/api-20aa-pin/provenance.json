@@ -36,10 +36,10 @@
   "prepared_graph": {
     "status": "PASS",
     "logical_sdk_paths": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/.build/20aa-validation/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
+      "<local>/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJNeedsClient/.build/20aa-validation/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
     ],
     "physical_sdk_paths": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin/ios/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
+      "<local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin/ios/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
     ],
     "CJTripClient_dependency": false,
     "sdk_copied": false

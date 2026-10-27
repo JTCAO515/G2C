@@ -8,7 +8,7 @@ ImportError: Failed to import test module: test_composition
 Traceback (most recent call last):
   File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 141, in loadTestsFromName
     module = __import__(module_name)
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/backend/cj_api/tests/test_composition.py", line 9, in <module>
+  File "<local>/Documents/Codex/2026-10-21/cj-005-foundation/backend/cj_api/tests/test_composition.py", line 9, in <module>
     from cj_auth.interfaces import CJAccessFacts, Fact
 ModuleNotFoundError: No module named 'cj_auth'
 
@@ -20,7 +20,7 @@ ImportError: Failed to import test module: test_composition
 Traceback (most recent call last):
   File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 141, in loadTestsFromName
     module = __import__(module_name)
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/backend/cj_api/tests/test_composition.py", line 9, in <module>
+  File "<local>/Documents/Codex/2026-10-21/cj-005-foundation/backend/cj_api/tests/test_composition.py", line 9, in <module>
     from cj_auth.interfaces import CJAccessFacts, Fact
 ModuleNotFoundError: No module named 'cj_auth'
 

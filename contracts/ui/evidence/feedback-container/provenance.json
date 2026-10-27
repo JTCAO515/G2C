@@ -31,12 +31,12 @@
     "cjshell": {
       "name": "CJShell",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell"
+      "path": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell"
     },
     "cjauth": {
       "name": "CJAuth",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJAuth"
+      "path": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJAuth"
     },
     "supabase-swift": {
       "name": "Supabase",
@@ -81,12 +81,12 @@
     "cjmemoryclient": {
       "name": "CJMemoryClient",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMemoryClient"
+      "path": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMemoryClient"
     },
     "cjfoundation": {
       "name": "CJFoundation",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/201156c9bf9850f9b8e87dc1f986452ce1ae789f/CJFoundation"
+      "path": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/201156c9bf9850f9b8e87dc1f986452ce1ae789f/CJFoundation"
     },
     "swift-openapi-runtime": {
       "name": "swift-openapi-runtime",
@@ -106,27 +106,27 @@
     "cjmessageclient": {
       "name": "CJMessageClient",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient"
+      "path": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient"
     },
     "cjtripclient": {
       "name": "CJTripClient",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJTripClient"
+      "path": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJTripClient"
     },
     "cjneedsclient": {
       "name": "CJNeedsClient",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJNeedsClient"
+      "path": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJNeedsClient"
     },
     "cjfeedbackclient": {
       "name": "CJFeedbackClient",
       "version": "unspecified",
-      "path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJFeedbackClient"
+      "path": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJFeedbackClient"
     }
   },
   "cjfoundation_references": 10,
   "unique_cjfoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/201156c9bf9850f9b8e87dc1f986452ce1ae789f/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJMessageClient/.generated/201156c9bf9850f9b8e87dc1f986452ce1ae789f/CJFoundation"
   ],
   "graph_sha256": "81c576679d5d5aa20ae08c94c12173189a8fb24ebddd17704d5206c81dfb7e6f",
   "exact_export_hashes": {

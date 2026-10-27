@@ -1,7 +1,7 @@
 # Trip content V2 schema proposal — producer ABI fixed / formal wire not accepted
 
 Owner CJ005, branch `cj/005-v2-schema-proposal`, isolated clone
-`/Users/jtsm5p/Documents/Codex/2026-10-26/cj-005-v2-schema`.
+`<local>/Documents/Codex/2026-10-26/cj-005-v2-schema`.
 Base is merged main `a10ad8998fbac4e2a648dd0137f1872eb12b8239` (PR135).
 This lease adds only this note, the unregistered schema fragment, same-directory
 fixtures/checker/result. Original5525/HOLD tree is not modified or executed.

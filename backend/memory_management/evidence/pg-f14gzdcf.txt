@@ -1,5 +1,5 @@
 CJ019 guarded delta / canonical 0045 / synthetic AUTH and real private PG
-data=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data
+data=<local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data
 socket=/private/tmp/cj019-xeo1trph
 PG environment replaced; empty explicit passfile; no TCP listener
 postgres (PostgreSQL) 16.15 (Homebrew)
@@ -11,7 +11,7 @@ The default text search configuration will be set to "english".
 
 Data page checksums are disabled.
 
-creating directory /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data ... ok
+creating directory <local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data ... ok
 creating subdirectories ... ok
 selecting dynamic shared memory implementation ... posix
 selecting default max_connections ... 100
@@ -24,10 +24,10 @@ syncing data to disk ... ok
 
 Success. You can now start the database server using:
 
-    '/opt/homebrew/opt/postgresql@16/bin/pg_ctl' -D /Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data -l logfile start
+    '/opt/homebrew/opt/postgresql@16/bin/pg_ctl' -D <local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data -l logfile start
 waiting for server to start.... done
 server started
-PASS private PG identity/settings: ('cj019_owner', 'postgres', '', '/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data', 'UTF8')
+PASS private PG identity/settings: ('cj019_owner', 'postgres', '', '<local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/.local/pg-f14gzdcf/data', 'UTF8')
 test_01_restricted_context_apply_query_same_transaction (__main__.Checks.test_01_restricted_context_apply_query_same_transaction) ... ok
 test_02_precommit_cancellation_rollback_sticky_when_caught (__main__.Checks.test_02_precommit_cancellation_rollback_sticky_when_caught) ... ok
 test_03_committed_ack_faults_keep_original_action (__main__.Checks.test_03_committed_ack_faults_keep_original_action) ... ok
@@ -55,4 +55,4 @@ waiting for server to shut down.... done
 server stopped
 final pg_ctl status=3
 PASS safe stop: no running server/PID/socket; data/logs preserved
-evidence=/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/evidence/pg-f14gzdcf.txt
+evidence=<local>/Documents/Codex/2026-10-21/cj-019-memory-management/backend/memory_management/evidence/pg-f14gzdcf.txt

@@ -49,7 +49,7 @@ from an older database, credentials or provider dispatch.
 Use INPUT_EXPORT with exact fixed NEEDS4cc9 + AUTH8b, from repository root:
 
 ```sh
-PYTHONPATH="$INPUT_EXPORT/backend/auth:$INPUT_EXPORT/backend/needs:backend/feasibility:backend/feasibility/tests" PYTHONDONTWRITEBYTECODE=1 /Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.venv/bin/python -B -m unittest test_protected_current.ProtectedCurrentTests -v
+PYTHONPATH="$INPUT_EXPORT/backend/auth:$INPUT_EXPORT/backend/needs:backend/feasibility:backend/feasibility/tests" PYTHONDONTWRITEBYTECODE=1 <local>/Documents/Codex/2026-10-21/cj-013-needs/backend/needs/.venv/bin/python -B -m unittest test_protected_current.ProtectedCurrentTests -v
 ```
 
 This is author local integration evidence for the complete internal read entry.

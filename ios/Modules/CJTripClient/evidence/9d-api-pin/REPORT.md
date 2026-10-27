@@ -68,7 +68,7 @@ swift package --package-path ios/Modules/CJTripClient \
   show-dependencies --format json > /tmp/cj015-9d-package-graph.json
 # After the preceding command finishes:
 python3 ios/Modules/CJTripClient/evidence/9d-api-pin/check_pin.py \
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation \
+  <local>/Documents/Codex/2026-10-21/cj-005-foundation \
   /tmp/cj015-9d-package-graph.json
 ```
 

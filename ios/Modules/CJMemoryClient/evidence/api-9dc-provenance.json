@@ -9,7 +9,7 @@
     "ios/Package.resolved",
     "ios/Sources/CJAPI/MemoryClientConfiguration.swift"
   ],
-  "shared_cjfoundation_path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation",
+  "shared_cjfoundation_path": "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation",
   "official_export_hashes": {
     "57336d501e5691302a3d5e9770f07666d1c57d4a": {
       "ios/Package.resolved": "69e139139d2a150b3e24f88d29add8bb9344f281801ea95ab9f7e5eec137af97",
@@ -51,6 +51,6 @@
   "openapi_sha256": "314a3d80e45bc1e81dd4a573e8aaf5c248a0d4ff197e6ee04783c1369d2253c0",
   "resolved_cjfoundation_occurrences": 2,
   "resolved_unique_cjfoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/9dc67ced50a0cb7611a84b4adf97ab0b43c88bea/CJFoundation"
   ]
 }

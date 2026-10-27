@@ -10,7 +10,7 @@
   },
   "unresolved_first_party_frame_occurrences": 71,
   "first_party_binaries": {
-    "6A29186A-B590-361F-8DB7-A9ED29D88D4F": "/Users/jtsm5p/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data/Containers/Bundle/Application/BCE49350-9EC1-4715-B55E-171AFC07DB86/CJIOSSpike.app/CJIOSSpike"
+    "6A29186A-B590-361F-8DB7-A9ED29D88D4F": "<local>/Library/Developer/CoreSimulator/Devices/B80AD40D-F779-4FE3-A36D-CFD4C4A19D83/data/Containers/Bundle/Application/BCE49350-9EC1-4715-B55E-171AFC07DB86/CJIOSSpike.app/CJIOSSpike"
   },
   "caveat": "One simulator Debug trace; statistical CPU sample weights, not FPS, frame latency, wall-time utilization or product acceptance. Trace warning must be considered.",
   "hotspot_conclusion": "WITHHELD: unresolved first-party frames; symbolication gate not satisfied"

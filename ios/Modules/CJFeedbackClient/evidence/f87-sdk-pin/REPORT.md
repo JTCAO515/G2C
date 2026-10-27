@@ -15,7 +15,7 @@ repo, and no known-conflicting original graph was run. Preparation lives only un
 this module's ignored `.build/f87-pin/snapshot/ios/Modules/`:
 
 - Shared CJMessageClient copied byte-for-byte from
-  `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin`
+  `<local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin`
   **5075bcf604e959d5c4592071a1e9de39d8687395**, tree recorded in compatibility.json.
 - CJAuth copied from this original clean base, tree3ba7e7f5390b48ba523342131f25b73c996b4410.
 - Feedback Package/Sources/Tests/lock copied exactly from this candidate.

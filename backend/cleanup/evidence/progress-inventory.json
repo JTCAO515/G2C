@@ -1,6 +1,6 @@
 {
-  "data": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-progress-20261023/data",
-  "socket": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24p",
+  "data": "<local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-progress-20261023/data",
+  "socket": "<local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24p",
   "port": 55459,
   "role": "cj024progress",
   "read_role": "cj024progress_read",

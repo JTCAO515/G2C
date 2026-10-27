@@ -1,9 +1,9 @@
 {
   "baseline": "7690a5f56717c22b4f0cfd96e50bcd5044c94da6",
-  "private_graph_root": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/f87-consumer-7690a5-c4d624f8",
+  "private_graph_root": "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/f87-consumer-7690a5-c4d624f8",
   "inputs": {
     "memory": {
-      "source": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client",
+      "source": "<local>/Documents/Codex/2026-10-21/cj-011-memory-client",
       "commit": "7690a5f56717c22b4f0cfd96e50bcd5044c94da6",
       "source_prefix": "ios/Modules/CJMemoryClient",
       "files": {
@@ -19,7 +19,7 @@
       }
     },
     "shared": {
-      "source": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin",
+      "source": "<local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin",
       "commit": "5075bcf604e959d5c4592071a1e9de39d8687395",
       "source_prefix": "ios/Modules/CJMessageClient",
       "files": {
@@ -58,7 +58,7 @@
       }
     },
     "auth": {
-      "source": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client",
+      "source": "<local>/Documents/Codex/2026-10-21/cj-011-memory-client",
       "commit": "b24cc77c307bbb1dd9c552aeb92a148213534541",
       "source_prefix": "ios/Modules/CJAuth",
       "files": {
@@ -82,7 +82,7 @@
       }
     },
     "sdk": {
-      "source": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation",
+      "source": "<local>/Documents/Codex/2026-10-21/cj-005-foundation",
       "commit": "f87a78a9d8984c59905e385483f17dddd8144d8a",
       "source_prefix": "ios",
       "files": {
@@ -111,8 +111,8 @@
   "single_sdk_graph": "PASS: two references to one canonical f87 CJFoundation in private fixed-input consumer graph",
   "fixed_input_hashes_unchanged_after_consumer_tests": true,
   "resolved_sdk_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/f87-consumer-7690a5-c4d624f8/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation",
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/f87-consumer-7690a5-c4d624f8/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/f87-consumer-7690a5-c4d624f8/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation",
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/f87-consumer-7690a5-c4d624f8/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
   ],
   "resolved_dependency_identities": [
     "cjauth",

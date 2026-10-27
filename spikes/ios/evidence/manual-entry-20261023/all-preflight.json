@@ -3,7 +3,7 @@
   "source_head": "abf79f38169c361fd755c84f8f86c59513c7af65",
   "mode": "all",
   "bundle_id": "space.go2china.cj004.spike",
-  "app": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/performance-post-p2/CJIOSSpike.app",
+  "app": "<local>/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/performance-post-p2/CJIOSSpike.app",
   "runtimes": [
     {
       "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-17-5",

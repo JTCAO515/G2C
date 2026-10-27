@@ -9,7 +9,7 @@ wire/types/transports/store/key provider and shared locks are unchanged.
 ## Original evidence and reproduced failure
 
 Independent Testing source:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-023-ios-feedback-client/REPORT.md`
+`<local>/Documents/Codex/2026-10-21/cj-testing/CJ-023-ios-feedback-client/REPORT.md`
 and independent-tests.log. Original test copied **byte-for-byte** from its snapshot
 Tests/CJFeedbackClientTests/IndependentFeedbackBoundaryTests.swift into this module.
 SHA256: f83f21f7f07907ef8ca8935db4660060501dc33832de649e7c3d64d038d2a9d7.

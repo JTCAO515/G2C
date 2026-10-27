@@ -6,7 +6,7 @@
 # CJ019 Memory lifecycle Shell host — local candidate
 
 Base: `0d1e7b76217ea1325ad3dbc694282aa65308cf47` (original CJ006 f87 candidate, untouched).
-Branch/root: `cj/019-memory-shell`, `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-019-memory-shell`.
+Branch/root: `cj/019-memory-shell`, `<local>/Documents/Codex/2026-10-21/cj-019-memory-shell`.
 Local commit is the commit containing this report; delivery receipt reads its exact head/tree.
 Only this integration owner writes the leased paths. No push, PR, merge, Issue close or HANDOFF edit.
 

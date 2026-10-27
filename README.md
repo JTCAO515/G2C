@@ -2,7 +2,7 @@
 
 面向外国来中国旅游的游客：记住已授权的事实、经历与偏好，提供有来源的旅行建议，并在持续修改中保护已经确认的安排。App 名为 **G2C**，Web 品牌为 **go2china.space**，后端为 **CJ Agent 系统**。
 
-**当前状态：JT 已授权正式开发，由唯一 CJ Main 协调。** PR #36 已合并为文档基线；该基线尚无产品工程、可运行 API、数据库 schema、已冻结契约或已验证技术组合。授权、文档合并与 Issue 规划均不代表产品实现、验收或上线；当前任务与证据以[唯一 Main/HANDOFF](docs/engineering.md#角色与写权)为准。
+**当前状态（2026-10-27）：** 处于 [ADR-0004](docs/adr/0004-delivery-flow-and-repo-hygiene.md) 的 P0 仓库卫生阶段。仓库已有各领域后端模块（`backend/*`）、本地 FastAPI 组合（`backend/cj_api`，仅 `CJ_ENV=local`）、OpenAPI 契约（`contracts/api/openapi.json`）、iOS 包与探针 App（`ios/`）和技术 spike（`spikes/`）；但尚无用户可用的端到端链路：已登记迁移只有空的 foundation，真实模型调用 UNRUN，iOS 主 App 仍为探针。当前状态、阻塞与唯一下一步以 [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成）为准。
 
 ## 已确认的产品边界
 
@@ -31,6 +31,14 @@
 
 客户端展示与收集操作；CJ API 校验身份、版本和业务写入；单主 Agent 提出建议；地点/事实/求解工具提供证据；业务库保存正式状态；内部记忆组件提供受控派生检索。详见[模块边界](docs/architecture.md#模块职责)。客户端与模型均不能直接改正式旅程。
 
-PR #36 基线的启动、构建、测试、生成客户端和迁移命令均为**待初始化**，后续以实际工程与验证结果更新。唯一 Main 已接管，按[工程说明](docs/engineering.md#后续开工顺序)组织契约和适用验证；原 Main 不恢复。本次仅修订文档，不创建线程。开发授权不包含付费调用、云资源、权限/凭据变更、外联、公开发布或删除旧数据。
+## 本地检查（与 CI 一致）
 
-仓库许可证与产品法律条款待定；公开仓库不等于已授予开源许可。此处不预设商业收费、城市、最低 iOS 或技术兼容性结论。
+```bash
+uv sync --locked
+CJ_ENV=local PYTHONPATH=backend:backend/auth:backend/message uv run pytest -q backend/tests
+uv run openapi-spec-validator contracts/api/openapi.json
+```
+
+各领域模块测试与 iOS 包测试见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)；CI 结果是唯一的“绿”，作者自报只作补充。开发授权不包含付费调用、云资源、权限/凭据变更、外联、公开发布或删除旧数据。
+
+仓库许可证与产品法律条款待定；公开仓库不等于已授予开源许可。P2 范围已确认单城市北京、邮箱一次性登录、最低 iOS 17（见 ADR-0004）；此处不预设商业收费或技术兼容性结论。

@@ -1,6 +1,6 @@
 {
   "foundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
   ],
   "foundation_refs": 23,
   "unique_f87": true,
@@ -9,43 +9,43 @@
   "cleanup_root_reachable": true,
   "module_paths": {
     "cjshell": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell"
     ],
     "cjauth": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJAuth"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJAuth"
     ],
     "cjmemoryclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJMemoryClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJMemoryClient"
     ],
     "cjfoundation": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJMessageClient/.generated/f87a78a9d8984c59905e385483f17dddd8144d8a/CJFoundation"
     ],
     "cjmessageclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJMessageClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJMessageClient"
     ],
     "cjtripclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJTripClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJTripClient"
     ],
     "cjmanualpreviewclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJManualPreviewClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJManualPreviewClient"
     ],
     "cjneedsclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJNeedsClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJNeedsClient"
     ],
     "cjfeedbackclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJFeedbackClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJFeedbackClient"
     ],
     "cjrunclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJRunClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJRunClient"
     ],
     "cjusageclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJUsageClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJUsageClient"
     ],
     "cjofflinetrip": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJOfflineTrip"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJOfflineTrip"
     ],
     "cjcleanupclient": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJCleanupClient"
+      "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.deps/f87a78a9d8984c59905e385483f17dddd8144d8a/ios/Modules/CJCleanupClient"
     ]
   }
 }

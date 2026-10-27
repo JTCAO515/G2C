@@ -6,19 +6,19 @@ test_source_timestamp_conversion_does_not_escape_raw_overflow (__main__.Independ
 FAIL: test_source_timestamp_conversion_does_not_escape_raw_overflow (__main__.IndependentInstantBoundary.test_source_timestamp_conversion_does_not_escape_raw_overflow) (field='published_at')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/independent_overflow_checks.py", line 20, in test_source_timestamp_conversion_does_not_escape_raw_overflow
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/independent_overflow_checks.py", line 20, in test_source_timestamp_conversion_does_not_escape_raw_overflow
     extract_structured_evidence(doc, evidence_id='independent-boundary', fact_key='fixture-key', policy=POLICY)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/structured.py", line 93, in extract_structured_evidence
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/structured.py", line 93, in extract_structured_evidence
     return Evidence(evidence_id, fact_key, document, value,
                     optional('regions', regions), optional('dates', dates),
                     optional('conditions', conditions), optional('published_at', stamp),
                     optional('expires_at', stamp))
   File "<string>", line 13, in __init__
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/model.py", line 134, in __post_init__
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/model.py", line 134, in __post_init__
     and _instant(self.expires_at.value) <= _instant(self.published_at.value)):
                                            ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/model.py", line 19, in _instant
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/model.py", line 19, in _instant
     return value.astimezone(timezone.utc)
            ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
 OverflowError: date value out of range
@@ -26,7 +26,7 @@ OverflowError: date value out of range
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/independent_overflow_checks.py", line 24, in test_source_timestamp_conversion_does_not_escape_raw_overflow
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/independent_overflow_checks.py", line 24, in test_source_timestamp_conversion_does_not_escape_raw_overflow
     self.fail('Untrusted source '+field+' escaped as raw UTC-conversion OverflowError')
     ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Untrusted source published_at escaped as raw UTC-conversion OverflowError
@@ -35,19 +35,19 @@ AssertionError: Untrusted source published_at escaped as raw UTC-conversion Over
 FAIL: test_source_timestamp_conversion_does_not_escape_raw_overflow (__main__.IndependentInstantBoundary.test_source_timestamp_conversion_does_not_escape_raw_overflow) (field='expires_at')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/independent_overflow_checks.py", line 20, in test_source_timestamp_conversion_does_not_escape_raw_overflow
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/independent_overflow_checks.py", line 20, in test_source_timestamp_conversion_does_not_escape_raw_overflow
     extract_structured_evidence(doc, evidence_id='independent-boundary', fact_key='fixture-key', policy=POLICY)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/structured.py", line 93, in extract_structured_evidence
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/structured.py", line 93, in extract_structured_evidence
     return Evidence(evidence_id, fact_key, document, value,
                     optional('regions', regions), optional('dates', dates),
                     optional('conditions', conditions), optional('published_at', stamp),
                     optional('expires_at', stamp))
   File "<string>", line 13, in __init__
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/model.py", line 134, in __post_init__
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/model.py", line 134, in __post_init__
     and _instant(self.expires_at.value) <= _instant(self.published_at.value)):
         ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/model.py", line 19, in _instant
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/cj_fact/model.py", line 19, in _instant
     return value.astimezone(timezone.utc)
            ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
 OverflowError: date value out of range
@@ -55,7 +55,7 @@ OverflowError: date value out of range
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/independent_overflow_checks.py", line 24, in test_source_timestamp_conversion_does_not_escape_raw_overflow
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/independent_overflow_checks.py", line 24, in test_source_timestamp_conversion_does_not_escape_raw_overflow
     self.fail('Untrusted source '+field+' escaped as raw UTC-conversion OverflowError')
     ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Untrusted source expires_at escaped as raw UTC-conversion OverflowError

@@ -30,7 +30,7 @@
   "old20aa_paths_unchanged": 28,
   "old20aa_schemas_unchanged": 97,
   "candidate_unique_cjfoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJRunClient/.build/DC29-pin-evidence/fixture/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-010-run-client/ios/Modules/CJRunClient/.build/DC29-pin-evidence/fixture/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
   ],
   "targeted_tests": {
     "functions": 5,

@@ -3,7 +3,7 @@
 差额 base e16b0a3ff9dd54d7cb637c26acdb9b08e01abdf1；仅原 Cleanup 写区。
 
 原独立来源（只读）：
-- /Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-024-cleanup/REPORT.md
+- <local>/Documents/Codex/2026-10-21/cj-testing/CJ-024-cleanup/REPORT.md
 - 同目录 independent_receipt_checks.py、independent-receipt-tests.log
 
 原两 probe 文件逐字复制到 tests/independent_receipt_checks.py，原FAIL log保存在 p2-independent-before.log；原 e16 HOLD 保留，不追认通过。

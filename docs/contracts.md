@@ -4,7 +4,7 @@
 
 ## 契约 owner 与发布
 
-[CJ-005 / #5](https://github.com/JTCAO515/Go2China/issues/5) 的 15 项 `@1.0` 是首个待发布版本目标，owner 是规划任务职责，不是已指派人/线程。
+[CJ-005 / #5](https://github.com/JTCAO515/G2C/issues/5) 的 15 项 `@1.0` 是首个待发布版本目标，owner 是规划任务职责，不是已指派人/线程。
 
 | 契约组 | 规划 owner | 核心消费约定 |
 |---|---|---|

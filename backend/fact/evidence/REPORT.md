@@ -9,7 +9,7 @@ Original logs and source manifest below remain the baseline evidence.
 Date: 2026-10-22, Asia/Shanghai. Base:
 `8deb696f8149b4f5aa70c767be6c3a263b036227`.
 Branch: `cj/034-fact`. Worktree:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact`.
+`<local>/Documents/Codex/2026-10-21/cj-034-fact`.
 Candidate is fixed by the commit containing this report; exact product/contract/
 test hashes are recorded in `source-sha256.json` (evidence files excluded).
 Only `backend/fact/**` and `contracts/fact/**` are changed. No shared locks,

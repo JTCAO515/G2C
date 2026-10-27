@@ -8,7 +8,7 @@ Independent Review/Testing of this repair is PENDING, not author approval.
 ## Actual before/after
 
 Original reviewer source/report:
-`/Users/jtsm5p/Documents/Codex/2026-10-21/cj-review/CJ015-client-c782339/`.
+`<local>/Documents/Codex/2026-10-21/cj-review/CJ015-client-c782339/`.
 `original-replay-before.txt` reruns that fixed reviewer executable against a fresh
 module-private synthetic directory and the original fixture. It reproduced all
 three reported observations: old accept click queried reject, reentrant newer

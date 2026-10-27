@@ -11,7 +11,7 @@ Traceback (most recent call last):
   File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py", line 720, in run_until_complete
     return future.result()
            ~~~~~~~~~~~~~^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/secret_echo_checks.py", line 26, in test_duplicate_key_escaped_credential_must_not_enter_response
+  File "<local>/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/secret_echo_checks.py", line 26, in test_duplicate_key_escaped_credential_must_not_enter_response
     self.assertIsNone(result.response,'recoverable credential echo must not escape in Response.body')
     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Response(<private body>) is not None : recoverable credential echo must not escape in Response.body
@@ -26,7 +26,7 @@ Traceback (most recent call last):
   File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py", line 720, in run_until_complete
     return future.result()
            ~~~~~~~~~~~~~^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/secret_echo_checks.py", line 33, in test_truncated_json_escaped_credential_must_not_enter_response
+  File "<local>/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/secret_echo_checks.py", line 33, in test_truncated_json_escaped_credential_must_not_enter_response
     self.assertIsNone(result.response,'recoverable credential echo must not escape in malformed Response.body')
     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Response(<private body>) is not None : recoverable credential echo must not escape in malformed Response.body

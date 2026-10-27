@@ -11,7 +11,7 @@
 - base：`13905e4587feb8611ebde5e3621024f3338532ae`
 - 代码与原始证据固定 head：`0eb447f93041444ce491678f559fbb72041acd29`；后续报告提交只改本文。
 - 分支 `cj/004-ios`；remote `https://github.com/JTCAO515/Go2China.git`。
-- 工作树 `/Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios`，独立 clone；初始目录不存在，原 task-4 仓库只读。全部 delta 位于 `spikes/ios/**`，无共享工程/HANDOFF/原13文档/Issue 改动，无 push/merge/deploy。
+- 工作树 `<local>/Documents/Codex/2026-10-21/cj-004-ios`，独立 clone；初始目录不存在，原 task-4 仓库只读。全部 delta 位于 `spikes/ios/**`，无共享工程/HANDOFF/原13文档/Issue 改动，无 push/merge/deploy。
 - 模型 requested：UNKNOWN（工程文档执行默认偏好 gpt-6.1-sol/medium，不是配置回执）；accepted/effective：UNKNOWN。
 
 ## 采用/替换结论

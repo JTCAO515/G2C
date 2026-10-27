@@ -46,7 +46,7 @@ Runtime tests use only the same explicit synthetic intercepted NEEDS fixture as1
 
 ## Reproduce
 
-Run `python3 -B ios/Modules/CJShell/scripts/prepare_feasibility_real_shell.py /Users/jtsm5p/Documents/Codex/2026-10-21`; use its printed directory/Modules/CJShell. This script is now the formal-peer successor to the fixed119 script; check out119 to reproduce the old compatibility snapshot. No moving owner HEADs are read.
+Run `python3 -B ios/Modules/CJShell/scripts/prepare_feasibility_real_shell.py <local>/Documents/Codex/2026-10-21`; use its printed directory/Modules/CJShell. This script is now the formal-peer successor to the fixed119 script; check out119 to reproduce the old compatibility snapshot. No moving owner HEADs are read.
 
 All commands unset CJ_SHELL_ISOLATED_DEPS and CJ_CLEANUP_ISOLATED_DEPS, use --disable-sandbox / --disable-automatic-resolution and /tmp/cj006-spm-cache. Graph/test compiler caches: CLANG_MODULE_CACHE_PATH=/tmp/cj006-clang-cache, SWIFTPM_MODULECACHE_OVERRIDE=/tmp/cj006-swift-cache.
 

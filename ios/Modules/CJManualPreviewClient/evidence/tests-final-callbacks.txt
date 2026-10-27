@@ -2,7 +2,7 @@ Building for debugging...
 [Computing dependencies]
 [2 / 4] CJManualPreviewClientTests-product
 [4 / 6] CJManualPreviewClientTests-product
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-017-manual-preview-client/ios/Modules/CJManualPreviewClient/Tests/CJManualPreviewClientTests/LifetimeTests.swift:18:16: warning: 'editor' mutated after capture by sendable closure
+<local>/Documents/Codex/2026-10-21/cj-017-manual-preview-client/ios/Modules/CJManualPreviewClient/Tests/CJManualPreviewClientTests/LifetimeTests.swift:18:16: warning: 'editor' mutated after capture by sendable closure
  15 |     @Test func credentialCallbackEditCannotDispatchOrEraseNewDraft() async throws {
  16 |         let h = try Harness(); try await h.load(); let wire = Wire(try response(preview(h.original)))
  17 |         var editor: PreviewEditor!

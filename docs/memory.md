@@ -1,6 +1,6 @@
 # 首批完整长记忆规格
 
-行为要求已确认；数据模型、API 与存储实现待验证。责任链：组件验证 CJ-003 [#3](https://github.com/JTCAO515/Go2China/issues/3)；条目与及时保存 CJ-011 [#12](https://github.com/JTCAO515/Go2China/issues/12)；编辑/启停 CJ-019 [#17](https://github.com/JTCAO515/Go2China/issues/17)；持续沉淀/摘要检索 CJ-020 [#23](https://github.com/JTCAO515/Go2China/issues/23)；删除 CJ-021 [#26](https://github.com/JTCAO515/Go2China/issues/26)；注销 CJ-024 [#27](https://github.com/JTCAO515/Go2China/issues/27)。
+行为要求已确认；数据模型、API 与存储实现待验证。责任链：组件验证 CJ-003 [#3](https://github.com/JTCAO515/G2C/issues/3)；条目与及时保存 CJ-011 [#12](https://github.com/JTCAO515/G2C/issues/12)；编辑/启停 CJ-019 [#17](https://github.com/JTCAO515/G2C/issues/17)；持续沉淀/摘要检索 CJ-020 [#23](https://github.com/JTCAO515/G2C/issues/23)；删除 CJ-021 [#26](https://github.com/JTCAO515/G2C/issues/26)；注销 CJ-024 [#27](https://github.com/JTCAO515/G2C/issues/27)。
 
 ## 内容与权威
 
@@ -37,7 +37,7 @@ UI 区分待确认、保存中、成功、失败与结果未知。保存失败�
 
 ## 验收链
 
-CJ-025/026/028 [#28](https://github.com/JTCAO515/Go2China/issues/28)、[#29](https://github.com/JTCAO515/Go2China/issues/29)、[#32](https://github.com/JTCAO515/Go2China/issues/32)对当前候选分别验证：
+CJ-025/026/028 [#28](https://github.com/JTCAO515/G2C/issues/28)、[#29](https://github.com/JTCAO515/G2C/issues/29)、[#32](https://github.com/JTCAO515/G2C/issues/32)对当前候选分别验证：
 
 1. 两账号、中英表达：明确保存/归纳确认 → 真实库条目 → 详情/回执 → 同会话下一轮 → 新聊天 → App 与服务重启 → 不同旅行，实际影响回答/规划。
 2. 临时与长期、用户与同伴、推断与事实、生成行程与真实决定分别验证；基础聊天摘要可无 Trip，真实接受/修改旅程来源后续接入仍需完整组合验证。

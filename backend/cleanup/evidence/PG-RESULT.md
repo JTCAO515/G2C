@@ -11,8 +11,8 @@ Independent follow-on to the receipt fix; not a replacement for its independent 
 
 Initial checks: suggested root absent, new shorter socket root absent, /tmp same-port socket absent and no 55457 TCP listener. Suggested socket path would be123bytes, too long for macOS; reported adjustment before creation to task-owned .local/c24s (98bytes full socket file). No existing instance was reused.
 
-- Data: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-journal-20261022/data
-- Socket: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24s
+- Data: <local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/cj024-journal-20261022/data
+- Socket: <local>/Documents/Codex/2026-10-21/cj-024-cleanup/backend/cleanup/.local/c24s
 - Port55457; private bootstrap/test role cj024journal; database postgres, initial public table count0 verified.
 - Explicit empty task passfile, PG/LIBPQ ambient variables removed, explicit connection kwargs; no ambientDSN, secrets or old data read.
 - PostgreSQL16.15 installed /opt/homebrew/opt/postgresql@16/bin; Python3.14; installed psycopg3.2.10 reused read-only from CJ005's driver directory. No install/new dependency resolution.
@@ -30,7 +30,7 @@ Final stop complete: pg_ctl status exit3 no server running; no postmaster.pid/so
 Reproduce only in a newly authorized absent resource root; runner intentionally refuses the already-preserved original paths:
 
 ```sh
-/opt/homebrew/bin/python3.14 backend/cleanup/tests/private_pg.py --pg-bin /opt/homebrew/opt/postgresql@16/bin --driver /Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-pg/driver
+/opt/homebrew/bin/python3.14 backend/cleanup/tests/private_pg.py --pg-bin /opt/homebrew/opt/postgresql@16/bin --driver <local>/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-pg/driver
 ```
 
 Original14 state tests and964 strict receipt2+3 evidence reused; only affected real transactions/faults/restart added, no other domain suites run. py_compile and git diff/check PASS.

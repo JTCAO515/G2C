@@ -68,6 +68,6 @@
   "openapi_sha256": "9dfa1a985f25b0fc672c1b042dc59fd3717520ec54909ab134184ba2584a1ccf",
   "resolved_cjfoundation_occurrences": 2,
   "resolved_unique_cjfoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/d688c01dc0fb18488a1e9c49414a039ce0126204/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMessageClient/.generated/d688c01dc0fb18488a1e9c49414a039ce0126204/CJFoundation"
   ]
 }

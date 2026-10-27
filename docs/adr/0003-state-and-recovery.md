@@ -2,7 +2,7 @@
 
 - 状态：**proposed**（设计约定待契约 owner 固定；用户控制要求已见 ADR-0001）
 - 日期：2026-10-21
-- owner：BASE/MESSAGE/RUN/TRIP/MEMORY/CLEANUP，见 [CJ-005](https://github.com/JTCAO515/Go2China/issues/5)
+- owner：BASE/MESSAGE/RUN/TRIP/MEMORY/CLEANUP，见 [CJ-005](https://github.com/JTCAO515/G2C/issues/5)
 
 ## 背景与选项
 

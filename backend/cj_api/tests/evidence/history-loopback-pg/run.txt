@@ -2,7 +2,7 @@ Building for debugging...
 [1 / 1]
 Build complete! (1.77秒)
 PASS first real PG connection and candidate SQL only in verified empty private cluster
-FIRST_CONNECTION {"version": "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit", "listen_addresses": "", "socket": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-history-pg/s", "user": "cj005h", "candidate_sql_sha256": "4060541a06fdd1233b787b212917ecd69728aa272f2e9ce46b34d48d44b1107b"}
+FIRST_CONNECTION {"version": "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit", "listen_addresses": "", "socket": "<local>/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-history-pg/s", "user": "cj005h", "candidate_sql_sha256": "4060541a06fdd1233b787b212917ecd69728aa272f2e9ce46b34d48d44b1107b"}
 HTTP_READY http://127.0.0.1:52257
 PASS real HTTP/PG conversations AEAD pagination and required explicit null
 PASS AEAD tamper wrong current subject/scope and expiry resync without private response

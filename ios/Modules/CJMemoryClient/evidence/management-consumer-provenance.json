@@ -1,5 +1,5 @@
 {
-  "root": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/management-20aa-09facf21",
+  "root": "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/management-20aa-09facf21",
   "inputs": {
     "shared": {
       "commit": "cc9e2c3ba1fb8fe7582e5e4664a924b1c6b93f71",
@@ -104,8 +104,8 @@
   "full_app_graph": "UNRUN",
   "production_management": "unavailable",
   "single_sdk_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/management-20aa-09facf21/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation",
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/management-20aa-09facf21/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/management-20aa-09facf21/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation",
+    "<local>/Documents/Codex/2026-10-21/cj-011-memory-client/ios/Modules/CJMemoryClient/.build/management-20aa-09facf21/Modules/CJMessageClient/.generated/20aa50ed5c8449e6026155a6151f22041dee7fd4/CJFoundation"
   ],
   "source_hashes_preserved_after_tests": true,
   "tests": "PASS: 41 related module methods, final 11 management methods after final binding-keyed recovery/control views",

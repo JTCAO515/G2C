@@ -10,15 +10,15 @@
 
 | 能力 | 行为与任务归属 |
 |---|---|
-| 账号与隔离 | 新用户建号、受邀准入、登录/退出/恢复/注销；两个真实账号验证隔离。CJ-007 [#8](https://github.com/JTCAO515/Go2China/issues/8)、CJ-024 [#27](https://github.com/JTCAO515/Go2China/issues/27) |
-| 对话与恢复 | 历史、持久接收、JSON/SSE 候选传输、停止、原结果查询、单一终态、同聊天顺序；调用前限额。CJ-008/009/010 [#9](https://github.com/JTCAO515/Go2China/issues/9)、[#10](https://github.com/JTCAO515/Go2China/issues/10)、[#11](https://github.com/JTCAO515/Go2China/issues/11) |
-| 真实旅行规划 | 需求纠正、地点/路线、时效来源、可行/不可行/未知、可审阅草稿；未知日期/预算允许探索，不伪装精确验证。CJ-012/013/014/034/035 [#13](https://github.com/JTCAO515/Go2China/issues/13)、[#14](https://github.com/JTCAO515/Go2China/issues/14)、[#19](https://github.com/JTCAO515/Go2China/issues/19)、[#16](https://github.com/JTCAO515/Go2China/issues/16)、[#18](https://github.com/JTCAO515/Go2China/issues/18) |
-| 正式旅程 | 接受/拒绝、版本与动作回执、每日时间线/地图/现场中英地点、手动编辑、固定事项保护、选定范围的助手修改。CJ-015～018 [#20](https://github.com/JTCAO515/Go2China/issues/20)、[#21](https://github.com/JTCAO515/Go2China/issues/21)、[#22](https://github.com/JTCAO515/Go2China/issues/22)、[#25](https://github.com/JTCAO515/Go2China/issues/25) |
+| 账号与隔离 | 新用户建号、受邀准入、登录/退出/恢复/注销；两个真实账号验证隔离。CJ-007 [#8](https://github.com/JTCAO515/G2C/issues/8)、CJ-024 [#27](https://github.com/JTCAO515/G2C/issues/27) |
+| 对话与恢复 | 历史、持久接收、JSON/SSE 候选传输、停止、原结果查询、单一终态、同聊天顺序；调用前限额。CJ-008/009/010 [#9](https://github.com/JTCAO515/G2C/issues/9)、[#10](https://github.com/JTCAO515/G2C/issues/10)、[#11](https://github.com/JTCAO515/G2C/issues/11) |
+| 真实旅行规划 | 需求纠正、地点/路线、时效来源、可行/不可行/未知、可审阅草稿；未知日期/预算允许探索，不伪装精确验证。CJ-012/013/014/034/035 [#13](https://github.com/JTCAO515/G2C/issues/13)、[#14](https://github.com/JTCAO515/G2C/issues/14)、[#19](https://github.com/JTCAO515/G2C/issues/19)、[#16](https://github.com/JTCAO515/G2C/issues/16)、[#18](https://github.com/JTCAO515/G2C/issues/18) |
+| 正式旅程 | 接受/拒绝、版本与动作回执、每日时间线/地图/现场中英地点、手动编辑、固定事项保护、选定范围的助手修改。CJ-015～018 [#20](https://github.com/JTCAO515/G2C/issues/20)、[#21](https://github.com/JTCAO515/G2C/issues/21)、[#22](https://github.com/JTCAO515/G2C/issues/22)、[#25](https://github.com/JTCAO515/G2C/issues/25) |
 | 完整长记忆 | 静态事实、经历、偏好；及时增量、会话结束摘要、归纳确认、跨旅行检索、条目编辑/启停/删除、防复活。CJ-011/019/020/021，见[规格](memory.md) |
-| 可用性与生命周期 | 正式旅程离线只读、同步时间与失效边界；可定位反馈、用户说明、全域注销清理。CJ-022/023/024 [#24](https://github.com/JTCAO515/Go2China/issues/24)、[#15](https://github.com/JTCAO515/Go2China/issues/15)、[#27](https://github.com/JTCAO515/Go2China/issues/27) |
-| UI 与双语 | Muse 四 Tab、记忆内账号、插件真实占位；中文/英文回答、错误、帮助、隐私和 VoiceOver 主要路径。CJ-006/026 [#7](https://github.com/JTCAO515/Go2China/issues/7)、[#29](https://github.com/JTCAO515/Go2China/issues/29) |
+| 可用性与生命周期 | 正式旅程离线只读、同步时间与失效边界；可定位反馈、用户说明、全域注销清理。CJ-022/023/024 [#24](https://github.com/JTCAO515/G2C/issues/24)、[#15](https://github.com/JTCAO515/G2C/issues/15)、[#27](https://github.com/JTCAO515/G2C/issues/27) |
+| UI 与双语 | Muse 四 Tab、记忆内账号、插件真实占位；中文/英文回答、错误、帮助、隐私和 VoiceOver 主要路径。CJ-006/026 [#7](https://github.com/JTCAO515/G2C/issues/7)、[#29](https://github.com/JTCAO515/G2C/issues/29) |
 
-CJ-025～029 的故障、真实服务、恢复、效果/成本与受邀内测证据，以及 CJ-031/033 的公开首发准备仍是实际交付的一部分；规划完整不表示这些已通过。[完整范围与依赖](https://github.com/JTCAO515/Go2China/issues/5)。
+CJ-025～029 的故障、真实服务、恢复、效果/成本与受邀内测证据，以及 CJ-031/033 的公开首发准备仍是实际交付的一部分；规划完整不表示这些已通过。[完整范围与依赖](https://github.com/JTCAO515/G2C/issues/5)。
 
 ## Non-goals
 

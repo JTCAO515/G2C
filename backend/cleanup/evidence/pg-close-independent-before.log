@@ -17,7 +17,7 @@ test_rollback_guard_before_commit_atomic (test_postgres.PostgresTests.test_rollb
 FAIL: test_close_callback_revocation_withholds_committed_write (test_postgres.PostgresTests.test_close_callback_revocation_withholds_committed_write)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-024-cleanup-postgres/independent_pg_runner.py", line 23, in test_close_callback_revocation_withholds_committed_write
+  File "<local>/Documents/Codex/2026-10-21/cj-testing/CJ-024-cleanup-postgres/independent_pg_runner.py", line 23, in test_close_callback_revocation_withholds_committed_write
     with self.assertRaises(CommitUnknown):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
 AssertionError: CommitUnknown not raised
@@ -26,7 +26,7 @@ AssertionError: CommitUnknown not raised
 FAIL: test_close_callback_revocation_withholds_read (test_postgres.PostgresTests.test_close_callback_revocation_withholds_read)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-testing/CJ-024-cleanup-postgres/independent_pg_runner.py", line 33, in test_close_callback_revocation_withholds_read
+  File "<local>/Documents/Codex/2026-10-21/cj-testing/CJ-024-cleanup-postgres/independent_pg_runner.py", line 33, in test_close_callback_revocation_withholds_read
     with self.assertRaises((core.Denied, Unavailable)):
          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: (<class 'cj_cleanup.core.Denied'>, <class 'cj_cleanup.postgres.Unavailable'>) not raised

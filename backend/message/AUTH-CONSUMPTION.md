@@ -59,7 +59,7 @@ Reproduce within the declared Python >=3.12,<3.15 range (tested 3.14.7 only),
 pointing at the local CJ007 Git repository:
 
 ```sh
-/opt/homebrew/bin/python3.14 -B backend/message/tests/run_auth_consumption.py /Users/jtsm5p/Documents/Codex/2026-10-21/cj-007-auth
+/opt/homebrew/bin/python3.14 -B backend/message/tests/run_auth_consumption.py <local>/Documents/Codex/2026-10-21/cj-007-auth
 ```
 
 The runner pins the revision internally and reads git objects, never source working files.

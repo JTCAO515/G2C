@@ -32,7 +32,7 @@ Traceback (most recent call last):
   File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py", line 720, in run_until_complete
     return future.result()
            ~~~~~~~~~~~~~^^
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/test_https_transport.py", line 362, in test_actual_connect_refusal_is_safe_and_attempted_once
+  File "<local>/Documents/Codex/2026-10-21/cj-034-fact/backend/fact/tests/test_https_transport.py", line 362, in test_actual_connect_refusal_is_safe_and_attempted_once
     with self.assertRaisesRegex(FactFailure, '^https_exchange_failed$'):
          ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: "^https_exchange_failed$" does not match "timeout"

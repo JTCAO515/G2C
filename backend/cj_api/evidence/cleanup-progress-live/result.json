@@ -73,9 +73,9 @@
   },
   "postgres": {
     "identity": [
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-cleanup-pg2/data",
+      "<local>/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-cleanup-pg2/data",
       "",
-      "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-cleanup-pg2/s",
+      "<local>/Documents/Codex/2026-10-21/cj-005-foundation/.local-cj005-cleanup-pg2/s",
       "cj005c_admin",
       "postgres",
       "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit"

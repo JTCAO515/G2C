@@ -2,7 +2,7 @@
 
 - 状态：**accepted**（JT 确认的产品要求；不是技术验收）
 - 日期：2026-10-21
-- 归属：CJ-001 [#1](https://github.com/JTCAO515/Go2China/issues/1)、CJ-006 [#7](https://github.com/JTCAO515/Go2China/issues/7)、CJ-011 [#12](https://github.com/JTCAO515/Go2China/issues/12)
+- 归属：CJ-001 [#1](https://github.com/JTCAO515/G2C/issues/1)、CJ-006 [#7](https://github.com/JTCAO515/G2C/issues/7)、CJ-011 [#12](https://github.com/JTCAO515/G2C/issues/12)
 
 ## 背景与选项
 
@@ -20,4 +20,4 @@ PR #36 准备阶段的授权仅文档与文档 PR；JT 此后已明确授权正�
 
 ## 验证与替换条件
 
-CJ-025/026/028 [#28](https://github.com/JTCAO515/Go2China/issues/28)、[#29](https://github.com/JTCAO515/Go2China/issues/29)、[#32](https://github.com/JTCAO515/Go2China/issues/32)验证实际链路、真机与效果。用户后续明确改变范围时新建/修订决策并同步受影响 Issue/规格；技术组件失败只触发技术替换，不自动削减这些用户承诺。
+CJ-025/026/028 [#28](https://github.com/JTCAO515/G2C/issues/28)、[#29](https://github.com/JTCAO515/G2C/issues/29)、[#32](https://github.com/JTCAO515/G2C/issues/32)验证实际链路、真机与效果。用户后续明确改变范围时新建/修订决策并同步受影响 Issue/规格；技术组件失败只触发技术替换，不自动削减这些用户承诺。

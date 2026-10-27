@@ -8,7 +8,7 @@ test_fresh_non_utc_keeps_original_source_timestamps (test_time_review.Independen
 FAIL: test_fold_age_must_be_stale (test_time_review.IndependentTimeTests.test_fold_age_must_be_stale)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/test_time_review.py", line 32, in test_fold_age_must_be_stale
+  File "<local>/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/test_time_review.py", line 32, in test_fold_age_must_be_stale
     self.assertEqual(result.outcome,Outcome.STALE)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: <Outcome.OK: 'ok'> != <Outcome.STALE: 'stale'>
@@ -17,7 +17,7 @@ AssertionError: <Outcome.OK: 'ok'> != <Outcome.STALE: 'stale'>
 FAIL: test_fold_elapsed_must_be_unknown (test_time_review.IndependentTimeTests.test_fold_elapsed_must_be_unknown)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/test_time_review.py", line 25, in test_fold_elapsed_must_be_unknown
+  File "<local>/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/test_time_review.py", line 25, in test_fold_elapsed_must_be_unknown
     self.assertEqual(result.outcome,Outcome.UNKNOWN)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: <Outcome.OK: 'ok'> != <Outcome.UNKNOWN: 'unknown'>
@@ -26,7 +26,7 @@ AssertionError: <Outcome.OK: 'ok'> != <Outcome.UNKNOWN: 'unknown'>
 FAIL: test_fold_future_receive_must_be_invalid (test_time_review.IndependentTimeTests.test_fold_future_receive_must_be_invalid)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/test_time_review.py", line 43, in test_fold_future_receive_must_be_invalid
+  File "<local>/Documents/Codex/2026-10-21/cj-012-place/backend/place/tests/test_time_review.py", line 43, in test_fold_future_receive_must_be_invalid
     self.assertEqual(result.outcome,Outcome.INVALID_RESPONSE)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: <Outcome.OK: 'ok'> != <Outcome.INVALID_RESPONSE: 'invalid_response'>

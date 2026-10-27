@@ -1,11 +1,11 @@
 {
   "base": "8f2ff45519d1d09f178f1fa766b6829d81bda77a",
-  "data": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-yu540pgn/data",
+  "data": "<local>/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-yu540pgn/data",
   "socket": "/tmp/cj023-n6w27k6y",
   "port": 56423,
   "bootstrap_role": "cj023_a249dd0e6c",
   "runtime_role": "cj023_a249dd0e6c_runtime",
-  "passfile": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-yu540pgn/empty.pgpass",
+  "passfile": "<local>/Documents/Codex/2026-10-21/cj-023-feedback/backend/feedback/.local/pg-yu540pgn/empty.pgpass",
   "listen_addresses": "",
   "stopped": true,
   "external_services": "UNRUN",

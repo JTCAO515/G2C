@@ -105,7 +105,7 @@
     "ios/Sources/CJAPI/MemoryClientConfiguration.swift"
   ],
   "official_export_files_exact": 16,
-  "single_cjfoundation_path": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/dc29-pin-validation/assembly/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation",
+  "single_cjfoundation_path": "<local>/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/dc29-pin-validation/assembly/ios/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation",
   "old_export_preserved": true,
   "product_sources_tests_lock_unchanged": {
     "ios/Modules/CJTripClient/Package.resolved": "ac553d48a91768d3a170f87909966b3455a69a2cb2028ecb6da05b210fa63952",
@@ -136,7 +136,7 @@
     "required_sdk": "dc29bb3634e63d8f065c38d39a7a0059f76cfa53",
     "sibling_writes_performed": false
   },
-  "assembly": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/dc29-pin-validation/assembly",
+  "assembly": "<local>/Documents/Codex/2026-10-21/cj-015-trip-client/ios/Modules/CJTripClient/.build/dc29-pin-validation/assembly",
   "original_sibling_files_unchanged": {
     "ios/Modules/CJMessageClient/Package.swift": "ffb8c3ed0dcc4a578d9f7c369ad89fc6ffb1c33d1a8171059d8ee1108966fa5e",
     "ios/Modules/CJMessageClient/scripts/prepare_generated.py": "b4c531de17da6ef247c2376ca2b2dd926234a82101afa0987556c8a9678c19c9",

@@ -21,11 +21,11 @@
 | Phase | P0-repo-hygiene |
 | Accepted Issue | CJ-005 (https://github.com/JTCAO515/G2C/issues/5); P0 scope per docs/dispatch/P0-repo-hygiene.md |
 | Owner | JT (operator); Claude architecture/review; Codex implementation |
-| Last updated | 2026-10-27T03:00:00Z |
+| Last updated | 2026-10-27T04:00:00Z |
 
 ## Active Work
 
-- P0 repo hygiene and minimal CI: docs/dispatch/P0-repo-hygiene.md (not started)
+- P0 repo hygiene and minimal CI on branch chore/p0-repo-hygiene (PR pending).
 
 ## Accepted Assumptions
 
@@ -47,22 +47,30 @@
 
 | Path | Reason |
 | --- | --- |
-| `docs/adr/0004-delivery-flow-and-repo-hygiene.md` | Mark accepted and record JT decisions of 2026-10-27. |
-| `docs/adr/README.md` | ADR-0004 status accepted. |
-| `docs/scope.md` | City, minimum iOS and login rows confirmed per ADR-0004. |
-| `docs/dispatch/P0-repo-hygiene.md` | Reflect accepted decisions; P1 next. |
-| `docs/handoff.json` | Decisions accepted, blockers cleared. |
-| `HANDOFF.md` | Rendered from docs/handoff.json. |
+| `.github/workflows/ci.yml` | Minimal CI: blocking python, contracts and swift jobs; informational known-failing job. |
+| `.gitignore` | Stop adding evidence logs, archives and recordings. |
+| `README.md` | Current status and local check commands. |
+| `AGENTS.md` | Repository-only entry point and ADR-0004 working rules. |
+| `docs/engineering.md` | ADR-0004 supersession note, local handoff path, tooling status rows. |
+| `docs/**/*.md` | Issue links moved from JTCAO515/Go2China to JTCAO515/G2C. |
+| `545 text files (*.md and evidence/**/*.json\|txt\|log)` | /Users/jtsm5p replaced with <local>; files whose sha256 or git blob hash is referenced anywhere in the repo were skipped (66), as were 7 non-evidence source files. |
+| `docs/handoff.json, HANDOFF.md` | P0 state. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `python3 -m json.tool docs/handoff.json` | handoff.json is valid JSON. | — |
-| pass | `node ~/.claude/skills/jtcoding-skills/scripts/handoff.js check --project .` | Schema valid and HANDOFF.md current at authoring time. | HANDOFF.md |
-| pass | `git diff --stat origin/main -- backend ios spikes contracts pyproject.toml uv.lock` | No business code changed by this PR. | — |
-| not-run | `CJ_ENV=local uv run pytest -q backend/tests backend/cj_api/tests` | Not run during review; to be established by P0 CI. | — |
-| not-run | `swift test (ios/Modules/CJShell)` | Not run during review; to be attempted in P0 CI. | — |
+| pass | `pytest -q backend/tests` | 4 passed (local, Python 3.14.7). | — |
+| pass | `pytest -q tests in backend/{draft,fact,feedback,manual_edit,memory_jobs,memory_withdrawal,message,place,run,usage}` | All pass locally (feedback 41 skipped without PostgreSQL); identical before and after path replacement. | — |
+| pass | `pytest evaluation/cj028/tests and ops/recovery-preflight` | 35 and 15 passed. | — |
+| pass | `openapi-spec-validator contracts/api/openapi.json` | OK. | — |
+| blocked | `swift test (ios root package)` | Local host has only CommandLineTools: library targets compile, CJAPITests fails with 'plugin for module TestingMacros not found'. Runs in CI on macos-15 with Xcode. | — |
+| fail | `unittest discover -s backend/cj_api/tests` | 40 tests, 33 errors: CompositionUnavailable 'Pinned internal dependency content mismatch' (sibling sources differ from pinned hashes on main). P1 removes pins. | — |
+| fail | `pytest backend/auth/tests` | 1 failed: test needs git object 8b6abb236cf10c1865a9cc8c6155bd8ac732c07e, absent from the repository. | — |
+| fail | `pytest backend/cleanup/tests` | 2 failed: AssertionError 23 != 21. | — |
+| blocked | `pytest backend/{needs,trip,feasibility}/tests` | Need local PostgreSQL 17 installation or TRIP_TEST_SOCKET; errors without it. | — |
+| not-run | `backend/{memory,memory_management} *_checks.py` | Custom check scripts, not pytest-discoverable; fold into CI in P1. | — |
+| not-run | `GitHub Actions ci.yml` | Result to be read from the P0 PR checks. | — |
 
 ## Blockers
 
@@ -70,9 +78,9 @@ No blockers recorded.
 
 ## Next Smallest Action
 
-- Action: Codex executes docs/dispatch/P0-repo-hygiene.md on branch chore/p0-repo-hygiene and opens a PR.
-- Expected observation: PR with CI results, zero business-code diff, local paths removed, handoff refreshed.
-- Resume command: `git fetch origin && git switch -c chore/p0-repo-hygiene origin/main`
+- Action: Merge the P0 PR once CI is green, then write docs/dispatch/P1-structure.md (single cj package, remove hash pins, move existing evidence out, ordered migrations with up/down in CI, fold known-failing suites into blocking CI).
+- Expected observation: P0 merged on main with green blocking CI; P1 dispatch reviewed by JT.
+- Resume command: `gh pr checks --repo JTCAO515/G2C`
 
 ## Rollback
 

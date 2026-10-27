@@ -1,11 +1,11 @@
 {
-  "prepared_root": "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.local/feasibility-real-shell/aa6635bdbda9c264",
+  "prepared_root": "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.local/feasibility-real-shell/aa6635bdbda9c264",
   "exported_files": 265,
   "main_shell_preserved_count": 29,
   "main_shared_six_count": 6,
   "actual_shell_state_sha256": "44780d1010bc00385223ce847f1d1845001b85a71ea7a63bec0a1447c9c1b9c8",
   "sdk_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.local/feasibility-real-shell/aa6635bdbda9c264/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-006-ui/ios/Modules/CJShell/.local/feasibility-real-shell/aa6635bdbda9c264/Modules/CJMessageClient/.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation"
   ],
   "sdk_references": 25,
   "all_identities_one_resolved_path": true,

@@ -1,4 +1,4 @@
 Traceback (most recent call last):
-  File "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-006-ui/contracts/ui/check_contract.py", line 7, in <module>
+  File "<local>/Documents/Codex/2026-10-21/cj-006-ui/contracts/ui/check_contract.py", line 7, in <module>
     assert set(base["paths"]) == {"/v1/probe"}
 AssertionError

@@ -1,5 +1,5 @@
 Swift OpenAPI Generator is running with the following configuration:
-- OpenAPI document path: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/c0-consumer/openapi.json
+- OpenAPI document path: <local>/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/c0-consumer/openapi.json
 - Configuration path: <none>
 - Generator modes: types, client
 - Access modifier: public
@@ -8,9 +8,9 @@ Swift OpenAPI Generator is running with the following configuration:
 - Type overrides: <none>
 - Feature flags: <none>
 - Output file names: Types.swift, Types+Components.swift, Types+Operations.swift, Types+Components+Schemas.swift, Types+Components+Parameters.swift, Types+Components+RequestBodies.swift, Types+Components+Responses.swift, Types+Components+Headers.swift, Client.swift
-- Output directory: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/c0-consumer/Sources/C0API
+- Output directory: <local>/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/c0-consumer/Sources/C0API
 - Diagnostics output path: <none - logs to stderr>
-- Current directory: /Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios
+- Current directory: <local>/Documents/Codex/2026-10-21/cj-004-ios
 - Plugin source: <none>
 - Is dry run: false
 - Additional imports: <none>
@@ -23,4 +23,4 @@ Writing data to file Types+Components+Parameters.swift...
 Writing data to file Types+Components+RequestBodies.swift...
 Writing data to file Types+Components+Responses.swift...
 Writing data to file Types+Components+Headers.swift...
-/Users/jtsm5p/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/c0-consumer
+<local>/Documents/Codex/2026-10-21/cj-004-ios/spikes/ios/.cache/c0-consumer

@@ -38,7 +38,7 @@
   },
   "transport_equals_previous_accepted_e450_sha256": "fe1b002d25e56290e7518b96110ff5a17440d304436bfca4842a4a4be6c76472",
   "CJFoundation_paths": [
-    "/Users/jtsm5p/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJMessageClient/.generated/33cec5ba71d74820cb0acd3c89ecbe39ba125590/CJFoundation"
+    "<local>/Documents/Codex/2026-10-21/cj-013-needs-client/ios/Modules/CJMessageClient/.generated/33cec5ba71d74820cb0acd3c89ecbe39ba125590/CJFoundation"
   ],
   "CJTripClient_dependency": false
 }

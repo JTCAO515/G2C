@@ -4,9 +4,9 @@ Consumer base `e98f9cd31a8117dce16bb6d7373a65203b1cc393`; businessdb48855 unchan
 Exact inputs explicitly delivered by Main:
 
 - Shared `5075bcf604e959d5c4592071a1e9de39d8687395`, Git objects read only from
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-009-memory-api-pin.
+  <local>/Documents/Codex/2026-10-21/cj-009-memory-api-pin.
 - Trip `a5cc42005c69811ccb05754793107141fb4a9f02`, Git objects read only from
-  /Users/jtsm5p/Documents/Codex/2026-10-21/cj-015-trip-client.
+  <local>/Documents/Codex/2026-10-21/cj-015-trip-client.
 - Official SDK `f87a78a9d8984c59905e385483f17dddd8144d8a` from cj-005-foundation.
 - AUTH: exact existing module tree from this consumer's e98f9cd baseline, not a
   moving/new owner version. No AUTH source edit or new identity authority.
