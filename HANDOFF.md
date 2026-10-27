@@ -18,16 +18,17 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1：#151 S0 Part 2/2 实施中；全 Swift 包矩阵、遗漏检查与 pr-lint 待本地/CI 验证和独立审查。 |
+| Phase | M1：#151 S0 Part 2/2，PR #174；本地 Python/PG/16 Swift 包通过，等待最终 head CI 与独立审查。 |
 | Accepted Issue | M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T13:39:21+00:00 |
+| Last updated | 2026-10-27T13:46:13+00:00 |
 
 ## Active Work
 
 - #154 已关闭（PR #172）；#20 剩余 #155。
-- #151：覆盖 ios 根包、App 与全部 Modules（包括嵌套 FeasibilityHostHarness），无 test target 排除；CI 门禁只增加。
+- #151 PR #174：16 包全覆盖（含 App Debug/Release 和嵌套 FeasibilityHostHarness）；无 test target 排除。pr-lint 真实 CI 缺引用负例已失败，恢复引用后的正例待运行。
 - #162 owner Claude，仍 OPEN；#159 文案尚无 JT 确认。
+- 范围外文档漂移记录为 #175：README 与 App README 仍含 #172 后暂停的旧指令；以当前 handoff / ADR-0007 为准。
 
 ## Accepted Assumptions
 
@@ -62,6 +63,7 @@
 | --- | --- |
 | `.github/workflows/ci.yml, .github/swift-packages.json, .github/scripts/swift_packages.py` | 全部 Swift 包阻塞矩阵、显式清单与遗漏检查；PR 正文经 env 的最小权限 pr-lint。 |
 | `ios/Modules/CJShell/Tests/FeasibilityHostHarness` | 历史测试包直接依赖当前模块，失效负例使用真实 Shell 入口；保留所有断言，锁定依赖。 |
+| `ios/Modules/CJMessageClient/Package.resolved` | 补齐现有测试图缺失的依赖锁项，版本与既有 CJShell 锁一致，无产品源码修改。 |
 | `docs/handoff.json, HANDOFF.md` | #151 当前状态、验证与下一步。 |
 
 ## Verification Evidence
@@ -71,11 +73,13 @@
 | pass | `uv run --locked python -B scripts/test.py` | 56/56 suites。 | — |
 | pass | `Swift inventory + pr-lint local negative/positive checks` | 完整清单通过；遗漏嵌套包/陈旧项/重复项失败；Issue 引用正负与 shell 字面内容不执行。 | — |
 | pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups，PG16/17 私有集群与迁移 up/down/up。 | — |
-| not-run | `Swift package matrix; GitHub Actions` | 本地全部 Swift 包执行中；待 PR 正反 pr-lint、精确 head CI 与独立审查。 | — |
+| pass | `swift test --package-path <.github/swift-packages.json 中每个包>; ios/App -c release` | 16/16 包成功；App Debug/Release 各 4 tests；CJShell 204、独立 FeasibilityHostHarness 10、CJTripClient 63。 | — |
+| pass | `GitHub Actions pr-lint（故意缺引用）` | 预期失败：缺少 Issue 关联时 pr-lint exit 1；此失败是负例，不是全 CI 通过。 | https://github.com/JTCAO515/G2C/actions/runs/40514287589/job/122224804417 |
+| not-run | `GitHub Actions final head; independent review` | 等待 PR #174 最终 head 的全部阻塞检查与独立 Codex 审查；合并后核验 main。Swift 原基线 268 秒，矩阵耗时见 PR。 | https://github.com/JTCAO515/G2C/pull/174 |
 
 ## Blockers
 
-- #162 未关闭前，#163、#164 不能开工；#167 依赖 #164（子票级停点，跳过继续）。
+- #162 OPEN：Claude PR #173 待 JT 批准；#163 等 #162，#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。
 - #159 帮助/隐私/支持文案需 JT 确认（子票级停点）。
 - L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
 
