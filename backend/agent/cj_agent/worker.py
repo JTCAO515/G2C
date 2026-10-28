@@ -11,6 +11,9 @@ owner or scope from request data. Recovery rules (ADR-0003):
 from dataclasses import dataclass
 import json
 
+# The worker must be ready (or fail startup) before accepting any work (#176).
+from cj_feasibility import solver as _solver_runtime
+
 from cj_run.core import Binding, Conflict, Event, TERMINAL
 
 from .draft import DRAFT_SYSTEM, DraftRejected

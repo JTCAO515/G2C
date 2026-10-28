@@ -7,6 +7,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from threading import Event
 
+# Process initialization, outside every request budget. Import errors must escape
+# startup rather than being converted to a solver UNKNOWN result (#176).
+from ortools.sat.python import cp_model
+
 from cj_needs.domain import Revision, Snapshot
 from .validator import Candidate
 from .routes import RouteAssessment
@@ -224,7 +228,6 @@ def solve(problem: Problem, limits: Limits, *, stop: Event) -> SolveResult:
     if remaining <= 0:
         return result('TIMEOUT', 'PREPARATION_BUDGET_EXHAUSTED')
     try:
-        from ortools.sat.python import cp_model
         model = cp_model.CpModel()
         variables = {}
         for item in items:

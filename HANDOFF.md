@@ -18,21 +18,19 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #161 local/native acceptance passed; preparing exact-head CI and independent review. JT queue: #161 -> #176 -> #182 -> #163. |
-| Accepted Issue | #8 / #161: two local development identities, Keychain restore/logout/switch, bilingual failure and stale-response isolation. |
+| Phase | M1 #176: cold-import cause measured; startup preload and regression pass; candidate being fixed for fresh-checkout three consecutive full PG runs. |
+| Accepted Issue | #176: process-level solver preload, unchanged request budget/TIMEOUT/UNKNOWN, fresh-process and three full-PG acceptance. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T04:45:05.783169+00:00 |
+| Last updated | 2026-10-28T05:22:02.299304+00:00 |
 
 ## Active Work
 
-- #160 completed by PR #181 at d28dd21, main CI 40628471012 all five jobs passed; #160 and matching parent #8 boxes updated.
-- #161 implemented DEBUG simulator account flow in Memory: protected API verification, Keychain persistence, explicit restore/logout, stale-response and foreground fences. Legacy direct Trip fixture preserved; Release stays disconnected.
-- #161 native first run failed 6/6 because successful login left Shell messageBindingBlocked=true and Trip binding failed. Fixed only after current verified identity; rejected/unknown/expired identities remain fenced. English diagnostic then full native run passed.
-- JT 2026-10-28 queue insertion explicitly authorized docs/plan/issue-plan.md change in this first PR: #161 -> #176 -> #182 -> #163, then original queue. #8 includes #182 and must remain open after #161.
-- #176 next: read Claude comment 6460752372; measure cold/hot import/preparation/model/search before fixing startup preload. Keep budget values/TIMEOUT/UNKNOWN/assertions; fresh checkout three consecutive full PG 11/11.
-- #182 after #176: transaction-level scope, reject existing nonempty cj.* scope before binding, reused physical connection tests across 12 tables and C2 pooler activation gate; preserve existing RLS/role limits and migrations 1..11.
-- #163 WIP preserved on issue-163-message-send-permit in its separate worktree; do not resume until #182 completes. Rebase on latest main and renumber provisional migration after 0011/latest manifest.
-- #159 copy, L2 authorization, branch protection and production keys remain JT-owned; do not handle them in this insertion sequence.
+- #161 merged via PR #183 as 81fd98e, main CI 40635026257 all five jobs green; #161/#8 boxes updated. #8 remains open for #182.
+- #176 fresh baseline: original 5s cross-day case timed out; request import 22.139932500s of 22.140946750s total, prepare/model under 1ms, engine UNRUN. Hot request 0.005447875s passed. Measurements posted to #176 before code changes.
+- #176 fix: CP-SAT module import at solver initialization; explicit API-factory/worker startup loading; failures escape startup. No budget value, original assertion, request timer or status semantics changed.
+- New startup tests failed in four baseline subcases (two missing preloads, two missing-dependency startups incorrectly succeeded). After fix 3/3 tests pass, including unchanged model-budget TIMEOUT guard. Python57/57 passes.
+- Next: verify fixed candidate from a separate clean checkout and independent uv environment, three sequential complete PG runs, each 11/11. Do not repeat failures to hide them.
+- #182 follows #176; #163 WIP remains preserved separately until #182 closes, then rebase/renumber after migration0011/latest manifest. No #159/L2/branch-protection/production-key work.
 
 ## Accepted Assumptions
 
@@ -66,27 +64,20 @@
 
 | Path | Reason |
 | --- | --- |
-| `ios/Modules/CJShell/Sources/CJShell/DevelopmentAccountHost.swift, DevelopmentAccountView.swift, ShellView.swift, MemoryShell.swift` | Local development account state, stale-response and foreground fences, and memory/account UI injection. |
-| `ios/Modules/CJShell/Tests/CJShellTests/DevelopmentAccountHostTests.swift` | Three controlled async tests for switching, logout/restore uncertainty, and foreground revalidation. |
-| `ios/App/CJProbeApp.swift, DevelopmentTripHost.swift, DevelopmentSessionConfiguration.swift` | Explicit DEBUG simulator account/Keychain root, protected GET verification, borrowed Trip session lease, metadata-only expiry and namespaces. |
-| `docs/handoff.json, HANDOFF.md` | Record #160 closure and unfinished #161 acceptance. |
-| `ios/App/Acceptance/DevelopmentAccountUITests.swift, check_development_accounts.py, ios/App/README.md` | Seven native bilingual/debug/release cases with real local signed API/private PG/Keychain and credential-byte scans; documented reproduction. |
-| `docs/plan/issue-plan.md` | JT explicitly authorized insertion of #176 and #182 after #161 and before #163, including dependencies and parent #8 closure rule. |
+| `backend/feasibility/cj_feasibility/solver.py, backend/cj_api/app.py, backend/agent/cj_agent/worker.py` | Move one-time native dependency loading to explicit startup, outside unchanged request budget. |
+| `backend/feasibility/tests/test_startup.py, backend/feasibility/README.md` | Fresh-process startup/failure and model-budget regression, plus initialization semantics. |
+| `docs/handoff.json, HANDOFF.md` | Record measured failure, candidate checks and required fresh-checkout validation. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `swift test --package-path ios/Modules/CJAuth` | 100 Swift Testing tests across four runners (19+27+8+46); no empty XCTest wrapper counted as evidence. | — |
-| pass | `swift test --package-path ios/Modules/CJShell` | 207 tests / 29 suites after verified-binding fence fix; includes three new controlled async account tests. | — |
-| pass | `swift test --package-path ios/App` | 4/4 development configuration tests. | — |
-| fail | `check_development_accounts.py (initial full native run)` | 6 Debug cases failed to sign in; UI reported secure storage unavailable because TripContainerHost refused the still-blocked Shell identity. Original xcresult retained; no test assertions weakened. | — |
-| pass | `check_development_accounts.py --diagnostic-test testLifecycleEnglish` | Partial only: English two-account Keychain login/logout/relaunch passed after fence fix; other cases explicitly UNRUN in that report. | — |
-| pass | `check_development_accounts.py (full native acceptance)` | iOS17.5: 6 Debug cases (English/Chinese lifecycle, rejected/expired/actual offline, delayed A response after B switch) + 1 Release-disconnected case, 0 failed/0 skipped. Relaunch omits tokens and restores from actual simulator Keychain. App-file and artifact raw-token scans pass; screenshots inspected. | — |
+| fail | `Pre-fix cold/hot timing on clean 81fd98e checkout` | Cold TIMEOUT/MODEL_BUDGET_EXHAUSTED: import22.139932500s, prepare0.000254959s, model0.000733s, solve UNRUN. Hot CONDITIONAL_SOLUTION: total0.005447875s. Original budget5.0 unchanged. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461190353 |
+| pass | `unittest test_startup.py before/after fix` | Before:3 tests/4 failing subcases. After:3/3 tests passed. Original model-budget exhaustion remains TIMEOUT/MODEL_BUDGET_EXHAUSTED. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461305561 |
+| pass | `Post-fix timing (same environment, warm filesystem, new process)` | Startup import0.653840875s; first request0.002212250s, hot request0.000675416s, both CONDITIONAL_SOLUTION and request import0. Does not claim startup loading itself became faster. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461305561 |
 | pass | `uv run --locked python -B scripts/test.py` | 57/57 groups. | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups, migrations 1..11 up/down/up. This run does not establish #176 cold-start repair; historical failures remain and #176 is now next in queue. | — |
-| pass | `git diff --check; handoff render/check; App README relative links` | Formatting, generated handoff and links checked. | — |
-| not-run | `Real OTP/cloud/model/device/release` | No L2/L3 resources or production activation used. | — |
+| not-run | `Fresh checkout: three consecutive complete scripts/pg_suites.py runs` | Required before PR/closure; pending on the fixed implementation. | — |
+| not-run | `Real provider/cloud/OTP/device/deployment` | No external resources used. | — |
 
 ## Blockers
 
@@ -112,9 +103,9 @@
 
 ## Next Smallest Action
 
-- Action: Create #161 PR including the explicitly authorized M1 queue update, wait exact-head CI and independent review, merge only approved head, verify main CI and update #161/#8. Keep #8 open for #182. The unique next ticket is #176, then #182, then restore #163 WIP; do not skip ahead to #163.
-- Expected observation: #161 L0/L1 acceptance complete with fixed-head gates, and nextAction points to #176 measurement first; frozen budgets/RLS/migrations/contracts/CI remain unchanged.
-- Resume command: `gh issue view 161 --repo JTCAO515/G2C --comments`
+- Action: Fix candidate commit, create a separate clean checkout with fresh uv environment, then run scripts/pg_suites.py three times consecutively and require 11/11 each. If any fails, preserve and diagnose. After successful evidence, update PR/handoff, exact-head all CI and independent review; merge/main green/update #176. Then #182, then restored #163 WIP.
+- Expected observation: Measured import cost excluded only at startup; original budget/status/assertions preserved and all three full PG runs green.
+- Resume command: `gh issue view 176 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 

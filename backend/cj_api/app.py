@@ -31,6 +31,9 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
                _feasibility_dependencies=None, _run_events_configuration=None):
     if os.environ.get("CJ_ENV") != "local":
         raise RuntimeError("CJ_ENV must explicitly be local; other environments are not configured")
+    # Load the required native solver before creating/serving the API. Fail-fast
+    # here keeps one-time dependency loading out of the first request's budget.
+    from cj_feasibility import solver as _solver_runtime
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.openapi = lambda: json.loads((ROOT / "contracts/api/openapi.json").read_text())
 

@@ -18,3 +18,17 @@ are separate from NEEDS-only.
 
 The bounded CP-SAT candidate and its module-local dependency/reproduction are
 in [SOLVER](../../contracts/feasibility/SOLVER.md).
+
+## Runtime startup (#176)
+
+The solver module loads CP-SAT during process initialization. The API factory
+imports it before creating the application, and the worker imports it before
+accepting work. A dependency loading error aborts startup; it is not converted to
+an `UNKNOWN` solver result. The existing root dependency pin remains unchanged.
+
+`max_solve_seconds` still starts at `solve()` entry and covers preparation, model
+construction, search and output verification. Process-level dependency loading is
+outside that request budget, per the accepted [#176 decision](https://github.com/JTCAO515/G2C/issues/176#issuecomment-6460752372).
+Budget values, cancellation, TIMEOUT/UNKNOWN and model/search/output checks are
+unchanged. `tests/test_startup.py` verifies API/worker startup in fresh processes,
+real first-request solving, fail-fast loading, and model-budget exhaustion.
