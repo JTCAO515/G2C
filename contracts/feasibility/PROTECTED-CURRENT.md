@@ -7,7 +7,7 @@ not a registered HTTP API/root factory. This consumer's independent gates pendin
 ## Fixed public input and surface
 
 NEEDS `4cc9c815293a4e03225b26adfa228fdd0b50b2e7`, public
-`CJ-NEEDS-PROTECTED-READ@0.1.0-rc.1`, as specified by its original owner in
+`CJ-NEEDS-PROTECTED-READ@0.1.0-rc.2`, as specified by its original owner in
 `contracts/needs/PROTECTED-READ.md`. Required AUTH remains exact
 `8b6abb236cf10c1865a9cc8c6155bd8ac732c07e` and its canonical protected read boundary.
 Main supplied producer Review/Testing PASS; this report proves consumer behavior,
