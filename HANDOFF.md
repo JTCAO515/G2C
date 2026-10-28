@@ -18,18 +18,17 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #156：TripPendingStore 登记及基线核验完成，待精确 head CI 与独立审查；PG 全套保留 #176 失败。 |
-| Accepted Issue | #5 CJ-005 / #156；仅补 TripPendingStore 中央现状登记，不改政策或行为。 |
+| Phase | M1：#175 两处 README 已修正，文档核对与本地 Python/PG 通过，待 PR 精确 head CI 与独立审查。 |
+| Accepted Issue | #175：仅同步两处 README 的自动续作入口，保留产品和外部资源门禁。 |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T02:25:25.457126+00:00 |
+| Last updated | 2026-10-28T02:54:07.287791+00:00 |
 
 ## Active Work
 
-- JT 2026-10-28 当前派工取消完成 #158 后暂停，按 ADR-0007 第 7 条自动续作。
-- #158 已由 PR #178 合并；main 6dba3a5 CI 40617700900 五个 job 全绿。
-- #156 已补 TripPendingStore 现状登记及清理测试 inventory；Python 57/57、生成/Swift HTTP/配置拒绝通过；PG 10/11，唯一失败为 #176 同一跨日求解预算耗尽。
-- #159 无 JT 确认文案或支持渠道，已评论阻塞并跳过；#162 已关闭，#163 架构前置解除。
-- #176 冷环境求解器预算问题仍保留，不在 #156 范围内修复或放宽预算。
+- PR #179 已独立审查并合并为 e7573c17c5ed82f2ee37cdcf9ef661a18cd411a5；main CI 40622684043 五项全绿；#156/#5 验收框已回写，父票 #5 已关闭。
+- #175：两处旧暂停指令改为 ADR-0007 自动续作，当前动作引用 HANDOFF；MESSAGE 的 ADR-0008/SEND-PERMIT 条件保留。
+- #159 仍待 JT 文案和支持渠道确认，继续跳过；#162 已关闭。
+- #176 本地 PG 冷环境预算失败仍保留；不在本轮范围内修复或重跑凑绿。
 
 ## Accepted Assumptions
 
@@ -63,23 +62,19 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/storage-registry.json` | 按 #156 JT 授权新增 TripPendingStore 现状登记并更新 version，原有条目不变。 |
-| `backend/cleanup/tests/test_cleanup.py` | 按 #156 JT 评论允许同步既有检查期望；清理清单增加新 store，并断言其存在，不改产品行为。 |
-| `docs/handoff.json, HANDOFF.md` | 取消过时暂停状态，记录当前 #156、待核验结果与连续队列。 |
+| `README.md, ios/App/README.md` | 移除已失效暂停文案，引用 ADR-0007/HANDOFF 和现有 MESSAGE 门禁。 |
+| `docs/handoff.json, HANDOFF.md` | 记录 #156/#5 完成、当前 #175 与后续 #160。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv sync --locked` | 从新工作树建立新 .venv，66 个锁定依赖；13 个直接运行/dev 依赖版本与安装许可 metadata 均核对。 | — |
-| pass | `uv run --locked python -B scripts/test.py` | 同步清理测试 inventory 后 57/57 groups passed。 | — |
-| fail | `Initial scripts/test.py before inventory update` | 56/57 groups；新增 store 使旧清理 inventory 断言失败（24 != 23）；修复测试期望后通过，未放宽断言。 | — |
-| pass | `swift build --package-path ios --force-resolved-versions --product CJProbe; scripts/check_wire.py` | 新工作树构建生成客户端；最小环境启动本地 API，正常响应/404 与生成类型一致，Swift 缺配置/外部 URL 及 API 缺配置/production 均拒绝。未注入真实模型凭据。 | — |
-| pass | `sh scripts/generate.sh --check` | Python/Swift 生成无漂移；scripts/test.py 已覆盖破坏性 schema、迁移校验和 registry 检查。 | — |
-| pass | `python3 -B .github/scripts/test_swift_packages.py` | 4 tests；清单覆盖、漏项与失败传播。Python 初次失败同样以 exit 1 汇总，无静默成功。 | — |
-| fail | `uv run --locked python -B scripts/pg_suites.py` | 10/11 groups；feasibility_domain 的跨日正例 TIMEOUT / MODEL_BUDGET_EXHAUSTED（1 failed / 111 passed / 14 skipped / 18 subtests），与 #176 一致；未重跑凑绿。其余十组通过，包括迁移 1..10 up/down/up（24 tables）、本地 e2e、清理隔离/防复活；14 个无 PG 跳过项由 feasibility 组执行。 | https://github.com/JTCAO515/G2C/issues/176 |
-| not-run | `Real provider / cloud / physical device` | 本票仅 L0/L1；父票真实资源与手机路径仍转 L2 #32，真机 #29。历史 #176 冷求解器失败保留。 | — |
-| pass | `Registry diff and runtime/renderer boundary inspection` | 除版本与新条目外旧 registry 深度相等；CJ-002/003 候选仍隔离在 spikes，最小生成客户端不引入 Agent/记忆/Auth 业务。检查结果不宣称组件产品化或历史真实服务重新验收。 | — |
+| pass | `git diff --check; README relative-link and boundary assertions` | 两个入口已引用 ADR-0007/HANDOFF；相对链接均存在；旧暂停指令消失，MESSAGE unavailable 与真实资源门禁保留。 | — |
+| fail | `uv run --locked python -B scripts/test.py (sandbox)` | 53/57；4 组本地 loopback HTTPS 检查被沙箱禁止 bind，PermissionError/Operation not permitted；未修改源码。 | — |
+| pass | `uv run --locked python -B scripts/test.py (outside sandbox)` | 诊断沙箱限制后执行相同入口，57/57；不删测试、不放宽断言。 | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups 通过，迁移 1..10 up/down/up；本次新票必需运行通过，不代表 #176 冷环境预算问题已修复。 | — |
+| pass | `python3 -B scripts/handoff.py render; check` | JSON/生成 Markdown 一致。 | — |
+| not-run | `Real provider / cloud / physical device` | 纯文档修改，不代表真实服务或设备验收；#156 本地 #176 FAIL 保留在 PR #179。 | — |
 
 ## Blockers
 
@@ -105,9 +100,9 @@
 
 ## Next Smallest Action
 
-- Action: 完成 #156 的实际基线核验、精确 head CI 与独立审查后合并，回写 #156/#5；核 main CI 后处理 #175，再继续 #160。每张票前重新检查 #159 是否解除。
-- Expected observation: #156 L0/L1 验收都有证据；L2/L3 保持 UNRUN。
-- Resume command: `gh issue view 156 --repo JTCAO515/G2C --comments`
+- Action: 完成 #175 的文档核对、精确 head CI 与独立审查后合并；main CI 全绿后回写 #175，重新核 #159，再执行 #160 API/DB 隔离与资格门禁核验。
+- Expected observation: 入口不再指示旧暂停；真实资源和 MESSAGE 激活边界仍保留。
+- Resume command: `gh issue view 175 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 

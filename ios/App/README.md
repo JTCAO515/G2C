@@ -76,7 +76,11 @@ Do not change version assertions or solver budgets to make tests pass.
 
 This proves the local simulator fixture flow, not real OTP, real-model quality,
 physical-device, cloud, backup restoration or release acceptance. MESSAGE sending
-remains unavailable. JT's latest instruction is independent Codex review, green CI,
-normal merge and main-CI verification, then PAUSE. No automatic continuation is
-authorized after this round. The later MESSAGE design remains separate and must
-not be implemented before JT resumes the work.
+remains unavailable. Follow [ADR-0007](../../docs/adr/0007-issue-closure-workflow.md)
+for independent Codex review, green CI on the exact head, normal merge, and main-CI
+verification before automatically continuing the queue. The current action and
+blockers are in [HANDOFF.md](../../HANDOFF.md). Continue until M1 is complete or a
+repository-level stop applies. MESSAGE activation still requires the separate
+[ADR-0008](../../docs/adr/0008-message-send-permit.md) and
+[MESSAGE-SEND@1](../../contracts/message/SEND-PERMIT.md) conditions; automatic
+continuation does not authorize real OTP, models, devices, cloud resources or release.
