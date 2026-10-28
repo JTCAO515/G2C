@@ -18,10 +18,10 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #176: cold-import cause measured; startup preload and regression pass; candidate being fixed for fresh-checkout three consecutive full PG runs. |
+| Phase | M1 #176: fixed code 74dd1da passed three consecutive fresh-checkout PG runs (11/11 each); preparing final PR gates. |
 | Accepted Issue | #176: process-level solver preload, unchanged request budget/TIMEOUT/UNKNOWN, fresh-process and three full-PG acceptance. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T05:22:02.299304+00:00 |
+| Last updated | 2026-10-28T05:33:45.710640+00:00 |
 
 ## Active Work
 
@@ -29,8 +29,9 @@
 - #176 fresh baseline: original 5s cross-day case timed out; request import 22.139932500s of 22.140946750s total, prepare/model under 1ms, engine UNRUN. Hot request 0.005447875s passed. Measurements posted to #176 before code changes.
 - #176 fix: CP-SAT module import at solver initialization; explicit API-factory/worker startup loading; failures escape startup. No budget value, original assertion, request timer or status semantics changed.
 - New startup tests failed in four baseline subcases (two missing preloads, two missing-dependency startups incorrectly succeeded). After fix 3/3 tests pass, including unchanged model-budget TIMEOUT guard. Python57/57 passes.
-- Next: verify fixed candidate from a separate clean checkout and independent uv environment, three sequential complete PG runs, each 11/11. Do not repeat failures to hide them.
 - #182 follows #176; #163 WIP remains preserved separately until #182 closes, then rebase/renumber after migration0011/latest manifest. No #159/L2/branch-protection/production-key work.
+- Fresh detached checkout at 74dd1da27c9f28762ce9098bce47fd71894c0a79 with new uv environment completed three serial full PG runs: 130.550s, 101.825s, 100.126s, each exit0/11 suites and clean source. No reruns or source changes between rounds.
+- GitHub connector/API transport temporarily failed while posting the fresh-validation comment; delivery not yet confirmed. Read back before retrying any write.
 
 ## Accepted Assumptions
 
@@ -76,8 +77,9 @@
 | pass | `unittest test_startup.py before/after fix` | Before:3 tests/4 failing subcases. After:3/3 tests passed. Original model-budget exhaustion remains TIMEOUT/MODEL_BUDGET_EXHAUSTED. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461305561 |
 | pass | `Post-fix timing (same environment, warm filesystem, new process)` | Startup import0.653840875s; first request0.002212250s, hot request0.000675416s, both CONDITIONAL_SOLUTION and request import0. Does not claim startup loading itself became faster. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461305561 |
 | pass | `uv run --locked python -B scripts/test.py` | 57/57 groups. | — |
-| not-run | `Fresh checkout: three consecutive complete scripts/pg_suites.py runs` | Required before PR/closure; pending on the fixed implementation. | — |
+| pass | `Fresh checkout: three consecutive complete scripts/pg_suites.py runs` | Fixed 74dd1da, new checkout/new uv env, three consecutive full runs: 130.550s/101.825s/100.126s; each 11/11 and clean source. Each feasibility_domain:115 passed,14 existing skipped,22 subtests. Raw logs retained outside Git. | — |
 | not-run | `Real provider/cloud/OTP/device/deployment` | No external resources used. | — |
+| pass | `AST comparison against 81fd98e` | solve() AST identical after removing only the old in-request CP import; all existing test_solver assertions, budgets, RLS/migrations/contracts/CI unchanged. | — |
 
 ## Blockers
 
@@ -103,8 +105,8 @@
 
 ## Next Smallest Action
 
-- Action: Fix candidate commit, create a separate clean checkout with fresh uv environment, then run scripts/pg_suites.py three times consecutively and require 11/11 each. If any fails, preserve and diagnose. After successful evidence, update PR/handoff, exact-head all CI and independent review; merge/main green/update #176. Then #182, then restored #163 WIP.
-- Expected observation: Measured import cost excluded only at startup; original budget/status/assertions preserved and all three full PG runs green.
+- Action: Read back #176 comments to resolve the uncertain validation-comment write, then post evidence only if absent. Final docs-only commit follows fixed code 74dd1da (three PG runs proven on identical implementation/tests). Push/open PR; require exact-head all CI and independent APPROVE before merge, then main green/Issue updates. Next #182, then preserved #163 WIP.
+- Expected observation: Three full-PG results retained; no duplicate unknown writes and no premature closure while PR gates remain.
 - Resume command: `gh issue view 176 --repo JTCAO515/G2C --comments`
 
 ## Rollback
