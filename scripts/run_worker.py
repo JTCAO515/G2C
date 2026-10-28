@@ -8,6 +8,7 @@ CJ_MODEL_API_KEY or, if absent, the macOS Keychain item `g2c-dashscope`; the key
 never printed. A run interrupted mid-answer becomes `unknown` and is not resent.
 """
 import argparse
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -17,11 +18,10 @@ import time
 if os.environ.get('CJ_ENV') != 'local':
     raise SystemExit('CJ_ENV=local is required')
 
-import psycopg
 from cj_agent.draft import DraftPublisher
-from cj_agent.provider import DashScopeConfig, DashScopeProvider, FakeProvider
+from cj_agent.provider import DashScopeConfig, DashScopeProvider, FakeProvider, ProviderFailed
 from cj_agent.worker import RunWorker
-from cj_api.local_app import LocalDatabase
+from cj_api.local_app import LocalDatabase, ISSUER, scope_for
 from cj_message.domain import Service as MessageService
 from cj_run.core import Service as RunService
 
@@ -38,33 +38,62 @@ def provider(real):
     return DashScopeProvider(DashScopeConfig.from_environment(environ))
 
 
-def scopes(database):
-    with psycopg.connect(**database.conninfo) as conn:
-        return [row[0] for row in conn.execute(
-            'SELECT DISTINCT scope FROM cj_message_delivery WHERE NOT acknowledged ORDER BY scope')]
+def invited_subjects(auth_dir):
+    subjects = json.loads((Path(auth_dir) / 'invited.json').read_text())
+    if type(subjects) is not list or any(type(s) is not str or not s.strip() for s in subjects):
+        raise ValueError('explicit local invitation list required')
+    return set(subjects)
 
 
-def run_once(database, model):
+def scopes(database, auth_dir):
+    # Enumerate only the operator-owned invitation source, never all tenants via
+    # an initialization/superuser connection. Each query has its own scoped role.
+    result = []
+    for subject in sorted(invited_subjects(auth_dir)):
+        scope = scope_for(ISSUER, subject)
+        with database.connect(scope) as conn:
+            if conn.execute('SELECT 1 FROM cj_message_delivery WHERE NOT acknowledged LIMIT 1').fetchone():
+                result.append(scope)
+    return result
+
+
+class InvitedProvider:
+    def __init__(self, model, auth_dir, subject):
+        self.model, self.auth_dir, self.subject = model, auth_dir, subject
+
+    def stream(self, *args, **kwargs):
+        # Repeat at each model outflow, including structured-draft generation.
+        # A failed/unknown invitation read raises before calling the provider.
+        if self.subject not in invited_subjects(self.auth_dir):
+            raise ProviderFailed('local invitation denied before dispatch')
+        yield from self.model.stream(*args, **kwargs)
+
+
+def run_once(database, model, auth_dir):
     results = []
-    for scope in scopes(database):
+    for scope in scopes(database, auth_dir):
         messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
         runs = RunService(database.run_repository(scope),
                           valid=lambda binding, m=messages: m.query(binding.message_id) is not None)
         drafts = DraftPublisher(database.trip_repository(scope))
-        results += RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts).process()
+        guarded_model = InvitedProvider(model, auth_dir, scope.removeprefix('local:' + ISSUER + ':'))
+        results += RunWorker(scope=scope, messages=messages, runs=runs, provider=guarded_model, drafts=drafts).process()
     return results
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--conninfo-json', type=Path, required=True)
+    parser.add_argument('--auth-dir', type=Path, default=os.environ.get('CJ_LOCAL_AUTH_DIR'))
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
     parser.add_argument('--interval', type=float, default=0.5)
     args = parser.parse_args()
+    if args.auth_dir is None:
+        parser.error('--auth-dir or CJ_LOCAL_AUTH_DIR is required for local invitations')
     database, model = LocalDatabase(args.conninfo_json), provider(args.real)
     while True:
-        for outcome in run_once(database, model):
+        for outcome in run_once(database, model, args.auth_dir):
             print(f'{outcome.status} message={outcome.message_id}'
                   + (f' proposal={outcome.proposal_id}' if outcome.proposal_id else ''), flush=True)
         if args.once:
