@@ -1,0 +1,64 @@
+"""Bounded RUN-CANCEL@1; no caller principal, run ID, scope or dispatch permission."""
+from fastapi import Request
+from fastapi.responses import JSONResponse, Response
+from starlette.concurrency import run_in_threadpool
+from cj_auth.interfaces import AdmissionReason, AdmissionStatus
+from cj_message.auth_boundary import AccessBlocked, IdentityChanged
+from cj_run.cancellation import (CancelCommand, CancellationHandler, CancellationInputTooLarge,
+                                 CancellationUnknown, MAX_CANCEL_BYTES)
+from .generated import RunCancellationResponse
+from .message_routes import _error, _token
+
+
+def register_run_cancel_route(app, reader=None, display_configuration=None, configuration=None):
+    # Display-only composition remains read-only. The explicit local streaming
+    # composition already owns the scoped RUN repository used by its worker.
+    handler = (CancellationHandler(reader.message_boundary, reader.resolve_run_repository)
+               if reader is not None and configuration is not None else None)
+
+    def unavailable(request, code='RUN_CANCEL_UNAVAILABLE'):
+        return _error(request, 503, code, 'dependency', 'unknown', 'reconcile_original')
+
+    @app.post('/v1/run-cancellations', response_model=RunCancellationResponse)
+    async def cancel(request: Request):
+        if handler is None: return unavailable(request)
+        token = _token(request)
+        if token is None: return _error(request, 401, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
+        media = request.headers.getlist('content-type')
+        if len(media) != 1 or media[0].split(';', 1)[0].strip().lower() != 'application/json':
+            return _error(request, 415, 'UNSUPPORTED_MEDIA_TYPE', 'input', 'failed', 'do_not_retry')
+        try:
+            if request.scope['query_string']: raise ValueError('query parameters unavailable')
+            raw = bytearray()
+            async for chunk in request.stream():
+                if len(raw) + len(chunk) > MAX_CANCEL_BYTES: raise CancellationInputTooLarge()
+                raw.extend(chunk)
+            command = CancelCommand.parse(bytes(raw))
+        except CancellationInputTooLarge:
+            return _error(request, 413, 'REQUEST_TOO_LARGE', 'input', 'failed', 'do_not_retry')
+        except (ValueError, UnicodeError, RecursionError):
+            return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
+
+        def project(state):
+            response = RunCancellationResponse.model_validate(dict(request_id=request.state.request_id,
+                message_id=state.binding.message_id, run_id=state.binding.run_id,
+                status=state.status, event_highwater=state.sequence))
+            body = JSONResponse(response.model_dump(mode='json')).body
+            if len(body) > display_configuration.max_response_bytes:
+                raise ValueError('cancellation response exceeds configured bound')
+            return body
+
+        try:
+            body = await run_in_threadpool(handler.cancel_projected, token, command, project)
+            return Response(content=body, media_type='application/json', headers={'Cache-Control': 'no-store'})
+        except CancellationUnknown:
+            return unavailable(request, 'RUN_CANCEL_UNKNOWN')
+        except AccessBlocked as exc:
+            if exc.status is AdmissionStatus.UNKNOWN:
+                return _error(request, 503, 'ACCESS_UNKNOWN', 'access', 'unknown', 'retry_safe_read')
+            return _error(request, 401 if exc.reason is AdmissionReason.IDENTITY_INVALID else 403,
+                          'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
+        except IdentityChanged:
+            return _error(request, 403, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
+        except Exception:
+            return unavailable(request)

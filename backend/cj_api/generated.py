@@ -1561,3 +1561,37 @@ class MessageSendStatusResponse(BaseModel):
         ...,
         description='Required active conversation head or explicit null. Generated fallback containers must be checked for actual null; invalid/missing data never means an unavailable conversation.',
     )
+
+
+class Version1(StrEnum):
+    RUN_cancel_1 = 'RUN-cancel.1'
+
+
+class RunCancellationRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Version1
+    message_id: constr(min_length=1, max_length=256) = Field(
+        ...,
+        description='Exact original MESSAGE id, nonblank/no NUL and at most 256 UTF-8 bytes. No caller run id, principal or scope.',
+    )
+
+
+class Status12(StrEnum):
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+    context_invalid = 'context_invalid'
+    unknown = 'unknown'
+
+
+class RunCancellationResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    status: Status12
+    event_highwater: conint(ge=1, le=9223372036854775807)

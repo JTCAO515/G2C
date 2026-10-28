@@ -2193,6 +2193,132 @@
         },
         "summary": "Read original receipt and active conversation head under the same scope lock"
       }
+    },
+    "/v1/run-cancellations": {
+      "post": {
+        "operationId": "cancelOriginalRun",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "description": "RUN-CANCEL@1: stop the currently accessible original message run. Resolve identity through the existing MESSAGE owner, never a supplied run/scope. Creation of an undispatched RUN and cancellation are one transaction. Repeat requests return the same terminal/highwater; already completed/failed/unknown terminals are not overwritten. Only committed cancellation prevents subsequent worker step starts; a lock/commit/owner/response failure is unknown and must reconcile the original run through existing reads. No automatic model/tool retry. In-flight work may settle but late output cannot change the terminal. Closed/foreign/absent/unavailable sources are indistinguishable. No query parameters.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCancellationRequest"
+              },
+              "examples": {
+                "original": {
+                  "value": {
+                    "version": "RUN-cancel.1",
+                    "message_id": "m1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Committed cancellation or unchanged existing terminal; request_id is tracing, not business idempotency.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunCancellationResponse"
+                },
+                "examples": {
+                  "cancelled": {
+                    "value": {
+                      "request_id": "00000000-0000-4000-8000-000000000001",
+                      "message_id": "m1",
+                      "run_id": "r1",
+                      "status": "cancelled",
+                      "event_highwater": 1
+                    }
+                  },
+                  "alreadyCompleted": {
+                    "value": {
+                      "request_id": "00000000-0000-4000-8000-000000000002",
+                      "message_id": "m1",
+                      "run_id": "r1",
+                      "status": "completed",
+                      "event_highwater": 3
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "400 invalid input, 413 body too large, 415 media type, 401/403 initial AUTH denial; 503 unavailable or possibly committed/unknown cancellation. No synthetic terminal or null success.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-negative-examples": [
+          {
+            "value": {},
+            "status": 400
+          },
+          {
+            "value": {
+              "version": "RUN-cancel.2",
+              "message_id": "m1"
+            },
+            "status": 400
+          },
+          {
+            "value": {
+              "version": "RUN-cancel.1",
+              "message_id": ""
+            },
+            "status": 400
+          },
+          {
+            "value": {
+              "version": "RUN-cancel.1",
+              "message_id": true
+            },
+            "status": 400
+          },
+          {
+            "value": {
+              "version": "RUN-cancel.1",
+              "message_id": "m1",
+              "scope": "foreign"
+            },
+            "status": 400
+          },
+          {
+            "raw": "{\"version\":\"RUN-cancel.1\",\"message_id\":\"m1\",\"message_id\":\"m2\"}",
+            "status": 400
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -5561,6 +5687,69 @@
             "description": "Required active conversation head or explicit null. Generated fallback containers must be checked for actual null; invalid/missing data never means an unavailable conversation."
           }
         }
+      },
+      "RunCancellationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "message_id"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "enum": [
+              "RUN-cancel.1"
+            ]
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "description": "Exact original MESSAGE id, nonblank/no NUL and at most 256 UTF-8 bytes. No caller run id, principal or scope."
+          }
+        },
+        "description": "RUN-CANCEL@1. Body at most 4096 bytes; duplicate/unknown/missing keys rejected. Stable cancellation identity is trusted principal + cancel + original message_id; JSON whitespace does not create a new action."
+      },
+      "RunCancellationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "message_id",
+          "run_id",
+          "status",
+          "event_highwater"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "cancelled",
+              "context_invalid",
+              "unknown"
+            ]
+          },
+          "event_highwater": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          }
+        },
+        "description": "Original RUN terminal observed after a durable cancellation transaction. Existing terminals are retained. Prior text/effects remain readable through their original ledgers. Does not claim rollback/refund or physical abortion of an already-started provider request."
       }
     },
     "securitySchemes": {

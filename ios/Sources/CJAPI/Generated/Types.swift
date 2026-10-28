@@ -122,6 +122,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/message-send-status`.
     /// - Remark: Generated from `#/paths//v1/message-send-status/get(getMessageSendStatus)`.
     func getMessageSendStatus(_ input: Operations.getMessageSendStatus.Input) async throws -> Operations.getMessageSendStatus.Output
+    /// RUN-CANCEL@1: stop the currently accessible original message run. Resolve identity through the existing MESSAGE owner, never a supplied run/scope. Creation of an undispatched RUN and cancellation are one transaction. Repeat requests return the same terminal/highwater; already completed/failed/unknown terminals are not overwritten. Only committed cancellation prevents subsequent worker step starts; a lock/commit/owner/response failure is unknown and must reconcile the original run through existing reads. No automatic model/tool retry. In-flight work may settle but late output cannot change the terminal. Closed/foreign/absent/unavailable sources are indistinguishable. No query parameters.
+    ///
+    /// - Remark: HTTP `POST /v1/run-cancellations`.
+    /// - Remark: Generated from `#/paths//v1/run-cancellations/post(cancelOriginalRun)`.
+    func cancelOriginalRun(_ input: Operations.cancelOriginalRun.Input) async throws -> Operations.cancelOriginalRun.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -511,6 +516,19 @@ extension APIProtocol {
         try await getMessageSendStatus(Operations.getMessageSendStatus.Input(
             query: query,
             headers: headers
+        ))
+    }
+    /// RUN-CANCEL@1: stop the currently accessible original message run. Resolve identity through the existing MESSAGE owner, never a supplied run/scope. Creation of an undispatched RUN and cancellation are one transaction. Repeat requests return the same terminal/highwater; already completed/failed/unknown terminals are not overwritten. Only committed cancellation prevents subsequent worker step starts; a lock/commit/owner/response failure is unknown and must reconcile the original run through existing reads. No automatic model/tool retry. In-flight work may settle but late output cannot change the terminal. Closed/foreign/absent/unavailable sources are indistinguishable. No query parameters.
+    ///
+    /// - Remark: HTTP `POST /v1/run-cancellations`.
+    /// - Remark: Generated from `#/paths//v1/run-cancellations/post(cancelOriginalRun)`.
+    public func cancelOriginalRun(
+        headers: Operations.cancelOriginalRun.Input.Headers = .init(),
+        body: Operations.cancelOriginalRun.Input.Body
+    ) async throws -> Operations.cancelOriginalRun.Output {
+        try await cancelOriginalRun(Operations.cancelOriginalRun.Input(
+            headers: headers,
+            body: body
         ))
     }
 }

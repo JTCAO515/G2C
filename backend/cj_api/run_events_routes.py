@@ -39,6 +39,11 @@ def _sse(event, data, event_id=None):
 
 
 def register_run_events_route(app, reader=None, display_configuration=None, configuration=None):
+    if configuration is not None and type(configuration) is not RunEventsConfiguration:
+        raise ValueError('explicit RUN events configuration required')
+    from .run_cancel_routes import register_run_cancel_route
+    register_run_cancel_route(app, reader, display_configuration, configuration)
+
     def unavailable(request):
         return _error(request, 503, 'RUN_EVENTS_UNAVAILABLE', 'dependency', 'unknown', 'retry_safe_read')
 

@@ -155,6 +155,22 @@ class Service:
             state = tx.accept(binding)
         return state
 
+    def cancel(self, binding):
+        """Stop the original run, including an accepted MESSAGE not yet dispatched.
+
+        The scope/run fence covers creation and the terminal event together. The
+        cancellation identity derives from that immutable original run; retries
+        never append a second cancellation or overwrite an existing terminal.
+        The public adapter must establish current ownership before entering here.
+        """
+        with self.repository.transaction() as tx:
+            state = tx.accept(binding)
+            if state.status not in TERMINAL:
+                state = advance(state, Event(binding, state.sequence + 1,
+                                'cancel:' + binding.run_id, 'cancelled'), self.valid)
+                tx.put(state)
+        return state
+
     def accept_with_usage(self, binding, usage, *, require_new=False):
         if type(usage) is not UsageBinding:
             raise ValueError('explicit original usage binding required')
