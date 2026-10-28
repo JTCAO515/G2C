@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-28T01:42:21.581033+00:00",
+  "lastUpdated": "2026-10-28T01:43:45.251145+00:00",
   "currentPhase": "M1：#158 本地全部必需检查通过，提交 PR 等精确 head CI 与独立审查；完成后按 JT 要求暂停。",
   "status": "active",
   "objective": "M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。",
@@ -14,7 +14,7 @@
     "#158：修复动态字体、对比度、中文换行与记忆入口点击；普通 App 全量 AX、4 项合成状态/混合输入/键盘/长文、4 项结构回归全部通过；Python56、PG11、CJShell204通过。",
     "Apple 官方确认 VoiceOver 不在 Simulator 提供。按 ADR-0007 第 1 条，实际设备听读/焦点/激活保留未勾并转记现有 #29，#7/#158/#29 已互相回链；不改里程碑/队列或执行真机操作。",
     "#156 等 JT 授权仅补 TripPendingStore 中央登记（目标文件超出子票原范围），#5 挂起；#176 保留冷环境求解器预算失败，未提高预算。",
-    "#159 文案待 JT；#162 owner Claude、PR #173 待 JT；#163/#164/#167 依赖仍阻塞。#175 为旧 README 文案。",
+    "#162 已由 Claude PR #173 关闭，ADR-0008 accepted、MESSAGE-SEND@1 冻结；main 9858a8a CI 40615231118 全绿。#163 的该前置已解除；本轮不启动后续票。#159 文案仍待 JT；#175 为旧 README。",
     "本轮完成 #158 后暂停（JT 当前指令）；不自动执行后续队列。实际 VoiceOver 保持 L3 #29 UNRUN。"
   ],
   "assumptions": [
@@ -34,7 +34,8 @@
     "已执行并结束：#154 于 PR #172 合并，暂停结束。自 PR #171 起按 ADR-0007 第 7 条与 docs/plan/issue-plan.md 自动续作（JT 授权，2026-10-27）。",
     "JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。",
     "accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).",
-    "accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending."
+    "accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending.",
+    "accepted (JT 2026-10-28): ADR-0008 消息发送许可：服务端会话头 CAS 为不可回退的首次发送证据；加锁的发送状态读取；MESSAGE-SEND@1 冻结，MESSAGE-draft.1 POST 撤回；App 真实发送只在 DEBUG 模拟器开发会话按 ADR-0008 第 7 条开放。"
   ],
   "architectureContracts": [
     "contracts/api/openapi.json unchanged in P1.",
@@ -58,8 +59,8 @@
   "verification": [
     {
       "command": "uv run --locked python -B scripts/test.py",
-      "status": "pass",
-      "summary": "56/56 passed；无数据库套件。",
+      "status": "not-run",
+      "summary": "合入最新 main #173 后新增契约检查，需重跑；合入前56/56通过。",
       "artifact": null
     },
     {
@@ -101,9 +102,9 @@
   ],
   "blockers": [
     "#156：中央存储登记缺 TripPendingStore；backend/storage-registry.json 不在允许修改范围，待 JT 授权仅补现状登记（不改政策/行为）或 Claude 安排。父票 #5 挂起，已跳过，恢复执行时优先核对授权。",
-    "#162 OPEN：Claude PR #173 待 JT 批准；#163 等 #162，#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。",
     "#159 帮助/隐私/支持文案需 JT 确认（子票级停点）。",
-    "L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。"
+    "L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。",
+    "#164 等 #163，#167 等 #164 与 #165；#162 已关闭，恢复时先重新核对依赖。"
   ],
   "risks": [
     "DEBUG 开发组装仅限 Simulator、显式 loopback 和开发 token；不是生产认证/存储激活。Release 和真机保持未连接。",

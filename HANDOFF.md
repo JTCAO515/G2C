@@ -21,7 +21,7 @@
 | Phase | M1：#158 本地全部必需检查通过，提交 PR 等精确 head CI 与独立审查；完成后按 JT 要求暂停。 |
 | Accepted Issue | #7 CJ-006 / #158：模拟器 L1 AX 审计、动态字体、关键状态与 Muse 交互；实际 VoiceOver 已按 ADR-0007 转记 L3 #29。 |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T01:42:21.581033+00:00 |
+| Last updated | 2026-10-28T01:43:45.251145+00:00 |
 
 ## Active Work
 
@@ -29,7 +29,7 @@
 - #158：修复动态字体、对比度、中文换行与记忆入口点击；普通 App 全量 AX、4 项合成状态/混合输入/键盘/长文、4 项结构回归全部通过；Python56、PG11、CJShell204通过。
 - Apple 官方确认 VoiceOver 不在 Simulator 提供。按 ADR-0007 第 1 条，实际设备听读/焦点/激活保留未勾并转记现有 #29，#7/#158/#29 已互相回链；不改里程碑/队列或执行真机操作。
 - #156 等 JT 授权仅补 TripPendingStore 中央登记（目标文件超出子票原范围），#5 挂起；#176 保留冷环境求解器预算失败，未提高预算。
-- #159 文案待 JT；#162 owner Claude、PR #173 待 JT；#163/#164/#167 依赖仍阻塞。#175 为旧 README 文案。
+- #162 已由 Claude PR #173 关闭，ADR-0008 accepted、MESSAGE-SEND@1 冻结；main 9858a8a CI 40615231118 全绿。#163 的该前置已解除；本轮不启动后续票。#159 文案仍待 JT；#175 为旧 README。
 - 本轮完成 #158 后暂停（JT 当前指令）；不自动执行后续队列。实际 VoiceOver 保持 L3 #29 UNRUN。
 
 ## Accepted Assumptions
@@ -52,6 +52,7 @@
 - JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。
 - accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).
 - accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending.
+- accepted (JT 2026-10-28): ADR-0008 消息发送许可：服务端会话头 CAS 为不可回退的首次发送证据；加锁的发送状态读取；MESSAGE-SEND@1 冻结，MESSAGE-draft.1 POST 撤回；App 真实发送只在 DEBUG 模拟器开发会话按 ADR-0008 第 7 条开放。
 
 ## Architecture Contracts
 
@@ -71,7 +72,7 @@
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 56/56 passed；无数据库套件。 | — |
+| not-run | `uv run --locked python -B scripts/test.py` | 合入最新 main #173 后新增契约检查，需重跑；合入前56/56通过。 | — |
 | pass | `uv run --locked python -B scripts/pg_suites.py` | 全新私有 PG：11/11 suites；未放宽求解器预算或断言。 | — |
 | pass | `swift test --package-path ios/Modules/CJShell` | 204 tests / 28 suites；iOS 源码另由原生 App XCTest 构建覆盖。 | — |
 | pass | `check_shell_structure.py (structure)` | iOS17.5 普通 App 1 + 合成宿主 3 tests，零失败零跳过；语言/草稿/导航与只读请求回归。 | — |
@@ -82,9 +83,9 @@
 ## Blockers
 
 - #156：中央存储登记缺 TripPendingStore；backend/storage-registry.json 不在允许修改范围，待 JT 授权仅补现状登记（不改政策/行为）或 Claude 安排。父票 #5 挂起，已跳过，恢复执行时优先核对授权。
-- #162 OPEN：Claude PR #173 待 JT 批准；#163 等 #162，#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。
 - #159 帮助/隐私/支持文案需 JT 确认（子票级停点）。
 - L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
+- #164 等 #163，#167 等 #164 与 #165；#162 已关闭，恢复时先重新核对依赖。
 
 ## Risks
 

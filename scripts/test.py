@@ -30,6 +30,7 @@ STANDALONE_MODULES = (('message/tests', 'history_context_tests'),)
 CONTRACT_SCRIPTS = ('scripts/check_contract.py', 'contracts/auth/check.py', 'contracts/auth/check_email.py',
                     'contracts/auth/check_ui.py', 'contracts/message/check.py',
                     'contracts/message/check_list_cursor.py', 'contracts/message/check_message_cursor.py',
+                    'contracts/message/check_send_permit.py',
                     'contracts/ui/check_contract.py')
 
 
