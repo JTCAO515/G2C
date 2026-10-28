@@ -362,6 +362,41 @@ class DraftToTrip(Harness):
             self.assertNotEqual(client.get('/v1/trip-proposals', params={'proposal_id': 'p-' + run_id},
                                            headers=self.headers('bob')).status_code, 200)
 
+    def test_structural_model_rejections_leave_no_candidate_or_formal_trip(self):
+        invalid = {
+            'duplicate-title': '{"title":"discarded","title":"x","items":["a"]}',
+            'overwritten-items': '{"title":"x","items":[],"items":["a"]}',
+            'escaped-duplicate': '{"title":"x","items":["a"],"it\\u0065ms":["b"]}',
+            'invalid-unicode': '{"title":"x","items":["\\ud800"]}',
+            'nesting-limit': '{"title":"x","items":' + '[' * (sys.getrecursionlimit() + 10) + '0' + ']' * (sys.getrecursionlimit() + 10) + '}',
+            'unknown-field': json.dumps({'title':'x','items':['a'],'verified':True}),
+            'title-bound': json.dumps({'title':'x' * 121,'items':['a']}),
+            'item-bound': json.dumps({'title':'x','items':['a' * 501]}),
+            'count-bound': json.dumps({'title':'x','items':['a'] * 21}),
+            # The current model format cannot supply canonical IDs or timed items.
+            # Rejecting this shape proves structural refusal, not time feasibility.
+            'caller-item-ids': json.dumps({'title':'x','items':[{'id':'same','text':'a'},{'id':'same','text':'b'}]}),
+        }
+        with TestClient(self.app) as client:
+            for case, raw in invalid.items():
+                with self.subTest(case=case):
+                    class Provider(FakeProvider):
+                        def stream(inner, messages, system=None):
+                            if system is not None:
+                                inner.calls += 1
+                                yield raw
+                                return
+                            yield from super().stream(messages)
+                    provider = Provider()
+                    run_id, outcome = self.draft(client, 'alice', 'Beijing please', provider=provider)
+                    self.assertEqual((outcome.status, outcome.proposal_id, provider.calls), ('completed', None, 2))
+                    self.assertNotEqual(client.get('/v1/trip-proposals', params={'proposal_id':'p-' + run_id},
+                                                   headers=self.headers('alice')).status_code, 200)
+                    with self.database.connect(scope_for(ISSUER, 'alice')) as conn:
+                        self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal WHERE proposal_id=%s', ('p-' + run_id,)).fetchone()[0], 0)
+                        self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record WHERE trip_id=%s', ('trip-' + run_id,)).fetchone()[0], 0)
+                        self.assertEqual(conn.execute("SELECT count(*) FROM cj_run_event WHERE run_id=%s AND kind='effect_committed'", (run_id,)).fetchone()[0], 0)
+
 
 class SignedTripConfirmation(Harness):
     draft = DraftToTrip.draft

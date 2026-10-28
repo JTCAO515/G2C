@@ -18,19 +18,19 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #166 worker ownership/recovery implemented; final L1/full-suite verification in progress. #164 remains blocked on #198 authorization. |
-| Accepted Issue | #11 / #166: ordered/mutually exclusive worker execution, restart/snapshot recovery and current authorization checks. |
+| Phase | M1 #166 merged/closed with green main; #168 structural ingress repair in progress, time mapping unresolved. #164/#167 remain blocked. |
+| Accepted Issue | #19 / #168: draft structure and travel constraints; current candidate is Part 1/2 (structure only). |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T13:31:15.637989+00:00 |
+| Last updated | 2026-10-28T13:53:18.747359+00:00 |
 
 ## Active Work
 
-- #165 PR #199 merged at 1d12ce4b82d07ce442c749661f0157c7cf67a052; exact head CI and independent APPROVE passed; main CI40686520940 all five jobs green. Child and parent cancellation evidence backfilled.
-- #166: dedicated physical-session per-chat advisory ownership distinguishes a live worker from interrupted execution. Contenders wait; process/session death permits original RUN recovery to unknown without another provider attempt. Existing short RUN cancellation/publication fences remain.
-- #166 actual entry rechecks the existing invitation source and original MESSAGE binding before steps/publication. scripts/run_worker.py has the necessary consumer wiring documented in issue comment6470094167; no policy, key, contract, migration or CI changes.
-- #166 baseline reproduced active-worker invalidation and late output after invitation revocation/unreadability. Actual private-PG/TCP e2e28/28 and test57/57 now pass. Complete PG gate, exact-head CI and independent review in progress.
-- #164 iOS candidate remains preserved, awaiting #198 approval for missing formal history configuration. Native Release negative and module tests passed; Debug L1 remains blocked. No backend/key workaround implemented.
-- Pending PR195/196/197 are not accepted main rules; verify latest queue/ownership before the next ticket. #159/L2/cloud/production keys and branch protection remain JT-owned.
+- #166 PR #200 merged at96e97af88d71390a9f2609cd0eedbb670762b0be; exact head5abd322 CI/pr-lint and independent APPROVE6470507941 passed. Main CI40698481356 all five jobs green. Four child boxes and parent#11 account/authorization/order/recovery evidence backfilled; parent remains open for#167.
+- #167 skipped by accepted prerequisite rule: #164 still waits for#198 authorization. Existing #164 iOS work preserved; no backend/key workaround.
+- #168 base96e97af: reproduced duplicate model JSON fields silently replacing earlier values and unpaired Unicode escaping DraftRejected. Part1 rejects ambiguous JSON, parser nesting overflow and invalid Unicode before publishing; existing valid/prose-compatible input and all boundary/security checks remain.
+- #168 Part1 unit16/16, full test.py57/57 and pg_suites.py11/11 pass, including e2e29/29 with10 structural rejection subcases and all prior regression checks. Preparing exact-head CI and independent review; #168 remains open.
+- #168 time mapping remains unresolved: active Proposal stores title/items/id/text/verification/evidence only, while FEAS requires authentic structured NEEDS inputs. Free-form model text is not such an input; do not fabricate snapshots/history or change frozen contracts to claim travel validation.
+- #159/L2/cloud/production keys and branch protection remain JT-owned. Pending PR195/196/197 are not accepted main rules.
 
 ## Accepted Assumptions
 
@@ -64,26 +64,25 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/run/cj_run/core.py, fixture.py, postgres.py` | Dedicated per-chat worker ownership, session loss handling and matching synthetic adapter; transaction-local scope and RLS preserved. |
-| `backend/agent/cj_agent/worker.py, scripts/run_worker.py` | Fence execution with current worker ownership and recheck original host admission before new steps and publication. |
-| `backend/agent/tests/test_worker_ownership.py, ownership_checks.py, e2e_local.py` | Live-worker competition, actual killed process/lost session, current authorization and TCP resume regressions; existing tests retained. |
-| `backend/run/README.md` | Document physical-session requirement, recovery and authorization limits. |
-| `docs/handoff.json, HANDOFF.md` | Record #166 implementation/evidence and preserved #164/#198 stop point. |
+| `backend/agent/cj_agent/draft.py` | Reject duplicate model JSON keys, excessive nesting and unencodable text as DraftRejected before persistence. |
+| `backend/agent/tests/test_draft.py, e2e_local.py` | Model-boundary regressions and real private-PG no-publication negatives; no existing tests removed. |
+| `backend/draft/README.md` | Distinguish structure-only repair from unresolved travel/time mapping and failure presentation. |
+| `docs/handoff.json, HANDOFF.md` | Record #166 closure, #167 prerequisite skip, #168 partial scope and pending decisions. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `#165 full local checks, exact-head CI and independent review` | test57/57, PG11/11, e2e22; independent review reproduced22/22 PG and68 unit tests/31 subtests; all head CI/pr-lint green. | https://github.com/JTCAO515/G2C/pull/199#issuecomment-6468738476 |
-| pass | `#165 post-merge main CI40686520940` | Five jobs success on1d12ce4; #165 and parent cancellation evidence updated. | https://github.com/JTCAO515/G2C/actions/runs/40686520940 |
-| fail | `pytest backend/agent/tests/test_worker_ownership.py on #166 baseline` | Second worker returns unknown instead of waiting while the original provider is alive; synthetic storage/thread reproduction only. | — |
-| pass | `uv run --locked python -B scripts/test.py` | 57/57 groups passed on #166 working tree. | — |
-| pass | `scripts/pg_suites.py e2e (final TCP/ownership/authorization round)` | 28/28 passed, including actual TCP disconnect/resume, repeated offset, expired cursor/fresh snapshot, killed subprocess, lost lease, same-chat order and revoked/unreadable invitation. Existing cancellation/RLS tests retained. | — |
-| not-run | `#166 full PG, exact-head CI and independent review` | In progress; merge and closure not established. | — |
+| pass | `#166 full local checks / independent review / exact-head CI` | test57/57, PG11/11 including e2e28; independent review reproduced e2e28/28, all head jobs green. | https://github.com/JTCAO515/G2C/pull/200#issuecomment-6470507941 |
+| pass | `#166 post-merge main CI40698481356` | Five jobs success on96e97af; #166 closed, parent evidence updated. | https://github.com/JTCAO515/G2C/actions/runs/40698481356 |
+| fail | `pytest backend/agent/tests/test_draft.py baseline` | 4 failed /12 passed: duplicate fields accepted and Unicode error escaped the draft failure type. Evidence preserved outside repository. | — |
+| pass | `pytest backend/agent/tests/test_draft.py after structure repair` | 16/16 passed. Includes duplicate spellings, unpaired surrogate and parser recursion bound. | — |
+| pass | `uv run --locked python -B scripts/test.py; uv run --locked python -B scripts/pg_suites.py` | test57/57, PG11/11 including e2e29/29 with10 structural no-publication subcases. CI and independent review still pending. Travel constraints and user-visible draft failure remain unresolved. | — |
 
 ## Blockers
 
-- #164 awaits JT authorization for #198: formal local history configuration is missing and returns503. Its iOS-only scope does not authorize backend/key initialization changes.
+- #164 awaits JT authorization for#198: formal local history configuration is missing (503); backend/key initialization is outside its iOS-only scope. #167 depends on#164.
+- #168 owning structured draft-time-to-NEEDS mapping is missing; frozen contracts cannot be changed under this ticket. Time conflict acceptance and explicit draft failure presentation remain unproven; #169/#170 depend on#168.
 - #159 copy, L2/cloud/real users/production key and branch protection decisions remain JT-owned.
 
 ## Risks
@@ -104,8 +103,8 @@
 
 ## Next Smallest Action
 
-- Action: Finish #166 final local checks, publish PR, obtain exact-head all-green CI and independent review, merge, verify main, then backfill all four child boxes and parent #11. #167 remains dependent on blocked #164; follow accepted queue thereafter. Resume #198/#164 only when required authorization arrives.
-- Expected observation: Original RUN/text survive reconnect and crash; a live competitor waits; revoked or unknown authorization cannot publish.
+- Action: Publish #168 Part1 structure repair with Refs#168 Part1/2; obtain exact-head all-green CI and independent APPROVE, merge, verify main and update evidence. Keep both full #168 boxes open for the missing structured time/NEEDS mapping and failure presentation. Do not change frozen contracts or invent NEEDS provenance. Resume #198/#164 only when required authorization arrives.
+- Expected observation: Ambiguous/invalid model structures never create candidates, formal trips or RUN effects; time validation remains explicitly unresolved.
 - Resume command: `uv run --locked python -B scripts/pg_suites.py`
 
 ## Rollback
