@@ -84,7 +84,7 @@ import Foundation
         tap("简体中文")
         tabs(["助手", "行程", "插件", "记忆"])
         XCTAssertTrue(app.navigationBars["语言"].exists)
-        text("保存在此设备。切换语言会保留当前导航和未发送草稿。")
+        text("保存在此设备。\n切换语言会保留当前导航和未发送草稿。")
         tap("助手"); draftRetained()
         for tab in ["助手", "行程", "插件"] {
             tap(tab)

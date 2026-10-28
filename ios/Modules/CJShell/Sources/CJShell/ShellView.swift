@@ -82,6 +82,21 @@ public struct ShellView: View {
     }
 }
 
+struct ShellReadableButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.65 : 1)
+    }
+}
+
+struct ShellSectionHeading: View {
+    let title: String
+    var body: some View {
+        Text(title).font(.subheadline).foregroundStyle(Color(uiColor: .label))
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
 struct ShellStatusView: View {
     let state: ShellPageState
     let language: ShellLanguage
@@ -89,13 +104,14 @@ struct ShellStatusView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if state == .loading { ProgressView().accessibilityLabel(language.text("Loading", "正在读取")) }
-            Text(message).fixedSize(horizontal: false, vertical: true)
+            Text(message).font(.body.leading(.loose)).lineLimit(nil).fixedSize(horizontal: false, vertical: true).padding(.vertical, 2)
         }.frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
     }
 
     private var message: String {
         switch state {
-        case .notConnected: language.text("This service is not connected yet. No records have been loaded.", "此服务尚未接入，尚未读取记录。")
+        case .notConnected: language.text("This service is not connected yet. No records have been loaded.", "此服务尚未接入。\n尚未读取记录。")
         case .empty: language.text("No records to show.", "暂无记录。")
         case .loading: language.text("Loading records…", "正在读取记录…")
         case .failed: language.text("Could not load records. Nothing is marked as saved.", "记录读取失败，未标记任何保存成功。")

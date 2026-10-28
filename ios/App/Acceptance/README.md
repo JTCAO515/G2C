@@ -38,4 +38,36 @@ Release behavior, CJAuth and production write gates are unchanged.
 
 This verifies UI structure and local fixture behavior. It does not approve help,
 privacy or support wording (#159), prove real authentication/storage, or replace
-VoiceOver/device and other state acceptance (#158 and L2/L3).
+the separate accessibility/state suite below or real VoiceOver/device acceptance (L3 #29).
+
+## Accessibility and state samples (#158)
+
+Use `--suite accessibility` for the ordinary App's complete system accessibility
+checks on the four roots and language selection in both languages, plus the labelled fixture's maximum text, assistant
+states, readonly Trip/memory states, long content and keyboard scenarios. Five
+XCTest methods must pass with no skips; keyboard cases type and retain mixed
+Chinese/English text in the Chinese UI and English text in the English UI:
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+python3 -B ios/App/Acceptance/check_shell_structure.py --suite accessibility \
+  --simulator '<iOS-17.5-UDID>' --output '<new-external-evidence-directory>' \
+  --build-dir '<external-reusable-build-cache>'
+```
+
+`--build-dir` is optional. Reusing compiler outputs does not overwrite previous
+reports or native test results. Verbose Xcode sysdiagnose collection is disabled
+because it can hang after a failed audit; the audit failure, XCTest output,
+screenshots and xcresult still remain and still fail the run. The audit handler
+returns false for every issue: nothing is filtered or accepted as an exception.
+
+The fixture's Trip client uses the public readonly initializer, memory-only
+synthetic session material, no pending store and no TripLiveWrites. Its memory
+client is also readonly. Loading responses wait for an explicit test release;
+all observed business requests must remain GETs. Assistant state and long-text
+samples are presentation data, not evidence of a real model or backend outcome.
+
+The physical VoiceOver listening, focus and activation checks remain UNRUN under
+L3 #29, linked from #7/#158 per ADR-0007. Apple states that VoiceOver is not
+available in Simulator; system accessibility audits do not replace it:
+[Apple accessibility testing](https://developer.apple.com/documentation/accessibility/performing-accessibility-testing-for-your-app).
