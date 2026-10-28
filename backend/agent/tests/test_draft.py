@@ -1,5 +1,6 @@
 """Model text -> canonical TRIP document; untrusted input is rejected, never repaired."""
 import json
+import sys
 
 import pytest
 
@@ -31,3 +32,15 @@ def test_identifiers_are_valid_trip_identifiers():
     assert identifier(proposal_id_for(run_id)) == 'p-' + run_id
     scope = trip_scope_for('local:https://local.g2c.invalid:alice')
     assert identifier(scope) == scope and scope != trip_scope_for('local:https://local.g2c.invalid:bob')
+
+
+@pytest.mark.parametrize('raw', [
+    '{"title":"discarded","title":"replacement","items":["a"]}',
+    '{"title":"x","items":[],"items":["a"]}',
+    '{"title":"x","items":["a"],"it\\u0065ms":["b"]}',
+    '{"title":"x","items":["\\ud800"]}',
+    '{"title":"x","items":' + '[' * (sys.getrecursionlimit() + 10) + '0' + ']' * (sys.getrecursionlimit() + 10) + '}',
+], ids=['duplicate-title', 'overwritten-items', 'escaped-duplicate', 'unpaired-surrogate', 'nesting-limit'])
+def test_ambiguous_or_unencodable_model_json_is_rejected_as_a_whole(raw):
+    with pytest.raises(DraftRejected):
+        document_from_model(raw)
