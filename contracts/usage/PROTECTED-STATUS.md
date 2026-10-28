@@ -40,10 +40,11 @@ No route/HTTP schema/registry/root lock, no AUTH edits, no MESSAGE dependency, n
 Meter mutator and no provider exit. Shared AUTH-USAGE-RUN check-to-call fence, live
 revocation, real users/provider costs/product RLS/I acceptance remain UNRUN.
 
-AUTH import dependency: host must supply canonical modules from that exact source
-head; importing protected_status without cj_auth.read_context fails rather than
-silently selecting a stub/older boundary. Tests export fixed AUTH blobs to ignored
-module-local .local storage and import them; exports are not committed product copies.
+AUTH dependency: since ADR-0004 `cj_auth` ships in the same `cj` distribution and
+is imported directly. `protected_status` no longer imports `cj_auth.read_context`
+itself (2026-10-28, #186), so importing it does not by itself prove the boundary is
+present. The trusted host composition (`cj_api`) must construct AttemptStatusReader
+with the canonical `ProtectedReadBoundary`; no stub or older boundary is supported.
 
 ## Author validation and remaining gates
 
