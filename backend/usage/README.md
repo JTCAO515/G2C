@@ -123,3 +123,14 @@ no additional external callback or new authorization check. Original 2 FAILs kep
 Author 14 affected checks PASS and original Review's 2 assertions PASS against the
 repaired fixture; see evidence/final-binding-* and review-final-binding-after.txt.
 Independent re-review remains pending. No database/resource operation for this fix.
+
+## Trust boundary (2026-10-28, #186)
+
+The final-binding comparison above and the per-stage domain guard were removed.
+They guarded against the host replacing its own trusted reader configuration,
+resolver or repository mid-request. AttemptStatusReader now checks principal
+issuer/audience once, refuses a missing host mapping, and passes an empty stage
+guard to `read_status`. Fresh AUTH runs at entry and before bytes escape in
+ProtectedReadBoundary, so revocation during storage, close or projection still
+withholds bytes. `read_status` keeps its own scope/connect, period, size and
+READ ONLY checks unchanged.

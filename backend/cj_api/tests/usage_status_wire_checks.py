@@ -109,7 +109,7 @@ class UsageStatusChecks(SyntheticFixture):
             if target[0] is not None and self.policy.calls==target[0]:
                 return CJAccessFacts(p,Fact.YES,Fact.YES,Fact.NO)
             return result
-        # From close: storage final check, domain final check, then outer AUTH.
-        self.close_hook=lambda:target.__setitem__(0,self.policy.calls+3)
+        # From close, the next admission check is the outer AUTH final check.
+        self.close_hook=lambda:target.__setitem__(0,self.policy.calls+1)
         with patch.object(self.policy,'evaluate',side_effect=evaluate):result=self.get()
         self.assertEqual(result.status_code,403);self.assertEqual(self.policy.calls,target[0]);self.assertNotIn('attempt',result.json())

@@ -21,13 +21,12 @@ never token refresh times, request owner or a newly provisioned ledger. AUTH con
 does not itself authorize arbitrary historical periods; resolver must apply host's
 accepted mapping. No fallback/default/scope creation.
 
-The same ctx.guard and captured principal/reader configuration/resolver/repository
-scope guard surround callbacks and storage. read_status validates stored ledger's
+Fresh AUTH runs at entry and before bytes escape (ProtectedReadBoundary); storage
+stages are not re-checked (see "Trust boundary" below). read_status validates stored ledger's
 period equals the selected historical period, performs READ ONLY SELECT, projects
 only the minimal status, finishes final host envelope bytes inside ctx, commits the
 read and closes cursor/connection. Close/encoding/scope/identity failures withhold
-bytes. The domain guard runs again after storage; the original AUTH boundary then
-rechecks current admission before returning exact bytes. No private transformation
+bytes. The original AUTH boundary rechecks current admission before returning exact bytes. No private transformation
 may be added afterwards. Transaction completion unknown retains its original error,
 not a current-denial fiction or permission to execute/retry a write.
 
@@ -41,10 +40,11 @@ No route/HTTP schema/registry/root lock, no AUTH edits, no MESSAGE dependency, n
 Meter mutator and no provider exit. Shared AUTH-USAGE-RUN check-to-call fence, live
 revocation, real users/provider costs/product RLS/I acceptance remain UNRUN.
 
-AUTH import dependency: host must supply canonical modules from that exact source
-head; importing protected_status without cj_auth.read_context fails rather than
-silently selecting a stub/older boundary. Tests export fixed AUTH blobs to ignored
-module-local .local storage and import them; exports are not committed product copies.
+AUTH dependency: since ADR-0004 `cj_auth` ships in the same `cj` distribution and
+is imported directly. `protected_status` no longer imports `cj_auth.read_context`
+itself (2026-10-28, #186), so importing it does not by itself prove the boundary is
+present. The trusted host composition (`cj_api`) must construct AttemptStatusReader
+with the canonical `ProtectedReadBoundary`; no stub or older boundary is supported.
 
 ## Author validation and remaining gates
 
@@ -89,3 +89,14 @@ checks plus both regression cases). Original Review assertion source is run agai
 the repaired local fixture in review-final-binding-after.txt: 2 PASS. These are
 author reruns, not independent Review approval. Old FAILs remain unchanged.
 No old suites, database clusters, AUTH source, root wire or dispatch paths changed.
+
+## Trust boundary (2026-10-28, #186)
+
+The final-binding comparison above and the per-stage domain guard were removed.
+They guarded against the host replacing its own trusted reader configuration,
+resolver or repository mid-request. AttemptStatusReader now checks principal
+issuer/audience once, refuses a missing host mapping, and passes an empty stage
+guard to `read_status`. Fresh AUTH runs at entry and before bytes escape in
+ProtectedReadBoundary, so revocation during storage, close or projection still
+withholds bytes. `read_status` keeps its own scope/connect, period, size and
+READ ONLY checks unchanged.
