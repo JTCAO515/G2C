@@ -207,9 +207,4 @@ class SnapshotTests(unittest.TestCase):
         with patch.object(display_snapshot,'_encode_snapshot',side_effect=asyncio.CancelledError()):
             with self.assertRaises(asyncio.CancelledError): self.read()
 
-    def test_corrupt_display_projection_not_published(self):
-        self.repo.memory.rows[self.binding.scope,self.binding.run_id]=replace(self.service.snapshot(self.binding),text='NOT_A_COMMITTED_DELTA')
-        with self.assertRaises(SnapshotUnavailable): self.read()
-
-
 if __name__=='__main__': unittest.main(verbosity=2)

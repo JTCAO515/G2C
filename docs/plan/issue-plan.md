@@ -1,6 +1,6 @@
 # Issue 总体规划
 
-依据 [ADR-0007](../adr/0007-issue-closure-workflow.md)。本文件只记录**结构**：里程碑、队列、子票和依赖。**进度**以 GitHub Issue 为准，不在这里勾选。最近一次修订：2026-10-28（Claude 排期，JT 授权插入 #176、#182）。
+依据 [ADR-0007](../adr/0007-issue-closure-workflow.md)。本文件只记录**结构**：里程碑、队列、子票和依赖。**进度**以 GitHub Issue 为准，不在这里勾选。最近一次修订：2026-10-28（Claude 排期，JT 授权插入 #176、#182、#185）。
 
 ## 规划原则
 
@@ -23,7 +23,7 @@
 
 ## M1 队列
 
-按顺序执行。一次只推进一张父票，最多 2 个开着的 PR。当前插入段的唯一顺序为 **#161 → #176 → #182 → #163**，之后继续原队列至 #170（JT 2026-10-28 授权）。#176 的方案以[收紧后的验收评论](https://github.com/JTCAO515/G2C/issues/176#issuecomment-6460752372)为准；票面早期“不进入 M1”是历史记录。
+按顺序执行。一次只推进一张父票，最多 2 个开着的 PR。当前插入段的唯一顺序为 **#161 → #176 → #182 → #185 → #163**，之后继续原队列至 #170（JT 2026-10-28 授权）。#176 的方案以[收紧后的验收评论](https://github.com/JTCAO515/G2C/issues/176#issuecomment-6460752372)为准；票面早期“不进入 M1”是历史记录。
 
 | 序 | 父票 | 子票（按顺序） | 转 L2 #32 的框 |
 |---|---|---|---|
@@ -34,6 +34,7 @@
 | 4 | [#8](https://github.com/JTCAO515/G2C/issues/8) CJ-007 账号与隔离 | [#160](https://github.com/JTCAO515/G2C/issues/160) API/DB 隔离与资格门禁 → [#161](https://github.com/JTCAO515/G2C/issues/161) App 开发身份登录与切换 | 框 6、8（真实 OTP 与 SDK 行为） |
 | 4.1 | M1 插入修复（关联 CJ-035 / #18，不提前启动 M2 整票） | [#176](https://github.com/JTCAO515/G2C/issues/176) 求解器冷启动测量、进程预载与预算回归（#161 之后） | 无 |
 | 4.2 | [#8](https://github.com/JTCAO515/G2C/issues/8) CJ-007 账号与隔离（续） | [#182](https://github.com/JTCAO515/G2C/issues/182) 事务级 scope、物理连接复用拒绝与 pooler 激活门禁（#176 之后） | 云端 pooler 实测留 C2，需 JT 资源授权 |
+| 4.3 | M1 基线规则补充（关联已关闭 #5，不重开整票） | [#185](https://github.com/JTCAO515/G2C/issues/185) 信任边界规则及三个限定例子的内部防御清理（#182 之后） | 无 |
 | 5 | [#10](https://github.com/JTCAO515/G2C/issues/10) CJ-009 聊天与消息 | [#162](https://github.com/JTCAO515/G2C/issues/162) 发送许可方案（**Claude**）→ [#163](https://github.com/JTCAO515/G2C/issues/163) 服务端实现 → [#164](https://github.com/JTCAO515/G2C/issues/164) App 发送与历史 | 无 |
 | 6 | [#11](https://github.com/JTCAO515/G2C/issues/11) CJ-010 流式与停止 | [#165](https://github.com/JTCAO515/G2C/issues/165) 停止生成接口 → [#166](https://github.com/JTCAO515/G2C/issues/166) 顺序/互斥/恢复 → [#167](https://github.com/JTCAO515/G2C/issues/167) App 流式与停止按钮 | 无（框 1 真实模型部分在子票内注明 → L2） |
 | 7 | [#19](https://github.com/JTCAO515/G2C/issues/19) CJ-014 草稿 | [#168](https://github.com/JTCAO515/G2C/issues/168) 约束校验 → [#169](https://github.com/JTCAO515/G2C/issues/169) 来源标注 → [#170](https://github.com/JTCAO515/G2C/issues/170) 失败路径与过期 fence | 框 1（真实工具与模型） |
@@ -43,7 +44,8 @@
 - **#162 由 Claude 负责**，可以和 Codex 的队列并行进行。Codex 不认领它；轮到 #163 时如果 #162 还没关闭，跳到 #165 继续。
 - 完整依赖以各子票正文的“前置子票”行为准；下面列出会导致跳过的几条。
 - #176 排在 #161 完成后；#182 依赖 #160，并在 #176 完成后执行。
-- #163 依赖 #162 和 #182；#164 依赖 #163。恢复 #163 时基于最新 main 重放其本地候选，新迁移按最新 manifest 顺延到已应用 0011 之后，不覆盖 1–11。
+- #185 在 #182 完成后执行，先写规则，再处理三个限定例子；保留全部边界/安全检查，不作全仓库清理。
+- #163 依赖 #162、#182 和 #185；#164 依赖 #163。恢复 #163 时基于最新 main 重放其本地候选并遵循新规则，新迁移按最新 manifest 顺延到已应用 0011 之后，不覆盖 1–11。
 - 父票 #8 包含 #160、#161、#182；#161 完成后仍须等待 #182。其余未完成子票等待 #176 时，#8 按既有规则挂起，不占在制名额。
 - #159 依赖 #157；#169 依赖 #168。
 - #161 依赖 #157（账号入口在记忆页）和 #160。

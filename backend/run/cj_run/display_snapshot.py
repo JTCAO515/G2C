@@ -7,8 +7,7 @@ from dataclasses import dataclass
 import inspect
 import json
 from cj_message.auth_boundary import Boundary, HistoryReadContext
-from .core import Binding, Cursor, Event, State, TERMINAL, advance
-from .postgres import Recovery
+from .core import Binding
 
 
 class SnapshotUnavailable(Exception):
@@ -35,24 +34,11 @@ class DisplaySnapshotConfiguration:
 
 def _checked_recovery(repository, binding):
     result = repository.recover(binding)
-    if type(result) is not Recovery or type(result.state) is not State or type(result.cursor) is not Cursor:
-        raise SnapshotUnavailable('invalid RUN recovery')
     state, cursor = result.state, result.cursor
-    if (state.binding != binding or cursor.binding != binding or type(state.events) is not tuple
-            or type(cursor.epoch) is not str or not cursor.epoch or type(cursor.through) is not int
-            or type(cursor.after) is not int or cursor.after != 0 or cursor.through != len(state.events)
-            or type(state.status) is not str or state.status not in TERMINAL | {'queued', 'running'}
-            or type(state.text) is not str):
+    if state.binding != binding or cursor.binding != binding:
         raise SnapshotUnavailable('invalid RUN snapshot boundary')
-    # Verify that displayed text/status really project the committed event sequence.
-    # This replays facts only, never a model/tool or a current execution authorization.
-    projected = State(binding, usage=state.usage)
-    for event in state.events:
-        if type(event) is not Event:
-            raise SnapshotUnavailable('invalid RUN event')
-        projected = advance(projected, event, lambda _: True)
-    if projected != state:
-        raise SnapshotUnavailable('RUN projection mismatch')
+    # Transaction.get reconstructs text from events and checks stored status/sequence.
+    # Keep source binding here; trust the repository's validated projection.
     return result
 
 
