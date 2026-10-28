@@ -18,18 +18,21 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #160 local isolation implementation ready for exact-head CI and independent review; local full PG retains #176 FAIL. |
-| Accepted Issue | #8 / #160: API and DB isolation, eligibility gate, old-identity rejection; local-only role/RLS/new migration authorized by JT 2026-10-28. |
+| Phase | M1 #161 local/native acceptance passed; preparing exact-head CI and independent review. JT queue: #161 -> #176 -> #182 -> #163. |
+| Accepted Issue | #8 / #161: two local development identities, Keychain restore/logout/switch, bilingual failure and stale-response isolation. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T03:36:16.210505+00:00 |
+| Last updated | 2026-10-28T04:45:05.783169+00:00 |
 
 ## Active Work
 
-- #156/#5 and #175 complete; PR #180 main 1e84903 CI 40624390008 all five jobs passed.
-- #160 original probe found DB-layer isolation FAIL despite API rejection; JT explicitly authorized local-only new migration, initializer/runtime separation, verified-scope binding and MESSAGE/RUN/TRIP RLS.
-- #160 migration 11 adds a nonprivileged runtime role and forced RLS for 12 M1 tables; LocalDatabase uses scoped fresh runtime connections, never initialization identity. Worker enumerates explicit invited subjects and rechecks before model outflow.
-- #163 uncommitted WIP preserved on issue-163-message-send-permit; do not overwrite. Its provisional migration 11 must be renumbered after #160 merges. Resume only after the current parent #8 finishes or suspends.
-- #159 copy remains pending; #176 historical cold-solver failure remains open.
+- #160 completed by PR #181 at d28dd21, main CI 40628471012 all five jobs passed; #160 and matching parent #8 boxes updated.
+- #161 implemented DEBUG simulator account flow in Memory: protected API verification, Keychain persistence, explicit restore/logout, stale-response and foreground fences. Legacy direct Trip fixture preserved; Release stays disconnected.
+- #161 native first run failed 6/6 because successful login left Shell messageBindingBlocked=true and Trip binding failed. Fixed only after current verified identity; rejected/unknown/expired identities remain fenced. English diagnostic then full native run passed.
+- JT 2026-10-28 queue insertion explicitly authorized docs/plan/issue-plan.md change in this first PR: #161 -> #176 -> #182 -> #163, then original queue. #8 includes #182 and must remain open after #161.
+- #176 next: read Claude comment 6460752372; measure cold/hot import/preparation/model/search before fixing startup preload. Keep budget values/TIMEOUT/UNKNOWN/assertions; fresh checkout three consecutive full PG 11/11.
+- #182 after #176: transaction-level scope, reject existing nonempty cj.* scope before binding, reused physical connection tests across 12 tables and C2 pooler activation gate; preserve existing RLS/role limits and migrations 1..11.
+- #163 WIP preserved on issue-163-message-send-permit in its separate worktree; do not resume until #182 completes. Rebase on latest main and renumber provisional migration after 0011/latest manifest.
+- #159 copy, L2 authorization, branch protection and production keys remain JT-owned; do not handle them in this insertion sequence.
 
 ## Accepted Assumptions
 
@@ -63,29 +66,33 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/migrations/0011_local_runtime_rls.sql, backend/migrations/down/0011_local_runtime_rls.down.sql, backend/migrations/manifest.json` | Authorized local role and RLS migration; existing migrations unchanged. |
-| `backend/cj_api/local_app.py, scripts/run_worker.py` | Bind fresh runtime connections to verified local scope and remove privileged queue enumeration; worker invitation guard. |
-| `backend/agent/tests/e2e_local.py, backend/cj_api/tests/test_local_database_config.py, backend/README.md` | Actual PG/API/signed Trip/worker negative tests and local setup documentation. |
-| `docs/handoff.json, HANDOFF.md` | Record authorization, evidence and parent queue. |
+| `ios/Modules/CJShell/Sources/CJShell/DevelopmentAccountHost.swift, DevelopmentAccountView.swift, ShellView.swift, MemoryShell.swift` | Local development account state, stale-response and foreground fences, and memory/account UI injection. |
+| `ios/Modules/CJShell/Tests/CJShellTests/DevelopmentAccountHostTests.swift` | Three controlled async tests for switching, logout/restore uncertainty, and foreground revalidation. |
+| `ios/App/CJProbeApp.swift, DevelopmentTripHost.swift, DevelopmentSessionConfiguration.swift` | Explicit DEBUG simulator account/Keychain root, protected GET verification, borrowed Trip session lease, metadata-only expiry and namespaces. |
+| `docs/handoff.json, HANDOFF.md` | Record #160 closure and unfinished #161 acceptance. |
+| `ios/App/Acceptance/DevelopmentAccountUITests.swift, check_development_accounts.py, ios/App/README.md` | Seven native bilingual/debug/release cases with real local signed API/private PG/Keychain and credential-byte scans; documented reproduction. |
+| `docs/plan/issue-plan.md` | JT explicitly authorized insertion of #176 and #182 after #161 and before #163, including dependencies and parent #8 closure rule. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| fail | `Pre-fix independent local isolation probe at 1e84903` | 7 API checks passed; 4 raw DB cross-scope checks failed. Original evidence retained. | https://github.com/JTCAO515/G2C/issues/160#issuecomment-6459669561 |
-| pass | `uv run --locked python -B scripts/test.py` | 57/57 groups after initial runtime/RLS/worker implementation. The subsequent config-guard tests were run separately (2/2); final CI must cover the final head. | — |
-| fail | `uv run --locked python -B scripts/pg_suites.py` | 10/11 groups; e2e 12 tests PASS, migration 1..11 up/down/up PASS. Only feasibility_domain cross-day positive failed with MODEL_BUDGET_EXHAUSTED, tracked #176; not rerun to obtain green. | https://github.com/JTCAO515/G2C/issues/176 |
-| fail | `Expanded e2e first attempt` | 11 tests, one test harness error: helper run ID mistaken for message ID. Fixed to use outcome.message_id; later full PG e2e 12/12 passed. No product bypass or weakened assertions. | — |
-| pass | `unittest test_local_database_config.py` | 2/2: initializer credentials removed; ambient/service/remote/production configuration rejected before connect. | — |
-| pass | `Final scoped-connection e2e after config guard` | 12/12 e2e tests passed. Final empty-passfile adjustment additionally passed 2 configuration tests and a fresh PG runtime-role/scoped-read smoke; no initializer credentials reused. | — |
-| not-run | `Cloud / real OTP / real model / physical device / deployment` | Only fresh private PG, synthetic local identities and FakeProvider. | — |
-| pass | `git diff --check; handoff render/check; applied migration byte comparison` | Existing migrations unchanged; only new version 11 plus manifest registration. No workflow or existing gate changes. | — |
+| pass | `swift test --package-path ios/Modules/CJAuth` | 100 Swift Testing tests across four runners (19+27+8+46); no empty XCTest wrapper counted as evidence. | — |
+| pass | `swift test --package-path ios/Modules/CJShell` | 207 tests / 29 suites after verified-binding fence fix; includes three new controlled async account tests. | — |
+| pass | `swift test --package-path ios/App` | 4/4 development configuration tests. | — |
+| fail | `check_development_accounts.py (initial full native run)` | 6 Debug cases failed to sign in; UI reported secure storage unavailable because TripContainerHost refused the still-blocked Shell identity. Original xcresult retained; no test assertions weakened. | — |
+| pass | `check_development_accounts.py --diagnostic-test testLifecycleEnglish` | Partial only: English two-account Keychain login/logout/relaunch passed after fence fix; other cases explicitly UNRUN in that report. | — |
+| pass | `check_development_accounts.py (full native acceptance)` | iOS17.5: 6 Debug cases (English/Chinese lifecycle, rejected/expired/actual offline, delayed A response after B switch) + 1 Release-disconnected case, 0 failed/0 skipped. Relaunch omits tokens and restores from actual simulator Keychain. App-file and artifact raw-token scans pass; screenshots inspected. | — |
+| pass | `uv run --locked python -B scripts/test.py` | 57/57 groups. | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups, migrations 1..11 up/down/up. This run does not establish #176 cold-start repair; historical failures remain and #176 is now next in queue. | — |
+| pass | `git diff --check; handoff render/check; App README relative links` | Formatting, generated handoff and links checked. | — |
+| not-run | `Real OTP/cloud/model/device/release` | No L2/L3 resources or production activation used. | — |
 
 ## Blockers
 
-- #159 帮助/隐私/支持文案需 JT 确认（子票级停点）。
-- L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
-- #164 等 #163，#167 等 #164 与 #165；#162 已关闭，恢复时先重新核对依赖。
+- #159 copy remains JT-owned; not handled in this sequence.
+- L2/cloud pooler/OTP/real model/physical-device resources remain separately authorized; no approved M1 external entries.
+- #163 waits for #182 under JT queue; #164 waits #163, #167 waits #164/#165, #170 waits #168/#165.
 
 ## Risks
 
@@ -105,9 +112,9 @@
 
 ## Next Smallest Action
 
-- Action: Submit #160 candidate PR, wait all exact-head CI jobs and independent Codex review. Keep local full-PG #176 FAIL in evidence. On approval merge locked head, verify main CI, update #160/#8, then continue #161. #163 WIP remains in its separate worktree/branch and needs rebase/renumbering only after parent #8 finishes or suspends.
-- Expected observation: All three #160 acceptance boxes proven without cloud, OTP, production role changes or privileged fallback.
-- Resume command: `gh issue view 160 --repo JTCAO515/G2C --comments`
+- Action: Create #161 PR including the explicitly authorized M1 queue update, wait exact-head CI and independent review, merge only approved head, verify main CI and update #161/#8. Keep #8 open for #182. The unique next ticket is #176, then #182, then restore #163 WIP; do not skip ahead to #163.
+- Expected observation: #161 L0/L1 acceptance complete with fixed-head gates, and nextAction points to #176 measurement first; frozen budgets/RLS/migrations/contracts/CI remain unchanged.
+- Resume command: `gh issue view 161 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 

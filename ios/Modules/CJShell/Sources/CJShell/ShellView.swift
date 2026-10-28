@@ -5,6 +5,7 @@ import SwiftUI
 public struct ShellView: View {
     @Bindable private var state: ShellState
     @State private var accountHost: AccountHost
+    @State private var developmentAccountHost: DevelopmentAccountHost?
     @State private var messageHost: AssistantMessageHost
     @State private var serverHistoryHost: ServerHistoryHost
     @State private var originalUsageContainerHost: OriginalUsageContainerHost
@@ -17,8 +18,9 @@ public struct ShellView: View {
     @State private var memoryContainerHost: MemoryContainerHost
     @Environment(\.scenePhase) private var scenePhase
 
-    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil) {
+    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil) {
         if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
+        if let developmentAccountHost { precondition(developmentAccountHost.belongs(to: state)) }
         if let messageHost { precondition(messageHost.belongs(to: state), "Message host must own the same ShellState") }
         if let serverHistoryHost { precondition(serverHistoryHost.belongs(to: state)) }
         if let memoryContainerHost { precondition(memoryContainerHost.belongs(to: state)) }
@@ -31,6 +33,7 @@ public struct ShellView: View {
         if let originalUsageContainerHost { precondition(originalUsageContainerHost.belongs(to: state)) }
         self.state = state
         self._accountHost = State(initialValue: accountHost ?? AccountHost(shell: state))
+        self._developmentAccountHost = State(initialValue: developmentAccountHost)
         self._messageHost = State(initialValue: messageHost ?? state.messageHost ?? AssistantMessageHost(shell: state))
         self._serverHistoryHost = State(initialValue: serverHistoryHost ?? state.serverHistoryHost ?? ServerHistoryHost(shell: state))
         self._originalUsageContainerHost = State(initialValue: originalUsageContainerHost ?? state.originalUsageContainerHost ?? OriginalUsageContainerHost(shell: state))
@@ -61,7 +64,7 @@ public struct ShellView: View {
             }
             .tabItem { Label(ShellTab.plugins.title(state.language), systemImage: "square.grid.2x2") }
             .tag(ShellTab.plugins)
-            MemoryShell(state: state, accountHost: accountHost, memoryHost: memoryContainerHost, feedbackHost: generalFeedbackHost)
+            MemoryShell(state: state, accountHost: accountHost, memoryHost: memoryContainerHost, feedbackHost: generalFeedbackHost, developmentAccountHost: developmentAccountHost)
                 .tabItem { Label(ShellTab.memory.title(state.language), systemImage: "tray") }
                 .tag(ShellTab.memory)
         }

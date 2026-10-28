@@ -7,6 +7,7 @@ struct MemoryShell: View {
     let accountHost: AccountHost
     let memoryHost: MemoryContainerHost
     let feedbackHost: FeedbackContainerHost
+    let developmentAccountHost: DevelopmentAccountHost?
     private var language: ShellLanguage { state.language }
 
     var body: some View {
@@ -81,7 +82,11 @@ struct MemoryShell: View {
         case .feedback(let entry):
             FeedbackContainerView(host: feedbackHost, entry: entry, language: language)
         case .account:
-            AccountView(host: accountHost, shell: state)
+            if let developmentAccountHost {
+                DevelopmentAccountView(host: developmentAccountHost, language: language)
+            } else {
+                AccountView(host: accountHost, shell: state)
+            }
         case .help:
             HelpView(language: language)
         case .privacy:
