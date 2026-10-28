@@ -42,14 +42,15 @@ encoded = project_current(operation, protected_read_context, explicit_needs_id,
 # This return remains inside those lifetimes; it is NOT publication authority.
 ```
 
-Exact canonical operation/context classes are required; inactive, wrong identity,
-expired or unknown context cannot be replaced by a snapshot or fake allow callback.
-NEEDS metadata principal must match the canonical read-context principal. Reads
-use only operation.detail/revision; no private transaction/repository fields.
+Callers pass the canonical Operation and ProtectedReadContext from the enclosing
+read lifetimes; their types are not re-checked here (trusted composition, see
+#185). An inactive or retired operation handle still refuses reads. Reads use
+only operation.detail/revision; no private transaction/repository fields.
 
 The consumer captures current Snapshot by needs_id, loads exact revisions 1..n
-under explicit positive revision/aggregate-byte limits, and surrounds each read
-with fresh canonical AUTH checks. Missing record/other scope gives the same safe
+under explicit positive revision/aggregate-byte limits. Fresh canonical AUTH runs
+at entry and before bytes escape in the enclosing ProtectedReadBoundary; it is not
+repeated around each read (2026-10-28, #186). Missing record/other scope gives the same safe
 withholding category. Missing/wrong-version chain or invalid original input
 withholds all output; no latest-source fallback or fabricated numeric/date values.
 

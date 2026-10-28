@@ -191,11 +191,10 @@ class PrivateReadTests(unittest.TestCase):
             identity.fact=Fact.NO
         with patch.object(current_read.json.JSONEncoder,'iterencode',revoke):
             with self.assertRaises(Exception):self.read()
-    def test_handle_outside_lifetime_and_forgery_rejected(self):
+    def test_handle_outside_lifetime_rejected(self):
         captured=[]
         self.read(observer=lambda op,ctx:captured.append((op,ctx)))
         with self.assertRaises(Exception):project_current(*captured[0],'synthetic-needs',limits=LIMITS)
-        with self.assertRaises(ReadWithheld):project_current(object(),object(),'synthetic-needs',limits=LIMITS)
     def test_no_business_writes_during_evaluation(self):
         with self.raw_connect() as conn:
             before=conn.execute('SELECT count(*),sum(version) FROM cj_needs_record').fetchone(),conn.execute('SELECT count(*) FROM cj_needs_revision').fetchone()
