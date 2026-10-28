@@ -21,13 +21,12 @@ never token refresh times, request owner or a newly provisioned ledger. AUTH con
 does not itself authorize arbitrary historical periods; resolver must apply host's
 accepted mapping. No fallback/default/scope creation.
 
-The same ctx.guard and captured principal/reader configuration/resolver/repository
-scope guard surround callbacks and storage. read_status validates stored ledger's
+Fresh AUTH runs at entry and before bytes escape (ProtectedReadBoundary); storage
+stages are not re-checked (see "Trust boundary" below). read_status validates stored ledger's
 period equals the selected historical period, performs READ ONLY SELECT, projects
 only the minimal status, finishes final host envelope bytes inside ctx, commits the
 read and closes cursor/connection. Close/encoding/scope/identity failures withhold
-bytes. The domain guard runs again after storage; the original AUTH boundary then
-rechecks current admission before returning exact bytes. No private transformation
+bytes. The original AUTH boundary rechecks current admission before returning exact bytes. No private transformation
 may be added afterwards. Transaction completion unknown retains its original error,
 not a current-denial fiction or permission to execute/retry a write.
 
@@ -89,3 +88,14 @@ checks plus both regression cases). Original Review assertion source is run agai
 the repaired local fixture in review-final-binding-after.txt: 2 PASS. These are
 author reruns, not independent Review approval. Old FAILs remain unchanged.
 No old suites, database clusters, AUTH source, root wire or dispatch paths changed.
+
+## Trust boundary (2026-10-28, #186)
+
+The final-binding comparison above and the per-stage domain guard were removed.
+They guarded against the host replacing its own trusted reader configuration,
+resolver or repository mid-request. AttemptStatusReader now checks principal
+issuer/audience once, refuses a missing host mapping, and passes an empty stage
+guard to `read_status`. Fresh AUTH runs at entry and before bytes escape in
+ProtectedReadBoundary, so revocation during storage, close or projection still
+withholds bytes. `read_status` keeps its own scope/connect, period, size and
+READ ONLY checks unchanged.

@@ -52,20 +52,18 @@ class CompositionChecks(unittest.TestCase):
                 if change=='unknown':self.s.allowed=False
                 else:self.s.p=TrustedPrincipal('synthetic-issuer','other','synthetic-aud',0,0,1000)
             self.hook=mutate
+            # Storage may run; the canonical final AUTH check still withholds bytes.
             with self.assertRaises((ReadAdmissionFailure,ReadContextViolation)):self.read()
-            self.assertNotIn('select',self.s.log)
 
-    def test_resolver_missing_or_wrong_repo_no_fallback(self):
-        for result in (None,object()):
-            self.reader.resolve_repository=lambda *args:result
-            with self.assertRaises(ReadUnavailable):self.read()
+    def test_resolver_missing_mapping_no_fallback(self):
+        self.reader.resolve_repository=lambda *args:None
+        with self.assertRaises(ReadUnavailable):self.read()
 
     def test_host_issuer_audience_period_config_failclosed(self):
         from dataclasses import replace
         for field,value in [('issuer','other'),('audience','other'),('period_end',1001)]:
             self.setUp();self.reader.configuration=replace(self.config,**{field:value})
             with self.assertRaises(ReadUnavailable):self.read()
-        with self.assertRaises(ReadUnavailable):AttemptStatusReader(self.boundary,lambda *a:self.s.repo,configuration=None)
 
     def test_cross_scope_unavailable_not_zeros(self):
         self.s.row=None
@@ -102,37 +100,11 @@ class CompositionChecks(unittest.TestCase):
             def evaluate(self,p):
                 if 'connection_close' in s.log:
                     self.after_close+=1
-                    if self.after_close==3:s.allowed=False
+                    if self.after_close==1:s.allowed=False
                 return original.evaluate(p)
         self.s.checker._access=FinalAccess()
         with self.assertRaises(ReadAdmissionFailure):self.read()
-        self.assertEqual(self.s.checker._access.after_close,3)
-
-    def test_last_auth_callback_scope_replacement_withholds(self):
-        self._last_callback_rebind('scope')
-
-    def test_last_auth_callback_configuration_replacement_withholds(self):
-        self._last_callback_rebind('configuration')
-
-    def _last_callback_rebind(self, kind):
-        from dataclasses import replace
-        original=self.s.checker._access
-        owner=self
-        class LastAccess:
-            after_close=0
-            def evaluate(self,p):
-                if 'connection_close' in owner.s.log:
-                    self.after_close+=1
-                    if self.after_close==3:
-                        if kind=='scope':owner.s.repo.scope='synthetic-replacement-scope'
-                        else:owner.reader.configuration=replace(owner.config,environment='synthetic-replacement-environment')
-                return original.evaluate(p)
-        access=LastAccess();self.s.checker._access=access
-        try:
-            with self.assertRaises((ReadUnavailable,ReadContextViolation)):
-                self.read()
-        finally:
-            self.assertEqual(access.after_close,3)
+        self.assertEqual(self.s.checker._access.after_close,1)
 
     def test_cancellation_and_reentry_withhold(self):
         def project(data):

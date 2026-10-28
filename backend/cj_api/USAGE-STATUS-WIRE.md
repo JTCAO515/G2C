@@ -25,7 +25,7 @@ final outer check remain original AUTH behavior, not a new wrapper guard.
 Only public reader.read(token,attempt_id,project=…) is called. Protected projection
 validates the minimal source JSON and encodes the complete BASE envelope INSIDE
 read_status/project. Source final size bound includes envelope; READ ONLY SELECT,
-commit, cursor/connection close, storage/domain guard, then outer AUTH final check
+commit, cursor/connection close, then outer AUTH final check
 all precede exact bytes leaving. HTTP sends bytes unchanged, no decode/rewrap later.
 Source/cleanup/commit errors withhold result; unknown primary transaction outcome is
 not overwritten by later denial. Reader-origin interruption becomes sanitized503;
@@ -77,3 +77,14 @@ new checker/resolver/SQL/project. Root only updates the exact source pin; no out
 authority workaround or SDK change. Same original Review assertions pass against fixed
 canonical imports, plus3 affected root close/outer/parallel lifetime checks. Independent
 combination review is still required; prior7 PG results retain their original source.
+
+## Trust boundary (2026-10-28, #186)
+
+The final-binding comparison above and the per-stage domain guard were removed.
+They guarded against the host replacing its own trusted reader configuration,
+resolver or repository mid-request. AttemptStatusReader now checks principal
+issuer/audience once, refuses a missing host mapping, and passes an empty stage
+guard to `read_status`. Fresh AUTH runs at entry and before bytes escape in
+ProtectedReadBoundary, so revocation during storage, close or projection still
+withholds bytes. `read_status` keeps its own scope/connect, period, size and
+READ ONLY checks unchanged.
