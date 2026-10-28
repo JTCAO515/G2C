@@ -51,6 +51,29 @@ class RunTests(unittest.TestCase):
                 self.s.apply(self.event(kind, 'late' if kind == 'text_delta' else ''))
         self.assertEqual(self.s.snapshot(self.b), state)
 
+    def test_cancel_original_is_idempotent_and_keeps_existing_terminal(self):
+        self.start()
+        self.s.apply(self.event('text_delta', 'committed partial'))
+        self.s.apply(self.event('effect_committed', 'committed-receipt'))
+        cancelled = self.s.cancel(self.b)
+        self.assertEqual((cancelled.status, cancelled.text, cancelled.effects),
+                         ('cancelled', 'committed partial', ('committed-receipt',)))
+        self.assertEqual(cancelled.events[-1].kind, 'cancelled')
+        for _ in range(3): self.assertEqual(self.s.cancel(self.b), cancelled)
+        self.assertEqual(cancelled.sequence, 4)
+        other = replace(self.b, conversation_id='other', message_id='other', run_id='other')
+        self.s.accept(other)
+        self.s.apply(Event(other, 1, 'start', 'started'))
+        done = self.s.apply(Event(other, 2, 'done', 'completed'))
+        self.assertEqual(self.s.cancel(other), done)
+
+    def test_cancel_before_worker_accepts_never_requires_dispatch_authority(self):
+        queued = replace(self.b, message_id='m2', run_id='r2', message_sequence=2)
+        cancelled = Service(self.repo).cancel(queued)
+        self.assertEqual((cancelled.status, cancelled.sequence, cancelled.text), ('cancelled', 1, ''))
+        self.assertEqual(self.s.snapshot(self.b).status, 'queued')
+        with self.assertRaises(Conflict): self.s.apply(Event(queued, 2, 'late-start', 'started'))
+
     def test_single_terminal_race(self):
         self.start()
         events = [self.event(k, identity=k) for k in ('completed', 'cancelled')]

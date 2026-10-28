@@ -18,20 +18,19 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #163 server send-permit implementation and full local validation passed; preparing exact-head CI and independent red-line review. |
-| Accepted Issue | #10 / #163: frozen MESSAGE-SEND@1 server CAS, locked send-status, parser split and active one-way trigger. |
+| Phase | M1 #165 cancellation implementation and full local verification passed; preparing exact-head CI and independent review. #164 remains blocked on #198 authorization. |
+| Accepted Issue | #11 / #165: original-run cancellation API, cooperative worker stop and immutable terminal protection. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T08:08:23.404769+00:00 |
+| Last updated | 2026-10-28T12:02:00.559318+00:00 |
 
 ## Active Work
 
-- #185 PR #192 merged at958e157; exact-head CI and independent APPROVE passed, main CI40652241654 all five jobs green; five issue boxes backfilled and parent #5 synchronized.
-- #163 now accepts only MESSAGE-send.1 writes with CAS; stored draft.1/send.1 remain readable. Original byte replay precedes active-head/CAS checks. Ordinary query active/generation guards preserved for existing RUN/USAGE safety.
-- #163 locked send-status returns same-conversation receipt and active head, explicit null only for known absence; errors remain non200. Runtime role/RLS and #182 LOCAL binding hooks unchanged.
-- New migration0012 prevents false->true chat reactivation; versions1..11 unchanged. MESSAGE PG tests cover all nine SEND-PERMIT invariants including both deterministic lock orders, closed replay, legacy reads and cross-account absence.
-- Full test.py57/57 and pg_suites.py11/11 passed. Additional e2e16/16 includes forced accept-process exit after commit/before dispatch, reconstructed API, same-byte replay and exactly one original RUN. No cloud/model/real-account evidence claimed.
-- Consumers changed only per ADR-0008 table; stored draft.1 fixtures retained, memory codec mixed-version roundtrip added, feedback inactive/expired checks split onto separate new fixtures instead of reactivating a chat.
-- Original #163 dirty worktree remains preserved. Next is exact-head CI/review/merge, then main CI and issue/parent evidence; #164 follows.
+- #164 iOS candidate remains preserved on issue-164-app-message-send. Client/Shell suites and Release native negative passed; Debug L1 is blocked by canonical history503. #198 requests narrowly scoped local backend/key wiring; async JT approval remains pending. No #198 changes made here.
+- #165 based on latest accepted main96454bf with green CI40667513064, taken under ADR-0007 child-stop skip rule. PR195/196/197 remained unmerged at last check; no proposed parallel-lane rule used as authority.
+- RUN-CANCEL@1 accepts only original MESSAGE id/version. Existing owner context supplies principal/scope/receipt; guarded RUN transaction creates an undispatched original and cancels atomically, preserves existing terminals, and withholds uncertain/postcommit-revoked responses.
+- Worker starts model calls/publication under RUN fence, discards late stream output and closes generators; cancellation does not roll back committed text/candidate references. A busy first advance may cause the existing lock timeout and must return unknown, not fake cancelled. Service.dispatch and USAGE gates unchanged.
+- Full scripts/test.py57/57 and pg_suites.py11/11 passed; e2e22 includes cancellation before dispatch, in-flight answer/draft, gap before second call, preserved committed candidate/completed terminal, real lost commit ACK, account isolation and busy-step unknown.
+- Initial core/worker/guard-reentry failures retained and fixed. HTTP test setup first lacked CJ_ENV; corrected explicit-local setup then baseline main returned404 for all four new API tests, while implementation passes. No failure/skips/CI gate removed.
 
 ## Accepted Assumptions
 
@@ -65,30 +64,27 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/message/**, backend/cj_api/message_routes.py, backend/memory_jobs/cj_memory_jobs/codec.py` | Resume frozen send-permit candidate; split write/stored parsing, CAS and locked status. Restore ordinary query active/generation guard to preserve existing consumers. |
-| `backend/migrations/0012_message_active_one_way.sql, backend/migrations/down/0012_message_active_one_way.down.sql, backend/migrations/manifest.json` | Renumber preserved new trigger after applied0011; applied migrations untouched. |
-| `contracts/api/openapi.json, backend/cj_api/generated.py, ios/Sources/CJAPI/Generated/**` | Frozen SEND-PERMIT wire schema and generated consumers. |
-| `backend/cj_api/tests/test_message_wire.py, backend/cj_api/tests/test_history_wire.py, backend/message/tests/**` | Adapt send fixtures and add actual PG CAS/status/closed/legacy tests; nine-invariant and wire coverage completed. |
-| `docs/handoff.json, HANDOFF.md` | Record #185 completed evidence and #163 resumption. |
-| `backend/agent/tests/e2e_local.py, backend/feedback/tests/test_sources.py, backend/memory_jobs/tests/test_jobs.py, scripts/check_ios_trip_confirm.py, scripts/check_run_stream.py` | ADR-0008 write consumers, closed-chat fixture discipline, stored-version codec and real accept-crash recovery. |
+| `backend/run/cj_run/core.py, fixture.py, cancellation.py, backend/run/tests/test_core.py, test_cancel_wire.py, backend/run/README.md` | Atomic original cancel, guarded owner/source mutation, reentrant fixture fence and contract/wire tests. |
+| `backend/agent/cj_agent/worker.py, provider.py, backend/agent/tests/test_worker_cancel.py, cancellation_checks.py, e2e_local.py` | Cooperative terminal handling, fenced step starts/publication, generator cleanup and real PG/signed API cancellation tests. |
+| `backend/cj_api/run_cancel_routes.py, run_events_routes.py, generated.py, contracts/api/openapi.json, ios/Sources/CJAPI/Generated/**` | New RUN-CANCEL@1 only, strict input/configuration boundaries and generated consumers. |
+| `docs/handoff.json, HANDOFF.md` | Record blocked #164/#198 and #165 verified progress under current accepted workflow. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `PR #192 exact-head CI and independent review` | All five CI jobs plus pr-lint green; reviewer audited every removed check and only deleted internal-defense test, no boundary/security removal. Independent targeted tests passed. | https://github.com/JTCAO515/G2C/pull/192#issuecomment-6463561304 |
-| pass | `Post-merge main CI40652241654` | All five jobs completed/success on958e157. | https://github.com/JTCAO515/G2C/actions/runs/40652241654 |
-| fail | `Initial #163 restored candidate scripts/test.py` | 53/57: write fixtures still draft.1; old candidate query change bypassed original active/generation guard. Restored guard and adapted only send consumers; no safety test removed. | — |
-| pass | `uv run --locked python -B scripts/test.py` | 57/57, including new send-status/parser wire negatives and mixed stored-version memory codec. | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups; migrations1..12 up/down/up, nine SEND-PERMIT invariant coverage and original safety suites. | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py e2e (additional crash/status coverage)` | 16/16; accept subprocess os._exit after real commit before dispatch, new app recovers exact receipt, replay and one original RUN; API cross-account status null/null. | — |
-| pass | `MESSAGE PG group and HTTP wire regression` | MESSAGE12+history7+auth2 plus real restart readback; HTTP wire24. Deterministic PG blocking observed in both commit/status orders. Initial generated-null strict-envelope failure fixed without weakening strict receipt/head validation. | — |
-| pass | `Generated Python/Swift reproduction and frozen migration check` | Regenerated into scratch and byte-compared; Swift generator reused from identical Package.resolved. Applied migration entries1..11 and local runtime role/RLS/binding unchanged. | — |
-| not-run | `Real cloud/OTP/provider/device/production` | Outside local authorized M1 scope. Native script fixture adaptations syntax-checked only; App send activation remains #164. | — |
+| fail | `New core/worker/reentry regressions on prior behavior` | Core cancel API absent; worker3/4 cancellation cases failed; guard reentry could call provider after nested cancel in synthetic repository. Failures retained and corrected. | — |
+| fail | `New HTTP tests on baseline96454bf with explicit CJ_ENV=local` | 4/4 fail404; initial test-setup profile error separately retained, not represented as a product regression. | — |
+| pass | `uv run --locked python -B scripts/test.py` | 57/57 groups including new contract examples, input/config/owner/unknown tests. First command-start approval review timed out, single allowed retry ran successfully. | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups; e2e22 with actual low-privilege runtime, unchanged migrations1..12, all original RLS/connection reuse/signature tests retained. | — |
+| pass | `Generated Python/Swift, frozen scope and diff checks` | Python/Swift regenerated from OpenAPI; identical locked Swift generator reused. No local_app, dev_auth, migrations or CI entry/config changes. | — |
+| not-run | `Exact-head CI and independent review` | Pending PR; no merge/closure claim. | — |
+| not-run | `Real provider/cloud/physical device/billing settlement` | Local PG, signed synthetic identities and FakeProvider only; cancellation does not claim forced remote abort/refund. | — |
 
 ## Blockers
 
-- #159 copy, L2/cloud/OTP/real model/device resources, branch protection and production keys remain JT-owned.
+- #164 awaits JT authorization for #198: formal local history configuration is missing and returns503. Its iOS-only scope does not authorize backend/key initialization changes.
+- #159 copy, L2/cloud/real users/production key and branch protection decisions remain JT-owned.
 
 ## Risks
 
@@ -108,9 +104,9 @@
 
 ## Next Smallest Action
 
-- Action: Publish #163 PR with nine-invariant and ADR-0008 consumer matrices; require exact-head all CI and independent red-line APPROVE, merge locked head, verify main, backfill #163 and parent#10, then #164.
-- Expected observation: All L1 send-permit evidence maps to actual private PG/API behavior; no production activation.
-- Resume command: `gh issue view 163 --repo JTCAO515/G2C --comments`
+- Action: Publish #165 with exact base/head and red-line evidence; require all head CI and independent APPROVE, merge locked head, verify main and backfill #165/#11. If #198 is authorized, implement its local prerequisite then resume preserved #164; otherwise follow the latest accepted queue/owner rules for unblocked work.
+- Expected observation: Cancellation proof remains local L1; #164 is not closed or bypassed; pending permission is not assumed by elapsed time.
+- Resume command: `gh issue view 165 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 

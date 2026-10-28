@@ -15,7 +15,10 @@ class MemoryRepository:
     def transaction(self):
         with self.lock:
             revision = self.revision
-            tx = _Transaction(self.rows.copy())
+            def check_current():
+                if revision != self.revision:
+                    raise Conflict('repository changed during callback')
+            tx = _Transaction(self.rows.copy(), check_current)
             yield tx
             # A nested transaction commits independently. Never roll it back when
             # an older callback/outer transaction fails or attempts a stale commit.
@@ -27,10 +30,11 @@ class MemoryRepository:
 
 
 class _Transaction:
-    def __init__(self, rows):
-        self.rows = rows
+    def __init__(self, rows, check_current):
+        self.rows, self.check_current = rows, check_current
 
     def accept(self, binding: Binding, usage=None, require_new=False):
+        self.check_current()
         if type(binding) is not Binding:
             raise ValueError('binding required')
         if usage is not None:
@@ -50,18 +54,23 @@ class _Transaction:
         return state
 
     def get(self, binding):
+        # A reentrant committed cancel must be visible before caller-owned outflow,
+        # not only rejected at this snapshot transaction's eventual commit.
+        self.check_current()
         state = self.rows.get((binding.scope, binding.run_id))
         if state is None or state.binding != binding:
             raise Conflict('unavailable')
         return state
 
     def put(self, state):
+        self.check_current()
         old = self.rows.get((state.binding.scope, state.binding.run_id))
         if old is not None and old.usage != state.usage:
             raise Conflict('immutable usage association')
         self.rows[state.binding.scope, state.binding.run_id] = state
 
     def previous_terminal(self, binding):
+        self.check_current()
         from .core import TERMINAL
         predecessors = {s.binding.message_sequence: s for s in self.rows.values()
                         if s.binding.chat == binding.chat and

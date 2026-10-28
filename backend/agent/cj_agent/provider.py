@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import json
 import os
 import ssl
-from typing import Iterator, Protocol
+from typing import Generator, Protocol
 
 import certifi
 import httpx
@@ -23,7 +23,7 @@ class ProviderUnknown(Exception):
 
 
 class ModelProvider(Protocol):
-    def stream(self, messages: list[dict], system: str | None = None) -> Iterator[str]: ...
+    def stream(self, messages: list[dict], system: str | None = None) -> Generator[str, None, None]: ...
 
 
 SYSTEM_PROMPT = (

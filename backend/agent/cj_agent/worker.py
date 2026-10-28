@@ -14,12 +14,19 @@ import json
 # The worker must be ready (or fail startup) before accepting any work (#176).
 from cj_feasibility import solver as _solver_runtime
 
-from cj_run.core import Binding, Conflict, Event, TERMINAL
+from cj_run.core import Binding, Conflict, Denied, Event, TERMINAL, advance
 
 from .draft import DRAFT_SYSTEM, DraftRejected
 from .provider import ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
+_END = object()
+
+
+class _Stopped(Exception):
+    def __init__(self, state):
+        super().__init__('original RUN is terminal')
+        self.state = state
 
 
 @dataclass(frozen=True)
@@ -58,7 +65,64 @@ class RunWorker:
 
     def _event(self, binding, state, kind, value=''):
         sequence = state.sequence + 1
-        return self.runs.apply(Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value))
+        try:
+            return self.runs.apply(Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value))
+        except Conflict:
+            current = self.runs.snapshot(binding)
+            if current.status in TERMINAL:
+                raise _Stopped(current) from None
+            raise
+
+    def _running(self, binding):
+        state = self.runs.snapshot(binding)
+        if state.status in TERMINAL:
+            raise _Stopped(state)
+        return state
+
+    def _step(self, binding, invoke, effect=None):
+        """Serialize this worker's actual step start/publication against cancellation.
+
+        This does not enable Service.dispatch or create a new execution authority.
+        A provider's first advance starts under the RUN fence; later stream reads
+        are an already-started call and do not hold the fence. Committed publication
+        and its RUN receipt are ordered before any subsequent cancellation.
+        """
+        with self.runs.repository.transaction() as tx:
+            state = tx.get(binding)
+            if state.status in TERMINAL:
+                raise _Stopped(state)
+            if state.status != 'running':
+                raise Conflict('step requires original running state')
+            if self.runs.valid(binding) is not True:
+                raise Denied('context invalid or unknown')
+            if tx.get(binding) != state:
+                raise Conflict('state changed during step guard')
+            result = invoke()
+            if effect is not None:
+                updated = advance(state, Event(binding, state.sequence + 1,
+                                  f'{binding.run_id}:{state.sequence + 1}', 'effect_committed', effect(result)), self.runs.valid)
+                if tx.get(binding) != state:
+                    raise Conflict('state changed during publication')
+                tx.put(updated)
+                state = updated
+        return state, result
+
+    def _stream(self, binding, messages, system=None):
+        stream = None
+        def start():
+            nonlocal stream
+            stream = self.provider.stream(messages) if system is None else self.provider.stream(messages, system=system)
+            return next(stream, _END)
+        try:
+            _, chunk = self._step(binding, start)
+            while chunk is not _END:
+                self._running(binding)
+                yield chunk
+                self._running(binding)
+                chunk = next(stream, _END)
+        finally:
+            if stream is not None:
+                stream.close()
 
     def _finish(self, receipt, state, proposal_id=None):
         if state.status in TERMINAL:
@@ -68,14 +132,26 @@ class RunWorker:
     def _draft(self, binding, state, text):
         """Second, non-streamed model call. A bad or unknown draft never fails the answer."""
         try:
-            reply = ''.join(self.provider.stream([{'role': 'user', 'content': text}], system=DRAFT_SYSTEM))
-            draft = self.drafts.publish(binding.run_id, reply)
+            reply = ''.join(self._stream(binding, [{'role': 'user', 'content': text}], system=DRAFT_SYSTEM))
+            state, draft = self._step(binding, lambda: self.drafts.publish(binding.run_id, reply),
+                                      lambda value: 'trip_proposal:' + value.proposal_id)
         except (DraftRejected, ProviderFailed, ProviderUnknown):
             return state, None
-        return self._event(binding, state, 'effect_committed', 'trip_proposal:' + draft.proposal_id), draft.proposal_id
+        return state, draft.proposal_id
 
     def _one(self, receipt):
         binding = self._binding(receipt)
+        try:
+            return self._execute(receipt, binding)
+        except _Stopped as stopped:
+            return self._finish(receipt, stopped.state)
+        except Conflict:
+            current = self.runs.snapshot(binding)
+            if current.status in TERMINAL:
+                return self._finish(receipt, current)
+            raise
+
+    def _execute(self, receipt, binding):
         state = self.runs.accept(binding)
         if state.status in TERMINAL:
             return self._finish(receipt, state)
@@ -92,7 +168,7 @@ class RunWorker:
         proposal_id = None
         buffer = ''
         try:
-            for chunk in self.provider.stream([{'role': 'user', 'content': text}]):
+            for chunk in self._stream(binding, [{'role': 'user', 'content': text}]):
                 buffer += chunk
                 if len(buffer) >= FLUSH_CHARS:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''

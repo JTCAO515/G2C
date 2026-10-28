@@ -3560,4 +3560,106 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// RUN-CANCEL@1: stop the currently accessible original message run. Resolve identity through the existing MESSAGE owner, never a supplied run/scope. Creation of an undispatched RUN and cancellation are one transaction. Repeat requests return the same terminal/highwater; already completed/failed/unknown terminals are not overwritten. Only committed cancellation prevents subsequent worker step starts; a lock/commit/owner/response failure is unknown and must reconcile the original run through existing reads. No automatic model/tool retry. In-flight work may settle but late output cannot change the terminal. Closed/foreign/absent/unavailable sources are indistinguishable. No query parameters.
+    ///
+    /// - Remark: HTTP `POST /v1/run-cancellations`.
+    /// - Remark: Generated from `#/paths//v1/run-cancellations/post(cancelOriginalRun)`.
+    public func cancelOriginalRun(_ input: Operations.cancelOriginalRun.Input) async throws -> Operations.cancelOriginalRun.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.cancelOriginalRun.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/v1/run-cancellations",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let headers: Operations.cancelOriginalRun.Output.Ok.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.cancelOriginalRun.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.RunCancellationResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(
+                        headers: headers,
+                        body: body
+                    ))
+                default:
+                    let headers: Operations.cancelOriginalRun.Output.Default.Headers = .init(X_hyphen_Request_hyphen_ID: try converter.getRequiredHeaderFieldAsURI(
+                        in: response.headerFields,
+                        name: "X-Request-ID",
+                        as: Components.Schemas.RequestId.self
+                    ))
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.cancelOriginalRun.Output.Default.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .`default`(
+                        statusCode: response.status.code,
+                        .init(
+                            headers: headers,
+                            body: body
+                        )
+                    )
+                }
+            }
+        )
+    }
 }

@@ -7648,5 +7648,132 @@ extension Components {
                 case head
             }
         }
+        /// RUN-CANCEL@1. Body at most 4096 bytes; duplicate/unknown/missing keys rejected. Stable cancellation identity is trusted principal + cancel + original message_id; JSON whitespace does not create a new action.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunCancellationRequest`.
+        public struct RunCancellationRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunCancellationRequest/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case RUN_hyphen_cancel_period_1 = "RUN-cancel.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunCancellationRequest/version`.
+            public var version: Components.Schemas.RunCancellationRequest.versionPayload
+            /// Exact original MESSAGE id, nonblank/no NUL and at most 256 UTF-8 bytes. No caller run id, principal or scope.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RunCancellationRequest/message_id`.
+            public var message_id: Swift.String
+            /// Creates a new `RunCancellationRequest`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - message_id: Exact original MESSAGE id, nonblank/no NUL and at most 256 UTF-8 bytes. No caller run id, principal or scope.
+            public init(
+                version: Components.Schemas.RunCancellationRequest.versionPayload,
+                message_id: Swift.String
+            ) {
+                self.version = version
+                self.message_id = message_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case message_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.RunCancellationRequest.versionPayload.self,
+                    forKey: .version
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "message_id"
+                ])
+            }
+        }
+        /// Original RUN terminal observed after a durable cancellation transaction. Existing terminals are retained. Prior text/effects remain readable through their original ledgers. Does not claim rollback/refund or physical abortion of an already-started provider request.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunCancellationResponse`.
+        public struct RunCancellationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunCancellationResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/RunCancellationResponse/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunCancellationResponse/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunCancellationResponse/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case completed = "completed"
+                case failed = "failed"
+                case cancelled = "cancelled"
+                case context_invalid = "context_invalid"
+                case unknown = "unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunCancellationResponse/status`.
+            public var status: Components.Schemas.RunCancellationResponse.statusPayload
+            /// - Remark: Generated from `#/components/schemas/RunCancellationResponse/event_highwater`.
+            public var event_highwater: Swift.Int
+            /// Creates a new `RunCancellationResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - status:
+            ///   - event_highwater:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                status: Components.Schemas.RunCancellationResponse.statusPayload,
+                event_highwater: Swift.Int
+            ) {
+                self.request_id = request_id
+                self.message_id = message_id
+                self.run_id = run_id
+                self.status = status
+                self.event_highwater = event_highwater
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case message_id
+                case run_id
+                case status
+                case event_highwater
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.status = try container.decode(
+                    Components.Schemas.RunCancellationResponse.statusPayload.self,
+                    forKey: .status
+                )
+                self.event_highwater = try container.decode(
+                    Swift.Int.self,
+                    forKey: .event_highwater
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "message_id",
+                    "run_id",
+                    "status",
+                    "event_highwater"
+                ])
+            }
+        }
     }
 }
