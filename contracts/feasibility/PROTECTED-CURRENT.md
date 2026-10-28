@@ -29,37 +29,34 @@ raw = entry.read(original_token, explicit_needs_id)
 
 Only token and needs_id are request-selected. No owner, scope, resolver,
 environment, snapshots/history, candidate, projector or result cap is accepted
-by the entry's read method. Host limits and reader are immutable facade fields;
-configuration changes inside the producer are fenced by the canonical producer.
+by the entry's read method. Host limits and reader are immutable facade fields.
+Since producer rc.2 the reader captures its configuration once per read; host
+configuration replacement affects only later reads and is not fenced mid-read.
 `CurrentNeedsRead()` has no resolver/reader/limits and refuses before IO.
 No root route, factory registry, token storage, service defaults or new authority.
 
 The facade supplies only its fixed `project_current` callback to actual
 `ProtectedReader.read`. Original projector is byte-unchanged from af52: same
 Snapshot/revision reads, exact history/evaluate validation, limits, complete
-immutable bytes, final current Snapshot reread and canonical context checks.
+immutable bytes, operation/context principal binding and final current Snapshot
+reread; fresh canonical AUTH at entry and before bytes escape comes from the
+enclosing ProtectedReadBoundary.
 The facade returns the exact producer-returned bytes. No IO, extra encoding,
 projection/provider callback or second auth wrapper follows producer settlement.
 The evaluator still reports only local CONFLICT/UNKNOWN and overall UNKNOWN.
 
-## Original two failures now rejected at first close
+## Original two failures: current status (rc.2)
 
 Original af52 FAIL log `current-read-seam-fail.txt` is preserved byte-for-byte.
 The new integration does not patch legacy Boundary or suppress those failures.
-It consumes the owner's separate strict seam:
 
-- An actual test PG connection closes, then raises an ordinary exception: first
-  read is withheld with exactly one connection opened/closed; no revision read or
-  projection bytes returned.
-- Trusted resolver's scope mapping changes on first close under the same explicit
-  supplied environment/principal: re-resolution detects mismatch immediately,
-  exactly one connection opened/closed, no bytes. The resolver uses the supplied
-  configuration environment; no unsupported hidden environment selector.
-- Replacing the captured configuration environment on first close also withholds.
-
-These are the original strict-entry assertions replayed on the new supported
-public composition, not a claim that legacy Boundary acquired strict behavior.
-The original known-FAIL probes intentionally continue to describe that old path.
+- Ordinary close failure: still rejected. An actual test PG connection closes,
+  then raises an ordinary exception; the read is withheld with exactly one
+  connection opened/closed and no bytes (strict close is unchanged in rc.2).
+- Trusted resolver scope remapping, or configuration replacement, on first close:
+  **no longer checked** since producer rc.2. Host composition is trusted and is
+  resolved once per read; the rc.1 tests for these were removed (#186). The
+  supplied-environment rule for the resolver is unchanged.
 
 ## Final byte and identity lifetime
 
@@ -69,10 +66,9 @@ flag. Correct owner can read the actual version2 record/full original history;
 missing/other owner shares a safe refusal. Missing history or advancing current
 version after historical reads is withheld. There is no domain write by evaluation.
 
-New tests arm a fault only after fixed projector returned complete bytes, then
-exercise producer serialized_return guards and the canonical AUTH final callback.
-Fresh final revocation rejects. A configuration mutation in that final admission
-callback also rejects in producer's callback-free post-retirement comparison.
+A test arms revocation only after the fixed projector returned complete bytes; the
+next admission is the canonical AUTH final check, and it rejects. Configuration
+mutation during that callback is no longer compared (rc.2, #186).
 These tests inspect only public configuration and test identity hooks; no private
 repository fields/transaction state or copied producer algorithm in runtime code.
 
