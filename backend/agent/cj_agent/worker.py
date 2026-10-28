@@ -9,18 +9,42 @@ owner or scope from request data. Recovery rules (ADR-0003):
 - a delivery is acknowledged only after RUN holds a terminal status.
 """
 from dataclasses import dataclass
+from contextlib import contextmanager
 import json
 
 # The worker must be ready (or fail startup) before accepting any work (#176).
 from cj_feasibility import solver as _solver_runtime
 
-from cj_run.core import Binding, Conflict, Denied, Event, TERMINAL, advance
+from cj_run.core import Binding, Conflict, Denied, Event, Service, TERMINAL, advance
+from cj_message.domain import Unavailable as MessageUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
 from .provider import ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
 _END = object()
+
+
+def original_context_valid(binding, messages, admitted):
+    """Current host admission plus the same original MESSAGE binding.
+
+    None denotes an unreadable admission source, never permission. This says
+    whether context may be used, not whether an in-flight model was charged.
+    """
+    try:
+        allowed = admitted()
+    except (OSError, ValueError):
+        return None
+    if allowed is not True: return False
+    try:
+        stored = messages.query(binding.message_id)
+    except MessageUnavailable:
+        return False
+    if stored is None: return False
+    receipt = stored.receipt
+    return (messages.repository.scope == binding.scope
+            and (receipt.message_id, receipt.conversation_id, receipt.generation, receipt.run_id, receipt.sequence)
+            == (binding.message_id, binding.conversation_id, binding.generation, binding.run_id, binding.message_sequence))
 
 
 class _Stopped(Exception):
@@ -141,10 +165,32 @@ class RunWorker:
 
     def _one(self, receipt):
         binding = self._binding(receipt)
+        messages, runs, provider, drafts = self.messages, self.runs, self.provider, self.drafts
+        with runs.repository.worker_lease(binding) as check:
+            if check is None:
+                return Outcome(receipt.message_id, receipt.run_id, 'waiting')
+            class OwnedRepository:
+                @contextmanager
+                def transaction(self):
+                    with runs.repository.transaction() as tx:
+                        check()
+                        yield tx
+                        check()
+                    check()
+            owned = RunWorker(scope=binding.scope, messages=messages, provider=provider, drafts=drafts,
+                              runs=Service(OwnedRepository(), runs.valid))
+            return owned._owned(receipt, binding)
+
+    def _owned(self, receipt, binding):
         try:
             return self._execute(receipt, binding)
         except _Stopped as stopped:
             return self._finish(receipt, stopped.state)
+        except Denied:
+            current = self.runs.snapshot(binding)
+            if current.status not in TERMINAL:
+                current = self._event(binding, current, 'context_invalid')
+            return self._finish(receipt, current)
         except Conflict:
             current = self.runs.snapshot(binding)
             if current.status in TERMINAL:

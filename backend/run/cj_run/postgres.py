@@ -2,8 +2,10 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
+import hashlib
+import json
 import logging
-from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, advance, page
+from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, WorkerOwnershipLost, advance, page
 from .usage_binding import UsageBinding
 
 
@@ -33,6 +35,83 @@ class Repository:
                 raise ValueError('explicit positive timeout required')
         self.connect, self.scope, self.expires_at = connect, scope, expires_at
         self.statement_timeout_ms, self.lock_timeout_ms = statement_timeout_ms, lock_timeout_ms
+
+    @contextmanager
+    def worker_lease(self, binding):
+        """One physical-session owner per chat; no row lock is held across the run.
+
+        This connection is dedicated until close. Transaction poolers cannot supply
+        this contract. LOCAL scope bindings end after setup, while the advisory
+        lock remains until explicit release or process/session death.
+        """
+        if binding.scope != self.scope: raise Denied('scope unavailable')
+        raw = b'CJ-RUN-WORKER-LEASE@1\x00' + json.dumps(binding.chat, ensure_ascii=False, separators=(',', ':')).encode()
+        unsigned = int.from_bytes(hashlib.sha256(raw).digest()[:8], 'big')
+        key = unsigned if unsigned < 1 << 63 else unsigned - (1 << 64)
+        high, low = unsigned >> 32, unsigned & 0xffffffff
+        conn = self.connect()
+        cur = None; acquired = False; active = False; failed = False
+        def budget():
+            cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
+                        (str(self.statement_timeout_ms), str(self.lock_timeout_ms)))
+        try:
+            try:
+                if conn.autocommit: raise WorkerOwnershipLost('autocommit lease unavailable')
+                cur = conn.cursor()
+                cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                bind_scope = getattr(conn, 'bind_scope', None)  # existing scoped DB-API extension
+                if bind_scope is not None: bind_scope(cur)
+                budget()
+                cur.execute('SELECT active FROM cj_run_scope WHERE scope=%s', (self.scope,))
+                row = cur.fetchone()
+                if row is None or row[0] is not True: raise Denied('scope unavailable')
+                cur.execute("SELECT count(*) FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory' AND granted")
+                if cur.fetchone()[0] != 0: raise WorkerOwnershipLost('dirty worker session')
+                cur.execute('SELECT pg_backend_pid(), pg_try_advisory_lock(%s)', (key,))
+                pid, acquired = cur.fetchone()
+                conn.commit()
+                active = acquired
+            except (Denied, WorkerOwnershipLost): raise
+            except Exception: raise WorkerOwnershipLost('worker ownership unavailable') from None
+
+            def check():
+                if not active: raise WorkerOwnershipLost('worker ownership ended')
+                try:
+                    budget()
+                    cur.execute("""SELECT pg_backend_pid(), EXISTS (
+                        SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory'
+                        AND granted AND mode='ExclusiveLock' AND objsubid=1
+                        AND classid::bigint=%s AND objid::bigint=%s)""", (high, low))
+                    owned = cur.fetchone()
+                    conn.commit()
+                    if owned != (pid, True): raise WorkerOwnershipLost('worker session changed')
+                except WorkerOwnershipLost: raise
+                except Exception: raise WorkerOwnershipLost('worker ownership unavailable') from None
+            if acquired: check()
+            yield check if acquired else None
+        except BaseException:
+            failed = True
+            raise
+        finally:
+            active = False
+            cleanup_error = None
+            try:
+                conn.rollback()
+                if acquired and cur is not None:
+                    budget()
+                    cur.execute('SELECT pg_advisory_unlock(%s)', (key,))
+                    released = cur.fetchone()[0]
+                    conn.commit()
+                    if released is not True: raise WorkerOwnershipLost('worker release unavailable')
+            except BaseException as exc: cleanup_error = exc
+            for close in ([cur.close] if cur is not None else []) + [conn.close]:
+                try: close()
+                except BaseException as exc:
+                    if cleanup_error is None: cleanup_error = exc
+            if cleanup_error is not None:
+                if not failed: raise WorkerOwnershipLost('worker release unavailable') from None
+                try: logging.getLogger(__name__).warning('run_worker_lease_cleanup_failed')
+                except BaseException: pass
 
     @contextmanager
     def transaction(self, *, require_clean_close=False):

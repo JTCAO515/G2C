@@ -78,3 +78,38 @@ cleanup or final-owner uncertainty likewise requires reading the original RUN.
 No retry of a model/tool is authorized. Physical provider interruption, real cost
 settlement and real-network latency are not established by local FakeProvider
 checks.
+
+## Worker ownership and recovery (M1 / #166)
+
+The local worker holds a PostgreSQL session advisory lock for the original chat
+(scope, conversation and generation) on a dedicated physical connection. A busy
+chat returns `waiting`; another chat can progress. Only a new owner may interpret
+an existing `running` record as interrupted and append `unknown`, preserving its
+original IDs and committed partial text without another provider attempt.
+
+The lease does not hold a RUN row lock across streaming. Existing short RUN
+transactions still order cancellation, step starts and publication. Each such
+transaction checks the same session and advisory lock before work and around
+commit. Connection/ownership loss stops the worker; uncertain work is reconciled
+through the original record. Process death releases the PostgreSQL lock. Setup
+uses the existing transaction-local scope binding and commits it away; it never
+leaves a session-level `cj.*` identity. No role or RLS grant is added.
+
+This adapter requires a dedicated physical session, and cannot run through a
+transaction pooler. Pooling remains gated by the C2 closure plan. PostgreSQL's
+[session-lock lifetime](https://www.postgresql.org/docs/17/explicit-locking.html#ADVISORY-LOCKS)
+and [advisory lock representation](https://www.postgresql.org/docs/17/view-pg-locks.html)
+define the ownership check. This is local coordination, not a remote-provider
+exactly-once or cost-settlement guarantee.
+
+The actual local worker entry re-reads its existing invitation source and original
+MESSAGE binding through the RUN validity hook before new steps and publication.
+Revoked or unreadable admission never grants permission; retained output stays
+partial with `context_invalid`. The invitation policy and key format are unchanged.
+
+The existing protected display/SSE path retains its UTF-8 byte-offset contract.
+Disconnecting does not cancel the worker; reconnecting from the received offset
+returns the remaining text. Invalid/expired cursors require a fresh protected
+snapshot, and `unknown` output is never labelled complete. Local TCP, competing
+workers, killed subprocesses and lost physical sessions are covered by
+`backend/agent/tests/ownership_checks.py` via `scripts/pg_suites.py e2e`.

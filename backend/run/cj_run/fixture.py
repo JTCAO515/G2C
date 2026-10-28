@@ -1,7 +1,7 @@
 """Synthetic atomic adapter only; NOT durable storage or a production authority."""
 from contextlib import contextmanager
-from threading import RLock
-from .core import Binding, State, Conflict
+from threading import Lock, RLock
+from .core import Binding, State, Conflict, WorkerOwnershipLost
 from .usage_binding import UsageBinding
 
 
@@ -10,6 +10,21 @@ class MemoryRepository:
         self.rows = {}
         self.lock = RLock()
         self.revision = 0
+        self.worker_locks = {}
+
+    @contextmanager
+    def worker_lease(self, binding):
+        with self.lock:
+            lock = self.worker_locks.setdefault(binding.chat, Lock())
+        acquired = lock.acquire(blocking=False)
+        active = acquired
+        def check():
+            if not active: raise WorkerOwnershipLost('worker ownership unavailable')
+        try:
+            yield check if acquired else None
+        finally:
+            active = False
+            if acquired: lock.release()
 
     @contextmanager
     def transaction(self):

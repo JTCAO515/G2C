@@ -469,4 +469,5 @@ class SignedTripConfirmation(Harness):
 if __name__ == '__main__':
     from transaction_scope_checks import TransactionScopeChecks
     from cancellation_checks import CancellationChecks
+    from ownership_checks import OwnershipChecks
     unittest.main(verbosity=2)
