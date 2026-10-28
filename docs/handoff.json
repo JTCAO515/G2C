@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-28T05:33:45.710640+00:00",
+  "lastUpdated": "2026-10-28T05:36:12.627860+00:00",
   "currentPhase": "M1 #176: fixed code 74dd1da passed three consecutive fresh-checkout PG runs (11/11 each); preparing final PR gates.",
   "status": "active",
   "objective": "M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。",
@@ -16,7 +16,7 @@
     "New startup tests failed in four baseline subcases (two missing preloads, two missing-dependency startups incorrectly succeeded). After fix 3/3 tests pass, including unchanged model-budget TIMEOUT guard. Python57/57 passes.",
     "#182 follows #176; #163 WIP remains preserved separately until #182 closes, then rebase/renumber after migration0011/latest manifest. No #159/L2/branch-protection/production-key work.",
     "Fresh detached checkout at 74dd1da27c9f28762ce9098bce47fd71894c0a79 with new uv environment completed three serial full PG runs: 130.550s, 101.825s, 100.126s, each exit0/11 suites and clean source. No reruns or source changes between rounds.",
-    "GitHub connector/API transport temporarily failed while posting the fresh-validation comment; delivery not yet confirmed. Read back before retrying any write."
+    "Fresh-validation evidence published and exact readback verified in #176 comment6461531638. Subsequent commits change only handoff documentation; implementation/tests remain byte-identical to validated74dd1da."
   ],
   "assumptions": [
     "本轮本地 API 使用 app_from_environment 强制签名入口、私有 PG、FakeProvider 和临时开发身份；不是生产、OTP 或真实模型验收。",
@@ -86,7 +86,7 @@
       "command": "Fresh checkout: three consecutive complete scripts/pg_suites.py runs",
       "status": "pass",
       "summary": "Fixed 74dd1da, new checkout/new uv env, three consecutive full runs: 130.550s/101.825s/100.126s; each 11/11 and clean source. Each feasibility_domain:115 passed,14 existing skipped,22 subtests. Raw logs retained outside Git.",
-      "artifact": null
+      "artifact": "https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461531638"
     },
     {
       "command": "Real provider/cloud/OTP/device/deployment",
@@ -122,8 +122,8 @@
   ],
   "rollback": "revert PR #171 合并提交即可恢复原队列写法；GitHub 上的子票、里程碑与父票正文按 Issue 编辑历史（edited 记录）手工回退。无代码、迁移或配置变更。",
   "nextAction": {
-    "description": "Read back #176 comments to resolve the uncertain validation-comment write, then post evidence only if absent. Final docs-only commit follows fixed code 74dd1da (three PG runs proven on identical implementation/tests). Push/open PR; require exact-head all CI and independent APPROVE before merge, then main green/Issue updates. Next #182, then preserved #163 WIP.",
-    "expectedObservation": "Three full-PG results retained; no duplicate unknown writes and no premature closure while PR gates remain.",
+    "description": "Push/open #176 PR. Final head differs from validated74dd1da only in handoff documentation; require exact-head all CI and independent APPROVE. Merge locked head, confirm main CI, update original and tightened acceptance evidence/close #176. Then #182, then preserved #163 WIP; do not change frozen budgets/RLS/migrations/contracts/CI.",
+    "expectedObservation": "Three full-PG results and measured failure retained; CI/review still pending before merge.",
     "command": "gh issue view 176 --repo JTCAO515/G2C --comments"
   },
   "readingOrder": [
