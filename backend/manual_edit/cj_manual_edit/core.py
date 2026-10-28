@@ -114,7 +114,8 @@ class Draft:
 
     @property
     def diff(self):
-        before, after = _document(self.original.content), _document(self.content)
+        # Draft construction validated both immutable documents.
+        before, after = json.loads(self.original.content), json.loads(self.content)
         changes = []
         if before['title'] != after['title']:
             changes.append(Change(('title',), packed(before['title']), packed(after['title'])))

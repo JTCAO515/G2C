@@ -134,6 +134,17 @@ class PgTests(unittest.TestCase):
             c.execute('DELETE FROM cj_run_event WHERE scope=%s AND sequence=1',(self.scope,))
         with self.assertRaises(ResyncRequired): self.repo.recover(self.b)
 
+    def test_stored_projection_mismatch_is_not_success(self):
+        self.service.apply(self.event('started',1))
+        # Redundant persisted fields must be checked at the repository boundary.
+        for column, value in (('status', 'queued'), ('event_sequence', 0)):
+            with self.subTest(column=column):
+                with connect() as c:
+                    c.execute('UPDATE cj_run_record SET status=%s,event_sequence=%s WHERE scope=%s',
+                              ('queued' if column == 'status' else 'running',
+                               value if column == 'event_sequence' else 1, self.scope))
+                with self.assertRaises(ResyncRequired): self.repo.recover(self.b)
+
     def test_revocation_and_default_context(self):
         with self.assertRaises(Denied): Service(self.repo).apply(self.event('started',1))
         with connect() as c:

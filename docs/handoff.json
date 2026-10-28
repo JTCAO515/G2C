@@ -1,22 +1,22 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-28T06:57:47.445671+00:00",
-  "currentPhase": "M1 #182 implementation and full local checks passed; preparing exact-head CI/independent review. Next #185, then #163.",
+  "lastUpdated": "2026-10-28T07:33:10.782563+00:00",
+  "currentPhase": "M1 #185 implementation and full local tests passed; preparing exact-head CI and independent review. Next #163.",
   "status": "active",
   "objective": "M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。",
-  "acceptedIssue": "#8 / #182: LOCAL transaction binding, dirty-checkout refusal, same-physical-connection matrix and C2 pooler gate.",
+  "acceptedIssue": "#185: trust-boundary rules and three bounded examples; JT authorized exactly two AGENTS additions and queue update.",
   "owner": "JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查",
   "fromAgent": "Claude（Issue 总体规划，PR #171）",
   "intendedNextAgent": "Codex：按 docs/plan/issue-plan.md 队列连续关票，自审自合并（ADR-0007 第 3、7 条）",
   "activeWork": [
-    "#176 merged via PR #184 at da9bd50; main CI40640109983 all five jobs green, original and tightened acceptance boxes updated/closed.",
-    "#182 baseline real private PG retained A scope after commit/rollback and unbound SELECT saw A; dirty checkout overwrote to B. The same physical PID was observed; this is not a claim about a real cloud pooler.",
-    "#182 LocalDatabase now returns IDLE with no scope. Transaction-entry hooks install LOCAL MESSAGE/TRIP scopes after isolation setup; direct host with uses same path. Both known M1 authority GUCs are checked at checkout and binding; contamination closes/refuses without overwrite.",
-    "#181 role checks, RLS policies and applied migrations1..11 remain unchanged. Original12 e2e retained; new commit/rollback A/B reuse matrix covers all12 tables SELECT/UPDATE/INSERT with real PG and simulated lease return only. Expanded e2e15/15 passed.",
-    "C2-CLOSURE-PLAN now requires actual pooler reset evidence and the reuse matrix through the actual target before activation; cloud resources remain unapproved/UNRUN.",
-    "JT new sequence: finish #182, then #185, then preserved #163 WIP. #185 rules/scope/source/callers read only so far. Its PR will update issue-plan and add only two AGENTS entries; do not do that cleanup in #182.",
-    "#163 WIP remains isolated on issue-163-message-send-permit and must be rebased/renumbered after current prerequisites. #159/L2/branch protection/production keys remain JT-owned."
+    "#182 merged via PR #191 at 420fda6205cd6e745c4f93cc415eb644a2a53f9d; main CI40648299392 all five jobs green. #182 acceptance updated and parent #8 L0/L1 closed; L2 items remain deferred.",
+    "#185 rules written first; AGENTS adds only a rule reference and review checklist item. Queue is #182 -> #185 -> #163.",
+    "Manual-edit input and Proposal export validators retained as separate boundaries; frozen Draft.diff trusts constructor-validated immutable bytes.",
+    "RUN repository already reconstructs text and checks persisted status/sequence. Removed consumer type/field defense and replay; source bindings, scope, output/lifetime and mutable-state guards retained.",
+    "Lifecycle constructor reflection removed. Runtime deferred-value fence and DB receipt validation retained for safety; original reentry, isolation, hash and adapter-identity tests retained.",
+    "Only deleted test: synthetic memory fixture mutating frozen State.text to exercise internal duplicate replay. Real PG stored status/sequence mismatch negative added; existing event-gap negative retained.",
+    "#163 WIP remains on issue-163-message-send-permit. After #185 closes, replay onto latest main and renumber migration after applied0011/latest. No #159/L2/branch-protection/production-key work."
   ],
   "assumptions": [
     "本轮本地 API 使用 app_from_environment 强制签名入口、私有 PG、FakeProvider 和临时开发身份；不是生产、OTP 或真实模型验收。",
@@ -45,70 +45,51 @@
   ],
   "changedFiles": [
     {
-      "path": "backend/cj_api/local_app.py, backend/message/cj_message/postgres.py, backend/run/cj_run/postgres.py, backend/trip/cj_trip/postgres.py",
-      "reason": "IDLE checkout plus transaction-entry LOCAL binding and dirty-scope refusal; no role/policy changes."
+      "path": "AGENTS.md, docs/engineering.md, docs/plan/issue-plan.md",
+      "reason": "JT-authorized rule/checklist additions and #185 queue dependencies."
     },
     {
-      "path": "backend/agent/tests/e2e_local.py, backend/agent/tests/transaction_scope_checks.py",
-      "reason": "Keep old e2e unchanged and add real-PG same-physical-connection reuse/dirty-state tests."
+      "path": "backend/manual_edit/cj_manual_edit/core.py, backend/run/cj_run/display_snapshot.py, backend/memory/cj_memory/lifecycle.py",
+      "reason": "Remove only internal duplicate validation; retain boundary and safety checks."
     },
     {
-      "path": "backend/README.md, backend/c2-preparation/C2-CLOSURE-PLAN.md",
-      "reason": "Describe binding contract and require real pooler reset/negative evidence before activation."
+      "path": "backend/run/tests/display_snapshot_checks.py, backend/run/tests/pg_checks.py",
+      "reason": "Remove one internal-defense fixture test; add real DB redundant projection mismatch coverage."
     },
     {
       "path": "docs/handoff.json, HANDOFF.md",
-      "reason": "Record #176 closure, #182 evidence and JT #185 insertion."
+      "reason": "Record #182 closure and bounded #185 work/evidence."
     }
   ],
   "verification": [
     {
-      "command": "Pre-fix retained physical connection probe at da9bd50",
-      "status": "fail",
-      "summary": "A setting survived commit and rollback, unbound SELECT returned1; same physical connection was overwritten to B instead of refused. Synthetic scopes and real PG only.",
-      "artifact": "https://github.com/JTCAO515/G2C/issues/182#issuecomment-6462294335"
-    },
-    {
-      "command": "scripts/pg_suites.py e2e before/after new matrix",
-      "status": "pass",
-      "summary": "Original12/12 maintained; then15/15 with both directions, commit/rollback,12 tables SELECT/UPDATE/INSERT and dirty checkout/transaction closure. No existing e2e removed or altered.",
-      "artifact": "https://github.com/JTCAO515/G2C/issues/182#issuecomment-6462501267"
-    },
-    {
       "command": "uv run --locked python -B scripts/test.py",
       "status": "pass",
-      "summary": "57/57 groups.",
+      "summary": "57/57 groups; existing boundary/safety tests retained.",
       "artifact": null
     },
     {
       "command": "uv run --locked python -B scripts/pg_suites.py",
       "status": "pass",
-      "summary": "11/11 full groups; e2e15/15 includes original12 unchanged plus reuse/dirty-state matrix; migrations1..11 up/down/up.",
+      "summary": "11/11 groups, e2e15/15, real PG stored status and sequence mismatch negative; lifecycle safety tests retained.",
       "artifact": null
     },
     {
-      "command": "Frozen paths and syntax/diff checks",
+      "command": "Frozen-path diff, test deletion audit, handoff render/check, git diff --check",
       "status": "pass",
-      "summary": "No changes under migrations/contracts/.github or test.py/pg_suites.py; existing role check unchanged.",
+      "summary": "Only scoped files changed; one internal-defense fixture test deleted and listed in PR; no boundary/safety test removed.",
       "artifact": null
     },
     {
-      "command": "Real pooler reset/cloud/OTP/model/device/deployment",
+      "command": "Real-service/cloud pooler/device/production",
       "status": "not-run",
-      "summary": "Local simulated lease return is not actual C2 pooler evidence; activation gate added.",
-      "artifact": null
-    },
-    {
-      "command": "Role/e2e AST comparison; frozen-path diff; handoff/diff checks",
-      "status": "pass",
-      "summary": "Existing role check and all #181 e2e class ASTs unchanged. No migrations, RLS policy, contracts, CI/test-entry, AGENTS or engineering-rule changes.",
+      "summary": "Outside authorized local M1 scope.",
       "artifact": null
     }
   ],
   "blockers": [
-    "#159 copy remains JT-owned; not handled in this sequence.",
-    "L2/cloud pooler/OTP/real model/physical-device resources remain separately authorized; no approved M1 external entries.",
-    "#163 waits for #182 under JT queue; #164 waits #163, #167 waits #164/#165, #170 waits #168/#165."
+    "#159 copy, L2/cloud/OTP/real model/device resources, branch protection and production keys remain JT-owned.",
+    "#163 waits for #185; preserved WIP must be replayed and migration renumbered."
   ],
   "risks": [
     "DEBUG 开发组装仅限 Simulator、显式 loopback 和开发 token；不是生产认证/存储激活。Release 和真机保持未连接。",
@@ -126,9 +107,9 @@
   ],
   "rollback": "revert PR #171 合并提交即可恢复原队列写法；GitHub 上的子票、里程碑与父票正文按 Issue 编辑历史（edited 记录）手工回退。无代码、迁移或配置变更。",
   "nextAction": {
-    "description": "Submit #182 PR, require exact-head all CI and independent APPROVE, merge locked head, verify main, update #182 and close #8 only after its child/L0-L1 audit. Then #185: rules first, only two authorized AGENTS entries, three scoped examples, protected boundary/security checks kept, queue synchronized in that PR. Then preserved #163 WIP after rebase/renumbering.",
-    "expectedObservation": "No pooler/cloud activation; existing security checks preserved and complete 12-table reuse proof accepted.",
-    "command": "gh issue view 182 --repo JTCAO515/G2C --comments"
+    "description": "Finish #185 actual tests, exact-head CI and independent review explicitly auditing every removed check/test for boundary/security duties; merge locked head, verify main, backfill issue and parent. Then resume preserved #163 WIP on latest main.",
+    "expectedObservation": "Boundary/security checks unchanged; #185 only scoped internal-defense removal.",
+    "command": "gh issue view 185 --repo JTCAO515/G2C --comments"
   },
   "readingOrder": [
     "HANDOFF.md",

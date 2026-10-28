@@ -21,14 +21,8 @@ class LifecycleAdapter:
     apply: Callable[[Transaction, bytes], Receipt]
     query: Callable[[Transaction, str], Receipt | None]
 
-    def __post_init__(self):
-        for fn in (self.action_id, self.apply, self.query):
-            if (not callable(fn) or inspect.iscoroutinefunction(fn)
-                    or inspect.isgeneratorfunction(fn) or inspect.isasyncgenfunction(fn)):
-                raise ValueError('synchronous fixed lifecycle adapter required')
-
-
 def _materialized(value):
+    # Transaction lifetime guard: deferred work must not escape the owner fence.
     if inspect.iscoroutine(value) or inspect.isgenerator(value):
         value.close()
     if inspect.isawaitable(value) or inspect.isgenerator(value) or inspect.isasyncgen(value):
