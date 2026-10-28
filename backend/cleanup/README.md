@@ -34,7 +34,7 @@ P2 close 后最终围栏返修：最终 captured guard/context 检查在最后�
 
 `protected_progress.ProgressReader` 消费 canonical AUTH8b 的 ProtectedReadBoundary；
 只读自身已有 operation 的有限白名单结果。只调用旧 PG query，不写恢复/receipt或删除。
-完整返回bytes在原AUTH寿命内生成，最末AUTH回调之后以callback-free字段核对完成绑定。
+完整返回bytes在原AUTH寿命内生成，AUTH 在进入与返回前各检查一次；不再复核宿主组合（rc.2）。
 接口、限量、原因枚举、final-envelope接缝见 [PROTECTED-PROGRESS](../../contracts/cleanup/PROTECTED-PROGRESS.md)。
 本目录原base的AUTH没有read_context：消费测试必须显式使用canonical8b源，不能回退假AUTH。
 新正式集成由Main/CJ005带已合AUTH一起接，不把忽略目录的临时导出作为第二AUTH来源。

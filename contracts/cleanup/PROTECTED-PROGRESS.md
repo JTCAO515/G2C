@@ -1,4 +1,6 @@
-# CJ-CLEANUP-PROGRESS-READ@0.1.0-rc.1
+# CJ-CLEANUP-PROGRESS-READ@0.1.0-rc.2
+
+rc.2（2026-10-28）：去掉读取过程中对可信宿主组合的复核，签名不变；见“只读、寿命与信任边界”。
 
 当前有效 AUTH 身份读取自己的**已有原操作**进度，内部 consumer 候选。
 基线08358f79921b8a3102a2be73b40f7c9e56d5dd80；消费 canonical AUTH
@@ -18,8 +20,8 @@ final_bytes = reader.read(original_token, original_operation_id, project=final_e
 
 boundary 必须为 canonical ProtectedReadBoundary；resolver 是服务端固定的同步
 `(TrustedPrincipal, environment, guard) -> cj_cleanup.postgres.Repository`。
-repository.scope 必须等于 `Scope.from_principal(environment, principal)`，guard 必须为
-传入的原 guard。没有请求 owner/scope/环境/permission 参数，不从 operation ID 推身份。
+repository.scope 必须等于 `Scope.from_principal(environment, principal)`，否则拒绝；
+resolver 须把传入的 guard 交给 Repository（rc.2 起它是空的阶段钩子，不再做鉴权）。没有请求 owner/scope/环境/permission 参数，不从 operation ID 推身份。
 环境/issuer/audience、步骤上限及输出bytes上限均由已批准 host 显式配置，不给生产默认值。
 max_steps1..128，max_response_bytes1..65536；超限整份拒绝，不截断或补零。
 
@@ -45,18 +47,24 @@ original_result_unknown / original_result_failed。
 缺原记录和他人记录均拒绝，不返回空数组或complete。complete只沿原冻结操作的有限语义，
 不是现实全域注销完成或新增域已清理声明；本reader不扩大原清单、不自动audit或结算。
 
-## 只读、寿命与最终围栏
+## 只读、寿命与信任边界
 
 只调用既有 `Repository.query`：SELECT + journal精确回放（recover_inflight=False），
 没有create/recover/intent/receipt/audit/delete/claim。in_progress原状态原revision保留，
 只读请求不能偷偷生成恢复事件或重发hook。没有destructive factory。
 
-整个查询和最终投影在同一 canonical read context 内，PG连接close后的原guard仍有效；
-close错误/ACK不明/取消/撤权都扣住私有返回。resolver、repo、投影回调和每个AUTH callback
-之后核对原principal/profile与捕获绑定。最末 outer AUTH callback 也可能改repo/config；
-outer返回后不复活context、不再调用任何外部checker/resolver/project/IO，只核对原reader
-boundary/resolver/config身份及配置值、repository.scope/connect/guard/scope_bytes，才返回
-已物化bytes。回调仍返回同principal但换绑定也拒绝。无第二鉴权/第二AUTH来源。
+整个查询和最终投影在同一 canonical read context 内。canonical ProtectedReadBoundary 在进入时
+和私有bytes返回前各做一次新鲜 AUTH 检查，所以查询、连接close或投影期间发生的撤权都会扣住返回；
+close错误/ACK不明/取消同样扣住。
+
+会检查：AUTH 进入与返回前准入、principal 的 issuer/audience 与配置一致、repository.scope
+与 principal 派生 scope 一致、step.target 有界 ID 白名单、manifest entry 的 hook_available 与
+step.available 为严格 bool、exact bytes 与输出上限、步骤上限。不检查：宿主自己的 reader、
+resolver、configuration、repository 对象在读取过程中是否被替换；它们是可信服务端组合，
+宿主替换 configuration 只影响之后的读取。journal 回放只保证 journal 与 state 一致、
+scope/operation ID 绑定，不校验持久字段内容；因此每个 step.target 仍按有界 ID 白名单
+校验，不合格整份拒绝，绝不输出正文（#188 审查回归）；持久 hook_available 非 bool（null、
+字符串等）同样整份拒绝，不按 truthiness 解释成 hook_unavailable 或可用（#188 第二轮复审）。
 
 同步围栏不是跨worker撤权原子锁；可信Python callback也不是沙箱。查询是该原operation
 的数据库快照，不保证显示后进度永远不变。原CommitUnknown等主异常不映射成未发生/成功，

@@ -99,22 +99,11 @@ class CleanupProgressChecks(SyntheticFixture):
             setattr(self,attr,True);r=self.get();self.assertEqual(r.status_code,503);self.assertNotIn('progress',r.json());self.assertNotIn('PRIVATE_',r.text);setattr(self,attr,False)
         self.close_hook=lambda:setattr(self.policy,'invited',Fact.NO)
         r=self.get();self.assertNotEqual(r.status_code,200);self.assertNotIn('progress',r.json())
-    def test_final_outer_auth_same_principal_binding_swap_is_rejected(self):
-        original=self.policy.evaluate;target=[None]
-        def evaluate(principal):
-            result=original(principal)
-            if target[0]==self.policy.calls:self.last_repo.connect=lambda:Conn(self)
-            return result
-        # close -> storage guard, domain guard, projection guard, outer AUTH.
-        self.close_hook=lambda:target.__setitem__(0,self.policy.calls+4)
-        with patch.object(self.policy,'evaluate',side_effect=evaluate):r=self.get()
-        self.assertEqual(self.policy.calls,target[0]);self.assertEqual(r.status_code,503);self.assertNotIn('progress',r.json())
-    def test_resolver_wrong_scope_and_guard_rejected(self):
-        for change in ['scope','guard']:
-            def resolve(principal,environment,guard):
-                return Repository(lambda:Conn(self),replace(self.scope,subject='other') if change=='scope' else self.scope,(lambda *_:None) if change=='guard' else guard)
-            with TestClient(create_cleanup_progress_app(configuration=self.options,**dict(self.args,resolve=resolve))) as c:
-                self.assertEqual(self.get(c).status_code,503)
+    def test_resolver_wrong_scope_rejected(self):
+        def resolve(principal,environment,guard):
+            return Repository(lambda:Conn(self),replace(self.scope,subject='other'),guard)
+        with TestClient(create_cleanup_progress_app(configuration=self.options,**dict(self.args,resolve=resolve))) as c:
+            self.assertEqual(self.get(c).status_code,503)
     def test_concurrent_http_gets_have_independent_native_read_contexts(self):
         self.barrier=threading.Barrier(2)
         with ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(lambda _:self.get(),range(2)))

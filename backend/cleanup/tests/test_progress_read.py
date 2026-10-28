@@ -121,6 +121,39 @@ class ProgressTests(unittest.TestCase):
         self.assertTrue(all(x['state']=='pending' for x in value['steps']))
         self.assertTrue(any(x['target']=='offline_devices' for x in value['steps']))
 
+    def test_illegal_persisted_target_never_returned(self):
+        # journal and state agree; only the persisted registry ID is not a bounded ID.
+        principal=replace(self.principal,subject=self.principal.subject+'-target')
+        scope=core.Scope.from_principal('synthetic',principal)
+        m=self.f.manifest
+        for bad in ('PRIVATE_BODY\ncustomer note','x'*200):
+            with self.subTest(bad=bad[:20]):
+                manifest=replace(m,entries=(replace(m.entries[0],registry_id=bad),)+m.entries[1:])
+                op=core.request(scope,'target-op-'+str(len(bad)),core.digest(b'confirmation'),manifest)
+                Repository(self.admin,scope,lambda s:None).create(op)
+                self.verifier.principal=principal
+                with self.assertRaises(ProgressUnavailable):self.reader.read(self.token,op.operation_id)
+                with psycopg.connect(**ADMIN) as conn:
+                    conn.execute('DELETE FROM cj_cleanup_journal_candidate WHERE operation_id=%s',(op.operation_id,))
+
+    def test_non_bool_persisted_hook_available_never_returned(self):
+        # Legal target, journal and state agree; only persisted hook_available is not a bool.
+        principal=replace(self.principal,subject=self.principal.subject+'-available')
+        scope=core.Scope.from_principal('synthetic',principal)
+        m=self.f.manifest
+        target='store:'+m.entries[0].registry_id
+        for index,(bad,capabilities) in enumerate(((None,()),('yes',()),('yes',(target,)),(0,()))):
+            with self.subTest(bad=bad,capabilities=capabilities):
+                manifest=replace(m,entries=(replace(m.entries[0],hook_available=bad),)+m.entries[1:])
+                op=core.request(scope,'available-op-'+str(index),core.digest(b'confirmation'),manifest,capabilities)
+                Repository(self.admin,scope,lambda s:None).create(op)
+                self.verifier.principal=principal
+                try:
+                    with self.assertRaises(ProgressUnavailable):self.reader.read(self.token,op.operation_id)
+                finally:
+                    with psycopg.connect(**ADMIN) as conn:
+                        conn.execute('DELETE FROM cj_cleanup_journal_candidate WHERE operation_id=%s',(op.operation_id,))
+
     def test_scope_cannot_come_from_resolver_or_request(self):
         def wrong(p,e,g): return Repository(self.connection,replace(self.scope,subject='other'),g)
         self.reader.resolve_repository=wrong
@@ -144,27 +177,6 @@ class ProgressTests(unittest.TestCase):
         self.access.invited=Fact.YES
         value=json.loads(self.read(project=lambda raw:b'{"envelope":'+raw+b'}'))
         self.assertEqual(value['envelope']['operation_id'],self.op.operation_id)
-
-    def test_final_auth_callback_mutation_rejected_without_another_auth_call(self):
-        mutations=(lambda:setattr(self.selected,'scope',replace(self.scope,subject='changed')),
-                   lambda:setattr(self.selected,'connect',lambda:None),
-                   lambda:setattr(self.selected,'guard',lambda s:None),
-                   lambda:setattr(self.selected,'_scope_bytes',b'changed'),
-                   lambda:object.__setattr__(self.config,'max_steps',63),
-                   lambda:setattr(self.reader,'configuration',replace(self.config)),
-                   lambda:setattr(self.reader,'resolve_repository',lambda *a:None))
-        for mutate in mutations:
-            # Restore host bindings; each new authenticated lifetime is independent.
-            self.config=Configuration('synthetic','issuer','aud',64,32768)
-            self.reader.configuration=self.config;self.reader.resolve_repository=self.resolver
-            final_call=[]
-            def project(raw):
-                expected=self.access.calls+2 # domain guard, then outer final AUTH
-                def last(): final_call.append(self.access.calls);mutate()
-                self.access.hooks[expected]=last
-                return raw
-            with self.assertRaises(ProgressUnavailable): self.read(project=project)
-            self.assertEqual(final_call,[self.access.calls])
 
     def test_response_and_step_bounds_withhold_whole_result(self):
         self.reader.configuration=replace(self.config,max_steps=1)

@@ -1,16 +1,11 @@
 """Current authenticated account's existing cleanup progress; no write/wire authority."""
-from dataclasses import dataclass, asdict
-import inspect
+from dataclasses import dataclass
 import re
-from cj_auth.read_context import (READ_CONTEXT_VERSION, ProtectedReadBoundary,
-                                  ProtectedReadContext)
 from . import core
-from .postgres import Repository
 
-INTERFACE = 'CJ-CLEANUP-PROGRESS-READ@0.1.0-rc.1'
-AUTH_READ = 'CJ-AUTH-READ-CONTEXT@0.1.0-rc.1'
+INTERFACE = 'CJ-CLEANUP-PROGRESS-READ@0.1.0-rc.2'
+
 _TARGET = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.:/-]{0,191}\Z')
-_STATUS = ('blocked','unknown','failed','complete','awaiting_revocation','in_progress')
 
 class ProgressUnavailable(Exception): pass
 
@@ -32,19 +27,18 @@ class Configuration:
             raise ProgressUnavailable('explicit bounded projection required')
 
 
-def _configuration(config):
-    return (config.environment,config.issuer,config.audience,config.max_steps,config.max_response_bytes)
-
-
-def _project(op, scope, operation_id, max_steps):
-    if (type(op) is not core.Operation or op.scope != scope or op.operation_id != operation_id
-            or type(op.revision) is not int or op.revision<0 or op.status not in _STATUS
-            or not op.steps or len(op.steps)>max_steps):
+def _project(op, max_steps):
+    # op comes from Repository.query (scope + operation ID bound there). Persisted
+    # fields are not validated by journal replay, so the output whitelist is checked here.
+    if len(op.steps)>max_steps:
+        raise ProgressUnavailable('original progress unavailable')
+    # request() derives step.available as `hook_available and ...`, so a persisted
+    # non-bool would either pass through (null) or be coerced (truthy string).
+    if any(type(e.hook_available) is not bool for e in op.manifest.entries):
         raise ProgressUnavailable('original progress unavailable')
     steps=[]
     for index,step in enumerate(op.steps):
-        if (type(step) is not core.Step or type(step.target) is not str or not _TARGET.fullmatch(step.target)
-                or step.state not in core.STATES or type(step.available) is not bool):
+        if not _TARGET.fullmatch(step.target) or type(step.available) is not bool:
             raise ProgressUnavailable('original progress unavailable')
         if step.state=='confirmed': reason='original_result_confirmed'
         elif step.state=='unknown': reason='original_result_unknown'
@@ -66,77 +60,42 @@ def _project(op, scope, operation_id, max_steps):
                             steps=steps,reasons=reasons))
 
 
+def _no_stage_check(stage=None):
+    # Fresh AUTH at entry and before bytes escape is enforced by ProtectedReadBoundary.
+    pass
+
+
 class ProgressReader:
     def __init__(self,boundary,resolve_repository,*,configuration):
-        if (READ_CONTEXT_VERSION != AUTH_READ or type(boundary) is not ProtectedReadBoundary
-                or not callable(resolve_repository) or type(configuration) is not Configuration):
-            raise ProgressUnavailable('canonical AUTH and explicit host composition required')
         self.boundary,self.resolve_repository,self.configuration=boundary,resolve_repository,configuration
 
     def read(self,token,operation_id,*,project=None):
         """Request inputs: token + original operation ID only.
 
         resolve_repository(principal, environment, guard) -> existing canonical PG
-        Repository with derived Scope and that exact guard. Resolver/project are
-        trusted host callbacks; project must encode the entire final response here.
+        Repository with derived Scope and that guard. Resolver/project are trusted
+        host callbacks; project must encode the entire final response here.
         """
         core.identifier(operation_id)
-        if project is not None and (not callable(project) or inspect.iscoroutinefunction(project)):
-            raise ProgressUnavailable('synchronous final projection required')
-        boundary,resolver,config=self.boundary,self.resolve_repository,self.configuration
-        config_values=_configuration(config)
-        completed=None
-
-        def frozen_binding():
-            # No external callbacks, context access, checks, project or IO here.
-            if (self.boundary is not boundary or self.resolve_repository is not resolver
-                    or self.configuration is not config or _configuration(config)!=config_values):
-                raise ProgressUnavailable('progress host binding changed')
-            if completed is not None:
-                repo,scope,connect,guard,scope_bytes=completed
-                if (repo.scope!=scope or repo.connect is not connect or repo.guard is not guard
-                        or repo._scope_bytes!=scope_bytes):
-                    raise ProgressUnavailable('progress repository binding changed')
+        config=self.configuration
 
         def operation(ctx):
-            nonlocal completed
-            if type(ctx) is not ProtectedReadContext: raise ProgressUnavailable('canonical context required')
             principal=ctx.principal
             if principal.issuer!=config.issuer or principal.audience!=config.audience:
                 raise ProgressUnavailable('host identity profile mismatch')
             scope=core.Scope.from_principal(config.environment,principal)
-
-            def guard(stage=None):
-                ctx.require_current()
-                frozen_binding() # after every canonical AUTH provider callback
-
-            guard()
-            repo=resolver(principal,config.environment,guard)
-            guard()
-            if type(repo) is not Repository:
-                if inspect.iscoroutine(repo): repo.close()
-                raise ProgressUnavailable('canonical progress repository required')
-            if repo.scope!=scope or repo.guard is not guard or repo._scope_bytes!=core.encode(asdict(scope)):
+            repo=self.resolve_repository(principal,config.environment,_no_stage_check)
+            if repo.scope!=scope:
                 raise ProgressUnavailable('original scope binding required')
-            completed=(repo,scope,repo.connect,repo.guard,repo._scope_bytes)
             op=repo.query(operation_id) # SELECT-only path: never create/recover/intent/receipt
-            guard() # query has already completed external close/its final guard
-            result=_project(op,scope,operation_id,config.max_steps)
+            result=_project(op,config.max_steps)
             if project is not None:
                 result=project(result) # whole BASE envelope must be encoded within ctx
-            if type(result) is not bytes:
-                if inspect.iscoroutine(result): result.close()
-                raise ProgressUnavailable('final progress bytes required')
+            if type(result) is not bytes: raise ProgressUnavailable('final progress bytes required')
             if len(result)>config.max_response_bytes: raise ProgressUnavailable('progress response too large')
-            guard() # projection callback can revoke/swap binding too
             return result
 
-        result=boundary.with_read_context(token,operation)
-        # Last AUTH callback can change host/repository despite returning ALLOWED.
-        # Context is now retired; only inspect captured plain canonical fields.
-        if completed is None: raise ProgressUnavailable('original progress binding unavailable')
-        frozen_binding()
-        return result
+        return self.boundary.with_read_context(token,operation)
 
 
 def post_logout_query(*args,**kwargs):
