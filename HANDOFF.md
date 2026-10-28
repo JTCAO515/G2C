@@ -18,17 +18,18 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1：#175 两处 README 已修正，文档核对与本地 Python/PG 通过，待 PR 精确 head CI 与独立审查。 |
-| Accepted Issue | #175：仅同步两处 README 的自动续作入口，保留产品和外部资源门禁。 |
+| Phase | M1 #160 local isolation implementation ready for exact-head CI and independent review; local full PG retains #176 FAIL. |
+| Accepted Issue | #8 / #160: API and DB isolation, eligibility gate, old-identity rejection; local-only role/RLS/new migration authorized by JT 2026-10-28. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T02:54:07.287791+00:00 |
+| Last updated | 2026-10-28T03:36:16.210505+00:00 |
 
 ## Active Work
 
-- PR #179 已独立审查并合并为 e7573c17c5ed82f2ee37cdcf9ef661a18cd411a5；main CI 40622684043 五项全绿；#156/#5 验收框已回写，父票 #5 已关闭。
-- #175：两处旧暂停指令改为 ADR-0007 自动续作，当前动作引用 HANDOFF；MESSAGE 的 ADR-0008/SEND-PERMIT 条件保留。
-- #159 仍待 JT 文案和支持渠道确认，继续跳过；#162 已关闭。
-- #176 本地 PG 冷环境预算失败仍保留；不在本轮范围内修复或重跑凑绿。
+- #156/#5 and #175 complete; PR #180 main 1e84903 CI 40624390008 all five jobs passed.
+- #160 original probe found DB-layer isolation FAIL despite API rejection; JT explicitly authorized local-only new migration, initializer/runtime separation, verified-scope binding and MESSAGE/RUN/TRIP RLS.
+- #160 migration 11 adds a nonprivileged runtime role and forced RLS for 12 M1 tables; LocalDatabase uses scoped fresh runtime connections, never initialization identity. Worker enumerates explicit invited subjects and rechecks before model outflow.
+- #163 uncommitted WIP preserved on issue-163-message-send-permit; do not overwrite. Its provisional migration 11 must be renumbered after #160 merges. Resume only after the current parent #8 finishes or suspends.
+- #159 copy remains pending; #176 historical cold-solver failure remains open.
 
 ## Accepted Assumptions
 
@@ -62,19 +63,23 @@
 
 | Path | Reason |
 | --- | --- |
-| `README.md, ios/App/README.md` | 移除已失效暂停文案，引用 ADR-0007/HANDOFF 和现有 MESSAGE 门禁。 |
-| `docs/handoff.json, HANDOFF.md` | 记录 #156/#5 完成、当前 #175 与后续 #160。 |
+| `backend/migrations/0011_local_runtime_rls.sql, backend/migrations/down/0011_local_runtime_rls.down.sql, backend/migrations/manifest.json` | Authorized local role and RLS migration; existing migrations unchanged. |
+| `backend/cj_api/local_app.py, scripts/run_worker.py` | Bind fresh runtime connections to verified local scope and remove privileged queue enumeration; worker invitation guard. |
+| `backend/agent/tests/e2e_local.py, backend/cj_api/tests/test_local_database_config.py, backend/README.md` | Actual PG/API/signed Trip/worker negative tests and local setup documentation. |
+| `docs/handoff.json, HANDOFF.md` | Record authorization, evidence and parent queue. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `git diff --check; README relative-link and boundary assertions` | 两个入口已引用 ADR-0007/HANDOFF；相对链接均存在；旧暂停指令消失，MESSAGE unavailable 与真实资源门禁保留。 | — |
-| fail | `uv run --locked python -B scripts/test.py (sandbox)` | 53/57；4 组本地 loopback HTTPS 检查被沙箱禁止 bind，PermissionError/Operation not permitted；未修改源码。 | — |
-| pass | `uv run --locked python -B scripts/test.py (outside sandbox)` | 诊断沙箱限制后执行相同入口，57/57；不删测试、不放宽断言。 | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups 通过，迁移 1..10 up/down/up；本次新票必需运行通过，不代表 #176 冷环境预算问题已修复。 | — |
-| pass | `python3 -B scripts/handoff.py render; check` | JSON/生成 Markdown 一致。 | — |
-| not-run | `Real provider / cloud / physical device` | 纯文档修改，不代表真实服务或设备验收；#156 本地 #176 FAIL 保留在 PR #179。 | — |
+| fail | `Pre-fix independent local isolation probe at 1e84903` | 7 API checks passed; 4 raw DB cross-scope checks failed. Original evidence retained. | https://github.com/JTCAO515/G2C/issues/160#issuecomment-6459669561 |
+| pass | `uv run --locked python -B scripts/test.py` | 57/57 groups after initial runtime/RLS/worker implementation. The subsequent config-guard tests were run separately (2/2); final CI must cover the final head. | — |
+| fail | `uv run --locked python -B scripts/pg_suites.py` | 10/11 groups; e2e 12 tests PASS, migration 1..11 up/down/up PASS. Only feasibility_domain cross-day positive failed with MODEL_BUDGET_EXHAUSTED, tracked #176; not rerun to obtain green. | https://github.com/JTCAO515/G2C/issues/176 |
+| fail | `Expanded e2e first attempt` | 11 tests, one test harness error: helper run ID mistaken for message ID. Fixed to use outcome.message_id; later full PG e2e 12/12 passed. No product bypass or weakened assertions. | — |
+| pass | `unittest test_local_database_config.py` | 2/2: initializer credentials removed; ambient/service/remote/production configuration rejected before connect. | — |
+| pass | `Final scoped-connection e2e after config guard` | 12/12 e2e tests passed. Final empty-passfile adjustment additionally passed 2 configuration tests and a fresh PG runtime-role/scoped-read smoke; no initializer credentials reused. | — |
+| not-run | `Cloud / real OTP / real model / physical device / deployment` | Only fresh private PG, synthetic local identities and FakeProvider. | — |
+| pass | `git diff --check; handoff render/check; applied migration byte comparison` | Existing migrations unchanged; only new version 11 plus manifest registration. No workflow or existing gate changes. | — |
 
 ## Blockers
 
@@ -100,9 +105,9 @@
 
 ## Next Smallest Action
 
-- Action: 完成 #175 的文档核对、精确 head CI 与独立审查后合并；main CI 全绿后回写 #175，重新核 #159，再执行 #160 API/DB 隔离与资格门禁核验。
-- Expected observation: 入口不再指示旧暂停；真实资源和 MESSAGE 激活边界仍保留。
-- Resume command: `gh issue view 175 --repo JTCAO515/G2C --comments`
+- Action: Submit #160 candidate PR, wait all exact-head CI jobs and independent Codex review. Keep local full-PG #176 FAIL in evidence. On approval merge locked head, verify main CI, update #160/#8, then continue #161. #163 WIP remains in its separate worktree/branch and needs rebase/renumbering only after parent #8 finishes or suspends.
+- Expected observation: All three #160 acceptance boxes proven without cloud, OTP, production role changes or privileged fallback.
+- Resume command: `gh issue view 160 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 

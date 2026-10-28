@@ -18,7 +18,7 @@ import uuid
 os.environ.setdefault('CJ_ENV', 'local')
 from fastapi.testclient import TestClient
 
-from cj_agent.draft import DraftPublisher
+from cj_agent.draft import DraftPublisher, trip_scope_for
 from cj_agent.provider import FakeProvider
 from cj_agent.worker import RunWorker
 from cj_api.local_app import LocalDatabase, create_local_app, scope_for, ISSUER
@@ -132,6 +132,86 @@ class LocalEndToEnd(Harness):
             self.assertIn(uninvited.status_code, (401, 403))
             self.assertEqual(client.get('/v1/run-events', params={'message_id': mid}).status_code, 401)
 
+    def test_runtime_database_enforces_bidirectional_scope_without_repository_filters(self):
+        import psycopg
+        scopes = {s: scope_for(ISSUER, s) for s in ('alice', 'bob')}
+        with TestClient(self.app) as client:
+            for subject in scopes:
+                self.send(client, subject, 'synthetic private', conversation='isolation-' + uuid.uuid4().hex)
+        for subject, other in (('alice', 'bob'), ('bob', 'alice')):
+            with self.subTest(subject=subject):
+                with self.database.connect(scopes[subject]) as conn:
+                    self.assertEqual(conn.execute('SELECT current_user').fetchone()[0], 'cj_m1_runtime')
+                    self.assertEqual(conn.execute('SELECT rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user').fetchone(), (False, False))
+                    self.assertGreater(conn.execute('SELECT count(*) FROM cj_message_receipt').fetchone()[0], 0)
+                    self.assertEqual(conn.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s', (scopes[other],)).fetchone()[0], 0)
+                    self.assertEqual(conn.execute('UPDATE cj_message_chat SET active=false WHERE scope=%s RETURNING conversation_id', (scopes[other],)).fetchall(), [])
+                    for table, foreign_scope in (('cj_message_scope', scopes[other]), ('cj_run_scope', scopes[other]),
+                                                 ('cj_trip_scope', trip_scope_for(scopes[other]))):
+                        with self.subTest(table=table), self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                            with conn.transaction():
+                                if table == 'cj_run_scope':
+                                    conn.execute('INSERT INTO cj_run_scope(scope,epoch,active) VALUES (%s,%s,true)', (foreign_scope + '-forged', '1'))
+                                else:
+                                    conn.execute('INSERT INTO ' + table + '(scope) VALUES (%s)', (foreign_scope + '-forged',))
+                    conn.rollback()
+
+    def test_runtime_database_missing_scope_fails_closed_and_cannot_assume_initializer(self):
+        import psycopg
+        with psycopg.connect(**self.database.conninfo) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_message_chat').fetchone()[0], 0)
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                with conn.transaction():
+                    conn.execute("INSERT INTO cj_message_scope(scope) VALUES ('unbound')")
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                with conn.transaction():
+                    from psycopg import sql
+                    initializer = json.loads(Path(CONNINFO).read_text())['user']
+                    conn.execute(sql.SQL('SET ROLE {}').format(sql.Identifier(initializer)))
+
+    def test_runtime_role_rejects_privileged_membership_or_bypassrls(self):
+        import psycopg
+        from psycopg import sql
+        from cj_api.composition import CompositionUnavailable
+        config = json.loads(Path(CONNINFO).read_text())
+        scope = scope_for(ISSUER, 'alice')
+        with psycopg.connect(**config, autocommit=True) as admin:
+            try:
+                admin.execute('ALTER ROLE cj_m1_runtime BYPASSRLS')
+                with self.assertRaises(CompositionUnavailable): self.database.connect(scope)
+            finally:
+                admin.execute('ALTER ROLE cj_m1_runtime NOBYPASSRLS')
+            try:
+                admin.execute(sql.SQL('GRANT {} TO cj_m1_runtime').format(sql.Identifier(config['user'])))
+                with self.assertRaises(CompositionUnavailable): self.database.connect(scope)
+            finally:
+                admin.execute(sql.SQL('REVOKE {} FROM cj_m1_runtime').format(sql.Identifier(config['user'])))
+
+    def test_worker_rechecks_invitation_before_provider_dispatch(self):
+        sys.path.insert(0, str(ROOT / 'scripts'))
+        import run_worker
+        from cj_agent.provider import ProviderFailed
+        class CountingProvider(FakeProvider):
+            calls = 0
+            def stream(self, *args, **kwargs):
+                self.calls += 1
+                yield from super().stream(*args, **kwargs)
+        model = CountingProvider()
+        with TestClient(self.app) as client:
+            mid, response = self.send(client, 'alice', 'must not dispatch after revocation', conversation=uuid.uuid4().hex)
+            self.assertEqual(response.status_code, 200)
+        wrapper = run_worker.InvitedProvider(model, self.auth, 'alice')
+        original = (self.auth / 'invited.json').read_bytes()
+        try:
+            (self.auth / 'invited.json').write_text('[]')
+            self.assertEqual(run_worker.run_once(self.database, model, self.auth), [])
+            with self.assertRaises(ProviderFailed): list(wrapper.stream([{'role':'user','content':'synthetic'}]))
+            self.assertEqual(model.calls, 0)
+            scope = scope_for(ISSUER, 'alice')
+            self.assertIsNotNone(MessageService(self.database.message_repository(scope), new_run_id=lambda: None).query(mid))
+        finally:
+            (self.auth / 'invited.json').write_bytes(original)
+
     def test_crash_mid_answer_becomes_unknown_without_resending(self):
         conversation = 'chat-' + uuid.uuid4().hex
         with TestClient(self.app) as client:
@@ -243,6 +323,41 @@ class SignedTripConfirmation(Harness):
     def post_action(self, client, raw, subject='alice'):
         return client.post('/v1/trip-actions', content=raw,
             headers={**self.headers(subject), 'Content-Type': 'application/octet-stream'})
+
+    def test_all_m1_tables_enforce_runtime_scope_after_signed_flow(self):
+        from psycopg import sql
+        tables = ('cj_message_scope', 'cj_message_chat', 'cj_message_receipt',
+                  'cj_message_delivery', 'cj_message_draft', 'cj_run_scope',
+                  'cj_run_record', 'cj_run_event', 'cj_trip_scope',
+                  'cj_trip_proposal', 'cj_trip_record', 'cj_trip_receipt')
+        with TestClient(self.app) as client:
+            for subject in ('alice', 'bob'):
+                _, outcome = self.draft(client, subject, 'Synthetic Beijing plan')
+                scope = scope_for(ISSUER, subject)
+                message = MessageService(self.database.message_repository(scope), new_run_id=lambda: None)
+                receipt = message.query(outcome.message_id).receipt
+                message.save_draft(receipt.conversation_id, receipt.generation, b'synthetic draft', 0)
+                proposal = client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id}, headers=self.headers(subject)).json()['proposal']
+                prepared = self.prepare(client, proposal, subject=subject)
+                self.assertEqual(prepared.status_code, 200)
+                raw = base64.b64decode(prepared.json()['action_utf8_base64'], validate=True)
+                self.assertEqual(self.post_action(client, raw, subject).status_code, 200)
+        for subject, other in (('alice', 'bob'), ('bob', 'alice')):
+            with self.database.connect(scope_for(ISSUER, subject)) as conn:
+                for table in tables:
+                    with self.subTest(subject=subject, table=table):
+                        relation = sql.Identifier(table)
+                        expected = scope_for(ISSUER, subject)
+                        foreign = scope_for(ISSUER, other)
+                        if table.startswith('cj_trip_'):
+                            expected, foreign = trip_scope_for(expected), trip_scope_for(foreign)
+                        rows = conn.execute(sql.SQL('SELECT DISTINCT scope FROM {}').format(relation)).fetchall()
+                        self.assertEqual(rows, [(expected,)])  # own rows exist: no vacuous foreign denial
+                        self.assertEqual(conn.execute(sql.SQL('SELECT count(*) FROM {} WHERE scope=%s').format(relation), (foreign,)).fetchone()[0], 0)
+                        self.assertEqual(conn.execute(sql.SQL('UPDATE {} SET scope=scope WHERE scope=%s RETURNING scope').format(relation), (foreign,)).fetchall(), [])
+                        flags = conn.execute('SELECT relrowsecurity,relforcerowsecurity,relowner=(SELECT oid FROM pg_roles WHERE rolname=current_user) FROM pg_class WHERE oid=%s::regclass', (table,)).fetchone()
+                        self.assertEqual(flags, (True, True, False))
+                conn.rollback()
 
     def test_signed_accept_reject_replay_and_foreign_refusal(self):
         with TestClient(self.app) as client:

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
+import tempfile
 import uuid
 
 import psycopg
@@ -37,26 +38,59 @@ def scope_for(issuer, subject):
 
 class LocalDatabase:
     def __init__(self, conninfo_path):
-        self.conninfo = json.loads(Path(conninfo_path).read_text())
+        config = json.loads(Path(conninfo_path).read_text())
+        if (os.environ.get('CJ_ENV') != 'local' or type(config) is not dict
+                or type(config.get('host')) is not str or not config['host'].startswith('/')
+                or ',' in config['host'] or config.get('hostaddr') or 'service' in config
+                or any(k.startswith(('PG', 'LIBPQ')) for k in os.environ)):
+            raise CompositionUnavailable('explicit local Unix-socket database required')
+        # The initialization identity is never used for application/worker SQL.
+        self._empty_passfile = tempfile.NamedTemporaryFile(prefix='cj-m1-runtime-', suffix='.pgpass')
+        self.conninfo = dict(config, user='cj_m1_runtime', passfile=self._empty_passfile.name)
+        self.conninfo.pop('password', None)
 
-    def connect(self):
-        return psycopg.connect(**self.conninfo)  # non-autocommit, as repositories require
+    def __del__(self):
+        passfile = getattr(self, '_empty_passfile', None)
+        if passfile is not None:
+            passfile.close()
+
+    def connect(self, scope):
+        if type(scope) is not str or not scope.startswith('local:' + ISSUER + ':') or not scope.removeprefix('local:' + ISSUER + ':'):
+            raise CompositionUnavailable('verified local scope required')
+        conn = psycopg.connect(**self.conninfo, autocommit=True)
+        try:
+            role = conn.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,"
+                                "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
+                                "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) "
+                                "FROM pg_roles r WHERE rolname=current_user").fetchone()
+            if role != (False, False, False, False, False, False, False):
+                raise CompositionUnavailable('unsafe local runtime database role')
+            # A fresh connection belongs to exactly one verified scope and one
+            # repository transaction; no pool/reuse or caller owner is accepted.
+            # Configure outside a transaction so repositories still receive IDLE.
+            conn.execute("SELECT set_config('cj.message_scope',%s,false), set_config('cj.trip_scope',%s,false)",
+                         (scope, trip_scope_for(scope)))
+            conn.autocommit = False
+            return conn
+        except BaseException:
+            conn.close()
+            raise
 
     def provision(self, scope):
         """Trusted, idempotent scope provisioning for the local host only."""
-        with psycopg.connect(**self.conninfo, autocommit=True) as conn:
+        with self.connect(scope) as conn:
             conn.execute('INSERT INTO cj_message_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
             conn.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
             conn.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
 
     def message_repository(self, scope):
-        return MessageRepository(self.connect, scope)
+        return MessageRepository(lambda: self.connect(scope), scope)
 
     def trip_repository(self, scope):
-        return TripRepository(self.connect, trip_scope_for(scope), confirm=local_confirmation)
+        return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
 
     def run_repository(self, scope):
-        return RunRepository(self.connect, scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
+        return RunRepository(lambda: self.connect(scope), scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
                              statement_timeout_ms=10000, lock_timeout_ms=5000)
 
 
@@ -101,7 +135,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None):
     def trip(principal):
         scope = scope_for(principal.issuer, principal.subject)
         database.provision(scope)
-        return database.connect, trip_scope_for(scope)
+        return lambda: database.connect(scope), trip_scope_for(scope)
 
     return create_composed_app(
         environment='local', jwt_configuration=config, verification_keys=keys,

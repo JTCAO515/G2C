@@ -28,7 +28,7 @@ uv run --locked python -B scripts/dev_auth.py init .local/dev-auth --invite alic
 uv run --locked python -B scripts/migrate.py up --conninfo-json .local/conn.json   # your own empty local DB
 CJ_LOCAL_CONNINFO=.local/conn.json CJ_LOCAL_AUTH_DIR=.local/dev-auth \
   uv run --locked uvicorn cj_api.local_app:app_from_environment --factory --host 127.0.0.1 --port 8765
-uv run --locked python -B scripts/run_worker.py --conninfo-json .local/conn.json          # FakeProvider; --real needs a key
+uv run --locked python -B scripts/run_worker.py --conninfo-json .local/conn.json --auth-dir .local/dev-auth  # FakeProvider; --real needs a key
 TOKEN=$(uv run --locked python -B scripts/dev_auth.py token .local/dev-auth --subject alice)
 ```
 
@@ -40,6 +40,24 @@ Trip draft: send with `creation_intent: "consider_trip"`; the worker publishes p
 (canonical `[action_id, kind, proposal_id, candidate_hash, confirmation_ref]`), then
 `GET /v1/trip-details?trip_id=...`. Real model check: `scripts/provider_smoke.py` (4 requests).
 `scripts/pg_suites.py e2e` runs the same flow automatically on a fresh private cluster.
+
+M1 local database isolation (#160): migration 11 creates `cj_m1_runtime` with no
+superuser, BYPASSRLS, role/database creation or table ownership. MESSAGE/RUN/TRIP
+tables use forced RLS. The migration/initialization identity remains separate;
+`LocalDatabase` never uses it for application or worker SQL. It requires an explicit
+local Unix socket and opens a new runtime connection per repository transaction,
+bound to the server-verified MESSAGE scope and its derived TRIP scope. These session
+settings are configured before the transaction and the connection is closed after
+use; there is no shared connection pool or caller-controlled owner setting. The
+trusted backend sets this context: RLS does not defend against a compromised backend
+deliberately issuing arbitrary scope-setting SQL. Other domain tables receive no
+runtime grants. The worker requires the explicit local invitation directory and
+checks invitations again before each model call. Missing role/schema/configuration
+fails visibly; there is no privileged fallback. This is a local-only acceptance path,
+not authorization to create roles, migrate data or deploy policy in a cloud database.
+The local private cluster uses Unix-socket authentication; initialization passwords
+and passfiles are not reused by the runtime role. Ambient `PG*`/`LIBPQ*`, service
+aliases, remote hosts and host addresses are rejected before any connection.
 
 macOS note: Python 3.14 ignores `.pth` files carrying the `hidden` file flag. If imports
 such as `cj_api` suddenly fail after `uv sync`, run
