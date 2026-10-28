@@ -45,10 +45,14 @@ M1 local database isolation (#160): migration 11 creates `cj_m1_runtime` with no
 superuser, BYPASSRLS, role/database creation or table ownership. MESSAGE/RUN/TRIP
 tables use forced RLS. The migration/initialization identity remains separate;
 `LocalDatabase` never uses it for application or worker SQL. It requires an explicit
-local Unix socket and opens a new runtime connection per repository transaction,
-bound to the server-verified MESSAGE scope and its derived TRIP scope. These session
-settings are configured before the transaction and the connection is closed after
-use; there is no shared connection pool or caller-controlled owner setting. The
+local Unix socket and returns an IDLE non-autocommit runtime connection with no
+scope installed. Each MESSAGE/RUN/TRIP transaction calls its `bind_scope` hook
+after selecting isolation and before reading data; direct host `with` consumers
+use the same entry. Both MESSAGE scope and derived TRIP scope are set LOCAL to the
+transaction and expire on commit/rollback. Checkout and transaction entry reject
+either nonempty M1 `cj.*` authority setting and close the connection; they never
+overwrite retained authority. Plain unbound SQL after a completed transaction
+does not automatically rebind. There is no production pool or caller owner setting. The
 trusted backend sets this context: RLS does not defend against a compromised backend
 deliberately issuing arbitrary scope-setting SQL. Other domain tables receive no
 runtime grants. The worker requires the explicit local invitation directory and
@@ -58,6 +62,14 @@ not authorization to create roles, migrate data or deploy policy in a cloud data
 The local private cluster uses Unix-socket authentication; initialization passwords
 and passfiles are not reused by the runtime role. Ambient `PG*`/`LIBPQ*`, service
 aliases, remote hosts and host addresses are rejected before any connection.
+
+The optional transaction hook preserves the injected DB-API interface for other
+trusted repository hosts. The concrete M1 local factory always supplies it; a raw
+runtime connection without binding is denied by the unchanged RLS policy. The
+same-physical-connection tests simulate checkout/return leases over real private
+PG and cover all 12 tables. They do not verify a cloud pooler's reset behavior;
+the [C2 activation gate](c2-preparation/C2-CLOSURE-PLAN.md#pooler-激活门禁182) must
+be satisfied before any pooler is enabled.
 
 macOS note: Python 3.14 ignores `.pth` files carrying the `hidden` file flag. If imports
 such as `cj_api` suddenly fail after `uv sync`, run

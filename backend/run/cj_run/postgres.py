@@ -59,6 +59,9 @@ class Repository:
             cur = conn.cursor()
             try:
                 cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                bind_scope = getattr(conn, 'bind_scope', None)
+                if bind_scope is not None:
+                    bind_scope(cur)
                 cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
                             (str(self.statement_timeout_ms), str(self.lock_timeout_ms)))
                 cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s FOR UPDATE', (self.scope,))

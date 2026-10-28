@@ -36,6 +36,9 @@ class Repository:
             cur = conn.cursor()
             try:
                 cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                bind_scope = getattr(conn, 'bind_scope', None)
+                if bind_scope is not None:
+                    bind_scope(cur)
                 yield Transaction(cur, self.scope)
             except BaseException:
                 outcome = 'body_failed'
