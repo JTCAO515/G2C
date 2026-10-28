@@ -3,7 +3,7 @@
 决策依据：[ADR-0008](../../docs/adr/0008-message-send-permit.md)。本文件冻结 wire 形状与判定语义；正式 OpenAPI 由 #163 按本文写入 `contracts/api/openapi.json`。
 正负样例：[send-permit-samples.json](send-permit-samples.json)；参考检查：[check_send_permit.py](check_send_permit.py)（进入 `scripts/test.py`）。
 
-状态：随 ADR-0008 一起冻结（JT 批准后生效）。改动按 `docs/contracts.md` 的版本规则走新版本。
+状态：已冻结（ADR-0008 accepted，JT 2026-10-28）。改动按 `docs/contracts.md` 的版本规则走新版本。
 
 ## 1. 提交：`POST /v1/messages`
 

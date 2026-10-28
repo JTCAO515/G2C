@@ -52,21 +52,27 @@ jobs:
       - run: uv sync --locked
       - run: uv run --locked python -B scripts/pg_suites.py
 
+  swift-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventory, full coverage and failure propagation tests
+        run: python3 -B .github/scripts/test_swift_packages.py
+      - name: Reject missing or stale Swift package entries
+        run: python3 -B .github/scripts/swift_packages.py
+
   swift:
-    # Locked Swift packages need Swift tools 6.4; use the newest runner image and Xcode.
+    # Every package is tested on one runner, reusing locked compiler outputs.
+    # Inventory order builds the broad Shell graph first; Cleanup has a distinct
+    # locked swift-collections version and runs last to avoid repeated switches.
+    needs: swift-packages
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - name: Verify Xcode toolchain
         run: swift --version
-      - name: iOS root package build and tests (macOS host)
-        working-directory: ios
-        run: swift test
-      - name: CJTripClient tests (confirmation, pending store, recovery)
-        working-directory: ios/Modules/CJTripClient
-        run: swift test
-      - name: RUN snapshot and SSE client tests (macOS host)
-        run: swift test --package-path ios/Modules/CJRunClient
+      - name: Package tests (macOS host)
+        run: python3 -B .github/scripts/swift_packages.py --run
 
   ios-app:
     # The App target with the CJShell four-tab shell and all iOS modules, built for the simulator.

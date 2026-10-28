@@ -18,16 +18,17 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 主链路闭环（模拟器 L1）：Issue 按 ADR-0007 重新规划（docs/plan/issue-plan.md）；#154 已关闭（PR #172），下一张为 #151 S0 Part 2/2。 |
-| Accepted Issue | M1 队列：#151 S0 Part 2/2 → #20 CJ-015 剩余 #155 → #5 → #7 → #8 → #10 → #11 → #19；见 docs/plan/issue-plan.md |
+| Phase | M1：#157 四 Tab 结构与语言验收候选完成，本地原生 iOS 17.5 四项 UI 检查通过，待 PR CI 与独立审查。#156 挂起待范围授权。 |
+| Accepted Issue | #7 CJ-006 / #157：iOS 17.5 四 Tab、记忆入口、语言保留和插件占位；#156 获授权后优先恢复。 |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T14:20:00Z |
+| Last updated | 2026-10-28T02:00:00Z |
 
 ## Active Work
 
-- #154 已关闭：PR #172 合并为 715fd00，main CI 全绿；#20 框 4 已勾，框 1、7 的 App 部分已附证据，服务端部分待 #155。
-- #151 S0 Part 2/2（iOS 测试全部进 CI、pr-lint）未开始，为下一张。
-- #162（CJ-009 子票）：ADR-0008 消息发送许可方案已起草（PR docs/adr0008-message-send-permit），待独立审查与 JT 批准；#163、#164 依赖它。
+- #151 已关闭（PR #174），#155 与父票 #20 经独立核验关闭；main 56c7153 CI 全绿。
+- #157：新增外部 XCTest 验收入口，普通 App 验证中英四 Tab、语言/导航/草稿与重启；标记为 synthetic 的 readonly Memory 宿主覆盖未配置/空/失败入口、标识保留和插件无额外请求。4 个原生测试全部通过。
+- #156 缺 TripPendingStore 中央登记，目标文件超出允许范围；待 JT 授权仅补登记或 Claude 安排，父票 #5 挂起。首次冷环境求解器超时保留为 #176，独立及串行完整复跑通过。
+- #162 由 PR #173 关闭（ADR-0008 accepted，MESSAGE-SEND@1 冻结）；#159 文案待 JT；#175 为旧 README 暂停文案。
 
 ## Accepted Assumptions
 
@@ -49,6 +50,7 @@
 - JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。
 - accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).
 - accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending.
+- accepted (JT 2026-10-28): ADR-0008 消息发送许可：服务端会话头 CAS 为不可回退的首次发送证据；加锁的发送状态读取；MESSAGE-SEND@1 冻结，MESSAGE-draft.1 POST 撤回；App 真实发送只在 DEBUG 模拟器开发会话按 ADR-0008 第 7 条开放。
 
 ## Architecture Contracts
 
@@ -60,21 +62,21 @@
 
 | Path | Reason |
 | --- | --- |
-| `docs/adr/0008-message-send-permit.md, docs/adr/README.md` | 新增 ADR-0008（proposed）：服务端会话头 CAS 作为发送许可。 |
-| `contracts/message/SEND-PERMIT.md, contracts/message/send-permit-samples.json, contracts/message/check_send_permit.py, contracts/message/README.md, docs/contracts.md` | MESSAGE-SEND@1 wire、判定表、正负样例与参考检查。 |
-| `scripts/test.py` | 加入 check_send_permit.py（门禁只增）。 |
+| `docs/adr/0008-message-send-permit.md, docs/adr/README.md` | ADR-0008 accepted：服务端会话头 CAS 作为发送许可。 |
+| `contracts/message/SEND-PERMIT.md, contracts/message/send-permit-samples.json, contracts/message/check_send_permit.py, contracts/message/README.md, docs/contracts.md` | MESSAGE-SEND@1 wire、判定表、不变量、正负样例与参考检查。 |
+| `scripts/test.py` | 加入 check_send_permit.py（门禁只增，JT 认可）。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 57/57，含 check_send_permit.py 10 项（判定表 10 条、请求体 2 正 10 负）。 | — |
-| pass | `python3 -B scripts/handoff.py check` | 通过。 | — |
-| pass | `独立对抗审查 PR #173` | 第一轮 REQUEST CHANGES 9 项已修正；复审 APPROVE 3d982d9；4 项非阻断建议已在后续提交补入（恢复动作确认负例、跨会话 message_id 冲突、服务端恢复文案、本记录状态）。 | https://github.com/JTCAO515/G2C/pull/173 |
+| pass | `uv run --locked python -B scripts/test.py` | 含 check_send_permit.py 10 项；合并 main 后以 PR 精确 head CI 为准。 | — |
+| pass | `独立对抗审查 PR #173` | REQUEST CHANGES 9 项已修正；APPROVE 3d982d9 与 e65e6b2。 | https://github.com/JTCAO515/G2C/pull/173 |
 
 ## Blockers
 
-- #162 待 JT 批准 ADR-0008；批准并合并前，#163、#164 不能开工；#167 依赖 #164（子票级停点，跳过继续）。
+- #156：中央存储登记缺 TripPendingStore；backend/storage-registry.json 不在允许修改范围，待 JT 授权仅补现状登记（不改政策/行为）或 Claude 安排。父票 #5 挂起，先继续 #157。
+- #163 已解除阻塞（#162 关闭，按 ADR-0008 / MESSAGE-SEND@1 实现）；#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。
 - #159 帮助/隐私/支持文案需 JT 确认（子票级停点）。
 - L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
 
@@ -96,9 +98,9 @@
 
 ## Next Smallest Action
 
-- Action: 开始 #151 S0 Part 2/2：iOS 测试全部进 CI（ios/Modules/**/Package.swift 全覆盖并检查遗漏）、新增 pr-lint；合并后按 docs/plan/issue-plan.md 从 #155 继续。
-- Expected observation: #151 关闭；main CI 包含全部 iOS 模块测试与 pr-lint 且全绿。
-- Resume command: `gh issue view 151 --repo JTCAO515/G2C`
+- Action: 为 #157 提交 PR，等待精确 head 全部 CI 与独立 Codex APPROVE 后正常合并并核验 main、回写 #7；然后 #158。若 JT 先解除 #156 范围阻塞，优先恢复 #156。
+- Expected observation: #157 四框有 L1 证据且通过交付门禁；#156/#159/#162 相关阻塞保持明确。
+- Resume command: `gh issue view 157 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 

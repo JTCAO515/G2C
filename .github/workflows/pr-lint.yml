@@ -1,0 +1,28 @@
+name: pr-lint
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: pr-lint-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-lint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require an Issue reference in the PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python3 - <<'PYTHON'
+          import os, re
+          if not re.search(r"(?i)\b(closes|fixes|resolves|refs)\s+#\d+", os.environ["PR_BODY"]):
+              raise SystemExit("PR body must contain Closes/Fixes/Resolves/Refs #<issue number>")
+          print("Issue reference present")
+          PYTHON

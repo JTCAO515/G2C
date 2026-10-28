@@ -1,6 +1,6 @@
 # ADR-0008 消息发送许可：服务端会话序号作为不可回退的证据
 
-- 状态：proposed（Claude 起草，待 JT 批准；批准后改为 accepted）
+- 状态：accepted（JT 批准，2026-10-28；Claude 起草）
 - 日期：2026-10-27
 - Issue：[#162](https://github.com/JTCAO515/G2C/issues/162)（父票 [#10](https://github.com/JTCAO515/G2C/issues/10) CJ-009）
 - 实现：[#163](https://github.com/JTCAO515/G2C/issues/163) 服务端，[#164](https://github.com/JTCAO515/G2C/issues/164) App
@@ -181,7 +181,7 @@
 ## 已确认 / 证据 / 待决 / 推断
 
 - **已确认事实**：第“背景”节列出的仓库证据。
-- **用户决策**：待 JT 批准本 ADR（ADR 修改属于 ADR-0007 第 3 条的停点）。
+- **用户决策**：JT 2026-10-28 批准本 ADR，并认可 PR #173 修改 `scripts/test.py`（门禁加项）与 handoff。
 - **待验证假设**：
   - 作用域锁加 CAS 在并发下只接受一条消息，加锁的发送状态读取不会出现“回执为空、会话头已越过 s”，二者由 #163 的 PG 并发测试证明；
   - 新可选字段对旧解码器的影响，由 #163 和 #164 验证。
