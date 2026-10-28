@@ -21,14 +21,14 @@
 | Phase | M1：#157 四 Tab 结构与语言验收候选完成，本地原生 iOS 17.5 四项 UI 检查通过，待 PR CI 与独立审查。#156 挂起待范围授权。 |
 | Accepted Issue | #7 CJ-006 / #157：iOS 17.5 四 Tab、记忆入口、语言保留和插件占位；#156 获授权后优先恢复。 |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T15:53:56+00:00 |
+| Last updated | 2026-10-28T02:00:00Z |
 
 ## Active Work
 
 - #151 已关闭（PR #174），#155 与父票 #20 经独立核验关闭；main 56c7153 CI 全绿。
 - #157：新增外部 XCTest 验收入口，普通 App 验证中英四 Tab、语言/导航/草稿与重启；标记为 synthetic 的 readonly Memory 宿主覆盖未配置/空/失败入口、标识保留和插件无额外请求。4 个原生测试全部通过。
 - #156 缺 TripPendingStore 中央登记，目标文件超出允许范围；待 JT 授权仅补登记或 Claude 安排，父票 #5 挂起。首次冷环境求解器超时保留为 #176，独立及串行完整复跑通过。
-- #162 owner Claude，PR #173 待 JT；#159 文案待 JT；#175 为旧 README 暂停文案。
+- #162 由 PR #173 关闭（ADR-0008 accepted，MESSAGE-SEND@1 冻结）；#159 文案待 JT；#175 为旧 README 暂停文案。
 
 ## Accepted Assumptions
 
@@ -50,6 +50,7 @@
 - JT 2026-10-27：仓库可见性当天先改为 PRIVATE，随后又改回 PUBLIC（gh 读回 PUBLIC）；去本机路径和秘密规则继续有效，许可证仍待定。ADR-0005/0006 的 V2 商业决策因此公开可见。
 - accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).
 - accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending.
+- accepted (JT 2026-10-28): ADR-0008 消息发送许可：服务端会话头 CAS 为不可回退的首次发送证据；加锁的发送状态读取；MESSAGE-SEND@1 冻结，MESSAGE-draft.1 POST 撤回；App 真实发送只在 DEBUG 模拟器开发会话按 ADR-0008 第 7 条开放。
 
 ## Architecture Contracts
 
@@ -61,27 +62,21 @@
 
 | Path | Reason |
 | --- | --- |
-| `ios/App/Acceptance/ShellStructureUITests.swift` | 四个原生 UI 测试：普通 App、双语记忆状态入口、语言/标识保留、插件无请求与权限弹窗。 |
-| `ios/App/Acceptance/ShellFixtureApp.swift, ios/App/Acceptance/check_shell_structure.py, ios/App/Acceptance/README.md` | 外部测试工程复用真实 Shell 和只读客户端；隔离 bundle、loopback 合成响应、请求审计与外部证据目录；不进入正式 App target。 |
-| `ios/App/Package.swift` | 验收目录与 macOS 开发配置 target 分离；原 4 个配置测试完整保留。 |
-| `docs/handoff.json, HANDOFF.md` | 同步已关闭 #151/#155/#20、#156 挂起及 #157 验证和下一步。 |
+| `docs/adr/0008-message-send-permit.md, docs/adr/README.md` | ADR-0008 accepted：服务端会话头 CAS 作为发送许可。 |
+| `contracts/message/SEND-PERMIT.md, contracts/message/send-permit-samples.json, contracts/message/check_send_permit.py, contracts/message/README.md, docs/contracts.md` | MESSAGE-SEND@1 wire、判定表、不变量、正负样例与参考检查。 |
+| `scripts/test.py` | 加入 check_send_permit.py（门禁只增，JT 认可）。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups。 | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 私有 PG16/17，11/11 groups，含迁移 up/down/up。 | — |
-| pass | `swift test --package-path ios/Modules/CJShell` | 204 tests。 | — |
-| pass | `swift test --package-path ios/App; swift test --package-path ios/App -c release` | Debug/Release 各 4 tests，验收宿主不进入该包的正式 target。 | — |
-| pass | `python3 -B ios/App/Acceptance/check_shell_structure.py --simulator <iOS-17.5-UDID> --output <external-directory>` | 普通 App 1 test + 标记合成宿主 3 tests，全通过无跳过；截图与 xcresult 在仓库外。实际原生点击、输入、语言重启、6 种状态/语言入口、标识不变与请求审计。 | — |
-| not-run | `PR exact-head CI + independent Codex review` | 待 PR 全部 CI 与独立审查；无自批。 | — |
-| not-run | `Real services / device / VoiceOver / final privacy-support wording` | 本票只关闭 #157 结构与语言，未代替 #158/#159、真实认证/存储或 L2/L3 验收。 | — |
+| pass | `uv run --locked python -B scripts/test.py` | 含 check_send_permit.py 10 项；合并 main 后以 PR 精确 head CI 为准。 | — |
+| pass | `独立对抗审查 PR #173` | REQUEST CHANGES 9 项已修正；APPROVE 3d982d9 与 e65e6b2。 | https://github.com/JTCAO515/G2C/pull/173 |
 
 ## Blockers
 
 - #156：中央存储登记缺 TripPendingStore；backend/storage-registry.json 不在允许修改范围，待 JT 授权仅补现状登记（不改政策/行为）或 Claude 安排。父票 #5 挂起，先继续 #157。
-- #162 OPEN：Claude PR #173 待 JT 批准；#163 等 #162，#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。
+- #163 已解除阻塞（#162 关闭，按 ADR-0008 / MESSAGE-SEND@1 实现）；#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。
 - #159 帮助/隐私/支持文案需 JT 确认（子票级停点）。
 - L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
 
