@@ -1,5 +1,5 @@
 {
-  "version": "1.12.0",
+  "version": "1.13.0",
   "stores": [
     {
       "id": "business",
@@ -317,6 +317,23 @@
           "retention": "UNDECIDED; activation blocked",
           "cleanup_hook": "clear(expectedID:storageState:for:) -> remove(expectedID:) exact SecItemDelete after reconciliation permit; invalidate() does not delete; not automatic with encrypted data present",
           "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+        },
+        {
+          "id": "trip-pending-file",
+          "owner": "CJ-015 / CJ-007",
+          "objects": [
+            "TripPendingStore AES-GCM .trip original-action and proposal snapshots"
+          ],
+          "source": "ios/Modules/CJTripClient/Sources/CJTripClient/TripPendingStore.swift; ios/App/DevelopmentTripHost.swift",
+          "status": "DEBUG_simulator_development_only; production_not_provisioned",
+          "principal_binding": "AES-GCM associated data binds environment/account/purpose/key ID; explicit scoped key provider; Application Support G2CDevelopmentTrip/<environment>/<account> directory 0700 and exclusive files 0600",
+          "sensitive_fields": [
+            "Exact original action UTF8 and confirmation reference",
+            "Proposal snapshot/content hash and action/proposal IDs"
+          ],
+          "retention": "UNDECIDED for production; local original records retained for restart reconciliation; no TTL API",
+          "cleanup_hook": "UNIMPLEMENTED; no resend/delete/TTL API; reopening grants original-action query only; missing keys or invalid storage fail closed without erasure",
+          "restore_fence": "UNIMPLEMENTED; backup restoration and revocation replay remain unaccepted; local restart reconciliation is not backup recovery"
         }
       ]
     },

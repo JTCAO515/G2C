@@ -11,7 +11,8 @@ INVENTORY = ('business','business/message','business/usage','business/memory-aut
  'business/trip-authoritative','business/needs-current-planning','business/feedback-private-actions',
  'business/cleanup-metadata','business/memory-management-actions',
  'checkpoints','checkpoints/run','memory-derived','device-cache','device-cache/encrypted-message-file',
- 'device-cache/sdk-session-keychain','device-cache/message-key-keychain','external-processing')
+ 'device-cache/sdk-session-keychain','device-cache/message-key-keychain',
+ 'device-cache/trip-pending-file','external-processing')
 
 class CleanupTests(unittest.TestCase):
     def setUp(self):
@@ -43,6 +44,7 @@ class CleanupTests(unittest.TestCase):
         self.assertEqual(op.status,'blocked')
         self.assertEqual(len(op.steps),len(INVENTORY)+len(BARRIERS))
         self.assertTrue(any(s.target=='store:business/trip-authoritative' for s in op.steps))
+        self.assertTrue(any(s.target=='store:device-cache/trip-pending-file' for s in op.steps))
         with self.assertRaises(Denied): intent(op,'auth_revocation','call')
 
     def test_missing_manifest_or_inventory(self):
