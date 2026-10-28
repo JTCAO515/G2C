@@ -33,6 +33,9 @@ class Repository:
             cur = conn.cursor()
             cur.execute("SET LOCAL lock_timeout = '5s'")
             cur.execute("SET LOCAL statement_timeout = '10s'")
+            bind_scope = getattr(conn, 'bind_scope', None)
+            if bind_scope is not None:
+                bind_scope(cur)
             cur.execute('SELECT scope FROM cj_trip_scope WHERE scope=%s FOR UPDATE', (self.scope,))
             if cur.fetchone() is None: raise Denied('scope not provisioned')
             self.guard('transaction')
