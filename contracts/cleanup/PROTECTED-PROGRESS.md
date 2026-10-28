@@ -58,11 +58,13 @@ original_result_unknown / original_result_failed。
 close错误/ACK不明/取消同样扣住。
 
 会检查：AUTH 进入与返回前准入、principal 的 issuer/audience 与配置一致、repository.scope
-与 principal 派生 scope 一致、step.target 有界 ID 白名单、exact bytes 与输出上限、步骤上限。不检查：宿主自己的 reader、
+与 principal 派生 scope 一致、step.target 有界 ID 白名单、manifest entry 的 hook_available 与
+step.available 为严格 bool、exact bytes 与输出上限、步骤上限。不检查：宿主自己的 reader、
 resolver、configuration、repository 对象在读取过程中是否被替换；它们是可信服务端组合，
 宿主替换 configuration 只影响之后的读取。journal 回放只保证 journal 与 state 一致、
 scope/operation ID 绑定，不校验持久字段内容；因此每个 step.target 仍按有界 ID 白名单
-校验，不合格整份拒绝，绝不输出正文（#188 审查回归）。
+校验，不合格整份拒绝，绝不输出正文（#188 审查回归）；持久 hook_available 非 bool（null、
+字符串等）同样整份拒绝，不按 truthiness 解释成 hook_unavailable 或可用（#188 第二轮复审）。
 
 同步围栏不是跨worker撤权原子锁；可信Python callback也不是沙箱。查询是该原operation
 的数据库快照，不保证显示后进度永远不变。原CommitUnknown等主异常不映射成未发生/成功，

@@ -32,9 +32,13 @@ def _project(op, max_steps):
     # fields are not validated by journal replay, so the output whitelist is checked here.
     if len(op.steps)>max_steps:
         raise ProgressUnavailable('original progress unavailable')
+    # request() derives step.available as `hook_available and ...`, so a persisted
+    # non-bool would either pass through (null) or be coerced (truthy string).
+    if any(type(e.hook_available) is not bool for e in op.manifest.entries):
+        raise ProgressUnavailable('original progress unavailable')
     steps=[]
     for index,step in enumerate(op.steps):
-        if not _TARGET.fullmatch(step.target):
+        if not _TARGET.fullmatch(step.target) or type(step.available) is not bool:
             raise ProgressUnavailable('original progress unavailable')
         if step.state=='confirmed': reason='original_result_confirmed'
         elif step.state=='unknown': reason='original_result_unknown'

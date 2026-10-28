@@ -136,6 +136,24 @@ class ProgressTests(unittest.TestCase):
                 with psycopg.connect(**ADMIN) as conn:
                     conn.execute('DELETE FROM cj_cleanup_journal_candidate WHERE operation_id=%s',(op.operation_id,))
 
+    def test_non_bool_persisted_hook_available_never_returned(self):
+        # Legal target, journal and state agree; only persisted hook_available is not a bool.
+        principal=replace(self.principal,subject=self.principal.subject+'-available')
+        scope=core.Scope.from_principal('synthetic',principal)
+        m=self.f.manifest
+        target='store:'+m.entries[0].registry_id
+        for index,(bad,capabilities) in enumerate(((None,()),('yes',()),('yes',(target,)),(0,()))):
+            with self.subTest(bad=bad,capabilities=capabilities):
+                manifest=replace(m,entries=(replace(m.entries[0],hook_available=bad),)+m.entries[1:])
+                op=core.request(scope,'available-op-'+str(index),core.digest(b'confirmation'),manifest,capabilities)
+                Repository(self.admin,scope,lambda s:None).create(op)
+                self.verifier.principal=principal
+                try:
+                    with self.assertRaises(ProgressUnavailable):self.reader.read(self.token,op.operation_id)
+                finally:
+                    with psycopg.connect(**ADMIN) as conn:
+                        conn.execute('DELETE FROM cj_cleanup_journal_candidate WHERE operation_id=%s',(op.operation_id,))
+
     def test_scope_cannot_come_from_resolver_or_request(self):
         def wrong(p,e,g): return Repository(self.connection,replace(self.scope,subject='other'),g)
         self.reader.resolve_repository=wrong
