@@ -8,6 +8,7 @@ struct CJProbeApp: App {
     @State private var shell: ShellState
     #if DEBUG && targetEnvironment(simulator)
     @State private var development: DevelopmentTripHost?
+    @State private var developmentAccounts: DevelopmentAccountRoot?
     @State private var developmentFailed = false
     @Environment(\.scenePhase) private var scenePhase
     #endif
@@ -17,11 +18,19 @@ struct CJProbeApp: App {
         _shell = State(initialValue: shell)
         #if DEBUG && targetEnvironment(simulator)
         do {
-            let host = try DevelopmentSessionConfiguration.read(ProcessInfo.processInfo.environment)
-                .map { try DevelopmentTripHost(configuration: $0, shell: shell) }
-            _development = State(initialValue: host)
+            let environment = ProcessInfo.processInfo.environment
+            if environment["G2C_DEV_ACCOUNT_MODE"] != nil {
+                _developmentAccounts = State(initialValue: try DevelopmentAccountRoot(environment: environment, shell: shell))
+                _development = State(initialValue: nil)
+            } else {
+                let host = try DevelopmentSessionConfiguration.read(environment)
+                    .map { try DevelopmentTripHost(configuration: $0, shell: shell) }
+                _development = State(initialValue: host)
+                _developmentAccounts = State(initialValue: nil)
+            }
         } catch {
             _development = State(initialValue: nil)
+            _developmentAccounts = State(initialValue: nil)
             _developmentFailed = State(initialValue: true)
         }
         #endif
@@ -30,8 +39,9 @@ struct CJProbeApp: App {
     var body: some Scene {
         WindowGroup {
             #if DEBUG && targetEnvironment(simulator)
-            ShellView(state: shell, tripContainerHost: development?.trips)
-                .id(development?.id) // host lifetime only; ShellState/language are retained
+            ShellView(state: shell, tripContainerHost: developmentAccounts?.trip?.trips ?? development?.trips,
+                      developmentAccountHost: developmentAccounts?.accounts)
+                .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained
                 .safeAreaInset(edge: .top) {
                     if developmentFailed {
                         Text(shell.language.text("Development trip connection unavailable", "开发行程连接不可用"))
@@ -39,6 +49,11 @@ struct CJProbeApp: App {
                     }
                 }
                 .onChange(of: scenePhase) { _, phase in
+                    if let developmentAccounts {
+                        if phase == .active { developmentAccounts.accounts.resume() }
+                        else { developmentAccounts.accounts.suspend() }
+                        return
+                    }
                     if phase != .active { development?.invalidate() }
                     else if let configuration = DevelopmentSessionConfiguration.read(ProcessInfo.processInfo.environment),
                             development?.trips.isConfigured != true {

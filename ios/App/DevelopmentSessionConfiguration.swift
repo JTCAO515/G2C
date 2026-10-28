@@ -14,16 +14,26 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     let proposalID: String?
     let environmentID: UUID
     let accountID: UUID
+    let subject: String
+    let expiresAt: Double?
 
-    static func read(_ environment: [String: String]) -> Self? {
+    static func readEndpoint(_ environment: [String: String]) -> URL? {
         guard let rawURL = environment["G2C_DEV_API_BASE_URL"],
               var url = URLComponents(string: rawURL), url.scheme == "http", url.host == "127.0.0.1",
               let port = url.port, (1...65535).contains(port), url.user == nil, url.password == nil,
-              url.query == nil, url.fragment == nil, ["", "/"].contains(url.path),
+              url.query == nil, url.fragment == nil, ["", "/"].contains(url.path) else { return nil }
+        url.path = ""
+        return url.url
+    }
+
+    static func environmentNamespace(_ endpoint: URL) -> UUID {
+        namespace("G2C.DEBUG.TRIP.environment|" + endpoint.absoluteString)
+    }
+
+    static func read(_ environment: [String: String]) -> Self? {
+        guard let endpoint = readEndpoint(environment),
               let token = environment["G2C_DEV_TOKEN"], !token.isEmpty, token.utf8.count <= 16384,
               token.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { return nil }
-        url.path = ""
-        guard let endpoint = url.url else { return nil }
         // These local dev-token claims partition simulator storage only. The API
         // remains the JWT/auth authority; no Supabase/production session is created.
         let parts = token.split(separator: ".", omittingEmptySubsequences: false)
@@ -37,8 +47,9 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
         let proposalID = environment["G2C_DEV_PROPOSAL_ID"]
         if let proposalID, proposalID.range(of: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", options: .regularExpression) == nil { return nil }
         return Self(endpoint: endpoint, token: token, proposalID: proposalID,
-            environmentID: namespace("G2C.DEBUG.TRIP.environment|" + endpoint.absoluteString),
-            accountID: namespace("G2C.DEBUG.TRIP.account|https://local.g2c.invalid|" + subject))
+            environmentID: environmentNamespace(endpoint),
+            accountID: namespace("G2C.DEBUG.TRIP.account|https://local.g2c.invalid|" + subject),
+            subject: subject, expiresAt: claims["exp"] as? Double)
     }
 
     private static func namespace(_ value: String) -> UUID {

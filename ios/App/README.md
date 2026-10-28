@@ -29,6 +29,43 @@ replaced by re-reading the draft while its outcome is unknown.
 After that original reaches a verified terminal outcome, a different explicitly
 selected proposal can be read and decided without removing the historical record.
 
+## Local account flow (#161)
+
+An explicit `G2C_DEV_ACCOUNT_MODE=1` selects the account flow instead of the legacy
+direct Trip fixture above. It still requires the exact loopback base URL. Optional
+`G2C_DEV_ACCOUNTS` is a JSON object from display label to operator-supplied local
+token; these inputs remain in memory. Omit it (or use `{}`) to test restoration
+without injecting any token. No production login, password collection or OTP is
+enabled. Account controls remain inside Memory → Account.
+
+Each sign-in first clears visible private content and retires the previous request.
+A protected `GET /v1/message-receipts` verifies current server identity and invitation;
+only then does the host save credential bytes using `KeychainSessionStore` in its
+explicit endpoint-specific namespace (`M1.Development.Active`). No token is written
+to UserDefaults or App files. The Trip host borrows the verified session operation;
+invalidating Trip views does not clear the account's Keychain credential.
+
+Restore is a user action. Relaunch does not automatically load credentials. Logout
+stores the existing nonsecret block marker, so relaunch/restore cannot revive a
+logged-out account. Network uncertainty keeps saved credentials and grants no new
+private view. Backgrounding fences private content; foreground revalidates only
+an already-active in-memory session, without an automatic Keychain load. Account
+switches and logout invalidate outstanding results before callbacks can publish.
+
+Native acceptance uses the actual App, a new private PG with the registered
+migrations, and the signed local API. Its external XCTest project has an isolated
+bundle/Keychain namespace and tests English/Chinese login, switching, logout,
+relaunch without token injection, denied/expired/offline states and delayed old
+responses. A Release variant receives the same development inputs but must remain
+disconnected. The harness scans App files for token bytes; no secrets or runtime
+databases belong in the repository.
+
+```sh
+CJ_PG_BINDIR='<PG17>/bin' uv run --locked python -B \
+  ios/App/Acceptance/check_development_accounts.py \
+  --simulator '<iOS-17.5-UDID>' --output '<external-output-directory>'
+```
+
 ## Reproduce on iOS 17.5
 
 Choose an available iOS 17.5 simulator UDID and a build/evidence directory outside
