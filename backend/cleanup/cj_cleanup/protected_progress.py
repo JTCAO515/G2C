@@ -1,8 +1,11 @@
 """Current authenticated account's existing cleanup progress; no write/wire authority."""
 from dataclasses import dataclass
+import re
 from . import core
 
 INTERFACE = 'CJ-CLEANUP-PROGRESS-READ@0.1.0-rc.2'
+
+_TARGET = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.:/-]{0,191}\Z')
 
 class ProgressUnavailable(Exception): pass
 
@@ -25,11 +28,14 @@ class Configuration:
 
 
 def _project(op, max_steps):
-    # op comes from Repository.query: journal replay already validated scope, ID and steps.
+    # op comes from Repository.query (scope + operation ID bound there). Persisted
+    # fields are not validated by journal replay, so the output whitelist is checked here.
     if len(op.steps)>max_steps:
         raise ProgressUnavailable('original progress unavailable')
     steps=[]
     for index,step in enumerate(op.steps):
+        if not _TARGET.fullmatch(step.target):
+            raise ProgressUnavailable('original progress unavailable')
         if step.state=='confirmed': reason='original_result_confirmed'
         elif step.state=='unknown': reason='original_result_unknown'
         elif step.state=='failed': reason='original_result_failed'

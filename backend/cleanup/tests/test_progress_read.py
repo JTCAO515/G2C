@@ -121,6 +121,21 @@ class ProgressTests(unittest.TestCase):
         self.assertTrue(all(x['state']=='pending' for x in value['steps']))
         self.assertTrue(any(x['target']=='offline_devices' for x in value['steps']))
 
+    def test_illegal_persisted_target_never_returned(self):
+        # journal and state agree; only the persisted registry ID is not a bounded ID.
+        principal=replace(self.principal,subject=self.principal.subject+'-target')
+        scope=core.Scope.from_principal('synthetic',principal)
+        m=self.f.manifest
+        for bad in ('PRIVATE_BODY\ncustomer note','x'*200):
+            with self.subTest(bad=bad[:20]):
+                manifest=replace(m,entries=(replace(m.entries[0],registry_id=bad),)+m.entries[1:])
+                op=core.request(scope,'target-op-'+str(len(bad)),core.digest(b'confirmation'),manifest)
+                Repository(self.admin,scope,lambda s:None).create(op)
+                self.verifier.principal=principal
+                with self.assertRaises(ProgressUnavailable):self.reader.read(self.token,op.operation_id)
+                with psycopg.connect(**ADMIN) as conn:
+                    conn.execute('DELETE FROM cj_cleanup_journal_candidate WHERE operation_id=%s',(op.operation_id,))
+
     def test_scope_cannot_come_from_resolver_or_request(self):
         def wrong(p,e,g): return Repository(self.connection,replace(self.scope,subject='other'),g)
         self.reader.resolve_repository=wrong
