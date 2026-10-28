@@ -29,6 +29,17 @@
 
 session pooler可避免先买IPv4附加项；实际host必须从新项目Connect页读回，不能由region推算。官方同时说明verify-full才校验证书身份；本计划不把require当完整服务端验证。[连接方式](https://supabase.com/docs/guides/database/connecting-to-postgres)。
 
+### Pooler 激活门禁（#182）
+
+接入任何 pooler 前，必须在获准的准确目标（host/port、runtime role、pooler 模式）上取得实际证据：
+
+1. 证明客户端断开/归还后，物理服务端会话是否执行 `DISCARD ALL` 或等效重置；覆盖正常结束、回滚和异常断开，不凭供应商名称或模式推断。
+2. 在该 pooler 后面运行 #182 的同物理连接复用负例：A 事务结束后未绑定读取为0；未重新绑定的后续借用不能读写 A；12 张 M1 表的 SELECT/UPDATE/INSERT、commit/rollback 与污染 scope 拒绝均通过，并保持原跨账号 e2e。
+3. 记录目标、模式、版本、会话/物理连接复用证据和结果；任何重置行为 UNKNOWN、负例失败或证据缺失都不得激活。事务级 scope 和 checkout 污染拒绝不能替代这项真实验证。
+
+M1 只提供真实私有 PG 上的模拟租借/归还测试。云端 pooler、真实账号和资源操作仍需 JT 批准；本门禁不授予连接或修改 Supabase 云配置的权限。
+
+
 Cloud Run对公网invocation的基础设施设置需要明确批准；业务路径仍先走canonical JWT/当前资格/归属检查，不因基础设施公开而匿名放行业务。只向指定测试者发放 App/账号。max1和账单告警都不是保证不会超额的财务硬上限。
 
 ## 3. 准确需要的数据与权威对象

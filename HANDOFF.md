@@ -18,20 +18,20 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #176: fixed code 74dd1da passed three consecutive fresh-checkout PG runs (11/11 each); preparing final PR gates. |
-| Accepted Issue | #176: process-level solver preload, unchanged request budget/TIMEOUT/UNKNOWN, fresh-process and three full-PG acceptance. |
+| Phase | M1 #182 implementation and full local checks passed; preparing exact-head CI/independent review. Next #185, then #163. |
+| Accepted Issue | #8 / #182: LOCAL transaction binding, dirty-checkout refusal, same-physical-connection matrix and C2 pooler gate. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T05:36:12.627860+00:00 |
+| Last updated | 2026-10-28T06:57:47.445671+00:00 |
 
 ## Active Work
 
-- #161 merged via PR #183 as 81fd98e, main CI 40635026257 all five jobs green; #161/#8 boxes updated. #8 remains open for #182.
-- #176 fresh baseline: original 5s cross-day case timed out; request import 22.139932500s of 22.140946750s total, prepare/model under 1ms, engine UNRUN. Hot request 0.005447875s passed. Measurements posted to #176 before code changes.
-- #176 fix: CP-SAT module import at solver initialization; explicit API-factory/worker startup loading; failures escape startup. No budget value, original assertion, request timer or status semantics changed.
-- New startup tests failed in four baseline subcases (two missing preloads, two missing-dependency startups incorrectly succeeded). After fix 3/3 tests pass, including unchanged model-budget TIMEOUT guard. Python57/57 passes.
-- #182 follows #176; #163 WIP remains preserved separately until #182 closes, then rebase/renumber after migration0011/latest manifest. No #159/L2/branch-protection/production-key work.
-- Fresh detached checkout at 74dd1da27c9f28762ce9098bce47fd71894c0a79 with new uv environment completed three serial full PG runs: 130.550s, 101.825s, 100.126s, each exit0/11 suites and clean source. No reruns or source changes between rounds.
-- Fresh-validation evidence published and exact readback verified in #176 comment6461531638. Subsequent commits change only handoff documentation; implementation/tests remain byte-identical to validated74dd1da.
+- #176 merged via PR #184 at da9bd50; main CI40640109983 all five jobs green, original and tightened acceptance boxes updated/closed.
+- #182 baseline real private PG retained A scope after commit/rollback and unbound SELECT saw A; dirty checkout overwrote to B. The same physical PID was observed; this is not a claim about a real cloud pooler.
+- #182 LocalDatabase now returns IDLE with no scope. Transaction-entry hooks install LOCAL MESSAGE/TRIP scopes after isolation setup; direct host with uses same path. Both known M1 authority GUCs are checked at checkout and binding; contamination closes/refuses without overwrite.
+- #181 role checks, RLS policies and applied migrations1..11 remain unchanged. Original12 e2e retained; new commit/rollback A/B reuse matrix covers all12 tables SELECT/UPDATE/INSERT with real PG and simulated lease return only. Expanded e2e15/15 passed.
+- C2-CLOSURE-PLAN now requires actual pooler reset evidence and the reuse matrix through the actual target before activation; cloud resources remain unapproved/UNRUN.
+- JT new sequence: finish #182, then #185, then preserved #163 WIP. #185 rules/scope/source/callers read only so far. Its PR will update issue-plan and add only two AGENTS entries; do not do that cleanup in #182.
+- #163 WIP remains isolated on issue-163-message-send-permit and must be rebased/renumbered after current prerequisites. #159/L2/branch protection/production keys remain JT-owned.
 
 ## Accepted Assumptions
 
@@ -65,21 +65,22 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/feasibility/cj_feasibility/solver.py, backend/cj_api/app.py, backend/agent/cj_agent/worker.py` | Move one-time native dependency loading to explicit startup, outside unchanged request budget. |
-| `backend/feasibility/tests/test_startup.py, backend/feasibility/README.md` | Fresh-process startup/failure and model-budget regression, plus initialization semantics. |
-| `docs/handoff.json, HANDOFF.md` | Record measured failure, candidate checks and required fresh-checkout validation. |
+| `backend/cj_api/local_app.py, backend/message/cj_message/postgres.py, backend/run/cj_run/postgres.py, backend/trip/cj_trip/postgres.py` | IDLE checkout plus transaction-entry LOCAL binding and dirty-scope refusal; no role/policy changes. |
+| `backend/agent/tests/e2e_local.py, backend/agent/tests/transaction_scope_checks.py` | Keep old e2e unchanged and add real-PG same-physical-connection reuse/dirty-state tests. |
+| `backend/README.md, backend/c2-preparation/C2-CLOSURE-PLAN.md` | Describe binding contract and require real pooler reset/negative evidence before activation. |
+| `docs/handoff.json, HANDOFF.md` | Record #176 closure, #182 evidence and JT #185 insertion. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| fail | `Pre-fix cold/hot timing on clean 81fd98e checkout` | Cold TIMEOUT/MODEL_BUDGET_EXHAUSTED: import22.139932500s, prepare0.000254959s, model0.000733s, solve UNRUN. Hot CONDITIONAL_SOLUTION: total0.005447875s. Original budget5.0 unchanged. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461190353 |
-| pass | `unittest test_startup.py before/after fix` | Before:3 tests/4 failing subcases. After:3/3 tests passed. Original model-budget exhaustion remains TIMEOUT/MODEL_BUDGET_EXHAUSTED. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461305561 |
-| pass | `Post-fix timing (same environment, warm filesystem, new process)` | Startup import0.653840875s; first request0.002212250s, hot request0.000675416s, both CONDITIONAL_SOLUTION and request import0. Does not claim startup loading itself became faster. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461305561 |
+| fail | `Pre-fix retained physical connection probe at da9bd50` | A setting survived commit and rollback, unbound SELECT returned1; same physical connection was overwritten to B instead of refused. Synthetic scopes and real PG only. | https://github.com/JTCAO515/G2C/issues/182#issuecomment-6462294335 |
+| pass | `scripts/pg_suites.py e2e before/after new matrix` | Original12/12 maintained; then15/15 with both directions, commit/rollback,12 tables SELECT/UPDATE/INSERT and dirty checkout/transaction closure. No existing e2e removed or altered. | https://github.com/JTCAO515/G2C/issues/182#issuecomment-6462501267 |
 | pass | `uv run --locked python -B scripts/test.py` | 57/57 groups. | — |
-| pass | `Fresh checkout: three consecutive complete scripts/pg_suites.py runs` | Fixed 74dd1da, new checkout/new uv env, three consecutive full runs: 130.550s/101.825s/100.126s; each 11/11 and clean source. Each feasibility_domain:115 passed,14 existing skipped,22 subtests. Raw logs retained outside Git. | https://github.com/JTCAO515/G2C/issues/176#issuecomment-6461531638 |
-| not-run | `Real provider/cloud/OTP/device/deployment` | No external resources used. | — |
-| pass | `AST comparison against 81fd98e` | solve() AST identical after removing only the old in-request CP import; all existing test_solver assertions, budgets, RLS/migrations/contracts/CI unchanged. | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 full groups; e2e15/15 includes original12 unchanged plus reuse/dirty-state matrix; migrations1..11 up/down/up. | — |
+| pass | `Frozen paths and syntax/diff checks` | No changes under migrations/contracts/.github or test.py/pg_suites.py; existing role check unchanged. | — |
+| not-run | `Real pooler reset/cloud/OTP/model/device/deployment` | Local simulated lease return is not actual C2 pooler evidence; activation gate added. | — |
+| pass | `Role/e2e AST comparison; frozen-path diff; handoff/diff checks` | Existing role check and all #181 e2e class ASTs unchanged. No migrations, RLS policy, contracts, CI/test-entry, AGENTS or engineering-rule changes. | — |
 
 ## Blockers
 
@@ -105,9 +106,9 @@
 
 ## Next Smallest Action
 
-- Action: Push/open #176 PR. Final head differs from validated74dd1da only in handoff documentation; require exact-head all CI and independent APPROVE. Merge locked head, confirm main CI, update original and tightened acceptance evidence/close #176. Then #182, then preserved #163 WIP; do not change frozen budgets/RLS/migrations/contracts/CI.
-- Expected observation: Three full-PG results and measured failure retained; CI/review still pending before merge.
-- Resume command: `gh issue view 176 --repo JTCAO515/G2C --comments`
+- Action: Submit #182 PR, require exact-head all CI and independent APPROVE, merge locked head, verify main, update #182 and close #8 only after its child/L0-L1 audit. Then #185: rules first, only two authorized AGENTS entries, three scoped examples, protected boundary/security checks kept, queue synchronized in that PR. Then preserved #163 WIP after rebase/renumbering.
+- Expected observation: No pooler/cloud activation; existing security checks preserved and complete 12-table reuse proof accepted.
+- Resume command: `gh issue view 182 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 
