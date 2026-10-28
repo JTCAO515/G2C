@@ -39,7 +39,7 @@ class SourceTests(unittest.TestCase):
                 conn.execute('INSERT INTO cj_message_scope(scope) VALUES (%s)',(scope,))
                 conn.execute("INSERT INTO cj_message_chat(scope,conversation_id,generation,epoch) VALUES (%s,'chat','gen',1)",(scope,))
                 conn.execute("INSERT INTO cj_run_scope VALUES (%s,'epoch',true)",(scope,))
-        message_raw=json.dumps(dict(version='MESSAGE-draft.1',conversation_id='chat',message_id='message-1',text='PRIVATE_CHAT_SENTINEL',trip_id=None,creation_intent='none')).encode()
+        message_raw=json.dumps(dict(version='MESSAGE-send.1',conversation_id='chat',message_id='message-1',text='PRIVATE_CHAT_SENTINEL',trip_id=None,creation_intent='none',expected_generation='gen',expected_sequence=0)).encode()
         receipt=self.message.receive('fixture-token',message_raw)
         self.binding=Binding(self.scope,receipt.conversation_id,receipt.generation,receipt.message_id,receipt.run_id,receipt.sequence)
         self.run=RunService(resolve(self.verifier.verify('fixture-token').principal,self.scope),lambda _:True)
@@ -105,10 +105,13 @@ class SourceTests(unittest.TestCase):
         with self.assertRaises(ReferenceUnavailable):self.submit()
         self.assertEqual(0,self.count())
 
-    def test_inactive_message_and_expired_run_rejected(self):
+    def test_inactive_message_rejected(self):
         self.sql('UPDATE cj_message_chat SET active=false WHERE scope=%s',self.scope)
         with self.assertRaises(ReferenceUnavailable):self.submit()
-        self.sql('UPDATE cj_message_chat SET active=true WHERE scope=%s',self.scope)
+        self.assertEqual(0,self.count())
+
+    def test_expired_run_rejected(self):
+        # Independent fixture creates a new active conversation; no reactivation.
         self.sql("UPDATE cj_run_record SET expires_at=clock_timestamp()-interval '1 second' WHERE scope=%s",self.scope)
         with self.assertRaises(ReferenceUnavailable):self.submit()
         self.assertEqual(0,self.count())
@@ -160,7 +163,7 @@ class SourceTests(unittest.TestCase):
     def test_message_receipt_not_run_completion(self):
         # A second accepted MESSAGE whose RUN has not been accepted is unavailable.
         self.message.new_run_id=lambda:'run-unaccepted'
-        value=dict(version='MESSAGE-draft.1',conversation_id='chat',message_id='message-2',text='PRIVATE',trip_id=None,creation_intent='none')
+        value=dict(version='MESSAGE-send.1',conversation_id='chat',message_id='message-2',text='PRIVATE',trip_id=None,creation_intent='none',expected_generation='gen',expected_sequence=1)
         self.message.receive('fixture-token',json.dumps(value).encode())
         with self.assertRaises(ReferenceUnavailable):self.submit([dict(kind='message',id='message-2')])
         self.assertEqual(0,self.count())
@@ -169,7 +172,7 @@ class SourceTests(unittest.TestCase):
         # Distinct real bindings with canonical terminal events, never fake diagnostics.
         for index,status in enumerate(('cancelled','unknown'),2):
             self.message.new_run_id=lambda:'run-'+str(index)
-            value=dict(version='MESSAGE-draft.1',conversation_id='chat',message_id='message-'+str(index),text='PRIVATE',trip_id=None,creation_intent='none')
+            value=dict(version='MESSAGE-send.1',conversation_id='chat',message_id='message-'+str(index),text='PRIVATE',trip_id=None,creation_intent='none',expected_generation='gen',expected_sequence=index-1)
             r=self.message.receive('fixture-token',json.dumps(value).encode())
             b=Binding(self.scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
             self.run.accept(b)
@@ -194,7 +197,7 @@ class SourceTests(unittest.TestCase):
 
     def test_run_observation_changes_before_commit_rejected(self):
         self.message.new_run_id=lambda:'queued-run'
-        value=dict(version='MESSAGE-draft.1',conversation_id='chat',message_id='queued-message',text='PRIVATE',trip_id=None,creation_intent='none')
+        value=dict(version='MESSAGE-send.1',conversation_id='chat',message_id='queued-message',text='PRIVATE',trip_id=None,creation_intent='none',expected_generation='gen',expected_sequence=1)
         r=self.message.receive('fixture-token',json.dumps(value).encode())
         b=Binding(self.scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
         self.run.accept(b)

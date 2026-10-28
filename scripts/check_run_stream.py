@@ -59,8 +59,12 @@ def main():
                     if opened.status_code != 200:
                         raise RuntimeError('local conversation setup failed')
                     mid = 'm/+%中文-' + uuid.uuid4().hex
-                    body = json.dumps(dict(version='MESSAGE-draft.1', conversation_id=conversation,
-                        message_id=mid, text=text, trip_id=None, creation_intent='none'), ensure_ascii=False).encode()
+                    status = client.get('/v1/message-send-status', params={'conversation_id': conversation}, headers=headers)
+                    status.raise_for_status()
+                    head = status.json()['head']
+                    body = json.dumps(dict(version='MESSAGE-send.1', conversation_id=conversation,
+                        message_id=mid, text=text, trip_id=None, creation_intent='none',
+                        expected_generation=head['generation'], expected_sequence=head['last_sequence']), ensure_ascii=False).encode()
                     response = client.post('/v1/messages', content=body,
                         headers={**headers, 'Content-Type': 'application/octet-stream'})
                     if response.status_code != 200:

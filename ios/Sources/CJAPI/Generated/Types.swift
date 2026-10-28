@@ -10,6 +10,8 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/probe`.
     /// - Remark: Generated from `#/paths//v1/probe/get(getProbe)`.
     func getProbe(_ input: Operations.getProbe.Input) async throws -> Operations.getProbe.Output
+    /// Accept MESSAGE-send.1 original UTF-8 bytes only. Replay returns the original receipt; a new message requires the matching expected_generation and expected_sequence. MESSAGE-draft.1 POST is rejected, including replay. A stale head returns 409 SEQUENCE_CONFLICT with reconcile_original.
+    ///
     /// - Remark: HTTP `POST /v1/messages`.
     /// - Remark: Generated from `#/paths//v1/messages/post(receiveMessage)`.
     func receiveMessage(_ input: Operations.receiveMessage.Input) async throws -> Operations.receiveMessage.Output
@@ -115,6 +117,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/trip-confirmations`.
     /// - Remark: Generated from `#/paths//v1/trip-confirmations/post(prepareTripConfirmation)`.
     func prepareTripConfirmation(_ input: Operations.prepareTripConfirmation.Input) async throws -> Operations.prepareTripConfirmation.Output
+    /// Read original receipt and active conversation head under the same scope lock
+    ///
+    /// - Remark: HTTP `GET /v1/message-send-status`.
+    /// - Remark: Generated from `#/paths//v1/message-send-status/get(getMessageSendStatus)`.
+    func getMessageSendStatus(_ input: Operations.getMessageSendStatus.Input) async throws -> Operations.getMessageSendStatus.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -126,6 +133,8 @@ extension APIProtocol {
     public func getProbe(headers: Operations.getProbe.Input.Headers = .init()) async throws -> Operations.getProbe.Output {
         try await getProbe(Operations.getProbe.Input(headers: headers))
     }
+    /// Accept MESSAGE-send.1 original UTF-8 bytes only. Replay returns the original receipt; a new message requires the matching expected_generation and expected_sequence. MESSAGE-draft.1 POST is rejected, including replay. A stale head returns 409 SEQUENCE_CONFLICT with reconcile_original.
+    ///
     /// - Remark: HTTP `POST /v1/messages`.
     /// - Remark: Generated from `#/paths//v1/messages/post(receiveMessage)`.
     public func receiveMessage(
@@ -489,6 +498,19 @@ extension APIProtocol {
         try await prepareTripConfirmation(Operations.prepareTripConfirmation.Input(
             headers: headers,
             body: body
+        ))
+    }
+    /// Read original receipt and active conversation head under the same scope lock
+    ///
+    /// - Remark: HTTP `GET /v1/message-send-status`.
+    /// - Remark: Generated from `#/paths//v1/message-send-status/get(getMessageSendStatus)`.
+    public func getMessageSendStatus(
+        query: Operations.getMessageSendStatus.Input.Query,
+        headers: Operations.getMessageSendStatus.Input.Headers = .init()
+    ) async throws -> Operations.getMessageSendStatus.Output {
+        try await getMessageSendStatus(Operations.getMessageSendStatus.Input(
+            query: query,
+            headers: headers
         ))
     }
 }

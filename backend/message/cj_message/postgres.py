@@ -68,9 +68,19 @@ class Transaction:
             raise Unavailable()
 
     def chat(self, cid, generation=None):
+        chat = self.active_head(cid)
+        if chat is None or (generation is not None and chat.generation != generation):
+            raise Unavailable()
+        return chat
+
+    def active_head(self, cid):
         self.cur.execute('SELECT generation, epoch, last_sequence FROM cj_message_chat WHERE scope = %s AND conversation_id = %s AND active FOR UPDATE', (self.scope, cid))
         row = self.cur.fetchone()
-        if row is None or (generation is not None and row[0] != generation):
+        if row is None:
+            return None
+        if (len(row) != 3 or type(row[0]) is not str or not row[0].strip()
+                or type(row[1]) is not int or row[1] < 0
+                or type(row[2]) is not int or row[2] < 0):
             raise Unavailable()
         return Chat(*row)
 

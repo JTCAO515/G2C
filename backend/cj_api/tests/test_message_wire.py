@@ -46,6 +46,8 @@ class TransactionDouble:
                 (generation is not None and generation != self.chats[cid].generation)):
             raise Unavailable()
         return self.chats[cid]
+    def active_head(self, cid):
+        return self.chats.get(cid) if self.active else None
     def insert(self, stored):
         self.inserts_started += 1
         self.rows[stored.receipt.message_id] = stored
@@ -85,16 +87,80 @@ class WireTests(SyntheticFixture):
         self.addCleanup(self.client.close)
         self.headers = {'Authorization':'Bearer '+self.token, 'Content-Type':'application/octet-stream'}
 
-    def raw(self, mid='m-original'):
+    def raw(self, mid='m-original', sequence=0):
         # Whitespace, decomposed Unicode and opaque ID bytes are deliberately retained.
-        return json.dumps(dict(version='MESSAGE-draft.1',conversation_id='c-original',message_id=mid,
-            text='e\u0301 + 中文',trip_id=None,creation_intent='none'),ensure_ascii=False,indent=1).encode()
+        return json.dumps(dict(version='MESSAGE-send.1',conversation_id='c-original',message_id=mid,
+            text='e\u0301 + 中文',trip_id=None,creation_intent='none',
+            expected_generation='generation-original',expected_sequence=sequence),ensure_ascii=False,indent=1).encode()
 
     def post(self, raw=None):
         return self.client.post('/v1/messages',content=self.raw() if raw is None else raw,headers=self.headers)
 
     def query(self, mid='m-original'):
         return self.client.get('/v1/message-receipts?message_id='+quote(mid,safe=''),headers=self.headers)
+
+    def send_status(self, cid='c-original', mid='m-original'):
+        params = {'conversation_id': cid}
+        if mid is not None: params['message_id'] = mid
+        return self.client.get('/v1/message-send-status', params=params, headers=self.headers)
+
+    def test_send_head_cas_and_closed_original_replay(self):
+        initial = self.send_status().json()
+        self.assertIsNone(initial['receipt'])
+        self.assertEqual(initial['head'], dict(conversation_id='c-original',
+                         generation='generation-original', last_sequence=0))
+        receipt = self.post().json()['receipt']
+        conflict = self.post(self.raw('competing'))
+        self.assertEqual(conflict.status_code, 409)
+        self.assertEqual({k: conflict.json()['error'][k] for k in ('code','category','outcome','recovery')},
+                         dict(code='SEQUENCE_CONFLICT', category='conflict', outcome='failed', recovery='reconcile_original'))
+        self.repo.active = False
+        self.assertEqual(self.post().json()['receipt'], receipt)
+        status = self.send_status().json()
+        self.assertEqual(status['receipt'], receipt)
+        self.assertIsNone(status['head'])
+        self.assertEqual(self.query().status_code, 503)  # ordinary source-read guard stays closed
+        self.assertEqual(self.post(self.raw('later', sequence=1)).status_code, 503)
+
+    def test_send_parser_rejects_old_version_missing_and_invalid_head(self):
+        original = json.loads(self.raw())
+        invalid = []
+        old = dict(original, version='MESSAGE-draft.1')
+        del old['expected_generation'], old['expected_sequence']
+        invalid.append(old)
+        for value in (True, 1.0, '0', -1): invalid.append(dict(original, expected_sequence=value))
+        for value in ('', ' ', None): invalid.append(dict(original, expected_generation=value))
+        for field in ('expected_generation', 'expected_sequence'):
+            missing = original.copy(); del missing[field]; invalid.append(missing)
+        for obj in invalid:
+            with self.subTest(obj=obj):
+                response = self.post(json.dumps(obj).encode())
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()['error']['code'], 'INVALID_INPUT')
+        self.assertEqual((self.repo.rows, self.repo.jobs), ({}, {}))
+
+    def test_send_status_query_and_storage_errors_never_become_absence(self):
+        for query in ('', 'conversation_id=', 'conversation_id=a&conversation_id=b',
+                      'conversation_id=a&scope=caller', 'conversation_id=%FF',
+                      'conversation_id=%', 'conversation_id=a&message_id=', 'conversation_id=%00'):
+            with self.subTest(query=query):
+                response = self.client.get('/v1/message-send-status?'+query, headers=self.headers)
+                self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.client.get('/v1/message-send-status?conversation_id=x').status_code, 401)
+        self.post()
+        absent = self.send_status('other').json()
+        self.assertIsNone(absent['receipt']); self.assertIsNone(absent['head'])
+        self.assertIsNone(self.send_status(mid=None).json()['receipt'])
+        self.repo.commit_unknown = True
+        failed = self.send_status()
+        self.assertEqual(failed.status_code, 503)
+        self.assertNotIn('head', failed.json())
+        self.repo.commit_unknown = False
+        def unavailable(): raise Unavailable()
+        self.repo.lock_scope = unavailable
+        failed = self.send_status()
+        self.assertEqual(failed.status_code, 503)
+        self.assertNotIn('receipt', failed.json())
 
     def test_preserves_bytes_receipt_and_idempotence_without_raw_projection(self):
         raw = self.raw()
@@ -114,8 +180,8 @@ class WireTests(SyntheticFixture):
         self.assertEqual(self.post(raw+b' ').status_code,409)
 
     def test_opaque_query_single_decode_and_duplicate_or_invalid_query_rejection(self):
-        for mid in (' + / % & é ', '%2F'):
-            receipt = self.post(self.raw(mid)).json()['receipt']
+        for sequence, mid in enumerate((' + / % & é ', '%2F')):
+            receipt = self.post(self.raw(mid, sequence)).json()['receipt']
             self.assertEqual(self.query(mid).json()['receipt'],receipt)
         for query in ('message_id=a&message_id=b','message_id=a&extra=b','message_id=','message_id=%FF','message_id=%'):
             response = self.client.get('/v1/message-receipts?'+query,headers=self.headers)
@@ -182,7 +248,7 @@ class WireTests(SyntheticFixture):
         self.repo.commit_unknown = False
         self.assertEqual(self.query().json()['receipt']['run_id'],'run-1')
         self.policy.calls = 0;self.policy.deny_at = 4
-        response = self.post(self.raw('m-after-denial'))
+        response = self.post(self.raw('m-after-denial', sequence=1))
         self.assertEqual(response.status_code,503)
         self.assertEqual(response.json()['error']['recovery'],'reconcile_original')
         self.policy.deny_at = None
@@ -208,7 +274,11 @@ class WireTests(SyntheticFixture):
         self.repo.rows['bad'] = Stored(b'private-body',Receipt('bad','c-original','',1,'run-ok','0'*64))
         self.assertEqual(self.query('bad').status_code,503)
         self.assertNotIn('private-body',self.query('bad').text)
-        self.repo.chats['c-original'] = Chat('',0,0)
+        original_insert = self.repo.insert
+        def invalid_insert(stored):
+            object.__setattr__(stored.receipt, 'generation', '')  # boundary corruption fixture
+            original_insert(stored)
+        self.repo.insert = invalid_insert
         invalid_projection = self.post(self.raw('m-invalid-projection'))
         self.assertEqual(invalid_projection.status_code,503)
         self.assertEqual(invalid_projection.json()['error']['recovery'],'reconcile_original')

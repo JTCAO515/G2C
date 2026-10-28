@@ -30,9 +30,10 @@ def provision(scope, ids=('a','b','c')):
         for cid in ids:
             c.execute('INSERT INTO cj_message_chat(scope,conversation_id,generation,epoch) VALUES (%s,%s,%s,0)',(scope,cid,'g-'+cid))
 
-def wire(mid,cid='a',text='合成 original'):
-    return json.dumps(dict(version='MESSAGE-draft.1',conversation_id=cid,message_id=mid,text=text,
-                           trip_id=None,creation_intent='none'),ensure_ascii=False).encode()
+def wire(mid,cid='a',text='合成 original',sequence=0):
+    return json.dumps(dict(version='MESSAGE-send.1',conversation_id=cid,message_id=mid,text=text,
+                           trip_id=None,creation_intent='none',expected_generation='g-'+cid,
+                           expected_sequence=sequence),ensure_ascii=False).encode()
 
 def service(scope): return Service(Repository(connect,scope),lambda:uuid.uuid4().hex)
 
@@ -63,10 +64,10 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual([r.conversation_id for r in service(self.other).conversations()[0]],['private'])
 
     def test_body_history_exact_bytes_highwater_and_epoch(self):
-        self.s.receive(wire('m1')); self.s.receive(wire('m2',text='第二条'))
+        self.s.receive(wire('m1')); self.s.receive(wire('m2',text='第二条',sequence=1))
         first,cursor=self.s.message_history('a',limit=1)
         self.assertEqual(first[0].original_utf8,wire('m1')); self.assertEqual(first[0].text,'合成 original')
-        self.s.receive(wire('m3'))
+        self.s.receive(wire('m3',sequence=2))
         tail,nxt=service(self.scope).message_history('a',cursor)
         self.assertEqual([r.receipt.message_id for r in tail],['m2']); self.assertIsNone(nxt)
         with self.assertRaises(Unavailable): service(self.other).message_history('a',cursor)
@@ -92,7 +93,7 @@ class HistoryTests(unittest.TestCase):
         (PRIVATE/'restart-history.json').write_text(json.dumps({'scope':self.scope,'raw_hex':raw.hex()}))
 
     def test_message_and_draft_old_generation_rejected(self):
-        self.s.receive(wire('m1')); self.s.receive(wire('m2'))
+        self.s.receive(wire('m1')); self.s.receive(wire('m2',sequence=1))
         _,cursor=self.s.message_history('a',limit=1)
         self.s.save_draft('a','g-a',b'old draft',0)
         with connect() as c:
