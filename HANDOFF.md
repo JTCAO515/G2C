@@ -54,6 +54,7 @@
 - accepted (JT 2026-10-27): ADR-0005 proactive fulfillment is V2 scope (backend JT Agent, signals -> cases -> AI execution with human confirmation); V1/P2 scope unchanged. Architecture and model choice remain proposed until the V2a shadow mode (docs/v2/shadow-mode.md).
 - accepted (JT 2026-10-27): ADR-0006 V2 membership Free / Plus / Guardian via Apple IAP; human service bundled; memory never deleted by the system, user-requested deletion always honoured; prices pending.
 - accepted (JT 2026-10-28): ADR-0008 消息发送许可：服务端会话头 CAS 为不可回退的首次发送证据；加锁的发送状态读取；MESSAGE-SEND@1 冻结，MESSAGE-draft.1 POST 撤回；App 真实发送只在 DEBUG 模拟器开发会话按 ADR-0008 第 7 条开放。
+- JT 2026-10-28：插件 Tab 首个插件为滴滴打车，先只做不可操作占位（#194，父票 #7）；队列插入 #163 → #194 → #164。滴滴 MCP Key 由 JT 保管，不进 App/仓库；真实接入属 V2（ADR-0005）。
 
 ## Architecture Contracts
 
