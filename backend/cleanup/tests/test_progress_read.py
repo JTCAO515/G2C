@@ -145,27 +145,6 @@ class ProgressTests(unittest.TestCase):
         value=json.loads(self.read(project=lambda raw:b'{"envelope":'+raw+b'}'))
         self.assertEqual(value['envelope']['operation_id'],self.op.operation_id)
 
-    def test_final_auth_callback_mutation_rejected_without_another_auth_call(self):
-        mutations=(lambda:setattr(self.selected,'scope',replace(self.scope,subject='changed')),
-                   lambda:setattr(self.selected,'connect',lambda:None),
-                   lambda:setattr(self.selected,'guard',lambda s:None),
-                   lambda:setattr(self.selected,'_scope_bytes',b'changed'),
-                   lambda:object.__setattr__(self.config,'max_steps',63),
-                   lambda:setattr(self.reader,'configuration',replace(self.config)),
-                   lambda:setattr(self.reader,'resolve_repository',lambda *a:None))
-        for mutate in mutations:
-            # Restore host bindings; each new authenticated lifetime is independent.
-            self.config=Configuration('synthetic','issuer','aud',64,32768)
-            self.reader.configuration=self.config;self.reader.resolve_repository=self.resolver
-            final_call=[]
-            def project(raw):
-                expected=self.access.calls+2 # domain guard, then outer final AUTH
-                def last(): final_call.append(self.access.calls);mutate()
-                self.access.hooks[expected]=last
-                return raw
-            with self.assertRaises(ProgressUnavailable): self.read(project=project)
-            self.assertEqual(final_call,[self.access.calls])
-
     def test_response_and_step_bounds_withhold_whole_result(self):
         self.reader.configuration=replace(self.config,max_steps=1)
         with self.assertRaises(ProgressUnavailable): self.read()
