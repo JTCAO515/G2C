@@ -20,7 +20,7 @@ if os.environ.get('CJ_ENV') != 'local':
 
 from cj_agent.draft import DraftPublisher
 from cj_agent.provider import DashScopeConfig, DashScopeProvider, FakeProvider, ProviderFailed
-from cj_agent.worker import RunWorker
+from cj_agent.worker import RunWorker, original_context_valid
 from cj_api.local_app import LocalDatabase, ISSUER, scope_for
 from cj_message.domain import Service as MessageService
 from cj_run.core import Service as RunService
@@ -73,10 +73,12 @@ def run_once(database, model, auth_dir):
     results = []
     for scope in scopes(database, auth_dir):
         messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
+        subject = scope.removeprefix('local:' + ISSUER + ':')
         runs = RunService(database.run_repository(scope),
-                          valid=lambda binding, m=messages: m.query(binding.message_id) is not None)
+                          valid=lambda binding, m=messages, s=subject: original_context_valid(
+                              binding, m, lambda: s in invited_subjects(auth_dir)))
         drafts = DraftPublisher(database.trip_repository(scope))
-        guarded_model = InvitedProvider(model, auth_dir, scope.removeprefix('local:' + ISSUER + ':'))
+        guarded_model = InvitedProvider(model, auth_dir, subject)
         results += RunWorker(scope=scope, messages=messages, runs=runs, provider=guarded_model, drafts=drafts).process()
     return results
 

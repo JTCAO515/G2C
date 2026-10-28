@@ -18,19 +18,19 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #165 cancellation implementation and full local verification passed; preparing exact-head CI and independent review. #164 remains blocked on #198 authorization. |
-| Accepted Issue | #11 / #165: original-run cancellation API, cooperative worker stop and immutable terminal protection. |
+| Phase | M1 #166 worker ownership/recovery implemented; final L1/full-suite verification in progress. #164 remains blocked on #198 authorization. |
+| Accepted Issue | #11 / #166: ordered/mutually exclusive worker execution, restart/snapshot recovery and current authorization checks. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T12:02:00.559318+00:00 |
+| Last updated | 2026-10-28T13:31:15.637989+00:00 |
 
 ## Active Work
 
-- #164 iOS candidate remains preserved on issue-164-app-message-send. Client/Shell suites and Release native negative passed; Debug L1 is blocked by canonical history503. #198 requests narrowly scoped local backend/key wiring; async JT approval remains pending. No #198 changes made here.
-- #165 based on latest accepted main96454bf with green CI40667513064, taken under ADR-0007 child-stop skip rule. PR195/196/197 remained unmerged at last check; no proposed parallel-lane rule used as authority.
-- RUN-CANCEL@1 accepts only original MESSAGE id/version. Existing owner context supplies principal/scope/receipt; guarded RUN transaction creates an undispatched original and cancels atomically, preserves existing terminals, and withholds uncertain/postcommit-revoked responses.
-- Worker starts model calls/publication under RUN fence, discards late stream output and closes generators; cancellation does not roll back committed text/candidate references. A busy first advance may cause the existing lock timeout and must return unknown, not fake cancelled. Service.dispatch and USAGE gates unchanged.
-- Full scripts/test.py57/57 and pg_suites.py11/11 passed; e2e22 includes cancellation before dispatch, in-flight answer/draft, gap before second call, preserved committed candidate/completed terminal, real lost commit ACK, account isolation and busy-step unknown.
-- Initial core/worker/guard-reentry failures retained and fixed. HTTP test setup first lacked CJ_ENV; corrected explicit-local setup then baseline main returned404 for all four new API tests, while implementation passes. No failure/skips/CI gate removed.
+- #165 PR #199 merged at 1d12ce4b82d07ce442c749661f0157c7cf67a052; exact head CI and independent APPROVE passed; main CI40686520940 all five jobs green. Child and parent cancellation evidence backfilled.
+- #166: dedicated physical-session per-chat advisory ownership distinguishes a live worker from interrupted execution. Contenders wait; process/session death permits original RUN recovery to unknown without another provider attempt. Existing short RUN cancellation/publication fences remain.
+- #166 actual entry rechecks the existing invitation source and original MESSAGE binding before steps/publication. scripts/run_worker.py has the necessary consumer wiring documented in issue comment6470094167; no policy, key, contract, migration or CI changes.
+- #166 baseline reproduced active-worker invalidation and late output after invitation revocation/unreadability. Actual private-PG/TCP e2e28/28 and test57/57 now pass. Complete PG gate, exact-head CI and independent review in progress.
+- #164 iOS candidate remains preserved, awaiting #198 approval for missing formal history configuration. Native Release negative and module tests passed; Debug L1 remains blocked. No backend/key workaround implemented.
+- Pending PR195/196/197 are not accepted main rules; verify latest queue/ownership before the next ticket. #159/L2/cloud/production keys and branch protection remain JT-owned.
 
 ## Accepted Assumptions
 
@@ -64,22 +64,22 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/run/cj_run/core.py, fixture.py, cancellation.py, backend/run/tests/test_core.py, test_cancel_wire.py, backend/run/README.md` | Atomic original cancel, guarded owner/source mutation, reentrant fixture fence and contract/wire tests. |
-| `backend/agent/cj_agent/worker.py, provider.py, backend/agent/tests/test_worker_cancel.py, cancellation_checks.py, e2e_local.py` | Cooperative terminal handling, fenced step starts/publication, generator cleanup and real PG/signed API cancellation tests. |
-| `backend/cj_api/run_cancel_routes.py, run_events_routes.py, generated.py, contracts/api/openapi.json, ios/Sources/CJAPI/Generated/**` | New RUN-CANCEL@1 only, strict input/configuration boundaries and generated consumers. |
-| `docs/handoff.json, HANDOFF.md` | Record blocked #164/#198 and #165 verified progress under current accepted workflow. |
+| `backend/run/cj_run/core.py, fixture.py, postgres.py` | Dedicated per-chat worker ownership, session loss handling and matching synthetic adapter; transaction-local scope and RLS preserved. |
+| `backend/agent/cj_agent/worker.py, scripts/run_worker.py` | Fence execution with current worker ownership and recheck original host admission before new steps and publication. |
+| `backend/agent/tests/test_worker_ownership.py, ownership_checks.py, e2e_local.py` | Live-worker competition, actual killed process/lost session, current authorization and TCP resume regressions; existing tests retained. |
+| `backend/run/README.md` | Document physical-session requirement, recovery and authorization limits. |
+| `docs/handoff.json, HANDOFF.md` | Record #166 implementation/evidence and preserved #164/#198 stop point. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| fail | `New core/worker/reentry regressions on prior behavior` | Core cancel API absent; worker3/4 cancellation cases failed; guard reentry could call provider after nested cancel in synthetic repository. Failures retained and corrected. | — |
-| fail | `New HTTP tests on baseline96454bf with explicit CJ_ENV=local` | 4/4 fail404; initial test-setup profile error separately retained, not represented as a product regression. | — |
-| pass | `uv run --locked python -B scripts/test.py` | 57/57 groups including new contract examples, input/config/owner/unknown tests. First command-start approval review timed out, single allowed retry ran successfully. | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 11/11 groups; e2e22 with actual low-privilege runtime, unchanged migrations1..12, all original RLS/connection reuse/signature tests retained. | — |
-| pass | `Generated Python/Swift, frozen scope and diff checks` | Python/Swift regenerated from OpenAPI; identical locked Swift generator reused. No local_app, dev_auth, migrations or CI entry/config changes. | — |
-| not-run | `Exact-head CI and independent review` | Pending PR; no merge/closure claim. | — |
-| not-run | `Real provider/cloud/physical device/billing settlement` | Local PG, signed synthetic identities and FakeProvider only; cancellation does not claim forced remote abort/refund. | — |
+| pass | `#165 full local checks, exact-head CI and independent review` | test57/57, PG11/11, e2e22; independent review reproduced22/22 PG and68 unit tests/31 subtests; all head CI/pr-lint green. | https://github.com/JTCAO515/G2C/pull/199#issuecomment-6468738476 |
+| pass | `#165 post-merge main CI40686520940` | Five jobs success on1d12ce4; #165 and parent cancellation evidence updated. | https://github.com/JTCAO515/G2C/actions/runs/40686520940 |
+| fail | `pytest backend/agent/tests/test_worker_ownership.py on #166 baseline` | Second worker returns unknown instead of waiting while the original provider is alive; synthetic storage/thread reproduction only. | — |
+| pass | `uv run --locked python -B scripts/test.py` | 57/57 groups passed on #166 working tree. | — |
+| pass | `scripts/pg_suites.py e2e (final TCP/ownership/authorization round)` | 28/28 passed, including actual TCP disconnect/resume, repeated offset, expired cursor/fresh snapshot, killed subprocess, lost lease, same-chat order and revoked/unreadable invitation. Existing cancellation/RLS tests retained. | — |
+| not-run | `#166 full PG, exact-head CI and independent review` | In progress; merge and closure not established. | — |
 
 ## Blockers
 
@@ -104,9 +104,9 @@
 
 ## Next Smallest Action
 
-- Action: Publish #165 with exact base/head and red-line evidence; require all head CI and independent APPROVE, merge locked head, verify main and backfill #165/#11. If #198 is authorized, implement its local prerequisite then resume preserved #164; otherwise follow the latest accepted queue/owner rules for unblocked work.
-- Expected observation: Cancellation proof remains local L1; #164 is not closed or bypassed; pending permission is not assumed by elapsed time.
-- Resume command: `gh issue view 165 --repo JTCAO515/G2C --comments`
+- Action: Finish #166 final local checks, publish PR, obtain exact-head all-green CI and independent review, merge, verify main, then backfill all four child boxes and parent #11. #167 remains dependent on blocked #164; follow accepted queue thereafter. Resume #198/#164 only when required authorization arrives.
+- Expected observation: Original RUN/text survive reconnect and crash; a live competitor waits; revoked or unknown authorization cannot publish.
+- Resume command: `uv run --locked python -B scripts/pg_suites.py`
 
 ## Rollback
 

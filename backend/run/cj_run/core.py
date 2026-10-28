@@ -16,6 +16,10 @@ class Denied(Exception):
     pass
 
 
+class WorkerOwnershipLost(Exception):
+    """No new step/publication is permitted; a new owner reconciles original state."""
+
+
 TERMINAL = frozenset({'completed', 'failed', 'cancelled', 'context_invalid', 'unknown'})
 KINDS = frozenset({'started', 'text_delta', 'effect_committed'}) | TERMINAL
 
@@ -143,6 +147,7 @@ class Repository(Protocol):
     # stale outer aborts; snapshot adapters need a commit revision fence.
     # Unknown commit => query original binding.
     def transaction(self) -> ContextManager[Transaction]: ...
+    def worker_lease(self, binding: Binding) -> ContextManager[Optional[Callable[[], None]]]: ...
 
 
 class Service:
