@@ -10,7 +10,7 @@ import json
 
 from cj_auth.read_context import ProtectedReadContext
 from cj_needs.boundary import Operation
-from cj_needs.domain import Revision, Snapshot, identifier
+from cj_needs.domain import identifier
 from .validator import evaluate
 
 VERSION = 'CJ-FEASIBILITY-CURRENT-READ@0.1.0-candidate.1'
@@ -38,37 +38,27 @@ class ReadLimits:
 def project_current(operation: Operation, context: ProtectedReadContext, needs_id: str, *, limits: ReadLimits) -> bytes:
     """Only caller-selected input is needs_id; no snapshot, owner, scope or callback.
 
-    Return stays INSIDE the canonical contexts. This function cannot itself attest
-    successful connection cleanup or settle the trusted host environment binding.
+    Return stays INSIDE the canonical contexts. Fresh AUTH before and after this
+    projection is the caller's ProtectedReadBoundary; it is not repeated per read.
     Never publish these bytes outside a future owner-provided strict read seam.
     """
-    if type(operation) is not Operation or type(context) is not ProtectedReadContext or type(limits) is not ReadLimits:
-        raise ReadWithheld('CANONICAL_CONTEXT_REQUIRED')
     try:
         identifier(needs_id)
-        context.require_current()
-        principal = context.principal
-        metadata = operation.metadata
-        if metadata.principal != principal:
+        # Two separately valid lifetimes are not proof of one user: bind them.
+        if operation.metadata.principal != context.principal:
             raise ReadWithheld('PRINCIPAL_BINDING_MISMATCH')
         first = operation.detail(needs_id)
-        context.require_current()
-        if type(first) is not Snapshot or first.needs_id != needs_id:
+        if first is None:
             raise ReadWithheld('RECORD_UNAVAILABLE')
-        if type(first.version) is not int or not 1 <= first.version <= limits.max_revisions:
+        if not 1 <= first.version <= limits.max_revisions:
             raise ReadWithheld('REVISION_BOUND_EXCEEDED')
-        if type(first.content) is not bytes or len(first.content) > limits.max_input_bytes:
+        if len(first.content) > limits.max_input_bytes:
             raise ReadWithheld('INPUT_BOUND_EXCEEDED')
         consumed = len(first.content)
         revisions = []
         for version in range(1, first.version + 1):
-            context.require_current()
             revision = operation.revision(needs_id, version)
-            context.require_current()
-            if (type(revision) is not Revision or revision.needs_id != needs_id
-                    or type(revision.version) is not int or revision.version != version):
-                raise ReadWithheld('REVISION_CHAIN_UNAVAILABLE')
-            if type(revision.content) is not bytes or type(revision.original_input) is not bytes:
+            if revision is None:
                 raise ReadWithheld('REVISION_CHAIN_UNAVAILABLE')
             consumed += len(revision.content) + len(revision.original_input)
             if consumed > limits.max_input_bytes:
@@ -80,7 +70,6 @@ def project_current(operation: Operation, context: ProtectedReadContext, needs_i
             raise ReadWithheld('EVALUATION_INPUT_INVALID')
         if report.status not in ('CONFLICT', 'UNKNOWN'):
             raise ReadWithheld('UNSUPPORTED_EVALUATION_VERDICT')
-        context.require_current()
         # Compact immutable projection. Original source bytes remain in memory
         # and their authorized declaration JSON is included, never lossy coerced.
         checks = []
@@ -108,11 +97,8 @@ def project_current(operation: Operation, context: ProtectedReadContext, needs_i
                 raise ReadWithheld('OUTPUT_BOUND_EXCEEDED')
             output.extend(encoded)
         frozen = bytes(output)
-        context.require_current()
-        last = operation.detail(needs_id)
-        context.require_current()
-        if (type(last) is not Snapshot or last != first
-                or operation.metadata != metadata or context.principal != principal):
+        # Independent transactions: the record must not have advanced while reading history.
+        if operation.detail(needs_id) != first:
             raise ReadWithheld('CURRENT_RECORD_OR_BINDING_CHANGED')
         return frozen
     except ReadWithheld:
