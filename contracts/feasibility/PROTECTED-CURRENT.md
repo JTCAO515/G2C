@@ -40,7 +40,8 @@ The facade supplies only its fixed `project_current` callback to actual
 Snapshot/revision reads, exact history/evaluate validation, limits, complete
 immutable bytes, operation/context principal binding and final current Snapshot
 reread; fresh canonical AUTH at entry and before bytes escape comes from the
-enclosing ProtectedReadBoundary.
+enclosing ProtectedReadBoundary; the projector no longer repeats
+context checks around each read (#186).
 The facade returns the exact producer-returned bytes. No IO, extra encoding,
 projection/provider callback or second auth wrapper follows producer settlement.
 The evaluator still reports only local CONFLICT/UNKNOWN and overall UNKNOWN.

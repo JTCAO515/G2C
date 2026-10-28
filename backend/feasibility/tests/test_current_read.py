@@ -140,6 +140,16 @@ class PrivateReadTests(unittest.TestCase):
         self.identity.subject='synthetic-b'
         with self.assertRaises(ReadWithheld) as other:self.read()
         self.assertEqual(absent.exception.code,other.exception.code)
+    def test_operation_and_context_of_different_users_withheld(self):
+        other=Identity();other.subject='synthetic-b'
+        auth_b=ProtectedReadBoundary(AdmissionChecker(other,other,clock=lambda:other.now),
+                                     max_response_bytes=LIMITS.max_output_bytes)
+        def outer(context_b):
+            return self.boundary.with_operation('synthetic-only',
+                lambda op_a:project_current(op_a,context_b,'synthetic-needs',limits=LIMITS))
+        with self.assertRaises(ReadWithheld) as failure:auth_b.with_read_context('synthetic-only',outer)
+        self.assertEqual(failure.exception.code,'PRINCIPAL_BINDING_MISMATCH')
+        self.assertEqual(self.opened,0)
     def test_expired_unknown_and_missing_configuration_do_not_read(self):
         self.identity.now=1001
         with self.assertRaises(Exception):self.read()

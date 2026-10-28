@@ -44,6 +44,9 @@ def project_current(operation: Operation, context: ProtectedReadContext, needs_i
     """
     try:
         identifier(needs_id)
+        # Two separately valid lifetimes are not proof of one user: bind them.
+        if operation.metadata.principal != context.principal:
+            raise ReadWithheld('PRINCIPAL_BINDING_MISMATCH')
         first = operation.detail(needs_id)
         if first is None:
             raise ReadWithheld('RECORD_UNAVAILABLE')

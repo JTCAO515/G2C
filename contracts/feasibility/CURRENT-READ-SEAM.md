@@ -43,8 +43,9 @@ encoded = project_current(operation, protected_read_context, explicit_needs_id,
 ```
 
 Callers pass the canonical Operation and ProtectedReadContext from the enclosing
-read lifetimes; their types are not re-checked here (trusted composition, see
-#185). An inactive or retired operation handle still refuses reads. Reads use
+read lifetimes; their Python types are not re-checked here (trusted composition,
+see #185), but their principals must match (below). An inactive or retired
+operation handle still refuses reads. Reads use
 only operation.detail/revision; no private transaction/repository fields.
 
 The consumer captures current Snapshot by needs_id, loads exact revisions 1..n
@@ -62,10 +63,13 @@ revision** in sources; encode that string as UTF8 to recover original bytes.
 No reconstructed command replaces the original source. Full private report bytes
 are iteratively encoded under the explicit output cap, then frozen as exact bytes.
 
-After encoding, it rechecks canonical context, re-reads the current record through
-the same NEEDS operation, checks exact Snapshot equality/metadata/principal, then
-checks canonical context again. This catches changes after history/projection,
-not a claim of a global atomic latest timestamp across independent transactions.
+Before any read, the NEEDS operation's metadata principal must equal the canonical
+read-context principal (`PRINCIPAL_BINDING_MISMATCH` otherwise): two separately
+valid lifetimes are not proof of one user. After encoding, it re-reads the current
+record through the same NEEDS operation and requires exact Snapshot equality. This
+catches changes after history/projection, not a claim of a global atomic latest
+timestamp across independent transactions. Fresh canonical AUTH at entry and before
+bytes escape belongs to the enclosing ProtectedReadBoundary (2026-10-28, #186).
 No operation handles, mutable reports, generators, database cursor or lazy encoder
 are returned. There are no domain writes during evaluation; fixture seeding is
 separate and synthetic.
