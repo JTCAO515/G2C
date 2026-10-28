@@ -15,9 +15,15 @@ struct MemoryContainerGroups: View {
             if host.selectGroup(group, context: action) { state.memoryPath.append(.memoryItems) }
         }
         .disabled(host.busy)
-        Button(state.language.text("Load groups", "读取分组")) {
+        Button {
             Task { await host.loadGroups(context: action) }
-        }.disabled(action == nil)
+        } label: {
+            Text(host.isConfigured ? state.language.text("Load groups", "读取分组")
+                 : state.language.text("Load groups — unavailable", "读取分组——不可用"))
+                .foregroundStyle(Color(uiColor: .label)).fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }.buttonStyle(ShellReadableButtonStyle()).disabled(action == nil)
         if host.isSynthetic {
             Text(state.language.text("Synthetic test data", "合成测试数据")).font(.caption)
         }

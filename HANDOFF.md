@@ -18,17 +18,19 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1：#157 四 Tab 结构与语言验收候选完成，本地原生 iOS 17.5 四项 UI 检查通过，待 PR CI 与独立审查。#156 挂起待范围授权。 |
-| Accepted Issue | #7 CJ-006 / #157：iOS 17.5 四 Tab、记忆入口、语言保留和插件占位；#156 获授权后优先恢复。 |
+| Phase | M1：#158 本地全部必需检查通过，提交 PR 等精确 head CI 与独立审查；完成后按 JT 要求暂停。 |
+| Accepted Issue | #7 CJ-006 / #158：模拟器 L1 AX 审计、动态字体、关键状态与 Muse 交互；实际 VoiceOver 已按 ADR-0007 转记 L3 #29。 |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-27T15:53:56+00:00 |
+| Last updated | 2026-10-28T01:42:21.581033+00:00 |
 
 ## Active Work
 
-- #151 已关闭（PR #174），#155 与父票 #20 经独立核验关闭；main 56c7153 CI 全绿。
-- #157：新增外部 XCTest 验收入口，普通 App 验证中英四 Tab、语言/导航/草稿与重启；标记为 synthetic 的 readonly Memory 宿主覆盖未配置/空/失败入口、标识保留和插件无额外请求。4 个原生测试全部通过。
-- #156 缺 TripPendingStore 中央登记，目标文件超出允许范围；待 JT 授权仅补登记或 Claude 安排，父票 #5 挂起。首次冷环境求解器超时保留为 #176，独立及串行完整复跑通过。
-- #162 owner Claude，PR #173 待 JT；#159 文案待 JT；#175 为旧 README 暂停文案。
+- #151/#155/#20 已完成；#157 经 PR #177 合并为 e36672a，main CI 40537842558 全绿，父票 #7 对应四框已勾。
+- #158：修复动态字体、对比度、中文换行与记忆入口点击；普通 App 全量 AX、4 项合成状态/混合输入/键盘/长文、4 项结构回归全部通过；Python56、PG11、CJShell204通过。
+- Apple 官方确认 VoiceOver 不在 Simulator 提供。按 ADR-0007 第 1 条，实际设备听读/焦点/激活保留未勾并转记现有 #29，#7/#158/#29 已互相回链；不改里程碑/队列或执行真机操作。
+- #156 等 JT 授权仅补 TripPendingStore 中央登记（目标文件超出子票原范围），#5 挂起；#176 保留冷环境求解器预算失败，未提高预算。
+- #159 文案待 JT；#162 owner Claude、PR #173 待 JT；#163/#164/#167 依赖仍阻塞。#175 为旧 README 文案。
+- 本轮完成 #158 后暂停（JT 当前指令）；不自动执行后续队列。实际 VoiceOver 保持 L3 #29 UNRUN。
 
 ## Accepted Assumptions
 
@@ -61,26 +63,25 @@
 
 | Path | Reason |
 | --- | --- |
-| `ios/App/Acceptance/ShellStructureUITests.swift` | 四个原生 UI 测试：普通 App、双语记忆状态入口、语言/标识保留、插件无请求与权限弹窗。 |
-| `ios/App/Acceptance/ShellFixtureApp.swift, ios/App/Acceptance/check_shell_structure.py, ios/App/Acceptance/README.md` | 外部测试工程复用真实 Shell 和只读客户端；隔离 bundle、loopback 合成响应、请求审计与外部证据目录；不进入正式 App target。 |
-| `ios/App/Package.swift` | 验收目录与 macOS 开发配置 target 分离；原 4 个配置测试完整保留。 |
-| `docs/handoff.json, HANDOFF.md` | 同步已关闭 #151/#155/#20、#156 挂起及 #157 验证和下一步。 |
+| `ios/App/Acceptance/ShellAccessibilityUITests.swift, ShellFixtureApp.swift, ShellStructureUITests.swift, check_shell_structure.py, README.md` | 新增五项 AX/关键状态/最大字体/混合输入/键盘/长文原生验收；保留四项结构回归；测试工程和证据在仓库外。 |
+| `ios/Modules/CJShell/Sources/CJShell/AssistantShell.swift, ShellView.swift, MemoryShell.swift, MemoryContainerViews.swift, TripShell.swift, PublicInformation.swift` | 对比度、标题/状态无障碍语义、固定设置入口动态布局、禁用状态明确可读、大字号助手布局；不改业务权限或原有公开内容字义。 |
+| `docs/handoff.json, HANDOFF.md` | 记录 #158 实际验证、早期失败、真实 VoiceOver UNRUN、阻塞子票与本轮完成后暂停的指令。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `uv run --locked python -B scripts/test.py` | 56/56 groups。 | — |
-| pass | `uv run --locked python -B scripts/pg_suites.py` | 私有 PG16/17，11/11 groups，含迁移 up/down/up。 | — |
-| pass | `swift test --package-path ios/Modules/CJShell` | 204 tests。 | — |
-| pass | `swift test --package-path ios/App; swift test --package-path ios/App -c release` | Debug/Release 各 4 tests，验收宿主不进入该包的正式 target。 | — |
-| pass | `python3 -B ios/App/Acceptance/check_shell_structure.py --simulator <iOS-17.5-UDID> --output <external-directory>` | 普通 App 1 test + 标记合成宿主 3 tests，全通过无跳过；截图与 xcresult 在仓库外。实际原生点击、输入、语言重启、6 种状态/语言入口、标识不变与请求审计。 | — |
-| not-run | `PR exact-head CI + independent Codex review` | 待 PR 全部 CI 与独立审查；无自批。 | — |
-| not-run | `Real services / device / VoiceOver / final privacy-support wording` | 本票只关闭 #157 结构与语言，未代替 #158/#159、真实认证/存储或 L2/L3 验收。 | — |
+| pass | `uv run --locked python -B scripts/test.py` | 56/56 passed；无数据库套件。 | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | 全新私有 PG：11/11 suites；未放宽求解器预算或断言。 | — |
+| pass | `swift test --package-path ios/Modules/CJShell` | 204 tests / 28 suites；iOS 源码另由原生 App XCTest 构建覆盖。 | — |
+| pass | `check_shell_structure.py (structure)` | iOS17.5 普通 App 1 + 合成宿主 3 tests，零失败零跳过；语言/草稿/导航与只读请求回归。 | — |
+| pass | `check_shell_structure.py --suite accessibility` | iOS17.5 原生 5 tests 零失败零跳过：四首页/语言页完整 AX；助手6状态双语、Trip/Memory4状态双语、最大字体、中英混合输入/键盘/长文。合成样例明确标识、仅 GET、无写能力。 | — |
+| fail | `Prior #158 AX audit runs` | 保留早期 contrast/dynamic type/clipping 和记忆同列表行导航误入的失败；逐项修复，未过滤 audit issue，未删断言。 | — |
+| not-run | `Real VoiceOver / real device` | 实际听读、焦点和激活转记 L3 #29；模拟器 AX 不替代。 | https://github.com/JTCAO515/G2C/issues/29#issuecomment-6447261832 |
 
 ## Blockers
 
-- #156：中央存储登记缺 TripPendingStore；backend/storage-registry.json 不在允许修改范围，待 JT 授权仅补现状登记（不改政策/行为）或 Claude 安排。父票 #5 挂起，先继续 #157。
+- #156：中央存储登记缺 TripPendingStore；backend/storage-registry.json 不在允许修改范围，待 JT 授权仅补现状登记（不改政策/行为）或 Claude 安排。父票 #5 挂起，已跳过，恢复执行时优先核对授权。
 - #162 OPEN：Claude PR #173 待 JT 批准；#163 等 #162，#164 等 #163，#167 等 #164 与 #165（子票级停点，跳过继续）。
 - #159 帮助/隐私/支持文案需 JT 确认（子票级停点）。
 - L2/L3：真实 OTP、真实模型 App 联调、真机均需 docs/authorizations/M1.md 中 JT 批准的条目；目前清单为空。
@@ -103,9 +104,9 @@
 
 ## Next Smallest Action
 
-- Action: 为 #157 提交 PR，等待精确 head 全部 CI 与独立 Codex APPROVE 后正常合并并核验 main、回写 #7；然后 #158。若 JT 先解除 #156 范围阻塞，优先恢复 #156。
-- Expected observation: #157 四框有 L1 证据且通过交付门禁；#156/#159/#162 相关阻塞保持明确。
-- Resume command: `gh issue view 157 --repo JTCAO515/G2C --comments`
+- Action: 完成 #158 PR 的精确 head 全 CI 与独立审查后合并，核验 main 并回写 #158/#7，然后按 JT 指令暂停；不领取下一张。恢复时先核 #156 范围授权、#159 JT 文案和 #162 状态，仍阻塞则下一可执行票 #160。
+- Expected observation: #158 的 L0/L1 框有实际证据；真实 VoiceOver 仍在 #29 保持 UNRUN，不弱化门禁。
+- Resume command: `gh issue view 158 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 

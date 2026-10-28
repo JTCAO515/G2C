@@ -36,7 +36,7 @@ import SwiftUI
 struct LaunchInformationSection: View {
     let language: ShellLanguage
     var body: some View {
-        Section(language.text("Launch and plans", "首发与方案")) {
+        Section {
             Text(language.text("Free at launch", "首发免费")).font(.headline)
             Text(language.text("Account verification and invited access are still required where applicable.", "仍须按适用要求验证账号与受邀资格。"))
             ForEach(ShellFuturePlan.allCases, id: \.self) { plan in
@@ -44,7 +44,7 @@ struct LaunchInformationSection: View {
             }
             Text(language.text("These are placeholders for future subscription plans. Plan benefits are not confirmed. No purchase, billing, subscription or paid access is enabled here; a paid service is not being offered.", "以上仅为未来订阅档位展示占位，方案权益尚未确认。此处未启用购买、扣费、订阅或付费权益，不代表已提供付费服务。"))
                 .font(.footnote).fixedSize(horizontal: false, vertical: true)
-        }
+        } header: { ShellSectionHeading(title: language.text("Launch and plans", "首发与方案")) }
     }
     private func placeholder(_ title: String, amount: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {

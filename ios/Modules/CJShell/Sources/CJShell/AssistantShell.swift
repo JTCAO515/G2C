@@ -1,6 +1,11 @@
 #if os(iOS)
 import SwiftUI
 
+private struct ShellHeaderHeight: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 struct AssistantShell: View {
     @Bindable var state: ShellState
     let messageHost: AssistantMessageHost
@@ -14,14 +19,20 @@ struct AssistantShell: View {
     @State private var panel: Panel?
     @State private var feedbackEntry: FeedbackContainerEntry?
     @FocusState private var draftFocused: Bool
-    @ScaledMetric(relativeTo: .body) private var headerClearance = 112.0
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var headerHeight: CGFloat = 0
+    @ScaledMetric(relativeTo: .body) private var controlIconSize = 20.0
 
     var body: some View {
         let answerEntry = feedbackHost.captureEntry()
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Keeps meaningful content reachable below the separate floating controls.
-                Color.clear.frame(height: draftFocused ? 80 : headerClearance).accessibilityHidden(true)
+                Color.clear.frame(height: dynamicTypeSize.isAccessibilitySize ? 0 : headerHeight + 12)
+                    .accessibilityHidden(true)
+                if !messageHost.isConfigured {
+                    ShellStatusView(state: state.assistantState, language: state.language)
+                }
+                unavailableHint
                 if let bodyText, !runHost.isShowingOriginal {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                     Button(state.language.text("Report a problem with this answer", "反馈此回答的问题")) {
@@ -33,15 +44,24 @@ struct AssistantShell: View {
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language)
                 MessageRecoveryStatus(host: messageHost, language: state.language)
-                if !messageHost.isConfigured {
-                    ShellStatusView(state: state.assistantState, language: state.language)
-                }
             }
             .padding(.horizontal)
             .padding(.bottom)
         }
         .scrollDismissesKeyboard(.interactively)
-        .overlay(alignment: .top) { floatingControls }
+        .clipped()
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear.frame(height: dynamicTypeSize.isAccessibilitySize ? headerHeight + 8 : 0)
+                .accessibilityHidden(true)
+        }
+        .overlay(alignment: .top) {
+            floatingControls.background {
+                GeometryReader { geometry in
+                    Color.clear.preference(key: ShellHeaderHeight.self, value: geometry.size.height)
+                }
+            }
+        }
+        .onPreferenceChange(ShellHeaderHeight.self) { headerHeight = $0 }
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -98,7 +118,7 @@ struct AssistantShell: View {
             .accessibilityIdentifier("assistant.history")
             Spacer(minLength: 8)
             VStack(spacing: 4) {
-                BrandAvatar(compact: draftFocused)
+                BrandAvatar(compact: draftFocused || dynamicTypeSize.isAccessibilitySize)
                 if !draftFocused {
                     Text(state.language.text("Assistant", "助手")).font(.headline)
                 }
@@ -118,7 +138,7 @@ struct AssistantShell: View {
             HStack(alignment: .bottom, spacing: 4) {
                 unavailableIcon("plus", english: "Attachments — not available", chinese: "附件——尚未开放")
                 TextField(state.language.text("Start chatting", "开始聊天"), text: $state.draft, axis: .vertical)
-                    .lineLimit(1...5)
+                    .lineLimit(1...(dynamicTypeSize.isAccessibilitySize ? 3 : 5))
                     .focused($draftFocused)
                     .padding(.vertical, 12)
                     .accessibilityLabel(state.language.text("Message draft", "消息草稿"))
@@ -131,17 +151,23 @@ struct AssistantShell: View {
             }
             .padding(.horizontal, 4)
             .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 28))
-            Text(draftFocused
-                 ? state.language.text("Sending unavailable", "发送尚未开放")
-                 : state.language.text("Sending, attachments, voice and gifts are not available yet.", "发送、附件、语音和礼物尚未开放。"))
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal).padding(.vertical, 8)
         .background(.regularMaterial)
     }
 
+    private var unavailableHint: some View {
+        Text(draftFocused
+                 ? state.language.text("Sending unavailable", "发送尚未开放")
+                 : state.language.text("Sending, attachments, voice and gifts are not available yet.", "发送、附件、语音和礼物尚未开放。"))
+                .font(.caption).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+    }
+
     private func unavailableIcon(_ symbol: String, english: String, chinese: String) -> some View {
-        Button {} label: { Image(systemName: symbol).frame(minWidth: 44, minHeight: 44) }
+        Button {} label: {
+            Image(systemName: symbol).font(.system(size: min(controlIconSize, 32)))
+                .frame(minWidth: 44, minHeight: 44)
+        }
             .disabled(true)
             .accessibilityLabel(state.language.text(english, chinese))
     }

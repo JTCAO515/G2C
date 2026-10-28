@@ -12,39 +12,60 @@ struct MemoryShell: View {
     var body: some View {
         NavigationStack(path: $state.memoryPath) {
             List {
-                Section(language.text("Your memories", "你的记忆")) {
+                Section {
                     MemoryContainerGroups(host: memoryHost, state: state)
-                    NavigationLink(language.text("Add memory", "新增记忆"), value: MemoryRoute.manualMemory)
+                    route(language.text("Add memory", "新增记忆"), to: .manualMemory, identifier: "memory.add")
+                } header: { ShellSectionHeading(title: language.text("Your memories", "你的记忆")) }
+                Section {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ShellSectionHeading(title: language.text("Me", "我的")).padding(.vertical, 8)
+                        route(language.text("Account", "账号"), to: .account, identifier: "memory.account")
+                        Divider()
+                        route(language.text("Language", "语言"), to: .language, identifier: "memory.language")
+                        ShellSectionHeading(title: language.text("Information", "说明")).padding(.top, 16).padding(.bottom, 8)
+                        route(language.text("Help", "帮助"), to: .help, identifier: "memory.help")
+                        Divider()
+                        route(language.text("Privacy facts draft", "隐私事实草稿"), to: .privacy, identifier: "memory.privacy")
+                        Divider()
+                        route(language.text("Support", "支持"), to: .support, identifier: "memory.support")
+                        Divider()
+                        route(language.text("Feedback", "问题反馈"), to: .feedback(feedbackHost.captureEntry()), identifier: "memory.feedback")
+                    }
                 }
-                Section(language.text("Me", "我的")) {
-                    NavigationLink(language.text("Account", "账号"), value: MemoryRoute.account)
-                    NavigationLink(language.text("Language", "语言"), value: MemoryRoute.language)
-                }
-                Section(language.text("Information", "说明")) {
-                    NavigationLink(language.text("Help", "帮助"), value: MemoryRoute.help)
-                    NavigationLink(language.text("Privacy facts draft", "隐私事实草稿"), value: MemoryRoute.privacy)
-                    NavigationLink(language.text("Support", "支持"), value: MemoryRoute.support)
-                    NavigationLink(language.text("Feedback", "问题反馈"), value: MemoryRoute.feedback(feedbackHost.captureEntry()))
-                }
-                LaunchInformationSection(language: language)
             }
             .navigationTitle(ShellTab.memory.title(language))
             .navigationDestination(for: MemoryRoute.self) { route in destination(route) }
         }
     }
 
+    private func route(_ title: String, to destination: MemoryRoute, identifier: String) -> some View {
+        Button { state.memoryPath.append(destination) } label: {
+            HStack {
+                Text(title).font(.body).foregroundStyle(Color(uiColor: .label))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier(identifier + ".label")
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                    .foregroundStyle(Color(uiColor: .label)).accessibilityHidden(true)
+            }.frame(minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain).accessibilityIdentifier(identifier)
+    }
+
     @ViewBuilder private func destination(_ route: MemoryRoute) -> some View {
         switch route {
         case .language:
             Form {
-                Picker(language.text("Language", "语言"), selection: Binding(get: { state.language }, set: { state.selectLanguage($0) })) {
+                Picker(selection: Binding(get: { state.language }, set: { state.selectLanguage($0) })) {
                     Text("English").tag(ShellLanguage.english)
                     Text("简体中文").tag(ShellLanguage.chinese)
-                }.pickerStyle(.inline)
+                } label: { ShellSectionHeading(title: language.text("Language", "语言")) }
+                .pickerStyle(.inline)
                 if state.invalidStoredLanguage {
                     Text(language.text("The saved language is unsupported. English is shown until you select a language.", "已保存的语言暂不支持。选择语言前将显示英文。"))
                 }
-                Text(language.text("Saved on this device. Switching language keeps your current navigation and unsent draft.", "保存在此设备。切换语言会保留当前导航和未发送草稿。"))
+                Text(language.text("Saved on this device. Switching language keeps your current navigation and unsent draft.", "保存在此设备。\n切换语言会保留当前导航和未发送草稿。"))
+                    .font(.body.leading(.loose)).fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
             }.navigationTitle(language.text("Language", "语言"))
         case .group(let group):
             List {
