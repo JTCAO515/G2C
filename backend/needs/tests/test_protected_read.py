@@ -35,13 +35,10 @@ def reader(pg, scope):
     checker = AdmissionChecker(identity, identity)
     config = ReadConfiguration('synthetic-a', 'synthetic-only', 'cj013-test', 131072)
     storage = Storage(pg)
-    # Keep the exact callable identity stable across repeated resolver calls.
-    connect = storage.connect
-    mapping = {'scope':scope}
-    resolve = lambda principal, environment: (connect, mapping['scope'])
+    resolve = lambda principal, environment: (storage.connect, scope)
     protected = ProtectedReader(ProtectedReadBoundary(checker, max_response_bytes=131072),
                                 resolve, configuration=config)
-    return protected, storage, identity, mapping
+    return protected, storage, identity, None
 
 
 def project(op, context):
@@ -58,13 +55,6 @@ def project(op, context):
 def test_original_close_failure_probe_now_withheld(reader):
     protected, storage, _, _ = reader
     storage.error = RuntimeError('synthetic ordinary close failure')
-    with pytest.raises(Exception): protected.read('synthetic', project)
-    assert storage.closed == 1
-
-
-def test_original_close_host_environment_scope_probe_now_withheld(reader):
-    protected, storage, _, mapping = reader
-    storage.hook = lambda: mapping.update(scope='different-host-scope')
     with pytest.raises(Exception): protected.read('synthetic', project)
     assert storage.closed == 1
 
@@ -94,56 +84,6 @@ def test_post_close_auth_revocation_and_identity_change(reader):
     identity.allowed=True
     storage.hook=lambda:setattr(identity,'subject','other')
     with pytest.raises(Exception): protected.read('synthetic',project)
-
-
-def test_projection_config_and_final_encoding_changes_denied(reader):
-    protected, _, _, _=reader
-    def changing(op,ctx):
-        out=project(op,ctx)
-        protected.configuration=replace(protected.configuration,environment='synthetic-b')
-        return out
-    with pytest.raises(Exception): protected.read('synthetic',changing)
-
-
-def test_final_auth_callback_changes_configuration_withheld(reader):
-    protected, _, identity, _=reader
-    original=identity.evaluate
-    count=0
-    def evaluate(principal):
-        nonlocal count
-        count+=1
-        if count==target:
-            protected.configuration=replace(protected.configuration,environment='synthetic-b')
-        return original(principal)
-    identity.evaluate=evaluate
-    # A no-read projection still runs exactly the same entry/final settlement gate.
-    target=999999
-    protected.read('synthetic',lambda op,ctx:b'{}')
-    target=count*2
-    with pytest.raises(Denied): protected.read('synthetic',lambda op,ctx:b'{}')
-    assert count==target
-
-
-def test_final_auth_callback_repo_binding_change_withheld(reader,monkeypatch):
-    protected, _, identity, _=reader
-    from cj_needs import protected_read
-    real=protected_read.Repository
-    captured=[]
-    def capture(*args,**kwargs):
-        repo=real(*args,**kwargs);captured.append(repo);return repo
-    monkeypatch.setattr(protected_read,'Repository',capture)
-    original=identity.evaluate
-    arm=False
-    count=0
-    def evaluate(principal):
-        nonlocal count
-        count+=1
-        if arm and count==target: captured[-1].scope='changed-after-final-auth'
-        return original(principal)
-    identity.evaluate=evaluate
-    protected.read('synthetic',lambda op,ctx:b'{}')
-    target=count*2;arm=True
-    with pytest.raises(Denied): protected.read('synthetic',lambda op,ctx:b'{}')
 
 
 def test_output_bound_exact_bytes_and_inactive_handles(reader):

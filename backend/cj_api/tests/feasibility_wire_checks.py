@@ -43,12 +43,12 @@ class Conn:
 class FeasibilityChecks(SyntheticFixture):
     def setUp(self):
         super().setUp();env=patch.dict(os.environ,{'CJ_ENV':'local'});env.start();self.addCleanup(env.stop)
-        self.scope='f-'+self._testMethodName;self.other='b-'+self._testMethodName;self.sql=[];self.opened=self.closed=0;self.close_error=False;self.close_hook=None;self.remapped=False
+        self.scope='f-'+self._testMethodName;self.other='b-'+self._testMethodName;self.sql=[];self.opened=self.closed=0;self.close_error=False;self.close_hook=None
         self.checker=AdmissionChecker(PyJWTVerifier(self.config,self.keys),self.policy)
         self.read_connect=lambda:Conn(self)
         def resolve(principal,environment):
             if environment!='local':raise ValueError('Unconfigured host environment')
-            return self.read_connect,self.scope if principal.subject=='synthetic-user' and not self.remapped else self.other
+            return self.read_connect,self.scope if principal.subject=='synthetic-user' else self.other
         self.resolve=resolve;self.options=FeasibilityConfiguration(10,1048576,131072,262144)
         self.deps=self.dependencies(self.options)
         self.client=TestClient(create_app(_feasibility_dependencies=self.deps));self.addCleanup(self.client.close)
@@ -98,21 +98,9 @@ class FeasibilityChecks(SyntheticFixture):
         corrupt=json.loads(self.originals[0]);corrupt['action_id']='different-original';corrupt['source']['text']='PRIVATE_HISTORY_SENTINEL'
         with connect() as c:c.execute('UPDATE cj_needs_revision SET original_input=%s WHERE scope=%s AND version=1',(json.dumps(corrupt).encode(),self.scope))
         r=self.get();self.assertEqual(r.status_code,503,r.text);self.assertEqual(r.json()['error']['code'],'FEASIBILITY_INPUT_INVALID');self.assertNotIn('evaluation',r.json());self.assertNotIn('PRIVATE_',r.text)
-    def test_strict_first_close_failure_or_remap_withholds_at_wire(self):
+    def test_strict_first_close_failure_withholds_at_wire(self):
         self.close_error=True;r=self.get();self.assertEqual(r.status_code,503);self.assertEqual(self.opened,1);self.assertEqual(self.closed,1);self.assertNotIn('evaluation',r.json())
-        self.close_error=False;self.opened=self.closed=0;self.close_hook=lambda:setattr(self,'remapped',True)
-        r=self.get();self.assertEqual(r.status_code,503);self.assertEqual(self.opened,1);self.assertEqual(self.closed,1);self.assertNotIn('evaluation',r.json())
-    def test_final_outer_auth_after_complete_base_config_change_withholds(self):
-        target=[None];reader=[None];init=ProtectedReader.__init__;evaluate=self.policy.evaluate;encode=feasibility_routes.encode_response
-        def initialize(obj,*a,**kw):init(obj,*a,**kw);reader[0]=obj
-        def encoded(*a,**kw):
-            raw=encode(*a,**kw);target[0]=self.policy.calls+3;return raw
-        def policy(p):
-            facts=evaluate(p)
-            if self.policy.calls==target[0]:reader[0].configuration=replace(reader[0].configuration,environment='changed-local')
-            return facts
-        with patch.object(ProtectedReader,'__init__',new=initialize),patch.object(feasibility_routes,'encode_response',side_effect=encoded),patch.object(self.policy,'evaluate',side_effect=policy):r=self.get()
-        self.assertIsNotNone(target[0]);self.assertEqual(self.policy.calls,target[0]);self.assertEqual(r.status_code,503,r.text);self.assertNotIn('evaluation',r.json())
+    def test_outer_auth_refusal_closed_before_io(self):
         before=self.opened
         for fact,status in [(Fact.NO,403),(Fact.UNKNOWN,503)]:
             self.policy.invited=fact;self.assertEqual(self.get().status_code,status);self.assertEqual(self.opened,before)

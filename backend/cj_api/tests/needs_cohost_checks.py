@@ -87,7 +87,7 @@ class NeedsCohostChecks(SyntheticFixture):
         self.assertEqual(len({id(repo) for repo in self.repositories}),len(self.repositories));self.assertEqual(self.opened,self.closed)
         with TestClient(create_app(_needs_boundary=self.old,_needs_configuration=self.needs_options,_needs_modules=self.modules)) as old_only:
             self.assertEqual(old_only.get('/v1/needs-feasibility?needs_id=cohost-needs',headers=self.headers).status_code,503)
-    def test_unknown_recovery_legacy_close_and_strict_final_scope(self):
+    def test_unknown_recovery_legacy_close_and_strict_close(self):
         raw=self.raw('original-unknown',dict(party_size=known(2)));self.unknown=True
         r=self.post(raw);self.assertEqual(r.status_code,503,r.text);self.assertEqual(r.json()['error']['recovery'],'reconcile_original');self.assertNotIn('receipt',r.json())
         self.unknown=False;before=self.inventory();receipt=self.get('/v1/needs-action-receipts',action_id='original-unknown').json()['receipt'];self.assertEqual(receipt['version'],1)
@@ -96,15 +96,7 @@ class NeedsCohostChecks(SyntheticFixture):
         self.close_error=True
         legacy=self.get('/v1/needs',needs_id='cohost-needs');self.assertEqual(legacy.status_code,200,legacy.text);self.assertIs(self.repositories[-1].strict_close,False)
         self.opened=self.closed=0;r=self.evaluate();self.assertEqual(r.status_code,503);self.assertNotIn('evaluation',r.json());self.assertEqual((self.opened,self.closed),(1,1));self.assertIs(self.repositories[-1].strict_close,True)
-        self.close_error=False;target=[None];encode=feasibility_routes.encode_response;policy=self.policy.evaluate
-        def encoded(*args,**kwargs):
-            result=encode(*args,**kwargs);target[0]=self.policy.calls+3;return result
-        def evaluate(principal):
-            facts=policy(principal)
-            if self.policy.calls==target[0]:self.last_strict.scope=self.other
-            return facts
-        with patch.object(feasibility_routes,'encode_response',side_effect=encoded),patch.object(self.policy,'evaluate',side_effect=evaluate):r=self.evaluate()
-        self.assertEqual(self.policy.calls,target[0]);self.assertEqual(r.status_code,503);self.assertNotIn('evaluation',r.json())
+        self.close_error=False
         # Retired strict repo mutation never rebinds a new legacy operation.
         restored=self.get('/v1/needs',needs_id='cohost-needs');self.assertEqual(restored.status_code,200,restored.text);self.assertEqual(restored.json()['needs']['version'],1)
         self.assertEqual(self.inventory(),before)

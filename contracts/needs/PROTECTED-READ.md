@@ -1,6 +1,8 @@
 # NEEDS protected read/projection seam
 
-`CJ-NEEDS-PROTECTED-READ@0.1.0-rc.1`, additive to c821b34. Not NEEDS@1.0 freeze.
+`CJ-NEEDS-PROTECTED-READ@0.1.0-rc.2`, additive to c821b34. Not NEEDS@1.0 freeze.
+rc.2 (2026-10-28) removes mid-read re-checks of trusted host composition; see
+"Trust boundary" below. Signature unchanged.
 This is the owner-confirmed producer signature for CJ035 to pin and consume after
 independent gates. Full consumer/root entry remains closed until those gates pass.
 
@@ -27,13 +29,12 @@ logic/types copied or alternative principal policy. Import the new module direct
 legacy `cj_needs` imports keep their previous dependency surface.
 
 The resolver is trusted server composition. It receives the current canonical
-principal plus the captured explicit environment and returns the same **stable
-connect callable identity** and opaque scope for that binding. Every actual
-resolver call is surrounded by fresh canonical AUTH. It must use the supplied
-configuration environment, not a hidden device/request environment or caller owner.
-Environment/configuration changes must replace reader.configuration; no mutable
-hidden environment selector is a supported host contract. No default configuration,
-resolver, scope provisioning, production migration or registered root factory added.
+principal plus the reader's explicit configuration environment and returns
+`(fresh_connect, opaque_scope)` for that principal. It is called once per read,
+after the canonical AUTH entry check. It must use the supplied configuration
+environment, not a hidden device/request environment or caller owner. No default
+configuration, resolver, scope provisioning, production migration or registered
+root factory added.
 
 `reader.read(token, project) -> bytes` accepts one synchronous trusted projector:
 `project(operation: cj_needs.boundary.Operation,
@@ -47,19 +48,23 @@ CJ035's existing fixed projector/evaluator and its input/history limits stay own
 by CJ035; this producer does not reimplement history validation or feasibility.
 
 Each original PG reader opts into strict close: an ordinary close exception or
-cancellation withholds output; after successful close it immediately runs fresh
-AUTH/current-environment binding settlement. This applies only to the new read
-repository. Legacy Boundary, write transactions, receipts, UNKNOWN reconciliation,
-schema and old persisted bytes retain their accepted semantics.
+cancellation withholds output. This applies only to the new read repository.
+Legacy Boundary, write transactions, receipts, UNKNOWN reconciliation, schema and
+old persisted bytes retain their accepted semantics.
 
-After the projector fully encodes **exact bytes**, the seam checks the explicit
-output cap, re-resolves current host binding, and runs canonical AUTH checks.
-The canonical AUTH boundary then executes its final fresh admission callback.
-After that callback and context retirement, the seam performs only callback-free
-comparisons of original reader/auth/resolver/configuration identity and values,
-and original repository/connect/scope/guard/strict-close fields. A changed
-configuration/repository during that final callback refuses the bytes. No resolver,
-AUTH/provider callback, IO, lazy iterator or second encoding follows this last check.
+After the projector returns, the seam requires exact `bytes` within the explicit
+output cap. The canonical AUTH boundary then runs its final fresh admission check
+before any bytes escape, so revocation or identity change during the read refuses
+the output.
+
+## Trust boundary
+
+Checked: canonical AUTH admission at entry and immediately before return
+(ProtectedReadBoundary), principal issuer/audience against configuration, read-only
+operation lifetime, strict close, exact bytes and output cap. Not checked: the
+host's own reader, resolver, configuration and repository objects. They are
+trusted server composition and are not re-resolved or compared during a read;
+a host that replaces `reader.configuration` affects subsequent reads only.
 
 All Operation and AUTH context handles retire on every exit. A read/close/cancel
 failure is unavailable, never missing-data success, rollback proof or permission
@@ -69,8 +74,8 @@ latest record across independent transactions; consumer's final Snapshot reread
 and version equality remain necessary.
 
 Scope of validation: real NEW private Unix-only PostgreSQL plus synthetic canonical
-AUTH. Original two consumer FAILs are reproduced semantically by local tests:
-ordinary close failure and trusted scope remapping on close now withhold. Final
-AUTH configuration/repository mutations, cancelled/escaped handles, strict output
-and read-only denial are also tested. CJ035 integration/independent gates, HTTP,
+AUTH. Ordinary close failure, AUTH revocation/identity change during the read,
+cancelled/escaped handles, reentry, strict output and read-only denial are tested.
+rc.1 tests for host scope remapping on close and host configuration/repository
+mutation during the final AUTH callback were removed with those checks. CJ035 integration/independent gates, HTTP,
 real accounts/App/provider and original Issue I acceptance remain UNRUN.
