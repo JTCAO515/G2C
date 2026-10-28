@@ -17,20 +17,20 @@
 | Field | Current value |
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
-| Status | active |
-| Phase | M1：#158 本地全部必需检查通过，提交 PR 等精确 head CI 与独立审查；完成后按 JT 要求暂停。 |
-| Accepted Issue | #7 CJ-006 / #158：模拟器 L1 AX 审计、动态字体、关键状态与 Muse 交互；实际 VoiceOver 已按 ADR-0007 转记 L3 #29。 |
+| Status | paused |
+| Phase | M1：#158 已经 PR #178 合并，main 6dba3a5 CI 全绿；JT 要求本轮做完后暂停，尚未领取下一张票。 |
+| Accepted Issue | #7 CJ-006 / #158 已完成 L0/L1；#7 尚余 #159 等 JT 文案，实际 VoiceOver 转记 L3 #29。 |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T01:43:45.251145+00:00 |
+| Last updated | 2026-10-28T02:01:42.903740+00:00 |
 
 ## Active Work
 
-- #151/#155/#20 已完成；#157 经 PR #177 合并为 e36672a，main CI 40537842558 全绿，父票 #7 对应四框已勾。
-- #158：修复动态字体、对比度、中文换行与记忆入口点击；普通 App 全量 AX、4 项合成状态/混合输入/键盘/长文、4 项结构回归全部通过；Python57、PG11、CJShell204通过。
-- Apple 官方确认 VoiceOver 不在 Simulator 提供。按 ADR-0007 第 1 条，实际设备听读/焦点/激活保留未勾并转记现有 #29，#7/#158/#29 已互相回链；不改里程碑/队列或执行真机操作。
-- #156 等 JT 授权仅补 TripPendingStore 中央登记（目标文件超出子票原范围），#5 挂起；#176 保留冷环境求解器预算失败，未提高预算。
-- #162 已由 Claude PR #173 关闭，ADR-0008 accepted、MESSAGE-SEND@1 冻结；main 9858a8a CI 40615231118 全绿。#163 的该前置已解除；本轮不启动后续票。#159 文案仍待 JT；#175 为旧 README。
-- 本轮完成 #158 后暂停（JT 当前指令）；不自动执行后续队列。实际 VoiceOver 保持 L3 #29 UNRUN。
+- #151（PR #174）、#155（核验关票）及父票 #20、#157（PR #177）、#158（PR #178）已关闭；#7 对应 #157/#158 框已同步，#159 未完成，父票保持挂起。
+- #178 head 1a8e310f8ca75676f2ec9cac338952113ac94429 经独立 APPROVE 与六项 CI SUCCESS 正常合并为 6dba3a51a89f4e538af23f2f6eb7b799120923eb；main CI 40617700900 五 jobs SUCCESS。
+- #158 本地：Python57/57、PG11/11、CJShell204、iOS17.5结构4+无障碍/状态5测试全过；早期失败保留于PR证据表，未过滤审计或放宽断言。
+- #156 缺中央 TripPendingStore 登记，超出原票允许文件，待 JT 范围授权；#159 待 JT 文案。#175旧README、#176冷环境求解器预算失败已另票记录，未扩大本轮范围。
+- #162 已由 Claude PR #173 关闭，ADR-0008 accepted、MESSAGE-SEND@1 冻结，#163 的该前置已解除；#164/#167 仍需各自后续前置。
+- 按 JT 当前指令暂停。M1 尚未全部完成，不自动取下一张票；实际 VoiceOver/真实外部服务/真机仍未验收。
 
 ## Accepted Assumptions
 
@@ -64,14 +64,13 @@
 
 | Path | Reason |
 | --- | --- |
-| `ios/App/Acceptance/ShellAccessibilityUITests.swift, ShellFixtureApp.swift, ShellStructureUITests.swift, check_shell_structure.py, README.md` | 新增五项 AX/关键状态/最大字体/混合输入/键盘/长文原生验收；保留四项结构回归；测试工程和证据在仓库外。 |
-| `ios/Modules/CJShell/Sources/CJShell/AssistantShell.swift, ShellView.swift, MemoryShell.swift, MemoryContainerViews.swift, TripShell.swift, PublicInformation.swift` | 对比度、标题/状态无障碍语义、固定设置入口动态布局、禁用状态明确可读、大字号助手布局；不改业务权限或原有公开内容字义。 |
-| `docs/handoff.json, HANDOFF.md` | 记录 #158 实际验证、早期失败、真实 VoiceOver UNRUN、阻塞子票与本轮完成后暂停的指令。 |
+| `docs/handoff.json, HANDOFF.md` | #158 合并后记录精确审查/CI、Issue回写、已解除及剩余阻塞，并按JT明确指令暂停；仅交接状态，无产品或门禁改动。 |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
+| pass | `PR #178 / main CI` | 精确 head 独立 APPROVE；PR六检查全绿；main合并6dba3a5五jobs全绿；#158 L1三框和#7对应框已回写。 | https://github.com/JTCAO515/G2C/actions/runs/40617700900 |
 | pass | `uv run --locked python -B scripts/test.py` | 同步 main #173 后57/57 passed，包含新增 MESSAGE-SEND 契约检查。 | — |
 | pass | `uv run --locked python -B scripts/pg_suites.py` | 全新私有 PG：11/11 suites；未放宽求解器预算或断言。 | — |
 | pass | `swift test --package-path ios/Modules/CJShell` | 204 tests / 28 suites；iOS 源码另由原生 App XCTest 构建覆盖。 | — |
@@ -105,9 +104,9 @@
 
 ## Next Smallest Action
 
-- Action: 完成 #158 PR 的精确 head 全 CI 与独立审查后合并，核验 main 并回写 #158/#7，然后按 JT 指令暂停；不领取下一张。恢复时先核 #156 范围授权、#159 JT 文案和 #162 状态，仍阻塞则下一可执行票 #160。
-- Expected observation: #158 的 L0/L1 框有实际证据；真实 VoiceOver 仍在 #29 保持 UNRUN，不弱化门禁。
-- Resume command: `gh issue view 158 --repo JTCAO515/G2C --comments`
+- Action: 暂停，等待 JT 明确恢复。恢复后的第一步：fetch/status 并确认最新 main CI 全绿，读 #156/#159/#162 的正文及全部评论核对阻塞；已解除的 #163 优先核其父票 #8、前置与全部评论，再按 issue-plan 队列执行。若 #156 获范围授权则优先收尾 #156。本次不启动任何后续子票。
+- Expected observation: 暂停指令解除前不写代码、不认领新票；恢复时以Git/Issue/CI实况为准，#162已关闭不再作为阻塞。
+- Resume command: `gh issue view 163 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 
