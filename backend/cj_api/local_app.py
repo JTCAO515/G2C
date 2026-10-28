@@ -13,6 +13,7 @@ import tempfile
 import uuid
 
 import psycopg
+from psycopg.pq import TransactionStatus
 
 from cj_auth.interfaces import CJAccessFacts, Fact
 from cj_auth.jwt_adapter import JWTConfiguration, StaticPublicKeys, VerificationKey
@@ -34,6 +35,52 @@ RUN_RETENTION = timedelta(days=30)
 
 def scope_for(issuer, subject):
     return f'local:{issuer}:{subject}'
+
+
+def _require_unbound(cursor):
+    """Reject either M1 authority GUC; never overwrite retained session authority."""
+    cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true)")
+    if any(value not in (None, '') for value in cursor.fetchone()):
+        raise CompositionUnavailable('database scope already present')
+
+
+class _ScopedConnection:
+    """IDLE DB-API connection with an explicit transaction-entry binding hook.
+
+    Domain repositories call bind_scope after setting transaction isolation and
+    before reading data. Direct host `with` consumers use the same hook here.
+    Plain execute/cursor calls never silently rebind after commit or rollback.
+    """
+    def __init__(self, connection, scope):
+        self._connection, self._scope = connection, scope
+
+    def __getattr__(self, name):
+        return getattr(self._connection, name)
+
+    def bind_scope(self, cursor):
+        try:
+            if self._connection.info.transaction_status != TransactionStatus.INTRANS:
+                raise CompositionUnavailable('active transaction required for scope binding')
+            _require_unbound(cursor)
+            cursor.execute("SELECT set_config('cj.message_scope',%s,true), set_config('cj.trip_scope',%s,true)",
+                           (self._scope, trip_scope_for(self._scope)))
+        except BaseException:
+            self._connection.close()
+            raise
+
+    def __enter__(self):
+        self._connection.__enter__()
+        try:
+            with self._connection.cursor() as cursor:
+                cursor.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                self.bind_scope(cursor)
+        except BaseException:
+            self._connection.close()
+            raise
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return self._connection.__exit__(exc_type, exc, traceback)
 
 
 class LocalDatabase:
@@ -59,19 +106,21 @@ class LocalDatabase:
             raise CompositionUnavailable('verified local scope required')
         conn = psycopg.connect(**self.conninfo, autocommit=True)
         try:
+            if conn.closed or conn.info.transaction_status != TransactionStatus.IDLE or conn.autocommit is not True:
+                raise CompositionUnavailable('fresh idle runtime connection required')
+            with conn.cursor() as cursor:
+                _require_unbound(cursor)
             role = conn.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,"
                                 "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
                                 "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) "
                                 "FROM pg_roles r WHERE rolname=current_user").fetchone()
             if role != (False, False, False, False, False, False, False):
                 raise CompositionUnavailable('unsafe local runtime database role')
-            # A fresh connection belongs to exactly one verified scope and one
-            # repository transaction; no pool/reuse or caller owner is accepted.
-            # Configure outside a transaction so repositories still receive IDLE.
-            conn.execute("SELECT set_config('cj.message_scope',%s,false), set_config('cj.trip_scope',%s,false)",
-                         (scope, trip_scope_for(scope)))
+            # No scope is installed at checkout. Repositories still receive IDLE;
+            # their transaction entry installs LOCAL authority which PostgreSQL
+            # removes on commit/rollback even when a physical connection survives.
             conn.autocommit = False
-            return conn
+            return _ScopedConnection(conn, scope)
         except BaseException:
             conn.close()
             raise
