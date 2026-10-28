@@ -21,7 +21,7 @@
 | Phase | M1 #163 server send-permit implementation and full local validation passed; preparing exact-head CI and independent red-line review. |
 | Accepted Issue | #10 / #163: frozen MESSAGE-SEND@1 server CAS, locked send-status, parser split and active one-way trigger. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T08:08:23.404769+00:00 |
+| Last updated | 2026-10-28T09:51:58.304774+00:00 |
 
 ## Active Work
 
@@ -32,6 +32,7 @@
 - Full test.py57/57 and pg_suites.py11/11 passed. Additional e2e16/16 includes forced accept-process exit after commit/before dispatch, reconstructed API, same-byte replay and exactly one original RUN. No cloud/model/real-account evidence claimed.
 - Consumers changed only per ADR-0008 table; stored draft.1 fixtures retained, memory codec mixed-version roundtrip added, feedback inactive/expired checks split onto separate new fixtures instead of reactivating a chat.
 - Original #163 dirty worktree remains preserved. Next is exact-head CI/review/merge, then main CI and issue/parent evidence; #164 follows.
+- #186: PRs #187, #189, #188 and #190 merged after independent exact-head reviews, in that order; none of those four PRs updated handoff themselves. #186 remains open pending its owner’s issue-level acceptance.
 
 ## Accepted Assumptions
 
@@ -85,6 +86,8 @@
 | pass | `MESSAGE PG group and HTTP wire regression` | MESSAGE12+history7+auth2 plus real restart readback; HTTP wire24. Deterministic PG blocking observed in both commit/status orders. Initial generated-null strict-envelope failure fixed without weakening strict receipt/head validation. | — |
 | pass | `Generated Python/Swift reproduction and frozen migration check` | Regenerated into scratch and byte-compared; Swift generator reused from identical Package.resolved. Applied migration entries1..11 and local runtime role/RLS/binding unchanged. | — |
 | not-run | `Real cloud/OTP/provider/device/production` | Outside local authorized M1 scope. Native script fixture adaptations syntax-checked only; App send activation remains #164. | — |
+| pass | `#186 exact-head review and local suites` | Each reviewed head passed test.py 57/57 and pg_suites.py 11/11; #188 additionally validated malformed persisted target and non-boolean availability in private PG. | https://github.com/JTCAO515/G2C/pull/188#issuecomment-6465264592 |
+| pass | `#186 post-merge main CI` | #187, #189, #188 and #190 post-merge main CI all passed; final run 40667513064 on 96454bf. | https://github.com/JTCAO515/G2C/actions/runs/40667513064 |
 
 ## Blockers
 
