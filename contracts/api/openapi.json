@@ -107,7 +107,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Accept MESSAGE-send.1 original UTF-8 bytes only. Replay returns the original receipt; a new message requires the matching expected_generation and expected_sequence. MESSAGE-draft.1 POST is rejected, including replay. A stale head returns 409 SEQUENCE_CONFLICT with reconcile_original."
       }
     },
     "/v1/message-receipts": {
@@ -2122,6 +2123,75 @@
             }
           }
         }
+      }
+    },
+    "/v1/message-send-status": {
+      "get": {
+        "operationId": "getMessageSendStatus",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt only, no runtime state or dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageSendStatusResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read original receipt and active conversation head under the same scope lock"
       }
     }
   },
@@ -5425,6 +5495,70 @@
           },
           "proposal": {
             "$ref": "#/components/schemas/TripProposalSnapshot"
+          }
+        }
+      },
+      "MessageHead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversation_id",
+          "generation",
+          "last_sequence"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "last_sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "format": "int64",
+            "maximum": 9223372036854775807
+          }
+        }
+      },
+      "MessageSendStatusResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "receipt",
+          "head"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageReceipt"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ],
+            "description": "Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone."
+          },
+          "head": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageHead"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ],
+            "description": "Required active conversation head or explicit null. Generated fallback containers must be checked for actual null; invalid/missing data never means an unavailable conversation."
           }
         }
       }

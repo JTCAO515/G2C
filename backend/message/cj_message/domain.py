@@ -13,6 +13,10 @@ class InputConflict(Exception):
     pass
 
 
+class SequenceConflict(Exception):
+    pass
+
+
 class Unavailable(Exception):
     pass
 
@@ -30,9 +34,20 @@ class Command:
     conversation_id: str
     message_id: str
     raw: bytes
+    expected_generation: str | None = None
+    expected_sequence: int | None = None
 
     @classmethod
     def parse(cls, raw):
+        return cls._parse(raw, stored=False)
+
+    @classmethod
+    def parse_stored(cls, raw):
+        """Historical draft.1 bytes remain readable; they never grant a new send."""
+        return cls._parse(raw, stored=True)
+
+    @classmethod
+    def _parse(cls, raw, *, stored):
         def pairs(items):
             result = {}
             for k, v in items:
@@ -47,17 +62,28 @@ class Command:
         except (ValueError, UnicodeError) as exc:
             raise InvalidInput('invalid input') from exc
         fields = {'version', 'conversation_id', 'message_id', 'text', 'trip_id', 'creation_intent'}
-        if not isinstance(obj, dict) or set(obj) != fields:
+        if not isinstance(obj, dict):
             raise InvalidInput('unsupported fields')
-        if obj['version'] != 'MESSAGE-draft.1':
+        version = obj.get('version')
+        if version == 'MESSAGE-send.1':
+            fields |= {'expected_generation', 'expected_sequence'}
+        elif version != 'MESSAGE-draft.1' or not stored:
             raise InvalidInput('unsupported version')
+        if set(obj) != fields:
+            raise InvalidInput('unsupported fields')
         if any(not isinstance(obj[k], str) or not obj[k].strip() for k in ('conversation_id', 'message_id', 'text')):
             raise InvalidInput('empty identity/text')
         if obj['trip_id'] is not None:
             raise InvalidInput('non-null Trip not supported')
         if obj['creation_intent'] not in ('none', 'consider_trip'):
             raise InvalidInput('unsupported intent')
-        return cls(obj['conversation_id'], obj['message_id'], raw)
+        if version == 'MESSAGE-send.1':
+            if (len(obj['conversation_id'].encode('utf-8')) > 256 or '\x00' in obj['conversation_id']
+                    or type(obj['expected_generation']) is not str or not obj['expected_generation'].strip()
+                    or type(obj['expected_sequence']) is not int or obj['expected_sequence'] < 0):
+                raise InvalidInput('invalid expected head')
+        return cls(obj['conversation_id'], obj['message_id'], raw,
+                   obj.get('expected_generation'), obj.get('expected_sequence'))
 
 
 @dataclass(frozen=True)
@@ -81,6 +107,12 @@ class Chat:
     generation: str
     epoch: int
     last_sequence: int
+
+
+@dataclass(frozen=True)
+class SendStatus:
+    stored: Stored | None
+    head: Chat | None
 
 
 @dataclass(frozen=True)
@@ -114,9 +146,10 @@ class Service:
                 if old.raw != command.raw:
                     raise InputConflict()
                 receipt = old.receipt
-                tx.chat(receipt.conversation_id, receipt.generation)
             else:
                 chat = tx.chat(command.conversation_id)
+                if (chat.generation, chat.last_sequence) != (command.expected_generation, command.expected_sequence):
+                    raise SequenceConflict()
                 receipt = Receipt(command.message_id, command.conversation_id,
                                   chat.generation, chat.last_sequence + 1,
                                   self.new_run_id(), hashlib.sha256(raw).hexdigest())
@@ -148,6 +181,21 @@ class Service:
                 tx.chat(old.receipt.conversation_id, old.receipt.generation)
         # None means absent in this ledger; production retention policy still gates retry.
         return old
+
+    def send_status(self, conversation_id, message_id=None):
+        if (type(conversation_id) is not str or not conversation_id.strip()
+                or len(conversation_id.encode('utf-8')) > 256 or '\x00' in conversation_id
+                or (message_id is not None and (type(message_id) is not str or not message_id.strip()))):
+            raise InvalidInput('explicit conversation and optional message required')
+        with self.repository.transaction() as tx:
+            # Both reads must follow the same scope lock as receive. READ COMMITTED
+            # without this lock can combine an absent receipt with a newer head.
+            tx.lock_scope()
+            stored = tx.find(message_id) if message_id is not None else None
+            if stored is not None and stored.receipt.conversation_id != conversation_id:
+                stored = None
+            head = tx.active_head(conversation_id)
+        return SendStatus(stored, head)
 
     def page(self, conversation_id, cursor=None, limit=20):
         if type(limit) is not int or not 1 <= limit <= 100:
@@ -212,7 +260,7 @@ class Service:
                 raise ResyncRequired()
             rows = []
             for index, item in enumerate(stored):
-                command = Command.parse(item.raw)
+                command = Command.parse_stored(item.raw)
                 if (item.receipt.sequence != cursor.after + index + 1 or
                     command.message_id != item.receipt.message_id or
                     command.conversation_id != conversation_id or

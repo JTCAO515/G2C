@@ -385,8 +385,12 @@ class Check:
                         headers = {'Authorization': 'Bearer ' + token}
                         conversation, message = uuid.uuid4().hex, uuid.uuid4().hex
                         api.put('/v1/conversations', params={'conversation_id': conversation}, headers=headers).raise_for_status()
-                        payload = dict(version='MESSAGE-draft.1', conversation_id=conversation, message_id=message,
-                            text='北京三日游' if case == 'zh' else 'Three days in Beijing', trip_id=None, creation_intent='consider_trip')
+                        status = api.get('/v1/message-send-status', params={'conversation_id': conversation}, headers=headers)
+                        status.raise_for_status()
+                        head = status.json()['head']
+                        payload = dict(version='MESSAGE-send.1', conversation_id=conversation, message_id=message,
+                            text='北京三日游' if case == 'zh' else 'Three days in Beijing', trip_id=None, creation_intent='consider_trip',
+                            expected_generation=head['generation'], expected_sequence=head['last_sequence'])
                         received = api.post('/v1/messages', content=json.dumps(payload, ensure_ascii=False).encode(),
                             headers={**headers, 'Content-Type': 'application/octet-stream'})
                         received.raise_for_status()

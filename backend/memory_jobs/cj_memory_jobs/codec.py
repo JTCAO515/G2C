@@ -66,7 +66,7 @@ def encode(source, rows, mode):
         if type(row.original_utf8) is not bytes or len(row.original_utf8) > 32768:
             raise InvalidInput('bounded immutable source required')
         try:
-            command = Command.parse(row.original_utf8)
+            command = Command.parse_stored(row.original_utf8)
         except ValueError:
             raise InvalidInput('invalid committed message') from None
         if (r.conversation_id != c.conversation_id or r.generation != c.generation

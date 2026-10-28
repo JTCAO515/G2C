@@ -76,9 +76,10 @@ class HistoryWireTests(SyntheticFixture):
         self.client=TestClient(create_composed_app(**self.kwargs,max_body_bytes=4096,history_configuration=self.options))
         self.addCleanup(self.client.close)
         self.headers={'Authorization':'Bearer '+self.token}
-    def raw(self,mid):return json.dumps(dict(version='MESSAGE-draft.1',conversation_id='c-original',message_id=mid,
-        text='private e\u0301 + 中文',trip_id=None,creation_intent='none'),ensure_ascii=False,indent=1).encode()
-    def receive(self,mid):return self.client.post('/v1/messages',content=self.raw(mid),headers=dict(self.headers,**{'Content-Type':'application/octet-stream'}))
+    def raw(self,mid,sequence=0):return json.dumps(dict(version='MESSAGE-send.1',conversation_id='c-original',message_id=mid,
+        text='private e\u0301 + 中文',trip_id=None,creation_intent='none',
+        expected_generation='generation-original',expected_sequence=sequence),ensure_ascii=False,indent=1).encode()
+    def receive(self,mid,sequence=0):return self.client.post('/v1/messages',content=self.raw(mid,sequence),headers=dict(self.headers,**{'Content-Type':'application/octet-stream'}))
     def get(self,path,**params):return self.client.get(path,params=params,headers=self.headers)
     def save(self,raw,revision=0,**query):
         q=dict(conversation_id='c-original',generation='generation-original',expected_revision=revision,**query)
@@ -118,7 +119,7 @@ class HistoryWireTests(SyntheticFixture):
         self.assertEqual(self.get('/v1/conversations',limit=1,cursor=token).status_code,409)
 
     def test_actual_history_private_bytes_hash_text_and_snapshot(self):
-        self.assertEqual(self.receive('m1').status_code,200);self.assertEqual(self.receive('m2').status_code,200)
+        self.assertEqual(self.receive('m1').status_code,200);self.assertEqual(self.receive('m2',sequence=1).status_code,200)
         first=self.get('/v1/message-history',conversation_id='c-original',limit=1)
         self.assertEqual(first.status_code,200)
         row=first.json()['messages'][0]

@@ -72,8 +72,14 @@ class Harness(unittest.TestCase):
                                     headers=self.headers(subject)).json()['generation'],
                          opened.json()['generation'])  # idempotent
         mid = 'm-' + uuid.uuid4().hex
-        raw = json.dumps(dict(version='MESSAGE-draft.1', conversation_id=conversation, message_id=mid,
-                              text=text, trip_id=None, creation_intent=intent), ensure_ascii=False).encode()
+        status = client.get('/v1/message-send-status', params={'conversation_id': conversation},
+                            headers=self.headers(subject))
+        self.assertEqual(status.status_code, 200, status.text)
+        head = status.json()['head']
+        raw = json.dumps(dict(version='MESSAGE-send.1', conversation_id=conversation, message_id=mid,
+                              text=text, trip_id=None, creation_intent=intent,
+                              expected_generation=head['generation'],
+                              expected_sequence=head['last_sequence']), ensure_ascii=False).encode()
         response = client.post('/v1/messages', content=raw,
                                headers={**self.headers(subject), 'Content-Type': 'application/octet-stream'})
         return mid, response
@@ -128,9 +134,61 @@ class LocalEndToEnd(Harness):
             self.assertEqual(response.status_code, 200)
             foreign = client.get('/v1/run-events', params={'message_id': mid}, headers=self.headers('bob'))
             self.assertEqual(foreign.status_code, 503)  # withheld exactly like an absent message
+            cid = response.json()['receipt']['conversation_id']
+            for conversation, message in ((cid, mid), ('absent-chat', 'absent-message')):
+                status = client.get('/v1/message-send-status',
+                                    params={'conversation_id': conversation, 'message_id': message},
+                                    headers=self.headers('bob'))
+                self.assertEqual(status.status_code, 200, status.text)
+                self.assertIsNone(status.json()['receipt'])
+                self.assertIsNone(status.json()['head'])
             _, uninvited = self.send(client, 'carol', 'hello')
             self.assertIn(uninvited.status_code, (401, 403))
             self.assertEqual(client.get('/v1/run-events', params={'message_id': mid}).status_code, 401)
+
+    def test_process_crash_after_accept_before_dispatch_recovers_one_original_run(self):
+        subject = 'crash-' + uuid.uuid4().hex
+        auth = Path(self.tmp.name) / subject
+        dev_auth('init', str(auth), '--invite', subject)
+        headers = {'Authorization': 'Bearer ' + dev_auth('token', str(auth), '--subject', subject)}
+        app = create_local_app(conninfo_path=CONNINFO, auth_dir=auth)
+        conversation, mid = uuid.uuid4().hex, uuid.uuid4().hex
+        with TestClient(app) as client:
+            self.assertEqual(client.put('/v1/conversations', params={'conversation_id': conversation},
+                                        headers=headers).status_code, 200)
+            head = client.get('/v1/message-send-status', params={'conversation_id': conversation},
+                              headers=headers).json()['head']
+        raw = json.dumps(dict(version='MESSAGE-send.1', conversation_id=conversation, message_id=mid,
+                              text='recover original', trip_id=None, creation_intent='none',
+                              expected_generation=head['generation'], expected_sequence=head['last_sequence']))
+        child = '''import os, sys, subprocess
+from pathlib import Path
+from fastapi.testclient import TestClient
+from cj_api.local_app import create_local_app
+conninfo, auth, raw, issuer, subject = sys.argv[1:]
+token = subprocess.check_output([sys.executable, '-B', issuer, 'token', auth, '--subject', subject], text=True).strip()
+with TestClient(create_local_app(conninfo_path=conninfo, auth_dir=Path(auth))) as client:
+    response = client.post('/v1/messages', content=raw.encode(), headers={'Authorization':'Bearer '+token, 'Content-Type':'application/octet-stream'})
+    if response.status_code != 200: raise RuntimeError('synthetic receive failed')
+    os._exit(73)  # committed, no response to parent and no worker dispatch
+'''
+        crashed = subprocess.run([sys.executable, '-B', '-c', child, CONNINFO, str(auth), raw,
+                                  str(ROOT / 'scripts/dev_auth.py'), subject], capture_output=True, text=True)
+        self.assertEqual(crashed.returncode, 73, crashed.stderr)
+        with TestClient(create_local_app(conninfo_path=CONNINFO, auth_dir=auth)) as recovered:
+            status = recovered.get('/v1/message-send-status', params={'conversation_id': conversation, 'message_id': mid},
+                                   headers=headers)
+            self.assertEqual(status.status_code, 200, status.text)
+            receipt = status.json()['receipt']
+            replay = recovered.post('/v1/messages', content=raw.encode(),
+                                    headers={**headers, 'Content-Type': 'application/octet-stream'})
+            self.assertEqual(replay.json()['receipt'], receipt)
+        provider = FakeProvider()
+        self.assertTrue(self.work(subject, provider))
+        self.assertFalse(self.work(subject, provider))
+        with self.database.connect(scope_for(ISSUER, subject)) as conn:
+            self.assertEqual(conn.execute('SELECT run_id FROM cj_run_record').fetchall(), [(receipt['run_id'],)])
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_message_receipt').fetchone()[0], 1)
 
     def test_runtime_database_enforces_bidirectional_scope_without_repository_filters(self):
         import psycopg

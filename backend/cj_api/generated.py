@@ -1536,3 +1536,28 @@ class TripConfirmationResponse(BaseModel):
     )
     expires_at: conint(ge=1)
     proposal: TripProposalSnapshot
+
+
+class MessageHead(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    last_sequence: conint(ge=0, le=9223372036854775807)
+
+
+class Head(Enum):
+    NoneType_None = None
+
+
+class MessageSendStatusResponse(BaseModel):
+    request_id: RequestId
+    receipt: MessageReceipt | Receipt = Field(
+        ...,
+        description='Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.',
+    )
+    head: MessageHead | Head = Field(
+        ...,
+        description='Required active conversation head or explicit null. Generated fallback containers must be checked for actual null; invalid/missing data never means an unavailable conversation.',
+    )

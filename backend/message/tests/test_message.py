@@ -8,10 +8,11 @@ from cj_message.domain import (Service, Chat, Cursor, Command, InvalidInput, Rec
 from cj_message.postgres import Repository, Transaction
 
 
-def wire(mid='m1', cid='c1'):
-    return json.dumps(dict(version='MESSAGE-draft.1', conversation_id=cid,
+def wire(mid='m1', cid='c1', sequence=0, generation='g1'):
+    return json.dumps(dict(version='MESSAGE-send.1', conversation_id=cid,
                            message_id=mid, text='你好', trip_id=None,
-                           creation_intent='consider_trip'), ensure_ascii=False).encode()
+                           creation_intent='consider_trip', expected_generation=generation,
+                           expected_sequence=sequence), ensure_ascii=False).encode()
 
 
 class FakeRepository:
@@ -45,6 +46,9 @@ class FakeRepository:
 
     def find(self, mid):
         return self.rows.get(mid)
+
+    def active_head(self, cid):
+        return None if cid in self.inactive else self.chats.get(cid)
 
     def insert(self, stored):
         r = stored.receipt
@@ -118,9 +122,9 @@ class DomainTests(unittest.TestCase):
         self.assertEqual(self.repo.rows, {})
 
     def test_snapshot_append_and_generation_epoch_scope_fences(self):
-        self.service.receive(wire()); self.service.receive(wire('m2'))
+        self.service.receive(wire()); self.service.receive(wire('m2', sequence=1))
         _, cursor = self.service.page('c1', limit=1)
-        self.service.receive(wire('m3'))
+        self.service.receive(wire('m3', sequence=2))
         tail, nxt = self.service.page('c1', cursor)
         self.assertEqual([r.message_id for r in tail], ['m2']); self.assertIsNone(nxt)
         for changed in (replace(cursor, generation='other'), replace(cursor, epoch=3),
@@ -131,7 +135,7 @@ class DomainTests(unittest.TestCase):
         self.assertEqual(self.service.page('c1'), ([], None))
 
     def test_history_hole_rejects_not_empty_success(self):
-        self.service.receive(wire()); self.service.receive(wire('m2'))
+        self.service.receive(wire()); self.service.receive(wire('m2', sequence=1))
         _, cursor = self.service.page('c1', limit=1)
         del self.repo.rows['m2']
         with self.assertRaises(ResyncRequired): self.service.page('c1', cursor)
@@ -139,7 +143,7 @@ class DomainTests(unittest.TestCase):
     def test_open_conversation_is_idempotent_and_never_reactivates(self):
         first = self.service.open_conversation('new-chat')
         self.assertEqual(self.service.open_conversation('new-chat'), first)
-        receipt = self.service.receive(wire(cid='new-chat'))
+        receipt = self.service.receive(wire(cid='new-chat', generation=first.generation))
         self.assertEqual((receipt.conversation_id, receipt.generation, receipt.sequence), ('new-chat', first.generation, 1))
         self.repo.inactive = frozenset({'archived'})
         with self.assertRaises(Unavailable): self.service.open_conversation('archived')
@@ -155,11 +159,11 @@ class DomainTests(unittest.TestCase):
         self.service.acknowledge(receipt)  # idempotent
         self.assertEqual(self.service.pending(), [])
 
-    def test_missing_chat_and_stale_receipt_unavailable(self):
+    def test_missing_chat_denied_but_original_receipt_survives_head_change(self):
         with self.assertRaises(Unavailable): self.service.receive(wire(cid='foreign'))
-        self.service.receive(wire())
+        receipt = self.service.receive(wire())
         self.repo.chats['c1'] = Chat('recreated', 0, 0)
-        with self.assertRaises(Unavailable): self.service.receive(wire())
+        self.assertEqual(self.service.receive(wire()), receipt)
 
 
 class RecordingConnection:
@@ -219,7 +223,7 @@ class AdapterTests(unittest.TestCase):
 
     def test_service_uses_one_sql_transaction_for_receipt_and_delivery(self):
         c = RecordingConnection()
-        answers = iter([('test-partition',), None, ('generation-1', 0, 0)])
+        answers = iter([('test-partition',), None, ('g1', 0, 0)])
         c.fetchone = lambda: next(answers)
         service = Service(Repository(lambda:c, 'test-partition'), lambda:'original-run')
         receipt = service.receive(wire())
@@ -232,7 +236,7 @@ class AdapterTests(unittest.TestCase):
 
     def test_delivery_sql_failure_rolls_back_whole_connection(self):
         c = RecordingConnection()
-        answers = iter([('test-partition',), None, ('generation-1', 0, 0)])
+        answers = iter([('test-partition',), None, ('g1', 0, 0)])
         c.fetchone = lambda: next(answers)
         record = c.execute
         def execute(sql, args=()):

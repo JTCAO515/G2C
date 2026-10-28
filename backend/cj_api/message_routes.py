@@ -6,7 +6,8 @@ from urllib.parse import parse_qsl
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
-from .generated import ErrorResponse, MessageReceipt, MessageReceiveResponse, MessageReceiptQueryResponse
+from .generated import (ErrorResponse, MessageReceipt, MessageReceiveResponse,
+                        MessageReceiptQueryResponse, MessageSendStatusResponse, MessageHead)
 
 
 def _error(request, status, code, category, outcome, recovery):
@@ -31,7 +32,7 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
     if boundary is not None:
         from cj_auth.interfaces import AdmissionReason, AdmissionStatus
         from cj_message.auth_boundary import Boundary, AccessBlocked, IdentityChanged
-        from cj_message.domain import CommitUnknown, InputConflict, InvalidInput, Stored, Receipt
+        from cj_message.domain import CommitUnknown, InputConflict, SequenceConflict, InvalidInput, Stored, Receipt
         if (not isinstance(boundary, Boundary) or type(max_body_bytes) is not int or max_body_bytes <= 0):
             raise ValueError('Explicit pinned MESSAGE boundary and body limit required')
 
@@ -75,6 +76,8 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
         if isinstance(exc, InputConflict):
             return _error(request, 409, 'INPUT_CONFLICT', 'conflict', 'failed', 'do_not_retry')
+        if isinstance(exc, SequenceConflict):
+            return _error(request, 409, 'SEQUENCE_CONFLICT', 'conflict', 'failed', 'reconcile_original')
         # Includes unavailable repositories and invalid projection after a possible commit.
         return unavailable(request, write)
 
@@ -141,3 +144,38 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
         except (ValueError, UnicodeError):
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
         return await invoke(request, token, False, message_id)
+
+    @app.get('/v1/message-send-status', response_model=MessageSendStatusResponse)
+    async def send_status(request: Request):
+        if boundary is None:
+            return unavailable(request, False)
+        token = _token(request)
+        if token is None:
+            return _error(request, 401, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
+        try:
+            raw_query = request.scope['query_string'].decode('ascii')
+            if re.search(r'%(?![0-9a-fA-F]{2})', raw_query):
+                raise ValueError('Invalid query encoding')
+            pairs = parse_qsl(raw_query, keep_blank_values=True, strict_parsing=True,
+                              encoding='utf-8', errors='strict')
+            query = dict(pairs)
+            if (len(query) != len(pairs) or not {'conversation_id'} <= query.keys()
+                    or not query.keys() <= {'conversation_id', 'message_id'}
+                    or any(not value.strip() for value in query.values())):
+                raise ValueError('Explicit conversation and optional original message required')
+        except (ValueError, UnicodeError):
+            return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
+
+        def project(context):
+            value = context.send_status(query['conversation_id'], query.get('message_id'))
+            receipt = (None if value.stored is None else
+                       MessageReceipt.model_validate(asdict(value.stored.receipt), strict=True))
+            head = (None if value.head is None else MessageHead.model_validate(
+                    dict(conversation_id=query['conversation_id'], generation=value.head.generation,
+                         last_sequence=value.head.last_sequence), strict=True))
+            return MessageSendStatusResponse.model_validate(
+                dict(request_id=request.state.request_id, receipt=receipt, head=head))
+        try:
+            return await run_in_threadpool(boundary.with_history_context, token, project)
+        except Exception as exc:
+            return failure(request, exc, False)

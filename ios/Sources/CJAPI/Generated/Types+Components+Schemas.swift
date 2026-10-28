@@ -7492,5 +7492,161 @@ extension Components {
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/MessageHead`.
+        public struct MessageHead: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageHead/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageHead/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageHead/last_sequence`.
+            public var last_sequence: Swift.Int64
+            /// Creates a new `MessageHead`.
+            ///
+            /// - Parameters:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - last_sequence:
+            public init(
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                last_sequence: Swift.Int64
+            ) {
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.last_sequence = last_sequence
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversation_id
+                case generation
+                case last_sequence
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.last_sequence = try container.decode(
+                    Swift.Int64.self,
+                    forKey: .last_sequence
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "conversation_id",
+                    "generation",
+                    "last_sequence"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse`.
+        public struct MessageSendStatusResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/receipt/case1`.
+                case MessageReceipt(Components.Schemas.MessageReceipt)
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/receipt/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MessageReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MessageReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/receipt`.
+            public var receipt: Components.Schemas.MessageSendStatusResponse.receiptPayload
+            /// Required active conversation head or explicit null. Generated fallback containers must be checked for actual null; invalid/missing data never means an unavailable conversation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/head`.
+            @frozen public enum headPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/head/case1`.
+                case MessageHead(Components.Schemas.MessageHead)
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/head/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MessageHead(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MessageHead(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// Required active conversation head or explicit null. Generated fallback containers must be checked for actual null; invalid/missing data never means an unavailable conversation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusResponse/head`.
+            public var head: Components.Schemas.MessageSendStatusResponse.headPayload
+            /// Creates a new `MessageSendStatusResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt: Required property: committed receipt or explicit null (not observed); absence is invalid. Generated fallback containers must be checked for actual null, never treated as null by case alone.
+            ///   - head: Required active conversation head or explicit null. Generated fallback containers must be checked for actual null; invalid/missing data never means an unavailable conversation.
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MessageSendStatusResponse.receiptPayload,
+                head: Components.Schemas.MessageSendStatusResponse.headPayload
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+                self.head = head
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+                case head
+            }
+        }
     }
 }

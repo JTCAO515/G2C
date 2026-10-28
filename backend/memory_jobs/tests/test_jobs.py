@@ -81,6 +81,17 @@ class Jobs(unittest.TestCase):
         raw = encode(self.source, (message(),), 'incremental')
         self.assertEqual(decode(raw), (self.source, (message(),), 'incremental'))
 
+    def test_mixed_draft_and_send_stored_messages_roundtrip(self):
+        second = message(2)
+        payload = json.loads(second.original_utf8)
+        payload.update(version='MESSAGE-send.1', expected_generation='generation', expected_sequence=1)
+        original = json.dumps(payload).encode()
+        second = replace(second, original_utf8=original,
+                         receipt=replace(second.receipt, input_sha256=hashlib.sha256(original).hexdigest()))
+        source = replace(self.source, cursor=replace(self.source.cursor, through=2))
+        rows = (message(), second)
+        self.assertEqual(decode(encode(source, rows, 'incremental')), (source, rows, 'incremental'))
+
     def test_strict_persisted_codec(self):
         raw = encode(self.source, (message(),), 'incremental')
         cases = [raw + b' ', raw.replace(b'"version":', b'"version":"x","version":'),

@@ -70,7 +70,7 @@ class HistoryReadContext:
         if type(stored) is not Stored or type(stored.receipt) is not Receipt:
             raise Unavailable()
         try:
-            command = Command.parse(stored.raw)
+            command = Command.parse_stored(stored.raw)
         except InvalidInput:
             raise Unavailable() from None
         receipt = stored.receipt
@@ -86,6 +86,23 @@ class HistoryReadContext:
     def conversations(self, cursor=None, limit=20):
         self._check()
         return self._service.conversations(cursor, limit)
+
+    def send_status(self, conversation_id, message_id=None):
+        self._check()
+        result = self._service.send_status(conversation_id, message_id)
+        self._check()
+        if result.stored is not None:
+            stored = result.stored
+            try:
+                command = Command.parse_stored(stored.raw)
+            except InvalidInput:
+                raise Unavailable() from None
+            if (stored.receipt.message_id != message_id or command.message_id != message_id
+                    or stored.receipt.conversation_id != conversation_id
+                    or command.conversation_id != conversation_id
+                    or hashlib.sha256(stored.raw).hexdigest() != stored.receipt.input_sha256):
+                raise Unavailable()
+        return result
 
     def message_history(self, conversation_id, cursor=None, limit=20):
         self._check()

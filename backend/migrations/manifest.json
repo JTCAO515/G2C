@@ -90,6 +90,14 @@
       "sha256": "ce6da487faf7e244bf1579aa775ecf5732c8680a0371e8fe2882b65ee2685b4c",
       "down": "backend/migrations/down/0011_local_runtime_rls.down.sql",
       "down_sha256": "0458635084c693f8c7c503dad5a5dfaa62c18f0b41b791a516de333b74f6cab6"
+    },
+    {
+      "version": 12,
+      "name": "message_active_one_way",
+      "file": "backend/migrations/0012_message_active_one_way.sql",
+      "sha256": "1846c569009f3e1a9ffa1bec613afb2e832e86af545f5c3014daa4d931d85641",
+      "down": "backend/migrations/down/0012_message_active_one_way.down.sql",
+      "down_sha256": "c9f21cdf796216e4c07c2e5a1494470492169ab4cea16d9196112fd43eb0eb94"
     }
   ]
 }
