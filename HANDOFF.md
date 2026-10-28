@@ -26,7 +26,7 @@
 ## Active Work
 
 - #151/#155/#20 已完成；#157 经 PR #177 合并为 e36672a，main CI 40537842558 全绿，父票 #7 对应四框已勾。
-- #158：修复动态字体、对比度、中文换行与记忆入口点击；普通 App 全量 AX、4 项合成状态/混合输入/键盘/长文、4 项结构回归全部通过；Python56、PG11、CJShell204通过。
+- #158：修复动态字体、对比度、中文换行与记忆入口点击；普通 App 全量 AX、4 项合成状态/混合输入/键盘/长文、4 项结构回归全部通过；Python57、PG11、CJShell204通过。
 - Apple 官方确认 VoiceOver 不在 Simulator 提供。按 ADR-0007 第 1 条，实际设备听读/焦点/激活保留未勾并转记现有 #29，#7/#158/#29 已互相回链；不改里程碑/队列或执行真机操作。
 - #156 等 JT 授权仅补 TripPendingStore 中央登记（目标文件超出子票原范围），#5 挂起；#176 保留冷环境求解器预算失败，未提高预算。
 - #162 已由 Claude PR #173 关闭，ADR-0008 accepted、MESSAGE-SEND@1 冻结；main 9858a8a CI 40615231118 全绿。#163 的该前置已解除；本轮不启动后续票。#159 文案仍待 JT；#175 为旧 README。
@@ -72,7 +72,7 @@
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| not-run | `uv run --locked python -B scripts/test.py` | 合入最新 main #173 后新增契约检查，需重跑；合入前56/56通过。 | — |
+| pass | `uv run --locked python -B scripts/test.py` | 同步 main #173 后57/57 passed，包含新增 MESSAGE-SEND 契约检查。 | — |
 | pass | `uv run --locked python -B scripts/pg_suites.py` | 全新私有 PG：11/11 suites；未放宽求解器预算或断言。 | — |
 | pass | `swift test --package-path ios/Modules/CJShell` | 204 tests / 28 suites；iOS 源码另由原生 App XCTest 构建覆盖。 | — |
 | pass | `check_shell_structure.py (structure)` | iOS17.5 普通 App 1 + 合成宿主 3 tests，零失败零跳过；语言/草稿/导航与只读请求回归。 | — |
