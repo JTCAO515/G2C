@@ -248,10 +248,19 @@ import Foundation
         } else { XCTAssertEqual(app.staticTexts["run.display.text"].label, result.text) }
         for _ in 0..<10 { if value.isHittable && value.frame.maxY < app.frame.height * 0.60 { break }; app.scrollViews.firstMatch.swipeUp() }
         XCTAssertTrue(value.isHittable)
+        try audit("RUN_AX " + language)
+    }
+    private func audit(_ context: String) throws {
+        var issues = 0
+        continueAfterFailure = true
+        defer { continueAfterFailure = false }
         try app.performAccessibilityAudit(for: .all) { issue in
-            print("RUN_AX \(language): \(issue.compactDescription); \(issue.element?.label ?? "unavailable")")
-            return false
+            issues += 1
+            print(context, issue.detailedDescription, issue.element?.label ?? "unavailable", issue.element?.frame ?? .zero)
+            return false // Every issue is still an XCTest failure; never filtered.
         }
+        continueAfterFailure = false
+        XCTAssertEqual(issues, 0) // Stop before further UI work if any audit check failed.
     }
     func testAnswerBudgetEnglish() async throws { try await run("budget_answer", language:"en") }
     func testAnswerBudgetChinese() async throws { try await run("budget_answer", language:"zh-Hans") }
@@ -289,7 +298,7 @@ import Foundation
         XCTAssertEqual(result.posts, 0); XCTAssertEqual(result.cancellations, 0); XCTAssertEqual(result.provider_calls, 0)
         XCTAssertEqual(result.requests, 0)
         XCTAssertEqual(result.exposure, 0); XCTAssertEqual(result.ledger_attempts, 0)
-        try app.performAccessibilityAudit(for: .all) { issue in print("RELEASE_AX", issue.compactDescription); return false }
+        try audit("RELEASE_AX")
         capture("release-run-closed")
     }
 }
