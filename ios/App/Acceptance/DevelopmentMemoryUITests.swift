@@ -262,7 +262,7 @@ import Foundation
         tap("Load groups"); _ = try await call("/wait-held", ["case": f.case_id])
         _ = try await call("/revoke-access", ["case": f.case_id])
         XCUIDevice.shared.press(.home); app.activate()
-        tap("Memory"); tap("memory.account")
+        tap("Memory")
         let rejected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Sign-in was rejected"), object: app.staticTexts["account.development.status"])
         XCTAssertEqual(XCTWaiter.wait(for: [rejected], timeout: 15), .completed)
         _ = try await call("/release-read", ["case": f.case_id])
