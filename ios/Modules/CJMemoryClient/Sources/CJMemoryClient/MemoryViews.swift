@@ -56,7 +56,9 @@ public struct MemoryGroupsView: View {
                         Text(group.subject)
                         Text("\(statusLabel(group.status.rawValue, language)) · \(group.count)").font(.subheadline)
                     }
-                }.buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityIdentifier("memory.group." + String(index))
             }
         }
     }
@@ -85,6 +87,8 @@ public struct MemoryItemsView: View {
                         Text(item.command.text)
                         Text(statusLabel(item.status.rawValue, language)).font(.caption)
                     }
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
                 }.buttonStyle(.plain)
             }
         }
