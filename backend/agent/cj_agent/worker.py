@@ -21,12 +21,36 @@ from cj_message.domain import Unavailable as MessageUnavailable
 from cj_needs.domain import Denied as NeedsDenied
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_usage.local_provider_exit import BudgetExceeded, BudgetUnknown
+from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 
 from .draft import DRAFT_SYSTEM, DraftRejected
-from .provider import ProviderFailed, ProviderUnknown
+from .provider import FakeProvider, ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
 _END = object()
+
+
+class _MemoryProvider(FakeProvider):
+    """Local Fake adapter retains the budget exit's existing provider policy."""
+    def __init__(self, original, memory):
+        self.original, self.memory = original, memory
+
+    def stream(self, messages, system=None):
+        stream = self.original.stream(messages, system=system)
+        primary = None
+        try:
+            self.memory.check()
+            yield from stream
+        except BaseException as error:
+            primary = error
+            raise
+        finally:
+            try:
+                stream.close()
+            except BaseException:
+                if primary is None:
+                    raise RuntimeUnknown('memory provider cleanup unavailable') from None
+                primary.add_note('memory provider cleanup unavailable')
 
 
 def original_context_valid(binding, messages, admitted):
@@ -70,7 +94,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -80,6 +104,8 @@ class RunWorker:
         self.needs_lease = needs_lease
         self.budget_exit = budget_exit
         self.execution_guard = execution_guard
+        self.memory = memory
+        self.memory_run = None
 
     def process(self, limit=20):
         outcomes = []
@@ -101,7 +127,19 @@ class RunWorker:
     def _event(self, binding, state, kind, value=''):
         sequence = state.sequence + 1
         try:
-            return self.runs.apply(Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value))
+            event = Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value)
+            if self.memory_run is None or kind not in {'text_delta', 'completed', 'draft_outcome'}:
+                return self.runs.apply(event)
+            with ExitStack() as leases:
+                with self.runs.repository.transaction() as tx:
+                    old = tx.get(binding)
+                    check_memory = leases.enter_context(self.memory_run.hold(binding))
+                    updated = advance(old, event, self.runs.valid)
+                    if tx.get(binding) != old:
+                        raise Conflict('state changed during memory publication')
+                    check_memory()
+                    tx.put(updated)
+            return updated
         except Conflict:
             current = self.runs.snapshot(binding)
             if current.status in TERMINAL:
@@ -135,6 +173,8 @@ class RunWorker:
                         raise Denied('context invalid or unknown')
                     if tx.get(binding) != state:
                         raise Conflict('state changed during step guard')
+                    check_memory = (leases.enter_context(self.memory_run.hold(binding))
+                                    if self.memory_run is not None else None)
                     if draft and state.draft_outcome is not None:
                         raise Conflict('draft result already recorded before invocation')
                     if draft and self.needs_lease is not None:
@@ -150,6 +190,8 @@ class RunWorker:
                         if self.runs.valid(binding) is not True:
                             raise Denied('authority changed before budgeted publication')
                     publication_started = effect is not None
+                    if check_memory is not None:
+                        check_memory()
                     result = invoke()
                     if effect is not None:
                         updated = advance(state, Event(binding, state.sequence + 1,
@@ -158,7 +200,7 @@ class RunWorker:
                             raise Conflict('state changed during publication')
                         tx.put(updated)
                         state = updated
-        except (NeedsDenied, LeaseUnavailable, Denied) as error:
+        except (NeedsDenied, LeaseUnavailable, Denied, RuntimeDenied, RuntimeUnknown) as error:
             if publication_started:
                 raise _PublicationUncertain() from error
             raise
@@ -207,14 +249,19 @@ class RunWorker:
     def _draft(self, binding, state, text, original):
         """Provider draft failures preserve the answer; accounting uncertainty stops RUN as unknown."""
         try:
-            reply = ''.join(self._stream(binding, [{'role': 'user', 'content': text}], system=DRAFT_SYSTEM))
+            messages = ([{'role': 'user', 'content': text}] if self.memory_run is None
+                        else self.memory_run.messages(text))
+            reply = ''.join(self._stream(binding, messages, system=DRAFT_SYSTEM))
             if self.drafts.content_version == 'legacy':
-                state, draft = self._step(binding, lambda: self.drafts.publish(binding.run_id, reply),
+                state, draft = self._step(binding, lambda: self.drafts.publish(binding.run_id, reply,
+                                          before_publish=self.memory_run.check) if self.memory_run is not None
+                                          else self.drafts.publish(binding.run_id, reply),
                                           lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
             else:
                 _, sources = self._step(binding, lambda: self.drafts.sources_for(binding), draft=True)
                 state, draft = self._step(binding, lambda: self.drafts.publish_for_message(
-                    binding, original, self.messages.query(binding.message_id), reply, sources),
+                    binding, original, self.messages.query(binding.message_id), reply, sources,
+                    **({'before_publish': self.memory_run.check} if self.memory_run is not None else {})),
                     lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
         except BudgetExceeded:
             return self._budget_rejection(binding,'draft'), None
@@ -243,6 +290,7 @@ class RunWorker:
                     check()
             owned = RunWorker(scope=binding.scope, messages=messages, provider=provider, drafts=drafts,
                               needs_lease=self.needs_lease, budget_exit=self.budget_exit,
+                              memory=self.memory,
                               runs=Service(OwnedRepository(), runs.valid))
             return owned._owned(receipt, binding)
 
@@ -260,12 +308,12 @@ class RunWorker:
                 raise
             current = self._event(binding, current, 'unknown')
             return self._finish(receipt, current)
-        except (LeaseUnavailable, _PublicationUncertain):
+        except (LeaseUnavailable, _PublicationUncertain, RuntimeUnknown):
             current = self.runs.snapshot(binding)
             if current.status not in TERMINAL:
                 current = self._event(binding, current, 'unknown')
             return self._finish(receipt, current)
-        except (Denied, NeedsDenied):
+        except (Denied, NeedsDenied, RuntimeDenied):
             current = self.runs.snapshot(binding)
             if current.status not in TERMINAL:
                 current = self._event(binding, current, 'context_invalid')
@@ -292,13 +340,18 @@ class RunWorker:
         stored = self.messages.query(receipt.message_id)
         command = json.loads(stored.raw)
         text = command['text']
+        if self.memory is not None:
+            self.memory_run = self.memory.capture(binding)
+            self.provider = _MemoryProvider(self.provider, self.memory_run)
         if self.needs_lease is not None and command['creation_intent'] == 'consider_trip':
             with self.needs_lease(binding) as check_needs:
                 check_needs()
         proposal_id = None
         buffer = ''
         try:
-            for chunk in self._stream(binding, [{'role': 'user', 'content': text}]):
+            inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
+                      else self.memory_run.messages(text))
+            for chunk in self._stream(binding, inputs):
                 buffer += chunk
                 if len(buffer) >= FLUSH_CHARS:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''
