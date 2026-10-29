@@ -141,7 +141,7 @@ def main():
                     if message['type'] == 'http.response.start':
                         with lock: responses.append((scope.get('path'), message['status']))
                     if scope.get('path') == '/v1/run-events' and message['type'] == 'http.response.body':
-                        with lock: stream_frames.append(message.get('body', b'').decode('utf-8'))
+                        with lock: stream_frames.append(dict(message_id=parse_qs(scope.get('query_string', b'').decode()).get('message_id', [''])[0], body=message.get('body', b'').decode('utf-8')))
                     await send(message)
                 await app(scope, receive, capture_response)
 
@@ -232,6 +232,14 @@ def main():
                                 while value['pending_deliveries'] and time.monotonic() < deadline:
                                     time.sleep(.05); value = proof(query['case'][0])
                                 if value['pending_deliveries']: raise RuntimeError('original delivery did not finish')
+                        elif parsed.path == '/observe-read-recovery':
+                            value = proof(query['case'][0])
+                            with lock: frames = [f['body'] for f in stream_frames if f['message_id'] == value['message_id'] and f['body']]
+                            if not frames or not ('data: {"status":"unavailable"}' in frames[-1] or 'RUN_EVENTS_UNAVAILABLE' in frames[-1]):
+                                raise RuntimeError('no producer unavailable evidence for original read recovery')
+                            report.setdefault('explicit_snapshot_reads', []).append(dict(message_id=value['message_id'],
+                                reason='producer unavailable; root cause UNKNOWN', before=value))
+                            save()
                         elif parsed.path == '/reconcile':
                             before = proof(query['case'][0])
                             result = subprocess.run([sys.executable, '-B', str(ROOT / 'scripts/run_worker.py'),

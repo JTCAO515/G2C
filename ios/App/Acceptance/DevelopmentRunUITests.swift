@@ -118,7 +118,7 @@ import Foundation
                 XCTAssertEqual(app.staticTexts["run.display.text"].label, prefix)
             }
             _ = try await call("/release", ["case": fixture.conversation])
-            if !stopping { status(language == "en" ? "Completed" : "已完成") }
+            if !stopping { try await terminal(fixture, expected: "completed", language: language) }
         }
         if mode == "budget_answer" {
             let first = try await proof(fixture, settled: true)
@@ -129,14 +129,14 @@ import Foundation
             send(fixture.prompt + " second")
         }
         let expectedStatus = stopping ? "cancelled" : mode == "unknown" ? "unknown" : ["failure", "budget_answer"].contains(mode) ? "failed" : "completed"
-        status(statusLabel(expectedStatus, language))
+        try await terminal(fixture, expected: expectedStatus, language: language)
         let saved = try await proof(fixture, settled: true)
         try check(mode, language: language, result: saved, expectedStatus: expectedStatus)
         capture(mode + "-persisted-" + language)
         _ = try await call("/reconcile", ["case": fixture.conversation])
         try launch(fixture, language: language, restore: true)
         tap("assistant.history"); tap("recovery.action." + (try XCTUnwrap(saved.message_id))); tap("assistant.panel.done")
-        status(statusLabel(expectedStatus, language))
+        try await terminal(fixture, expected: expectedStatus, language: language)
         let reopened = try await proof(fixture, settled: true)
         try check(mode, language: language, result: reopened, expectedStatus: expectedStatus)
         XCTAssertEqual(reopened.message_id, saved.message_id)
@@ -149,6 +149,28 @@ import Foundation
         XCTAssertEqual(reopened.usage_receipts, saved.usage_receipts)
         XCTAssertGreaterThanOrEqual(reopened.draft_reads, 2)
         capture(mode + "-read-after-reopen-" + language)
+    }
+    /// One explicit user read after an observed producer refusal. Never retry a write/model.
+    private func terminal(_ fixture: Fixture, expected: String, language: String) async throws {
+        let value = app.staticTexts["run.display.status"]
+        let unavailable = language == "en" ? "Original run unavailable; result unknown" : "原运行不可用，结果未知"
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format:"label BEGINSWITH %@ OR label == %@", statusLabel(expected, language), unavailable), object:value)
+        XCTAssertEqual(XCTWaiter.wait(for:[ready], timeout:30), .completed)
+        if value.label == unavailable {
+            XCTAssertFalse(app.staticTexts["run.display.text"].exists)
+            XCTAssertFalse(app.staticTexts["run.stream.text"].exists)
+            let card = app.descendants(matching:.any).matching(identifier:"run.draft.status").firstMatch
+            XCTAssertFalse(card.label.contains("Budget exhausted")); XCTAssertFalse(card.label.contains("预算已耗尽"))
+            capture("producer-read-unavailable-" + language)
+            let before = try await proof(fixture, settled:true)
+            _ = try await call("/observe-read-recovery", ["case":fixture.conversation])
+            tap("run.snapshot.read")
+            status(statusLabel(expected, language))
+            let after = try await proof(fixture, settled:true)
+            XCTAssertEqual(after.provider_calls, before.provider_calls)
+            XCTAssertEqual(after.posts, before.posts)
+            XCTAssertEqual(after.ledger_fingerprint, before.ledger_fingerprint)
+        } else { status(statusLabel(expected, language)) }
     }
     private func send(_ text: String) {
         let field = app.textViews["assistant.draft"]
@@ -191,7 +213,8 @@ import Foundation
         let value = app.descendants(matching: .any).matching(identifier: "run.draft.status").firstMatch
         let label = value.label
         XCTAssertTrue(label.contains(language == "en" ? "Draft result" : "草稿结果"))
-        XCTAssertTrue(label.contains(language == "en" ? "Run state at draft read:" : "读取草稿时的运行状态："))
+        let runLabel = expectedStatus == "failed" ? (language == "en" ? "Failed" : "失败") : expectedStatus == "unknown" ? (language == "en" ? "Unknown" : "未知") : expectedStatus == "cancelled" ? (language == "en" ? "Cancelled" : "已取消") : (language == "en" ? "Completed" : "已完成")
+        XCTAssertTrue(label.contains((language == "en" ? "Run state at draft read: " : "读取草稿时的运行状态：") + runLabel))
         if stage == "none" {
             XCTAssertFalse(label.contains("Budget exhausted")); XCTAssertFalse(label.contains("预算已耗尽"))
         } else {
