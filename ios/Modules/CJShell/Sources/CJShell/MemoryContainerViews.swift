@@ -1,9 +1,23 @@
 #if os(iOS)
 import SwiftUI
 import CJMemoryClient
+import CJRunClient
 
 private extension ShellLanguage {
     var memoryLanguage: MemoryLanguage { self == .english ? .english : .chinese }
+}
+
+private struct MemoryActionButton: View {
+    let title: String
+    let enabled: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            RunReadableText(text: title)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }.buttonStyle(ShellReadableButtonStyle()).accessibilityLabel(title).disabled(!enabled)
+    }
 }
 
 struct MemoryContainerGroups: View {
@@ -37,28 +51,29 @@ struct MemoryContainerItems: View {
         let action = host.captureAction()
         List {
             if let group = host.selectedGroup {
-                Section(group.subject) {
+                Section {
                     MemoryItemsView(state: host.items, language: state.language.memoryLanguage) { itemID in
                         if host.selectItem(itemID, context: action) { state.memoryPath.append(.memoryDetail) }
                     }.disabled(host.busy)
+                } header: {
+                    RunReadableText(text: group.subject, style: .caption).textCase(nil)
                 }
                 Section {
-                    Button(state.language.text("Load from start", "从头读取")) {
+                    MemoryActionButton(title: state.language.text("Load from start", "从头读取"), enabled: action != nil) {
                         Task { await host.loadItems(context: action) }
-                    }.disabled(action == nil)
+                    }
                     if host.hasMore {
-                        Button(state.language.text("Load next page", "读取下一页")) {
+                        MemoryActionButton(title: state.language.text("Load next page", "读取下一页"), enabled: action != nil) {
                             Task { await host.loadItems(context: action, more: true) }
-                        }.disabled(action == nil)
-                        Text(state.language.text("More records may follow, even when this page has no matching memories.", "即使本页没有匹配记忆，后续仍可能有记录。"))
-                            .font(.caption)
+                        }
+                        RunReadableText(text: state.language.text("More records may follow, even when this page has no matching memories.", "即使本页没有匹配记忆，后续仍可能有记录。"), style: .caption)
                     }
                 }
             } else {
                 Text(state.language.text("Select a current memory group first.", "请先选择当前记忆分组。"))
             }
-        }.buttonStyle(.bordered).controlSize(.large)
-            .navigationTitle(state.language.text("Memories", "记忆列表"))
+        }
+            .navigationTitle(state.language.text("Memories", "记忆列表")).navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -70,13 +85,14 @@ struct MemoryContainerDetail: View {
         let action = host.captureAction()
         List {
             MemoryDetailView(state: host.detail, language: language.memoryLanguage)
-            MemoryManagementHostControls(host: host, language: language)
-                .id(host.managementIdentity)
-            Button(language.text("Load current detail", "读取当前详情")) {
+            if host.managementAvailable {
+                MemoryManagementHostControls(host: host, language: language).id(host.managementIdentity)
+            }
+            MemoryActionButton(title: language.text("Load current detail", "读取当前详情"), enabled: action != nil) {
                 Task { await host.loadDetail(context: action) }
-            }.disabled(action == nil)
-        }.buttonStyle(.bordered).controlSize(.large)
-            .navigationTitle(language.text("Memory detail", "记忆详情"))
+            }
+        }
+            .navigationTitle(language.text("Memory detail", "记忆详情")).navigationBarTitleDisplayMode(.inline)
             .onAppear { presentation = host.beginManagementPresentation() }
             .onDisappear {
                 host.leaveManagementPresentation(presentation)
@@ -108,12 +124,12 @@ struct MemoryContainerManual: View {
                 } else {
                     Text(language.text("Memory is not configured.", "记忆尚未配置。"))
                 }
-                MemoryManagementHostRecovery(host: host, language: language)
-                    .id(host.managementIdentity)
+                if host.managementAvailable {
+                    MemoryManagementHostRecovery(host: host, language: language).id(host.managementIdentity)
+                }
                 Divider()
                 Text(language.text("Previous save operations", "此前的保存操作")).font(.headline)
-                Button(language.text("Read original operations", "读取原操作")) { host.loadPending(context: action) }
-                    .disabled(action == nil)
+                MemoryActionButton(title: language.text("Read original operations", "读取原操作"), enabled: action != nil) { host.loadPending(context: action) }
                 switch host.pending {
                 case .unconfigured:
                     Text(language.text("Original operations have not been loaded.", "尚未读取原操作。"))
@@ -126,9 +142,9 @@ struct MemoryContainerManual: View {
                     ForEach(records, id: \.originalUTF8) { record in
                         VStack(alignment: .leading, spacing: 6) {
                             Text(record.operationID).font(.caption).textSelection(.enabled)
-                            Button(language.text("Query this original operation", "查询此原操作")) {
+                            MemoryActionButton(title: language.text("Query this original operation", "查询此原操作"), enabled: action != nil) {
                                 Task { await host.queryOriginal(record.operationID, context: action) }
-                            }.disabled(action == nil)
+                            }
                         }
                     }
                 }
@@ -140,8 +156,8 @@ struct MemoryContainerManual: View {
                 Text(language.text("A past receipt does not establish current use. An unknown or missing receipt does not permit resending.", "历史回执不代表当前仍在使用；结果未知或未查到回执时，不可重新发送。"))
                     .font(.caption)
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
-        }.buttonStyle(.bordered).controlSize(.large)
-            .navigationTitle(language.text("Add memory", "新增记忆"))
+        }
+            .navigationTitle(language.text("Add memory", "新增记忆")).navigationBarTitleDisplayMode(.inline)
             .onAppear { presentation = host.beginManagementPresentation() }
             .onDisappear {
                 host.leaveManagementPresentation(presentation)
@@ -187,8 +203,8 @@ struct MemoryCollectionView: View {
                 Text(language.text("If a save is unknown, check its original operation from Add memory. Skipping does not cancel or resend it.", "保存结果未知时，请在新增记忆页查询原操作。跳过不会取消或重发保存。"))
                     .font(.footnote)
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
-        }.buttonStyle(.bordered).controlSize(.large)
-            .navigationTitle(language.text("Optional questions", "可选问题"))
+        }
+            .navigationTitle(language.text("Optional questions", "可选问题")).navigationBarTitleDisplayMode(.inline)
     }
 }
 #endif
