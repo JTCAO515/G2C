@@ -170,7 +170,7 @@ def main():
                         assert all(item[k]==v for k,v in command.items())
                         assert item['source_id']=='manual-v1:'+hashlib.sha256(raw).hexdigest() and item['source_version']==1
                         assert item_version==version and item_status==status
-                        items.append(dict(slot=item['slot'],source_id=item['source_id']))
+                        items.append(dict(slot=item['slot'],source_id=item['source_id'],item_id=iid))
                     current=[dict(operation_id=o,item_id=i,sha256=hashlib.sha256(bytes(raw)).hexdigest(),version=v,status=s) for o,i,raw,v,s in operations]
                     if 'baseline' in row: assert row['baseline']==current
                     else: row['baseline']=current
