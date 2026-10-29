@@ -184,3 +184,17 @@ diagnostic found clipping reports at accessibility5 for the same SwiftUI Text,
 while the UILabel comparison avoided them; this is a bounded observation, not a
 general framework diagnosis. The native suite checks the combined accessible
 heading, result and RUN state and preserves every audit failure.
+
+## #167 budget read preparation
+
+`draftStatusVersion: .v2` explicitly selects the frozen v2 original-message GET;
+there is no fallback to v1 or automatic read retry. The default remains v1 and
+the App composition still uses that default until the formal B-line host route
+is delivered. Generated v2 types and synthetic client tests do not activate it.
+
+V2 shows only the persisted `budget_exhausted_stage` (answer/draft); none, generic
+failed and unknown do not imply budget exhaustion. Original RUN state and text
+remain independent, including cancellation/unknown after a historical reason.
+All source/session and receipt/header/body checks are shared with v1. No write,
+quota setup, ledger access or new model request is introduced. Actual budget L1
+remains UNRUN until #170 formal host integration is available.
