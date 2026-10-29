@@ -58,18 +58,21 @@
 
 本次插入段冻结求解预算数值、TIMEOUT/UNKNOWN 与既有断言，以及 RLS 隔离语义、运行角色权限上限、已应用迁移 1–11、契约和 CI 门禁。#176 先记录冷/热分阶段耗时，采用启动预载且失败即退出，最后在新 checkout 连续三次完整 PG 11/11；#182 必须覆盖 12 张 M1 表的同物理连接复用 SELECT/UPDATE/INSERT 负例并保留 #181 e2e。若修复需改变这些边界、碰云资源或真实账号，停止并在票中说明，等待 JT 决定。#159 文案、L2 授权、分支保护和生产 key 仍由 JT 决定。
 
-### 并行线（2026-10-28 起，2026-10-29 按实况修订）
+### 并行线（2026-10-28 起；M2 修订：JT 批准，2026-10-30）
 
-每条线一个 Codex 会话、同一时间 1 张父票、最多 1 个开着的 PR（ADR-0007 第 2 条）。线内依赖未满足时按子票级停点跳过或等待，不去碰别的线拥有的文件。已完成：#165、#166（原 B 线）、#168 Part1（PR #201）。
+每条线一个 Codex 会话、同一时间 1 张父票、最多 1 个开着的 PR（ADR-0007 第 2 条）。线内依赖未满足时按子票级停点跳过或等待。M1 已交付记录保留在 Issue 与本线 handoff；#194、#159 仍等 JT 确认文案。
 
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
-| A App | #164 → #167 → #194 → #159（#194、#159 等 JT 确认文案后才做；未确认就跳过） | `ios/Modules/CJMessageClient/**`、`ios/Modules/CJRunClient/**`、`ios/Modules/CJShell/**`、`ios/App/**`、`ios/Modules/CJUsageClient` 测试夹具、`docs/ui.md` | #164 等 B 线 #198 合并；#170 若需要 App 端失败呈现，由 B 线拆子票交本线 |
-| B 后端消息与运行 | #198 → #170 → M2 #9：#242 统一计量出口 → #243 并发/重复与工具后台限额；#244 App消费归A | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`scripts/dev_auth.py`、`backend/agent/cj_agent/worker.py`、`backend/agent/cj_agent/provider.py` | #170 等 C 线 #168 关闭；#244 依赖 #242 冻结语义，复用 A 线 #167；实际工具/后台生产者按功能票与owner确认，不以fixture替代 |
-| C 草稿 | #168 收尾（Part2）→ #169 → M2 #12：#226 保存/读取 → #227 跨会话使用 → #228 App 记忆页 | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`ios/Modules/CJTripClient/**`、`ios/Modules/CJMemoryClient/**` | 跨线文件须明确写权并无冲突；#226 本地 API/RLS 接入、#227 运行消费、#228 Shell/App 宿主按各票停点协调 |
+| A App | 文档 PR（M1 交接 + 本次规划修订）→ #244 → #228 → #21（App 部分）；#194、#159 等 JT 文案 | 整个 `ios/**`、`docs/ui.md`；包括从原 C 线移入的 `CJMemoryClient`、`CJTripClient` 等全部 iOS 模块；#228 整体归 A | #244 等 #242 关闭，复用 #167 预算呈现，M2 新消费边界单独实测；#242 未关闭时先做 #228 框 1–3（只依赖 #226），框 4 等 C 线 #227 当前上下文冻结；#21 App 等 B 线 #13 PLACE 契约冻结 |
+| B 后端消息与运行 | #242（PR #251）→ #243 → #13 → #16 → #14 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | 实际工具/后台生产者按功能票接入，不以 fixture 替代；#13 冻结 PLACE 契约供 A 线 #21 消费 |
+| C 后端记忆与草稿 | #227 → #17 → #18 → #22（后端部分） | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`；只做后端 | #227 当前上下文供 A 线 #228 框 4 消费；#227 与 #228 都关闭后，由最后关票的一方回写并关闭 #12 |
 
-M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两张父票”），两条线的拆票都要改 `docs/plan/**`，按共享文件规则排队。
-共享文件（唯一权威清单，ADR-0007 第 2 条引用此处）同一时间只允许一个开着的 PR 修改：`contracts/**` 与生成代码（#169 会改 `openapi.json`）、`backend/migrations/**`、`scripts/test.py`、`scripts/pg_suites.py`、`docs/plan/**`、`docs/handoff.json` 与生成的 `HANDOFF.md`、`backend/agent/tests/e2e_local.py`。
+- 未列出的目录由 JT 指定归属；本线只改拥有且获准的文件。A 同时只推进一张父票（#244 属 #9，#228 属 #12）；当前票剩余框全部被前置卡住时，先记停点再换另一张。
+- **共享文件按文件加锁**：每个共享文件同一时间只能有一个开着的 PR 修改，不同共享文件可以同时被不同 PR 修改。`contracts/**` 与生成代码算一组；`docs/handoff.json` 与生成的 `HANDOFF.md` 算一组，组内共用锁。
+- 共享文件唯一权威清单（ADR-0007 第 2 条引用此处）：`contracts/**` 与生成代码、`backend/migrations/**`、`scripts/test.py`、`scripts/pg_suites.py`、`docs/plan/**`、`docs/handoff.json` 与生成的 `HANDOFF.md`、`backend/agent/tests/e2e_local.py`。除上述两组外按具体文件加锁，目录模式不构成整目录锁。
+- **B 线协调文件**：`backend/agent/cj_agent/worker.py`、`backend/agent/cj_agent/provider.py`、`backend/cj_api/local_app.py`、`scripts/run_worker.py`。其他线确需修改时，先确认没有开着的 PR 修改同一文件，并在本线票和 B 线当前票上声明改动范围；占用规则同共享文件，按文件加锁。声明不替代本轮具体写入授权。
+- 开 PR 前运行 `gh pr list`，对每个开着的 PR 运行 `gh pr diff --name-only`，逐文件核对占用；被占用就等待或先做不触碰该文件的部分。M2 拆子票同步 `docs/plan/**` 时同样适用。
 
 ### 停点与跳过
 
@@ -97,7 +100,7 @@ M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两�
 | 序 | 父票 | 预计子票 |
 |---|---|---|
 | 1 | #9 CJ-008 用量与运行上限 | [#242](https://github.com/JTCAO515/G2C/issues/242) 统一计量出口与超限拒绝 → [#243](https://github.com/JTCAO515/G2C/issues/243) 并发/重复与工具后台限额；[#244](https://github.com/JTCAO515/G2C/issues/244) App超限/未知用量/原结果恢复（A线，依赖#242，复用#167） |
-| 2 | #12 CJ-011 结构化长记忆 | [#226](https://github.com/JTCAO515/G2C/issues/226) 保存与受保护读取 → [#227](https://github.com/JTCAO515/G2C/issues/227) 跨会话即时使用/版本消费 → [#228](https://github.com/JTCAO515/G2C/issues/228) App 记忆页/渐进收集；#226 不单独构成整张父票完成 |
+| 2 | #12 CJ-011 结构化长记忆 | [#226](https://github.com/JTCAO515/G2C/issues/226) 保存与受保护读取 → [#227](https://github.com/JTCAO515/G2C/issues/227) 跨会话即时使用/版本消费 → [#228](https://github.com/JTCAO515/G2C/issues/228) App 记忆页/渐进收集（整体归 A，框 1–3 可先于 #227）；#226 不单独构成整张父票完成 |
 | 3 | #17 CJ-019 记忆编辑与启停 | 编辑/启停；旧结果不覆盖（含从 #11、#19 转入的记忆版本 fence） |
 | 4 | #14 CJ-013 需求整理与纠正 | 需求修订与固定事项；App 纠正入口 |
 | 5 | #13 CJ-012、#16 CJ-034 | 地点/路线与天气/时效：L1 用录制数据，真实接口 → L2 |
