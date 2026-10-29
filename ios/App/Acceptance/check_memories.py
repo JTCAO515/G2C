@@ -61,6 +61,7 @@ def main():
     sources = [*list((ROOT/'ios/App').glob('*.swift')), *list((ROOT/'ios/Modules/CJMemoryClient/Sources').rglob('*.swift')),
                *list((ROOT/'ios/Modules/CJShell/Sources').rglob('*.swift')), Path(__file__), HERE/'DevelopmentMemoryUITests.swift']
     sources += list((ROOT/'ios/Modules/CJMessageClient/Sources').rglob('*.swift'))
+    sources += list((ROOT/'ios/Modules/CJRunClient/Sources').rglob('*.swift'))
     report['source_hashes'] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     report['git_trees']={path:subprocess.check_output(['git','rev-parse',head+':'+path],cwd=ROOT,text=True).strip() for path in ('ios','backend','contracts','scripts')}
     report['run_context_sha256']=hashlib.sha256(args.run_context.read_bytes()).hexdigest()

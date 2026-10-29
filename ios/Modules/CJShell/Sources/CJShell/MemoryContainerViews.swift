@@ -105,6 +105,7 @@ struct MemoryContainerManual: View {
     let host: MemoryContainerHost
     let language: ShellLanguage
     @State private var presentation: MemoryManagementPresentationLifetime?
+    @State private var recovering = false
     var body: some View {
         let action = host.captureAction()
         ScrollView {
@@ -114,6 +115,9 @@ struct MemoryContainerManual: View {
                 }
                 Text(language.text("Before a new save, previous operations are checked. An unknown receipt keeps new saves blocked; previous operations are never resent.", "新增保存前会核查此前的原操作。回执未查明时不提交新的保存，也不会重发旧操作。"))
                     .font(.footnote)
+                if recovering {
+                    MemoryActionButton(title: language.text("New memory", "新增一条记忆"), enabled: action != nil) { recovering = false }
+                } else {
                 if let binding = host.manualBinding {
                     MemoryManualForm(binding: binding, currentBinding: { host.manualBinding },
                         options: host.manualOptions, language: language.memoryLanguage,
@@ -124,12 +128,13 @@ struct MemoryContainerManual: View {
                 } else {
                     Text(language.text("Memory is not configured.", "记忆尚未配置。"))
                 }
+                }
                 if host.managementAvailable {
                     MemoryManagementHostRecovery(host: host, language: language).id(host.managementIdentity)
                 }
                 Divider()
                 Text(language.text("Previous save operations", "此前的保存操作")).font(.headline)
-                MemoryActionButton(title: language.text("Read original operations", "读取原操作"), enabled: action != nil) { host.loadPending(context: action) }
+                MemoryActionButton(title: language.text("Read original operations", "读取原操作"), enabled: action != nil) { recovering = true; host.loadPending(context: action) }
                 switch host.pending {
                 case .unconfigured:
                     Text(language.text("Original operations have not been loaded.", "尚未读取原操作。"))
@@ -141,7 +146,7 @@ struct MemoryContainerManual: View {
                     if records.isEmpty { Text(language.text("No original operations found.", "未发现原操作。")) }
                     ForEach(records, id: \.originalUTF8) { record in
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(record.operationID).font(.caption).textSelection(.enabled)
+                            RunSelectableText(text: record.operationID, minimumHeight: 44)
                             MemoryActionButton(title: language.text("Query this original operation", "查询此原操作"), enabled: action != nil) {
                                 Task { await host.queryOriginal(record.operationID, context: action) }
                             }
