@@ -18,14 +18,14 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 must merge before any lane opens a feature PR. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). |
-| Accepted Issue | #151 / #196: parallel lanes A App, B backend message/run, C draft. |
+| Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 merged; lane A closed #159/#194 and parent #7 through PR #202/#211; #164 native repair remains in progress. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). |
+| Accepted Issue | Lane A: #10 / #164 native message acceptance; #7 closed after #159 and #194. Other lane ownership remains unchanged. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-29T01:43:39.334164+00:00 |
+| Last updated | 2026-10-29T03:18:59.955177+00:00 |
 
 ## Active Work
 
-- Lane A App: #164 (iOS candidate exists; waits #198) → #167 → #194 → #159 (#194/#159 wait for JT copy).
+- Lane A App: #159 PR202 and #194 PR211 merged; parent #7 closed with green post-merge main CI40809944579. #164 candidate preserved separately; #198 implementation merged via PR206. Native04 passed four Debug scenarios, two crashed in XCTest AX/log callbacks. Separate native05 UI passed but post-test container scan failed with Simulator Shutdown; no full native PASS. QueryRequired/unknown and actual Toggle-control fixes validated by Shell212/212. Independent preview found history-refresh gate and post-reopen pagination gaps; fixes and 12 SendPermit tests pass, native rerun remains pending. #167 waits #164.
 - Lane B backend message/run: #198 (JT authorization https://github.com/JTCAO515/G2C/issues/198#issuecomment-6485249369) → #170 (waits #168) → split M2 #9.
 - Lane C draft: #168 Part2 close-out per JT decision https://github.com/JTCAO515/G2C/issues/168#issuecomment-6485249974 → #169 → split M2 #12.
 - #186 four cleanup PRs #187–#190 merged with exact-head review; #186 remains open for its owner (Claude). PR #195 (#194 insertion) and #197 (#186 handoff note) are superseded by this revision.
@@ -62,10 +62,7 @@
 
 | Path | Reason |
 | --- | --- |
-| `docs/adr/0007-issue-closure-workflow.md` | §2 parallel lanes (max 3, one parent and one open PR per lane, conflict rules; shared-file list delegated to issue-plan); §6 feature PRs do not edit handoff; decision record. |
-| `docs/plan/issue-plan.md` | Parallel-lane table rewritten for main 8d7a8c4 (A #164→#167→#194→#159; B #198→#170→M2 #9; C #168 Part2→#169→M2 #12); single authoritative shared-file list; #198 and #194 added to the M1 queue table and dependencies. |
-| `AGENTS.md` | Entry rules point to parallel lanes and the new handoff update rule. |
-| `docs/handoff.json, HANDOFF.md` | Lanes, JT decisions on #198/#168, #194 copy operator action; this PR's changed files and checks. |
+| `docs/handoff.json, HANDOFF.md` | Lane A parent#7 closeout and #164 actual progress; preserve other lane entries. |
 
 ## Verification Evidence
 
@@ -79,11 +76,12 @@
 | fail | `[#201 (#168 Part1) 历史] pytest backend/agent/tests/test_draft.py baseline` | 4 failed /12 passed: duplicate fields accepted and Unicode error escaped the draft failure type. Evidence preserved outside repository. | — |
 | pass | `[#201 (#168 Part1) 历史] pytest backend/agent/tests/test_draft.py after structure repair` | 16/16 passed. Includes duplicate spellings, unpaired surrogate and parser recursion bound. | — |
 | pass | `[#201 (#168 Part1) 历史] uv run --locked python -B scripts/test.py; uv run --locked python -B scripts/pg_suites.py` | test57/57, PG11/11 including e2e29/29 with10 structural no-publication subcases. Later merged as PR #201 after exact-head CI and independent APPROVE (main CI 40702955553). Travel constraints and user-visible draft failure remain unresolved. | https://github.com/JTCAO515/G2C/pull/201#issuecomment-6471129685 |
+| pass | `Lane A #159/#194 closeout` | PR202/211 exact-head CI and independent APPROVE; #194 Shell208, structure2+3, AX1+4. Six screenshots attached. Main40809944579 all five success; parent#7 closed. | https://github.com/JTCAO515/G2C/pull/211#issuecomment-6486610499 |
+| fail | `Lane A #164 native04/native05` | Native04 four Debug cases passed, two XCTest AX/log callback crashes; native05 UI passed but container scan failed because simulator was Shutdown. Full native acceptance remains incomplete. | https://github.com/JTCAO515/G2C/issues/164#issuecomment-6486770716 |
 
 ## Blockers
 
-- #194 and #159 final bilingual copy (and DiDi brand name display for #194) await JT.
-- #170 waits #168 close-out; #164 waits #198 merge; #167 waits #164.
+- #170 waits #168 close-out; #164 requires full native acceptance after client repairs; #167 waits #164.
 - L2/cloud/OTP/real model/device resources, branch protection and production keys remain JT-owned.
 
 ## Risks
@@ -104,9 +102,9 @@
 
 ## Next Smallest Action
 
-- Action: Independent Codex review of #196 at exact head; merge locked head and verify main CI. Then start three lane sessions: A #164 (prep only until #198 merges), B #198, C #168 Part2. Each lane: one parent, at most one open PR, only its owned files; shared files one PR at a time; feature PRs do not edit handoff.
-- Expected observation: Each lane opens its first PR without touching other lanes' owned files; main CI stays green.
-- Resume command: `gh pr view 196 --repo JTCAO515/G2C`
+- Action: A: finish #164 history-refresh/reopen-pagination repairs and full native acceptance, then exact-head CI and independent review; #167 follows. B: #198 → #170 → split M2 #9; C: #168 Part2 → #169 → split M2 #12. B/C are the previously recorded queue paths retained for their owners, not a fresh status claim; current Issue/PR state takes precedence. One open PR per lane; shared files one PR at a time.
+- Expected observation: A: all six Debug and Release native cases have actual evidence; retained FAIL/INTERRUPTED/UNRUN remain explicit. #194 VoiceOver device work stays L3 #29.
+- Resume command: `gh issue view 164 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 
