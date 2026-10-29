@@ -32,7 +32,7 @@ public struct Lease: Equatable, Sendable {
 }
 
 public enum ActionPhase: String, Codable, Sendable {
-    case staged, queryRequired, notObserved, accepted
+    case staged, queryRequired, notObserved, accepted, notAccepted, integrityError, resyncRequired
 }
 
 public struct ActionRecord: Codable, Sendable, Equatable {
@@ -161,6 +161,7 @@ public struct Submission: Sendable {
         let digest: String
     }
     private var fresh: [String: FreshAuthorization] = [:]
+    private var rearming: Set<String> = []
     // Process-local denial memory only, not a durable authority or external ledger.
     // Survives coordinator replacement/account switching; no API clears it.
     private static var observed: [Data: Set<String>] = [:]
@@ -204,7 +205,7 @@ public struct Submission: Sendable {
     /// Immediate local fence; does not claim remote logout/deletion or erase recovery data.
     public func invalidate() {
         activationGeneration = UUID()
-        lease = nil; scope = nil; snapshot = Snapshot(); memoryRevision = UUID(); writeView = nil; operations = [:]; draftOperations = [:]; fresh = [:]
+        lease = nil; scope = nil; snapshot = Snapshot(); memoryRevision = UUID(); writeView = nil; operations = [:]; draftOperations = [:]; fresh = [:]; rearming = []
     }
 
     public func validateScope(_ expected: StorageScope, lease: Lease) throws {
@@ -337,6 +338,23 @@ public struct Submission: Sendable {
         return Submission(operation: issue(key, record.messageID, lease, false), originalUTF8: record.originalUTF8)
     }
 
+    /// Trusted send adapter calls only after current server status permits the exact
+    /// original bytes and any restored-action confirmation has been obtained.
+    /// This restores the existing once-only permit; it never creates or changes input.
+    public func authorizeOriginalResubmission(messageID: String, lease: Lease) throws {
+        try check(lease)
+        let key = Self.key(messageID)
+        guard var record = snapshot.actions[key],
+              record.phase == .queryRequired || record.phase == .notObserved,
+              operations[key] == nil, !rearming.contains(key) else { throw RecoveryError.queryOnly }
+        rearming.insert(key)
+        defer { rearming.remove(key) }
+        record.phase = .staged
+        var next = mutationSnapshot; next.actions[key] = record
+        try persist(next)
+        fresh[key] = FreshAuthorization(lease: lease, digest: record.inputSHA256)
+    }
+
     public func beginQuery(messageID: String, lease: Lease) throws -> Operation {
         try check(lease)
         let key = Self.key(messageID)
@@ -353,6 +371,26 @@ public struct Submission: Sendable {
     public func observeNotObserved(_ operation: Operation) throws {
         guard operation.isQuery else { throw RecoveryError.invalidInput }
         try complete(operation, phase: .notObserved, receipt: nil)
+    }
+
+    public func observeNotAccepted(_ operation: Operation) throws {
+        guard operation.isQuery else { throw RecoveryError.invalidInput }
+        try complete(operation, phase: .notAccepted, receipt: nil)
+    }
+
+    public func observeIntegrityError(_ operation: Operation) throws {
+        guard operation.isQuery else { throw RecoveryError.invalidInput }
+        try complete(operation, phase: .integrityError, receipt: nil)
+    }
+
+    public func observeSubmissionInputConflict(_ operation: Operation) throws {
+        guard !operation.isQuery else { throw RecoveryError.invalidInput }
+        try complete(operation, phase: .integrityError, receipt: nil)
+    }
+
+    public func observeResyncRequired(_ operation: Operation) throws {
+        guard operation.isQuery else { throw RecoveryError.invalidInput }
+        try complete(operation, phase: .resyncRequired, receipt: nil)
     }
 
     /// Adapter must first verify/decode the generated wire receipt, then pass its original

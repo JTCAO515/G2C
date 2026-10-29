@@ -23,13 +23,16 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     let synthetic: Bool
     let draftWriteCapability: ServerDraftWriteCapability?
     let isCurrent: @MainActor () -> Bool
+    let selectForSending: (@MainActor (String) -> Bool)?
     public init(client: MessageHTTPClient, recovery: MessageRecovery, scope: StorageScope, lease: Lease,
                 generation: ShellGeneration, limit: Int, limits: MessageReadLimits, synthetic: Bool,
-                draftWriteCapability: ServerDraftWriteCapability? = nil, isCurrent: @escaping @MainActor () -> Bool) {
+                draftWriteCapability: ServerDraftWriteCapability? = nil, isCurrent: @escaping @MainActor () -> Bool,
+                selectForSending: (@MainActor (String) -> Bool)? = nil) {
         self.client = client; self.recovery = recovery; self.scope = scope; self.lease = lease
         self.generation = generation; self.limit = limit; self.limits = limits
         self.synthetic = synthetic; self.isCurrent = isCurrent
         self.draftWriteCapability = draftWriteCapability
+        self.selectForSending = selectForSending
     }
 }
 
@@ -186,6 +189,10 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     @discardableResult public func selectConversation(_ row: Components.Schemas.ConversationSummary, token: UUID) -> Bool {
         guard token == listRequest, current, conversations.contains(where: { Data($0.conversation_id.utf8) == Data(row.conversation_id.utf8) && Data($0.generation.utf8) == Data(row.generation.utf8) && $0.epoch == row.epoch }) else { return false }
         guard writeState != .saving && queryState != .loading else { return false }
+        guard let original = binding else { return false }
+        if let select = original.selectForSending {
+            guard select(row.conversation_id), current(original), token == listRequest else { return false }
+        }
         resetWriteSelection()
         selectionEpoch = UUID()
         listRequest = UUID() // retire a list read issued under the previous selected context

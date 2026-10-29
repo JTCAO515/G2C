@@ -69,7 +69,7 @@ import OpenAPIRuntime
     /// The synthetic accepted input is produced via actual canonical generated
     /// MessageHTTPClient.query and MessageRecovery, never by constructing accepted refs.
     func accept() async throws {
-        let raw = try JSONSerialization.data(withJSONObject: ["version":"MESSAGE-draft.1","message_id":message,"conversation_id":conversation,"text":"synthetic","trip_id":NSNull(),"creation_intent":"none"])
+        let raw = try JSONSerialization.data(withJSONObject: ["version":"MESSAGE-send.1","message_id":message,"conversation_id":conversation,"text":"synthetic","trip_id":NSNull(),"creation_intent":"none","expected_generation":messageGeneration,"expected_sequence":6])
         try recovery.stage(messageID: message, originalUTF8: raw, lease: lease)
         let submission = try recovery.beginSubmission(messageID: message, lease: lease)
         try recovery.observeUnknown(submission.operation)

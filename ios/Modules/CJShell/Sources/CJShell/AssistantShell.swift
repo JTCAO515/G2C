@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import CJMessageHTTP
 
 private struct ShellHeaderHeight: PreferenceKey {
     static let defaultValue: CGFloat = 0
@@ -40,10 +41,15 @@ struct AssistantShell: View {
                     }
                 }
                 Button(state.language.text("Server history and drafts", "服务器历史与草稿")) { panel = .server }
+                    .accessibilityIdentifier("assistant.serverHistory")
                 Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language)
                 MessageRecoveryStatus(host: messageHost, language: state.language)
+                if let text = messageHost.visibleOriginalText {
+                    Text(text).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .trailing)
+                        .accessibilityIdentifier("assistant.originalText")
+                }
             }
             .padding(.horizontal)
             .padding(.bottom)
@@ -73,6 +79,7 @@ struct AssistantShell: View {
             draftFocused = false
             panel = nil; feedbackEntry = nil
         }
+        .onChange(of: state.draft) { _, _ in messageHost.saveDraft() }
         .onChange(of: state.selectedTab) { _, tab in
             if tab != .assistant { draftFocused = false }
         }
@@ -97,6 +104,7 @@ struct AssistantShell: View {
                 }
                 .toolbar { ToolbarItem(placement: .confirmationAction) {
                     Button(state.language.text("Done", "完成")) { panel = nil }
+                        .accessibilityIdentifier("assistant.panel.done")
                 }}
             }
         }
@@ -135,6 +143,17 @@ struct AssistantShell: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
+            if messageHost.supportsSending {
+                if let conversation = messageHost.selectedConversation {
+                    Text(state.language.text("Conversation: ", "会话：") + conversation)
+                        .font(.caption).accessibilityIdentifier("assistant.conversation")
+                }
+                Toggle(state.language.text("Trip planning", "规划行程"), isOn: Binding(
+                    get: { messageHost.creationIntent == .considerTrip },
+                    set: { messageHost.creationIntent = $0 ? .considerTrip : .none }))
+                    .font(.caption).disabled(messageHost.isBusy)
+                    .accessibilityIdentifier("assistant.intent")
+            }
             HStack(alignment: .bottom, spacing: 4) {
                 unavailableIcon("plus", english: "Attachments — not available", chinese: "附件——尚未开放")
                 TextField(state.language.text("Start chatting", "开始聊天"), text: $state.draft, axis: .vertical)
@@ -143,8 +162,19 @@ struct AssistantShell: View {
                     .padding(.vertical, 12)
                     .accessibilityLabel(state.language.text("Message draft", "消息草稿"))
                     .accessibilityIdentifier("assistant.draft")
+                    .disabled(messageHost.isBusy)
                 if state.hasDraft {
-                    unavailableIcon("arrow.up", english: "Send — service not connected", chinese: "发送——服务尚未接入")
+                    if messageHost.supportsSending {
+                        Button { messageHost.sendNew(); draftFocused = false } label: {
+                            Image(systemName: "arrow.up").font(.system(size: min(controlIconSize, 32)))
+                                .frame(minWidth: 44, minHeight: 44)
+                        }
+                        .disabled(!messageHost.canSend)
+                        .accessibilityLabel(state.language.text("Send", "发送"))
+                        .accessibilityIdentifier("assistant.send")
+                    } else {
+                        unavailableIcon("arrow.up", english: "Send — service not connected", chinese: "发送——服务尚未接入")
+                    }
                 } else {
                     unavailableIcon("mic", english: "Voice — not available", chinese: "语音——尚未开放")
                 }
@@ -157,7 +187,9 @@ struct AssistantShell: View {
     }
 
     private var unavailableHint: some View {
-        Text(draftFocused
+        Text(messageHost.supportsSending
+                 ? state.language.text("Choose a conversation in history. Unsent drafts are saved locally.", "请在历史中选择会话。未发送草稿会保存在本地。")
+                 : draftFocused
                  ? state.language.text("Sending unavailable", "发送尚未开放")
                  : state.language.text("Sending, attachments, voice and gifts are not available yet.", "发送、附件、语音和礼物尚未开放。"))
                 .font(.caption).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)

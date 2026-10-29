@@ -3,6 +3,8 @@ import Foundation
 import CJShell
 import CJTripClient
 import CJMessageHTTP
+import CJMessageClient
+import CJMessageKeyBridge
 import CJMessageKeys
 import CJSession
 import CJAPI
@@ -54,6 +56,7 @@ import Observation
 @MainActor final class DevelopmentTripHost {
     let id = UUID()
     let trips: TripContainerHost
+    let messages: DevelopmentMessageHost
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
@@ -96,6 +99,8 @@ import Observation
             proposalID: configuration.proposalID, synthetic: false, currentBinding: { lifetime.current })) else {
             throw TripFailure.staleBinding
         }
+        messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
+                                               isCurrent: { lifetime.current != nil })
         shell.selectedTab = .trips
         // Disk restoration only selects an original action for GET reconciliation;
         // it never prepares or submits another action, even while the API is offline.
@@ -108,9 +113,98 @@ import Observation
 
     func invalidate() {
         lifetime.active = false
+        messages.invalidate()
         trips.invalidate()
         keys.invalidate()
         if lifetime.ownsSession { _ = lifetime.session.clearWithSettlement() }
+    }
+}
+
+@MainActor private final class DevelopmentMessageLifetime {
+    var active = true
+    let isCurrent: @MainActor () -> Bool
+    init(isCurrent: @escaping @MainActor () -> Bool) { self.isCurrent = isCurrent }
+    func validate() throws {
+        guard active, isCurrent() else { throw RecoveryError.inactive }
+    }
+}
+
+@MainActor private final class DevelopmentMessageCredentials: MessageCredentialsProvider {
+    private let token: String
+    private let scope: StorageScope
+    private let lease: Lease
+    private let lifetime: DevelopmentMessageLifetime
+    init(token: String, scope: StorageScope, lease: Lease, lifetime: DevelopmentMessageLifetime) {
+        self.token = token; self.scope = scope; self.lease = lease; self.lifetime = lifetime
+    }
+    func bearer(for requested: StorageScope, lease: Lease) async throws -> String? {
+        try lifetime.validate()
+        guard lease == self.lease, Data(requested.environment.utf8) == Data(scope.environment.utf8),
+              Data(requested.account.utf8) == Data(scope.account.utf8) else { throw RecoveryError.inactive }
+        return token
+    }
+}
+
+/// Uses the same development account/session lifetime as the Trip host; no interceptor.
+@MainActor final class DevelopmentMessageHost {
+    let messages: AssistantMessageHost
+    let history: ServerHistoryHost
+    private let lifetime: DevelopmentMessageLifetime
+    private let keyAdapter: ExistingMessageKeyAdapter
+
+    init(configuration: DevelopmentSessionConfiguration, shell: ShellState,
+         isCurrent: @escaping @MainActor () -> Bool) throws {
+        let lifetime = DevelopmentMessageLifetime(isCurrent: isCurrent)
+        let scope = try StorageScope(environment: configuration.environmentID.uuidString, account: configuration.accountID.uuidString)
+        let namespace = MessageKeyNamespace(environment: configuration.environmentID, account: configuration.accountID,
+                                             purpose: .localMessageStorageV1)
+        guard let applicationID = Bundle.main.bundleIdentifier else { throw MessageHTTPFailure.invalidConfiguration }
+        let keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
+                                                 protection: .whenUnlockedThisDeviceOnly)
+        let files = FileManager.default
+        let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let directory = support.appendingPathComponent("G2CDevelopmentMessages", isDirectory: true)
+            .appendingPathComponent(namespace.environment.uuidString, isDirectory: true)
+            .appendingPathComponent(namespace.account.uuidString, isDirectory: true)
+        try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let root = directory.resolvingSymlinksInPath()
+        if try keys.existing(expectedID: nil, for: keys.begin(.lookup)) == nil {
+            guard try files.contentsOfDirectory(atPath: root.path).isEmpty else { throw RecoveryError.keyUnavailable }
+            _ = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
+        }
+        let keyAdapter = try ExistingMessageKeyAdapter(provider: keys, scope: scope, namespace: namespace)
+        let storage = try EncryptedFileStorage(directory: root, keys: keyAdapter)
+        let recovery = MessageRecovery(storage: storage)
+        let lease = try recovery.activate(scope)
+        let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16384,
+                                           maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
+        let transport = try NoRedirectTransport.developmentMessages(endpoint: endpoint, requestTimeout: 10,
+            resourceTimeout: 20, validate: { try lifetime.validate() })
+        let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
+        let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,
+                                        credentials: credentials, liveReadTransport: transport)
+        let messages = AssistantMessageHost(shell: shell), history = ServerHistoryHost(shell: shell)
+        guard messages.bind(AssistantMessageBinding(recovery: recovery, scope: scope, lease: lease,
+            generation: shell.generation, synthetic: false,
+            isCurrent: { (try? lifetime.validate()) != nil },
+            invalidateResources: { lifetime.active = false; keyAdapter.invalidate() }, sendClient: client)) else {
+            throw RecoveryError.inactive
+        }
+        let limits = try MessageReadLimits(maximumPageItems: 20, maximumCursorBytes: 4096,
+                                           maximumDecodedBytes: 1_000_000, maximumPages: 50)
+        guard history.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease,
+            generation: shell.generation, limit: 20, limits: limits, synthetic: false,
+            isCurrent: { (try? lifetime.validate()) != nil },
+            selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
+            messages.invalidate(); throw RecoveryError.inactive
+        }
+        self.lifetime = lifetime; self.keyAdapter = keyAdapter
+        self.messages = messages; self.history = history
+    }
+
+    func invalidate() {
+        lifetime.active = false
+        history.invalidate(); messages.invalidate(); keyAdapter.invalidate()
     }
 }
 

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import CJMessageClient
+import CJMessageHTTP
 import CJAPI
 
 /// Trusted composition input, never constructed from view text or a session token.
@@ -16,16 +17,19 @@ import CJAPI
     let isCurrent: @MainActor () -> Bool
     let invalidateResources: @MainActor () -> Void
     let queryOriginal: (@MainActor (String, Lease) async throws -> Void)?
+    let sendClient: MessageHTTPClient?
 
     public init(recovery: MessageRecovery, scope: StorageScope, lease: Lease,
                 generation: ShellGeneration, conversationID: String? = nil, messageID: String? = nil,
                 synthetic: Bool, isCurrent: @escaping @MainActor () -> Bool,
                 invalidateResources: @escaping @MainActor () -> Void,
-                queryOriginal: (@MainActor (String, Lease) async throws -> Void)? = nil) {
+                queryOriginal: (@MainActor (String, Lease) async throws -> Void)? = nil,
+                sendClient: MessageHTTPClient? = nil) {
         self.recovery = recovery; self.scope = scope; self.lease = lease
         self.generation = generation; self.conversationID = conversationID; self.messageID = messageID
         self.synthetic = synthetic; self.isCurrent = isCurrent; self.queryOriginal = queryOriginal
         self.invalidateResources = invalidateResources
+        self.sendClient = sendClient
     }
 }
 
@@ -65,7 +69,15 @@ import CJAPI
 
 /// Activity only; canonical action phase/bytes/receipt stay in CJMessageClient.ActionRecord.
 public enum MessageHostActivity: Equatable {
-    case unavailable, ready, querying, unknown, storageBlocked, invalidated
+    case unavailable, ready, preparing, sending, querying, inputRejected, unknown, storageBlocked, invalidated
+}
+
+@MainActor public struct MessageResubmissionContext: Identifiable {
+    public let id = UUID()
+    public let requiresConfirmation: Bool
+    fileprivate let binding: AssistantMessageBinding
+    fileprivate let messageID: String
+    fileprivate let revision: UUID
 }
 
 @MainActor @Observable public final class AssistantMessageHost {
@@ -82,23 +94,43 @@ public enum MessageHostActivity: Equatable {
     private var selectedMessageID: String?
     private var runSelectionRevision = UUID()
     private var runSelectionAllowed = false
+    public var creationIntent: MessageCreationIntent = .none
+    public var isBusy: Bool { activity == .preparing || activity == .sending || activity == .querying }
+    public var selectedConversation: String? { bindingIsCurrent ? selectedConversationID : nil }
+    public var supportsSending: Bool { bindingIsCurrent && binding?.sendClient != nil }
+    public var visibleOriginalText: String? {
+        guard let record = visibleRecord,
+              let value = try? JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any] else { return nil }
+        return value["text"] as? String
+    }
     public var visibleProjection: LocalRecoveryProjection? {
         guard bindingIsCurrent, let binding, let projection,
               (try? binding.recovery.validateProjection(projection, scope: binding.scope, lease: binding.lease)) != nil else { return nil }
         return projection
     }
-    public var canSelectLocalItem: Bool { bindingIsCurrent && activity != .querying }
+    public var canSelectLocalItem: Bool { bindingIsCurrent && !isBusy }
 
     public var visibleRecord: ActionRecord? { bindingIsCurrent ? record : nil }
     public var isSynthetic: Bool { bindingIsCurrent && binding?.synthetic == true }
     public var isConfigured: Bool { bindingIsCurrent }
-    public var canSaveDraft: Bool { bindingIsCurrent && selectedConversationID != nil && activity != .querying && activity != .storageBlocked }
+    public var canSaveDraft: Bool { bindingIsCurrent && selectedConversationID != nil && !isBusy && activity != .storageBlocked }
     public var canQuery: Bool {
-        guard bindingIsCurrent, binding?.queryOriginal != nil, activity != .querying,
+        guard bindingIsCurrent, binding?.queryOriginal != nil || binding?.sendClient != nil, !isBusy,
               let record else { return false }
         return record.phase == .queryRequired || record.phase == .notObserved
     }
-    public var canSend: Bool { false }
+    public var canStartMessage: Bool {
+        guard bindingIsCurrent, !isBusy, let binding, let client = binding.sendClient,
+              let conversation = selectedConversationID else { return false }
+        return (try? client.canStartSend(conversationID: conversation, lease: binding.lease)) == true
+    }
+    public var canSend: Bool { canStartMessage && !shell.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    public var canResubmit: Bool {
+        guard bindingIsCurrent, !isBusy, let binding, let client = binding.sendClient,
+              let record, record.phase == .notObserved,
+              let cid = try? originalConversation(record), selectedConversationID.map({ Data($0.utf8) == Data(cid.utf8) }) == true else { return false }
+        return (try? client.sendDecision(messageID: record.messageID, lease: binding.lease)) == .resubmitOriginal
+    }
 
     public init(shell: ShellState) {
         self.shell = shell
@@ -249,12 +281,13 @@ public enum MessageHostActivity: Equatable {
     }
 
     public func queryOriginal() {
-        guard canQuery, let binding, let messageID = selectedMessageID, let query = binding.queryOriginal else { return }
+        guard canQuery, let binding, let messageID = selectedMessageID else { return }
         retireRunSelection()
         activity = .querying
         task = Task { [weak self] in
             do {
-                try await query(messageID, binding.lease)
+                if let client = binding.sendClient { _ = try await client.reconcileSend(messageID: messageID, lease: binding.lease) }
+                else if let query = binding.queryOriginal { try await query(messageID, binding.lease) }
                 guard let self, self.isSameBinding(binding) else { return }
                 guard self.bindingIsCurrent else { self.blockStorage(for: binding); return }
                 guard self.isSameBinding(binding) else { return }
@@ -273,6 +306,132 @@ public enum MessageHostActivity: Equatable {
         }
     }
 
+    @discardableResult public func selectConversationForSending(_ conversationID: String) -> Bool {
+        guard bindingIsCurrent, !isBusy, let binding, let client = binding.sendClient,
+              !conversationID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              conversationID.utf8.count <= 256, !conversationID.utf8.contains(0) else { return false }
+        do {
+            let previous = selectedConversationID
+            if let previous {
+                try binding.recovery.saveDraft(Data(shell.draft.utf8), conversationID: previous, lease: binding.lease)
+            }
+            guard isSameBinding(binding), bindingIsCurrent, isSameBinding(binding) else { return false }
+            retireRunSelection()
+            selectedConversationID = conversationID; selectedMessageID = nil; record = nil
+            let draft = try binding.recovery.draft(conversationID: conversationID, lease: binding.lease)
+            if previous != nil || shell.draft.isEmpty {
+                guard let text = String(data: draft ?? Data(), encoding: .utf8) else { throw RecoveryError.invalidSnapshot }
+                shell.draft = text
+            }
+            storedDraftBytes = draft
+            let currentProjection = try binding.recovery.localProjection(scope: binding.scope, lease: binding.lease)
+            projection = currentProjection
+            for reference in currentProjection.actions.sorted(by: { Data($0.messageID.utf8).lexicographicallyPrecedes(Data($1.messageID.utf8)) })
+                where reference.phase != .accepted && reference.phase != .notAccepted {
+                guard let pending = try binding.recovery.action(messageID: reference.messageID, lease: binding.lease) else { throw RecoveryError.staleOperation }
+                if Data(try originalConversation(pending).utf8) == Data(conversationID.utf8) {
+                    selectedMessageID = pending.messageID; record = pending; break
+                }
+            }
+            let revision = runSelectionRevision
+            let needsHead = record == nil
+            activity = .preparing
+            task = Task { [weak self] in
+                do {
+                    if needsHead { _ = try await client.readSendHead(conversationID: conversationID, lease: binding.lease) }
+                    guard let self, self.isSameBinding(binding), self.runSelectionRevision == revision else { return }
+                    guard self.bindingIsCurrent else { self.blockStorage(for: binding); return }
+                    self.activity = .ready; self.task = nil
+                    self.saveDraft()
+                } catch { self?.sendFailed(binding, revision: revision) }
+            }
+            return true
+        } catch { blockStorage(for: binding); return false }
+    }
+
+    public func sendNew() {
+        guard canSend, let binding, let client = binding.sendClient, let conversation = selectedConversationID else { return }
+        let text = shell.draft, editorRevision = shell.draftRevision
+        retireRunSelection()
+        let revision = runSelectionRevision
+        activity = .sending
+        do {
+            let original = try client.stageSend(messageID: UUID().uuidString, conversationID: conversation,
+                                                text: text, creationIntent: creationIntent, lease: binding.lease)
+            guard isSameBinding(binding), bindingIsCurrent, isSameBinding(binding) else { return }
+            record = original; selectedMessageID = original.messageID
+            projection = try binding.recovery.localProjection(scope: binding.scope, lease: binding.lease)
+            task = Task { [weak self] in
+                do {
+                    _ = try await client.submitPrepared(messageID: original.messageID, lease: binding.lease)
+                    try self?.sendFinished(binding, messageID: original.messageID, revision: revision,
+                                          clearEditorRevision: editorRevision)
+                } catch { self?.sendFailed(binding, revision: revision) }
+            }
+        } catch RecoveryError.invalidInput {
+            guard isSameBinding(binding), runSelectionRevision == revision else { return }
+            guard bindingIsCurrent else { blockStorage(for: binding); return }
+            guard isSameBinding(binding), runSelectionRevision == revision else { return }
+            activity = .inputRejected; task = nil; saveDraft()
+        } catch { sendFailed(binding, revision: revision) }
+    }
+
+    public func captureResubmission() -> MessageResubmissionContext? {
+        guard canResubmit, let binding, let client = binding.sendClient, let record,
+              let confirmation = try? client.requiresResubmissionConfirmation(messageID: record.messageID, lease: binding.lease) else { return nil }
+        return MessageResubmissionContext(requiresConfirmation: confirmation, binding: binding,
+                                          messageID: record.messageID, revision: runSelectionRevision)
+    }
+
+    public func resubmitOriginal(_ context: MessageResubmissionContext, confirmed: Bool) {
+        guard canResubmit, isSameBinding(context.binding), runSelectionRevision == context.revision,
+              selectedMessageID.map({ Data($0.utf8) == Data(context.messageID.utf8) }) == true,
+              !context.requiresConfirmation || confirmed, let client = context.binding.sendClient else { return }
+        let binding = context.binding
+        retireRunSelection(); let revision = runSelectionRevision
+        activity = .sending
+        task = Task { [weak self] in
+            do {
+                _ = try await client.submitPrepared(messageID: context.messageID, lease: binding.lease, confirmRestored: confirmed)
+                try self?.sendFinished(binding, messageID: context.messageID, revision: revision)
+            } catch { self?.sendFailed(binding, revision: revision) }
+        }
+    }
+
+    private func sendFinished(_ original: AssistantMessageBinding, messageID: String, revision: UUID,
+                              clearEditorRevision: UUID? = nil) throws {
+        guard isSameBinding(original), runSelectionRevision == revision else { return }
+        guard bindingIsCurrent else { blockStorage(for: original); return }
+        guard isSameBinding(original), runSelectionRevision == revision else { return }
+        record = try original.recovery.action(messageID: messageID, lease: original.lease)
+        if record?.phase == .accepted, let clearEditorRevision, shell.draftRevision == clearEditorRevision,
+           let conversation = selectedConversationID {
+            try original.recovery.saveDraft(Data(), conversationID: conversation, lease: original.lease)
+            guard isSameBinding(original), bindingIsCurrent, isSameBinding(original), runSelectionRevision == revision else { return }
+            if shell.draftRevision == clearEditorRevision { shell.draft = ""; storedDraftBytes = Data() }
+        }
+        projection = try original.recovery.localProjection(scope: original.scope, lease: original.lease)
+        runSelectionAllowed = record?.phase == .accepted
+        activity = record?.phase == .queryRequired ? .unknown : .ready; task = nil
+        saveDraft()
+    }
+
+    private func sendFailed(_ original: AssistantMessageBinding, revision: UUID) {
+        guard isSameBinding(original), runSelectionRevision == revision else { return }
+        let current = bindingIsCurrent
+        guard isSameBinding(original), runSelectionRevision == revision else { return }
+        guard current else { blockStorage(for: original); return }
+        if let selectedMessageID { record = try? original.recovery.action(messageID: selectedMessageID, lease: original.lease) }
+        activity = .unknown; task = nil
+        saveDraft()
+    }
+
+    private func originalConversation(_ record: ActionRecord) throws -> String {
+        guard let value = try JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any],
+              let cid = value["conversation_id"] as? String, !cid.isEmpty else { throw RecoveryError.invalidSnapshot }
+        return cid
+    }
+
     /// Called synchronously by ShellState BEFORE its identity generation/clear changes.
     public func invalidate() { retire(as: .invalidated) }
 
@@ -280,6 +439,7 @@ public enum MessageHostActivity: Equatable {
         let previous = binding
         binding = nil; record = nil; projection = nil; storedDraftBytes = nil
         selectedConversationID = nil; selectedMessageID = nil
+        creationIntent = .none
         retireRunSelection()
         task?.cancel(); task = nil
         activity = nextActivity
