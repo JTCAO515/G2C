@@ -265,9 +265,14 @@ def group_local_budget_exit():
     return script('backend/cj_api/tests/local_budget_exit_pg.py')
 
 
+def group_local_protection_schema():
+    # #170 durable local protection schema/upgrade, not host activation.
+    return script('backend/cj_api/tests/local_protection_schema_pg.py')
+
+
 GROUPS = {'e2e': group_e2e, 'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners,
-          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit}
+          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema}
 
 
 def main(argv):
