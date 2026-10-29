@@ -302,7 +302,7 @@ def exercise(auth,conninfo):
     with TestClient(app) as client:
         for subject in ('unicode-high','unicode-low'):
             result=status(client,subject,subject)
-            assert result['run_status']=='unknown' and result['budget_exhausted_stage'] is None,result
+            assert result['run_status']=='unknown' and result['budget_exhausted_stage']=='none',result
             ledger,operations=saved(subject)
             assert not ledger.attempts and not operations and Meter.exposure(ledger)==0
         assert status(client,'unicode-valid','unicode-valid')['run_status']=='completed'
