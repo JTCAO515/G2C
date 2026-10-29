@@ -65,7 +65,7 @@
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
 | A App | #164 → #167 → #194 → #159（#194、#159 等 JT 确认文案后才做；未确认就跳过） | `ios/Modules/CJMessageClient/**`、`ios/Modules/CJRunClient/**`、`ios/Modules/CJShell/**`、`ios/App/**`、`ios/Modules/CJUsageClient` 测试夹具、`docs/ui.md` | #164 等 B 线 #198 合并；#170 若需要 App 端失败呈现，由 B 线拆子票交本线 |
-| B 后端消息与运行 | #198 → #170 → 按“M2 拆分预案”拆 #9 并开始第一张子票 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`scripts/dev_auth.py`、`backend/agent/cj_agent/worker.py`、`backend/agent/cj_agent/provider.py` | #170 等 C 线 #168 关闭 |
+| B 后端消息与运行 | #198 → #170 → M2 #9：#242 统一计量出口 → #243 并发/重复与工具后台限额；#244 App消费归A | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`scripts/dev_auth.py`、`backend/agent/cj_agent/worker.py`、`backend/agent/cj_agent/provider.py` | #170 等 C 线 #168 关闭；#244 依赖 #242 冻结语义，复用 A 线 #167；实际工具/后台生产者按功能票与owner确认，不以fixture替代 |
 | C 草稿 | #168 收尾（Part2）→ #169 → M2 #12：#226 保存/读取 → #227 跨会话使用 → #228 App 记忆页 | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`ios/Modules/CJTripClient/**`、`ios/Modules/CJMemoryClient/**` | 跨线文件须明确写权并无冲突；#226 本地 API/RLS 接入、#227 运行消费、#228 Shell/App 宿主按各票停点协调 |
 
 M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两张父票”），两条线的拆票都要改 `docs/plan/**`，按共享文件规则排队。
@@ -96,7 +96,7 @@ M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两�
 
 | 序 | 父票 | 预计子票 |
 |---|---|---|
-| 1 | #9 CJ-008 用量与运行上限 | 统一计量出口与超限拒绝；并发/重复尝试不绕过限制；App 超限提示 |
+| 1 | #9 CJ-008 用量与运行上限 | [#242](https://github.com/JTCAO515/G2C/issues/242) 统一计量出口与超限拒绝 → [#243](https://github.com/JTCAO515/G2C/issues/243) 并发/重复与工具后台限额；[#244](https://github.com/JTCAO515/G2C/issues/244) App超限/未知用量/原结果恢复（A线，依赖#242，复用#167） |
 | 2 | #12 CJ-011 结构化长记忆 | [#226](https://github.com/JTCAO515/G2C/issues/226) 保存与受保护读取 → [#227](https://github.com/JTCAO515/G2C/issues/227) 跨会话即时使用/版本消费 → [#228](https://github.com/JTCAO515/G2C/issues/228) App 记忆页/渐进收集；#226 不单独构成整张父票完成 |
 | 3 | #17 CJ-019 记忆编辑与启停 | 编辑/启停；旧结果不覆盖（含从 #11、#19 转入的记忆版本 fence） |
 | 4 | #14 CJ-013 需求整理与纠正 | 需求修订与固定事项；App 纠正入口 |
@@ -104,6 +104,8 @@ M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两�
 | 6 | #18 CJ-035 可行性 | 约束求解有界执行；与草稿校验对接 |
 | 7 | #21 CJ-016 行程页 | 每日时间线、地图与地点信息 |
 | 8 | #22 CJ-017、#25 CJ-018 | 手动编辑与固定事项保护；助手只改选定行程并说明影响 |
+
+#9 父票六框映射：框1/5由#242承接；框2/6由#243承接；框3的入口注册/拒绝由#242、实际工具循环和后台生产者接入由#243及对应功能票承接；框4及App日志/缓存由#244承接。真实身份、模型/工具费用、真实结算与晚到回执登记L2 #32，设备部分按适用范围留L3 #29；本地合成回调不替代实际生产者。三张票已建立原生sub-issue，#243/#244原生依赖#242。新契约、迁移语义、别线写权和外部资源仍适用既有停点，拆票本身不授予这些权限。
 
 ## 修订规则
 
