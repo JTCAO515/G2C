@@ -3,6 +3,7 @@ import json
 import time
 import uuid
 from unittest.mock import patch
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 import psycopg
@@ -39,7 +40,7 @@ class TestUsageConnection:
 
 
 def exercise(auth, conninfo):
-    subjects=['alice','race','draft','output','assoc-ack','reserve-ack','claim-ack','settle-ack','cancel-gap','cancel-ledger','success-draft','period','not-fake','revoke-claim','draft-claim-ack','time-bound']
+    subjects=['alice','race','draft','output','assoc-ack','reserve-ack','claim-ack','settle-ack','cancel-gap','cancel-ledger','success-draft','period','not-fake','revoke-claim','draft-claim-ack','time-bound','late-auth','late-eof','late-settle']
     harness.dev_auth.init(auth,subjects)
     config=json.loads(conninfo.read_text()); database=LocalDatabase(conninfo)
     checker=AdmissionChecker(PyJWTVerifier(JWTConfiguration(ISSUER,AUDIENCE,'RS256',0),
@@ -285,6 +286,44 @@ def exercise(auth, conninfo):
     assert result.status=='failed' and worker.provider.calls==1
     assert worker.runs.snapshot(worker._binding(receipt)).budget_exhausted_stage=='answer'
     assert Meter.exposure(ledger(account))==1
+    scope,account,factory=setup('late-auth',1)
+    receipt=send('late-auth'); worker=factory()
+    transaction=PostgresRepository.transaction; transactions=[]
+    @contextmanager
+    def revoke_after_read(repo):
+        with transaction(repo) as value: yield value
+        transactions.append(True)
+        if len(transactions)==3:
+            (auth/'invited.json').write_text(json.dumps([s for s in subjects if s!='late-auth']))
+    try:
+        with patch.object(PostgresRepository,'transaction',revoke_after_read): result=worker._one(receipt)
+    finally: (auth/'invited.json').write_text(json.dumps(subjects))
+    assert result.status=='context_invalid' and worker.provider.calls==0
+
+    for late_stage in ('eof','settle'):
+        tick=[time.time()]
+        subject='late-'+late_stage
+        scope,account,factory=setup(subject,2,clock=lambda:tick[0])
+        receipt=send(subject,'consider_trip'); worker=factory()
+        class LateEOF(FakeProvider):
+            def stream(self,messages,system=None):
+                yield from super().stream(messages,system=system)
+                if system is not None and late_stage=='eof': tick[0]+=601
+        worker.provider=LateEOF()
+        settle=Meter.settle; settled=[]
+        def settle_then_delay(meter,receipt):
+            result=settle(meter,receipt); settled.append(True)
+            if len(settled)==2 and late_stage=='settle': tick[0]+=601
+            return result
+        with patch.object(Meter,'settle',settle_then_delay): result=worker._one(receipt)
+        state=worker.runs.snapshot(worker._binding(receipt))
+        assert result.status=='completed' and result.proposal_id is None
+        assert state.budget_exhausted_stage=='draft' and state.draft_outcome=='budget_exhausted'
+        attempts=list(ledger(account).attempts.values())
+        assert sum(a.receipt is not None for a in attempts)==(1 if late_stage=='eof' else 2)
+        assert Meter.exposure(ledger(account))==2
+        with psycopg.connect(**config) as admin:
+            assert admin.execute('SELECT count(*) FROM cj_trip_proposal WHERE proposal_id=%s',('p-'+receipt.run_id,)).fetchone()[0]==0
     print('PASS PG quota/concurrency, two-step receipts, original periods, ACK/cancel faults and FakeProvider-only gate; host UNRUN')
 
 
