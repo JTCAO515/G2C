@@ -134,7 +134,7 @@ import Foundation
         XCTAssertEqual(saved.posts, 1); XCTAssertEqual(saved.receipts, 1); XCTAssertEqual(saved.provider_calls, draft && !stopping ? 2 : 1)
         XCTAssertEqual(saved.cancellations, stopping ? 1 : 0)
         XCTAssertEqual(saved.effects, 0); XCTAssertEqual(saved.forbidden_writes, 0)
-        if draft { checkDraft(mode, language: language, proof: saved) }
+        if draft { try checkDraft(mode, language: language, proof: saved) }
         capture(mode + "-persisted-" + language)
         try launch(fixture, language: language, restore: true)
         tap("assistant.history")
@@ -145,10 +145,10 @@ import Foundation
         let reopened = try await proof(fixture)
         XCTAssertEqual(reopened.provider_calls, saved.provider_calls); XCTAssertEqual(reopened.posts, 1)
         XCTAssertEqual(reopened.cancellations, saved.cancellations)
-        if draft { checkDraft(mode, language: language, proof: reopened) }
+        if draft { try checkDraft(mode, language: language, proof: reopened) }
         capture(mode + "-read-after-reopen-" + language)
     }
-    private func checkDraft(_ mode: String, language: String, proof: Proof) {
+    private func checkDraft(_ mode: String, language: String, proof: Proof) throws {
         let expected: String
         let outcome: String?
         switch mode {
@@ -164,6 +164,10 @@ import Foundation
         let visible = NSPredicate(format:"exists == true AND hittable == true")
         for _ in 0..<10 { if visible.evaluate(with:value) { break }; app.swipeUp() }
         XCTAssertTrue(visible.evaluate(with:value))
+        try app.performAccessibilityAudit(for: [.sufficientElementDescription, .textClipped]) { issue in
+            print("DRAFT_AX \(language): \(issue.compactDescription)")
+            return false
+        }
         XCTAssertEqual(proof.creation_intent, "consider_trip")
         XCTAssertGreaterThanOrEqual(proof.draft_reads, 1)
         XCTAssertEqual(proof.draft_outcome, outcome)
