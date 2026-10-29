@@ -70,7 +70,8 @@ import Foundation
         let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", text), object: value)
         XCTAssertEqual(XCTWaiter.wait(for: [expected], timeout: 30), .completed, value.label)
     }
-    private func launch(_ fixture: Fixture, language: String, restore: Bool = false) throws {
+    private func launch(_ fixture: Fixture, language: String, restore: Bool = false, account: String? = nil) throws {
+        let choice = account ?? fixture.choice
         app?.terminate(); app = XCUIApplication(bundleIdentifier: bundle)
         app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = ["G2C_DEV_ACCOUNT_MODE": "1", "G2C_DEV_API_BASE_URL": fixture.endpoint,
@@ -78,8 +79,8 @@ import Foundation
         app.launch(); XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         tap(language == "en" ? "Memory" : "记忆"); tap("memory.account")
         if restore { tap("account.development.restore") }
-        else { tap("account.development.signout"); tap("account.development.signin." + fixture.choice) }
-        let signed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", fixture.subjects[fixture.choice]!), object: app.staticTexts["account.development.status"])
+        else { tap("account.development.signout"); tap("account.development.signin." + choice) }
+        let signed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", fixture.subjects[choice]!), object: app.staticTexts["account.development.status"])
         XCTAssertEqual(XCTWaiter.wait(for: [signed], timeout: 20), .completed)
         tap(language == "en" ? "Assistant" : "助手")
     }
@@ -133,6 +134,7 @@ import Foundation
         let saved = try await proof(fixture, settled: true)
         try check(mode, language: language, result: saved, expectedStatus: expectedStatus)
         capture(mode + "-persisted-" + language)
+        try checkOriginal(fixture.prompt + (mode == "budget_answer" ? " second" : ""), selection: mode == "draft_published", language: language)
         _ = try await call("/reconcile", ["case": fixture.conversation])
         try launch(fixture, language: language, restore: true)
         tap("assistant.history"); tap("recovery.action." + (try XCTUnwrap(saved.message_id))); tap("assistant.panel.done")
@@ -149,6 +151,18 @@ import Foundation
         XCTAssertEqual(reopened.usage_receipts, saved.usage_receipts)
         XCTAssertGreaterThanOrEqual(reopened.draft_reads, 2)
         capture(mode + "-read-after-reopen-" + language)
+        try checkOriginal(fixture.prompt + (mode == "budget_answer" ? " second" : ""), selection: false, language: language)
+        if mode == "draft_published" {
+            let other = fixture.choice == "A" ? "B" : "A"
+            try launch(fixture, language: language, account: other)
+            XCTAssertFalse(app.staticTexts["run.display.text"].exists)
+            XCTAssertFalse(app.textViews["assistant.originalText"].exists)
+            tap("assistant.serverHistory"); tap("history.loadConversations")
+            XCTAssertTrue(app.staticTexts[language == "en" ? "The read returned no records." : "本次读取未返回记录。"].firstMatch.waitForExistence(timeout: 15))
+            XCTAssertFalse(app.buttons["history.conversation." + fixture.conversation].exists)
+            capture("foreign-account-empty-history-" + language)
+            _ = try await call("/observe-foreign-ui", ["case": fixture.conversation])
+        }
     }
     /// One explicit user read after an observed producer refusal. Never retry a write/model.
     private func terminal(_ fixture: Fixture, expected: String, language: String) async throws {
@@ -171,6 +185,23 @@ import Foundation
             XCTAssertEqual(after.posts, before.posts)
             XCTAssertEqual(after.ledger_fingerprint, before.ledger_fingerprint)
         } else { status(statusLabel(expected, language)) }
+    }
+    private func checkOriginal(_ expected: String, selection: Bool, language: String) throws {
+        let original = app.textViews["assistant.originalText"]
+        XCTAssertTrue(original.exists)
+        let value = try XCTUnwrap(original.value as? String)
+        XCTAssertEqual(Array(value.utf8), Array(expected.utf8))
+        if selection {
+            let scroll = app.scrollViews.firstMatch
+            for _ in 0..<8 { if scroll.frame.contains(original.frame) && original.isHittable { break }; scroll.swipeUp() }
+            XCTAssertTrue(original.isHittable)
+            original.press(forDuration: 1)
+            let names = NSPredicate(format:"label IN %@", ["Copy", "拷贝", "复制"])
+            let menu = app.menuItems.matching(names).firstMatch
+            let copy = menu.waitForExistence(timeout: 2) ? menu : app.buttons.matching(names).firstMatch
+            XCTAssertTrue(copy.waitForExistence(timeout: 5)); XCTAssertTrue(copy.isEnabled)
+            capture("original-selection-menu-" + language)
+        }
     }
     private func send(_ text: String) {
         let field = app.textViews["assistant.draft"]

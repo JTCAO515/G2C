@@ -177,7 +177,7 @@ def main():
                     runs = RunService(database.run_repository(scope), valid=lambda b: messages.query(b.message_id) is not None)
                     state = runs.snapshot(Binding(scope, original.conversation_id, original.generation, original.message_id, original.run_id, original.sequence))
                     status, text, effects, draft_outcome = state.status, state.text, len(state.effects), state.draft_outcome
-                    budget_stage = next((event.value for event in state.events if event.kind == 'budget_denied'), 'none')
+                    budget_stage = state.budget_exhausted_stage
                     trips = database.trip_repository(scope)
                     for effect in state.effects:
                         if effect.startswith('trip_proposal:'):
@@ -232,6 +232,8 @@ def main():
                                 while value['pending_deliveries'] and time.monotonic() < deadline:
                                     time.sleep(.05); value = proof(query['case'][0])
                                 if value['pending_deliveries']: raise RuntimeError('original delivery did not finish')
+                        elif parsed.path == '/observe-foreign-ui':
+                            report.setdefault('native_foreign_account_checks', []).append(query['case'][0]); save(); value = {}
                         elif parsed.path == '/observe-read-recovery':
                             value = proof(query['case'][0])
                             with lock: frames = [f['body'] for f in stream_frames if f['message_id'] == value['message_id'] and f['body']]
