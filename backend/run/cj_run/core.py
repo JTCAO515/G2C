@@ -21,8 +21,8 @@ class WorkerOwnershipLost(Exception):
 
 
 TERMINAL = frozenset({'completed', 'failed', 'cancelled', 'context_invalid', 'unknown'})
-DRAFT_OUTCOMES = frozenset({'validation_failed', 'provider_failed', 'provider_unknown'})
-KINDS = frozenset({'started', 'text_delta', 'effect_committed', 'draft_outcome'}) | TERMINAL
+DRAFT_OUTCOMES = frozenset({'validation_failed', 'provider_failed', 'provider_unknown', 'budget_exhausted'})
+KINDS = frozenset({'started', 'text_delta', 'effect_committed', 'draft_outcome', 'budget_denied'}) | TERMINAL
 
 
 @dataclass(frozen=True)
@@ -64,7 +64,9 @@ class Event:
             raise ValueError('empty payload')
         if self.kind == 'draft_outcome' and self.value not in DRAFT_OUTCOMES:
             raise ValueError('unsupported draft outcome')
-        if self.kind not in {'text_delta', 'effect_committed', 'draft_outcome'} and self.value:
+        if self.kind == 'budget_denied' and self.value not in ('answer','draft'):
+            raise ValueError('unsupported budget stage')
+        if self.kind not in {'text_delta', 'effect_committed', 'draft_outcome', 'budget_denied'} and self.value:
             raise ValueError('status events have no payload')
 
 
@@ -80,6 +82,10 @@ class State:
     @property
     def draft_outcome(self):
         return next((event.value for event in self.events if event.kind == 'draft_outcome'), None)
+
+    @property
+    def budget_exhausted_stage(self):
+        return next((event.value for event in self.events if event.kind == 'budget_denied'), 'none')
 
     @property
     def sequence(self):
@@ -100,14 +106,20 @@ def advance(state: State, event: Event, valid: Callable[[Binding], bool]) -> Sta
     if state.status in TERMINAL:
         raise Conflict('terminal run')
     # Failure/cancel remain possible after authority/context loss. These do not publish output.
-    if event.kind not in {'cancelled', 'failed', 'context_invalid', 'unknown'}:
+    if event.kind not in {'cancelled', 'failed', 'context_invalid', 'unknown', 'budget_denied'}:
         if valid(state.binding) is not True:
             raise Denied('context invalid or unknown')
     if state.status == 'queued' and event.kind not in {'started', 'cancelled', 'failed', 'context_invalid'}:
         raise Conflict('not started')
     if state.status == 'running' and event.kind == 'started':
         raise Conflict('already started')
+    if event.kind == 'budget_denied':
+        if (state.budget_exhausted_stage != 'none' or state.draft_outcome is not None
+                or any(effect.startswith('trip_proposal:') for effect in state.effects)):
+            raise Conflict('budget rejection contradicts recorded result')
     if event.kind == 'draft_outcome':
+        if event.value == 'budget_exhausted' and state.budget_exhausted_stage != 'draft':
+            raise Conflict('draft budget result requires original rejection')
         if state.draft_outcome is not None or any(effect.startswith('trip_proposal:') for effect in state.effects):
             raise Conflict('draft result already recorded')
     if event.kind == 'effect_committed' and event.value.startswith('trip_proposal:') and state.draft_outcome is not None:
