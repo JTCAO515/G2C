@@ -1827,10 +1827,10 @@ class DraftOutcome1(StrEnum):
     budget_exhausted = 'budget_exhausted'
 
 
-class BudgetExhaustedStage(Enum):
+class BudgetExhaustedStage(StrEnum):
+    none = 'none'
     answer = 'answer'
     draft = 'draft'
-    NoneType_None = None
 
 
 class RunDraftStatusV2Response(BaseModel):
@@ -1847,7 +1847,7 @@ class RunDraftStatusV2Response(BaseModel):
     version: Version3
     run_status: RunStatus
     draft_outcome: DraftOutcome1
-    budget_exhausted_stage: BudgetExhaustedStage | None = Field(
+    budget_exhausted_stage: BudgetExhaustedStage = Field(
         ...,
-        description='Original persisted budget_denied stage only; null when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.',
+        description='Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.',
     )

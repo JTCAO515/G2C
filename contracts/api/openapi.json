@@ -6509,16 +6509,13 @@
             ]
           },
           "budget_exhausted_stage": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "enum": [
+              "none",
               "answer",
-              "draft",
-              null
+              "draft"
             ],
-            "description": "Original persisted budget_denied stage only; null when no such event. Not inferred from failed/unknown and not a receipt or retry authorization."
+            "description": "Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization."
           }
         },
         "description": "Version 2 original-message protected draft status; adds budget outcome and its persisted stage. run_status remains independent. No independent budget endpoint."

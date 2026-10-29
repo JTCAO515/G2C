@@ -8845,18 +8845,18 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/RunDraftStatusV2Response/draft_outcome`.
             public var draft_outcome: Components.Schemas.RunDraftStatusV2Response.draft_outcomePayload
-            /// Original persisted budget_denied stage only; null when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
+            /// Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
             ///
             /// - Remark: Generated from `#/components/schemas/RunDraftStatusV2Response/budget_exhausted_stage`.
             @frozen public enum budget_exhausted_stagePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case none = "none"
                 case answer = "answer"
                 case draft = "draft"
-                case _empty = ""
             }
-            /// Original persisted budget_denied stage only; null when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
+            /// Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
             ///
             /// - Remark: Generated from `#/components/schemas/RunDraftStatusV2Response/budget_exhausted_stage`.
-            public var budget_exhausted_stage: Components.Schemas.RunDraftStatusV2Response.budget_exhausted_stagePayload?
+            public var budget_exhausted_stage: Components.Schemas.RunDraftStatusV2Response.budget_exhausted_stagePayload
             /// Creates a new `RunDraftStatusV2Response`.
             ///
             /// - Parameters:
@@ -8870,7 +8870,7 @@ extension Components {
             ///   - version:
             ///   - run_status:
             ///   - draft_outcome:
-            ///   - budget_exhausted_stage: Original persisted budget_denied stage only; null when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
+            ///   - budget_exhausted_stage: Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
             public init(
                 conversation_id: Swift.String,
                 generation: Swift.String,
@@ -8882,7 +8882,7 @@ extension Components {
                 version: Components.Schemas.RunDraftStatusV2Response.versionPayload,
                 run_status: Components.Schemas.RunDraftStatusV2Response.run_statusPayload,
                 draft_outcome: Components.Schemas.RunDraftStatusV2Response.draft_outcomePayload,
-                budget_exhausted_stage: Components.Schemas.RunDraftStatusV2Response.budget_exhausted_stagePayload? = nil
+                budget_exhausted_stage: Components.Schemas.RunDraftStatusV2Response.budget_exhausted_stagePayload
             ) {
                 self.conversation_id = conversation_id
                 self.generation = generation
@@ -8951,7 +8951,7 @@ extension Components {
                     Components.Schemas.RunDraftStatusV2Response.draft_outcomePayload.self,
                     forKey: .draft_outcome
                 )
-                self.budget_exhausted_stage = try container.decodeIfPresent(
+                self.budget_exhausted_stage = try container.decode(
                     Components.Schemas.RunDraftStatusV2Response.budget_exhausted_stagePayload.self,
                     forKey: .budget_exhausted_stage
                 )

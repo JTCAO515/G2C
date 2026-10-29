@@ -23,10 +23,11 @@ class DraftStatusV2ContractTests(unittest.TestCase):
         self.validator.validate(self.value)
         self.validator.validate(dict(self.value,run_status='failed',draft_outcome='not_recorded',budget_exhausted_stage='answer'))
         self.validator.validate(dict(self.value,run_status='cancelled'))
-        self.validator.validate(dict(self.value,draft_outcome='not_recorded',budget_exhausted_stage=None))
+        self.validator.validate(dict(self.value,draft_outcome='not_recorded',budget_exhausted_stage='none'))
 
     def test_unknown_version_stage_and_extra_fields_fail(self):
         for patch in ({'version':'RUN-draft-status.1'},{'budget_exhausted_stage':'tool'},
+                      {'budget_exhausted_stage':None},{'budget_exhausted_stage':''},
                       {'draft_outcome':'success'},{'scope':'owner'},{'event_highwater':-1}):
             with self.subTest(patch=patch):
                 self.assertTrue(list(self.validator.iter_errors(dict(self.value,**patch))))
@@ -47,6 +48,7 @@ class DraftStatusV2ContractTests(unittest.TestCase):
         parsed=RunDraftStatusV2Response.model_validate_json(json.dumps(self.value),strict=True)
         self.assertEqual(parsed.model_dump(mode='json'),self.value)
         for patch in ({'version':'RUN-draft-status.1'},{'budget_exhausted_stage':'tool'},
+                      {'budget_exhausted_stage':None},{'budget_exhausted_stage':''},
                       {'draft_outcome':'success'},{'owner':'other'},{'event_highwater':True}):
             with self.subTest(patch=patch),self.assertRaises(ValidationError):
                 RunDraftStatusV2Response.model_validate_json(json.dumps(dict(self.value,**patch)),strict=True)

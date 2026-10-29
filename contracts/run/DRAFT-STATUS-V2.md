@@ -9,8 +9,10 @@ does not activate a working route.
 Retain v1 reference fields, run_status and event_highwater. version is exactly
 RUN-draft-status.2. draft_outcome retains not_requested/not_recorded/published/
 validation_failed/provider_failed/provider_unknown and adds budget_exhausted.
-Add required budget_exhausted_stage: null | answer | draft, sourced only from the
+Add required budget_exhausted_stage: none | answer | draft, sourced only from the
 original persisted budget_denied reason event, never guessed from failed/unknown.
+none means no recorded budget_denied event; null, empty string and missing stage
+are invalid. The field is required and nonnullable.
 The stage is a historical reason fact; terminal cancellation/unknown remains
 visible independently and must never be relabelled as success or safe retry.
 
