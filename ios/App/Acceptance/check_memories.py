@@ -87,7 +87,7 @@ def main():
                     'blocked':dict(kind='fact',collection_allowed=False,semantic_resolved=True)},
                     extents=['long_term'],context_ids=[])
                 policy = dict(version='local-memory-policy.1',expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),
-                              profiles={s:profile for row in subjects.values() for s in row.values()})
+                              profiles={s:profile for row in subjects.values() for s in row.values() if s != subjects['testRejected']['A']})
                 policy_path=root/'memory-policy.json'; policy_path.write_text(json.dumps(policy)); policy_path.chmod(0o600)
                 for target in (env, os.environ): target.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),
                     CJ_LOCAL_RUN_CONTEXT=str(args.run_context.resolve()),CJ_LOCAL_MEMORY_POLICY=str(policy_path))
@@ -186,6 +186,9 @@ def main():
                     if stage=='reopen':
                         native=[a['query']['operation_id'][0] for a in audit if a['path']=='/v1/memory-receipts'][-3:]
                         assert len(native)==3 and set(native)=={o for o,*_ in operations}
+                    if stage=='rejected':
+                        denied=[a for a in audit if a['path']=='/v1/memories' and a['status']==403]
+                        assert denied and denied[-1]['server_error']==dict(code='MEMORY_SOURCE_DENIED',outcome='failed',recovery='do_not_retry')
                     if stage=='server-unknown':
                         denied=[a for a in audit if a['path']=='/v1/memories' and a['status']==503]
                         assert denied and denied[-1]['server_error']==dict(code='MEMORY_OUTCOME_UNKNOWN',outcome='unknown',recovery='reconcile_original')
