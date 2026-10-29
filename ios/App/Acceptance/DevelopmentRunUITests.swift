@@ -14,6 +14,14 @@ import Foundation
         let choice: String
     }
     private struct Proof: Decodable {
+        let runtime_role: String
+        let pending_deliveries: Int
+        let ledger_fingerprint: String
+        let exposure: Int
+        let ledger_attempts: Int
+        let usage_receipts: Int
+        let tool_steps: Int
+        let budget_stage: String
         let requests: Int
         let status: String?
         let text: String
@@ -40,8 +48,8 @@ import Foundation
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return data
     }
-    private func proof(_ fixture: Fixture) async throws -> Proof {
-        try JSONDecoder().decode(Proof.self, from: await call("/proof", ["case": fixture.conversation]))
+    private func proof(_ fixture: Fixture, settled: Bool = false) async throws -> Proof {
+        try JSONDecoder().decode(Proof.self, from: await call("/proof", ["case": fixture.conversation, "settled": settled ? "1" : "0"]))
     }
     private func tap(_ identifier: String) {
         let button = app.buttons.matching(identifier: identifier).firstMatch
@@ -86,10 +94,6 @@ import Foundation
         try launch(fixture, language: language)
         tap("assistant.serverHistory"); tap("history.loadConversations")
         tap("history.conversation." + fixture.conversation); tap("assistant.panel.done")
-        let field = app.textViews["assistant.draft"]
-        XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText(fixture.prompt)
-        XCTAssertEqual(field.value as? String, fixture.prompt)
-        if app.buttons["Done"].exists { tap("Done") } else if app.buttons["完成"].exists { tap("完成") }
         let draft = mode.hasPrefix("draft_")
         let stopping = mode == "stop" || mode == "draft_stop"
         if draft {
@@ -98,101 +102,138 @@ import Foundation
             intent.switches.firstMatch.tap()
             XCTAssertEqual(intent.value as? String, "1")
         }
-        tap("assistant.send")
-        if mode == "failure" {
-            status(language == "en" ? "Failed" : "运行失败")
-            XCTAssertFalse(app.staticTexts["run.display.text"].exists)
-            XCTAssertFalse(app.staticTexts["run.stream.text"].exists)
-            let result = try await proof(fixture)
-            XCTAssertEqual(result.status, "failed"); XCTAssertEqual(result.text, "")
-            XCTAssertEqual(result.provider_calls, 1); XCTAssertEqual(result.posts, 1)
-            XCTAssertEqual(result.receipts, 1); XCTAssertEqual(result.cancellations, 0)
-            XCTAssertEqual(result.effects, 0); XCTAssertEqual(result.forbidden_writes, 0)
-            capture("provider-failed-" + language)
-            return
-        }
-        let partial = app.staticTexts["run.stream.text"]
-        let received = partial.waitForExistence(timeout: 25)
-        if !received {
-            capture("missing-stream-" + language)
-            print("RUN_UI_STATUS", app.staticTexts["run.display.status"].exists ? app.staticTexts["run.display.status"].label : "no status")
-        }
-        XCTAssertTrue(received)
-        XCTAssertFalse(partial.label.isEmpty)
-        let prefix = partial.label
-        let before = try await proof(fixture)
-        XCTAssertEqual(before.status, "running"); XCTAssertTrue(before.text.hasPrefix(prefix))
-        capture("stream-partial-" + language)
-        if stopping {
-            tap("run.stop")
-            status(language == "en" ? "Cancelled" : "已取消")
-            XCTAssertEqual(app.staticTexts["run.display.text"].label, prefix)
+        send(fixture.prompt)
+        if mode != "failure" && mode != "unknown" {
+            let partial = app.staticTexts["run.stream.text"]
+            XCTAssertTrue(partial.waitForExistence(timeout: 25))
+            let prefix = partial.label
+            XCTAssertFalse(prefix.isEmpty)
+            let before = try await proof(fixture)
+            XCTAssertEqual(before.status, "running"); XCTAssertTrue(before.text.hasPrefix(prefix))
+            XCTAssertEqual(before.tool_steps, 0)
+            capture("stream-partial-" + language)
+            if stopping {
+                tap("run.stop")
+                status(language == "en" ? "Cancelled" : "已取消")
+                XCTAssertEqual(app.staticTexts["run.display.text"].label, prefix)
+            }
             _ = try await call("/release", ["case": fixture.conversation])
-        } else {
-            _ = try await call("/release", ["case": fixture.conversation])
-            status(language == "en" ? "Completed" : "已完成")
+            if !stopping { status(language == "en" ? "Completed" : "已完成") }
         }
-        let saved = try await proof(fixture)
-        XCTAssertEqual(saved.status, stopping ? "cancelled" : "completed")
-        XCTAssertEqual(app.staticTexts["run.display.text"].label, saved.text)
-        XCTAssertEqual(saved.posts, 1); XCTAssertEqual(saved.receipts, 1); XCTAssertEqual(saved.provider_calls, draft && !stopping ? 2 : 1)
-        XCTAssertEqual(saved.cancellations, stopping ? 1 : 0)
-        XCTAssertEqual(saved.effects, mode == "draft_published" ? 1 : 0); XCTAssertEqual(saved.forbidden_writes, 0)
-        if draft { try checkDraft(mode, language: language, proof: saved) }
+        if mode == "budget_answer" {
+            let first = try await proof(fixture, settled: true)
+            XCTAssertEqual(first.exposure, 1); XCTAssertEqual(first.provider_calls, 1)
+            XCTAssertEqual(first.receipts, 1); XCTAssertEqual(first.status, "completed")
+            waitCard(language == "en" ? "No draft was requested for this message" : "此消息未请求草稿")
+            capture("answer-budget-first-call-" + language)
+            send(fixture.prompt + " second")
+        }
+        let expectedStatus = stopping ? "cancelled" : mode == "unknown" ? "unknown" : ["failure", "budget_answer"].contains(mode) ? "failed" : "completed"
+        status(statusLabel(expectedStatus, language))
+        let saved = try await proof(fixture, settled: true)
+        try check(mode, language: language, result: saved, expectedStatus: expectedStatus)
         capture(mode + "-persisted-" + language)
+        _ = try await call("/reconcile", ["case": fixture.conversation])
         try launch(fixture, language: language, restore: true)
-        tap("assistant.history")
-        tap("recovery.action." + (try XCTUnwrap(saved.message_id)))
-        tap("assistant.panel.done")
-        status(language == "en" ? (stopping ? "Cancelled" : "Completed") : (stopping ? "已取消" : "已完成"))
-        XCTAssertEqual(app.staticTexts["run.display.text"].label, saved.text)
-        let reopened = try await proof(fixture)
-        XCTAssertEqual(reopened.provider_calls, saved.provider_calls); XCTAssertEqual(reopened.posts, 1)
+        tap("assistant.history"); tap("recovery.action." + (try XCTUnwrap(saved.message_id))); tap("assistant.panel.done")
+        status(statusLabel(expectedStatus, language))
+        let reopened = try await proof(fixture, settled: true)
+        try check(mode, language: language, result: reopened, expectedStatus: expectedStatus)
+        XCTAssertEqual(reopened.message_id, saved.message_id)
+        XCTAssertEqual(reopened.text, saved.text)
+        XCTAssertEqual(reopened.provider_calls, saved.provider_calls)
+        XCTAssertEqual(reopened.posts, saved.posts)
         XCTAssertEqual(reopened.cancellations, saved.cancellations)
-        if draft { try checkDraft(mode, language: language, proof: reopened) }
+        XCTAssertEqual(reopened.ledger_fingerprint, saved.ledger_fingerprint)
+        XCTAssertEqual(reopened.exposure, saved.exposure)
+        XCTAssertEqual(reopened.usage_receipts, saved.usage_receipts)
+        XCTAssertGreaterThanOrEqual(reopened.draft_reads, 2)
         capture(mode + "-read-after-reopen-" + language)
     }
-    private func checkDraft(_ mode: String, language: String, proof: Proof) throws {
+    private func send(_ text: String) {
+        let field = app.textViews["assistant.draft"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText(text)
+        XCTAssertEqual(field.value as? String, text)
+        if app.buttons["Done"].exists { tap("Done") } else if app.buttons["完成"].exists { tap("完成") }
+        tap("assistant.send")
+    }
+    private func statusLabel(_ status: String, _ language: String) -> String {
+        switch status {
+        case "failed": language == "en" ? "Failed" : "运行失败"
+        case "unknown": language == "en" ? "Result unknown" : "结果未知"
+        case "cancelled": language == "en" ? "Cancelled" : "已取消"
+        default: language == "en" ? "Completed" : "已完成"
+        }
+    }
+    private func waitCard(_ text: String) {
+        let value = app.descendants(matching: .any).matching(identifier: "run.draft.status").firstMatch
+        XCTAssertTrue(value.waitForExistence(timeout: 10))
+        let match = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", text), object:value)
+        XCTAssertEqual(XCTWaiter.wait(for:[match], timeout:15), .completed)
+    }
+    private func check(_ mode: String, language: String, result: Proof, expectedStatus: String) throws {
+        let draft = mode.hasPrefix("draft_")
+        let stopping = mode == "stop" || mode == "draft_stop"
+        let published = mode == "draft_published"
+        let stage = mode == "budget_answer" ? "answer" : mode == "draft_budget" ? "draft" : "none"
         let expected: String
         let outcome: String?
         switch mode {
+        case "draft_budget": expected = language == "en" ? "Draft generation budget exhausted" : "草稿生成预算已耗尽"; outcome = "budget_exhausted"
         case "draft_published": expected = language == "en" ? "Draft candidate recorded; not a saved trip" : "已记录草稿候选，尚非正式行程"; outcome = nil
         case "draft_validation": expected = language == "en" ? "Draft failed validation; no candidate published" : "草稿校验失败，未发布候选"; outcome = "validation_failed"
         case "draft_provider": expected = language == "en" ? "Draft generation failed; no candidate published" : "草稿生成失败，未发布候选"; outcome = "provider_failed"
         case "draft_unknown": expected = language == "en" ? "Draft generation result unknown; do not generate again" : "草稿生成结果未知，请勿再次生成"; outcome = "provider_unknown"
-        default: expected = language == "en" ? "No draft result recorded; outcome unknown" : "尚无草稿结果记录，结果未知"; outcome = nil
+        case "draft_stop": expected = language == "en" ? "No draft result recorded; outcome unknown" : "尚无草稿结果记录，结果未知"; outcome = nil
+        default: expected = language == "en" ? "No draft was requested for this message" : "此消息未请求草稿"; outcome = nil
         }
+        waitCard(expected)
         let value = app.descendants(matching: .any).matching(identifier: "run.draft.status").firstMatch
-        XCTAssertTrue(value.waitForExistence(timeout: 10))
-        let match = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object:value)
-        XCTAssertEqual(XCTWaiter.wait(for:[match], timeout:15), .completed)
-        XCTAssertTrue(value.label.contains(language == "en" ? "Draft result" : "草稿结果"))
-        XCTAssertTrue(value.label.contains(language == "en" ? "Run state at draft read:" : "读取草稿时的运行状态："))
-        XCTAssertTrue(value.label.contains(language == "en" ? (mode == "draft_stop" ? "Cancelled" : "Completed") : (mode == "draft_stop" ? "已取消" : "已完成")))
-        let visible = NSPredicate(format:"exists == true AND hittable == true")
-        for _ in 0..<10 { if visible.evaluate(with:value) { break }; app.swipeUp() }
-        XCTAssertTrue(visible.evaluate(with:value))
-        print("DRAFT_FRAME_BEFORE", value.frame)
-        for _ in 0..<5 {
-            if value.frame.maxY < app.frame.height * 0.60 { break }
-            app.scrollViews.firstMatch.swipeUp()
+        let label = value.label
+        XCTAssertTrue(label.contains(language == "en" ? "Draft result" : "草稿结果"))
+        XCTAssertTrue(label.contains(language == "en" ? "Run state at draft read:" : "读取草稿时的运行状态："))
+        if stage == "none" {
+            XCTAssertFalse(label.contains("Budget exhausted")); XCTAssertFalse(label.contains("预算已耗尽"))
+        } else {
+            let budget = language == "en" ? "Budget exhausted before \(stage) generation" : stage == "answer" ? "生成回答前预算已耗尽" : "生成草稿前预算已耗尽"
+            XCTAssertTrue(label.contains(budget))
         }
-        print("DRAFT_FRAME_AFTER", value.frame)
-        XCTAssertTrue(visible.evaluate(with:value))
-        try app.performAccessibilityAudit(for: [.sufficientElementDescription, .textClipped]) { issue in
-            print("DRAFT_AX \(language): \(issue.compactDescription); \(issue.element?.label ?? "unavailable")")
+        XCTAssertEqual(result.runtime_role, "cj_m1_runtime")
+        XCTAssertEqual(result.pending_deliveries, 0)
+        XCTAssertEqual(result.status, expectedStatus)
+        XCTAssertEqual(result.budget_stage, stage)
+        XCTAssertEqual(result.posts, mode == "budget_answer" ? 2 : 1)
+        XCTAssertEqual(result.receipts, mode == "budget_answer" ? 2 : 1)
+        XCTAssertEqual(result.provider_calls, draft && !stopping && mode != "draft_budget" ? 2 : 1)
+        XCTAssertEqual(result.draft_calls, draft && !stopping && mode != "draft_budget" ? 1 : 0)
+        XCTAssertEqual(result.exposure, draft && !stopping && mode != "draft_budget" ? 2 : 1)
+        XCTAssertEqual(result.cancellations, stopping ? 1 : 0)
+        XCTAssertEqual(result.effects, published ? 1 : 0)
+        XCTAssertEqual(result.published_effects, published ? 1 : 0)
+        XCTAssertEqual(result.pending_proposals, published ? 1 : 0)
+        XCTAssertEqual(result.formal_trips, 0); XCTAssertTrue(result.proposal_binding_valid)
+        XCTAssertEqual(result.draft_outcome, outcome)
+        XCTAssertEqual(result.creation_intent, draft ? "consider_trip" : "none")
+        XCTAssertEqual(result.forbidden_writes, 0); XCTAssertEqual(result.tool_steps, 0)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format:"label CONTAINS[c] 'tool executed' OR label CONTAINS '工具已执行' OR label CONTAINS '已执行工具'")).firstMatch.exists)
+        if ["failed", "unknown"].contains(expectedStatus) {
+            XCTAssertEqual(result.text, "")
+            XCTAssertFalse(app.staticTexts["run.display.text"].exists)
+            XCTAssertFalse(app.staticTexts["run.stream.text"].exists)
+        } else { XCTAssertEqual(app.staticTexts["run.display.text"].label, result.text) }
+        for _ in 0..<10 { if value.isHittable && value.frame.maxY < app.frame.height * 0.60 { break }; app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(value.isHittable)
+        try app.performAccessibilityAudit(for: .all) { issue in
+            print("RUN_AX \(language): \(issue.compactDescription); \(issue.element?.label ?? "unavailable")")
             return false
         }
-        XCTAssertEqual(proof.creation_intent, "consider_trip")
-        XCTAssertGreaterThanOrEqual(proof.draft_reads, 1)
-        XCTAssertEqual(proof.published_effects, mode == "draft_published" ? 1 : 0)
-        XCTAssertEqual(proof.pending_proposals, mode == "draft_published" ? 1 : 0)
-        XCTAssertEqual(proof.formal_trips, 0)
-        XCTAssertTrue(proof.proposal_binding_valid)
-        XCTAssertEqual(proof.draft_outcome, outcome)
-        XCTAssertEqual(proof.draft_calls, mode == "draft_stop" ? 0 : 1)
-        XCTAssertFalse(value.label.contains("PRIVATE_SENTINEL"))
     }
+    func testAnswerBudgetEnglish() async throws { try await run("budget_answer", language:"en") }
+    func testAnswerBudgetChinese() async throws { try await run("budget_answer", language:"zh-Hans") }
+    func testDraftBudgetEnglish() async throws { try await run("draft_budget", language:"en") }
+    func testDraftBudgetChinese() async throws { try await run("draft_budget", language:"zh-Hans") }
+    func testUnknownEnglish() async throws { try await run("unknown", language:"en") }
+    func testUnknownChinese() async throws { try await run("unknown", language:"zh-Hans") }
     func testDraftPublishedEnglish() async throws { try await run("draft_published", language:"en") }
     func testDraftPublishedChinese() async throws { try await run("draft_published", language:"zh-Hans") }
     func testDraftValidationEnglish() async throws { try await run("draft_validation", language:"en") }
@@ -222,6 +263,8 @@ import Foundation
         let result = try await proof(fixture)
         XCTAssertEqual(result.posts, 0); XCTAssertEqual(result.cancellations, 0); XCTAssertEqual(result.provider_calls, 0)
         XCTAssertEqual(result.requests, 0)
+        XCTAssertEqual(result.exposure, 0); XCTAssertEqual(result.ledger_attempts, 0)
+        try app.performAccessibilityAudit(for: .all) { issue in print("RELEASE_AX", issue.compactDescription); return false }
         capture("release-run-closed")
     }
 }
