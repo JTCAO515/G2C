@@ -162,7 +162,7 @@ private actor DraftTransport: ClientTransport {
             Issue.record("missing original result"); return
         }
         #expect(answer.snapshot.status.rawValue == status)
-        #expect(f.model.draftStatus.runStatus == status)
+        #expect(f.model.draftStatus.runStatus?.rawValue == status)
         #expect(await f.transport.paths.count == 2)
     }
     @Test func v2UnknownWithoutBudgetIsNotExhaustion() async throws {
@@ -170,7 +170,7 @@ private actor DraftTransport: ClientTransport {
         await f.read()
         #expect(f.model.draftStatus.budgetLabel(.english) == nil)
         #expect(f.model.draftStatus.budgetLabel(.chinese) == nil)
-        #expect(f.model.draftStatus.runStatus == "unknown")
+        #expect(f.model.draftStatus.runStatus == .unknown)
         #expect(await f.transport.paths.count == 2)
     }
     @Test(arguments:["", "future", "ANSWER"])
