@@ -138,9 +138,17 @@ def main():
                     posts=row['posts']
                     assert len(posts)==(1 if stage=='rejected' else expected)
                     originals={p:hashlib.sha256(p).hexdigest() for p in posts}
+                    items=[]
                     for oid,iid,raw,version,status in operations:
                         raw=bytes(raw); assert raw in originals and version==1 and status=='active'
                         command=json.loads(raw); assert command['operation_id']==oid and command['item_id']==iid
+                        with database.connect(scope) as conn:
+                            item_raw,item_version,item_status=conn.execute('SELECT original_input,version,status FROM cj_memory_item WHERE scope=%s AND item_id=%s',(scope,iid)).fetchone()
+                        item=json.loads(bytes(item_raw))
+                        assert all(item[k]==v for k,v in command.items())
+                        assert item['source_id']=='manual-v1:'+hashlib.sha256(raw).hexdigest() and item['source_version']==1
+                        assert item_version==version and item_status==status
+                        items.append(dict(slot=item['slot'],source_id=item['source_id']))
                     current=[dict(operation_id=o,item_id=i,sha256=hashlib.sha256(bytes(raw)).hexdigest(),version=v,status=s) for o,i,raw,v,s in operations]
                     if 'baseline' in row: assert row['baseline']==current
                     else: row['baseline']=current
@@ -160,7 +168,7 @@ def main():
                         while model.calls<1 and time.monotonic()<deadline: time.sleep(.05)
                         assert model.calls>=1
                     if stage=='release': assert len(requests)==row['request_start']
-                    value=dict(runtime_role=role,operations=current,posts=len(posts),foreign_reads=foreign,provider_calls=model.calls)
+                    value=dict(runtime_role=role,operations=current,items=items,posts=len(posts),foreign_reads=foreign,provider_calls=model.calls)
                     report['checks'][case+'-'+stage]=value; save(); return value
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*args): pass

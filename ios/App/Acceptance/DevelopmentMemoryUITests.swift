@@ -5,6 +5,10 @@ import Foundation
     let bundle = "space.go2china.memory.acceptance"
     let control = "__FIXTURE_URL__"
     var app: XCUIApplication!
+    struct ReadProof: Decodable {
+        struct Item: Decodable { let slot: String; let source_id: String }
+        let items: [Item]
+    }
     struct Fixture: Decodable {
         let endpoint: String
         let accounts: [String: String]
@@ -99,19 +103,27 @@ import Foundation
             waitStatus(language == "en" ? "Saved." : "已保存")
             capture("saved-" + slot + "-" + language); back()
         }
+        let readProof = try JSONDecoder().decode(ReadProof.self, from: await call("/verify", ["case": f.case_id, "stage": "three-saves"]))
         tap(language == "en" ? "Load groups" : "读取分组")
         let group = app.buttons["memory.group.0"]
         XCTAssertTrue(group.waitForExistence(timeout: 10)); group.tap()
         tap(language == "en" ? "Load from start" : "从头读取")
-        for (_, value) in rows {
+        for (slot, value) in rows {
             let item = app.buttons.containing(.staticText, identifier: value).firstMatch
             XCTAssertTrue(item.waitForExistence(timeout: 10)); item.tap()
             tap(language == "en" ? "Load current detail" : "读取当前详情")
             XCTAssertTrue(app.staticTexts[value].waitForExistence(timeout: 10))
-            XCTAssertTrue(app.staticTexts["Synthetic date unknown / 合成时间不详"].waitForExistence(timeout: 10), app.debugDescription)
+            let timeLabel = (language == "en" ? "Approximate time, " : "大致时间, ") + "Synthetic date unknown / 合成时间不详"
+            XCTAssertTrue(app.staticTexts[timeLabel].waitForExistence(timeout: 10), app.debugDescription)
+            XCTAssertTrue(app.staticTexts[language == "en" ? "Subject, self" : "对象, self"].exists)
+            XCTAssertTrue(app.staticTexts[(language == "en" ? "Field, " : "字段, ") + slot].exists)
+            XCTAssertTrue(app.staticTexts[language == "en" ? "Scope, long_term" : "范围, long_term"].exists)
+            XCTAssertTrue(app.staticTexts[language == "en" ? "Version, 1" : "版本, 1"].exists)
+            XCTAssertTrue(app.staticTexts[language == "en" ? "Source version, 1" : "来源版本, 1"].exists)
+            let source = try XCTUnwrap(readProof.items.first { $0.slot == slot })
+            XCTAssertTrue(app.staticTexts[(language == "en" ? "Source, " : "来源, ") + source.source_id].exists)
             capture("detail-" + language); back()
         }
-        try await query(f, "three-saves")
         app.terminate()
         try launch(f, language: language == "en" ? "zh-Hans" : "en", restore: true)
         tap("memory.add"); tap(language == "en" ? "读取原操作" : "Read original operations")
