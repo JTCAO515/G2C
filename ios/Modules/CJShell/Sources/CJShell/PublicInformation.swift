@@ -43,6 +43,7 @@ private struct ContactRow: View {
         VStack(alignment: .leading, spacing: 6) {
             if let destination = contact.emailURL {
                 Link(contact.title(language), destination: destination)
+                    .accessibilityIdentifier("support.email")
                     .accessibilityLabel(contact.title(language) + ": " + contact.address)
                     .accessibilityHint(language.text("Opens your mail app. Review and send the message there.", "打开邮件应用，由你审阅并发送邮件。"))
             } else {

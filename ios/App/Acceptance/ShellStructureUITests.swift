@@ -93,7 +93,7 @@ import Foundation
             XCTAssertTrue(support.isHittable); support.tap()
             XCTAssertTrue(app.navigationBars[chinese ? "支持" : "Support"].exists)
             text("hello@go2china.space")
-            let mail = app.links.firstMatch
+            let mail = app.buttons["support.email"]
             XCTAssertTrue(mail.exists && mail.isHittable)
             XCTAssertTrue(mail.label.contains("hello@go2china.space"))
             XCTAssertFalse(app.staticTexts["support@go2china.space"].exists)
