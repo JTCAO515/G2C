@@ -2319,6 +2319,67 @@
           }
         ]
       }
+    },
+    "/v1/run-draft-status": {
+      "get": {
+        "operationId": "getRunDraftStatus",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exact original opaque message ID; host UTF8 byte bound explicit. No caller run ID/scope/owner/permission."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versioned protected original-message draft outcome; old RUN display and SSE remain unchanged.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDraftStatusResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE input/unavailable/too-large error, never a synthetic/null/empty successful snapshot; no automatic read retry.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Read original-message-bound persisted draft outcome under the same owner and identity guards."
+      }
     }
   },
   "components": {
@@ -5750,6 +5811,83 @@
           }
         },
         "description": "Original RUN terminal observed after a durable cancellation transaction. Existing terminals are retained. Prior text/effects remain readable through their original ledgers. Does not claim rollback/refund or physical abortion of an already-started provider request."
+      },
+      "RunDraftStatusResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversation_id",
+          "generation",
+          "message_id",
+          "run_id",
+          "message_sequence",
+          "event_highwater",
+          "request_id",
+          "version",
+          "run_status",
+          "draft_outcome"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "event_highwater": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "version": {
+            "type": "string",
+            "enum": [
+              "RUN-draft-status.1"
+            ]
+          },
+          "run_status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled",
+              "context_invalid",
+              "unknown"
+            ]
+          },
+          "draft_outcome": {
+            "type": "string",
+            "enum": [
+              "not_requested",
+              "not_recorded",
+              "published",
+              "validation_failed",
+              "provider_failed",
+              "provider_unknown"
+            ]
+          }
+        },
+        "description": "Independent persisted draft outcome bound to the original message. Missing historical outcome is not_recorded; never infer failure or retry permission. Answer status remains separate."
       }
     },
     "securitySchemes": {

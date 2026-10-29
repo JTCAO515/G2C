@@ -81,6 +81,8 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
     register_feedback_routes(app, _feedback_boundary, _feedback_configuration, _feedback_modules)
     from .run_display_routes import register_run_display_route
     register_run_display_route(app, _run_display_reader, _run_display_configuration, _run_display_modules)
+    from .run_draft_status_routes import register_run_draft_status_route
+    register_run_draft_status_route(app, _run_display_reader, _run_display_configuration, _run_display_modules)
     from .manual_preview_routes import register_manual_preview
     register_manual_preview(app, _manual_preview_boundary, _manual_preview_configuration, _manual_preview_modules)
     from .usage_status_routes import register_usage_status

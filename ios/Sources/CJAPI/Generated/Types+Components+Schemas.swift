@@ -7775,5 +7775,156 @@ extension Components {
                 ])
             }
         }
+        /// Independent persisted draft outcome bound to the original message. Missing historical outcome is not_recorded; never infer failure or retry permission. Answer status remains separate.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse`.
+        public struct RunDraftStatusResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/message_sequence`.
+            public var message_sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/event_highwater`.
+            public var event_highwater: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case RUN_hyphen_draft_hyphen_status_period_1 = "RUN-draft-status.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/version`.
+            public var version: Components.Schemas.RunDraftStatusResponse.versionPayload
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/run_status`.
+            @frozen public enum run_statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case queued = "queued"
+                case running = "running"
+                case completed = "completed"
+                case failed = "failed"
+                case cancelled = "cancelled"
+                case context_invalid = "context_invalid"
+                case unknown = "unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/run_status`.
+            public var run_status: Components.Schemas.RunDraftStatusResponse.run_statusPayload
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/draft_outcome`.
+            @frozen public enum draft_outcomePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case not_requested = "not_requested"
+                case not_recorded = "not_recorded"
+                case published = "published"
+                case validation_failed = "validation_failed"
+                case provider_failed = "provider_failed"
+                case provider_unknown = "provider_unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusResponse/draft_outcome`.
+            public var draft_outcome: Components.Schemas.RunDraftStatusResponse.draft_outcomePayload
+            /// Creates a new `RunDraftStatusResponse`.
+            ///
+            /// - Parameters:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - message_sequence:
+            ///   - event_highwater:
+            ///   - request_id:
+            ///   - version:
+            ///   - run_status:
+            ///   - draft_outcome:
+            public init(
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                message_sequence: Swift.Int,
+                event_highwater: Swift.Int,
+                request_id: Components.Schemas.RequestId,
+                version: Components.Schemas.RunDraftStatusResponse.versionPayload,
+                run_status: Components.Schemas.RunDraftStatusResponse.run_statusPayload,
+                draft_outcome: Components.Schemas.RunDraftStatusResponse.draft_outcomePayload
+            ) {
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.message_id = message_id
+                self.run_id = run_id
+                self.message_sequence = message_sequence
+                self.event_highwater = event_highwater
+                self.request_id = request_id
+                self.version = version
+                self.run_status = run_status
+                self.draft_outcome = draft_outcome
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversation_id
+                case generation
+                case message_id
+                case run_id
+                case message_sequence
+                case event_highwater
+                case request_id
+                case version
+                case run_status
+                case draft_outcome
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.message_sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .message_sequence
+                )
+                self.event_highwater = try container.decode(
+                    Swift.Int.self,
+                    forKey: .event_highwater
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.version = try container.decode(
+                    Components.Schemas.RunDraftStatusResponse.versionPayload.self,
+                    forKey: .version
+                )
+                self.run_status = try container.decode(
+                    Components.Schemas.RunDraftStatusResponse.run_statusPayload.self,
+                    forKey: .run_status
+                )
+                self.draft_outcome = try container.decode(
+                    Components.Schemas.RunDraftStatusResponse.draft_outcomePayload.self,
+                    forKey: .draft_outcome
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "conversation_id",
+                    "generation",
+                    "message_id",
+                    "run_id",
+                    "message_sequence",
+                    "event_highwater",
+                    "request_id",
+                    "version",
+                    "run_status",
+                    "draft_outcome"
+                ])
+            }
+        }
     }
 }

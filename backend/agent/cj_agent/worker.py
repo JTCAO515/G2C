@@ -103,7 +103,7 @@ class RunWorker:
             raise _Stopped(state)
         return state
 
-    def _step(self, binding, invoke, effect=None):
+    def _step(self, binding, invoke, effect=None, *, draft=False):
         """Serialize this worker's actual step start/publication against cancellation.
 
         This does not enable Service.dispatch or create a new execution authority.
@@ -121,6 +121,8 @@ class RunWorker:
                 raise Denied('context invalid or unknown')
             if tx.get(binding) != state:
                 raise Conflict('state changed during step guard')
+            if draft and state.draft_outcome is not None:
+                raise Conflict('draft result already recorded before invocation')
             result = invoke()
             if effect is not None:
                 updated = advance(state, Event(binding, state.sequence + 1,
@@ -138,7 +140,7 @@ class RunWorker:
             stream = self.provider.stream(messages) if system is None else self.provider.stream(messages, system=system)
             return next(stream, _END)
         try:
-            _, chunk = self._step(binding, start)
+            _, chunk = self._step(binding, start, draft=system is not None)
             while chunk is not _END:
                 self._running(binding)
                 yield chunk
@@ -158,8 +160,11 @@ class RunWorker:
         try:
             reply = ''.join(self._stream(binding, [{'role': 'user', 'content': text}], system=DRAFT_SYSTEM))
             state, draft = self._step(binding, lambda: self.drafts.publish(binding.run_id, reply),
-                                      lambda value: 'trip_proposal:' + value.proposal_id)
-        except (DraftRejected, ProviderFailed, ProviderUnknown):
+                                      lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
+        except (DraftRejected, ProviderFailed, ProviderUnknown) as error:
+            outcome = ('validation_failed' if isinstance(error, DraftRejected) else
+                       'provider_failed' if isinstance(error, ProviderFailed) else 'provider_unknown')
+            state = self._event(binding, self.runs.snapshot(binding), 'draft_outcome', outcome)
             return state, None
         return state, draft.proposal_id
 
