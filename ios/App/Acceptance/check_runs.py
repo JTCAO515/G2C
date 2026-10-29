@@ -62,6 +62,7 @@ def main():
     from fastapi.testclient import TestClient
     from cj_api.local_app import app_from_environment, LocalDatabase, ISSUER, scope_for
     from cj_agent.provider import FakeProvider, ProviderFailed, ProviderUnknown
+    from cj_agent.draft import proposal_id_for
     from cj_message.domain import Service as MessageService
     from cj_run.core import Binding, Service as RunService
     from run_worker import run_once
@@ -138,14 +139,24 @@ def main():
                 with database.connect(scope) as conn:
                     rows = conn.execute('SELECT message_id,raw_input FROM cj_message_receipt WHERE conversation_id=%s ORDER BY sequence', (spec['conversation'],)).fetchall()
                 status, text, effects, draft_outcome = None, '', 0, None
+                pending_proposals, formal_trips, proposal_bindings = 0, 0, []
                 if rows:
                     messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
                     original = messages.query(rows[-1][0]).receipt
                     runs = RunService(database.run_repository(scope), valid=lambda b: messages.query(b.message_id) is not None)
                     state = runs.snapshot(Binding(scope, original.conversation_id, original.generation, original.message_id, original.run_id, original.sequence))
                     status, text, effects, draft_outcome = state.status, state.text, len(state.effects), state.draft_outcome
+                    trips = database.trip_repository(scope)
+                    for effect in state.effects:
+                        if effect.startswith('trip_proposal:'):
+                            identifier = effect.removeprefix('trip_proposal:')
+                            detail = trips.proposal_detail(identifier)
+                            pending_proposals += detail.status == 'pending'
+                            formal_trips += trips.detail(detail.proposal.trip_id) is not None
+                            proposal_bindings.append(identifier == detail.proposal.proposal_id == proposal_id_for(original.run_id))
                 return dict(requests=len(calls), status=status, text=text, effects=effects, message_id=rows[-1][0] if rows else None,
                     draft_outcome=draft_outcome, draft_calls=spec['draft_calls'],
+                    pending_proposals=pending_proposals, formal_trips=formal_trips, proposal_binding_valid=all(proposal_bindings),
                     published_effects=sum(effect.startswith('trip_proposal:') for effect in state.effects) if rows else 0,
                     creation_intent=json.loads(bytes(rows[-1][1]))['creation_intent'] if rows else None,
                     draft_reads=calls.count(('GET', '/v1/run-draft-status')),

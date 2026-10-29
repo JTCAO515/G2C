@@ -26,6 +26,9 @@ import Foundation
         let draft_outcome: String?
         let draft_calls: Int
         let published_effects: Int
+        let pending_proposals: Int
+        let formal_trips: Int
+        let proposal_binding_valid: Bool
         let creation_intent: String?
         let draft_reads: Int
         let forbidden_writes: Int
@@ -183,6 +186,9 @@ import Foundation
         XCTAssertEqual(proof.creation_intent, "consider_trip")
         XCTAssertGreaterThanOrEqual(proof.draft_reads, 1)
         XCTAssertEqual(proof.published_effects, mode == "draft_published" ? 1 : 0)
+        XCTAssertEqual(proof.pending_proposals, mode == "draft_published" ? 1 : 0)
+        XCTAssertEqual(proof.formal_trips, 0)
+        XCTAssertTrue(proof.proposal_binding_valid)
         XCTAssertEqual(proof.draft_outcome, outcome)
         XCTAssertEqual(proof.draft_calls, mode == "draft_stop" ? 0 : 1)
         XCTAssertFalse(value.label.contains("PRIVATE_SENTINEL"))
