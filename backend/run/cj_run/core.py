@@ -21,7 +21,8 @@ class WorkerOwnershipLost(Exception):
 
 
 TERMINAL = frozenset({'completed', 'failed', 'cancelled', 'context_invalid', 'unknown'})
-KINDS = frozenset({'started', 'text_delta', 'effect_committed'}) | TERMINAL
+DRAFT_OUTCOMES = frozenset({'validation_failed', 'provider_failed', 'provider_unknown'})
+KINDS = frozenset({'started', 'text_delta', 'effect_committed', 'draft_outcome'}) | TERMINAL
 
 
 @dataclass(frozen=True)
@@ -61,7 +62,9 @@ class Event:
             raise ValueError('unsupported event')
         if self.kind in {'text_delta', 'effect_committed'} and not self.value:
             raise ValueError('empty payload')
-        if self.kind not in {'text_delta', 'effect_committed'} and self.value:
+        if self.kind == 'draft_outcome' and self.value not in DRAFT_OUTCOMES:
+            raise ValueError('unsupported draft outcome')
+        if self.kind not in {'text_delta', 'effect_committed', 'draft_outcome'} and self.value:
             raise ValueError('status events have no payload')
 
 
@@ -73,6 +76,10 @@ class State:
     text: str = ''
     effects: tuple[str, ...] = ()
     usage: Optional[UsageBinding] = None
+
+    @property
+    def draft_outcome(self):
+        return next((event.value for event in self.events if event.kind == 'draft_outcome'), None)
 
     @property
     def sequence(self):
@@ -100,6 +107,11 @@ def advance(state: State, event: Event, valid: Callable[[Binding], bool]) -> Sta
         raise Conflict('not started')
     if state.status == 'running' and event.kind == 'started':
         raise Conflict('already started')
+    if event.kind == 'draft_outcome':
+        if state.draft_outcome is not None or any(effect.startswith('trip_proposal:') for effect in state.effects):
+            raise Conflict('draft result already recorded')
+    if event.kind == 'effect_committed' and event.value.startswith('trip_proposal:') and state.draft_outcome is not None:
+        raise Conflict('draft failure already recorded')
     effects = state.effects
     if event.kind == 'effect_committed':
         if event.value in effects:
