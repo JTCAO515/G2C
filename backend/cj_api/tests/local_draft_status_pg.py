@@ -52,7 +52,7 @@ def exercise(auth, conninfo):
                     runs.apply(Event(binding, 2, 'legacy-completed', 'completed'))
                 else:
                     result = worker.process()[0]
-                    assert result.status == 'completed' 
+                    assert result.status == 'completed'
                 with TestClient(app_from_environment()) as rebuilt:
                     response = harness.expect(rebuilt.get('/v1/run-draft-status', params={'message_id':mid}, headers=headers['alice']))
                     assert (response['draft_outcome'], response['run_status'], response['version']) == (expected,'completed','RUN-draft-status.1'), response
