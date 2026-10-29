@@ -4,6 +4,7 @@ import Foundation
 struct StrictJSON {
     var bytes: [UInt8]
     var index = 0
+    var topLevelUnsignedIntegers: [String: Int64] = [:]
     mutating func check() throws {
         _ = try JSONSerialization.jsonObject(with: Data(bytes))
         try value(depth: 0)
@@ -35,7 +36,13 @@ struct StrictJSON {
                 whitespace(); let key = try string()
                 guard keys.insert(key).inserted else { throw MessageHTTPFailure.invalidResponse }
                 whitespace(); index += 1 // colon: grammar already validated
-                try value(depth: depth + 1); whitespace()
+                whitespace(); let start = index
+                try value(depth: depth + 1)
+                if depth == 0, bytes[start..<index].allSatisfy({ (48...57).contains($0) }),
+                   let integer = Int64(String(decoding: bytes[start..<index], as: UTF8.self)) {
+                    topLevelUnsignedIntegers[key] = integer
+                }
+                whitespace()
                 if bytes[index] == 125 { index += 1; break }
                 index += 1
             }

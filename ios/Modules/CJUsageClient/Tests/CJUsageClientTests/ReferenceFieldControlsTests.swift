@@ -40,7 +40,7 @@ import OpenAPIRuntime
         let message = field == "message_id" ? text : "m"
         let conversation = field == "conversation_id" ? text : "c"
         let generation = field == "generation" ? text : "g"
-        let raw = try JSONSerialization.data(withJSONObject:["version":"MESSAGE-draft.1", "message_id":message, "conversation_id":conversation, "text":"synthetic", "trip_id":NSNull(), "creation_intent":"none"])
+        let raw = try JSONSerialization.data(withJSONObject:["version":"MESSAGE-send.1", "message_id":message, "conversation_id":conversation, "text":"synthetic", "trip_id":NSNull(), "creation_intent":"none","expected_generation":generation,"expected_sequence":0])
         try recovery.stage(messageID:message, originalUTF8:raw, lease:lease)
         let submission = try recovery.beginSubmission(messageID:message, lease:lease); try recovery.observeUnknown(submission.operation)
         let staged = try #require(try recovery.action(messageID:message, lease:lease))

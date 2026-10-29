@@ -71,3 +71,33 @@ The physical VoiceOver listening, focus and activation checks remain UNRUN under
 L3 #29, linked from #7/#158 per ADR-0007. Apple states that VoiceOver is not
 available in Simulator; system accessibility audits do not replace it:
 [Apple accessibility testing](https://developer.apple.com/documentation/accessibility/performing-accessibility-testing-for-your-app).
+
+## Message sending and recovery (#164)
+
+`check_messages.py` uses the actual App in a separate Simulator bundle, the signed
+`app_from_environment` entry, a fresh private PG cluster and Simulator Keychain.
+It does not inject a history configuration or bypass runtime roles. The formal
+local entry must expose configured history routes (prerequisite #198); a 503 is
+an acceptance failure, not an empty history.
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B ios/App/Acceptance/check_messages.py \
+  --simulator '<iOS-17.5-UDID>' --output '<new-external-evidence-directory>' \
+  --build-dir '<external-reusable-build-cache>'
+```
+
+The six Debug cases cover both languages: actual send, conversation/message
+pagination, language stability, encrypted unsent draft reopening, and unknown
+responses injected before/after real commit. A restored unaccepted original
+requires a fresh status read and explicit confirmation before the exact ID/bytes
+are submitted again. A committed original is recovered by query without another
+POST. A seventh Release case requires no development sending capability or API
+requests. The test fixture provisions conversations through the existing server
+API; the App's new write capability remains limited to message POST.
+
+`--diagnostic-test <method>` runs only one named scenario and reports PARTIAL_PASS
+on success; it cannot establish the complete acceptance. Reports retain runtime
+source hashes, native results/screenshots, DB request/receipt proofs and token /
+plaintext-draft scans. Before/after 503 faults are controlled local injections,
+not evidence of a real external-service outage. No OTP, cloud service, paid model,
+physical device or production deployment is involved.

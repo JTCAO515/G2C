@@ -60,6 +60,9 @@ struct LocalRecoveryList: View {
         case .queryRequired: language.text("Query only", "仅可查询")
         case .notObserved: language.text("Receipt not observed — do not resend", "未观察到回执，请勿重发")
         case .accepted: language.text("Original-action receipt available", "原操作已有回执")
+        case .notAccepted: language.text("Original request will no longer be accepted", "原请求不会再被接受")
+        case .integrityError: language.text("Integrity mismatch — sending stopped", "完整性不一致，已停止发送")
+        case .resyncRequired: language.text("Resynchronization required — sending stopped", "需要重新同步，已停止发送")
         }
     }
 }

@@ -43,7 +43,7 @@ private extension Optional where Wrapped == HTTPBody {
 }
 @Suite @MainActor struct TransportTests {
     let trace = "b8131f98-bbc8-4109-90d6-031199c00a10"
-    var raw: Data { Data(" {\"version\":\"MESSAGE-draft.1\",\"message_id\":\"m1\",\"conversation_id\":\"chat\",\"text\":\"你好\",\"trip_id\":null,\"creation_intent\":\"none\"} \n".utf8) }
+    var raw: Data { Data(" {\"version\":\"MESSAGE-send.1\",\"message_id\":\"m1\",\"conversation_id\":\"chat\",\"text\":\"你好\",\"trip_id\":null,\"creation_intent\":\"none\",\"expected_generation\":\"g1\",\"expected_sequence\":0} \n".utf8) }
     func response(_ trace: String? = nil, status: HTTPResponse.Status = .ok) -> HTTPResponse {
         var value = HTTPResponse(status: status)
         value.headerFields[HTTPField.Name("X-Request-ID")!] = trace ?? self.trace

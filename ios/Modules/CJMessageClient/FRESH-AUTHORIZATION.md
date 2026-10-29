@@ -1,3 +1,5 @@
+> Historical candidate evidence retained. Current activation and original-resubmission rules are defined by [ACTIVATION-GATE.md](ACTIVATION-GATE.md), ADR-0008 and #164. Statements below that all live POST gates remain closed describe the historical baseline; the once-only, rollback and owner fences remain required.
+
 # Process-local once-only action authorization candidate
 
 Delta parent c79da94c94315dd3b63db0fcc001dda3afa7403b. Same Issue10 safety fix;

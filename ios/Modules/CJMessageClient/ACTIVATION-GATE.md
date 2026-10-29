@@ -1,59 +1,51 @@
-# Rollback gate: no live POST activation
+# MESSAGE send activation — ADR-0008 / #164
 
-Delta base 6aef735ce7b2ab595cdd6071840f9bc50186d083. Fixed old authentic ciphertext can
-restore an earlier staged action: AES-GCM integrity and key-ID binding do NOT establish
-freshness. A synthetic encrypted replay reproduced two failing assertions in one test
-before repair (evidence/rollback-before.txt); original bytes/key were valid, not corrupted.
+Authority is the server conversation head defined by [ADR-0008](../../../docs/adr/0008-message-send-permit.md) and [MESSAGE-SEND@1](../../../contracts/message/SEND-PERMIT.md). An encrypted snapshot, a key ID, a restored phase or a receipt-query null is never fresh sending authority.
 
-## Minimal implemented conservative policy
+## Build and session boundary
 
-Every action loaded from storage with phase staged is changed IN MEMORY to queryRequired
-before activation returns. No rewrite/delete/key change is used to mask the older file.
-All subsequent saves retain that conservative state. It also applies to truly unsent
-staged records after reopening: the local snapshot cannot distinguish those cases.
-The original ID/bytes remain intact and only query is allowed. A notObserved response
-still cannot authorize a POST. There is no “retry with new ID” fallback.
+- The public `NoRedirectTransport.developmentMessages` factory exists only as a granting path in **DEBUG iOS Simulator** builds. Other builds throw before creating a sending capability.
+- Its endpoint must be explicit `http://127.0.0.1:<port>`. The trusted development host supplies a validator capturing the actual current account, environment and session lease. Default transports remain read-only; no permissive boolean opens them.
+- Release, physical-device and production sending remain closed. Their later activation requires the separate L2 account/resource decision specified by ADR-0008.
+- `interceptedTestTransport` and the internal transport-test initializer are strictly non-network test seams. A product host must use the live factory; a live transport must never be placed in an interceptor seam.
 
-This cannot detect a snapshot rolled back before the action existed, a missing entire
-file, or a malicious host constructing a new action. Therefore the concrete live HTTP
-composition has NO POST activation: MessageHTTPClient's liveReadTransport initializer
-rejects submit before obtaining credentials or producing a submission; NoRedirectTransport
-also refuses POST before URLSession sends. No configuration boolean or permissive default
-opens this gate. A later fix requires separately reviewed authoritative evidence.
+## Head provenance and first send
 
-The explicitly named interceptedTestTransport initializer remains available ONLY for
-non-network synthetic interceptors. It is not a production activation path. A host that
-intentionally injects an unrelated live ClientTransport through this test seam violates
-its contract; this library cannot sandbox arbitrary trusted host code. Product hosts
-must use liveReadTransport and cannot treat interceptor test success as send readiness.
+`MessageHTTPClient.readSendHead` reads the official status endpoint under the current recovery scope/lease. The head cache is process-local and is cleared on lease changes; it is not Codable or stored in `Snapshot`. A preceding validated receipt can advance the cached head for the same conversation.
 
-## Evidence needed before opening live POST
+`stageSend` constructs `MESSAGE-send.1` bytes from that head, explicit user text and creation intent, with `trip_id = null`. It refuses a missing head, an unresolved original action in the conversation, or an already observed ID/body. It reserves the head before storage callbacks. `submitPrepared` requires the exact prepared digest and consumes the existing `MessageRecovery` once-only authorization before handing bytes to transport. It persists uncertainty before any credential or network await.
 
-A fixed source of non-rollbackable original-action/epoch evidence bound to verified
-account/environment must establish first-send authority and preservation across restart,
-backup restore, credential/key lifecycle and unknown writes. It needs exact ownership,
-lookup/write/unknown semantics, failures and affected recovery tests. Such an authority
-is not currently provided by CJSession, message keys or encrypted snapshots; no new
-ledger/schema/framework is invented here. Do not infer freshness from a new key or erase
-original messages to obtain “empty” state. Actual server readback/notObserved alone does
-not resolve retention/recovery uncertainty under the current wire contract.
+A later `SEQUENCE_CONFLICT` is not permission to change the ID, input or head: the original action stays query-required and sending status must be read again.
 
-## Results and limits
+## Two independent sending checks
 
-PASS: 8 transport checks + 1 actual old-ciphertext replay test on Swift6.4/macOS;
-evidence/rollback-after.txt. Old persisted staged becomes queryRequired; live submit
-fails before credentials, direct live transport POST fails before outflow; intercepted
-original-byte path remains testable. No genuine network request/credential or Keychain.
-Existing key/PG/AUTH evidence reused; no full old suite rerun. No data deletion, key
-rotation or new backend authority. Independent acceptance and actual anti-rollback
-storage/production POST remain outstanding. Read-only query is still separately blocked
-on the known d886677 generated receipt omission until fixed CJ005 source arrives.
+1. The live client requires the explicit development capability, current binding, current-process head provenance, exact original bytes and once-only authorization. Its first capability check occurs before credentials are requested.
+2. The live `NoRedirectTransport` capability admits only official `receiveMessage`, `POST /v1/messages`, the bound endpoint, exact octet-stream media type and a valid send.1 body. Alternate paths, methods, operation labels, host/authority overrides, old versions, duplicate fields and invalid integer heads are rejected. It revalidates the host before outflow and after response materialization, rejects redirects and bounds both bodies.
 
-Query-only update: fixed CJ005 312a69ca resolves the generated receipt omission; its
-query decoder/transport is now wired with actual-null validation. The LIVE POST gate
-in this document is unchanged; neither a receipt query nor null is anti-rollback evidence.
+The pre-existing read-only manual-preview capability is separate and unchanged. A message capability does not grant preview, Trip, draft PUT, or other writes; no other module's transport is modified.
 
-Process-local strengthening: FRESH-AUTHORIZATION.md adds a non-Codable once-only permit,
-pre-save reservation/consumption and denial memory across coordinator replacement. It
-blocks known-action restaging after same-process clearing/replay, but cannot detect a
-wholly absent action after process restart. Live gates above are unchanged and closed.
+## Original-action recovery
+
+A send-status request reads the original receipt and head together. Required nullable generated containers must contain **actual null**; a fallback enum case containing an object is invalid. Missing, malformed, foreign-bound, failed or unknown responses keep the original action query-required.
+
+| Receipt | Head | Decision |
+|---|---|---|
+| Matching original hash | Any, including null | accepted |
+| Different hash | Any | integrity error; stop this conversation |
+| null | null | not accepted; original request can no longer be accepted |
+| null | Different generation | not accepted |
+| null | Sequence above original expectation | not accepted |
+| null | Same generation and sequence | original-byte resubmission may be offered |
+| null | Sequence below original expectation | resync required; stop this conversation |
+
+An offered resubmission always uses the same ID and exact bytes and consumes a new once-only authorization only after that current status read. A process that already crossed this action's sending intent may resubmit without a second confirmation. **Every action restored from storage requires explicit user confirmation** after the read. Confirmation by itself never creates permission. An `INPUT_CONFLICT` on submission is an integrity error, not a retry loop.
+
+`notAccepted`, `integrityError` and `resyncRequired` are persisted local outcomes; they grant no head authority. Integrity/resync outcomes continue blocking the conversation after reopening. A new message after not-accepted still needs a fresh process-local head and a new user action. Do not describe not-accepted as proof that an earlier server execution never happened; ADR-0008's server restore rule remains in force.
+
+## Storage and compatibility
+
+The encrypted original ID/body, original receipt, existing Keychain namespace isolation and process-local denial memory remain authoritative for local recovery. No file deletion, key rotation, empty-store fallback or input rewrite is used to make an old action fresh. Loaded staged records still become query-required.
+
+Historical draft.1 local records remain readable by the existing recovery/query path, but cannot pass either live send gate. Older binaries do not understand the new terminal phase values and fail closed rather than discard/rewrite them; do not use downgrade as a recovery shortcut.
+
+Historical rollback and once-only evidence remains in [FRESH-AUTHORIZATION.md](FRESH-AUTHORIZATION.md) and its linked evidence files. Current acceptance is tracked in [#164](https://github.com/JTCAO515/G2C/issues/164); unit/interceptor evidence alone is not Simulator, real-service or production acceptance.

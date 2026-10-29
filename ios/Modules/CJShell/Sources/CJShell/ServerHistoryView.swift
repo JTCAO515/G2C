@@ -16,14 +16,17 @@ struct ServerHistoryView: View {
             Section(language.text("Conversations", "会话")) {
                 status(host.conversationsStatus)
                 Button(language.text("Load from first page", "从第一页读取")) { Task { await host.loadConversations(context: readContext) } }
+                    .accessibilityIdentifier("history.loadConversations")
                     .disabled(!host.isConfigured || host.conversationsStatus == .loading || host.draftWriteStatus == .saving || host.draftQueryStatus == .loading)
                 let selectionToken = host.conversationSelectionToken
                 ForEach(host.conversations, id: \.conversationBytes) { row in
                     Button(row.conversation_id) { _ = host.selectConversation(row, token: selectionToken) }
+                        .accessibilityIdentifier("history.conversation." + row.conversation_id)
                         .disabled(host.draftWriteStatus == .saving || host.draftQueryStatus == .loading)
                 }
                 if host.hasMoreConversations {
                     Button(language.text("Next conversations page", "下一页会话")) { Task { await host.loadConversations(context: readContext, more: true) } }
+                        .accessibilityIdentifier("history.nextConversations")
                         .disabled(host.draftWriteStatus == .saving || host.draftQueryStatus == .loading)
                 }
             }
@@ -31,12 +34,14 @@ struct ServerHistoryView: View {
                 Section(language.text("Stored messages", "已存消息") + " · " + selected.conversation_id) {
                     status(host.historyStatus)
                     Button(language.text("Load messages from first page", "从第一页读取消息")) { Task { await host.loadHistory(context: readContext) } }
+                        .accessibilityIdentifier("history.loadMessages")
                         .disabled(host.historyStatus == .loading)
                     ForEach(host.messages, id: \.messageBytes) { row in
-                        Text(row.text).textSelection(.enabled)
+                        Text(row.text).textSelection(.enabled).accessibilityIdentifier("history.message." + row.receipt.message_id)
                     }
                     if host.hasMoreMessages {
                         Button(language.text("Next messages page", "下一页消息")) { Task { await host.loadHistory(context: readContext, more: true) } }
+                            .accessibilityIdentifier("history.nextMessages")
                     }
                 }
                 Section(language.text("Server draft — read only", "服务器草稿——只读")) {
