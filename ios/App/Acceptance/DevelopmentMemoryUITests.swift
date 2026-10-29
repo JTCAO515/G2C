@@ -48,6 +48,8 @@ import Foundation
         target.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         target.typeText(value)
+        guard let entered = target.value as? String else { XCTFail("Native input has no text value"); return }
+        XCTAssertEqual(Array(entered.utf8), Array(value.utf8))
         if app.buttons["Done"].exists { app.buttons["Done"].tap() }
         else if app.buttons["完成"].exists { app.buttons["完成"].tap() }
     }
@@ -59,6 +61,17 @@ import Foundation
     func capture(_ name: String) {
         let image = XCTAttachment(screenshot: app.screenshot()); image.name = name
         image.lifetime = .keepAlways; add(image)
+    }
+    func audit(_ context: String) throws {
+        var issues = 0
+        continueAfterFailure = true
+        defer { continueAfterFailure = false }
+        try app.performAccessibilityAudit(for: .all) { issue in
+            issues += 1
+            print(context, issue.detailedDescription, issue.element?.label ?? "unavailable", issue.element?.frame ?? .zero)
+            return false
+        }
+        XCTAssertEqual(issues, 0)
     }
     func launch(_ f: Fixture, language: String, restore: Bool = false, account: String = "A", large: Bool = false) throws {
         app?.terminate(); app = XCUIApplication(bundleIdentifier: bundle)
@@ -97,6 +110,9 @@ import Foundation
         let f = try await prepare("success", caseID: large ? "testChineseLargeText" : "testEnglish")
         defer { app?.terminate() }
         try launch(f, language: language, large: large)
+        tap(language == "en" ? "Load groups" : "读取分组")
+        XCTAssertTrue(app.staticTexts[language == "en" ? "No memory groups" : "暂无记忆分组"].waitForExistence(timeout: 10))
+        capture("empty-" + language)
         let rows = [("fact", "Synthetic fact / 合成事实"), ("experience", "Synthetic experience / 合成经历"), ("food.spice", "cafe\u{301} / 合成偏好")]
         for (slot, value) in rows {
             save(slot, text: value, language: language)
@@ -122,7 +138,7 @@ import Foundation
             XCTAssertTrue(app.staticTexts[language == "en" ? "Source version, 1" : "来源版本, 1"].exists)
             let source = try XCTUnwrap(readProof.items.first { $0.slot == slot })
             XCTAssertTrue(app.staticTexts[(language == "en" ? "Source, " : "来源, ") + source.source_id].exists)
-            capture("detail-" + language); back()
+            capture("detail-" + language); try audit("MEMORY_DETAIL_" + language); back()
         }
         app.terminate()
         try launch(f, language: language == "en" ? "zh-Hans" : "en", restore: true)
@@ -138,7 +154,9 @@ import Foundation
         tap(switched == "en" ? "Load groups" : "读取分组")
         tap("memory.group.0"); tap(switched == "en" ? "Load from start" : "从头读取")
         for (_, value) in rows { XCTAssertTrue(app.staticTexts[value].waitForExistence(timeout: 10)) }
-        capture("same-originals-after-language-switch"); try await query(f, "reopen")
+        capture("same-originals-after-language-switch")
+        try audit("MEMORY_LIST_" + switched)
+        try await query(f, "reopen")
     }
     func testEnglish() async throws { try await success(language: "en") }
     func testChineseLargeText() async throws { try await success(language: "zh-Hans", large: true) }
@@ -150,6 +168,7 @@ import Foundation
         app.terminate(); try launch(f, language: "en", restore: true)
         tap("memory.add"); tap("Read original operations"); tap("Query this original operation")
         waitStatus("Saved.", identifier: "memory.original.status"); capture("original-reconciled")
+        try audit("MEMORY_UNKNOWN_RECOVERED")
         try await query(f, "unknown-reopen")
     }
     func testRejected() async throws {
@@ -157,6 +176,7 @@ import Foundation
         try launch(f, language: "en")
         save("blocked", text: "Synthetic denied collection", language: "en")
         waitStatus("Save not confirmed"); capture("real-policy-rejected")
+        try audit("MEMORY_REJECTED")
         try await query(f, "rejected")
     }
     func testSkipAndChat() async throws {
@@ -172,6 +192,59 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for: [completed], timeout: 35), .completed)
         capture("chat-after-skip"); try await query(f, "skip")
     }
+    func testCandidate() async throws {
+        let f = try await prepare("candidate"); defer { app?.terminate() }
+        try launch(f, language: "en")
+        save("ambiguous", text: "Synthetic unconfirmed candidate", language: "en")
+        waitStatus("Saved as a candidate")
+        capture("candidate-not-fact"); back(); tap("Load groups"); tap("memory.group.0"); tap("Load from start")
+        XCTAssertTrue(app.staticTexts["Candidate · unconfirmed"].waitForExistence(timeout: 10))
+        try await query(f, "candidate")
+    }
+    func testServerUnknown() async throws {
+        let f = try await prepare("server_unknown"); defer { app?.terminate() }
+        try launch(f, language: "en")
+        _ = try await call("/hold-operation", ["case": f.case_id])
+        save("fact", text: "Synthetic precommit auth change", language: "en")
+        _ = try await call("/revoke-blocked-operation", ["case": f.case_id])
+        waitStatus("Result unknown"); capture("actual-server-unknown")
+        _ = try await call("/restore-access", ["case": f.case_id])
+        tap("memory.save.query"); waitStatus("Original receipt not observed")
+        capture("unknown-null-is-not-retry")
+        try await query(f, "server-unknown")
+    }
+    func testSwitchLateRead() async throws {
+        let f = try await prepare("switch"); defer { app?.terminate() }
+        try launch(f, language: "en")
+        save("fact", text: "Synthetic A private memory", language: "en"); waitStatus("Saved."); back()
+        _ = try await call("/hold-read", ["case": f.case_id])
+        tap("Load groups"); _ = try await call("/wait-held", ["case": f.case_id])
+        XCTAssertTrue(app.staticTexts["Loading memories"].exists)
+        tap("memory.account"); tap("account.development.signin.B")
+        let signed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", f.subjects["B"]!), object: app.staticTexts["account.development.status"])
+        XCTAssertEqual(XCTWaiter.wait(for: [signed], timeout: 15), .completed)
+        back(); _ = try await call("/release-read", ["case": f.case_id])
+        XCTAssertFalse(app.buttons["memory.group.0"].exists)
+        tap("Load groups"); XCTAssertTrue(app.staticTexts["No memory groups"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["Synthetic A private memory"].exists)
+        capture("B-after-A-late-response"); try await query(f, "switch")
+    }
+    func testRevokedLateRead() async throws {
+        let f = try await prepare("revoke"); defer { app?.terminate() }
+        try launch(f, language: "en")
+        save("fact", text: "Synthetic revoked memory", language: "en"); waitStatus("Saved."); back()
+        _ = try await call("/hold-read", ["case": f.case_id])
+        tap("Load groups"); _ = try await call("/wait-held", ["case": f.case_id])
+        _ = try await call("/revoke-access", ["case": f.case_id])
+        XCUIDevice.shared.press(.home); app.activate()
+        tap("Memory"); tap("memory.account")
+        let rejected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Sign-in was rejected"), object: app.staticTexts["account.development.status"])
+        XCTAssertEqual(XCTWaiter.wait(for: [rejected], timeout: 15), .completed)
+        _ = try await call("/release-read", ["case": f.case_id])
+        back(); XCTAssertFalse(app.buttons["memory.group.0"].exists)
+        XCTAssertFalse(app.staticTexts["Synthetic revoked memory"].exists)
+        capture("revoked-no-late-content"); try await query(f, "revoke")
+    }
     func testReleaseClosed() async throws {
         let f = try await prepare("release"); defer { app?.terminate() }
         app = XCUIApplication(bundleIdentifier: bundle)
@@ -180,6 +253,7 @@ import Foundation
         app.launch(); tap("Memory"); tap("memory.add")
         XCTAssertTrue(app.staticTexts["Memory is not configured."].exists)
         XCTAssertFalse(app.buttons["memory.manual.save"].exists)
-        capture("release-disconnected"); try await query(f, "release")
+        capture("release-disconnected"); try audit("MEMORY_RELEASE")
+        try await query(f, "release")
     }
 }
