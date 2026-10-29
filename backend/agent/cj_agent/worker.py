@@ -250,7 +250,8 @@ class RunWorker:
             return self._finish(receipt, stopped.state)
         except BudgetUnknown:
             current = self.runs.snapshot(binding)
-            if current.status in TERMINAL:
+            if current.status != 'running':
+                # No execution retry/terminal rewrite for queued or terminal RUN.
                 # Terminal RUN is durable; expose failed stop reconciliation rather
                 # than retrying the accounting mutation inside this invocation.
                 raise
@@ -274,6 +275,8 @@ class RunWorker:
 
     def _execute(self, receipt, binding):
         state = self.runs.accept(binding)
+        if self.budget_exit is not None:
+            self.budget_exit = self.budget_exit.for_run(binding,state)
         if state.status in TERMINAL:
             return self._finish(receipt, state)
         if state.status == 'running':
