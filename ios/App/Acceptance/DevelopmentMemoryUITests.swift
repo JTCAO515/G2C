@@ -100,7 +100,7 @@ import Foundation
             capture("saved-" + slot + "-" + language); back()
         }
         tap(language == "en" ? "Load groups" : "读取分组")
-        let group = app.buttons.containing(.staticText, identifier: "self").firstMatch
+        let group = app.buttons["memory.group.0"]
         XCTAssertTrue(group.waitForExistence(timeout: 10)); group.tap()
         tap(language == "en" ? "Load from start" : "从头读取")
         for (_, value) in rows {
