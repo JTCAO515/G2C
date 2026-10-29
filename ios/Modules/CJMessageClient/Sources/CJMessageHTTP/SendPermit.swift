@@ -39,6 +39,8 @@ struct SendPermitState {
     var lease: Lease?
     var heads: [Data: Components.Schemas.MessageHead] = [:]
     var reads: [Data: UUID] = [:]
+    var historyEpochs: [Data: UUID] = [:]
+    var historyHeads: [Data: Components.Schemas.MessageHead] = [:]
     var prepared: [Data: PreparedMessageSend] = [:]
     var decisions: [Data: MessageSendDecision] = [:]
     var intents: Set<Data> = []
@@ -92,12 +94,21 @@ extension MessageHTTPClient {
         let conversation = Data(conversationID.utf8)
         guard let head = sendPermitState.heads[conversation], head.last_sequence < Int64.max else { return nil }
         let local = try recovery.localProjection(scope: scope, lease: lease)
-        for reference in local.actions where reference.phase != .accepted && reference.phase != .notAccepted {
+        for reference in local.actions where reference.phase != .accepted {
             guard let record = try recovery.action(messageID: reference.messageID, lease: lease) else { throw RecoveryError.staleOperation }
             var parser = StrictJSON(bytes: Array(record.originalUTF8)); try parser.check()
             guard let object = try JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any],
                   let cid = object["conversation_id"] as? String else { throw RecoveryError.invalidSnapshot }
-            if Data(cid.utf8) == conversation { return nil }
+            if Data(cid.utf8) == conversation {
+                if reference.phase == .notAccepted {
+                    let original = try OriginalMessageSend(raw: record.originalUTF8, maximumBytes: endpoint.maximumRequestBytes)
+                    if Data(original.head.generation.utf8) == Data(head.generation.utf8), head.last_sequence > original.head.last_sequence {
+                        guard let history = sendPermitState.historyHeads[conversation],
+                              Data(history.generation.utf8) == Data(head.generation.utf8),
+                              history.last_sequence >= head.last_sequence else { return nil }
+                    }
+                } else { return nil }
+            }
         }
         return head
     }
@@ -247,6 +258,10 @@ extension MessageHTTPClient {
             }
             // The operation check above rejects stale concurrent replies before cache mutation.
             sendPermitState.decisions[key] = decision
+            if decision == .notAccepted {
+                sendPermitState.historyEpochs[conversation] = UUID()
+                sendPermitState.historyHeads.removeValue(forKey: conversation)
+            }
             if decision == .accepted || decision == .notAccepted, let head { sendPermitState.heads[conversation] = head }
             return decision
         } catch {

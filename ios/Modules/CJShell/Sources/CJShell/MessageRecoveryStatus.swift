@@ -68,7 +68,7 @@ struct MessageRecoveryStatus: View {
             if host.canResubmit { return language.text("The original request can still be accepted. You may submit it unchanged.", "原请求仍可接收，可以原样重新提交。") }
             return language.text("No receipt was observed. This does not prove the message was unsent or safe to resend.", "未观察到回执。这不证明消息未发送，也不允许重新发送。")
         case .accepted: return language.text("The original action has a confirmed receipt. This is not an assistant reply.", "原操作已有确认回执。这不是助手回复。")
-        case .notAccepted: return language.text("The original request will no longer be accepted. You can start a new message.", "原请求不会再被接受，可以发起新消息。")
+        case .notAccepted: return language.text("The original request will no longer be accepted. Refresh this conversation’s history before starting a new message.", "原请求不会再被接受。请先刷新此会话的历史，再决定是否发送新消息。")
         case .integrityError: return language.text("The original message does not match its receipt. Sending is stopped for this conversation.", "原消息与回执不一致，已停止此会话的发送。")
         case .resyncRequired: return language.text("The conversation state needs resynchronization. Sending is stopped.", "会话状态需要重新同步，已停止发送。")
         }

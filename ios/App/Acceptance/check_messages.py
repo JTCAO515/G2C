@@ -46,6 +46,10 @@ def main():
     devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j'], env=env))
     assert any('iOS-17-5' in runtime and d['udid'] == args.simulator
                for runtime, rows in devices['devices'].items() for d in rows)
+    target = next(d for rows in devices['devices'].values() for d in rows if d['udid'] == args.simulator)
+    if target['state'] == 'Shutdown':
+        subprocess.run(['xcrun', 'simctl', 'boot', args.simulator], env=env, check=True)
+    subprocess.run(['xcrun', 'simctl', 'bootstatus', args.simulator, '-b'], env=env, check=True)
     sources = [ROOT / 'ios/App/CJProbeApp.swift', ROOT / 'ios/App/DevelopmentTripHost.swift',
                ROOT / 'ios/App/DevelopmentSessionConfiguration.swift', ROOT / 'ios/Modules/CJShell/Package.swift']
     for directory in ('ios/Modules/CJMessageClient/Sources', 'ios/Modules/CJShell/Sources'):
@@ -204,22 +208,27 @@ def main():
                     report['unrun'] = [case for cases in variants.values() for case in cases if case != args.diagnostic_test]
                     variants = {'Release' if args.diagnostic_test == 'testReleaseClosed' else 'Debug': [args.diagnostic_test]}
                 for configuration, tests in variants.items():
-                    result = output / (configuration + '.xcresult')
-                    command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-configuration', configuration,
-                        '-destination', 'platform=iOS Simulator,id=' + args.simulator, '-derivedDataPath', str(build),
-                        '-resultBundlePath', str(result), '-scmProvider', 'system', '-skipPackageUpdates', '-onlyUsePackageVersionsFromResolvedFile',
-                        '-parallel-testing-enabled', 'NO', '-collect-test-diagnostics', 'never', 'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES',
-                        'CODE_SIGNING_ALLOWED=YES', 'CODE_SIGN_IDENTITY=-']
-                    command += ['-only-testing:G2CControl/DevelopmentMessageUITests/' + case for case in tests]
-                    print('Running native ' + configuration + ': ' + ', '.join(tests), flush=True)
-                    run = subprocess.run(command + ['test'], cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=1200)
-                    log = run.stdout
-                    for token in tokens.values(): log = log.replace(token, '<redacted-local-token>')
-                    (output / (configuration + '.log')).write_text(log); run.check_returncode()
-                    summary = json.loads(subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(result)], env=env))
-                    (output / (configuration + '-summary.json')).write_text(json.dumps(summary, indent=2))
-                    assert summary['passedTests'] == len(tests) and summary['failedTests'] == 0 and summary['skippedTests'] == 0
-                    report['cases'][configuration] = dict(status='PASS', tests=tests)
+                    # Isolate XCTest processes; preserve every original assertion and case.
+                    for case in tests:
+                        case_name = configuration + '-' + case
+                        result = output / (case_name + '.xcresult')
+                        command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-configuration', configuration,
+                            '-destination', 'platform=iOS Simulator,id=' + args.simulator, '-derivedDataPath', str(build),
+                            '-resultBundlePath', str(result), '-scmProvider', 'system', '-skipPackageUpdates', '-onlyUsePackageVersionsFromResolvedFile',
+                            '-parallel-testing-enabled', 'NO', '-collect-test-diagnostics', 'never', 'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES',
+                            'CODE_SIGNING_ALLOWED=YES', 'CODE_SIGN_IDENTITY=-']
+                        command += ['-only-testing:G2CControl/DevelopmentMessageUITests/' + case]
+                        print('Running native ' + configuration + ': ' + case, flush=True)
+                        run = subprocess.run(command + ['test'], cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=1200)
+                        log = run.stdout
+                        for token in tokens.values(): log = log.replace(token, '<redacted-local-token>')
+                        (output / (case_name + '.log')).write_text(log); run.check_returncode()
+                        summary = json.loads(subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(result)], env=env))
+                        (output / (case_name + '-summary.json')).write_text(json.dumps(summary, indent=2))
+                        assert summary['passedTests'] == 1 and summary['failedTests'] == 0 and summary['skippedTests'] == 0
+                        report['cases'].setdefault(configuration, dict(status='RUNNING', tests=[]))['tests'].append(case)
+                        (output / 'report.json').write_text(json.dumps(report, indent=2))
+                    report['cases'][configuration]['status'] = 'PASS'
                 report['database_proofs'] = {key + '/' + cid: proof(key, cid) for key in subjects for cid in (primary[key], before[key], after[key])}
                 container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
                 sealed = list(container.rglob('*.sealed'))

@@ -407,6 +407,9 @@ extension MessageHTTPClient {
     }
     public func history(conversationID: String, limit: Int, after: MessageReadCursor? = nil, limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<[Components.Schemas.MessageHistoryItem]> {
         guard !conversationID.isEmpty else { throw MessageHTTPFailure.invalidConfiguration }
+        try checkSendLease(lease)
+        let historyKey = Data(conversationID.utf8)
+        let historyEpoch = sendPermitState.historyEpochs[historyKey]
         let purpose = Data("history:".utf8) + Data(conversationID.utf8)
         try readCursor(after, purpose: purpose, limit: limit, limits: limits, lease: lease)
         let client = try await client(lease)
@@ -440,6 +443,10 @@ extension MessageHTTPClient {
                 generation = r.generation; last = Int64(r.sequence)
             }
             let next = try nextRead(cursor, previous: after, purpose: purpose, last: last, generation: generation, ids: ids, limits: limits, lease: lease)
+            try checkSendLease(lease)
+            if sendPermitState.historyEpochs[historyKey] == historyEpoch, let generation {
+                sendPermitState.historyHeads[historyKey] = .init(conversation_id: conversationID, generation: generation, last_sequence: last)
+            }
             return MessageReadResult(value:body.messages,next:next,requestID:body.request_id,owner:readOwner,lease:lease)
         case .default(let status, let response): try readError(status, response.body.json)
         }

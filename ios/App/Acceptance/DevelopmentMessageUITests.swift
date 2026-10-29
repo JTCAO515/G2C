@@ -155,8 +155,17 @@ import Foundation
         let draft = "CJ164 unsent " + choice + " 未发送草稿"
         enter(draft)
         try launch(fixture, language, restore: true, choice: choice)
-        select(cid, fixture: fixture, choice: choice, language: language)
+        select(cid, fixture: fixture, choice: choice, language: language, paginate: true)
         status(language == "en" ? "Ready" : "可以编辑")
+        XCTAssertEqual(field.value as? String, draft)
+        tap("assistant.serverHistory"); tap("history.loadMessages")
+        XCTAssertTrue(app.staticTexts["history.message.seed-" + choice + "-00"].waitForExistence(timeout: 15))
+        tap("history.nextMessages")
+        let originalMessage = app.staticTexts["history.message." + mid]
+        XCTAssertTrue(originalMessage.waitForExistence(timeout: 15))
+        XCTAssertTrue(originalMessage.label.contains(text))
+        capture(language + "-original-message-pages-after-reopen")
+        tap("assistant.panel.done")
         XCTAssertEqual(field.value as? String, draft)
         let reopenedProof = try await proof(choice, cid)
         XCTAssertEqual(reopenedProof.posts, 1)

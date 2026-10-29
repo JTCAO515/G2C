@@ -40,7 +40,7 @@ A send-status request reads the original receipt and head together. Required nul
 
 An offered resubmission always uses the same ID and exact bytes and consumes a new once-only authorization only after that current status read. A process that already crossed this action's sending intent may resubmit without a second confirmation. **Every action restored from storage requires explicit user confirmation** after the read. Confirmation by itself never creates permission. An `INPUT_CONFLICT` on submission is an integrity error, not a retry loop.
 
-`notAccepted`, `integrityError` and `resyncRequired` are persisted local outcomes; they grant no head authority. Integrity/resync outcomes continue blocking the conversation after reopening. A new message after not-accepted still needs a fresh process-local head and a new user action. Do not describe not-accepted as proof that an earlier server execution never happened; ADR-0008's server restore rule remains in force.
+`notAccepted`, `integrityError` and `resyncRequired` are persisted local outcomes; they grant no head authority. Integrity/resync outcomes continue blocking the conversation after reopening. A new message after not-accepted still needs a fresh process-local head and a new user action. If the original position was occupied, validated history must first cover the current head. Pre-verdict history, failed reads and restored local snapshots cannot satisfy that refresh; history never grants a send head. Do not describe not-accepted as proof that an earlier server execution never happened; ADR-0008's server restore rule remains in force.
 
 ## Storage and compatibility
 

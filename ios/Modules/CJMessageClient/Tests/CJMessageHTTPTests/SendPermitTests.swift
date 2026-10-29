@@ -84,6 +84,46 @@ private actor PermitServer: ClientTransport {
 }
 
 @Suite @MainActor struct SendPermitTests {
+    @Test func occupiedSequenceRequiresValidatedFreshHistoryIncludingAfterReopen() async throws {
+        let memory = PermitMemory(), server = PermitServer()
+        let state = MessageRecovery(storage: memory)
+        let scope = try StorageScope(environment: UUID().uuidString, account: "a")
+        let lease = try state.activate(scope)
+        let endpoint = try MessageEndpoint(url: #require(URL(string: "https://synthetic.invalid")), maximumRequestBytes: 10000, maximumResponseBytes: 10000)
+        let client = MessageHTTPClient(recovery: state, scope: scope, endpoint: endpoint, credentials: PermitCredentials(), interceptedTestTransport: server)
+        let limits = try MessageReadLimits(maximumPageItems: 20, maximumCursorBytes: 2048, maximumDecodedBytes: 10000, maximumPages: 10)
+        _ = try await client.readSendHead(conversationID: "chat", lease: lease)
+        try client.stageSend(messageID: "m1", conversationID: "chat", text: "original", lease: lease)
+        _ = try state.beginSubmission(messageID: "m1", lease: lease)
+        let other = try JSONSerialization.data(withJSONObject: ["version": "MESSAGE-send.1", "conversation_id": "chat", "message_id": "other", "text": "occupying message", "trip_id": NSNull(), "creation_intent": "none", "expected_generation": "g1", "expected_sequence": 0])
+        let row: [String: Any] = ["receipt": ["message_id": "other", "conversation_id": "chat", "generation": "g1", "sequence": 1, "run_id": "r", "input_sha256": SHA256.hash(data: other).map { String(format: "%02x", $0) }.joined()], "original_utf8_base64": other.base64EncodedString(), "text": "occupying message"]
+        let page = String(decoding: try JSONSerialization.data(withJSONObject: ["request_id": "$TRACE", "messages": [row], "next_cursor": NSNull()]), as: UTF8.self)
+        // A page read before the verdict cannot satisfy the subsequent refresh.
+        await server.overrideStatus(page)
+        _ = try await client.history(conversationID: "chat", limit: 20, limits: limits, lease: lease)
+        await server.overrideStatus(nil); await server.status(sequence: 1)
+        #expect(try await client.reconcileSend(messageID: "m1", lease: lease) == .notAccepted)
+        #expect(try !client.canStartSend(conversationID: "chat", lease: lease))
+        _ = try await client.readSendHead(conversationID: "chat", lease: lease)
+        #expect(throws: (any Error).self) { try client.stageSend(messageID: "new", conversationID: "chat", text: "blocked", lease: lease) }
+        await server.overrideStatus("{}")
+        await #expect(throws: (any Error).self) { try await client.history(conversationID: "chat", limit: 20, limits: limits, lease: lease) }
+        #expect(try !client.canStartSend(conversationID: "chat", lease: lease))
+        await server.overrideStatus(page)
+        _ = try await client.history(conversationID: "chat", limit: 20, limits: limits, lease: lease)
+        #expect(try client.canStartSend(conversationID: "chat", lease: lease))
+        state.invalidate()
+        let restored = MessageRecovery(storage: memory), next = try restored.activate(scope)
+        let reopened = MessageHTTPClient(recovery: restored, scope: scope, endpoint: endpoint, credentials: PermitCredentials(), interceptedTestTransport: server)
+        await server.overrideStatus(nil)
+        _ = try await reopened.readSendHead(conversationID: "chat", lease: next)
+        #expect(try !reopened.canStartSend(conversationID: "chat", lease: next))
+        await server.overrideStatus(page)
+        _ = try await reopened.history(conversationID: "chat", limit: 20, limits: limits, lease: next)
+        try reopened.stageSend(messageID: "new", conversationID: "chat", text: "user chooses after refresh", lease: next)
+        #expect(await server.posted.isEmpty)
+    }
+
     @Test func sequenceConflictRequiresOriginalStatusBeforeResubmission() async throws {
         let state = MessageRecovery(storage: PermitMemory())
         let scope = try StorageScope(environment: UUID().uuidString, account: "a")
