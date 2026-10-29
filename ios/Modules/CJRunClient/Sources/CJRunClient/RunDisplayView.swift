@@ -92,6 +92,7 @@ extension RunDisplayState {
                 Task { await model.perform(work) }
             }.disabled(disabled(state) || model.cancellationState == .stopping).accessibilityIdentifier("run.stream.read")
         }
+        .buttonStyle(RunReadableButtonStyle())
         .onChange(of: scenePhase) { _, phase in if phase != .active { model.invalidate() } }
         .onDisappear { model.invalidate() }
     }
@@ -108,5 +109,16 @@ extension RunDisplayState {
     }
     private func disabled(_ state: RunDisplayState) -> Bool {
         switch state { case .unselected, .loading: true; default: false }
+    }
+}
+
+private struct RunReadableButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var enabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(Color.primary)
+            .opacity(enabled && !configuration.isPressed ? 1 : 0.7)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
     }
 }
