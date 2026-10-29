@@ -145,6 +145,7 @@ import Foundation
     func testReleaseClosed() async throws {
         let f = try await prepare("release"); defer { app?.terminate() }
         app = XCUIApplication(bundleIdentifier: bundle)
+        app.launchArguments = ["-cj.ui.language.v1", "en"]
         app.launchEnvironment = ["G2C_DEV_API_BASE_URL": f.endpoint, "G2C_DEV_TOKEN": f.accounts["A"]!, "G2C_DEV_MEMORY_PROFILE": f.profile]
         app.launch(); tap("Memory"); tap("memory.add")
         XCTAssertTrue(app.staticTexts["Memory is not configured."].exists)
