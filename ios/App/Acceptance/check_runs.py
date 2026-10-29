@@ -24,7 +24,7 @@ CASES = ['testStreamEnglish', 'testStreamChinese', 'testStopEnglish', 'testStopC
          'testFailureEnglish', 'testFailureChinese']
 
 
-DRAFT_CASES = ['testDraftValidationEnglish', 'testDraftValidationChinese', 'testDraftProviderEnglish', 'testDraftProviderChinese', 'testDraftUnknownEnglish', 'testDraftUnknownChinese', 'testDraftStopEnglish', 'testDraftStopChinese']
+DRAFT_CASES = ['testDraftValidationEnglish', 'testDraftValidationChinese', 'testDraftProviderEnglish', 'testDraftProviderChinese', 'testDraftUnknownEnglish', 'testDraftUnknownChinese', 'testDraftStopEnglish', 'testDraftStopChinese', 'testDraftPublishedEnglish', 'testDraftPublishedChinese']
 
 
 def main():
@@ -146,6 +146,7 @@ def main():
                     status, text, effects, draft_outcome = state.status, state.text, len(state.effects), state.draft_outcome
                 return dict(requests=len(calls), status=status, text=text, effects=effects, message_id=rows[-1][0] if rows else None,
                     draft_outcome=draft_outcome, draft_calls=spec['draft_calls'],
+                    published_effects=sum(effect.startswith('trip_proposal:') for effect in state.effects) if rows else 0,
                     creation_intent=json.loads(bytes(rows[-1][1]))['creation_intent'] if rows else None,
                     draft_reads=calls.count(('GET', '/v1/run-draft-status')),
                     receipts=len(rows), provider_calls=spec['calls'], posts=calls.count(('POST', '/v1/messages')),
@@ -159,7 +160,7 @@ def main():
                         parsed = urlsplit(self.path); query = parse_qs(parsed.query)
                         if parsed.path == '/prepare':
                             mode, language = query['mode'][0], query['language'][0]
-                            if mode not in ('normal', 'stop', 'failure', 'release', 'draft_validation', 'draft_provider', 'draft_unknown', 'draft_stop') or language not in ('en', 'zh-Hans'): raise ValueError('invalid case')
+                            if mode not in ('normal', 'stop', 'failure', 'release', 'draft_validation', 'draft_provider', 'draft_unknown', 'draft_stop', 'draft_published') or language not in ('en', 'zh-Hans'): raise ValueError('invalid case')
                             choice = 'A' if language == 'en' else 'B'
                             cid = 'cj167-' + uuid.uuid4().hex
                             prompt = f'CJ167 {mode} {cid} ' + ('北京行程测试' if choice == 'B' else 'Beijing travel test')
