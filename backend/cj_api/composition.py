@@ -216,9 +216,7 @@ def build_message_boundary(*, environment, jwt_configuration, verification_keys,
     Gate rechecks do not implement a DB-linked atomic revocation fence.
     """
     if (environment != 'local' or jwt_configuration is None or verification_keys is None
-            or access_provider is None or not callable(getattr(verification_keys, 'resolve', None))
-            or not callable(getattr(access_provider, 'evaluate', None))
-            or not callable(resolve_repository) or not callable(new_run_id)):
+            or access_provider is None or resolve_repository is None or new_run_id is None):
         raise CompositionUnavailable('Explicit local JWT, policy and repository configuration required')
     try:
         modules = _internal_modules()
@@ -257,7 +255,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
             raise CompositionUnavailable('Host run ID factory returned invalid value')
         return value  # no trim/normalization of valid opaque IDs
 
-    if not callable(new_run_id):
+    if new_run_id is None:
         raise CompositionUnavailable('Explicit run ID factory required')
     boundary = build_message_boundary(environment=environment, jwt_configuration=jwt_configuration,
         verification_keys=verification_keys, access_provider=access_provider,

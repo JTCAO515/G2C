@@ -23,10 +23,7 @@ def build_trip_boundary(*,environment,jwt_configuration,verification_keys,access
     An absent validator remains absent: public producer denies fresh actions.
     This constructs a Boundary only; routes require the public projection seam.
     """
-    if (environment!='local' or not callable(resolve)
-            or not callable(getattr(verification_keys,'resolve',None))
-            or not callable(getattr(access_provider,'evaluate',None))
-            or confirmation_validator is not None and not callable(confirmation_validator)):
+    if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local TRIP AUTH/resolver configuration required')
     modules=_internal_modules('trip')
     auth=modules['cj_auth.jwt_adapter']

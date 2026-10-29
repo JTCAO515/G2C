@@ -29,7 +29,7 @@ class ConfirmationSigner:
     def __post_init__(self):
         if (type(self.key) is not bytes or len(self.key) < 32
                 or type(self.lifetime_seconds) is not int or not 1 <= self.lifetime_seconds <= 600
-                or not callable(self.clock)):
+                or self.clock is None):
             raise ValueError('dedicated key, bounded lifetime and clock required')
 
     def _now(self):

@@ -21,7 +21,7 @@
 | Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 merged; lane A closed #159/#194 and parent #7, #164 and parent #10, and #212 via PR232. #167 Part1 PR229 is merged; remaining real budget acceptance is A-owned; B #170 formal host is available. A has a unmerged v2 read candidate only; native budget remains UNRUN. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). Lane B: #198/#170 and parent #19 closed; formal local NEEDS/provider_call host PR240 merged573faf1 with all main CI green. Persistent protection0016 prevents configuration downgrade. B M1 is complete; M2 #9 is split into #242/#243/#244 by PR245. First slice #242 awaits JT scope confirmation for a versioned generic exit; implementation remains UNRUN. Lane C: #168/#169 and M2 #226 delivered with reviewed heads and green post-merge CI; #227/#228 remain future work and #12 stays open. |
 | Accepted Issue | Lane A: #11 / #167 remaining budget acceptance; #212 completed. Unmerged v2 candidate only, no activation or feature PR. Lane B: M1 #198/#170 and parent #19 complete; M2 #9 / #242 scope proposal pending JT; #243/#244 depend on #242. Lane C: requested scope through #12/#226 complete; next queue is #227 then #228. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-29T12:19:24.399811+00:00 |
+| Last updated | 2026-10-29T13:46:59.614387+00:00 |
 
 ## Active Work
 
@@ -29,6 +29,7 @@
 - Lane B: #198 closed with PR206 and independently verified A native08; #170 and parent #19 closed after PR213/223/230/235/237/240. Final host head861cb67 independently APPROVED6494916060, full head CI, locked merge573faf1, main40862391938 all five success. Fixed executable source test57/57 and PG16/16; independent host/needs/budget and e2e37/37, original downgrade regression zero calls/RUN/proposal and unchanged ledger. Config-loss, two activation/send lock orders, ACK unknown, original period, cross-scope and corrupt-ledger refusal pass. Historical FAIL retained. #212 native failure UI is closed; #167 native budget remains A-owned and was notified6495204833. M2 #9 now has native children #242/#243/#244 (M2, B/B/A; 5/5/4 ACs), with #243/#244 blocked_by #242. PR245 planning sync merged4580bae. #242 mapping/scope proposal6495987746 is UNRUN and awaits JT; no new generic contract, migration or implementation has been changed.
 - Lane C: #168 Part2 PR208 merged414b0ac with main CI40807520711; #169 PR222 merged630a611 with main CI40821295205; M2 #12 split into #226/#227/#228 with native sub-issue links. #226 PR236 exact head26332b2 independently APPROVED6493581381, all CI40852784786 passed, locked mergee022eac and main CI40854592928 all green. Local test57/57, PG14/14 (e2e37), independent e2e37 including MEMORY6 and migration data retention. #17 now explicitly carries the #11/#19 memory-version fence; #227 consumes it. Requested C goal ends after this first M2 slice; #227/#228 remain OPEN, not implemented. Local MEMORY activation is explicit/private-policy-only; no App/automatic recall or cloud/real-account claim.
 - #186 four cleanup PRs #187–#190 merged with exact-head review; #186 remains open for its owner (Claude). PR #195 (#194 insertion) and #197 (#186 handoff note) are superseded by this revision.
+- #186 slice #247 (Claude, JT 2026-10-29): internal-adapter callable()/getattr shape reflection replaced by presence checks in backend composition/repositories; security checks (environment gate, AUTH profile, Boundary/AdmissionChecker type, evaluate_session provider, guard) retained. No test removed; PR pending Codex independent review.
 
 ## Accepted Assumptions
 
@@ -62,12 +63,15 @@
 
 | Path | Reason |
 | --- | --- |
-| `docs/handoff.json, HANDOFF.md` | B M2 split and #242 explicit scope-approval stop; A/C status and M1 closure evidence preserved. |
+| `backend/cj_api/*composition*.py, memory_boundary.py, history_config.py, history_routes.py, trip_routes.py, aead_cursor.py; backend/{run,usage,feedback,cleanup,memory,trip}/cj_*/ (8 files)` | #247: drop internal callable() shape reflection per docs/engineering.md trust-boundary rule; missing configuration still fails closed. |
+| `docs/handoff.json, HANDOFF.md` | #247 status. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
+| pass | `uv run --locked python -B scripts/test.py` | #247: 57/57 groups, no test removed or relaxed. | — |
+| pass | `uv run --locked python -B scripts/pg_suites.py` | #247: all 16 private-PG groups exit 0. | — |
 | pass | `python3 -B scripts/handoff.py render; python3 -B scripts/handoff.py check; git diff --check` | #196 docs-only change: HANDOFF.md matches docs/handoff.json; no whitespace errors. | — |
 | pass | `uv run --locked python -B scripts/test.py` | #196 local run 57/57 on the rebased branch (docs-only; no code, test, migration, contract or CI change). | — |
 | pending | `#196 exact-head CI and independent review` | Review of 6004dc6 requested changes (handoff fields, shared-file list); fixes in the next head need fresh CI and review. | https://github.com/JTCAO515/G2C/pull/196 |

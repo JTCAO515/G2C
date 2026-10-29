@@ -16,15 +16,14 @@ class UsageStatusConfiguration:
 def _usage_status_from_checker(checker,resolve,configuration,*,environment,issuer,audience):
     modules=_internal_modules('usage_status')
     if (environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker)
-            or not callable(resolve) or type(configuration) is not UsageStatusConfiguration):
+            or resolve is None or type(configuration) is not UsageStatusConfiguration):
         raise CompositionUnavailable('Canonical checker, trusted historical resolver and explicit config required')
     source=modules['cj_usage.protected_status']
     host=source.StatusReadConfiguration(environment,issuer,audience,configuration.period_start,configuration.period_end,configuration.max_response_bytes)
     return checker,resolve,host,modules
 
 def build_usage_status_dependencies(*,environment,jwt_configuration,verification_keys,access_provider,resolve,configuration):
-    if (environment!='local' or not callable(resolve) or not callable(getattr(verification_keys,'resolve',None))
-            or not callable(getattr(access_provider,'evaluate',None))):
+    if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local read AUTH and resolver required')
     modules=_internal_modules('usage_status');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:

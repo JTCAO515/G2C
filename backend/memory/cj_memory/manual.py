@@ -56,8 +56,8 @@ class ManualPolicy:
         if not self.subjects or not self.slots or not self.extents or not self.extents <= {'long_term', 'current'}:
             raise ValueError('explicit manual scope required')
         if (not isinstance(self.expires_at, datetime) or self.expires_at.tzinfo is None
-                or self.expires_at.utcoffset() is None or not callable(self.content_allowed)
-                or not callable(self.semantic_resolved)):
+                or self.expires_at.utcoffset() is None or self.content_allowed is None
+                or self.semantic_resolved is None):
             raise ValueError('explicit deadline and policy checks required')
 
     def evaluate(self, c, raw):

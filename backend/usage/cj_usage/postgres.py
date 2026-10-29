@@ -16,7 +16,7 @@ class RepositoryUnavailable(Exception):
 class PostgresRepository:
     def __init__(self, connect, scope):
         label(scope)
-        if not callable(connect):
+        if connect is None:
             raise ValueError('connection factory required')
         self.connect, self.scope = connect, scope
 
@@ -82,7 +82,7 @@ class PostgresRepository:
         from .read_status import ReadUnavailable, encode_status, status_of
         label(attempt_id)
         integer(max_response_bytes, 1)
-        if not callable(guard) or (project is not None and not callable(project)):
+        if not callable(guard):
             raise ReadUnavailable('original authority guard required')
         if expected_period is not None:
             if type(expected_period) is not tuple or len(expected_period) != 2:

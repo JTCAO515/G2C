@@ -8,7 +8,7 @@ from .domain import SourceReference, ReferenceUnavailable
 
 class Sources:
     def __init__(self, message, resolve_run):
-        if not isinstance(message, MessageBoundary) or not callable(resolve_run):
+        if not isinstance(message, MessageBoundary) or resolve_run is None:
             raise ReferenceUnavailable()
         self.message, self.resolve_run = message, resolve_run
 

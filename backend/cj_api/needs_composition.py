@@ -12,8 +12,7 @@ class NeedsWireConfiguration:
                 raise CompositionUnavailable('Explicit bounded NEEDS limits required')
 
 def build_needs_boundary(*,environment,jwt_configuration,verification_keys,access_provider,resolve):
-    if (environment!='local' or not callable(resolve) or not callable(getattr(verification_keys,'resolve',None))
-            or not callable(getattr(access_provider,'evaluate',None))):
+    if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local NEEDS AUTH and trusted resolver required')
     modules=_internal_modules('needs');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:

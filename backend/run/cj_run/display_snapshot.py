@@ -60,7 +60,7 @@ def _encode_snapshot(state, configuration):
 
 class DisplaySnapshotReader:
     def __init__(self, message_boundary, resolve_run_repository, *, configuration):
-        if (type(message_boundary) is not Boundary or not callable(resolve_run_repository)
+        if (type(message_boundary) is not Boundary or resolve_run_repository is None
                 or type(configuration) is not DisplaySnapshotConfiguration):
             raise ValueError('fixed MESSAGE boundary, trusted resolver and explicit configuration required')
         self.message_boundary = message_boundary
@@ -85,7 +85,7 @@ class DisplaySnapshotReader:
         """
         if type(message_id) is not str or not message_id.strip():
             raise ValueError('original message ID required')
-        if not callable(project):
+        if project is None:
             raise ValueError('trusted synchronous projection required')
         configuration = self.configuration
         return self._read_materialized(token, message_id,

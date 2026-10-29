@@ -13,7 +13,7 @@ class RunDisplayWireConfiguration:
 
 def _attach_run_display(message,resolve_run,configuration):
     modules=_internal_modules('run_display')
-    if (type(message) is not modules['cj_message.auth_boundary'].Boundary or not callable(resolve_run)
+    if (type(message) is not modules['cj_message.auth_boundary'].Boundary or resolve_run is None
             or type(configuration) is not RunDisplayWireConfiguration):
         raise CompositionUnavailable('Fixed MESSAGE, trusted RUN resolver and explicit limits required')
     display=modules['cj_run.display_snapshot']
@@ -22,8 +22,7 @@ def _attach_run_display(message,resolve_run,configuration):
 
 def build_run_display_reader(*,environment,jwt_configuration,verification_keys,access_provider,
                              resolve_message_repository,resolve_run,configuration):
-    if (environment!='local' or not callable(resolve_message_repository) or not callable(resolve_run)
-            or not callable(getattr(verification_keys,'resolve',None)) or not callable(getattr(access_provider,'evaluate',None))):
+    if environment!='local' or None in (resolve_message_repository,resolve_run,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local display AUTH and resolvers required')
     modules=_internal_modules('run_display');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:

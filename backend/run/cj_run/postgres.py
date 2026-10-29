@@ -26,7 +26,7 @@ class Recovery:
 
 class Repository:
     def __init__(self, connect, scope, *, expires_at, statement_timeout_ms, lock_timeout_ms):
-        if not callable(connect) or type(scope) is not str or not scope.strip():
+        if connect is None or type(scope) is not str or not scope.strip():
             raise ValueError('trusted scope and connection factory required')
         if not isinstance(expires_at, datetime) or expires_at.tzinfo is None or expires_at.utcoffset() is None:
             raise ValueError('explicit timezone-aware expiry required')

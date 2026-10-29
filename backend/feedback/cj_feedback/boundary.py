@@ -58,7 +58,7 @@ class Boundary:
     field. It must return a new idle connection factory. No membership source here.
     """
     def __init__(self, checker, resolve, *, sources=None):
-        if not isinstance(checker, AdmissionChecker) or not callable(resolve): raise Unavailable()
+        if not isinstance(checker, AdmissionChecker) or resolve is None: raise Unavailable()
         if sources is not None:
             from .sources import Sources
             if type(sources) is not Sources or sources.message.checker is not checker: raise Unavailable()

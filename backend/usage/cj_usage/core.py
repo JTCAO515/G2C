@@ -114,7 +114,7 @@ class Repository(Protocol):
 
 class Meter:
     def __init__(self, repository: Repository, config: Config, clock):
-        if not isinstance(config, Config) or not callable(clock):
+        if not isinstance(config, Config) or clock is None:
             raise Blocked('configuration_required')
         self.repo, self.config, self.clock = repository, config, clock
 

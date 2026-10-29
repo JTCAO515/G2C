@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "projectId": "JTCAO515/G2C",
-  "lastUpdated": "2026-10-29T12:19:24.399811+00:00",
+  "lastUpdated": "2026-10-29T13:46:59.614387+00:00",
   "currentPhase": "M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 merged; lane A closed #159/#194 and parent #7, #164 and parent #10, and #212 via PR232. #167 Part1 PR229 is merged; remaining real budget acceptance is A-owned; B #170 formal host is available. A has a unmerged v2 read candidate only; native budget remains UNRUN. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). Lane B: #198/#170 and parent #19 closed; formal local NEEDS/provider_call host PR240 merged573faf1 with all main CI green. Persistent protection0016 prevents configuration downgrade. B M1 is complete; M2 #9 is split into #242/#243/#244 by PR245. First slice #242 awaits JT scope confirmation for a versioned generic exit; implementation remains UNRUN. Lane C: #168/#169 and M2 #226 delivered with reviewed heads and green post-merge CI; #227/#228 remain future work and #12 stays open.",
   "status": "active",
   "objective": "M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。",
@@ -13,7 +13,8 @@
     "Lane A App: #159/#194/#164/#212 and parents #7/#10 complete. #212 PR232 exact head b22de6f, final independent red-line APPROVE6490714107, locked merge dcf1c30, main40835826547 five jobs success. Native12 clean exact-head 9/9; bilingual draft failure/unknown/stop/reopen, Release zero requests, 8 cross-account refusals, complete AX labels/audits and token scans. Historical FAIL and interrupted evidence retained. #167 Part1 remains delivered; preparatory branch a/167-budget-status at a27af6b adds explicit v2 reads with default v1, L0 suite reports57 tests (liveLoopback skipped), Debug build PASS; real budget L1 remains A-owned/UNRUN; B formal host is now available. Supplementary published02/03 each passed one real native v1 scenario (reports remain PARTIAL_PASS): one original pending draft effect, corresponding formal Trip absent, bilingual full AX and reopen without redispatch. This is not budget or external-tool acceptance.",
     "Lane B: #198 closed with PR206 and independently verified A native08; #170 and parent #19 closed after PR213/223/230/235/237/240. Final host head861cb67 independently APPROVED6494916060, full head CI, locked merge573faf1, main40862391938 all five success. Fixed executable source test57/57 and PG16/16; independent host/needs/budget and e2e37/37, original downgrade regression zero calls/RUN/proposal and unchanged ledger. Config-loss, two activation/send lock orders, ACK unknown, original period, cross-scope and corrupt-ledger refusal pass. Historical FAIL retained. #212 native failure UI is closed; #167 native budget remains A-owned and was notified6495204833. M2 #9 now has native children #242/#243/#244 (M2, B/B/A; 5/5/4 ACs), with #243/#244 blocked_by #242. PR245 planning sync merged4580bae. #242 mapping/scope proposal6495987746 is UNRUN and awaits JT; no new generic contract, migration or implementation has been changed.",
     "Lane C: #168 Part2 PR208 merged414b0ac with main CI40807520711; #169 PR222 merged630a611 with main CI40821295205; M2 #12 split into #226/#227/#228 with native sub-issue links. #226 PR236 exact head26332b2 independently APPROVED6493581381, all CI40852784786 passed, locked mergee022eac and main CI40854592928 all green. Local test57/57, PG14/14 (e2e37), independent e2e37 including MEMORY6 and migration data retention. #17 now explicitly carries the #11/#19 memory-version fence; #227 consumes it. Requested C goal ends after this first M2 slice; #227/#228 remain OPEN, not implemented. Local MEMORY activation is explicit/private-policy-only; no App/automatic recall or cloud/real-account claim.",
-    "#186 four cleanup PRs #187–#190 merged with exact-head review; #186 remains open for its owner (Claude). PR #195 (#194 insertion) and #197 (#186 handoff note) are superseded by this revision."
+    "#186 four cleanup PRs #187–#190 merged with exact-head review; #186 remains open for its owner (Claude). PR #195 (#194 insertion) and #197 (#186 handoff note) are superseded by this revision.",
+    "#186 slice #247 (Claude, JT 2026-10-29): internal-adapter callable()/getattr shape reflection replaced by presence checks in backend composition/repositories; security checks (environment gate, AUTH profile, Boundary/AdmissionChecker type, evaluate_session provider, guard) retained. No test removed; PR pending Codex independent review."
   ],
   "assumptions": [
     "本轮本地 API 使用 app_from_environment 强制签名入口、私有 PG、FakeProvider 和临时开发身份；不是生产、OTP 或真实模型验收。",
@@ -42,11 +43,27 @@
   ],
   "changedFiles": [
     {
+      "path": "backend/cj_api/*composition*.py, memory_boundary.py, history_config.py, history_routes.py, trip_routes.py, aead_cursor.py; backend/{run,usage,feedback,cleanup,memory,trip}/cj_*/ (8 files)",
+      "reason": "#247: drop internal callable() shape reflection per docs/engineering.md trust-boundary rule; missing configuration still fails closed."
+    },
+    {
       "path": "docs/handoff.json, HANDOFF.md",
-      "reason": "B M2 split and #242 explicit scope-approval stop; A/C status and M1 closure evidence preserved."
+      "reason": "#247 status."
     }
   ],
   "verification": [
+    {
+      "command": "uv run --locked python -B scripts/test.py",
+      "status": "pass",
+      "summary": "#247: 57/57 groups, no test removed or relaxed.",
+      "artifact": null
+    },
+    {
+      "command": "uv run --locked python -B scripts/pg_suites.py",
+      "status": "pass",
+      "summary": "#247: all 16 private-PG groups exit 0.",
+      "artifact": null
+    },
     {
       "command": "python3 -B scripts/handoff.py render; python3 -B scripts/handoff.py check; git diff --check",
       "status": "pass",

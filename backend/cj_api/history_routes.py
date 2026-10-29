@@ -63,8 +63,7 @@ def _number(raw, minimum, maximum):
 
 def register_history_routes(app, boundary=None, configuration=None, environment=None):
     if configuration is not None:
-        if (not isinstance(configuration,HistoryWireConfiguration) or environment != 'local'
-                or not callable(getattr(boundary,'with_history_context',None))):
+        if not isinstance(configuration,HistoryWireConfiguration) or environment != 'local' or boundary is None:
             raise ValueError('Explicit local history context/configuration required')
         from cj_auth.interfaces import AdmissionReason, AdmissionStatus
         from cj_message.auth_boundary import AccessBlocked, IdentityChanged
