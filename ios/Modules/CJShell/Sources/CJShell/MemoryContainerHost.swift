@@ -260,8 +260,20 @@ public struct MemoryManagementPresentationLifetime {
             throw MemoryFailure.liveWriteUnavailable
         }
         let token = UUID(); epoch = token; busy = true; saveValue = .saving
-        queriedID = command.operation_id
+        queriedID = nil
         do {
+            // A user-requested new save may follow leaving/reopening the form.
+            // Reconcile old originals read-only; never resend them or infer
+            // settlement from local history, a missing receipt or an old UI card.
+            let originals = try context.binding.client.pending(binding: context.binding.memory)
+            guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
+            pendingValue = .loaded(originals)
+            for original in originals {
+                let prior = try await context.binding.client.query(operationID: original.operationID, binding: context.binding.memory)
+                guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
+                if case .notObserved = prior { throw MemoryFailure.pendingRequiresQuery }
+            }
+            queriedID = command.operation_id
             let result = try await context.binding.client.save(command, binding: context.binding.memory)
             guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
             saveValue = state(for: result)
@@ -269,8 +281,10 @@ public struct MemoryManagementPresentationLifetime {
             return result
         } catch {
             if owns(context.binding, token) {
-                if case MemoryFailure.rejected = error { saveValue = .failed }
-                else { saveValue = .unknown }
+                switch error {
+                case MemoryFailure.rejected, MemoryFailure.pendingRequiresQuery: saveValue = .failed
+                default: saveValue = .unknown
+                }
                 busy = false
             }
             throw error
