@@ -121,3 +121,23 @@ repository-level stop applies. MESSAGE activation still requires the separate
 [ADR-0008](../../docs/adr/0008-message-send-permit.md) and
 [MESSAGE-SEND@1](../../contracts/message/SEND-PERMIT.md) conditions; automatic
 continuation does not authorize real OTP, models, devices, cloud resources or release.
+
+## Explicit local Memory composition (#228 candidate)
+
+`G2C_DEV_MEMORY_PROFILE` opts the DEBUG simulator host into manual Memory using
+the current signed account. Its JSON is the same selected identity profile shape
+used by `local-memory-policy.1`: `subjects`, `slots` (kind, collection_allowed,
+semantic_resolved), `extents`, `context_ids`. The operator supplies matching
+`CJ_LOCAL_MEMORY_POLICY` to the API. App choices convey no server authority;
+server policy, consent and owner checks remain decisive. A missing profile keeps
+Memory unconfigured; an invalid explicit profile fails composition visibly.
+Release and physical devices do not compile this write initializer/root.
+
+Manual saves retain their exact original operation and bytes before dispatch in
+an account-scoped encrypted Memory journal. Reopen only queries originals; missing
+receipts never authorize resend. Up to three optional questions reuse this form
+and can be skipped to chat. #227 effective-context consumption remains separate.
+The native harness is `ios/App/Acceptance/check_memories.py` with explicit
+`--run-context`, `--simulator`, external `--output` and `--build-dir`; it runs the
+formal signed local API, fresh private PG and `run_once`/FakeProvider. New L1
+results are pending until actual reports exist; no real service is used.

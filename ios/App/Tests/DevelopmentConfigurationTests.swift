@@ -45,3 +45,24 @@ struct DevelopmentConfigurationTests {
         #endif
     }
 }
+
+#if DEBUG
+struct DevelopmentMemoryConfigurationTests {
+    @Test func profileMustBeExplicitAndCanonical() throws {
+        #expect(try DevelopmentMemoryProfile.read([:]) == nil)
+        let raw = """
+        {"subjects":["self"],"slots":{"diet":{"kind":"preference","collection_allowed":true,"semantic_resolved":false}},"extents":["long_term"],"context_ids":[]}
+        """
+        let profile = try #require(try DevelopmentMemoryProfile.read(["G2C_DEV_MEMORY_PROFILE": raw]))
+        #expect(profile.subjects == ["self"])
+        #expect(profile.slots["diet"]?.semantic_resolved == false)
+        for invalid in ["{}", raw.replacingOccurrences(of: "preference", with: "invented-kind"),
+                        raw.replacingOccurrences(of: "long_term", with: "current"),
+                        raw.replacingOccurrences(of: "[\"self\"]", with: "[]")] {
+            #expect(throws: (any Error).self) {
+                try DevelopmentMemoryProfile.read(["G2C_DEV_MEMORY_PROFILE": invalid])
+            }
+        }
+    }
+}
+#endif
