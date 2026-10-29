@@ -1,3 +1,14 @@
+# #228 local App candidate (L1 pending)
+
+The explicit DEBUG iOS Simulator `localEndpoint` initializer uses only loopback,
+`NoRedirectTransport`, the existing signed #226 API and the existing encrypted
+manual journal. It enables manual save only; lifecycle management and ordinary
+public/Release clients retain their previous gates. The host must use the same
+account lifetime and explicitly selected server policy choices. No production
+factory, automatic recall, lifecycle writes or real-account permission is added.
+The historical read-only candidate and its earlier limitations below remain as
+provenance; new local acceptance is recorded in #228, never inferred from them.
+
 # Independent lifecycle candidate
 
 Current follow-up adds gated pause/resume/original-action recovery on SDK20aa. See
