@@ -122,7 +122,7 @@ public struct MemoryDetailView: View {
                     LabeledContent(language.text("Approximate time", "大致时间"), value: item.command.occurred_at)
                     LabeledContent(language.text("Recorded", "记录时间")) { Text(item.recorded_at, format: .dateTime) }
                     LabeledContent(language.text("Version", "版本"), value: String(item.version))
-                }
+                }.foregroundStyle(Color.primary, Color.primary)
             } else { Text(language.text("Memory not found", "未找到该记忆")) }
         }
     }
