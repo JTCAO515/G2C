@@ -69,11 +69,11 @@ extension RunDisplayState {
             Button(language.text("Read original run", "读取原运行")) {
                 let work = model.prepareRead()
                 Task { await model.perform(work) }
-            }.disabled(disabled(state)).accessibilityIdentifier("run.snapshot.read")
+            }.disabled(disabled(state) || model.cancellationState == .stopping).accessibilityIdentifier("run.snapshot.read")
             Button(language.text("Follow / resume this answer", "接收／继续此回答")) {
                 let work = model.prepareStream()
                 Task { await model.perform(work) }
-            }.disabled(disabled(state)).accessibilityIdentifier("run.stream.read")
+            }.disabled(disabled(state) || model.cancellationState == .stopping).accessibilityIdentifier("run.stream.read")
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active { model.invalidate() } }
         .onDisappear { model.invalidate() }
