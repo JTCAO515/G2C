@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import unittest
 from jsonschema import Draft202012Validator, RefResolver
+from pydantic import ValidationError
+from cj_api.generated import RunDraftStatusV2Response
 
 ROOT=Path(__file__).resolve().parents[3]
 
@@ -40,3 +42,11 @@ class DraftStatusV2ContractTests(unittest.TestCase):
         self.assertEqual(self.spec['paths']['/v1/run-draft-status']['get']['operationId'],'getRunDraftStatus')
         self.assertEqual(self.spec['paths']['/v2/run-draft-status']['get']['operationId'],'getRunDraftStatusV2')
         self.assertNotIn('/v1/run-budget-status',self.spec['paths'])
+
+    def test_generated_model_matches_fixed_wire(self):
+        parsed=RunDraftStatusV2Response.model_validate_json(json.dumps(self.value),strict=True)
+        self.assertEqual(parsed.model_dump(mode='json'),self.value)
+        for patch in ({'version':'RUN-draft-status.1'},{'budget_exhausted_stage':'tool'},
+                      {'draft_outcome':'success'},{'owner':'other'},{'event_highwater':True}):
+            with self.subTest(patch=patch),self.assertRaises(ValidationError):
+                RunDraftStatusV2Response.model_validate_json(json.dumps(dict(self.value,**patch)),strict=True)

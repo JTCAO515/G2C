@@ -132,6 +132,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/run-draft-status`.
     /// - Remark: Generated from `#/paths//v1/run-draft-status/get(getRunDraftStatus)`.
     func getRunDraftStatus(_ input: Operations.getRunDraftStatus.Input) async throws -> Operations.getRunDraftStatus.Output
+    /// Read version 2 original-message draft status, including explicit local budget rejection; no write or retry capability.
+    ///
+    /// - Remark: HTTP `GET /v2/run-draft-status`.
+    /// - Remark: Generated from `#/paths//v2/run-draft-status/get(getRunDraftStatusV2)`.
+    func getRunDraftStatusV2(_ input: Operations.getRunDraftStatusV2.Input) async throws -> Operations.getRunDraftStatusV2.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -545,6 +550,19 @@ extension APIProtocol {
         headers: Operations.getRunDraftStatus.Input.Headers = .init()
     ) async throws -> Operations.getRunDraftStatus.Output {
         try await getRunDraftStatus(Operations.getRunDraftStatus.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Read version 2 original-message draft status, including explicit local budget rejection; no write or retry capability.
+    ///
+    /// - Remark: HTTP `GET /v2/run-draft-status`.
+    /// - Remark: Generated from `#/paths//v2/run-draft-status/get(getRunDraftStatusV2)`.
+    public func getRunDraftStatusV2(
+        query: Operations.getRunDraftStatusV2.Input.Query,
+        headers: Operations.getRunDraftStatusV2.Input.Headers = .init()
+    ) async throws -> Operations.getRunDraftStatusV2.Output {
+        try await getRunDraftStatusV2(Operations.getRunDraftStatusV2.Input(
             query: query,
             headers: headers
         ))

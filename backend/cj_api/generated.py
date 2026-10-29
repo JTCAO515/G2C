@@ -1811,3 +1811,43 @@ class SourceTripConfirmationResponse(BaseModel):
     expires_at: conint(ge=1)
     proposal: SourceTripProposalSnapshot
     representation: Representation
+
+
+class Version3(StrEnum):
+    RUN_draft_status_2 = 'RUN-draft-status.2'
+
+
+class DraftOutcome1(StrEnum):
+    not_requested = 'not_requested'
+    not_recorded = 'not_recorded'
+    published = 'published'
+    validation_failed = 'validation_failed'
+    provider_failed = 'provider_failed'
+    provider_unknown = 'provider_unknown'
+    budget_exhausted = 'budget_exhausted'
+
+
+class BudgetExhaustedStage(Enum):
+    answer = 'answer'
+    draft = 'draft'
+    NoneType_None = None
+
+
+class RunDraftStatusV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    message_sequence: conint(ge=1, le=9223372036854775807)
+    event_highwater: conint(ge=0, le=9223372036854775807)
+    request_id: RequestId
+    version: Version3
+    run_status: RunStatus
+    draft_outcome: DraftOutcome1
+    budget_exhausted_stage: BudgetExhaustedStage | None = Field(
+        ...,
+        description='Original persisted budget_denied stage only; null when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.',
+    )
