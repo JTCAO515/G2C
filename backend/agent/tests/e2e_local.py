@@ -376,7 +376,13 @@ class DraftToTrip(Harness):
             # The current model format cannot supply canonical IDs or timed items.
             # Rejecting this shape proves structural refusal, not time feasibility.
             'caller-item-ids': json.dumps({'title':'x','items':[{'id':'same','text':'a'},{'id':'same','text':'b'}]}),
+            'object-item': json.dumps({'title': 'x', 'items': ['valid text', {'text': 'Temple'}]}),
         }
+        for field in ('date', 'time', 'start', 'end', 'timezone'):
+            invalid['document-' + field] = json.dumps({
+                'title': 'x', 'items': ['valid text'], field: '2026-11-01T09:00:00+08:00'})
+            invalid['item-' + field] = json.dumps({
+                'title': 'x', 'items': ['valid text', {'text': 'Temple', field: '2026-11-01T09:00:00+08:00'}]})
         with TestClient(self.app) as client:
             for case, raw in invalid.items():
                 with self.subTest(case=case):
@@ -390,12 +396,42 @@ class DraftToTrip(Harness):
                     provider = Provider()
                     run_id, outcome = self.draft(client, 'alice', 'Beijing please', provider=provider)
                     self.assertEqual((outcome.status, outcome.proposal_id, provider.calls), ('completed', None, 2))
+                    events = self.events(client, 'alice', outcome.message_id)
+                    self.assertEqual(''.join(e[2]['text'] for e in events if e[0] == 'delta'),
+                                     '(local simulated reply) Received: Beijing please. Beijing plans need opening hours checked.')
+                    self.assertEqual((events[-1][0], events[-1][2]), ('status', {'status': 'completed'}))
                     self.assertNotEqual(client.get('/v1/trip-proposals', params={'proposal_id':'p-' + run_id},
                                                    headers=self.headers('alice')).status_code, 200)
                     with self.database.connect(scope_for(ISSUER, 'alice')) as conn:
                         self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal WHERE proposal_id=%s', ('p-' + run_id,)).fetchone()[0], 0)
                         self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record WHERE trip_id=%s', ('trip-' + run_id,)).fetchone()[0], 0)
                         self.assertEqual(conn.execute("SELECT count(*) FROM cj_run_event WHERE run_id=%s AND kind='effect_committed'", (run_id,)).fetchone()[0], 0)
+
+    def test_time_text_persists_only_as_pending_without_evidence(self):
+        items = ['09:00–11:00 故宫', '10:00–12:00 Temple of Heaven',
+                 '18:00–09:00 倒序时间待核实', 'Date TBD / 日期待定']
+
+        class Provider(FakeProvider):
+            def stream(inner, messages, system=None):
+                if system is not None:
+                    inner.calls += 1
+                    yield json.dumps({'title': 'Beijing', 'items': items})
+                    return
+                yield from super().stream(messages)
+
+        with TestClient(self.app) as client:
+            run_id, outcome = self.draft(client, 'alice', 'Beijing please', provider=Provider())
+            self.assertEqual((outcome.status, outcome.proposal_id), ('completed', 'p-' + run_id))
+            response = client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id},
+                                  headers=self.headers('alice'))
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.json()['proposal']['document'], {
+                'title': 'Beijing', 'items': [
+                    {'id': f'item-{n}', 'text': text, 'verification': 'pending', 'evidence': []}
+                    for n, text in enumerate(items, 1)]})
+            with self.database.connect(scope_for(ISSUER, 'alice')) as conn:
+                self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record WHERE trip_id=%s',
+                                              ('trip-' + run_id,)).fetchone()[0], 0)
 
 
 class SignedTripConfirmation(Harness):
