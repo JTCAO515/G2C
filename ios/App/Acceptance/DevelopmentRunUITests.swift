@@ -152,10 +152,10 @@ import Foundation
         let expected: String
         let outcome: String?
         switch mode {
-        case "draft_validation": expected = language == "en" ? "failed validation" : "草稿校验失败"; outcome = "validation_failed"
-        case "draft_provider": expected = language == "en" ? "generation failed" : "草稿生成失败"; outcome = "provider_failed"
-        case "draft_unknown": expected = language == "en" ? "result unknown" : "草稿生成结果未知"; outcome = "provider_unknown"
-        default: expected = language == "en" ? "No draft result recorded" : "尚无草稿结果记录"; outcome = nil
+        case "draft_validation": expected = language == "en" ? "Draft failed validation; no candidate published" : "草稿校验失败，未发布候选"; outcome = "validation_failed"
+        case "draft_provider": expected = language == "en" ? "Draft generation failed; no candidate published" : "草稿生成失败，未发布候选"; outcome = "provider_failed"
+        case "draft_unknown": expected = language == "en" ? "Draft generation result unknown; do not generate again" : "草稿生成结果未知，请勿再次生成"; outcome = "provider_unknown"
+        default: expected = language == "en" ? "No draft result recorded; outcome unknown" : "尚无草稿结果记录，结果未知"; outcome = nil
         }
         let value = app.descendants(matching: .any).matching(identifier: "run.draft.status").firstMatch
         XCTAssertTrue(value.waitForExistence(timeout: 10))
