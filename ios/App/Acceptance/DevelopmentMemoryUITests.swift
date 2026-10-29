@@ -108,7 +108,7 @@ import Foundation
             XCTAssertTrue(item.waitForExistence(timeout: 10)); item.tap()
             tap(language == "en" ? "Load current detail" : "读取当前详情")
             XCTAssertTrue(app.staticTexts[value].waitForExistence(timeout: 10))
-            XCTAssertTrue(app.staticTexts["Synthetic date unknown / 合成时间不详"].exists)
+            XCTAssertTrue(app.staticTexts["Synthetic date unknown / 合成时间不详"].waitForExistence(timeout: 10), app.debugDescription)
             capture("detail-" + language); back()
         }
         try await query(f, "three-saves")
@@ -119,6 +119,7 @@ import Foundation
             let buttons = app.buttons.matching(identifier: language == "en" ? "查询此原操作" : "Query this original operation")
             XCTAssertEqual(buttons.count, 3)
             buttons.element(boundBy: index).tap()
+            waitStatus(language == "en" ? "已保存" : "Saved.")
         }
         capture("reopen-originals"); try await query(f, "reopen")
     }
