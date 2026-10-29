@@ -152,6 +152,9 @@ def main():
                                 assert response.status_code!=200 or all(v is None for k,v in response.json().items() if k in ('item','receipt'))
                                 assert not any(json.loads(bytes(raw))['text'] in response.text for _,_,raw,*_ in operations)
                                 foreign.append(dict(path=path,status=response.status_code))
+                    if stage=='reopen':
+                        native=[a['query']['operation_id'][0] for a in audit if a['path']=='/v1/memory-receipts'][-3:]
+                        assert len(native)==3 and set(native)=={o for o,*_ in operations}
                     if stage=='skip':
                         deadline=time.monotonic()+15
                         while model.calls<1 and time.monotonic()<deadline: time.sleep(.05)
