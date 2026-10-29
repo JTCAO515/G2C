@@ -36,6 +36,7 @@ struct LocalRecoveryList: View {
                                 Text(phase(reference.phase)).font(.caption)
                             }
                         }.disabled(!host.canSelectLocalItem)
+                            .accessibilityIdentifier("recovery.action." + reference.messageID)
                     }
                 }
             } else {

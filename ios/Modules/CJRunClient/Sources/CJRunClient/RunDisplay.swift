@@ -58,6 +58,14 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
     public nonisolated var customMirror: Mirror { Mirror(self, children: [:]) }
 }
 
+public enum RunCancellationState: Sendable { case idle, stopping, unknown }
+@MainActor public struct RunCancellationWork: CustomReflectable {
+    fileprivate let owner: UUID
+    fileprivate let epoch: UUID
+    fileprivate let source: RunDisplaySource
+    public nonisolated var customMirror: Mirror { Mirror(self, children: [:]) }
+}
+
 @MainActor @Observable public final class RunDisplayModel {
     public typealias Credentials = @MainActor (SessionOperation) async throws -> String?
     private let endpoint: MessageEndpoint
@@ -65,6 +73,9 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
     private let maxTextBytes: Int
     private let credentials: Credentials
     private let transport: any ClientTransport
+    private let cancellationTransport: (any ClientTransport)?
+    private var cancellationPrepared = false
+    private var storedCancellation: RunCancellationState = .idle
     private let owner = UUID()
     private var epoch = UUID()
     private var source: RunDisplaySource?
@@ -82,16 +93,17 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
     }
 
     public convenience init(endpoint: MessageEndpoint, maximumMessageIDBytes: Int, maximumTextBytes: Int,
-                            credentials: @escaping Credentials, liveReadTransport: NoRedirectTransport) throws {
+                            credentials: @escaping Credentials, liveReadTransport: NoRedirectTransport,
+                            liveCancellationTransport: RunCancellationTransport? = nil) throws {
         try self.init(endpoint: endpoint, maximumMessageIDBytes: maximumMessageIDBytes,
-                      maximumTextBytes: maximumTextBytes, credentials: credentials, transport: liveReadTransport)
+                      maximumTextBytes: maximumTextBytes, credentials: credentials, transport: liveReadTransport, cancellationTransport: liveCancellationTransport)
     }
     /// Internal interceptor seam; public composition only accepts the existing no-redirect transport.
     init(endpoint: MessageEndpoint, maximumMessageIDBytes: Int, maximumTextBytes: Int,
-         credentials: @escaping Credentials, transport: any ClientTransport) throws {
+         credentials: @escaping Credentials, transport: any ClientTransport, cancellationTransport: (any ClientTransport)? = nil) throws {
         guard maximumMessageIDBytes > 0, maximumTextBytes > 0 else { throw RunDisplayFailure.invalidConfiguration }
         self.endpoint = endpoint; maxMessageIDBytes = maximumMessageIDBytes; maxTextBytes = maximumTextBytes
-        self.credentials = credentials; self.transport = transport
+        self.credentials = credentials; self.transport = transport; self.cancellationTransport = cancellationTransport
     }
     /// Fail closed on access too: host still must eagerly invalidate when its ownership changes.
     public var state: RunDisplayState {
@@ -115,6 +127,7 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
     /// Call synchronously for selection/source/account/auth changes, background and disappearance.
     /// Resuming requires a newly accepted source. Does not cancel the server RUN.
     public func invalidate() {
+        cancellationPrepared = false; storedCancellation = .idle
         epoch = UUID(); source = nil; previous = nil; storedStream = nil; prepared = false; executing = false; storedState = .unselected
     }
     private func owns(_ original: RunDisplaySource, _ token: UUID) -> Bool { source === original && epoch == token }
@@ -135,14 +148,35 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
     /// Explicit GET-only continuation; never resends a message or starts a model run.
     public func prepareStream() -> RunDisplayWork? { prepare(streaming: true) }
     private func prepare(streaming: Bool) -> RunDisplayWork? {
-        guard !prepared, !executing, let original = source else { return nil }
+        guard !prepared, !executing, !cancellationPrepared, storedCancellation != .stopping, let original = source else { return nil }
         let token = epoch
         guard valid(original, token) else { retireIfOwned(original, token); return nil }
         // Reentrant validation may itself prepare work on the same source.
-        guard !prepared, !executing, owns(original, token) else { return nil }
+        guard !prepared, !executing, !cancellationPrepared, storedCancellation != .stopping, owns(original, token) else { return nil }
         epoch = UUID(); prepared = true; storedState = .loading
         return RunDisplayWork(owner: owner, epoch: epoch, source: original, streaming: streaming)
     }
+    /// A just-accepted MESSAGE can precede the worker's RUN row. Retry only this
+    /// initial 503 read, at most three GET attempts, never after any stream progress.
+    public func performInitialStream(_ work: RunDisplayWork?) async {
+        guard let work, work.streaming else { return }
+        await perform(work)
+        var completedEpoch = work.epoch
+        for _ in 0..<2 {
+            guard owns(work.source, completedEpoch), storedStream == nil, previous == nil,
+                  storedCancellation == .idle,
+                  case .unavailable(.rejected(status: 503)) = storedState else { return }
+            do {
+                try check(work.source, completedEpoch)
+                try await Task.sleep(for: .milliseconds(200))
+                try check(work.source, completedEpoch)
+            } catch { return }
+            guard let retry = prepareStream() else { return }
+            completedEpoch = retry.epoch
+            await perform(retry)
+        }
+    }
+
     public func perform(_ work: RunDisplayWork?) async {
         guard let work, work.owner == owner, owns(work.source, work.epoch), prepared, !executing else { return }
         prepared = false; executing = true
@@ -174,7 +208,7 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
                     }
                 }
                 try check(original, token)
-                previous = value; storedStream = nil; storedState = .loaded(value); executing = false
+                previous = value; storedStream = nil; storedState = .loaded(value); executing = false; storedCancellation = .idle
             case .default(let status, let response):
                 _ = try response.body.json // Official BASE decoding; never publish raw server error text.
                 throw RunDisplayFailure.rejected(status: status)
@@ -193,6 +227,97 @@ public enum RunDisplayState: Sendable, CustomStringConvertible, CustomDebugStrin
             storedState = .unavailable(failure); executing = false
         }
     }
+    public var supportsCancellation: Bool { cancellationTransport != nil }
+    public var cancellationState: RunCancellationState {
+        guard let original = source else { return .idle }
+        let token = epoch
+        guard valid(original, token) else { retireIfOwned(original, token); return .idle }
+        return storedCancellation
+    }
+    public var canCancel: Bool {
+        guard cancellationTransport != nil, storedCancellation == .idle, !cancellationPrepared,
+              let original = source else { return false }
+        let token = epoch
+        guard valid(original, token), storedCancellation == .idle, owns(original, token) else { return false }
+        if let status = storedStream?.status ?? previous?.snapshot.status.rawValue {
+            return status == "queued" || status == "running"
+        }
+        return true
+    }
+    public func prepareCancellation() -> RunCancellationWork? {
+        guard canCancel, let original = source else { return nil }
+        // Retire any in-flight read before cancellation, without erasing received text.
+        if storedStream == nil, let previous {
+            storedStream = RunStreamProgress(text: previous.snapshot.text, status: previous.snapshot.status.rawValue)
+        }
+        epoch = UUID(); prepared = false; executing = false; cancellationPrepared = true
+        storedCancellation = .stopping
+        return RunCancellationWork(owner: owner, epoch: epoch, source: original)
+    }
+    public func performCancellation(_ work: RunCancellationWork?) async {
+        guard let work, work.owner == owner, cancellationPrepared, let cancellationTransport,
+              owns(work.source, work.epoch), storedCancellation == .stopping else { return }
+        cancellationPrepared = false
+        let original = work.source, token = work.epoch
+        do {
+            try check(original, token)
+            let bearer = try await credentials(original.operation)
+            try check(original, token)
+            guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else {
+                throw RunDisplayFailure.credentialsUnavailable
+            }
+            let input = Components.Schemas.RunCancellationRequest(version: .RUN_hyphen_cancel_period_1,
+                                                                  message_id: original.receipt.message_id)
+            var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v1/run-cancellations")
+            request.headerFields[.contentType] = "application/json"
+            request.headerFields[.authorization] = "Bearer " + bearer
+            let (response, responseBody) = try await cancellationTransport.send(request,
+                body: HTTPBody(try JSONEncoder().encode(input)), baseURL: endpoint.url, operationID: Operations.cancelOriginalRun.id)
+            try check(original, token)
+            guard response.status.code == 200 else { throw RunDisplayFailure.rejected(status: response.status.code) }
+            guard let responseBody else { throw RunDisplayFailure.invalidResponse }
+            let bytes = try await Data(collecting: responseBody, upTo: endpoint.maximumResponseBytes)
+            try check(original, token)
+            let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
+            let controls = response.headerFields.filter { $0.name == .cacheControl }
+            let media = response.headerFields.filter { $0.name == .contentType }
+            guard traces.count == 1, UUID(uuidString: traces[0].value) != nil,
+                  controls.count == 1, controls[0].value.lowercased() == "no-store",
+                  media.count == 1, media[0].value.split(separator: ";").first?.lowercased() == "application/json" else {
+                throw RunDisplayFailure.invalidResponse
+            }
+            var parser = StrictRunJSON(bytes: Array(bytes)); try parser.check()
+            let receipt = try JSONDecoder().decode(Components.Schemas.RunCancellationResponse.self, from: bytes)
+            guard exact(receipt.request_id, traces[0].value), exact(receipt.message_id, original.receipt.message_id),
+                  exact(receipt.run_id, original.receipt.run_id), receipt.event_highwater > 0 else { throw RunDisplayFailure.invalidResponse }
+            let checked = RunReadTransport(underlying: transport, endpoint: endpoint, bearer: bearer,
+                originalMessageID: original.receipt.message_id, validate: { [self] in try check(original, token) })
+            let api = Client(serverURL: endpoint.url, configuration: .memory, transport: checked)
+            let output = try await api.getRunDisplaySnapshot(query: .init(message_id: original.receipt.message_id))
+            try check(original, token)
+            guard case .ok(let response) = output else { throw RunDisplayFailure.unavailable }
+            let body = try response.body.json
+            try validate(body.snapshot, original: original.receipt)
+            guard body.snapshot.status.rawValue == receipt.status.rawValue,
+                  body.snapshot.event_highwater == receipt.event_highwater,
+                  body.snapshot.text.utf8.starts(with: (storedStream?.text ?? "").utf8) else { throw RunDisplayFailure.inconsistentSnapshot }
+            if let previous { try validateProgress(body.snapshot, after: previous.snapshot) }
+            try check(original, token)
+            let value = RunDisplayValue(snapshot: body.snapshot, requestID: body.request_id)
+            previous = value; storedStream = nil; storedState = .loaded(value); storedCancellation = .idle
+        } catch {
+            guard valid(original, token) else { retireIfOwned(original, token); return }
+            let failure = (error as? RunDisplayFailure) ?? .unavailable
+            switch failure {
+            case .rejected(status: 401), .rejected(status: 403), .credentialsUnavailable, .invalidResponse, .inconsistentSnapshot:
+                storedStream = nil
+            default: break // Uncertain transport outcome retains only visibly partial text.
+            }
+            storedCancellation = .unknown
+            storedState = .unavailable(failure) // sanitized; original read is the recovery path
+        }
+    }
+
     private func receiveEvents(_ original: RunDisplaySource, _ token: UUID, bearer: String) async throws {
         let prefix = storedStream?.text ?? previous?.snapshot.text ?? ""
         var parser = try RunEventParser(text: prefix, maximumTextBytes: maxTextBytes,

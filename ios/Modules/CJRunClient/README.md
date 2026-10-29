@@ -1,16 +1,38 @@
-# CJ-010 original-run display client
+# CJ-010 original-run display and bounded cancellation client
 
-Read-only module for original MESSAGE recovery, composed by CJShell's existing
+Read-only by default for original MESSAGE recovery, composed by CJShell's existing
 RunContainerHost. This is a scoped [Issue 11](https://github.com/JTCAO515/G2C/issues/11)
 slice, not full message-send, provider, login or device acceptance.
+
+## #167 DEBUG Simulator cancellation
+
+The App may supply `RunCancellationTransport.development` for the explicit loopback
+session. This is a separate capability for `POST /v1/run-cancellations`; it does not
+open the shared MESSAGE transport or any PUT/other write. Release and physical
+devices cannot construct the live capability. Existing callers default to reads only.
+
+`prepareCancellation()` captures one original source and retires old stream work.
+`performCancellation()` validates the original cancellation receipt and then reads
+its protected snapshot before publishing a terminal. Existing terminal states stay
+truthful; unknown exchange retains partial text and requires an original read, while
+access/integrity failures withhold it. The operation does not undo prior effects or
+claim physical abortion of an already-started provider call.
+
+The development App opts into following a newly accepted original message. Before
+any stream progress, an initial 503 can receive at most three GET attempts under
+the same source/session. This only bridges worker RUN-row startup; other errors,
+existing stream interruption and source changes are not automatically retried. Normal
+read-only hosts keep explicit selection/read behavior. Native validation uses the
+formal local API and real worker with controlled FakeProvider; real budget exhaustion
+remains pending B-line #170 and cannot be replaced by a display-byte-limit test.
 
 ## P2c: explicit SSE read and resume
 
 `prepareStream()` captures the same one-use original source/session work as
 `prepareRead()`. `perform(work)` uses the existing no-redirect transport to GET
 `/v1/run-events`, with the original message ID and received UTF-8 byte offset in
-`Last-Event-ID`. No message POST, model call, automatic reconnect or RUN cancellation
-is introduced. The App's default unconfigured host stays unavailable.
+`Last-Event-ID`. The read path introduces no message POST, model call or automatic reconnect.
+Server cancellation is only the separate #167 capability above. The App's default unconfigured host stays unavailable.
 
 Frames are bounded by the endpoint response-byte limit; text has its own byte bound.
 Split Unicode, CRLF, duplicate fields, bad offsets, invalid status, extra JSON keys

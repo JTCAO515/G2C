@@ -10,12 +10,13 @@ import CJSession
     let operation: SessionOperation
     let generation: ShellGeneration
     let synthetic: Bool
+    let followAcceptedMessages: Bool
     let isCurrent: @MainActor () -> Bool
     /// Model credentials must use this same original session operation and the existing trusted bridge.
     public init(model: RunDisplayModel, session: SessionLifecycle, operation: SessionOperation,
-                generation: ShellGeneration, synthetic: Bool, isCurrent: @escaping @MainActor () -> Bool) {
+                generation: ShellGeneration, synthetic: Bool, followAcceptedMessages: Bool = false, isCurrent: @escaping @MainActor () -> Bool) {
         self.model = model; self.session = session; self.operation = operation
-        self.generation = generation; self.synthetic = synthetic; self.isCurrent = isCurrent
+        self.generation = generation; self.synthetic = synthetic; self.followAcceptedMessages = followAcceptedMessages; self.isCurrent = isCurrent
     }
 }
 @MainActor @Observable public final class RunContainerHost {
@@ -29,6 +30,7 @@ import CJSession
         guard foreground, let configuration, configurationIsCurrent(configuration) else { return nil }
         return configuration.model
     }
+    public var followsAcceptedMessages: Bool { displayModel != nil && configuration?.followAcceptedMessages == true }
     public var isShowingOriginal: Bool { origin != nil || sourceUnavailable }
     public var isSynthetic: Bool { displayModel != nil && configuration?.synthetic == true }
     public init(shell: ShellState) {
