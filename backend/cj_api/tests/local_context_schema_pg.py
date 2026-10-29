@@ -65,6 +65,7 @@ def exercise(auth, conninfo):
         # Reader's shared lease forces a writer to fail its bounded lock wait.
         with connect('cj_m1_runtime') as reader, connect() as writer:
             with reader.transaction():
+                reader.execute('SET TRANSACTION READ ONLY')
                 scope(reader,'a')
                 reader.execute("SELECT pg_advisory_xact_lock_shared(cj_needs_fence_key('na'))")
                 try:
@@ -74,8 +75,13 @@ def exercise(auth, conninfo):
                 except psycopg.errors.LockNotAvailable: pass
                 else: raise AssertionError('writer bypassed reader lease')
                 assert reader.execute('SELECT version FROM cj_needs_record').fetchone()[0]==1
+                try:
+                    with reader.transaction(): reader.execute("UPDATE cj_usage_ledger_candidate SET revision=revision+1 WHERE scope_id='ua'")
+                except psycopg.errors.ReadOnlySqlTransaction: pass
+                else: raise AssertionError('read lease allowed ledger mutation')
             with writer.transaction(): writer.execute("UPDATE cj_needs_record SET version=2 WHERE scope='na'")
             with reader.transaction():
+                reader.execute('SET TRANSACTION READ ONLY')
                 scope(reader,'a')
                 reader.execute("SELECT pg_advisory_xact_lock_shared(cj_needs_fence_key('na'))")
                 assert reader.execute('SELECT version FROM cj_needs_record').fetchone()[0]==2
@@ -92,6 +98,7 @@ def exercise(auth, conninfo):
                 except psycopg.errors.LockNotAvailable: pass
                 else: raise AssertionError('reader bypassed writer lease')
             with reader.transaction():
+                reader.execute('SET TRANSACTION READ ONLY')
                 scope(reader,'a')
                 reader.execute("SELECT pg_advisory_xact_lock_shared(cj_needs_fence_key('na'))")
                 assert reader.execute('SELECT version FROM cj_needs_record').fetchone()[0]==3
@@ -101,6 +108,7 @@ def exercise(auth, conninfo):
                     raise RuntimeError('abort writer')
             except RuntimeError: pass
             with reader.transaction():
+                reader.execute('SET TRANSACTION READ ONLY')
                 scope(reader,'a')
                 reader.execute("SELECT pg_advisory_xact_lock_shared(cj_needs_fence_key('na'))")
                 assert reader.execute('SELECT version FROM cj_needs_record').fetchone()[0]==3

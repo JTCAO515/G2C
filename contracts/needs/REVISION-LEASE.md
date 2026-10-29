@@ -26,7 +26,7 @@ is rejected while the fence protocol is active. Hash collision may serialize
 unrelated work but never establishes ownership. No SECURITY DEFINER or extra role.
 
 Runtime only SELECTs the three NEEDS tables. An authenticated, trusted local lease
-uses a fresh transaction and plain SELECT under that shared lock; it must not use
+uses a fresh READ ONLY transaction and plain SELECT under that shared lock; it must not use
 SELECT FOR UPDATE or write permissions. Final canonical AUTH/current-identity
 checks and strict connection cleanup withhold output on failure. Leases never
 escape their authenticated host lifetime and are never cached as permission.
