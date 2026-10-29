@@ -6,7 +6,7 @@ import Foundation
     let control = "__FIXTURE_URL__"
     var app: XCUIApplication!
     struct ReadProof: Decodable {
-        struct Item: Decodable { let slot: String; let source_id: String }
+        struct Item: Decodable { let slot: String; let source_id: String; let item_id: String }
         let items: [Item]
     }
     struct Fixture: Decodable {
@@ -126,7 +126,8 @@ import Foundation
         XCTAssertTrue(group.waitForExistence(timeout: 10)); group.tap()
         tap(language == "en" ? "Load from start" : "从头读取")
         for (slot, value) in rows {
-            let item = app.buttons.containing(.staticText, identifier: value).firstMatch
+            let source = try XCTUnwrap(readProof.items.first { $0.slot == slot })
+            let item = app.buttons["memory.item." + source.item_id]
             XCTAssertTrue(item.waitForExistence(timeout: 10)); item.tap()
             tap(language == "en" ? "Load current detail" : "读取当前详情")
             XCTAssertTrue(app.staticTexts[value].waitForExistence(timeout: 10))
@@ -137,7 +138,6 @@ import Foundation
             XCTAssertTrue(app.staticTexts[language == "en" ? "Scope, long_term" : "范围, long_term"].exists)
             XCTAssertTrue(app.staticTexts[language == "en" ? "Version, 1" : "版本, 1"].exists)
             XCTAssertTrue(app.staticTexts[language == "en" ? "Source version, 1" : "来源版本, 1"].exists)
-            let source = try XCTUnwrap(readProof.items.first { $0.slot == slot })
             XCTAssertTrue(app.staticTexts[(language == "en" ? "Source, " : "来源, ") + source.source_id].exists)
             capture("detail-" + language); try audit("MEMORY_DETAIL_" + language); back()
         }
@@ -154,7 +154,12 @@ import Foundation
         let switched = language == "en" ? "zh-Hans" : "en"
         tap(switched == "en" ? "Load groups" : "读取分组")
         tap("memory.group.0"); tap(switched == "en" ? "Load from start" : "从头读取")
-        for (_, value) in rows { XCTAssertTrue(app.staticTexts[value].waitForExistence(timeout: 10)) }
+        for (slot, value) in rows {
+            let source = try XCTUnwrap(readProof.items.first { $0.slot == slot })
+            let item = app.buttons["memory.item." + source.item_id]
+            XCTAssertTrue(item.waitForExistence(timeout: 10))
+            XCTAssertEqual(item.label, value + ", " + (switched == "en" ? "Active" : "已启用"))
+        }
         capture("same-originals-after-language-switch")
         try audit("MEMORY_LIST_" + switched)
         try await query(f, "reopen")

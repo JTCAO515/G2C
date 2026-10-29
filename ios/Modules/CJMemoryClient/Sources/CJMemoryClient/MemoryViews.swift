@@ -84,12 +84,14 @@ public struct MemoryItemsView: View {
             ForEach(items, id: \.memoryRowIdentity) { item in
                 Button { select(item.command.item_id) } label: {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(item.command.text).font(.body).foregroundStyle(Color.primary).fixedSize(horizontal: false, vertical: true)
-                        Text(statusLabel(item.status.rawValue, language)).font(.caption).foregroundStyle(Color.primary).fixedSize(horizontal: false, vertical: true)
+                        MemoryRowText(text: item.command.text, style: .body)
+                        MemoryRowText(text: statusLabel(item.status.rawValue, language), style: .caption)
                     }
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     .contentShape(Rectangle())
                 }.buttonStyle(.plain)
+                    .accessibilityLabel(item.command.text + ", " + statusLabel(item.status.rawValue, language))
+                    .accessibilityIdentifier("memory.item." + item.command.item_id)
             }
         }
     }
