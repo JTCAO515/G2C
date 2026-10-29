@@ -91,7 +91,7 @@ def exercise(auth, conninfo):
     def missing_configuration():
         before=unchanged_state();model=FakeProvider()
         try: run_worker.run_once(LocalDatabase(conninfo),model,auth)
-        except Unavailable: pass
+        except CompositionUnavailable: pass
         else: raise AssertionError('protected work consumed without configuration')
         assert model.calls==0 and unchanged_state()==before
         cli('run_worker.py','--once',context=None,ok=False)
@@ -101,7 +101,7 @@ def exercise(auth, conninfo):
         argv=['run_worker.py','--conninfo-json',str(conninfo),'--auth-dir',str(auth),'--once','--real']
         with patch.dict(os.environ,selected,clear=True),patch.object(sys,'argv',argv),patch.object(run_worker,'provider',side_effect=AssertionError('credential factory reached')):
             try: run_worker.main()
-            except Unavailable: pass
+            except SystemExit as error: assert error.code==2
             else: raise AssertionError('missing config preflight bypassed')
         assert unchanged_state()==before
     with api() as client:
@@ -215,63 +215,6 @@ def exercise(auth, conninfo):
         assert conn.execute('SELECT 1 FROM cj_usage_ledger_candidate WHERE scope_id=%s',(new_account,)).fetchone() is None
     print('PASS interrupted original run recovered with retained period; no current-period account or redispatch (config clock advanced)')
     print('PASS missing API/worker config refuses plain pre-step, stale NEEDS and original claimed work; CLI preflight reaches no credential factory')
-    # First activation cannot silently change pending legacy execution semantics.
-    with api(None) as client: harness.expect(send(client,'legacy','legacy')[0])
-    operator('legacy','init-budget',ok=False)
-    legacy_model=FakeProvider()
-    result=run_worker.run_once(LocalDatabase(conninfo),legacy_model,auth)
-    assert result[0].status=='completed' and legacy_model.calls==1
-    operator('legacy','init-budget')
-    with api(None) as client:
-        harness.expect(client.put('/v1/conversations',params={'conversation_id':'legacy-after-activation'},headers=headers['legacy']),503)
-    def wait_blocked(fragment):
-        deadline=time.monotonic()+4
-        while time.monotonic()<deadline:
-            with psycopg.connect(**config) as conn:
-                if conn.execute("SELECT 1 FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE %s",('%'+fragment+'%',)).fetchone(): return
-            time.sleep(.01)
-        raise AssertionError('expected actual PostgreSQL lock wait: '+fragment)
-    # Send wins: pause only real INSERT timing while its original scope lock lives.
-    entered=Event();release=Event();insert=MessageTransaction.insert
-    def held_insert(tx,stored):
-        if tx.scope==scope_for(ISSUER,'send-first'):
-            entered.set()
-            if not release.wait(5): raise AssertionError('send barrier timeout')
-        return insert(tx,stored)
-    with api(None) as client,ThreadPoolExecutor(max_workers=2) as pool,patch.object(MessageTransaction,'insert',held_insert):
-        sending=pool.submit(send,client,'send-first','send-first')
-        assert entered.wait(5)
-        activating=pool.submit(operator,'send-first','init-budget',ok=False)
-        try: wait_blocked('cj_message_scope')
-        finally: release.set()
-        harness.expect(sending.result()[0]);activating.result()
-    with psycopg.connect(**config) as conn:
-        assert conn.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s',(scope_for(ISSUER,'send-first'),)).fetchone() is None
-    legacy_model=FakeProvider();result=run_worker.run_once(LocalDatabase(conninfo),legacy_model,auth)
-    assert result[0].status=='completed' and legacy_model.calls==1
-    # Activation wins: a test-only trigger delays commit, never changes the result.
-    # The production operator CLI and formal legacy API take their real row locks.
-    with api(None) as client: harness.expect(client.put('/v1/conversations',params={'conversation_id':'chat-activate-first'},headers=headers['activate-first']))
-    with psycopg.connect(**config,autocommit=True) as admin:
-        admin.execute("CREATE FUNCTION test_activation_barrier() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_advisory_xact_lock(17016001); RETURN NEW; END $$")
-        admin.execute('CREATE TRIGGER test_activation_barrier BEFORE INSERT ON cj_local_run_protection FOR EACH ROW EXECUTE FUNCTION test_activation_barrier()')
-        try:
-            with psycopg.connect(**config) as lock,api(None) as client,ThreadPoolExecutor(max_workers=2) as pool:
-                lock.execute('SELECT pg_advisory_xact_lock(17016001)')
-                activating=pool.submit(operator,'activate-first','init-budget')
-                wait_blocked('cj_local_run_protection')
-                sending=pool.submit(send,client,'activate-first','activate-first')
-                try: wait_blocked('cj_message_scope')
-                finally: lock.commit()
-                activating.result()
-                # Existing conversation open is a safe read, actual receive refuses.
-                assert sending.result()[0].status_code==503
-        finally:
-            admin.execute('DROP TRIGGER test_activation_barrier ON cj_local_run_protection')
-            admin.execute('DROP FUNCTION test_activation_barrier()')
-        assert admin.execute('SELECT 1 FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'activate-first'),)).fetchone() is None
-    assert Meter.exposure(ledger('activate-first'))==0
-    print('PASS actual activation/send lock orders, pending legacy refusal and unchanged unactivated worker semantics')
     # Lose only the acknowledgement AFTER real operator activation commits.
     import local_run_context as operator_module
     connect=psycopg.connect
@@ -362,6 +305,68 @@ def exercise(auth, conninfo):
         else: raise AssertionError('bad explicit context accepted')
     with psycopg.connect(**config) as conn:
         assert conn.execute("SELECT count(*) FROM cj_message_receipt WHERE message_id='unbound'").fetchone()[0]==0
+    # First activation cannot silently change pending legacy execution semantics.
+    with api(None) as client: harness.expect(send(client,'legacy','legacy')[0])
+    operator('legacy','init-budget',ok=False)
+    legacy_model=FakeProvider()
+    before=unchanged_state()
+    try: run_worker.run_once(LocalDatabase(conninfo),legacy_model,auth)
+    except CompositionUnavailable: pass
+    else: raise AssertionError('legacy work bypassed mandatory quota')
+    assert legacy_model.calls==0 and unchanged_state()==before
+    with api(None) as client:
+        assert harness.expect(client.get('/v1/message-receipts',params={'message_id':'legacy'},headers=headers['legacy']))['receipt']['message_id']=='legacy'
+    def wait_blocked(fragment):
+        deadline=time.monotonic()+4
+        while time.monotonic()<deadline:
+            with psycopg.connect(**config) as conn:
+                if conn.execute("SELECT 1 FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE %s",('%'+fragment+'%',)).fetchone(): return
+            time.sleep(.01)
+        raise AssertionError('expected actual PostgreSQL lock wait: '+fragment)
+    # Send wins: pause only real INSERT timing while its original scope lock lives.
+    entered=Event();release=Event();insert=MessageTransaction.insert
+    def held_insert(tx,stored):
+        if tx.scope==scope_for(ISSUER,'send-first'):
+            entered.set()
+            if not release.wait(5): raise AssertionError('send barrier timeout')
+        return insert(tx,stored)
+    with api(None) as client,ThreadPoolExecutor(max_workers=2) as pool,patch.object(MessageTransaction,'insert',held_insert):
+        sending=pool.submit(send,client,'send-first','send-first')
+        assert entered.wait(5)
+        activating=pool.submit(operator,'send-first','init-budget',ok=False)
+        try: wait_blocked('cj_message_scope')
+        finally: release.set()
+        harness.expect(sending.result()[0]);activating.result()
+    with psycopg.connect(**config) as conn:
+        assert conn.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s',(scope_for(ISSUER,'send-first'),)).fetchone() is None
+    legacy_model=FakeProvider();before=unchanged_state()
+    try: run_worker.run_once(LocalDatabase(conninfo),legacy_model,auth)
+    except CompositionUnavailable: pass
+    else: raise AssertionError('unconfigured sender consumed pending work')
+    assert legacy_model.calls==0 and unchanged_state()==before
+    # Activation wins: a test-only trigger delays commit, never changes the result.
+    # The production operator CLI and formal legacy API take their real row locks.
+    with api(None) as client: harness.expect(client.put('/v1/conversations',params={'conversation_id':'chat-activate-first'},headers=headers['activate-first']))
+    with psycopg.connect(**config,autocommit=True) as admin:
+        admin.execute("CREATE FUNCTION test_activation_barrier() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_advisory_xact_lock(17016001); RETURN NEW; END $$")
+        admin.execute('CREATE TRIGGER test_activation_barrier BEFORE INSERT ON cj_local_run_protection FOR EACH ROW EXECUTE FUNCTION test_activation_barrier()')
+        try:
+            with psycopg.connect(**config) as lock,api(None) as client,ThreadPoolExecutor(max_workers=2) as pool:
+                lock.execute('SELECT pg_advisory_xact_lock(17016001)')
+                activating=pool.submit(operator,'activate-first','init-budget')
+                wait_blocked('cj_local_run_protection')
+                sending=pool.submit(send,client,'activate-first','activate-first')
+                try: wait_blocked('cj_message_scope')
+                finally: lock.commit()
+                activating.result()
+                # Existing conversation open is a safe read, actual receive refuses.
+                assert sending.result()[0].status_code==503
+        finally:
+            admin.execute('DROP TRIGGER test_activation_barrier ON cj_local_run_protection')
+            admin.execute('DROP FUNCTION test_activation_barrier()')
+        assert admin.execute('SELECT 1 FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'activate-first'),)).fetchone() is None
+    assert Meter.exposure(ledger('activate-first'))==0
+    print('PASS actual activation/send lock orders, pending legacy refusal and mandatory configured execution')
     print('PASS four LOCAL scopes cleared on commit/rollback, invalid profiles refused, no failed-send residue')
 
 
