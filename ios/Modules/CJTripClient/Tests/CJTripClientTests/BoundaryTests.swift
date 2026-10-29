@@ -12,9 +12,9 @@ import CJAPI
         }
         let client = try h.client(transport)
         let p = try await client.proposal(id: "proposal1", binding: h.binding)
-        #expect(p.status == status && !client.acceptsUserActions)
+        #expect(p.status.rawValue == status.rawValue && !client.acceptsUserActions)
         #expect(p.content_utf8_base64 == (try fixture().proposal.content_utf8_base64))
-        #expect(p.document.items.first?.verification == .pending)
+        #expect(p.document.displayItems.first?.verification == .pending)
     }
     @Test func expiredOrTerminalTestCandidateCannotDispatch() async throws {
         let h = try Harness(); defer { h.clean() }

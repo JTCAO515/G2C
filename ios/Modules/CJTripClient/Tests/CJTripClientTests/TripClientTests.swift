@@ -59,7 +59,7 @@ import CJSession
         let detail = try await client.detail(id: "trip1", binding: h.binding)
         let list = try await client.list(limit: 20, binding: h.binding)
         #expect(detail?.version == 9 && list.trips.first == detail)
-        #expect(detail?.document.items.first?.verification == .pending)
+        #expect(detail?.document.displayItems.first?.verification == .pending)
         #expect(list.next != nil) // Short page is not completeness.
     }
     @Test(arguments: ["{}", "false", "7", "\"bad\""])

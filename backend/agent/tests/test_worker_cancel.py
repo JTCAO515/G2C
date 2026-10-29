@@ -23,6 +23,7 @@ class Messages:
 
 
 class Drafts:
+    content_version = 'legacy'
     def __init__(self): self.calls = 0
     def publish(self, run_id, reply):
         self.calls += 1

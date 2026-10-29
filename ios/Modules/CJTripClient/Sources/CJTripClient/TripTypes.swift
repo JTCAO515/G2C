@@ -21,7 +21,7 @@ public struct TripBinding: Hashable, Sendable {
 }
 
 public struct TripPage: Sendable {
-    public let trips: [Components.Schemas.TripRecord]
+    public let trips: [Components.Schemas.SourceTripRecord]
     public let next: TripCursor?
 }
 

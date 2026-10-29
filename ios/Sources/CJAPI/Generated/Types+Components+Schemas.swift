@@ -7926,5 +7926,876 @@ extension Components {
                 ])
             }
         }
+        /// Server-acquired historical source snapshot, bound inside canonical candidate bytes. Base64 is canonical UTF8 JSON with display_text and the original typed record projection; snapshot_sha256 hashes those bytes. Correlation/provenance is not factual verification. Synthetic evidence must remain visible. Message records retain original command bytes and receipt; PLACE records retain original query/source and exact displayed field.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SourceRecordV1`.
+        public struct SourceRecordV1: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case message = "message"
+                case place = "place"
+                case route_estimate = "route_estimate"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/kind`.
+            public var kind: Components.Schemas.SourceRecordV1.kindPayload
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/reference`.
+            public var reference: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/text`.
+            public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/snapshot_utf8_base64`.
+            public var snapshot_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/snapshot_sha256`.
+            public var snapshot_sha256: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/evidence_level`.
+            @frozen public enum evidence_levelPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case user_statement = "user_statement"
+                case synthetic = "synthetic"
+                case unverified_bytes = "unverified_bytes"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceRecordV1/evidence_level`.
+            public var evidence_level: Components.Schemas.SourceRecordV1.evidence_levelPayload
+            /// Creates a new `SourceRecordV1`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - kind:
+            ///   - reference:
+            ///   - text:
+            ///   - snapshot_utf8_base64:
+            ///   - snapshot_sha256:
+            ///   - evidence_level:
+            public init(
+                id: Swift.String,
+                kind: Components.Schemas.SourceRecordV1.kindPayload,
+                reference: Swift.String,
+                text: Swift.String,
+                snapshot_utf8_base64: Swift.String,
+                snapshot_sha256: Swift.String,
+                evidence_level: Components.Schemas.SourceRecordV1.evidence_levelPayload
+            ) {
+                self.id = id
+                self.kind = kind
+                self.reference = reference
+                self.text = text
+                self.snapshot_utf8_base64 = snapshot_utf8_base64
+                self.snapshot_sha256 = snapshot_sha256
+                self.evidence_level = evidence_level
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case kind
+                case reference
+                case text
+                case snapshot_utf8_base64
+                case snapshot_sha256
+                case evidence_level
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.id = try container.decode(
+                    Swift.String.self,
+                    forKey: .id
+                )
+                self.kind = try container.decode(
+                    Components.Schemas.SourceRecordV1.kindPayload.self,
+                    forKey: .kind
+                )
+                self.reference = try container.decode(
+                    Swift.String.self,
+                    forKey: .reference
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                self.snapshot_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .snapshot_utf8_base64
+                )
+                self.snapshot_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .snapshot_sha256
+                )
+                self.evidence_level = try container.decode(
+                    Components.Schemas.SourceRecordV1.evidence_levelPayload.self,
+                    forKey: .evidence_level
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "id",
+                    "kind",
+                    "reference",
+                    "text",
+                    "snapshot_utf8_base64",
+                    "snapshot_sha256",
+                    "evidence_level"
+                ])
+            }
+        }
+        /// Unknown model text has no refs. Other categories have one source and exactly its display text: message/user_provided, place/queried, route_estimate/estimated. Source association never upgrades pending verification.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1`.
+        public struct SourceDocumentItemV1: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1/text`.
+            public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1/verification`.
+            @frozen public enum verificationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pending = "pending"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1/verification`.
+            public var verification: Components.Schemas.SourceDocumentItemV1.verificationPayload
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1/evidence`.
+            public var evidence: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1/source_category`.
+            @frozen public enum source_categoryPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case queried = "queried"
+                case user_provided = "user_provided"
+                case estimated = "estimated"
+                case unknown = "unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1/source_category`.
+            public var source_category: Components.Schemas.SourceDocumentItemV1.source_categoryPayload
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentItemV1/source_refs`.
+            public var source_refs: [Swift.String]
+            /// Creates a new `SourceDocumentItemV1`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - text:
+            ///   - verification:
+            ///   - evidence:
+            ///   - source_category:
+            ///   - source_refs:
+            public init(
+                id: Swift.String,
+                text: Swift.String,
+                verification: Components.Schemas.SourceDocumentItemV1.verificationPayload,
+                evidence: [Swift.String],
+                source_category: Components.Schemas.SourceDocumentItemV1.source_categoryPayload,
+                source_refs: [Swift.String]
+            ) {
+                self.id = id
+                self.text = text
+                self.verification = verification
+                self.evidence = evidence
+                self.source_category = source_category
+                self.source_refs = source_refs
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case text
+                case verification
+                case evidence
+                case source_category
+                case source_refs
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.id = try container.decode(
+                    Swift.String.self,
+                    forKey: .id
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                self.verification = try container.decode(
+                    Components.Schemas.SourceDocumentItemV1.verificationPayload.self,
+                    forKey: .verification
+                )
+                self.evidence = try container.decode(
+                    [Swift.String].self,
+                    forKey: .evidence
+                )
+                self.source_category = try container.decode(
+                    Components.Schemas.SourceDocumentItemV1.source_categoryPayload.self,
+                    forKey: .source_category
+                )
+                self.source_refs = try container.decode(
+                    [Swift.String].self,
+                    forKey: .source_refs
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "id",
+                    "text",
+                    "verification",
+                    "evidence",
+                    "source_category",
+                    "source_refs"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SourceDocumentDecisionsV1`.
+        public struct SourceDocumentDecisionsV1: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentDecisionsV1/travel_dates`.
+            @frozen public enum travel_datesPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case unknown = "unknown"
+                case undecided = "undecided"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentDecisionsV1/travel_dates`.
+            public var travel_dates: Components.Schemas.SourceDocumentDecisionsV1.travel_datesPayload
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentDecisionsV1/prompt`.
+            @frozen public enum promptPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case decide_travel_dates = "decide_travel_dates"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentDecisionsV1/prompt`.
+            public var prompt: Components.Schemas.SourceDocumentDecisionsV1.promptPayload
+            /// Creates a new `SourceDocumentDecisionsV1`.
+            ///
+            /// - Parameters:
+            ///   - travel_dates:
+            ///   - prompt:
+            public init(
+                travel_dates: Components.Schemas.SourceDocumentDecisionsV1.travel_datesPayload,
+                prompt: Components.Schemas.SourceDocumentDecisionsV1.promptPayload
+            ) {
+                self.travel_dates = travel_dates
+                self.prompt = prompt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case travel_dates
+                case prompt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.travel_dates = try container.decode(
+                    Components.Schemas.SourceDocumentDecisionsV1.travel_datesPayload.self,
+                    forKey: .travel_dates
+                )
+                self.prompt = try container.decode(
+                    Components.Schemas.SourceDocumentDecisionsV1.promptPayload.self,
+                    forKey: .prompt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "travel_dates",
+                    "prompt"
+                ])
+            }
+        }
+        /// Independent provenance.1 content format. No structured itinerary time fields, no text date parsing, no fabricated NEEDS. Original untagged TripDocument remains unchanged.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SourceDocumentV1`.
+        public struct SourceDocumentV1: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentV1/content_version`.
+            @frozen public enum content_versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case provenance_period_1 = "provenance.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentV1/content_version`.
+            public var content_version: Components.Schemas.SourceDocumentV1.content_versionPayload
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentV1/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentV1/items`.
+            public var items: [Components.Schemas.SourceDocumentItemV1]
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentV1/sources`.
+            public var sources: [Components.Schemas.SourceRecordV1]
+            /// - Remark: Generated from `#/components/schemas/SourceDocumentV1/decisions`.
+            public var decisions: Components.Schemas.SourceDocumentDecisionsV1
+            /// Creates a new `SourceDocumentV1`.
+            ///
+            /// - Parameters:
+            ///   - content_version:
+            ///   - title:
+            ///   - items:
+            ///   - sources:
+            ///   - decisions:
+            public init(
+                content_version: Components.Schemas.SourceDocumentV1.content_versionPayload,
+                title: Swift.String,
+                items: [Components.Schemas.SourceDocumentItemV1],
+                sources: [Components.Schemas.SourceRecordV1],
+                decisions: Components.Schemas.SourceDocumentDecisionsV1
+            ) {
+                self.content_version = content_version
+                self.title = title
+                self.items = items
+                self.sources = sources
+                self.decisions = decisions
+            }
+            public enum CodingKeys: String, CodingKey {
+                case content_version
+                case title
+                case items
+                case sources
+                case decisions
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.content_version = try container.decode(
+                    Components.Schemas.SourceDocumentV1.content_versionPayload.self,
+                    forKey: .content_version
+                )
+                self.title = try container.decode(
+                    Swift.String.self,
+                    forKey: .title
+                )
+                self.items = try container.decode(
+                    [Components.Schemas.SourceDocumentItemV1].self,
+                    forKey: .items
+                )
+                self.sources = try container.decode(
+                    [Components.Schemas.SourceRecordV1].self,
+                    forKey: .sources
+                )
+                self.decisions = try container.decode(
+                    Components.Schemas.SourceDocumentDecisionsV1.self,
+                    forKey: .decisions
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "content_version",
+                    "title",
+                    "items",
+                    "sources",
+                    "decisions"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SourceTripContent`.
+        @frozen public enum SourceTripContent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceTripContent/case1`.
+            case TripDocument(Components.Schemas.TripDocument)
+            /// - Remark: Generated from `#/components/schemas/SourceTripContent/case2`.
+            case SourceDocumentV1(Components.Schemas.SourceDocumentV1)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .TripDocument(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .SourceDocumentV1(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .TripDocument(value):
+                    try value.encode(to: encoder)
+                case let .SourceDocumentV1(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// Protected immutable display snapshot. Stored candidate_hash is revalidated by producer against original fields and server scope; never hash a reserialized API body. expires_at is Unix seconds. Stored pending may already be elapsed; this read does not retire, authorize, record review, or confirm acceptance.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot`.
+        public struct SourceTripProposalSnapshot: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/proposal_id`.
+            public var proposal_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/trip_id`.
+            public var trip_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/basis_version`.
+            public var basis_version: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/expires_at`.
+            public var expires_at: Swift.Int
+            /// RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/content_utf8_base64`.
+            public var content_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/document`.
+            public var document: Components.Schemas.SourceTripContent
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/candidate_hash`.
+            public var candidate_hash: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pending = "pending"
+                case accepted = "accepted"
+                case rejected = "rejected"
+                case expired = "expired"
+                case superseded = "superseded"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalSnapshot/status`.
+            public var status: Components.Schemas.SourceTripProposalSnapshot.statusPayload
+            /// Creates a new `SourceTripProposalSnapshot`.
+            ///
+            /// - Parameters:
+            ///   - proposal_id:
+            ///   - trip_id:
+            ///   - expected_version:
+            ///   - basis_version:
+            ///   - expires_at:
+            ///   - content_utf8_base64: RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.
+            ///   - document:
+            ///   - candidate_hash:
+            ///   - status:
+            public init(
+                proposal_id: Swift.String,
+                trip_id: Swift.String,
+                expected_version: Swift.Int,
+                basis_version: Swift.String,
+                expires_at: Swift.Int,
+                content_utf8_base64: Swift.String,
+                document: Components.Schemas.SourceTripContent,
+                candidate_hash: Swift.String,
+                status: Components.Schemas.SourceTripProposalSnapshot.statusPayload
+            ) {
+                self.proposal_id = proposal_id
+                self.trip_id = trip_id
+                self.expected_version = expected_version
+                self.basis_version = basis_version
+                self.expires_at = expires_at
+                self.content_utf8_base64 = content_utf8_base64
+                self.document = document
+                self.candidate_hash = candidate_hash
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case proposal_id
+                case trip_id
+                case expected_version
+                case basis_version
+                case expires_at
+                case content_utf8_base64
+                case document
+                case candidate_hash
+                case status
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.proposal_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .proposal_id
+                )
+                self.trip_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .trip_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.basis_version = try container.decode(
+                    Swift.String.self,
+                    forKey: .basis_version
+                )
+                self.expires_at = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expires_at
+                )
+                self.content_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .content_utf8_base64
+                )
+                self.document = try container.decode(
+                    Components.Schemas.SourceTripContent.self,
+                    forKey: .document
+                )
+                self.candidate_hash = try container.decode(
+                    Swift.String.self,
+                    forKey: .candidate_hash
+                )
+                self.status = try container.decode(
+                    Components.Schemas.SourceTripProposalSnapshot.statusPayload.self,
+                    forKey: .status
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "proposal_id",
+                    "trip_id",
+                    "expected_version",
+                    "basis_version",
+                    "expires_at",
+                    "content_utf8_base64",
+                    "document",
+                    "candidate_hash",
+                    "status"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SourceTripRecord`.
+        public struct SourceTripRecord: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceTripRecord/trip_id`.
+            public var trip_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceTripRecord/version`.
+            public var version: Swift.Int
+            /// RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SourceTripRecord/content_utf8_base64`.
+            public var content_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceTripRecord/document`.
+            public var document: Components.Schemas.SourceTripContent
+            /// Creates a new `SourceTripRecord`.
+            ///
+            /// - Parameters:
+            ///   - trip_id:
+            ///   - version:
+            ///   - content_utf8_base64: RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.
+            ///   - document:
+            public init(
+                trip_id: Swift.String,
+                version: Swift.Int,
+                content_utf8_base64: Swift.String,
+                document: Components.Schemas.SourceTripContent
+            ) {
+                self.trip_id = trip_id
+                self.version = version
+                self.content_utf8_base64 = content_utf8_base64
+                self.document = document
+            }
+            public enum CodingKeys: String, CodingKey {
+                case trip_id
+                case version
+                case content_utf8_base64
+                case document
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.trip_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .trip_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.content_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .content_utf8_base64
+                )
+                self.document = try container.decode(
+                    Components.Schemas.SourceTripContent.self,
+                    forKey: .document
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "trip_id",
+                    "version",
+                    "content_utf8_base64",
+                    "document"
+                ])
+            }
+        }
+        /// Missing and wrong-scope candidates both fail generically; no nullable candidate or confirmation evidence is fabricated.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SourceTripProposalResponse`.
+        public struct SourceTripProposalResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalResponse/proposal`.
+            public var proposal: Components.Schemas.SourceTripProposalSnapshot
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalResponse/representation`.
+            @frozen public enum representationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case provenance_period_1 = "provenance.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceTripProposalResponse/representation`.
+            public var representation: Components.Schemas.SourceTripProposalResponse.representationPayload
+            /// Creates a new `SourceTripProposalResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - proposal:
+            ///   - representation:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                proposal: Components.Schemas.SourceTripProposalSnapshot,
+                representation: Components.Schemas.SourceTripProposalResponse.representationPayload
+            ) {
+                self.request_id = request_id
+                self.proposal = proposal
+                self.representation = representation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case proposal
+                case representation
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.proposal = try container.decode(
+                    Components.Schemas.SourceTripProposalSnapshot.self,
+                    forKey: .proposal
+                )
+                self.representation = try container.decode(
+                    Components.Schemas.SourceTripProposalResponse.representationPayload.self,
+                    forKey: .representation
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "proposal",
+                    "representation"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SourceTripDetailResponse`.
+        public struct SourceTripDetailResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceTripDetailResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/SourceTripDetailResponse/trip`.
+            @frozen public enum tripPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/SourceTripDetailResponse/trip/case1`.
+                case SourceTripRecord(Components.Schemas.SourceTripRecord)
+                /// - Remark: Generated from `#/components/schemas/SourceTripDetailResponse/trip/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .SourceTripRecord(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .SourceTripRecord(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceTripDetailResponse/trip`.
+            public var trip: Components.Schemas.SourceTripDetailResponse.tripPayload
+            /// - Remark: Generated from `#/components/schemas/SourceTripDetailResponse/representation`.
+            @frozen public enum representationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case provenance_period_1 = "provenance.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceTripDetailResponse/representation`.
+            public var representation: Components.Schemas.SourceTripDetailResponse.representationPayload
+            /// Creates a new `SourceTripDetailResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - trip:
+            ///   - representation:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                trip: Components.Schemas.SourceTripDetailResponse.tripPayload,
+                representation: Components.Schemas.SourceTripDetailResponse.representationPayload
+            ) {
+                self.request_id = request_id
+                self.trip = trip
+                self.representation = representation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case trip
+                case representation
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.trip = try container.decode(
+                    Components.Schemas.SourceTripDetailResponse.tripPayload.self,
+                    forKey: .trip
+                )
+                self.representation = try container.decode(
+                    Components.Schemas.SourceTripDetailResponse.representationPayload.self,
+                    forKey: .representation
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "trip",
+                    "representation"
+                ])
+            }
+        }
+        /// Live Trip-ID keyset page with C byte ordering. next_after is last returned trip_id for any nonempty page and null for an empty page. At most requested limit; no has-more or cross-page snapshot/completeness promise. The complete returned ID is an opaque next boundary, never parsed/incremented.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SourceTripListResponse`.
+        public struct SourceTripListResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceTripListResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/SourceTripListResponse/trips`.
+            public var trips: [Components.Schemas.SourceTripRecord]
+            /// - Remark: Generated from `#/components/schemas/SourceTripListResponse/next_after`.
+            @frozen public enum next_afterPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/SourceTripListResponse/next_after/case1`.
+                case case1(Swift.String)
+                /// - Remark: Generated from `#/components/schemas/SourceTripListResponse/next_after/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .case1(try decoder.decodeFromSingleValueContainer())
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .case1(value):
+                        try encoder.encodeToSingleValueContainer(value)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceTripListResponse/next_after`.
+            public var next_after: Components.Schemas.SourceTripListResponse.next_afterPayload
+            /// - Remark: Generated from `#/components/schemas/SourceTripListResponse/representation`.
+            @frozen public enum representationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case provenance_period_1 = "provenance.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceTripListResponse/representation`.
+            public var representation: Components.Schemas.SourceTripListResponse.representationPayload
+            /// Creates a new `SourceTripListResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - trips:
+            ///   - next_after:
+            ///   - representation:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                trips: [Components.Schemas.SourceTripRecord],
+                next_after: Components.Schemas.SourceTripListResponse.next_afterPayload,
+                representation: Components.Schemas.SourceTripListResponse.representationPayload
+            ) {
+                self.request_id = request_id
+                self.trips = trips
+                self.next_after = next_after
+                self.representation = representation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case trips
+                case next_after
+                case representation
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.trips = try container.decode(
+                    [Components.Schemas.SourceTripRecord].self,
+                    forKey: .trips
+                )
+                self.next_after = try container.decode(
+                    Components.Schemas.SourceTripListResponse.next_afterPayload.self,
+                    forKey: .next_after
+                )
+                self.representation = try container.decode(
+                    Components.Schemas.SourceTripListResponse.representationPayload.self,
+                    forKey: .representation
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "trips",
+                    "next_after",
+                    "representation"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SourceTripConfirmationResponse`.
+        public struct SourceTripConfirmationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SourceTripConfirmationResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// Exact canonical original action bytes. Persist unchanged; submit only on explicit user confirmation. Unknown outcomes require querying the original action ID, never reissuing replacement bytes.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SourceTripConfirmationResponse/action_utf8_base64`.
+            public var action_utf8_base64: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SourceTripConfirmationResponse/expires_at`.
+            public var expires_at: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/SourceTripConfirmationResponse/proposal`.
+            public var proposal: Components.Schemas.SourceTripProposalSnapshot
+            /// - Remark: Generated from `#/components/schemas/SourceTripConfirmationResponse/representation`.
+            @frozen public enum representationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case provenance_period_1 = "provenance.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/SourceTripConfirmationResponse/representation`.
+            public var representation: Components.Schemas.SourceTripConfirmationResponse.representationPayload
+            /// Creates a new `SourceTripConfirmationResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - action_utf8_base64: Exact canonical original action bytes. Persist unchanged; submit only on explicit user confirmation. Unknown outcomes require querying the original action ID, never reissuing replacement bytes.
+            ///   - expires_at:
+            ///   - proposal:
+            ///   - representation:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                action_utf8_base64: Swift.String,
+                expires_at: Swift.Int,
+                proposal: Components.Schemas.SourceTripProposalSnapshot,
+                representation: Components.Schemas.SourceTripConfirmationResponse.representationPayload
+            ) {
+                self.request_id = request_id
+                self.action_utf8_base64 = action_utf8_base64
+                self.expires_at = expires_at
+                self.proposal = proposal
+                self.representation = representation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case action_utf8_base64
+                case expires_at
+                case proposal
+                case representation
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.action_utf8_base64 = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_utf8_base64
+                )
+                self.expires_at = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expires_at
+                )
+                self.proposal = try container.decode(
+                    Components.Schemas.SourceTripProposalSnapshot.self,
+                    forKey: .proposal
+                )
+                self.representation = try container.decode(
+                    Components.Schemas.SourceTripConfirmationResponse.representationPayload.self,
+                    forKey: .representation
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "action_utf8_base64",
+                    "expires_at",
+                    "proposal",
+                    "representation"
+                ])
+            }
+        }
     }
 }
