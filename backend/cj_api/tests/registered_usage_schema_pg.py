@@ -186,6 +186,15 @@ def exercise(auth,conninfo):
         assert admin.execute("SELECT count(*) FROM cj_run_metered_operation WHERE scope='a'").fetchone()[0]==0
         assert admin.execute("SELECT count(*) FROM cj_run_metered_operation WHERE scope='b'").fetchone()[0]==1
         assert admin.execute("SELECT count(*) FROM cj_local_metered_profile WHERE scope='a'").fetchone()[0]==1
+        with connect(True) as runtime:
+            def rebind_removed():
+                authority(runtime,'a',accounts['a']);bind(runtime,'a','r',accounts['a'])
+            failure(runtime,psycopg.errors.ForeignKeyViolation,rebind_removed)
+        admin.execute("DELETE FROM cj_message_delivery WHERE scope='a' AND message_id='m'")
+        admin.execute("DELETE FROM cj_message_receipt WHERE scope='a' AND message_id='m'")
+        assert admin.execute("SELECT count(*) FROM cj_message_metered_requirement WHERE scope='a' AND message_id='m'").fetchone()[0]==0
+        assert admin.execute("SELECT count(*) FROM cj_message_metered_requirement WHERE scope='b' AND message_id='m'").fetchone()[0]==1
+        assert admin.execute("SELECT count(*) FROM cj_local_metered_profile WHERE scope='a'").fetchone()[0]==1
         assert old_snapshot(admin,names)==before
     print('PASS schema: three kinds, original bytes/uniqueness, dual scopes/fixed period, deferred old-writer refusal, pending activation, cleanup restrictions and populated down refusal')
     print('UNRUN: generic execution core, business tool/background producers and consumer activation')
