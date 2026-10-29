@@ -1,5 +1,10 @@
 # Immutable original RUN → USAGE association
 
+> #170 additive local contract: [LOCAL-USAGE.md](LOCAL-USAGE.md) and
+> [STEP-USAGE-BINDING.md](STEP-USAGE-BINDING.md) define a separate gated local
+> provider_call exit. Historical fixture restrictions and FAIL/HOLD below remain;
+> these classes are not enabled as real executors by the new contract.
+
 Parent 448bcc4073642f4fc17410bf8b637923a9a64a1f is preserved with its known-gap
 FAIL evidence. This increment fixes that bounded association gap; shared
 claim/cancel/AUTH fencing and real executor integration remain HOLD.

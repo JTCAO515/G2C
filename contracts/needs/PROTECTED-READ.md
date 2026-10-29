@@ -79,3 +79,7 @@ cancelled/escaped handles, reentry, strict output and read-only denial are teste
 rc.1 tests for host scope remapping on close and host configuration/repository
 mutation during the final AUTH callback were removed with those checks. CJ035 integration/independent gates, HTTP,
 real accounts/App/provider and original Issue I acceptance remain UNRUN.
+
+The separate [REVISION-LEASE.md](REVISION-LEASE.md) local publication fence does not
+change this read-only signature or permit side effects in its projector. Its host
+consumer is independently gated; this reader is not a publication lock.

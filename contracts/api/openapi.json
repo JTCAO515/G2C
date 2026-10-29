@@ -2458,6 +2458,67 @@
         },
         "description": "Read original-message-bound persisted draft outcome under the same owner and identity guards."
       }
+    },
+    "/v2/run-draft-status": {
+      "get": {
+        "operationId": "getRunDraftStatusV2",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exact original opaque message ID; host UTF8 byte bound explicit. No caller run ID/scope/owner/permission."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RUN-draft-status.2 with original persisted budget reason; unchanged v1 route is separately available.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDraftStatusV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE input/unavailable/too-large error, never a synthetic/null/empty successful snapshot; no automatic read retry.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Read version 2 original-message draft status, including explicit local budget rejection; no write or retry capability."
+      }
     }
   },
   "components": {
@@ -6370,6 +6431,94 @@
             ]
           }
         }
+      },
+      "RunDraftStatusV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversation_id",
+          "generation",
+          "message_id",
+          "run_id",
+          "message_sequence",
+          "event_highwater",
+          "request_id",
+          "version",
+          "run_status",
+          "draft_outcome",
+          "budget_exhausted_stage"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "event_highwater": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "version": {
+            "type": "string",
+            "enum": [
+              "RUN-draft-status.2"
+            ]
+          },
+          "run_status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled",
+              "context_invalid",
+              "unknown"
+            ]
+          },
+          "draft_outcome": {
+            "type": "string",
+            "enum": [
+              "not_requested",
+              "not_recorded",
+              "published",
+              "validation_failed",
+              "provider_failed",
+              "provider_unknown",
+              "budget_exhausted"
+            ]
+          },
+          "budget_exhausted_stage": {
+            "type": "string",
+            "enum": [
+              "none",
+              "answer",
+              "draft"
+            ],
+            "description": "Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization."
+          }
+        },
+        "description": "Version 2 original-message protected draft status; adds budget outcome and its persisted stage. run_status remains independent. No independent budget endpoint."
       }
     },
     "securitySchemes": {
