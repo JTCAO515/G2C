@@ -187,6 +187,8 @@ private struct MemoryManualFormContent: View {
     let options: [MemoryManualOption]
     let language: MemoryLanguage
     let submit: (Components.Schemas.MemoryManualSaveCommand) async throws -> MemorySaveResult
+    private enum Input: Hashable { case memory, time }
+    @FocusState private var focusedInput: Input?
     @State private var selection: UUID?
     @State private var text = ""
     @State private var occurredAt = ""
@@ -233,8 +235,17 @@ private struct MemoryManualFormContent: View {
                     ForEach(options) { option in Text(option.label).tag(Optional(option.id)) }
                 }.disabled(started).accessibilityIdentifier("memory.manual.scope")
                 if let option = options.first(where: { $0.id == selection }) { Text(option.disclosure).font(.subheadline) }
-                TextField(language.text("Memory", "记忆内容"), text: $text, axis: .vertical).disabled(started).accessibilityIdentifier("memory.manual.text")
-                TextField(language.text("Approximate time (required; describe if unknown)", "大致时间（必填，不清楚请明确说明）"), text: $occurredAt).disabled(started).accessibilityIdentifier("memory.manual.time")
+                TextField(language.text("Memory", "记忆内容"), text: $text, axis: .vertical)
+                    .textFieldStyle(.roundedBorder).frame(minHeight: 44)
+                    .focused($focusedInput, equals: .memory)
+                    .contentShape(Rectangle()).onTapGesture { focusedInput = .memory }
+                    .disabled(started).accessibilityIdentifier("memory.manual.text")
+                TextField(language.text("Approximate time (required; describe if unknown)", "大致时间（必填，不清楚请明确说明）"), text: $occurredAt)
+                    .textFieldStyle(.roundedBorder).frame(minHeight: 44)
+                    .focused($focusedInput, equals: .time).submitLabel(.done)
+                    .onSubmit { focusedInput = nil }
+                    .contentShape(Rectangle()).onTapGesture { focusedInput = .time }
+                    .disabled(started).accessibilityIdentifier("memory.manual.time")
                 Button(language.text("Save memory", "保存记忆")) {
                     guard !started, let option = options.first(where: { $0.id == selection }) else { return }
                     do {
