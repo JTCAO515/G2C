@@ -165,3 +165,22 @@ xcodebuild -scheme CJRunClient -destination 'generic/platform=iOS Simulator' -de
 
 See [evidence/REPORT.md](evidence/REPORT.md). Synthetic interceptor/session evidence,
 unsigned module compilation, real service, App and physical device claims are separate.
+
+## #212 original-message draft result
+
+The development App opts into `readsDraftStatus`; existing consumers default to
+false. After a validated original RUN snapshot (including confirmed stop), one
+bounded `GET /v1/run-draft-status` reads `RUN-draft-status.1` with the same receipt,
+credentials and source/session epoch. Its six outcomes appear separately from
+answer text and canonical RUN state. The read's own RUN status remains visible.
+No unknown result automatically retries or enables a write. Non-200, offline,
+unknown enum, mismatched original references, invalid trace/cache/JSON or stale
+source fail closed. Server 401/403 also retire the private answer. v2 generation
+alone does not activate a v2 consumer; an unsupported v1 outcome remains unknown.
+
+On iOS, the draft-result sentence uses a multiline UILabel with the full SwiftUI
+Dynamic Type mapping and measured available width. A retained iOS17.5 typography
+diagnostic found clipping reports at accessibility5 for the same SwiftUI Text,
+while the UILabel comparison avoided them; this is a bounded observation, not a
+general framework diagnosis. The native suite checks the combined accessible
+heading, result and RUN state and preserves every audit failure.

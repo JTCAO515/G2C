@@ -101,3 +101,29 @@ source hashes, native results/screenshots, DB request/receipt proofs and token /
 plaintext-draft scans. Before/after 503 faults are controlled local injections,
 not evidence of a real external-service outage. No OTP, cloud service, paid model,
 physical device or production deployment is involved.
+
+## Original RUN and draft outcomes (#167 / #212)
+
+`check_runs.py` uses the actual App, signed formal local API, fresh private PG and
+`run_worker.run_once` with a controlled FakeProvider. Its default suite covers
+bilingual streamed answers, confirmed stops, provider failure and Release closure;
+its report remains PARTIAL_PASS while real budget exhaustion awaits #170 host
+integration. No tool execution or real-model result is implied.
+
+Add `--draft-status` for #212: both languages cover invalid structured draft,
+definite provider rejection, provider-unknown, stop-before-draft, original history
+reopening and Release closure. Invalid draft bytes and provider exceptions originate
+at the test provider boundary; the real worker, validators, database and protected
+GET route determine the persisted/UI result. The suite also reads each original
+with the other development account and requires refusal without private fields.
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B ios/App/Acceptance/check_runs.py \
+  --draft-status --simulator '<iOS-17.5-UDID>' \
+  --output '<new-external-evidence-directory>' --build-dir '<external-build-cache>'
+```
+
+`--diagnostic-test` retains PARTIAL_PASS and lists omitted cases. Every run keeps
+its original report, per-case request/DB/provider counts and xcresult; reuse only
+build outputs, never evidence directories. Runtime permissions, histories and
+repositories are not replaced. Physical VoiceOver remains a separate L3 gate.
