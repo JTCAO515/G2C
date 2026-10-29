@@ -176,8 +176,16 @@ struct MemoryCollectionView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var index = 0
     private var language: ShellLanguage { shell.language }
-    private var questions: [MemoryManualOption] { Array(host.manualOptions.prefix(3)) }
+    private func question(_ option: MemoryManualOption) -> String {
+        switch option.kind {
+        case .fact: language.text("What would you like us to know for your travels?", "关于你的旅行，有哪些希望我们记住的情况？")
+        case .experience: language.text("Which travel experience would you like to keep?", "有哪些旅行经历希望记下来？")
+        case .preference: language.text("What travel preference would you like to save?", "你有哪些希望保存的旅行偏好？")
+        case .inference: language.text("Which suggestion still needs your confirmation?", "哪些推断仍需要你确认？")
+        }
+    }
     var body: some View {
+        let questions = host.collectionOptions
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text(language.text("A few things to remember", "逐步了解你的旅行习惯")).font(.title2)
@@ -185,6 +193,8 @@ struct MemoryCollectionView: View {
                 if questions.indices.contains(index), let binding = host.manualBinding {
                     Text(language.text("Question ", "问题 ") + "\(index + 1)/\(questions.count)")
                         .accessibilityIdentifier("memory.collection.progress")
+                    RunReadableText(text: question(questions[index]))
+                        .accessibilityIdentifier("memory.collection.question")
                     MemoryManualForm(binding: binding, currentBinding: { host.manualBinding },
                         options: [questions[index]], language: language.memoryLanguage,
                         submit: { command in try await host.submitManual(command, context: host.captureAction()) },
