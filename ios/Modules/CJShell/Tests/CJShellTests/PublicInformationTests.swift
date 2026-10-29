@@ -3,13 +3,13 @@ import Testing
 @testable import CJShell
 
 @Suite @MainActor struct PublicInformationTests {
-    @Test func futurePriceLabelsStayExactAcrossLanguageSwitchesWithoutChangingAccess() throws {
+    @Test func betaPlansDoNotGrantAccessAcrossLanguageSwitches() throws {
         let state = ShellState(preferences: try #require(UserDefaults(suiteName: UUID().uuidString)))
         let original = state.presentation, generation = state.generation
         for language in [ShellLanguage.chinese, .english] {
             state.selectLanguage(language)
-            #expect(ShellFuturePlan.allCases.map(\.rawValue) == ["US$19.99/month", "US$39.99/month"])
-            #expect(ShellFuturePlan.allCases.allSatisfy { !$0.title(language).isEmpty })
+            #expect(ShellBetaInformation.plans(language).contains("Early Access"))
+            #expect(!ShellBetaInformation.plans(language).contains("US$"))
             #expect(state.presentation == original && state.generation == generation && !state.canSend)
         }
     }
@@ -21,8 +21,8 @@ import Testing
             #expect(parts.host == nil && parts.user == nil && parts.password == nil)
             #expect(parts.query == nil && parts.fragment == nil)
         }
-        #expect(ShellContact.support.address == "support@go2china.space")
-        #expect(ShellContact.contact.address == "jtcao@go2china.space")
+        #expect(ShellContact.support.address == "hello@go2china.space")
+        #expect(ShellContact.allCases.count == 1)
     }
     @Test func informationalRoutesAndLanguageChangesDoNotGrantSendingOrEraseDraft() throws {
         let state = ShellState(preferences: try #require(UserDefaults(suiteName: UUID().uuidString)))

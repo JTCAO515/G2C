@@ -70,6 +70,39 @@ import Foundation
         return try JSONDecoder().decode([String].self, from: data)
     }
 
+    func testOrdinaryHelpPrivacySupportInBothLanguages() {
+        for language in ["en", "zh-Hans"] {
+            let chinese = language == "zh-Hans"
+            launch(language: language)
+            tap(chinese ? "记忆" : "Memory")
+            tap(chinese ? "帮助" : "Help")
+            XCTAssertTrue(app.navigationBars[chinese ? "帮助" : "Help"].exists)
+            text(chinese ? "首次使用与建号" : "Getting started")
+            capture("help-" + language)
+            app.navigationBars.buttons.element(boundBy: 0).tap()
+            tap(chinese ? "隐私说明（内测版）" : "Privacy notice (beta)")
+            XCTAssertTrue(app.navigationBars[chinese ? "隐私说明（内测版）" : "Privacy notice (beta)"].exists)
+            let provider = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Context Jump LLC")).firstMatch
+            XCTAssertTrue(provider.waitForExistence(timeout: 5))
+            capture("privacy-provider-" + language)
+            let support = app.buttons[chinese ? "支持" : "Support"]
+            for _ in 0..<12 {
+                if support.exists && support.isHittable { break }
+                app.swipeUp()
+            }
+            XCTAssertTrue(support.isHittable); support.tap()
+            XCTAssertTrue(app.navigationBars[chinese ? "支持" : "Support"].exists)
+            text("hello@go2china.space")
+            let mail = app.links.firstMatch
+            XCTAssertTrue(mail.exists && mail.isHittable)
+            XCTAssertTrue(mail.label.contains("hello@go2china.space"))
+            XCTAssertFalse(app.staticTexts["support@go2china.space"].exists)
+            XCTAssertFalse(app.staticTexts["jtcao@go2china.space"].exists)
+            capture("support-" + language)
+            app.terminate()
+        }
+    }
+
     func testOrdinaryAppTabsLanguageAndDraft() {
         launch()
         tabs(["Assistant", "Trips", "Plugins", "Memory"])
@@ -113,10 +146,10 @@ import Foundation
                     : mode == "failed" ? (chinese ? "无法读取分组" : "Could not load groups")
                     : (chinese ? "记忆尚未配置" : "Memory is not configured")
                 text(expected)
-                for label in (chinese ? ["账号", "语言", "帮助", "隐私事实草稿"] : ["Account", "Language", "Help", "Privacy facts draft"]) {
+                for label in (chinese ? ["账号", "语言", "帮助", "隐私说明（内测版）"] : ["Account", "Language", "Help", "Privacy notice (beta)"]) {
                     tap(label)
-                    let title = label == "Privacy facts draft" ? "Privacy draft"
-                        : label == "隐私事实草稿" ? "隐私草稿" : label
+                    let title = label == "Privacy notice (beta)" ? "Privacy notice (beta)"
+                        : label == "隐私说明（内测版）" ? "隐私说明（内测版）" : label
                     XCTAssertTrue(app.navigationBars[title].exists, title)
                     if label == "Account" || label == "账号" {
                         text(chinese ? "尚无已验证的账号会话。" : "No verified account session.")

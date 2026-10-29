@@ -93,7 +93,7 @@ def main():
     try:
         test_class = "ShellStructureUITests" if args.suite == "structure" else "ShellAccessibilityUITests"
         variants = {
-            "ordinary": ["testOrdinaryAppTabsLanguageAndDraft"],
+            "ordinary": ["testOrdinaryAppTabsLanguageAndDraft", "testOrdinaryHelpPrivacySupportInBothLanguages"],
             "fixture": ["testMemoryStatesKeepSettingsReachable", "testLanguagePreservesReferencesAndDoesNotRepeatRequests", "testPluginsAreInertInBothLanguages"]
         } if args.suite == "structure" else {"fixture": ["testMaximumTextLayout", "testAssistantStateSamplesInBothLanguages", "testTripAndMemoryReadStatesInBothLanguages", "testLongTextKeyboardAndUnavailableControls"], "ordinary": ["testOrdinaryAppAccessibilityAudits"]}
         for variant, tests in variants.items():
