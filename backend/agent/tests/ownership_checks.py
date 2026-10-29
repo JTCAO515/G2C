@@ -7,6 +7,7 @@ import threading
 import time
 import uuid
 import json
+from unittest.mock import patch
 import socket
 import httpx
 import uvicorn
@@ -99,7 +100,27 @@ class OwnershipChecks(Harness):
                 if unavailable: self.setUp()
                 source = self.auth / 'invited.json'
                 original = source.read_bytes()
-                class Provider:
+                # Same formal entry and security assertions, now with real explicit
+                # quota/NEEDS setup instead of the retired unmetered branch.
+                from cj_api.local_run_context import load_run_context
+                from cj_api.local_app import app_from_environment, LocalDatabase
+                import local_run_context as operator
+                now=int(time.time());context_file=self.auth/'run-context.json'
+                context_file.write_text(json.dumps({'version':'CJ-LOCAL-RUN@1','current':{
+                    'meter':dict(unit='provider_call',budget=4,period_start=now-10,period_end=now+3600,
+                                 max_steps=4,max_tools=1,max_output=10000,max_seconds=600),
+                    'output_limits':{'answer':1000,'draft':1000}},'history':[]}))
+                context=load_run_context(context_file)
+                operator.provision_budget(CONNINFO,context,self.own)
+                operator.provision_budget(CONNINFO,context,self.other)
+                with patch.dict('os.environ',{'CJ_LOCAL_CONNINFO':CONNINFO,'CJ_LOCAL_AUTH_DIR':str(self.auth),
+                                              'CJ_LOCAL_RUN_CONTEXT':str(context_file)}):
+                    self.app=app_from_environment()
+                self.database=LocalDatabase(CONNINFO,run_context=context)
+                operator.put_needs(CONNINFO,self.auth,self.own,json.dumps(dict(action_id='needs',needs_id='needs',
+                    expected_version=0,source={'kind':'manual','text':'explicit test input'},
+                    changes={'party_size':{'state':'known','value':1}})).encode())
+                class Provider(FakeProvider):
                     calls = 0
                     def stream(inner, messages, system=None):
                         inner.calls += 1
@@ -108,11 +129,14 @@ class OwnershipChecks(Harness):
                         yield 'MUST_NOT_PUBLISH_AFTER_AUTH_CHANGE' * 2
                 model = Provider()
                 with TestClient(self.app) as client:
-                    _, accepted = self.send(client, self.own, 'original', conversation=uuid.uuid4().hex, intent='consider_trip')
+                    conversation=uuid.uuid4().hex
+                    self.assertEqual(client.put('/v1/conversations',params={'conversation_id':conversation},headers=self.headers(self.own)).status_code,200)
+                    operator.bind_needs(CONNINFO,self.own,conversation,'needs')
+                    _, accepted = self.send(client, self.own, 'original', conversation=conversation, intent='consider_trip')
                 binding = self.binding(accepted.json()['receipt'])
                 try:
                     outcomes = run_worker.run_once(self.database, model, self.auth)
-                    self.assertEqual(outcomes[0].status, 'context_invalid')
+                    self.assertEqual(outcomes[0].status, 'unknown' if unavailable else 'context_invalid')
                     state = self.services()[1].snapshot(binding)
                     self.assertEqual(state.text, 'committed before authority change ' * 2)
                     self.assertEqual(state.effects, ())

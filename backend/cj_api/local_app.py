@@ -172,7 +172,8 @@ class LocalDatabase:
 
     def message_repository(self, scope):
         return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None,
-                                 local_run_mode=self.run_context is not None)
+                                 local_run_mode=self.run_context is not None,
+                                 registered_usage=self.run_context is not None and self.run_context.version=='CJ-LOCAL-RUN@2')
 
     def require_execution(self, scope, binding=None):
         with self.message_repository(scope).transaction() as tx:

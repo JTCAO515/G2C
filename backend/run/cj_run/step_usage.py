@@ -1,5 +1,5 @@
 """RUN-owned immutable local step association. No provider dispatch authority."""
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 import hashlib
 import json
 import uuid
@@ -28,7 +28,7 @@ class Step:
 
     @property
     def command(self):
-        return Command(**self.original.values())
+        return self.original.command
 
 
 class StepStore:
@@ -45,8 +45,8 @@ class StepStore:
         if row is None: return None
         original=UsageBinding(bytes(row[5]),bytes(row[6]))
         original.check_run(binding.run_id)
-        if (original.values()['attempt_id'] != row[0] or original.values()['kind'] != 'model'
-                or original.values()['reserve'] != 1 or row[2] != 'provider_call'
+        if (original.command.attempt_id != row[0] or original.command.kind != 'model'
+                or original.command.reserve != 1 or row[2] != 'provider_call'
                 or (row[3],row[4]) != (self.config.period_start,self.config.period_end)
                 or row[1] != ledger_scope_for(binding.scope,self.config)):
             raise OriginalStepOnly('original step integrity or period unavailable')
@@ -70,7 +70,8 @@ class StepStore:
                 raise OriginalStepOnly('original step already exists')
             command=Command(self.new_id(),self.new_id(),binding.run_id,'model',
                             hashlib.sha256(input_bytes).hexdigest(),1,output_limit)
-            encoded=json.dumps(asdict(command),sort_keys=True,separators=(',',':')).encode('utf-8')
+            original=UsageBinding.from_command(command,input_bytes)
+            encoded=original.command_bytes
             account=ledger_scope_for(binding.scope,self.config)
             tx.cur.execute('INSERT INTO cj_run_step_usage '
                 '(scope,run_id,step_key,attempt_id,ledger_scope,unit,period_start,period_end,command_bytes,input_bytes) '
@@ -79,7 +80,7 @@ class StepStore:
                  self.config.period_start,self.config.period_end,encoded,input_bytes))
             if tx.get(binding)!=state or self.runs.valid(binding) is not True:
                 raise Denied('original run changed during preparation')
-            result=Step(binding,step_key,account,(self.config.period_start,self.config.period_end),UsageBinding(encoded,input_bytes))
+            result=Step(binding,step_key,account,(self.config.period_start,self.config.period_end),original)
         return result
 
     def read_original(self, binding, step_key):
