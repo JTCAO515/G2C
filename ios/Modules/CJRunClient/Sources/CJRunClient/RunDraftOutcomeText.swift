@@ -1,15 +1,19 @@
 import SwiftUI
 
+public enum RunReadableTextStyle: Sendable { case body, caption }
+
 #if os(iOS)
 import UIKit
 
 /// Multiline UIKit measurement avoids the reproducible SwiftUI Text clipping
 /// at the largest accessibility size. The font follows the SwiftUI environment;
 /// there is no size cap, alternate accessibility text or filtered audit result.
-struct RunDraftOutcomeText: UIViewRepresentable {
+public struct RunReadableText: UIViewRepresentable {
     let text: String
+    let style: RunReadableTextStyle
+    public init(text: String, style: RunReadableTextStyle = .body) { self.text = text; self.style = style }
     @Environment(\.dynamicTypeSize) private var size
-    func makeUIView(context: Context) -> UILabel {
+    public func makeUIView(context: Context) -> UILabel {
         let label = UILabel()
         label.numberOfLines = 0
         label.lineBreakMode = .byWordWrapping
@@ -18,12 +22,12 @@ struct RunDraftOutcomeText: UIViewRepresentable {
         label.setContentCompressionResistancePriority(.required, for: .vertical)
         return label
     }
-    func updateUIView(_ label: UILabel, context: Context) {
+    public func updateUIView(_ label: UILabel, context: Context) {
         label.text = text
-        label.font = UIFont.preferredFont(forTextStyle: .body,
+        label.font = UIFont.preferredFont(forTextStyle: style == .body ? .body : .caption1,
             compatibleWith: UITraitCollection(preferredContentSizeCategory: category))
     }
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+    public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
         return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
     }
@@ -46,8 +50,10 @@ struct RunDraftOutcomeText: UIViewRepresentable {
     }
 }
 #else
-struct RunDraftOutcomeText: View {
+public struct RunReadableText: View {
     let text: String
-    var body: some View { Text(text).fixedSize(horizontal: false, vertical: true) }
+    let style: RunReadableTextStyle
+    public init(text: String, style: RunReadableTextStyle = .body) { self.text = text; self.style = style }
+    public var body: some View { Text(text).font(style == .body ? .body : .caption).fixedSize(horizontal: false, vertical: true) }
 }
 #endif

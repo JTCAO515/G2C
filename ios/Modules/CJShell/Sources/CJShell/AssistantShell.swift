@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJMessageHTTP
+import CJRunClient
 
 struct AssistantShell: View {
     @Bindable var state: ShellState
@@ -128,8 +129,8 @@ struct AssistantShell: View {
         VStack(alignment: .leading, spacing: 6) {
             if messageHost.supportsSending {
                 if let conversation = messageHost.selectedConversation {
-                    Text(state.language.text("Conversation: ", "会话：") + conversation)
-                        .font(.caption).accessibilityIdentifier("assistant.conversation")
+                    RunReadableText(text: state.language.text("Conversation: ", "会话：") + conversation, style: .caption)
+                        .accessibilityIdentifier("assistant.conversation")
                 }
                 Toggle(isOn: Binding(
                     get: { messageHost.creationIntent == .considerTrip },
