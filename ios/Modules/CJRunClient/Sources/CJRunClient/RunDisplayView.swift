@@ -57,7 +57,7 @@ extension RunDisplayState {
             if model.readsDraftStatus {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(language.text("Draft result", "草稿结果")).font(.headline)
-                    Text(model.draftStatus.label(language))
+                    Text(model.draftStatus.label(language)).baselineOffset(2)
                         .font(.body.leading(.loose)).lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 2)
