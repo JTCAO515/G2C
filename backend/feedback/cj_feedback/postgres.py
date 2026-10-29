@@ -8,7 +8,7 @@ from .domain import Action, Receipt, Conflict, InvalidInput, Unavailable, Refere
 
 class Repository:
     def __init__(self, connect, scope, guard, *, sources=None, token=None, principal=None):
-        if not callable(connect) or not callable(guard) or type(scope) is not str or not scope:
+        if connect is None or not callable(guard) or type(scope) is not str or not scope:
             raise Unavailable()
         self.connect, self.scope, self.guard = connect, scope, guard
         self.sources, self.token, self.principal = sources, token, principal

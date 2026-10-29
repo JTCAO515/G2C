@@ -13,16 +13,14 @@ class FeedbackWireConfiguration:
 def _feedback_with_shared_message(message,resolve,resolve_run=None):
     """Internal same-app assembly. The existing MESSAGE checker is reused exactly."""
     modules=_internal_modules('feedback')
-    if type(message) is not modules['cj_message.auth_boundary'].Boundary or not callable(resolve):
+    if type(message) is not modules['cj_message.auth_boundary'].Boundary or resolve is None:
         raise CompositionUnavailable('Trusted shared MESSAGE boundary and feedback resolver required')
-    if resolve_run is not None and not callable(resolve_run):raise CompositionUnavailable('Explicit RUN resolver required')
     sources=None if resolve_run is None else modules['cj_feedback.sources'].Sources(message,resolve_run)
     return modules['cj_feedback.boundary'].Boundary(message.checker,resolve,sources=sources),modules
 
 def build_feedback_boundary(*,environment,jwt_configuration,verification_keys,access_provider,resolve,
                             resolve_message_repository=None,resolve_run=None):
-    if (environment!='local' or not callable(resolve) or not callable(getattr(verification_keys,'resolve',None))
-            or not callable(getattr(access_provider,'evaluate',None))):
+    if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local FEEDBACK AUTH/resolver required')
     modules=_internal_modules('feedback');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
@@ -30,7 +28,7 @@ def build_feedback_boundary(*,environment,jwt_configuration,verification_keys,ac
     checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)
     sources=None
     if resolve_message_repository is not None or resolve_run is not None:
-        if not callable(resolve_message_repository) or not callable(resolve_run):
+        if resolve_message_repository is None or resolve_run is None:
             raise CompositionUnavailable('Both explicit MESSAGE and RUN resolvers required for references')
         # Public read context does not create a RUN: no write ID factory is supplied.
         message=modules['cj_message.auth_boundary'].Boundary(checker,resolve_message_repository,None)

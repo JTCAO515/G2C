@@ -12,13 +12,13 @@ class CleanupProgressConfiguration:
 
 def _cleanup_progress_from_checker(checker,resolve,configuration,*,environment,issuer,audience):
     modules=_internal_modules('cleanup_progress')
-    if environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker) or not callable(resolve) or type(configuration) is not CleanupProgressConfiguration:
+    if environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker) or resolve is None or type(configuration) is not CleanupProgressConfiguration:
         raise CompositionUnavailable('Canonical checker/trusted current-account resolver/config required')
     host=modules['cj_cleanup.protected_progress'].Configuration(environment,issuer,audience,configuration.max_steps,configuration.max_response_bytes)
     return checker,resolve,host,modules
 
 def create_cleanup_progress_app(*,configuration,environment,jwt_configuration,verification_keys,access_provider,resolve):
-    if environment!='local' or not callable(resolve) or not callable(getattr(verification_keys,'resolve',None)) or not callable(getattr(access_provider,'evaluate',None)):
+    if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local cleanup progress AUTH/resolver required')
     modules=_internal_modules('cleanup_progress');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:

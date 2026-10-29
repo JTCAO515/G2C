@@ -40,7 +40,7 @@ class AeadCursorCodec:
     def __init__(self,*,keys,active_key_id,version,clock,max_ttl_seconds,
                  max_token_bytes,max_plaintext_bytes,max_binding_bytes):
         try:
-            if (not isinstance(keys,dict) or not keys or not callable(clock)
+            if (not isinstance(keys,dict) or not keys or clock is None
                     or any(type(v) is not int or v<=0 for v in
                            (max_ttl_seconds,max_token_bytes,max_plaintext_bytes,max_binding_bytes))
                     or max_ttl_seconds>MAX_I64):raise ValueError()

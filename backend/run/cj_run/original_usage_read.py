@@ -70,7 +70,7 @@ def _association(repository, binding):
 
 class OriginalUsageAssociationReader:
     def __init__(self, message_boundary, resolve_run_repository, *, configuration):
-        if (type(message_boundary) is not Boundary or not callable(resolve_run_repository)
+        if (type(message_boundary) is not Boundary or resolve_run_repository is None
                 or type(configuration) is not UsageAssociationReadConfiguration):
             raise ValueError('fixed MESSAGE boundary, trusted RUN resolver and explicit configuration required')
         self.message_boundary, self.resolve_run_repository = message_boundary, resolve_run_repository
@@ -86,7 +86,7 @@ class OriginalUsageAssociationReader:
         canonical RUN Repository. Approved environment is host configuration.
         project validates/encodes the final generated envelope inside this lifetime.
         """
-        if type(message_id) is not str or not message_id.strip() or not callable(project):
+        if type(message_id) is not str or not message_id.strip() or project is None:
             raise ValueError('original message ID and synchronous host projection required')
         boundary, resolver, configuration = self.message_boundary, self.resolve_run_repository, self.configuration
         if type(boundary) is not Boundary or type(configuration) is not UsageAssociationReadConfiguration:

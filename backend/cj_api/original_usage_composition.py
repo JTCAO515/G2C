@@ -12,14 +12,13 @@ class OriginalUsageWireConfiguration:
 
 def _attach_original_usage(message,resolve_run,configuration):
     modules=_internal_modules('original_usage')
-    if type(message) is not modules['cj_message.auth_boundary'].Boundary or not callable(resolve_run) or type(configuration) is not OriginalUsageWireConfiguration:
+    if type(message) is not modules['cj_message.auth_boundary'].Boundary or resolve_run is None or type(configuration) is not OriginalUsageWireConfiguration:
         raise CompositionUnavailable('Fixed MESSAGE, canonical resolver and explicit limits required')
     source=modules['cj_run.original_usage_read']
     return source.OriginalUsageAssociationReader(message,resolve_run,configuration=source.UsageAssociationReadConfiguration(configuration.max_response_bytes)),modules
 
 def create_original_usage_app(*,configuration,environment,jwt_configuration,verification_keys,access_provider,resolve_message_repository,resolve_run):
-    if (environment!='local' or not callable(resolve_message_repository) or not callable(resolve_run)
-            or not callable(getattr(verification_keys,'resolve',None)) or not callable(getattr(access_provider,'evaluate',None))):
+    if environment!='local' or None in (resolve_message_repository,resolve_run,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local association AUTH/resolvers required')
     modules=_internal_modules('original_usage');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:

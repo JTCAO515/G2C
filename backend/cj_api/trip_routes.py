@@ -14,8 +14,7 @@ def register_trip_routes(app,boundary=None,configuration=None,modules=None):
     if boundary is None:
         if configuration is not None or modules is not None:raise ValueError('Complete TRIP configuration required')
     elif (type(configuration) is not TripWireConfiguration or not modules
-            or type(boundary) is not modules['cj_trip.auth_boundary'].Boundary
-            or not callable(getattr(boundary,'with_operation',None))):
+            or type(boundary) is not modules['cj_trip.auth_boundary'].Boundary):
         raise ValueError('Pinned public guarded TRIP boundary required')
     domain=modules['cj_trip.domain'] if modules else None
 

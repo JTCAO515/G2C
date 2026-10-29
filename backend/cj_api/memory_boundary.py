@@ -117,9 +117,7 @@ class MemoryBoundary:
 
 def build_memory_boundary(*, environment, jwt_configuration, verification_keys,
                           access_provider, resolve_binding, source_policy):
-    if (environment != 'local' or not callable(resolve_binding) or not callable(source_policy)
-            or not callable(getattr(verification_keys, 'resolve', None))
-            or not callable(getattr(access_provider, 'evaluate', None))):
+    if environment != 'local' or None in (resolve_binding, source_policy, verification_keys, access_provider):
         raise CompositionUnavailable('Explicit local memory AUTH/binding/source policy required')
     modules = _internal_modules('memory')
     auth = modules['cj_auth.jwt_adapter']

@@ -23,7 +23,7 @@ def state_bytes(op):
 
 class Repository:
     def __init__(self, connect, scope, guard):
-        if not callable(connect) or not isinstance(scope, core.Scope) or not callable(guard):
+        if connect is None or not isinstance(scope, core.Scope) or not callable(guard):
             raise Unavailable('trusted composition required')
         self.connect, self.scope, self.guard = connect, scope, guard
         self._scope_bytes = core.encode(asdict(scope))

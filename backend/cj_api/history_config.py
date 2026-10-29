@@ -51,9 +51,7 @@ class CursorPolicy:
     max_token_bytes: int
 
     def __post_init__(self):
-        if (not _positive(self.ttl_seconds) or not _positive(self.max_token_bytes)
-                or not callable(getattr(self.codec,'encode',None))
-                or not callable(getattr(self.codec,'decode',None))):
+        if not _positive(self.ttl_seconds) or not _positive(self.max_token_bytes) or self.codec is None:
             raise ValueError('Explicit authenticated codec, TTL and token bound required')
 
     def decode(self, token, binding):

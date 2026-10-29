@@ -24,7 +24,7 @@ class CandidateDependencies:
 
 def _candidate_dependencies(*,environment,checker,resolve,configuration,issuer,audience):
     modules=_internal_modules('feasibility')
-    if environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker) or not callable(resolve) or type(configuration) is not FeasibilityConfiguration:
+    if environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker) or resolve is None or type(configuration) is not FeasibilityConfiguration:
         raise CompositionUnavailable('Existing canonical checker and explicit trusted read host required')
     host=modules['cj_needs.protected_read'].ReadConfiguration(environment,issuer,audience,configuration.max_response_bytes)
     limits=modules['cj_feasibility.current_read'].ReadLimits(configuration.max_revisions,configuration.max_input_bytes,configuration.max_report_bytes)
