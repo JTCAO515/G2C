@@ -161,6 +161,9 @@ import Foundation
         XCTAssertTrue(value.waitForExistence(timeout: 10))
         let match = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object:value)
         XCTAssertEqual(XCTWaiter.wait(for:[match], timeout:15), .completed)
+        XCTAssertTrue(value.label.contains(language == "en" ? "Draft result" : "草稿结果"))
+        XCTAssertTrue(value.label.contains(language == "en" ? "Run state at draft read:" : "读取草稿时的运行状态："))
+        XCTAssertTrue(value.label.contains(language == "en" ? (mode == "draft_stop" ? "Cancelled" : "Completed") : (mode == "draft_stop" ? "已取消" : "已完成")))
         let visible = NSPredicate(format:"exists == true AND hittable == true")
         for _ in 0..<10 { if visible.evaluate(with:value) { break }; app.swipeUp() }
         XCTAssertTrue(visible.evaluate(with:value))
