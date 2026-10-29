@@ -59,8 +59,11 @@ extension RunDisplayState {
                     Text(language.text("Draft result", "草稿结果")).font(.headline)
                     RunDraftOutcomeText(text: model.draftStatus.label(language))
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    if case .loaded(let value) = model.draftStatus {
-                        Text(language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(value.run_status.rawValue))
+                    if let budget = model.draftStatus.budgetLabel(language) {
+                        RunDraftOutcomeText(text: budget).accessibilityIdentifier("run.budget.status")
+                    }
+                    if let status = model.draftStatus.runStatus {
+                        Text(language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(status))
                             .font(.caption).fixedSize(horizontal: false, vertical: true)
 
                     }

@@ -77,6 +77,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
     private let transport: any ClientTransport
     private let cancellationTransport: (any ClientTransport)?
     public let readsDraftStatus: Bool
+    private let draftStatusVersion: RunDraftStatusVersion
     private var storedDraftStatus: RunDraftReadState = .unread
     public var draftStatus: RunDraftReadState {
         guard let original = source else { return .unread }
@@ -106,16 +107,16 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
 
     public convenience init(endpoint: MessageEndpoint, maximumMessageIDBytes: Int, maximumTextBytes: Int,
                             credentials: @escaping Credentials, liveReadTransport: NoRedirectTransport,
-                            liveCancellationTransport: RunCancellationTransport? = nil, readsDraftStatus: Bool = false) throws {
+                            liveCancellationTransport: RunCancellationTransport? = nil, readsDraftStatus: Bool = false, draftStatusVersion: RunDraftStatusVersion = .v1) throws {
         try self.init(endpoint: endpoint, maximumMessageIDBytes: maximumMessageIDBytes,
-                      maximumTextBytes: maximumTextBytes, credentials: credentials, transport: liveReadTransport, cancellationTransport: liveCancellationTransport, readsDraftStatus: readsDraftStatus)
+                      maximumTextBytes: maximumTextBytes, credentials: credentials, transport: liveReadTransport, cancellationTransport: liveCancellationTransport, readsDraftStatus: readsDraftStatus, draftStatusVersion: draftStatusVersion)
     }
     /// Internal interceptor seam; public composition only accepts the existing no-redirect transport.
     init(endpoint: MessageEndpoint, maximumMessageIDBytes: Int, maximumTextBytes: Int,
-         credentials: @escaping Credentials, transport: any ClientTransport, cancellationTransport: (any ClientTransport)? = nil, readsDraftStatus: Bool = false) throws {
+         credentials: @escaping Credentials, transport: any ClientTransport, cancellationTransport: (any ClientTransport)? = nil, readsDraftStatus: Bool = false, draftStatusVersion: RunDraftStatusVersion = .v1) throws {
         guard maximumMessageIDBytes > 0, maximumTextBytes > 0 else { throw RunDisplayFailure.invalidConfiguration }
         self.endpoint = endpoint; maxMessageIDBytes = maximumMessageIDBytes; maxTextBytes = maximumTextBytes
-        self.credentials = credentials; self.transport = transport; self.cancellationTransport = cancellationTransport; self.readsDraftStatus = readsDraftStatus
+        self.credentials = credentials; self.transport = transport; self.cancellationTransport = cancellationTransport; self.readsDraftStatus = readsDraftStatus; self.draftStatusVersion = draftStatusVersion
     }
     /// Fail closed on access too: host still must eagerly invalidate when its ownership changes.
     public var state: RunDisplayState {
@@ -351,9 +352,9 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             try check(original, token)
             storedDraftStatus = .loading
             let value = try await readOriginalDraftStatus(endpoint: endpoint, transport: transport, bearer: bearer,
-                receipt: original.receipt, snapshot: snapshot, validate: { [self] in try check(original, token) })
+                receipt: original.receipt, snapshot: snapshot, version: draftStatusVersion, validate: { [self] in try check(original, token) })
             try check(original, token)
-            storedDraftStatus = .loaded(value)
+            storedDraftStatus = value
         } catch {
             guard valid(original, token) else { retireIfOwned(original, token); return }
             if let failure = error as? RunDisplayFailure,
