@@ -21,6 +21,7 @@ class RunProfile:
 class LocalRunContext:
     current: RunProfile
     history: tuple[RunProfile, ...]
+    version: str
 
     @property
     def profiles(self): return (self.current,*self.history)
@@ -34,12 +35,13 @@ def _unique(pairs):
     return result
 
 
-def _profile(value):
+def _profile(value, version):
     if type(value) is not dict or set(value)!={'meter','output_limits'}:
         raise LocalContextUnavailable('explicit meter and output limits required')
     config=Config(**value['meter'])
     limits=value['output_limits']
-    if (config.unit!='provider_call' or type(limits) is not dict or set(limits)!={'answer','draft'}
+    expected={'answer','draft'} if version=='CJ-LOCAL-RUN@1' else {'model','tool','memory'}
+    if (config.unit!='provider_call' or type(limits) is not dict or set(limits)!=expected
             or any(type(v) is not int or not 1<=v<=config.max_output for v in limits.values())):
         raise LocalContextUnavailable('local provider_call profile required')
     return RunProfile(config,MappingProxyType(dict(limits)))
@@ -52,10 +54,10 @@ def load_run_context(path, *, clock=time.time, require_active=True):
         if len(raw)>1_048_576: raise LocalContextUnavailable('context file too large')
         value=json.loads(raw,object_pairs_hook=_unique)
         if (type(value) is not dict or set(value)!={'version','current','history'}
-                or value['version']!='CJ-LOCAL-RUN@1' or type(value['history']) is not list):
+                or value['version'] not in ('CJ-LOCAL-RUN@1','CJ-LOCAL-RUN@2') or type(value['history']) is not list):
             raise LocalContextUnavailable('explicit versioned local context required')
-        current=_profile(value['current'])
-        history=tuple(_profile(item) for item in value['history'])
+        current=_profile(value['current'],value['version'])
+        history=tuple(_profile(item,value['version']) for item in value['history'])
         periods=sorted((p.meter.period_start,p.meter.period_end) for p in (current,*history))
         if any(a[1]>b[0] for a,b in zip(periods,periods[1:])):
             raise LocalContextUnavailable('overlapping or duplicate quota periods')
@@ -63,6 +65,6 @@ def load_run_context(path, *, clock=time.time, require_active=True):
             raise LocalContextUnavailable('history must precede current period')
         if require_active and not current.meter.period_start<=clock()<current.meter.period_end:
             raise LocalContextUnavailable('current quota period is not active')
-        return LocalRunContext(current,history)
+        return LocalRunContext(current,history,value['version'])
     except (OSError,ValueError,TypeError,KeyError,Blocked,UnicodeError,RecursionError):
         raise LocalContextUnavailable('local run context unavailable or invalid') from None
