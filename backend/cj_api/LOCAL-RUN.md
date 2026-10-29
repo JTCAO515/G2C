@@ -1,11 +1,11 @@
-# M1 local NEEDS and provider-call quota
+# Local NEEDS and registered provider-call quota
 
 This opt-in host composition implements #170 under JT approval6488161293. It is
 only for `CJ_ENV=local`, a new private Unix-socket PostgreSQL database and
 `FakeProvider`. A `provider_call` is one complete local answer or draft invocation;
 it is not a token price, paid-model budget or production authorization.
 
-Apply the repository migration manifest through 0016 using the local initializer,
+Apply the repository migration manifest through 0017 using the local initializer,
 and initialize invited development subjects with `scripts/dev_auth.py`. The API
 and worker still connect as `cj_m1_runtime`; the initializer is used only by the
 operator CLI below. Never use cloud connection information here.
@@ -96,14 +96,14 @@ restore the original profile, then reconcile the same run. Unknown claims keep
 their exposure; there is no reset or automatic retry. Configuration-clock injection
 in the host test checks period selection, not elapsed wall-clock production behavior.
 
-If `CJ_LOCAL_RUN_CONTEXT` is absent, the prior local composition remains available
-only for unactivated scopes. In an activated scope the API refuses new messages or
-write operations, and the worker refuses pending consumption before RUN acceptance
-or provider credential loading/calls. Original history remains a safe read; it is
-not execution permission. Unknown/missing protection metadata never means legacy.
-The old unactivated path does not satisfy #170 quota/NEEDS acceptance.
+The formal worker now requires `CJ_LOCAL_RUN_CONTEXT` / `--run-context` before
+any pending work executes, including previously unactivated local scopes. Its CLI
+rejects `--real` before credential loading. Original history remains a safe read;
+missing configuration does not grant execution or automatic legacy migration.
+Legacy pending work is retained, not rebound to a new attempt/period or resent.
+Domain-only synthetic test seams are not formal worker entry points.
 
-Activation is one-way. Rollback must stop the worker and preserve migrations14–16,
+Activation is one-way. Rollback must stop the worker and preserve migrations14–17,
 markers, ledgers and original period files. Do not restore a worker that ignores the
 markers, delete/reset accounting, or run down on populated protection tables.
 
@@ -113,3 +113,43 @@ clearly marked local FakeProvider/ACK/config-clock fault probes. Module interlea
 and permission probes remain in local_needs_fence, local_budget_exit and
 local_context_schema. No fixture is presented as native App, cloud or real-model
 acceptance; A line owns the remaining native budget presentation checks.
+
+
+## Registered mode (`CJ-LOCAL-RUN@2`)
+
+Use the same explicit `meter` fields and period rules, but set the top-level version
+to `CJ-LOCAL-RUN@2` and provide `output_limits` for **model**, **tool**, **memory**.
+For example `{"model":1000,"tool":1000,"memory":1000}`. This config sets bounds;
+it does not register a business tool, task producer or arbitrary Python executor.
+History profiles retain the same protocol's original limits and meter parameters.
+Do not reinterpret an old @1 pending invocation with @2 configuration.
+
+Run the same operator `init-budget` command with the @2 file. Activation uses the
+0017 database boundary under MESSAGE scope lock and refuses any unacknowledged
+message or queued/running RUN. Existing account/unknown exposure is retained; an
+existing profile is idempotent. Drain/reconcile original @1 work under its original
+configuration before upgrading. Never reset data or switch subject/period to retry
+an uncertain original. Local validation uses fresh private databases and development
+identities; it does not migrate production or historical accounts.
+
+@2 stores the new receipt requirement, one immutable RUN account/period and a
+separate original operation for each stable key. The current production registry
+contains only `model.answer` and `model.draft`, using FakeProvider. The shared core
+supports the canonical three kinds, but controlled tool/memory infrastructure tests
+are not business producer acceptance; actual integrations remain #243.
+
+Old @1 configuration/consumers cannot execute new-mode work or submit old markers
+to an upgraded scope. Both protocols keep the existing public message bytes and
+RUN draft-status versions; no public execution/registration field is added.
+
+The CLI emits minimal JSON audit records on stderr before dispatch, containing
+server run/attempt IDs, kind, stage, unit and UNKNOWN/null confirmed units. A
+`prepared` record is not a receipt or a statement of fees: correlate its IDs with
+the original persistent operation/ledger and final RUN status. No prompt, token,
+client message_id, subject or raw provider response is logged. The stdout outcome
+uses the server run_id. Audit/adapter initialization precedes final admission;
+no mutable logging callback is inserted after the final check.
+
+Evidence entry: `scripts/pg_suites.py registered_exit`, included in the default
+gate. This exercises actual @2 API/operator/worker plus clearly marked three-kind
+PG infrastructure and ACK/timing faults. Real fees/cloud remain UNRUN.

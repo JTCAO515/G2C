@@ -20,6 +20,15 @@ def label(value):
         raise Blocked('invalid_configuration_or_input')
 
 
+def checked_clock_value(now, previous=None):
+    """Mutable server clock boundary, shared by ledger and in-flight limits."""
+    if type(now) not in (int, float) or not math.isfinite(now):
+        raise Blocked('clock_invalid')
+    if previous is not None and now < previous:
+        raise Blocked('clock_regressed')
+    return now
+
+
 @dataclass(frozen=True)
 class Config:
     unit: str
@@ -119,11 +128,7 @@ class Meter:
         self.repo, self.config, self.clock = repository, config, clock
 
     def _now(self, ledger):
-        now = self.clock()
-        if type(now) not in (int, float) or not math.isfinite(now):
-            raise Blocked('clock_invalid')
-        if ledger.last_clock is not None and now < ledger.last_clock:
-            raise Blocked('clock_regressed')
+        now = checked_clock_value(self.clock(), ledger.last_clock)
         ledger.last_clock = now
         return now
 

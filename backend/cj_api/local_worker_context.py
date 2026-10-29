@@ -7,9 +7,11 @@ from cj_auth.jwt_adapter import PyJWTVerifier, JWTConfiguration, StaticPublicKey
 from cj_message.needs_binding import needs_scope_for
 from cj_needs.revision_lease import RevisionLease, LeaseUnavailable
 from cj_run.step_usage import ledger_scope_for
+from cj_run.operation_usage import ABI as REGISTERED_ABI
 from cj_usage.core import Meter
 from cj_usage.postgres import PostgresRepository
 from cj_usage.local_provider_exit import LocalProviderExit, BudgetUnknown
+from cj_usage.registered_exit import RegisteredExit, MODEL_REGISTRY
 from .local_app import ISSUER, AUDIENCE, KEY_ID, scope_for, InvitedSubjects
 
 
@@ -36,10 +38,14 @@ class LocalBudgetRouter:
         for profile in context.profiles:
             account=ledger_scope_for(binding.scope,profile.meter)
             with self.database.connect(binding.scope,usage_profile=profile) as conn:
-                rows=conn.execute('SELECT ledger_scope,unit,period_start,period_end FROM cj_run_step_usage '
-                                  'WHERE scope=%s AND run_id=%s',(binding.scope,binding.run_id)).fetchall()
+                registered=context.version=='CJ-LOCAL-RUN@2'
+                table='cj_run_metered_binding' if registered else 'cj_run_step_usage'
+                fields='ledger_scope,unit,period_start,period_end'+(',source_abi' if registered else '')
+                rows=conn.execute('SELECT '+fields+' FROM '+table+
+                                  ' WHERE scope=%s AND run_id=%s',(binding.scope,binding.run_id)).fetchall()
                 if rows:
                     expected=(account,'provider_call',profile.meter.period_start,profile.meter.period_end)
+                    if registered: expected+= (REGISTERED_ABI,)
                     if any(row!=expected for row in rows): raise BudgetUnknown('original profile integrity unavailable')
                     matches.append(profile)
         if len(matches)>1: raise BudgetUnknown('original run spans quota periods')
@@ -52,6 +58,9 @@ class LocalBudgetRouter:
             if original.scope!=binding.scope or account!=ledger_scope_for(binding.scope,profile.meter):
                 raise BudgetUnknown('original quota owner changed')
             return Meter(PostgresRepository(lambda:self.database.connect(binding.scope,usage_profile=profile),account),profile.meter,time.time)
+        if context.version=='CJ-LOCAL-RUN@2':
+            return RegisteredExit(profile.meter,resolve,clock=time.time,output_limits=profile.output_limits,
+                                  environment='local',registrations=MODEL_REGISTRY)
         return LocalProviderExit(profile.meter,resolve,clock=time.time,
                                  output_limits=profile.output_limits,environment='local')
 
