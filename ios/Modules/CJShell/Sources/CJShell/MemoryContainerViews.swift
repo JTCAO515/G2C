@@ -118,16 +118,16 @@ struct MemoryContainerManual: View {
                 if recovering {
                     MemoryActionButton(title: language.text("New memory", "新增一条记忆"), enabled: action != nil) { recovering = false }
                 } else {
-                if let binding = host.manualBinding {
-                    MemoryManualForm(binding: binding, currentBinding: { host.manualBinding },
-                        options: host.manualOptions, language: language.memoryLanguage,
-                        submit: { command in try await host.submitManual(command, context: action) },
-                        queryOriginal: { operationID in try await host.queryManual(operationID, context: host.captureAction()) })
-                        .id(host.formIdentity)
-                        .disabled(!host.canSubmitManual)
-                } else {
-                    Text(language.text("Memory is not configured.", "记忆尚未配置。"))
-                }
+                    if let binding = host.manualBinding {
+                        MemoryManualForm(binding: binding, currentBinding: { host.manualBinding },
+                            options: host.manualOptions, language: language.memoryLanguage,
+                            submit: { command in try await host.submitManual(command, context: action) },
+                            queryOriginal: { operationID in try await host.queryManual(operationID, context: host.captureAction()) })
+                            .id(host.formIdentity)
+                            .disabled(!host.canSubmitManual)
+                    } else {
+                        Text(language.text("Memory is not configured.", "记忆尚未配置。"))
+                    }
                 }
                 if host.managementAvailable {
                     MemoryManagementHostRecovery(host: host, language: language).id(host.managementIdentity)

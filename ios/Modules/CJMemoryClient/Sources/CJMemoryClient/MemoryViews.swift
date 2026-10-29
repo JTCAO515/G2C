@@ -252,31 +252,31 @@ private struct MemoryManualFormContent: View {
                     MemoryRowText(text: text, style: .body)
                     MemoryRowText(text: occurredAt, style: .body)
                 } else {
-                Picker(language.text("Save scope", "保存范围"), selection: $selection) {
-                    Text(language.text("Choose a scope", "请选择范围")).tag(Optional<UUID>.none)
-                    ForEach(options) { option in Text(option.label).tag(Optional(option.id)) }
-                }.disabled(started).accessibilityIdentifier("memory.manual.scope")
-                if let option = options.first(where: { $0.id == selection }) { Text(option.disclosure).font(.subheadline) }
-                TextField(language.text("Memory", "记忆内容"), text: $text, axis: .vertical)
-                    .textFieldStyle(.roundedBorder).frame(minHeight: 44)
-                    .focused($focusedInput, equals: .memory)
-                    .contentShape(Rectangle()).onTapGesture { focusedInput = .memory }
-                    .disabled(started).accessibilityIdentifier("memory.manual.text")
-                TextField(language.text("Approximate time (required; describe if unknown)", "大致时间（必填，不清楚请明确说明）"), text: $occurredAt)
-                    .textFieldStyle(.roundedBorder).frame(minHeight: 44)
-                    .focused($focusedInput, equals: .time).submitLabel(.done)
-                    .onSubmit { focusedInput = nil }
-                    .contentShape(Rectangle()).onTapGesture { focusedInput = .time }
-                    .disabled(started).accessibilityIdentifier("memory.manual.time")
-                Button(language.text("Save memory", "保存记忆")) {
-                    guard !started, let option = options.first(where: { $0.id == selection }) else { return }
-                    do {
-                        let command = try option.command(text: text, occurredAt: occurredAt)
-                        guard current() == binding else { return }
-                        focusedInput = nil; started = true; state = .saving; originalID = command.operation_id
-                        run { try await submit(command) }
-                    } catch { state = .unconfigured }
-                }.disabled(started || selection == nil || !memoryText(text) || !memoryText(occurredAt)).accessibilityIdentifier("memory.manual.save")
+                    Picker(language.text("Save scope", "保存范围"), selection: $selection) {
+                        Text(language.text("Choose a scope", "请选择范围")).tag(Optional<UUID>.none)
+                        ForEach(options) { option in Text(option.label).tag(Optional(option.id)) }
+                    }.disabled(started).accessibilityIdentifier("memory.manual.scope")
+                    if let option = options.first(where: { $0.id == selection }) { Text(option.disclosure).font(.subheadline) }
+                    TextField(language.text("Memory", "记忆内容"), text: $text, axis: .vertical)
+                        .textFieldStyle(.roundedBorder).frame(minHeight: 44)
+                        .focused($focusedInput, equals: .memory)
+                        .contentShape(Rectangle()).onTapGesture { focusedInput = .memory }
+                        .disabled(started).accessibilityIdentifier("memory.manual.text")
+                    TextField(language.text("Approximate time (required; describe if unknown)", "大致时间（必填，不清楚请明确说明）"), text: $occurredAt)
+                        .textFieldStyle(.roundedBorder).frame(minHeight: 44)
+                        .focused($focusedInput, equals: .time).submitLabel(.done)
+                        .onSubmit { focusedInput = nil }
+                        .contentShape(Rectangle()).onTapGesture { focusedInput = .time }
+                        .disabled(started).accessibilityIdentifier("memory.manual.time")
+                    Button(language.text("Save memory", "保存记忆")) {
+                        guard !started, let option = options.first(where: { $0.id == selection }) else { return }
+                        do {
+                            let command = try option.command(text: text, occurredAt: occurredAt)
+                            guard current() == binding else { return }
+                            focusedInput = nil; started = true; state = .saving; originalID = command.operation_id
+                            run { try await submit(command) }
+                        } catch { state = .unconfigured }
+                    }.disabled(started || selection == nil || !memoryText(text) || !memoryText(occurredAt)).accessibilityIdentifier("memory.manual.save")
                 }
                 MemorySaveStatusView(state: state, language: language, queryOriginal: originalID.map { id in
                     { run { try await query(id) } }
