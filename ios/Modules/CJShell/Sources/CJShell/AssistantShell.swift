@@ -42,7 +42,8 @@ struct AssistantShell: View {
                 RunContainerView(host: runHost, messages: messageHost, language: state.language)
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if let text = messageHost.visibleOriginalText {
-                    Text(text).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .trailing)
+                    RunSelectableText(text: text).frame(maxWidth: .infinity, alignment: .trailing)
+                        .accessibilityLabel(state.language.text("Original message", "原消息"))
                         .accessibilityIdentifier("assistant.originalText")
                 }
             }
