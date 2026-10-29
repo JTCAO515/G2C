@@ -63,6 +63,8 @@ def main():
             assert all(p['runtime_role']=='cj_m1_runtime' and p['pending_deliveries']==0 and p['forbidden_writes']==0 and p['tool_steps']==0 for p in evidence['database_proofs'].values())
             if case!='testReleaseClosed':
                 assert evidence['worker_restarts'] and evidence['cross_account_reads']
+            if 'Published' in case:
+                assert evidence['native_foreign_account_checks']
             report['cases'][case]=dict(status='PASS', budget=budget, report=str((child/'report.json').relative_to(output)))
             save()
         report['status']='PASS'
