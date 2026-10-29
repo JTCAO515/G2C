@@ -71,6 +71,7 @@ import Foundation
             print(context, issue.detailedDescription, issue.element?.label ?? "unavailable", issue.element?.frame ?? .zero)
             return false
         }
+        continueAfterFailure = false
         XCTAssertEqual(issues, 0)
     }
     func launch(_ f: Fixture, language: String, restore: Bool = false, account: String = "A", large: Bool = false) throws {
