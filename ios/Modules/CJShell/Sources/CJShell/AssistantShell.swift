@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJMessageHTTP
+import CJRunClient
 
 private struct ShellHeaderHeight: PreferenceKey {
     static let defaultValue: CGFloat = 0
@@ -47,7 +48,8 @@ struct AssistantShell: View {
                 RunContainerView(host: runHost, messages: messageHost, language: state.language)
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if let text = messageHost.visibleOriginalText {
-                    Text(text).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .trailing)
+                    RunSelectableText(text: text).frame(maxWidth: .infinity, alignment: .trailing)
+                        .accessibilityLabel(state.language.text("Original message", "原消息"))
                         .accessibilityIdentifier("assistant.originalText")
                 }
             }
@@ -145,13 +147,16 @@ struct AssistantShell: View {
         VStack(alignment: .leading, spacing: 6) {
             if messageHost.supportsSending {
                 if let conversation = messageHost.selectedConversation {
-                    Text(state.language.text("Conversation: ", "会话：") + conversation)
-                        .font(.caption).accessibilityIdentifier("assistant.conversation")
+                    RunReadableText(text: state.language.text("Conversation: ", "会话：") + conversation, style: .caption)
+                        .accessibilityIdentifier("assistant.conversation")
                 }
-                Toggle(state.language.text("Trip planning", "规划行程"), isOn: Binding(
+                Toggle(isOn: Binding(
                     get: { messageHost.creationIntent == .considerTrip },
-                    set: { messageHost.creationIntent = $0 ? .considerTrip : .none }))
-                    .font(.caption).disabled(messageHost.isBusy)
+                    set: { messageHost.creationIntent = $0 ? .considerTrip : .none })) {
+                    RunReadableText(text: state.language.text("Trip planning", "规划行程"))
+                }
+                    .accessibilityLabel(state.language.text("Trip planning", "规划行程"))
+                    .disabled(messageHost.isBusy)
                     .accessibilityIdentifier("assistant.intent")
             }
             HStack(alignment: .bottom, spacing: 4) {

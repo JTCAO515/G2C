@@ -184,3 +184,18 @@ diagnostic found clipping reports at accessibility5 for the same SwiftUI Text,
 while the UILabel comparison avoided them; this is a bounded observation, not a
 general framework diagnosis. The native suite checks the combined accessible
 heading, result and RUN state and preserves every audit failure.
+
+## #167 protected local budget reads
+
+`draftStatusVersion: .v2` explicitly selects the frozen v2 original-message GET;
+there is no fallback to v1 or automatic read retry. The public initializer default remains v1 for existing consumers. The Debug
+Simulator App now explicitly selects v2, backed by the formal local host delivered
+in PR240. Missing configuration or a refused route remains unavailable; generated
+types and synthetic tests alone are never proof of host activation.
+
+V2 shows only the persisted `budget_exhausted_stage` (answer/draft); none, generic
+failed and unknown do not imply budget exhaustion. Original RUN state and text
+remain independent, including cancellation/unknown after a historical reason.
+All source/session and receipt/header/body checks are shared with v1. No write,
+quota setup, ledger access or new model request is introduced. Actual budget L1 is recorded separately by this PR
+using the documented protected host and explicit operator configuration.

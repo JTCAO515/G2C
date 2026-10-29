@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJMessageClient
+import CJRunClient
 
 struct MessageRecoveryStatus: View {
     let host: AssistantMessageHost
@@ -12,14 +13,18 @@ struct MessageRecoveryStatus: View {
             if host.isSynthetic {
                 Text(language.text("Synthetic local state — not a service reply", "合成本地状态——不是服务回复")).font(.caption)
             }
-            Text(status).accessibilityIdentifier("assistant.recoveryStatus")
+            RunReadableText(text: status).accessibilityIdentifier("assistant.recoveryStatus")
             if host.isConfigured {
-                Button(language.text("Save draft locally", "保存本地草稿")) { host.saveDraft() }
+                Button { host.saveDraft() } label: {
+                    RunReadableText(text: language.text("Save draft locally", "保存本地草稿"))
+                }.accessibilityLabel(language.text("Save draft locally", "保存本地草稿"))
                     .disabled(!host.canSaveDraft)
                 if host.draftStored {
-                    Text(language.text("Draft stored locally; this does not establish delivery status.", "草稿已交给配置的本地存储，不能据此判断投递状态。"))
+                    RunReadableText(text: language.text("Draft stored locally; this does not establish delivery status.", "草稿已交给配置的本地存储，不能据此判断投递状态。"))
                 }
-                Button(language.text("Check original action", "查询原操作")) { host.queryOriginal() }
+                Button { host.queryOriginal() } label: {
+                    RunReadableText(text: language.text("Check original action", "查询原操作"))
+                }.accessibilityLabel(language.text("Check original action", "查询原操作"))
                     .disabled(!host.canQuery)
                     .accessibilityIdentifier("assistant.queryOriginal")
                 if let resubmission {
@@ -30,6 +35,7 @@ struct MessageRecoveryStatus: View {
                 }
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(RecoveryReadableButtonStyle())
         .confirmationDialog(language.text("Submit the original message again?", "重新提交原消息？"),
             isPresented: Binding(get: { pendingResubmission != nil }, set: { if !$0 { pendingResubmission = nil } }),
             presenting: pendingResubmission) { context in
@@ -72,6 +78,15 @@ struct MessageRecoveryStatus: View {
         case .integrityError: return language.text("The original message does not match its receipt. Sending is stopped for this conversation.", "原消息与回执不一致，已停止此会话的发送。")
         case .resyncRequired: return language.text("The conversation state needs resynchronization. Sending is stopped.", "会话状态需要重新同步，已停止发送。")
         }
+    }
+}
+private struct RecoveryReadableButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var enabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.foregroundStyle(Color.primary)
+            .opacity(enabled && !configuration.isPressed ? 1 : 0.7)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
     }
 }
 #endif
