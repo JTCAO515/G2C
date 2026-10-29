@@ -6,6 +6,8 @@ import CJMessageHTTP
 import OpenAPIRuntime
 import HTTPTypes
 
+private struct RunStreamStartupUnavailable: Error {}
+
 public enum RunDisplayFailure: Error, Equatable, Sendable {
     case invalidConfiguration, invalidReference, unavailable, invalidResponse
     case staleContext, cancelled, credentialsUnavailable, inconsistentSnapshot
@@ -84,6 +86,8 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
     private var storedState: RunDisplayState = .unselected
     private var previous: RunDisplayValue?
     private var storedStream: RunStreamProgress?
+    private var streamObserved = false
+    private var failedAtStreamStartup = false
 
     public var streamProgress: RunStreamProgress? {
         guard let original = source else { return nil }
@@ -127,7 +131,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
     /// Call synchronously for selection/source/account/auth changes, background and disappearance.
     /// Resuming requires a newly accepted source. Does not cancel the server RUN.
     public func invalidate() {
-        cancellationPrepared = false; storedCancellation = .idle
+        cancellationPrepared = false; storedCancellation = .idle; streamObserved = false; failedAtStreamStartup = false
         epoch = UUID(); source = nil; previous = nil; storedStream = nil; prepared = false; executing = false; storedState = .unselected
     }
     private func owns(_ original: RunDisplaySource, _ token: UUID) -> Bool { source === original && epoch == token }
@@ -163,7 +167,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
         await perform(work)
         var completedEpoch = work.epoch
         for _ in 0..<2 {
-            guard owns(work.source, completedEpoch), storedStream == nil, previous == nil,
+            guard owns(work.source, completedEpoch), failedAtStreamStartup, !streamObserved, storedStream == nil, previous == nil,
                   storedCancellation == .idle,
                   case .unavailable(.rejected(status: 503)) = storedState else { return }
             do {
@@ -179,7 +183,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
 
     public func perform(_ work: RunDisplayWork?) async {
         guard let work, work.owner == owner, owns(work.source, work.epoch), prepared, !executing else { return }
-        prepared = false; executing = true
+        prepared = false; executing = true; failedAtStreamStartup = false
         let original = work.source, token = work.epoch
         do {
             try check(original, token)
@@ -218,6 +222,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             guard valid(original, token) else { retireIfOwned(original, token); return }
             let failure: RunDisplayFailure
             if Task.isCancelled || error is CancellationError { failure = .cancelled }
+            else if error is RunStreamStartupUnavailable { failure = .rejected(status: 503); failedAtStreamStartup = true }
             else { failure = (error as? RunDisplayFailure) ?? .unavailable }
             switch failure {
             case .rejected, .credentialsUnavailable, .invalidResponse, .inconsistentSnapshot:
@@ -242,7 +247,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
         if let status = storedStream?.status ?? previous?.snapshot.status.rawValue {
             return status == "queued" || status == "running"
         }
-        return true
+        return false // Every selection must first observe the original RUN.
     }
     public func prepareCancellation() -> RunCancellationWork? {
         guard canCancel, let original = source else { return nil }
@@ -271,8 +276,16 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v1/run-cancellations")
             request.headerFields[.contentType] = "application/json"
             request.headerFields[.authorization] = "Bearer " + bearer
-            let (response, responseBody) = try await cancellationTransport.send(request,
-                body: HTTPBody(try JSONEncoder().encode(input)), baseURL: endpoint.url, operationID: Operations.cancelOriginalRun.id)
+            let payload = try JSONEncoder().encode(input)
+            let result: (HTTPResponse, HTTPBody?)
+            if let live = cancellationTransport as? RunCancellationTransport {
+                result = try await live.sendBound(request, body: HTTPBody(payload), baseURL: endpoint.url,
+                    operationID: Operations.cancelOriginalRun.id, validateOriginal: { [self] in try check(original, token) })
+            } else { // Internal non-network test composition only.
+                result = try await cancellationTransport.send(request, body: HTTPBody(payload), baseURL: endpoint.url,
+                                                              operationID: Operations.cancelOriginalRun.id)
+            }
+            let (response, responseBody) = result
             try check(original, token)
             guard response.status.code == 200 else { throw RunDisplayFailure.rejected(status: response.status.code) }
             guard let responseBody else { throw RunDisplayFailure.invalidResponse }
@@ -336,7 +349,10 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
         let (response, body) = try await transport.send(request, body: nil, baseURL: endpoint.url,
                                                          operationID: "streamRunEvents")
         try check(original, token)
-        guard response.status.code == 200 else { throw RunDisplayFailure.rejected(status: response.status.code) }
+        guard response.status.code == 200 else {
+            if response.status.code == 503 { throw RunStreamStartupUnavailable() }
+            throw RunDisplayFailure.rejected(status: response.status.code)
+        }
         let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
         let controls = response.headerFields.filter { $0.name == .cacheControl }
         let media = response.headerFields.filter { $0.name == .contentType }
@@ -344,6 +360,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
               controls.count == 1, controls[0].value.lowercased() == "no-store",
               media.count == 1, media[0].value.split(separator: ";").first?.lowercased() == "text/event-stream",
               let body else { throw RunDisplayFailure.invalidResponse }
+        streamObserved = true
         for try await chunk in body {
             try check(original, token)
             if let progress = try parser.append(chunk) {

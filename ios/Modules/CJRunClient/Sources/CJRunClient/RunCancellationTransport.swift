@@ -38,9 +38,18 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
     }
     deinit { session?.invalidateAndCancel() }
 
+    /// An unbound transport call is not an original-action authorization.
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL,
                      operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        try await validate(); try Task.checkCancellation()
+        throw RunDisplayFailure.invalidReference
+    }
+    func sendBound(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL,
+                   operationID: String, validateOriginal: @escaping @MainActor @Sendable () throws -> Void) async throws -> (HTTPResponse, HTTPBody?) {
+        let validateBinding: @Sendable () async throws -> Void = {
+            try await self.validate()
+            try await validateOriginal()
+        }
+        try await validateBinding(); try Task.checkCancellation()
         guard baseURL == endpoint.url, request.method == .post,
               operationID == Operations.cancelOriginalRun.id, request.path == "/v1/run-cancellations",
               request.scheme == nil, request.authority == nil,
@@ -60,13 +69,13 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         var outgoing = URLRequest(url: url.absoluteURL)
         outgoing.httpMethod = "POST"; outgoing.httpBody = data
         for field in request.headerFields { outgoing.addValue(field.value, forHTTPHeaderField: field.name.canonicalName) }
-        try await validate(); try Task.checkCancellation()
+        try await validateBinding(); try Task.checkCancellation()
         if let intercepted {
             let (response, body) = try await intercepted.send(request, body: HTTPBody(data), baseURL: baseURL, operationID: operationID)
-            try await validate()
+            try await validateBinding()
             guard !(300..<400).contains(response.status.code), let body else { throw RunDisplayFailure.invalidResponse }
             let result = try await Data(collecting: body, upTo: endpoint.maximumResponseBytes)
-            try await validate(); try Task.checkCancellation()
+            try await validateBinding(); try Task.checkCancellation()
             return (response, HTTPBody(result))
         }
         guard let session else { throw RunDisplayFailure.invalidConfiguration }
@@ -79,7 +88,7 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
             guard result.count < endpoint.maximumResponseBytes else { throw RunDisplayFailure.invalidResponse }
             result.append(byte)
         }
-        try await validate(); try Task.checkCancellation()
+        try await validateBinding(); try Task.checkCancellation()
         var output = HTTPResponse(status: .init(code: response.statusCode))
         for (key, value) in response.allHeaderFields {
             guard let name = HTTPField.Name(String(describing: key)) else { throw RunDisplayFailure.invalidResponse }

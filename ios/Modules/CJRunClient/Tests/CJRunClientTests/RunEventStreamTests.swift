@@ -27,6 +27,8 @@ private actor StreamTransport: ClientTransport {
     var finalText = answer
     var finalStatus = "completed"
     var status = 200
+    var snapshotStatus: Int?
+    func snapshotFailure(_ code: Int) { snapshotStatus = code }
     var contentType = "text/event-stream; charset=utf-8"
     var trace = streamTrace
     var requests: [(String, String)] = []
@@ -56,7 +58,7 @@ private actor StreamTransport: ClientTransport {
             startupFailures -= 1
             return (HTTPResponse(status: .serviceUnavailable), HTTPBody(Data()))
         }
-        var response = HTTPResponse(status: .init(code: status))
+        var response = HTTPResponse(status: .init(code: operationID == "getRunDisplaySnapshot" ? (snapshotStatus ?? status) : status))
         response.headerFields[HTTPField.Name("X-Request-ID")!] = trace
         response.headerFields[.cacheControl] = "no-store"
         if operationID == "streamRunEvents" {
@@ -70,6 +72,10 @@ private actor StreamTransport: ClientTransport {
         }
         #expect(operationID == "getRunDisplaySnapshot" && parts.path == "/v1/run-display")
         response.headerFields[.contentType] = "application/json"
+        if snapshotStatus == 503 {
+            let error: [String: Any] = ["request_id": streamTrace, "error": ["code": "RUN_UNAVAILABLE", "category": "dependency", "message_en": "Unavailable", "message_zh": "不可用", "outcome": "unknown", "recovery": "retry_safe_read"]]
+            return (response, HTTPBody(try JSONSerialization.data(withJSONObject: error)))
+        }
         let snapshot: [String: Any] = ["message_id": originalID, "conversation_id": "chat", "generation": "g",
             "run_id": "run", "message_sequence": 1, "event_highwater": 3, "status": finalStatus,
             "text": finalText, "text_state": finalStatus == "completed" ? "complete" : "partial"]
@@ -101,6 +107,12 @@ private actor StreamTransport: ClientTransport {
 @MainActor struct RunEventStreamTests {
     /// Opt-in real local HTTP/PG check; absent configuration is explicitly SKIPPED.
     /// The harness creates only disposable local identities and FakeProvider answers.
+    @Test func finalSnapshot503NeverRestartsAnObservedStream() async throws {
+        let f = try StreamFixture(complete()); await f.transport.snapshotFailure(503)
+        await f.model.performInitialStream(f.model.prepareStream())
+        #expect(await f.transport.requests.map { $0.0 } == ["streamRunEvents", "getRunDisplaySnapshot"])
+        guard case .unavailable(.rejected(status: 503)) = f.model.state else { Issue.record("snapshot failure hidden"); return }
+    }
     @Test func initialRunStartupRetriesOnlyOriginalGET() async throws {
         let f = try StreamFixture(complete())
         await f.transport.failStartup(1)

@@ -9,7 +9,10 @@ slice, not full message-send, provider, login or device acceptance.
 The App may supply `RunCancellationTransport.development` for the explicit loopback
 session. This is a separate capability for `POST /v1/run-cancellations`; it does not
 open the shared MESSAGE transport or any PUT/other write. Release and physical
-devices cannot construct the live capability. Existing callers default to reads only.
+devices cannot construct the live capability. Existing callers default to reads only. Unbound transport sends are rejected; the
+model carries its original-source/selection validator through the last outflow
+check. Every source selection must observe its original RUN before cancellation
+becomes available, including reselection after an unknown outcome.
 
 `prepareCancellation()` captures one original source and retires old stream work.
 `performCancellation()` validates the original cancellation receipt and then reads

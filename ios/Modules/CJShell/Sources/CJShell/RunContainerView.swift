@@ -23,7 +23,7 @@ struct RunContainerView: View {
             if let model = host.displayModel {
                 Button(language.text("Use selected accepted message", "使用已选中的已接受消息")) {
                     _ = host.selectAcceptedMessage(from: messages)
-                }.accessibilityIdentifier("run.selectOriginal")
+                }.disabled(model.cancellationState == .stopping).accessibilityIdentifier("run.selectOriginal")
                 if host.sourceUnavailable {
                     Text(language.text("No current accepted message receipt is available. Select an original message in recovery first.", "没有可用的当前已接受消息回执，请先在恢复列表中选择原消息。"))
                         .font(.footnote)

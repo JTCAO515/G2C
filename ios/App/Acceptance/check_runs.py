@@ -45,7 +45,7 @@ def main():
     sources = list((ROOT / 'ios/App').glob('*.swift')) + list((ROOT / 'ios/Modules/CJRunClient/Sources').rglob('*.swift')) + list((ROOT / 'ios/Modules/CJShell/Sources').rglob('*.swift'))
     sources += [HERE / 'DevelopmentRunUITests.swift', HERE / 'check_runs.py']
     report = dict(status='RUNNING', working_tree_dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)), head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-        cases={}, unrun=['real budget exhaustion: #170 authorization/implementation pending', 'real providers/cloud/device'],
+        cases={}, unrun=['real budget exhaustion: #170 formal host implementation pending', 'real providers/cloud/device'],
         scope='Actual iOS17.5 App, formal local API, private PG/runtime, real worker with controlled FakeProvider; no actual tool requested',
         source_hashes={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources})
     def save(): (output / 'report.json').write_text(json.dumps(report, indent=2))

@@ -51,18 +51,31 @@ private actor CancelWire: ClientTransport {
         return (response, HTTPBody(try JSONSerialization.data(withJSONObject: value)))
     }
 }
+@MainActor private final class CancelChecks {
+    var count = 0
+    var hook: (() -> Void)?
+    func fire() { count += 1; hook?() }
+}
 @MainActor private final class CancelFixture {
     let session = SessionLifecycle(persistence: CancelStore(), restorePolicy: .userInitiatedOnly)
     let operation: SessionOperation
     let wire = CancelWire()
     let model: RunDisplayModel
-    init(enabled: Bool = true) throws {
+    let source: RunDisplaySource
+    let checks = CancelChecks()
+    init(enabled: Bool = true, bound: Bool = false) throws {
         operation = try session.beginTrustedSDKSave()
         let endpoint = try MessageEndpoint(url: URL(string: "https://synthetic.invalid")!, maximumRequestBytes: 4096, maximumResponseBytes: 10000)
+        let checks = checks
+        let cancellation: (any ClientTransport)?
+        if !enabled { cancellation = nil }
+        else if bound { cancellation = RunCancellationTransport(interceptedTransport: wire, endpoint: endpoint, validate: { checks.fire() }) }
+        else { cancellation = wire }
         model = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes: 256, maximumTextBytes: 10000,
-            credentials: { _ in "synthetic-only" }, transport: wire, cancellationTransport: enabled ? wire : nil)
+            credentials: { _ in "synthetic-only" }, transport: wire, cancellationTransport: cancellation)
         let receipt = Components.Schemas.MessageReceipt(message_id: "original", conversation_id: "chat", generation: "g", run_id: "run", sequence: 1, input_sha256: String(repeating: "a", count: 64))
-        #expect(model.select(try RunDisplaySource(receipt: receipt, session: session, operation: operation, isCurrent: { true })))
+        source = try RunDisplaySource(receipt: receipt, session: session, operation: operation, isCurrent: { true })
+        #expect(model.select(source))
     }
     func read() async { await model.perform(model.prepareRead()) }
 }
@@ -83,18 +96,38 @@ private actor CancelWire: ClientTransport {
             (.post, "/v1/messages", "receiveMessage"), (.post, "/v1/run-cancellations?scope=foreign", "cancelOriginalRun"),
             (.post, "/v1/run-cancellations", "arbitraryWrite")] {
             var wrong = request; wrong.method = method; wrong.path = path
-            await #expect(throws: (any Error).self) { try await transport.send(wrong, body: HTTPBody(raw), baseURL: endpoint.url, operationID: operation) }
+            await #expect(throws: (any Error).self) { try await transport.sendBound(wrong, body: HTTPBody(raw), baseURL: endpoint.url, operationID: operation, validateOriginal: {}) }
         }
         for bytes in [Data("{}".utf8), Data(String(decoding: raw, as: UTF8.self).replacingOccurrences(of: "RUN-cancel.1", with: "other").utf8), Data(repeating: 32, count: 4097)] {
-            await #expect(throws: (any Error).self) { try await transport.send(request, body: HTTPBody(bytes), baseURL: endpoint.url, operationID: "cancelOriginalRun") }
+            await #expect(throws: (any Error).self) { try await transport.sendBound(request, body: HTTPBody(bytes), baseURL: endpoint.url, operationID: "cancelOriginalRun", validateOriginal: {}) }
         }
         var foreign = request; foreign.authority = "foreign.invalid"
-        await #expect(throws: (any Error).self) { try await transport.send(foreign, body: HTTPBody(raw), baseURL: endpoint.url, operationID: "cancelOriginalRun") }
-        #expect(await wire.posts == 0)
-        _ = try await transport.send(request, body: HTTPBody(raw), baseURL: endpoint.url, operationID: "cancelOriginalRun")
-        lifetime.active = false
+        await #expect(throws: (any Error).self) { try await transport.sendBound(foreign, body: HTTPBody(raw), baseURL: endpoint.url, operationID: "cancelOriginalRun", validateOriginal: {}) }
         await #expect(throws: (any Error).self) { try await transport.send(request, body: HTTPBody(raw), baseURL: endpoint.url, operationID: "cancelOriginalRun") }
+        #expect(await wire.posts == 0)
+        _ = try await transport.sendBound(request, body: HTTPBody(raw), baseURL: endpoint.url, operationID: "cancelOriginalRun", validateOriginal: {})
+        lifetime.active = false
+        await #expect(throws: (any Error).self) { try await transport.sendBound(request, body: HTTPBody(raw), baseURL: endpoint.url, operationID: "cancelOriginalRun", validateOriginal: {}) }
         #expect(await wire.posts == 1)
+    }
+    @Test(arguments: [false, true])
+    func operationRetirementDuringTransportValidationPreventsPost(_ reselect: Bool) async throws {
+        let f = try CancelFixture(bound: true); await f.read()
+        f.checks.hook = {
+            if f.checks.count == 2 {
+                if reselect { _ = f.model.select(f.source) } else { f.model.invalidate() }
+            }
+        }
+        await f.model.performCancellation(f.model.prepareCancellation())
+        #expect(await f.wire.posts == 0)
+        #expect(!f.model.canCancel)
+    }
+    @Test func boundedModelCancellationHasAValidOutflow() async throws {
+        let f = try CancelFixture(bound: true); await f.read()
+        await f.model.performCancellation(f.model.prepareCancellation())
+        #expect(await f.wire.posts == 1)
+        guard case .loaded(let value) = f.model.state else { Issue.record("valid stop failed"); return }
+        #expect(value.snapshot.status == .cancelled)
     }
     @Test func onlyConfirmedSnapshotShowsCancelledAndRetainsText() async throws {
         let f = try CancelFixture(); await f.read()
@@ -128,8 +161,18 @@ private actor CancelWire: ClientTransport {
         if case .loaded = f.model.state { Issue.record("invalid cancellation published") }
         #expect(f.model.streamProgress == nil)
     }
+    @Test func reselectionCannotSkipOriginalReadAfterUnknownStop() async throws {
+        let f = try CancelFixture(); await f.read(); await f.wire.configure(code: 503)
+        await f.model.performCancellation(f.model.prepareCancellation())
+        #expect(f.model.cancellationState == .unknown)
+        #expect(f.model.select(f.source))
+        #expect(!f.model.canCancel && f.model.prepareCancellation() == nil)
+        await f.read()
+        #expect(!f.model.canCancel)
+        #expect(await f.wire.posts == 1)
+    }
     @Test func priorTerminalIsNotRelabelledAsCancelled() async throws {
-        let f = try CancelFixture(); await f.wire.configure(terminal: "completed")
+        let f = try CancelFixture(); await f.read(); await f.wire.configure(terminal: "completed")
         await f.model.performCancellation(f.model.prepareCancellation())
         guard case .loaded(let value) = f.model.state else { Issue.record("terminal snapshot missing"); return }
         #expect(value.snapshot.status == .completed && !f.model.canCancel)
