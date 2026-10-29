@@ -94,6 +94,8 @@ struct MemoryContainerManual: View {
                 if !host.canSubmitManual {
                     Text(language.text("Saving new memories is not available yet.", "暂不支持保存新记忆。"))
                 }
+                Text(language.text("Before a new save, previous operations are checked. An unknown receipt keeps new saves blocked; previous operations are never resent.", "新增保存前会核查此前的原操作。回执未查明时不提交新的保存，也不会重发旧操作。"))
+                    .font(.footnote)
                 if let binding = host.manualBinding {
                     MemoryManualForm(binding: binding, currentBinding: { host.manualBinding },
                         options: host.manualOptions, language: language.memoryLanguage,
