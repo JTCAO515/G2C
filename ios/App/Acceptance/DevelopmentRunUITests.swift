@@ -164,6 +164,13 @@ import Foundation
         let visible = NSPredicate(format:"exists == true AND hittable == true")
         for _ in 0..<10 { if visible.evaluate(with:value) { break }; app.swipeUp() }
         XCTAssertTrue(visible.evaluate(with:value))
+        print("DRAFT_FRAME_BEFORE", value.frame)
+        for _ in 0..<5 {
+            if value.frame.maxY < app.frame.height * 0.60 { break }
+            app.scrollViews.firstMatch.swipeUp()
+        }
+        print("DRAFT_FRAME_AFTER", value.frame)
+        XCTAssertTrue(visible.evaluate(with:value))
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .textClipped]) { issue in
             print("DRAFT_AX \(language): \(issue.compactDescription); \(issue.element?.label ?? "unavailable")")
             return false
