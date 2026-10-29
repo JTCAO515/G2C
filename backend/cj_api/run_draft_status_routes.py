@@ -2,7 +2,7 @@
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
-from .generated import RunDraftStatusResponse
+from .generated import RunDraftStatusResponse, RunDraftStatusV2Response
 from .history_routes import _query
 from .message_routes import _error,_token
 from .run_display_composition import RunDisplayWireConfiguration
@@ -17,8 +17,7 @@ def register_run_draft_status_route(app,reader=None,configuration=None,modules=N
             or type(reader) is not modules['cj_run.display_snapshot'].DisplaySnapshotReader):
         raise ValueError('Pinned protected display reader required')
     def unavailable(request):return _error(request,503,'RUN_DRAFT_STATUS_UNAVAILABLE','dependency','unknown','retry_safe_read')
-    @app.get('/v1/run-draft-status',response_model=RunDraftStatusResponse)
-    async def read(request:Request):
+    async def read(request:Request, *, version):
         if reader is None:return unavailable(request)
         token=_token(request)
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
@@ -31,7 +30,8 @@ def register_run_draft_status_route(app,reader=None,configuration=None,modules=N
         request_id=request.state.request_id
         def invoke():
             try:
-                return reader.read_draft_status(token,mid,request_id)
+                return (reader.read_draft_status_v2(token,mid,request_id) if version==2
+                        else reader.read_draft_status(token,mid,request_id))
             except BaseException as exc:
                 if isinstance(exc,Exception):raise
                 # Only interruptions originating inside the synchronous reader are
@@ -43,3 +43,9 @@ def register_run_draft_status_route(app,reader=None,configuration=None,modules=N
         except modules['cj_run.display_snapshot'].SnapshotTooLarge:
             return _error(request,413,'RUN_DRAFT_STATUS_TOO_LARGE','input','failed','retry_safe_read')
         except Exception:return unavailable(request)
+
+    @app.get('/v1/run-draft-status',response_model=RunDraftStatusResponse)
+    async def read_v1(request:Request): return await read(request,version=1)
+
+    @app.get('/v2/run-draft-status',response_model=RunDraftStatusV2Response)
+    async def read_v2(request:Request): return await read(request,version=2)

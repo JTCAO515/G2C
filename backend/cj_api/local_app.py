@@ -25,6 +25,10 @@ from cj_trip.postgres import Repository as TripRepository
 from cj_agent.draft import trip_scope_for
 
 from .composition import CompositionUnavailable, create_composed_app
+from .local_run_context import load_run_context
+from cj_message.needs_binding import needs_scope_for
+from cj_run.step_usage import ledger_scope_for
+from cj_usage.codec import decode as decode_ledger
 from .run_display_composition import RunDisplayWireConfiguration
 from .run_events_routes import RunEventsConfiguration
 from .trip_composition import TripWireConfiguration
@@ -40,8 +44,9 @@ def scope_for(issuer, subject):
 
 
 def _require_unbound(cursor):
-    """Reject either M1 authority GUC; never overwrite retained session authority."""
-    cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true)")
+    """Reject any M1 authority GUC; never overwrite retained session authority."""
+    cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true), "
+                   "current_setting('cj.needs_scope',true), current_setting('cj.usage_scope',true)")
     if any(value not in (None, '') for value in cursor.fetchone()):
         raise CompositionUnavailable('database scope already present')
 
@@ -53,8 +58,9 @@ class _ScopedConnection:
     before reading data. Direct host `with` consumers use the same hook here.
     Plain execute/cursor calls never silently rebind after commit or rollback.
     """
-    def __init__(self, connection, scope):
+    def __init__(self, connection, scope, *, needs_scope=None, usage_scope=None):
         self._connection, self._scope = connection, scope
+        self._needs_scope, self._usage_scope = needs_scope, usage_scope
 
     def __getattr__(self, name):
         return getattr(self._connection, name)
@@ -66,6 +72,9 @@ class _ScopedConnection:
             _require_unbound(cursor)
             cursor.execute("SELECT set_config('cj.message_scope',%s,true), set_config('cj.trip_scope',%s,true)",
                            (self._scope, trip_scope_for(self._scope)))
+            if self._needs_scope is not None:
+                cursor.execute("SELECT set_config('cj.needs_scope',%s,true), set_config('cj.usage_scope',%s,true)",
+                               (self._needs_scope,self._usage_scope))
         except BaseException:
             self._connection.close()
             raise
@@ -85,14 +94,20 @@ class _ScopedConnection:
         return self._connection.__exit__(exc_type, exc, traceback)
 
 
+def local_conninfo(conninfo_path):
+    config = json.loads(Path(conninfo_path).read_text())
+    if (os.environ.get('CJ_ENV') != 'local' or type(config) is not dict
+            or type(config.get('host')) is not str or not config['host'].startswith('/')
+            or ',' in config['host'] or config.get('hostaddr') or 'service' in config
+            or any(k.startswith(('PG', 'LIBPQ')) for k in os.environ)):
+        raise CompositionUnavailable('explicit local Unix-socket database required')
+    return config
+
+
 class LocalDatabase:
-    def __init__(self, conninfo_path):
-        config = json.loads(Path(conninfo_path).read_text())
-        if (os.environ.get('CJ_ENV') != 'local' or type(config) is not dict
-                or type(config.get('host')) is not str or not config['host'].startswith('/')
-                or ',' in config['host'] or config.get('hostaddr') or 'service' in config
-                or any(k.startswith(('PG', 'LIBPQ')) for k in os.environ)):
-            raise CompositionUnavailable('explicit local Unix-socket database required')
+    def __init__(self, conninfo_path, *, run_context=None):
+        config = local_conninfo(conninfo_path)
+        self.run_context = run_context
         # The initialization identity is never used for application/worker SQL.
         self._empty_passfile = tempfile.NamedTemporaryFile(prefix='cj-m1-runtime-', suffix='.pgpass')
         self.conninfo = dict(config, user='cj_m1_runtime', passfile=self._empty_passfile.name)
@@ -103,7 +118,7 @@ class LocalDatabase:
         if passfile is not None:
             passfile.close()
 
-    def connect(self, scope):
+    def connect(self, scope, *, usage_profile=None):
         if type(scope) is not str or not scope.startswith('local:' + ISSUER + ':') or not scope.removeprefix('local:' + ISSUER + ':'):
             raise CompositionUnavailable('verified local scope required')
         conn = psycopg.connect(**self.conninfo, autocommit=True)
@@ -122,10 +137,26 @@ class LocalDatabase:
             # their transaction entry installs LOCAL authority which PostgreSQL
             # removes on commit/rollback even when a physical connection survives.
             conn.autocommit = False
-            return _ScopedConnection(conn, scope)
+            if self.run_context is None:
+                if usage_profile is not None: raise CompositionUnavailable('run context unavailable')
+                return _ScopedConnection(conn, scope)
+            profile=self.run_context.current if usage_profile is None else usage_profile
+            if profile not in self.run_context.profiles:
+                raise CompositionUnavailable('unregistered original period')
+            return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope),
+                                     usage_scope=ledger_scope_for(scope,profile.meter))
         except BaseException:
             conn.close()
             raise
+
+    def require_budget_account(self, scope, *, profile=None):
+        if self.run_context is None: return
+        profile=self.run_context.current if profile is None else profile
+        account=ledger_scope_for(scope,profile.meter)
+        with self.connect(scope,usage_profile=profile) as conn:
+            row=conn.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
+            if row is None or row[0]!=1 or decode_ledger(row[1]).config!=profile.meter:
+                raise CompositionUnavailable('original budget account unavailable or changed')
 
     def provision(self, scope):
         """Trusted, idempotent scope provisioning for the local host only."""
@@ -135,13 +166,14 @@ class LocalDatabase:
             conn.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
 
     def message_repository(self, scope):
-        return MessageRepository(lambda: self.connect(scope), scope)
+        return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None)
 
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
 
-    def run_repository(self, scope):
-        return RunRepository(lambda: self.connect(scope), scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
+    def run_repository(self, scope, *, usage_profile=None):
+        connect = (lambda: self.connect(scope)) if usage_profile is None else (lambda: self.connect(scope,usage_profile=usage_profile))
+        return RunRepository(connect, scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
                              statement_timeout_ms=10000, lock_timeout_ms=5000)
 
 
@@ -166,16 +198,17 @@ class InvitedSubjects:
 
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
-                     memory_configuration=None):
+                     memory_configuration=None, run_context=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
-    database = LocalDatabase(conninfo_path)
+    database = LocalDatabase(conninfo_path,run_context=run_context)
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
 
     def message_repository(principal):
         scope = scope_for(principal.issuer, principal.subject)
+        database.require_budget_account(scope)
         database.provision(scope)
         return database.message_repository(scope)
 
@@ -320,4 +353,6 @@ def app_from_environment():
     return create_local_app(conninfo_path=os.environ['CJ_LOCAL_CONNINFO'], auth_dir=auth_dir,
                             confirmation_signer=load_confirmation_signer(auth_dir),
                             history_configuration=load_history_configuration(auth_dir),
-                            memory_configuration=memory_configuration)
+                            memory_configuration=memory_configuration,
+                            run_context=load_run_context(os.environ['CJ_LOCAL_RUN_CONTEXT'])
+                            if 'CJ_LOCAL_RUN_CONTEXT' in os.environ else None)

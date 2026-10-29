@@ -38,6 +38,11 @@ class LocalProviderExit:
         self.config,self.resolve_meter,self.clock=config,resolve_meter,clock
         self.output_limits=dict(output_limits)
 
+    def for_run(self, binding, state):
+        # Fixed-profile module callers already selected the original period. The
+        # formal local host uses LocalBudgetRouter before selecting this exit.
+        return self
+
     def prepare(self, runs, binding, step_key, messages, system, provider):
         """Stage A is separate from the later RUN-fenced first stream advance."""
         from cj_agent.provider import FakeProvider
