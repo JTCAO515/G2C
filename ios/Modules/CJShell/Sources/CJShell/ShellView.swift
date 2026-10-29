@@ -58,7 +58,8 @@ public struct ShellView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         Text(state.language.text("Coming soon", "尚未开放")).font(.title2)
-                        Text(state.language.text("Translation tools are planned for a future version. No tools are connected.", "翻译工具计划在后续版本提供。目前未接入工具。"))
+                        PluginPlaceholderCard(language: state.language)
+                        Text(PluginPlaceholderCopy.footer(state.language)).fixedSize(horizontal: false, vertical: true)
                     }.frame(maxWidth: .infinity, alignment: .leading).padding()
                 }.navigationTitle(ShellTab.plugins.title(state.language))
             }
