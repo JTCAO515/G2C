@@ -106,6 +106,14 @@
       "sha256": "5d5e021a385528e10a0bdc2ecaa02acf47521de4d46652f2e8c3e028ebd1d102",
       "down": "backend/migrations/down/0013_run_draft_outcome.down.sql",
       "down_sha256": "e3dc1df01ccdce655829b3f6852e2b01b37d9505f74a5dc6717813c654f61380"
+    },
+    {
+      "version": 14,
+      "name": "m1_budget_needs_binding",
+      "file": "backend/migrations/0014_m1_budget_needs_binding.sql",
+      "sha256": "d52f63faf6522fb44939da35fa00e1bc2e23e7c83e8c53029e6ac12feec9e629",
+      "down": "backend/migrations/down/0014_m1_budget_needs_binding.down.sql",
+      "down_sha256": "fc3e8fb8665a5f5e651edb225f0de6d844ebe13956623039380d19ae6c973b03"
     }
   ]
 }
