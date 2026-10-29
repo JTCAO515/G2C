@@ -153,9 +153,9 @@ struct AssistantShell: View {
                 Toggle(isOn: Binding(
                     get: { messageHost.creationIntent == .considerTrip },
                     set: { messageHost.creationIntent = $0 ? .considerTrip : .none })) {
-                    Text(state.language.text("Trip planning", "规划行程"))
-                        .font(.body).foregroundStyle(Color(uiColor: .label))
+                    RunReadableText(text: state.language.text("Trip planning", "规划行程"))
                 }
+                    .accessibilityLabel(state.language.text("Trip planning", "规划行程"))
                     .disabled(messageHost.isBusy)
                     .accessibilityIdentifier("assistant.intent")
             }
