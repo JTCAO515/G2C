@@ -20,6 +20,7 @@ from cj_message.domain import Unavailable as MessageUnavailable
 
 from cj_needs.domain import Denied as NeedsDenied
 from cj_needs.revision_lease import LeaseUnavailable
+from cj_usage.local_provider_exit import BudgetExceeded, BudgetUnknown
 
 from .draft import DRAFT_SYSTEM, DraftRejected
 from .provider import ProviderFailed, ProviderUnknown
@@ -69,7 +70,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -77,6 +78,7 @@ class RunWorker:
         """
         self.scope, self.messages, self.runs, self.provider, self.drafts = scope, messages, runs, provider, drafts
         self.needs_lease = needs_lease
+        self.budget_exit = budget_exit
 
     def process(self, limit=20):
         outcomes = []
@@ -159,9 +161,14 @@ class RunWorker:
 
     def _stream(self, binding, messages, system=None):
         stream = None
+        prepared = None
+        if self.budget_exit is not None:
+            prepared = self.budget_exit.prepare(self.runs,binding,'draft' if system is not None else 'answer',
+                                                messages,system,self.provider)
         def start():
             nonlocal stream
-            stream = self.provider.stream(messages) if system is None else self.provider.stream(messages, system=system)
+            stream = (self.budget_exit.stream(prepared) if prepared is not None else
+                      self.provider.stream(messages) if system is None else self.provider.stream(messages, system=system))
             return next(stream, _END)
         try:
             _, chunk = self._step(binding, start, draft=system is not None)
@@ -176,11 +183,24 @@ class RunWorker:
 
     def _finish(self, receipt, state, proposal_id=None):
         if state.status in TERMINAL:
+            if self.budget_exit is not None and state.status != 'completed':
+                self.budget_exit.stop(self._binding(receipt))
             self.messages.acknowledge(receipt)
         return Outcome(receipt.message_id, receipt.run_id, state.status, proposal_id)
 
+    def _budget_rejection(self, binding, step):
+        with self.runs.repository.transaction() as tx:
+            state=tx.get(binding)
+            if state.status in TERMINAL: raise _Stopped(state)
+            for kind,value in [('budget_denied',step),
+                               ('failed','') if step=='answer' else ('draft_outcome','budget_exhausted')]:
+                sequence=state.sequence+1
+                state=advance(state,Event(binding,sequence,f'{binding.run_id}:{sequence}',kind,value),self.runs.valid)
+                tx.put(state)
+        return state
+
     def _draft(self, binding, state, text, original):
-        """Second, non-streamed model call. A bad or unknown draft never fails the answer."""
+        """Provider draft failures preserve the answer; accounting uncertainty stops RUN as unknown."""
         try:
             reply = ''.join(self._stream(binding, [{'role': 'user', 'content': text}], system=DRAFT_SYSTEM))
             if self.drafts.content_version == 'legacy':
@@ -191,6 +211,8 @@ class RunWorker:
                 state, draft = self._step(binding, lambda: self.drafts.publish_for_message(
                     binding, original, self.messages.query(binding.message_id), reply, sources),
                     lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
+        except BudgetExceeded:
+            return self._budget_rejection(binding,'draft'), None
         except (DraftRejected, ProviderFailed, ProviderUnknown) as error:
             outcome = ('validation_failed' if isinstance(error, DraftRejected) else
                        'provider_failed' if isinstance(error, ProviderFailed) else 'provider_unknown')
@@ -213,7 +235,7 @@ class RunWorker:
                         check()
                     check()
             owned = RunWorker(scope=binding.scope, messages=messages, provider=provider, drafts=drafts,
-                              needs_lease=self.needs_lease,
+                              needs_lease=self.needs_lease, budget_exit=self.budget_exit,
                               runs=Service(OwnedRepository(), runs.valid))
             return owned._owned(receipt, binding)
 
@@ -222,6 +244,14 @@ class RunWorker:
             return self._execute(receipt, binding)
         except _Stopped as stopped:
             return self._finish(receipt, stopped.state)
+        except BudgetUnknown:
+            current = self.runs.snapshot(binding)
+            if current.status in TERMINAL:
+                # Terminal RUN is durable; expose failed stop reconciliation rather
+                # than retrying the accounting mutation inside this invocation.
+                raise
+            current = self._event(binding, current, 'unknown')
+            return self._finish(receipt, current)
         except (LeaseUnavailable, _PublicationUncertain):
             current = self.runs.snapshot(binding)
             if current.status not in TERMINAL:
@@ -267,6 +297,8 @@ class RunWorker:
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 state, proposal_id = self._draft(binding, state, text, stored)
             state = self._event(binding, state, 'completed')
+        except BudgetExceeded:
+            state = self._budget_rejection(binding,'answer')
         except ProviderFailed:
             state = self._event(binding, self.runs.snapshot(binding), 'failed')
         except ProviderUnknown:

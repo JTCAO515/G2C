@@ -42,6 +42,8 @@ class PostgresRepository:
             cur = conn.cursor()
             try:
                 cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                bind_scope = getattr(conn, 'bind_scope', None)  # existing scoped DB-API extension
+                if bind_scope is not None: bind_scope(cur)
                 cur.execute('SELECT revision, format_version, ledger FROM public.cj_usage_ledger_candidate WHERE scope_id=%s FOR UPDATE', (self.scope,))
                 row = cur.fetchone()
                 if row is None:
