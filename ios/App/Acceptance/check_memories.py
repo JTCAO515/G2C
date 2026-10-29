@@ -136,7 +136,7 @@ def main():
                     if delayed:
                         records[case]['hold_path']=None; records[case]['held'].set()
                         if not await asyncio.to_thread(records[case]['release'].wait,30): raise TimeoutError('late-read release missing')
-                    if case=='testUnknownReopen' and status==200:
+                    if case=='testUnknownReopen' and method=='POST' and path=='/v1/memories' and status==200:
                         await send(captured[0])
                         raise RuntimeError('controlled loss after real committed MEMORY response')
                     for message in captured: await send(message)
