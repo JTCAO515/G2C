@@ -104,6 +104,15 @@ public struct MemoryManagementPresentationLifetime {
     public var formIdentity: UUID? { current ? binding?.id : nil }
     public var queriedOperationID: String? { current ? queriedID : nil }
     public var manualOptions: [MemoryManualOption] { current ? binding?.options ?? [] : [] }
+    var collectionOptions: [MemoryManualOption] {
+        var seen = Set<String>()
+        var choices: [MemoryManualOption] = []
+        for option in manualOptions {
+            if seen.insert(option.kind.rawValue).inserted { choices.append(option) }
+            if choices.count == 3 { break }
+        }
+        return choices
+    }
     public var canSubmitManual: Bool { current && binding?.client.manualWritesAvailable == true }
     public var hasMore: Bool { current && !busy && pages.last?.next != nil }
     public init(shell: ShellState) {
