@@ -60,18 +60,15 @@ struct CheckedTransport: ClientTransport {
 }
 
 public final class NoRedirectTransport: ClientTransport, Sendable {
-    private struct ManualPreviewCapability: Sendable {
-        let endpoint: MessageEndpoint
-        let validate: @MainActor @Sendable () throws -> Void
-    }
-    private struct MessageSendCapability: Sendable {
+    private struct EndpointCapability: Sendable {
         let endpoint: MessageEndpoint
         let validate: @MainActor @Sendable () throws -> Void
     }
     private let session: URLSession?
     private let transport: any ClientTransport
-    private let preview: ManualPreviewCapability?
-    private let messages: MessageSendCapability?
+    private let preview: EndpointCapability?
+    private let messages: EndpointCapability?
+    private let memory: EndpointCapability?
 
     public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
@@ -82,7 +79,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     public static func readOnlyManualPreview(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
         try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
-            preview:ManualPreviewCapability(endpoint:endpoint,validate:validate))
+            preview:EndpointCapability(endpoint:endpoint,validate:validate))
     }
 
     /// ADR-0008 activation is only available to an explicit local development
@@ -93,13 +90,27 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
               let port = endpoint.url.port, (1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
-            preview: nil, messages: MessageSendCapability(endpoint: endpoint, validate: validate))
+            preview: nil, messages: EndpointCapability(endpoint: endpoint, validate: validate))
         #else
         throw MessageHTTPFailure.productionActivationUnavailable
         #endif
     }
 
-    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: ManualPreviewCapability?, messages: MessageSendCapability? = nil) throws {
+    /// Existing #226 manual wire only, scoped to the explicit local simulator
+    /// session. It grants neither MESSAGE sending nor lifecycle management.
+    public static func developmentMemory(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port, (1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
+            preview: nil, memory: EndpointCapability(endpoint: endpoint, validate: validate))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+
+    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: EndpointCapability? = nil, memory: EndpointCapability? = nil) throws {
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
             throw MessageHTTPFailure.invalidConfiguration
         }
@@ -107,26 +118,33 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         let session = URLSession(configuration: config, delegate: RedirectBlocker(), delegateQueue: nil)
-        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages
+        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory
     }
 
     /// Internal non-network seam for module tests; never used by live callers.
     init(interceptedTransport: any ClientTransport, previewEndpoint: MessageEndpoint?,
          validatePreview: (@MainActor @Sendable () throws -> Void)?) throws {
         if let endpoint=previewEndpoint, let validate=validatePreview {
-            preview=ManualPreviewCapability(endpoint:endpoint,validate:validate)
+            preview=EndpointCapability(endpoint:endpoint,validate:validate)
         } else {
             guard previewEndpoint == nil && validatePreview == nil else {throw MessageHTTPFailure.invalidConfiguration}
             preview=nil
         }
-        session=nil;transport=interceptedTransport;messages=nil
+        session=nil;transport=interceptedTransport;messages=nil;memory=nil
     }
 
     /// Module-test-only composition: the supplied transport must be non-network.
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
-        session = nil; transport = interceptedTransport; preview = nil
-        messages = MessageSendCapability(endpoint: messageEndpoint, validate: validateMessage)
+        session = nil; transport = interceptedTransport; preview = nil; memory = nil
+        messages = EndpointCapability(endpoint: messageEndpoint, validate: validateMessage)
+    }
+
+    /// Non-network Memory boundary seam for deterministic transport tests.
+    init(interceptedTransport: any ClientTransport, memoryEndpoint: MessageEndpoint,
+         validateMemory: @escaping @MainActor @Sendable () throws -> Void) {
+        session = nil; transport = interceptedTransport; preview = nil; messages = nil
+        memory = EndpointCapability(endpoint: memoryEndpoint, validate: validateMemory)
     }
 
     @MainActor func validateMessageSending(to endpoint: MessageEndpoint) throws {
@@ -143,21 +161,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
            request.path == "/v1/messages", request.scheme == nil, request.authority == nil,
            baseURL == messages.endpoint.url,
            !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
-            let media = request.headerFields.filter { $0.name == .contentType }
-            guard media.count == 1, media.first?.value == "application/octet-stream" else { throw MessageHTTPFailure.invalidConfiguration }
-            try Task.checkCancellation()
-            let bytes = try await Data(collecting: body, upTo: messages.endpoint.maximumRequestBytes)
-            _ = try OriginalMessageSend(raw: bytes, maximumBytes: messages.endpoint.maximumRequestBytes)
-            try await messages.validate()
-            try Task.checkCancellation()
-            let (response, responseBody) = try await transport.send(request, body: HTTPBody(bytes), baseURL: baseURL, operationID: operationID)
-            try await messages.validate()
-            try Task.checkCancellation()
-            guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
-            let result = try await Data(collecting: responseBody, upTo: messages.endpoint.maximumResponseBytes)
-            try await messages.validate()
-            try Task.checkCancellation()
-            return (response, HTTPBody(result))
+            return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
+                                            capability: messages, originalMessage: true)
+        }
+        if let memory, request.method == .post, operationID == Operations.saveMemory.id,
+           request.path == "/v1/memories", request.scheme == nil, request.authority == nil,
+           baseURL == memory.endpoint.url,
+           !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
+            return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
+                                            capability: memory, originalMessage: false)
         }
         // No other write-shaped request is enabled. Exact official operation/path are
         // fixed here; calling an arbitrary request "readonly" cannot grant capability.
@@ -185,6 +197,25 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         try Task.checkCancellation()
         return (response,HTTPBody(result))
     }
+    private func sendLocalWrite(_ request: HTTPRequest, body: HTTPBody, baseURL: URL, operationID: String,
+                                capability: EndpointCapability, originalMessage: Bool) async throws -> (HTTPResponse, HTTPBody?) {
+        let media = request.headerFields.filter { $0.name == .contentType }
+        guard media.count == 1, media.first?.value == "application/octet-stream" else { throw MessageHTTPFailure.invalidConfiguration }
+        try Task.checkCancellation()
+        let bytes = try await Data(collecting: body, upTo: capability.endpoint.maximumRequestBytes)
+        if originalMessage { _ = try OriginalMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes) }
+        try await capability.validate()
+        try Task.checkCancellation()
+        let (response, responseBody) = try await transport.send(request, body: HTTPBody(bytes), baseURL: baseURL, operationID: operationID)
+        try await capability.validate()
+        try Task.checkCancellation()
+        guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
+        let result = try await Data(collecting: responseBody, upTo: capability.endpoint.maximumResponseBytes)
+        try await capability.validate()
+        try Task.checkCancellation()
+        return (response, HTTPBody(result))
+    }
+
 }
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest) async -> URLRequest? { nil }

@@ -159,11 +159,14 @@ import Observation
                                            binding: binding, expectedKeyID: key.id, provider: keys)
         let endpoint = try MemoryEndpoint(url: configuration.endpoint, maximumRequestBytes: 32768,
                                          maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
-        let transport = try NoRedirectTransport(requestTimeout: 10, resourceTimeout: 20)
         // The lifetime is shared with account/Trip/MESSAGE; callbacks cannot revive an old identity.
         let current: @MainActor () -> MemoryBinding? = {
             isCurrent() && session.isCurrent(operation) && shell.generation == generation ? binding : nil
         }
+        let transport = try NoRedirectTransport.developmentMemory(endpoint: endpoint, requestTimeout: 10,
+            resourceTimeout: 20, validate: {
+                guard current() == binding else { throw MemoryFailure.staleBinding }
+            })
         let client = try MemoryClient(localEndpoint: endpoint, credentials: { requested in
             guard current() == requested else { return nil }
             return configuration.token
