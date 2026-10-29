@@ -99,6 +99,7 @@ def main():
             app = app_from_environment(); database = LocalDatabase(connection, run_context=context)
             specs, audit, errors = {}, [], []
             responses = []
+            stream_frames = []
             lock = threading.Lock(); stop = threading.Event()
 
             class ControlledFake(FakeProvider):
@@ -139,6 +140,8 @@ def main():
                 async def capture_response(message):
                     if message['type'] == 'http.response.start':
                         with lock: responses.append((scope.get('path'), message['status']))
+                    if scope.get('path') == '/v1/run-events' and message['type'] == 'http.response.body':
+                        with lock: stream_frames.append(message.get('body', b'').decode('utf-8'))
                     await send(message)
                 await app(scope, receive, capture_response)
 
@@ -283,7 +286,7 @@ def main():
                     assert summary['passedTests'] == 1 and summary['failedTests'] == 0 and summary['skippedTests'] == 0
                     report['cases'][case] = 'PASS'; save()
                 report['database_proofs'] = {cid: proof(cid) for cid in specs}
-                if True:
+                if args.run_context:
                     report['cross_account_reads'] = {}
                     with TestClient(app) as client:
                         for cid, spec in specs.items():
@@ -310,6 +313,7 @@ def main():
                 with lock:
                     report['request_audit'] = list(audit)
                     report['response_audit'] = list(responses)
+                    report['stream_frames'] = list(stream_frames)
                 raise
             finally:
                 stop.set()
@@ -326,6 +330,7 @@ def main():
                 with lock:
                     report['request_audit'] = list(audit)
                     report['response_audit'] = list(responses)
+                    report['stream_frames'] = list(stream_frames)
                 save()
     print(json.dumps({k: report[k] for k in ('status', 'cases', 'unrun', 'artifact_token_scan')}, indent=2))
     if report['status'] == 'FAIL': raise SystemExit(1)
