@@ -113,7 +113,7 @@ public struct MemoryDetailView: View {
                     LabeledContent(language.text("Subject", "对象"), value: item.command.subject)
                     LabeledContent(language.text("Field", "字段"), value: item.command.slot)
                     LabeledContent(language.text("Kind", "类型"), value: item.command.kind.rawValue)
-                    LabeledContent { Text(item.command.extent.rawValue).accessibilityIdentifier("memory.detail.scope.value") } label: {
+                    LabeledContent { MemoryRowText(text: item.command.extent.rawValue, style: .body).accessibilityIdentifier("memory.detail.scope.value") } label: {
                         MemoryRowText(text: language.text("Scope", "范围"), style: .body)
                     }
                     if case .case1(let context) = item.command.context_id {
