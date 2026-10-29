@@ -113,7 +113,9 @@ public struct MemoryDetailView: View {
                     LabeledContent(language.text("Subject", "对象"), value: item.command.subject)
                     LabeledContent(language.text("Field", "字段"), value: item.command.slot)
                     LabeledContent(language.text("Kind", "类型"), value: item.command.kind.rawValue)
-                    LabeledContent(language.text("Scope", "范围"), value: item.command.extent.rawValue)
+                    LabeledContent { Text(item.command.extent.rawValue) } label: {
+                        MemoryRowText(text: language.text("Scope", "范围"), style: .body)
+                    }
                     if case .case1(let context) = item.command.context_id {
                         LabeledContent(language.text("Context", "适用上下文"), value: context)
                     }
@@ -122,7 +124,7 @@ public struct MemoryDetailView: View {
                     LabeledContent(language.text("Approximate time", "大致时间"), value: item.command.occurred_at)
                     LabeledContent(language.text("Recorded", "记录时间")) { Text(item.recorded_at, format: .dateTime) }
                     LabeledContent(language.text("Version", "版本"), value: String(item.version))
-                }.foregroundStyle(Color.primary, Color.primary)
+                }
             } else { Text(language.text("Memory not found", "未找到该记忆")) }
         }
     }
