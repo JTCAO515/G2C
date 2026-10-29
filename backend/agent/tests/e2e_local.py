@@ -598,6 +598,7 @@ class SignedTripConfirmation(Harness):
 
 
 if __name__ == '__main__':
+    from memory_save_read_checks import MemorySaveReadChecks
     from transaction_scope_checks import TransactionScopeChecks
     from cancellation_checks import CancellationChecks
     from ownership_checks import OwnershipChecks

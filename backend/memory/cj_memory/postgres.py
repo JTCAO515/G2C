@@ -4,9 +4,10 @@ import hashlib
 from .domain import Command, Receipt, Item, Conflict, Unavailable, CommitUnknown, current_context
 
 class Repository:
-    def __init__(self, connect, scope):
+    def __init__(self, connect, scope, *, transaction_binder=None):
         if type(scope) is not str or not scope.strip(): raise ValueError('trusted scope required')
         self.connect, self.scope = connect, scope
+        self.transaction_binder = transaction_binder
 
     @contextmanager
     def transaction(self):
@@ -15,6 +16,8 @@ class Repository:
             if conn.autocommit: raise ValueError('autocommit forbidden')
             cur = conn.cursor()
             cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+            if self.transaction_binder is not None:
+                self.transaction_binder(conn, cur)
             try: yield Transaction(cur, self.scope)
             except BaseException:
                 try: conn.rollback()

@@ -114,6 +114,14 @@
       "sha256": "d52f63faf6522fb44939da35fa00e1bc2e23e7c83e8c53029e6ac12feec9e629",
       "down": "backend/migrations/down/0014_m1_budget_needs_binding.down.sql",
       "down_sha256": "fc3e8fb8665a5f5e651edb225f0de6d844ebe13956623039380d19ae6c973b03"
+    },
+    {
+      "version": 15,
+      "name": "memory_runtime_rls",
+      "file": "backend/migrations/0015_memory_runtime_rls.sql",
+      "sha256": "4638a2505badc09f909ae4a1c51e74b615abaff3ba77b12422276e3c8ffb7c63",
+      "down": "backend/migrations/down/0015_memory_runtime_rls.down.sql",
+      "down_sha256": "f27a376eab6a3b76838c3b461a24ca1cb6cbd76a73c374c67f7fef593909a57b"
     }
   ]
 }

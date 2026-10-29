@@ -165,7 +165,8 @@ class InvitedSubjects:
         return CJAccessFacts(principal, Fact.YES, Fact.YES, Fact.YES if invited else Fact.NO)
 
 
-def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None):
+def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
+                     memory_configuration=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -188,8 +189,59 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         database.provision(scope)
         return lambda: database.connect(scope), trip_scope_for(scope)
 
+    memory_wire, resolve_memory, memory_source_policy = None, None, None
+    if memory_configuration is not None:
+        from cj_memory.local import LocalMemoryConfiguration
+        from cj_memory.domain import Service as MemoryService
+        from cj_memory.postgres import Repository as MemoryRepository
+        from .memory_boundary import MemoryBinding, MemorySourceRejected, MemoryWireConfiguration
+        if type(memory_configuration) is not LocalMemoryConfiguration:
+            raise CompositionUnavailable('explicit local memory policy required')
+        memory_wire = MemoryWireConfiguration(32768, 50, 1_000_000)
+
+        def resolve_memory(principal):
+            profile = memory_configuration.profiles.get(principal.subject)
+            if profile is None:
+                raise MemorySourceRejected()
+            scope = scope_for(principal.issuer, principal.subject)
+            with database.connect(scope) as conn:
+                # Existing scope reads never reinsert/update a row locked by the
+                # current save's epoch update during fresh AUTH guard stages.
+                exists = conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s', (scope,)).fetchone()
+                if exists is None:
+                    conn.execute('INSERT INTO cj_memory_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
+            repository = MemoryRepository(lambda: database.connect(scope), scope,
+                                           transaction_binder=lambda conn, cursor: conn.bind_scope(cursor))
+            return MemoryBinding(scope, MemoryService(repository, manual_policy=profile.manual_policy()))
+
+        def memory_source_policy(principal, scope, kind, command, argument, stage):
+            profile = memory_configuration.profiles.get(principal.subject)
+            if profile is None or scope != scope_for(principal.issuer, principal.subject):
+                return False
+            if command is not None:
+                # Historical byte-identical replay is a read of the original
+                # result, not renewed collection/source authority. An in-flight
+                # new ledger row is invisible to this independent guard read.
+                with database.connect(scope) as conn:
+                    old = conn.execute('SELECT original_input FROM cj_memory_operation WHERE scope=%s AND operation_id=%s',
+                                       (scope, command.operation_id)).fetchone()
+                if old is not None and bytes(old[0]) == argument:
+                    return True
+                if profile.expires_at <= datetime.now(timezone.utc):
+                    return False
+            if command is not None and command.extent == 'current':
+                # Local current-context references are explicitly selected owned
+                # MESSAGE conversations, never arbitrary caller ownership claims.
+                with database.connect(scope) as conn:
+                    row = conn.execute('SELECT active FROM cj_message_chat WHERE scope=%s AND conversation_id=%s',
+                                       (scope, command.context_id)).fetchone()
+                return row is not None and row[0] is True
+            return True
+
     return create_composed_app(
         environment='local', jwt_configuration=config, verification_keys=keys,
+        memory_configuration=memory_wire, resolve_memory_binding=resolve_memory,
+        memory_source_policy=memory_source_policy,
         access_provider=InvitedSubjects(auth_dir / 'invited.json'),
         resolve_repository=message_repository, new_run_id=lambda: str(uuid.uuid4()),
         max_body_bytes=16384, history_configuration=history_configuration,
@@ -258,6 +310,14 @@ def app_from_environment():
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = os.environ['CJ_LOCAL_AUTH_DIR']
+    memory_configuration = None
+    if 'CJ_LOCAL_MEMORY_POLICY' in os.environ:
+        from cj_memory.local import load_local_memory_configuration, LocalMemoryConfigurationError
+        try:
+            memory_configuration = load_local_memory_configuration(os.environ['CJ_LOCAL_MEMORY_POLICY'])
+        except LocalMemoryConfigurationError:
+            raise CompositionUnavailable('local memory policy unavailable') from None
     return create_local_app(conninfo_path=os.environ['CJ_LOCAL_CONNINFO'], auth_dir=auth_dir,
                             confirmation_signer=load_confirmation_signer(auth_dir),
-                            history_configuration=load_history_configuration(auth_dir))
+                            history_configuration=load_history_configuration(auth_dir),
+                            memory_configuration=memory_configuration)
