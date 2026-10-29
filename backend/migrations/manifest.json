@@ -130,6 +130,14 @@
       "sha256": "2b8a21fc2937a7541604412d3d9dabc008d7c8b68e8784411fca0374999d9fc9",
       "down": "backend/migrations/down/0016_local_run_protection.down.sql",
       "down_sha256": "0752682918bb31f07972a56bbdd250177ea43c08d6223c042c8c60ebb5c1a403"
+    },
+    {
+      "version": 17,
+      "name": "registered_usage_source",
+      "file": "backend/migrations/0017_registered_usage_source.sql",
+      "sha256": "70da388b5d5311765cd29356a71e0a09e4b61cf0bd3010ef712bd946b57cf696",
+      "down": "backend/migrations/down/0017_registered_usage_source.down.sql",
+      "down_sha256": "6311e2d10a5f19236fb46baeafd989b0737b4e63073b1af4ae141f7b78f119fa"
     }
   ]
 }
