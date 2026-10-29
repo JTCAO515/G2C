@@ -2,11 +2,6 @@
 import SwiftUI
 import CJMessageHTTP
 
-private struct ShellHeaderHeight: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
 struct AssistantShell: View {
     @Bindable var state: ShellState
     let messageHost: AssistantMessageHost
@@ -21,15 +16,14 @@ struct AssistantShell: View {
     @State private var feedbackEntry: FeedbackContainerEntry?
     @FocusState private var draftFocused: Bool
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @State private var headerHeight: CGFloat = 0
     @ScaledMetric(relativeTo: .body) private var controlIconSize = 20.0
 
     var body: some View {
         let answerEntry = feedbackHost.captureEntry()
-        ScrollView {
+        VStack(spacing: 0) {
+            floatingControls.padding(.bottom, dynamicTypeSize.isAccessibilitySize ? 8 : 12)
+            ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Color.clear.frame(height: dynamicTypeSize.isAccessibilitySize ? 0 : headerHeight + 12)
-                    .accessibilityHidden(true)
                 if !messageHost.isConfigured {
                     ShellStatusView(state: state.assistantState, language: state.language)
                 }
@@ -54,21 +48,10 @@ struct AssistantShell: View {
             .padding(.horizontal)
             .padding(.bottom)
         }
-        .scrollDismissesKeyboard(.interactively)
-        .clipped()
-        .safeAreaInset(edge: .top, spacing: 0) {
-            Color.clear.frame(height: dynamicTypeSize.isAccessibilitySize ? headerHeight + 8 : 0)
-                .accessibilityHidden(true)
+            .scrollDismissesKeyboard(.interactively)
+            .clipped()
+            composer
         }
-        .overlay(alignment: .top) {
-            floatingControls.background {
-                GeometryReader { geometry in
-                    Color.clear.preference(key: ShellHeaderHeight.self, value: geometry.size.height)
-                }
-            }
-        }
-        .onPreferenceChange(ShellHeaderHeight.self) { headerHeight = $0 }
-        .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
