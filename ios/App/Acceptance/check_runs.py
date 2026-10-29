@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--simulator', required=True)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--build-dir', required=True, type=Path)
-    parser.add_argument('--draft-status', action='store_true', help='Retained scenario-group selector')
+    parser.add_argument('--draft-status', action='store_true', help='Retained compatibility flag for older commands')
     parser.add_argument('--run-context', required=True, type=Path, help='Explicit CJ-LOCAL-RUN@1 file; never supplied by a test repository')
     parser.add_argument('--diagnostic-test', required=True, choices=CASES + DRAFT_CASES + BUDGET_CASES + ['testReleaseClosed'])
     args = parser.parse_args()
@@ -50,7 +50,7 @@ def main():
     if target['state'] == 'Shutdown': subprocess.run(['xcrun', 'simctl', 'boot', args.simulator], env=env, check=True)
     subprocess.run(['xcrun', 'simctl', 'bootstatus', args.simulator, '-b'], env=env, check=True)
     sources = list((ROOT / 'ios/App').glob('*.swift')) + list((ROOT / 'ios/Modules/CJRunClient/Sources').rglob('*.swift')) + list((ROOT / 'ios/Modules/CJShell/Sources').rglob('*.swift'))
-    sources += [HERE / 'DevelopmentRunUITests.swift', HERE / 'check_runs.py']
+    sources += [HERE / 'DevelopmentRunUITests.swift', HERE / 'check_runs.py', HERE / 'check_run_budget.py']
     report = dict(status='RUNNING', working_tree_dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)), head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         cases={}, unrun=['real tools/providers/cloud/device'], run_context=json.loads(args.run_context.read_text()),
         scope='Actual iOS17.5 App, formal local API, private PG/runtime, real worker with controlled FakeProvider; no actual tool requested',
@@ -187,7 +187,7 @@ def main():
                             formal_trips += trips.detail(detail.proposal.trip_id) is not None
                             proposal_bindings.append(identifier == detail.proposal.proposal_id == proposal_id_for(original.run_id))
                 return dict(runtime_role=role, pending_deliveries=pending, ledger_fingerprint=fingerprint,
-                    exposure=Meter.exposure(ledger), ledger_attempts=len(ledger.attempts),
+                    exposure=Meter.exposure(ledger), ledger=json.loads(encode(ledger)), ledger_attempts=len(ledger.attempts),
                     usage_receipts=sum(a.receipt is not None for a in ledger.attempts.values()),
                     tool_steps=sum(run.tools for run in ledger.runs.values()), budget_stage=budget_stage,
                     requests=len(calls), status=status, text=text, effects=effects, message_id=rows[-1][0] if rows else None,
@@ -294,16 +294,15 @@ def main():
                     assert summary['passedTests'] == 1 and summary['failedTests'] == 0 and summary['skippedTests'] == 0
                     report['cases'][case] = 'PASS'; save()
                 report['database_proofs'] = {cid: proof(cid) for cid in specs}
-                if args.run_context:
-                    report['cross_account_reads'] = {}
-                    with TestClient(app) as client:
-                        for cid, spec in specs.items():
-                            original = report['database_proofs'][cid]['message_id']
-                            if original is None: continue
-                            other = 'B' if spec['choice'] == 'A' else 'A'
-                            response = client.get('/v2/run-draft-status', params={'message_id': original}, headers={'Authorization': 'Bearer ' + tokens[other]})
-                            assert response.status_code != 200 and 'draft_outcome' not in response.json()
-                            report['cross_account_reads'][cid] = dict(status=response.status_code, private_result_absent=True)
+                report['cross_account_reads'] = {}
+                with TestClient(app) as client:
+                    for cid, spec in specs.items():
+                        original = report['database_proofs'][cid]['message_id']
+                        if original is None: continue
+                        other = 'B' if spec['choice'] == 'A' else 'A'
+                        response = client.get('/v2/run-draft-status', params={'message_id': original}, headers={'Authorization': 'Bearer ' + tokens[other]})
+                        assert response.status_code != 200 and not {'draft_outcome','run_id','conversation_id','budget_exhausted_stage'} & response.json().keys()
+                        report['cross_account_reads'][cid] = dict(status=response.status_code, private_result_absent=True)
                 assert not errors
                 container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
                 for path in container.rglob('*'):
