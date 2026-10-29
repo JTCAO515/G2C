@@ -191,6 +191,11 @@ import Foundation
             let before = try await requests()
             tap(chinese ? "插件" : "Plugins")
             text(chinese ? "尚未开放" : "Coming soon")
+            let card = app.staticTexts["plugins.didi.placeholder"]
+            XCTAssertTrue(card.waitForExistence(timeout: 5))
+            XCTAssertEqual(card.label, chinese ? "滴滴打车，即将推出，未来可在行程中直接叫车。目前尚未接入。" : "DiDi Ride-hailing, Coming soon, Request rides in China from your trip. Not connected yet.")
+            XCTAssertFalse(app.buttons["plugins.didi.placeholder"].exists)
+            text(chinese ? "更多插件将在后续版本提供。目前未接入任何工具。" : "More plugins are planned. No tools are connected.")
             XCTAssertEqual(app.buttons.count, 4) // Only the four Tab buttons; no pretend tool action.
             let observedRequests = try await requests()
             XCTAssertEqual(observedRequests, before)

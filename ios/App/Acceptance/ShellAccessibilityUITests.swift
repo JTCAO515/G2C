@@ -58,6 +58,22 @@ import Foundation
         capture("maximum-text-memory-top")
         app.swipeUp()
         capture("maximum-text-memory-scrolled")
+        for language in ["en", "zh-Hans"] {
+            fixture(language: language, size: "maximum")
+            app.tabBars.buttons[language == "en" ? "Plugins" : "插件"].tap()
+            let card = app.staticTexts["plugins.didi.placeholder"]
+            XCTAssertTrue(card.waitForExistence(timeout: 5))
+            XCTAssertTrue(card.label.contains(language == "en" ? "Not connected yet." : "目前尚未接入。"))
+            XCTAssertEqual(app.staticTexts.matching(identifier: "plugins.didi.placeholder").count, 1)
+            XCTAssertFalse(app.buttons["plugins.didi.placeholder"].exists)
+            XCTAssertEqual(app.buttons.count, 4)
+            XCTAssertLessThanOrEqual(card.frame.maxX, app.frame.maxX)
+            XCTAssertGreaterThanOrEqual(card.frame.minX, app.frame.minX)
+            capture("plugins-maximum-text-" + language)
+            app.swipeUp()
+            visible(language == "en" ? "More plugins are planned." : "更多插件将在后续版本提供。")
+            capture("plugins-maximum-text-scrolled-" + language)
+        }
     }
 
     private let fixtureURL = "__FIXTURE_URL__"
