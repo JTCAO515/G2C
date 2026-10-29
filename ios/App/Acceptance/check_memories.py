@@ -109,7 +109,7 @@ def main():
                     await app(scope,observed_receive,capture)
                     status=captured[0]['status']
                     body=b''.join(m.get('body',b'') for m in captured[1:])
-                    audit.append(dict(method=method,path=path,status=status,input_sha256=hashlib.sha256(original).hexdigest(),response_sha256=hashlib.sha256(body).hexdigest()))
+                    audit.append(dict(method=method,path=path,status=status,query=parse_qs(scope.get('query_string',b'').decode()),input_sha256=hashlib.sha256(original).hexdigest(),response_sha256=hashlib.sha256(body).hexdigest()))
                     case=None
                     if method=='POST' and path=='/v1/memories':
                         auth_header=dict(scope['headers']).get(b'authorization',b'').decode()
@@ -166,7 +166,7 @@ def main():
                             query=parse_qs(urlsplit(self.path).query)
                             if urlsplit(self.path).path=='/prepare':
                                 mode=query['mode'][0]
-                                case={'success': 'testChineseLargeText' if 'testEnglish' in records else 'testEnglish',
+                                case={'success': query.get('case',['testEnglish'])[0],
                                       'unknown':'testUnknownReopen','rejected':'testRejected','skip':'testSkipAndChat','release':'testReleaseClosed'}[mode]
                                 tokens[case]={a:dev_auth.token(auth,s,120) for a,s in subjects[case].items()}
                                 for subject in subjects[case].values():
