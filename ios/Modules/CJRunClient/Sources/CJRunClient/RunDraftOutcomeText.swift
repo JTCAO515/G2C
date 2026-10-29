@@ -36,7 +36,8 @@ public struct RunReadableText: UIViewRepresentable {
 
 public struct RunSelectableText: UIViewRepresentable {
     let text: String
-    public init(text: String) { self.text = text }
+    let minimumHeight: CGFloat
+    public init(text: String, minimumHeight: CGFloat = 0) { self.text = text; self.minimumHeight = minimumHeight }
     @Environment(\.dynamicTypeSize) private var size
     public func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -54,7 +55,8 @@ public struct RunSelectableText: UIViewRepresentable {
     }
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
-        return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: measured.width, height: max(minimumHeight, measured.height))
     }
     public static func dismantleUIView(_ uiView: UITextView, coordinator: ()) { uiView.text = nil }
 }
@@ -85,7 +87,8 @@ public struct RunReadableText: View {
 }
 public struct RunSelectableText: View {
     let text: String
-    public init(text: String) { self.text = text }
-    public var body: some View { Text(text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
+    let minimumHeight: CGFloat
+    public init(text: String, minimumHeight: CGFloat = 0) { self.text = text; self.minimumHeight = minimumHeight }
+    public var body: some View { Text(text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true).frame(minHeight: minimumHeight) }
 }
 #endif

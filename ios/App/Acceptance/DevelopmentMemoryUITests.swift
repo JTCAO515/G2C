@@ -135,7 +135,8 @@ import Foundation
             XCTAssertTrue(app.staticTexts[timeLabel].waitForExistence(timeout: 10), app.debugDescription)
             XCTAssertTrue(app.staticTexts[language == "en" ? "Subject, self" : "对象, self"].exists)
             XCTAssertTrue(app.staticTexts[(language == "en" ? "Field, " : "字段, ") + slot].exists)
-            XCTAssertTrue(app.staticTexts[language == "en" ? "Scope, long_term" : "范围, long_term"].exists)
+            let scope = app.staticTexts["memory.detail.scope.value"]
+            XCTAssertTrue(scope.exists); XCTAssertEqual(scope.label, "long_term")
             XCTAssertTrue(app.staticTexts[language == "en" ? "Version, 1" : "版本, 1"].exists)
             XCTAssertTrue(app.staticTexts[language == "en" ? "Source version, 1" : "来源版本, 1"].exists)
             XCTAssertTrue(app.staticTexts[(language == "en" ? "Source, " : "来源, ") + source.source_id].exists)
