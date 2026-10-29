@@ -127,6 +127,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/run-cancellations`.
     /// - Remark: Generated from `#/paths//v1/run-cancellations/post(cancelOriginalRun)`.
     func cancelOriginalRun(_ input: Operations.cancelOriginalRun.Input) async throws -> Operations.cancelOriginalRun.Output
+    /// Read original-message-bound persisted draft outcome under the same owner and identity guards.
+    ///
+    /// - Remark: HTTP `GET /v1/run-draft-status`.
+    /// - Remark: Generated from `#/paths//v1/run-draft-status/get(getRunDraftStatus)`.
+    func getRunDraftStatus(_ input: Operations.getRunDraftStatus.Input) async throws -> Operations.getRunDraftStatus.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -529,6 +534,19 @@ extension APIProtocol {
         try await cancelOriginalRun(Operations.cancelOriginalRun.Input(
             headers: headers,
             body: body
+        ))
+    }
+    /// Read original-message-bound persisted draft outcome under the same owner and identity guards.
+    ///
+    /// - Remark: HTTP `GET /v1/run-draft-status`.
+    /// - Remark: Generated from `#/paths//v1/run-draft-status/get(getRunDraftStatus)`.
+    public func getRunDraftStatus(
+        query: Operations.getRunDraftStatus.Input.Query,
+        headers: Operations.getRunDraftStatus.Input.Headers = .init()
+    ) async throws -> Operations.getRunDraftStatus.Output {
+        try await getRunDraftStatus(Operations.getRunDraftStatus.Input(
+            query: query,
+            headers: headers
         ))
     }
 }

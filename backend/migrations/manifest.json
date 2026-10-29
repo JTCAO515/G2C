@@ -98,6 +98,14 @@
       "sha256": "1846c569009f3e1a9ffa1bec613afb2e832e86af545f5c3014daa4d931d85641",
       "down": "backend/migrations/down/0012_message_active_one_way.down.sql",
       "down_sha256": "c9f21cdf796216e4c07c2e5a1494470492169ab4cea16d9196112fd43eb0eb94"
+    },
+    {
+      "version": 13,
+      "name": "run_draft_outcome",
+      "file": "backend/migrations/0013_run_draft_outcome.sql",
+      "sha256": "5d5e021a385528e10a0bdc2ecaa02acf47521de4d46652f2e8c3e028ebd1d102",
+      "down": "backend/migrations/down/0013_run_draft_outcome.down.sql",
+      "down_sha256": "e3dc1df01ccdce655829b3f6852e2b01b37d9505f74a5dc6717813c654f61380"
     }
   ]
 }

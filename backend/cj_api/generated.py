@@ -1595,3 +1595,42 @@ class RunCancellationResponse(BaseModel):
     run_id: constr(min_length=1)
     status: Status12
     event_highwater: conint(ge=1, le=9223372036854775807)
+
+
+class Version2(StrEnum):
+    RUN_draft_status_1 = 'RUN-draft-status.1'
+
+
+class RunStatus(StrEnum):
+    queued = 'queued'
+    running = 'running'
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+    context_invalid = 'context_invalid'
+    unknown = 'unknown'
+
+
+class DraftOutcome(StrEnum):
+    not_requested = 'not_requested'
+    not_recorded = 'not_recorded'
+    published = 'published'
+    validation_failed = 'validation_failed'
+    provider_failed = 'provider_failed'
+    provider_unknown = 'provider_unknown'
+
+
+class RunDraftStatusResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    message_sequence: conint(ge=1, le=9223372036854775807)
+    event_highwater: conint(ge=0, le=9223372036854775807)
+    request_id: RequestId
+    version: Version2
+    run_status: RunStatus
+    draft_outcome: DraftOutcome
