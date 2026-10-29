@@ -70,7 +70,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -79,6 +79,7 @@ class RunWorker:
         self.scope, self.messages, self.runs, self.provider, self.drafts = scope, messages, runs, provider, drafts
         self.needs_lease = needs_lease
         self.budget_exit = budget_exit
+        self.execution_guard = execution_guard
 
     def process(self, limit=20):
         outcomes = []
@@ -226,6 +227,8 @@ class RunWorker:
 
     def _one(self, receipt):
         binding = self._binding(receipt)
+        if self.execution_guard is not None:
+            self.execution_guard(binding)
         messages, runs, provider, drafts = self.messages, self.runs, self.provider, self.drafts
         with runs.repository.worker_lease(binding) as check:
             if check is None:
