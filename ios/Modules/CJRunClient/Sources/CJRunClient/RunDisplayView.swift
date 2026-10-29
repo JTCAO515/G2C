@@ -77,24 +77,30 @@ extension RunDisplayState {
                 } else if model.cancellationState == .unknown {
                     Text(language.text("Stop result unknown. Check the original run before trying again.", "停止结果未知，请先查询原运行。")).accessibilityIdentifier("run.stop.status")
                 }
-                Button(language.text("Stop generation", "停止生成")) {
+                actionButton("Stop generation", "停止生成", disabled: !model.canCancel, id: "run.stop") {
                     let work = model.prepareCancellation()
                     Task { await model.performCancellation(work) }
-                }.disabled(!model.canCancel).accessibilityIdentifier("run.stop")
+                }
             }
             if case .loading = state { ProgressView() }
-            Button(language.text("Read original run", "读取原运行")) {
+            actionButton("Read original run", "读取原运行", disabled: disabled(state) || model.cancellationState == .stopping, id: "run.snapshot.read") {
                 let work = model.prepareRead()
                 Task { await model.perform(work) }
-            }.disabled(disabled(state) || model.cancellationState == .stopping).accessibilityIdentifier("run.snapshot.read")
-            Button(language.text("Follow / resume this answer", "接收／继续此回答")) {
+            }
+            actionButton("Follow / resume this answer", "接收／继续此回答", disabled: disabled(state) || model.cancellationState == .stopping, id: "run.stream.read") {
                 let work = model.prepareStream()
                 Task { await model.perform(work) }
-            }.disabled(disabled(state) || model.cancellationState == .stopping).accessibilityIdentifier("run.stream.read")
+            }
         }
         .buttonStyle(RunReadableButtonStyle())
         .onChange(of: scenePhase) { _, phase in if phase != .active { model.invalidate() } }
         .onDisappear { model.invalidate() }
+    }
+    private func actionButton(_ english: String, _ chinese: String, disabled: Bool, id: String,
+                              action: @escaping @MainActor () -> Void) -> some View {
+        let title = language.text(english, chinese)
+        return Button(action: action) { RunReadableText(text: title) }
+            .accessibilityLabel(title).disabled(disabled).accessibilityIdentifier(id)
     }
     private func draftRunLabel(_ status: String) -> String {
         switch status {
