@@ -24,12 +24,16 @@ CASES = ['testStreamEnglish', 'testStreamChinese', 'testStopEnglish', 'testStopC
          'testFailureEnglish', 'testFailureChinese']
 
 
+DRAFT_CASES = ['testDraftValidationEnglish', 'testDraftValidationChinese', 'testDraftProviderEnglish', 'testDraftProviderChinese', 'testDraftUnknownEnglish', 'testDraftUnknownChinese', 'testDraftStopEnglish', 'testDraftStopChinese']
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulator', required=True)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--build-dir', required=True, type=Path)
-    parser.add_argument('--diagnostic-test', choices=CASES + ['testReleaseClosed'])
+    parser.add_argument('--draft-status', action='store_true', help='#212 v1 draft-result native suite')
+    parser.add_argument('--diagnostic-test', choices=CASES + DRAFT_CASES + ['testReleaseClosed'])
     args = parser.parse_args()
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT): raise ValueError('External evidence only')
@@ -45,7 +49,7 @@ def main():
     sources = list((ROOT / 'ios/App').glob('*.swift')) + list((ROOT / 'ios/Modules/CJRunClient/Sources').rglob('*.swift')) + list((ROOT / 'ios/Modules/CJShell/Sources').rglob('*.swift'))
     sources += [HERE / 'DevelopmentRunUITests.swift', HERE / 'check_runs.py']
     report = dict(status='RUNNING', working_tree_dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)), head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-        cases={}, unrun=['real budget exhaustion: #170 formal host implementation pending', 'real providers/cloud/device'],
+        cases={}, unrun=['real providers/cloud/device'] + ([] if args.draft_status else ['real budget exhaustion: #170 formal host implementation pending']),
         scope='Actual iOS17.5 App, formal local API, private PG/runtime, real worker with controlled FakeProvider; no actual tool requested',
         source_hashes={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources})
     def save(): (output / 'report.json').write_text(json.dumps(report, indent=2))
@@ -57,7 +61,7 @@ def main():
     from pg_suites import cluster
     from fastapi.testclient import TestClient
     from cj_api.local_app import app_from_environment, LocalDatabase, ISSUER, scope_for
-    from cj_agent.provider import FakeProvider, ProviderFailed
+    from cj_agent.provider import FakeProvider, ProviderFailed, ProviderUnknown
     from cj_message.domain import Service as MessageService
     from cj_run.core import Binding, Service as RunService
     from run_worker import run_once
@@ -81,9 +85,16 @@ def main():
                 def stream(self, messages, system=None):
                     prompt = messages[-1]['content']
                     with lock:
-                        spec = next((s for s in specs.values() if s['prompt'] == prompt), None)
+                        spec = next((s for s in specs.values() if s['prompt'] == prompt or (system is not None and s['prompt'] in prompt)), None)
                         if spec is None: raise ProviderFailed('unregistered local test input')
                         spec['calls'] += 1
+                        if system is not None: spec['draft_calls'] += 1
+                    if system is not None:
+                        if spec['mode'] == 'draft_provider': raise ProviderFailed('controlled draft rejection')
+                        if spec['mode'] == 'draft_unknown': raise ProviderUnknown('controlled draft unknown')
+                        if spec['mode'] == 'draft_validation':
+                            yield '{"title":123,"items":[]}'
+                            return
                     if spec['mode'] == 'failure': raise ProviderFailed('controlled definite provider rejection')
                     for index, chunk in enumerate(FakeProvider(chunks_per_reply=2).stream(messages, system)):
                         if index and not spec['release'].wait(90): raise ProviderFailed('local test release deadline')
@@ -125,15 +136,18 @@ def main():
                 if failures: raise RuntimeError('worker failed: ' + ','.join(failures))
                 scope = scope_for(ISSUER, subjects[spec['choice']])
                 with database.connect(scope) as conn:
-                    rows = conn.execute('SELECT message_id FROM cj_message_receipt WHERE conversation_id=%s ORDER BY sequence', (spec['conversation'],)).fetchall()
-                status, text, effects = None, '', 0
+                    rows = conn.execute('SELECT message_id,raw_input FROM cj_message_receipt WHERE conversation_id=%s ORDER BY sequence', (spec['conversation'],)).fetchall()
+                status, text, effects, draft_outcome = None, '', 0, None
                 if rows:
                     messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
                     original = messages.query(rows[-1][0]).receipt
                     runs = RunService(database.run_repository(scope), valid=lambda b: messages.query(b.message_id) is not None)
                     state = runs.snapshot(Binding(scope, original.conversation_id, original.generation, original.message_id, original.run_id, original.sequence))
-                    status, text, effects = state.status, state.text, len(state.effects)
+                    status, text, effects, draft_outcome = state.status, state.text, len(state.effects), state.draft_outcome
                 return dict(requests=len(calls), status=status, text=text, effects=effects, message_id=rows[-1][0] if rows else None,
+                    draft_outcome=draft_outcome, draft_calls=spec['draft_calls'],
+                    creation_intent=json.loads(bytes(rows[-1][1]))['creation_intent'] if rows else None,
+                    draft_reads=calls.count(('GET', '/v1/run-draft-status')),
                     receipts=len(rows), provider_calls=spec['calls'], posts=calls.count(('POST', '/v1/messages')),
                     cancellations=calls.count(('POST', '/v1/run-cancellations')),
                     forbidden_writes=sum(m not in ('GET', 'HEAD') and p not in ('/v1/messages', '/v1/run-cancellations') for m, p in calls))
@@ -145,7 +159,7 @@ def main():
                         parsed = urlsplit(self.path); query = parse_qs(parsed.query)
                         if parsed.path == '/prepare':
                             mode, language = query['mode'][0], query['language'][0]
-                            if mode not in ('normal', 'stop', 'failure', 'release') or language not in ('en', 'zh-Hans'): raise ValueError('invalid case')
+                            if mode not in ('normal', 'stop', 'failure', 'release', 'draft_validation', 'draft_provider', 'draft_unknown', 'draft_stop') or language not in ('en', 'zh-Hans'): raise ValueError('invalid case')
                             choice = 'A' if language == 'en' else 'B'
                             cid = 'cj167-' + uuid.uuid4().hex
                             prompt = f'CJ167 {mode} {cid} ' + ('北京行程测试' if choice == 'B' else 'Beijing travel test')
@@ -154,7 +168,7 @@ def main():
                             with lock:
                                 for prior in specs.values():
                                     if 'audit_end' not in prior: prior['audit_end'] = len(audit)
-                                specs[cid] = dict(conversation=cid, mode=mode, prompt=prompt, choice=choice, calls=0, release=threading.Event(), audit_start=len(audit))
+                                specs[cid] = dict(conversation=cid, mode=mode, prompt=prompt, choice=choice, calls=0, draft_calls=0, release=threading.Event(), audit_start=len(audit))
                             value = dict(endpoint=endpoint, accounts=tokens, subjects=subjects, conversation=cid, prompt=prompt, choice=choice)
                         elif parsed.path == '/proof': value = proof(query['case'][0])
                         elif parsed.path == '/release':
@@ -179,8 +193,9 @@ def main():
                 line = next(l for l in text.splitlines() if l.startswith('A00000000000000000000004 = {isa = XCBuildConfiguration; name = Debug;'))
                 text = text.replace(line, line + '\n' + line.replace('A00000000000000000000004', 'A0000000000000000000000C', 1).replace('name = Debug;', 'name = Release;', 1)).replace('buildConfigurations = (A00000000000000000000004);', 'buildConfigurations = (A00000000000000000000004, A0000000000000000000000C);')
                 pbx.write_text(text)
-                cases = [args.diagnostic_test] if args.diagnostic_test else CASES + ['testReleaseClosed']
-                if args.diagnostic_test: report['unrun'] += [c for c in CASES + ['testReleaseClosed'] if c not in cases]
+                suite = DRAFT_CASES if args.draft_status else CASES
+                cases = [args.diagnostic_test] if args.diagnostic_test else suite + ['testReleaseClosed']
+                if args.diagnostic_test: report['unrun'] += [c for c in suite + ['testReleaseClosed'] if c not in cases]
                 for case in cases:
                     configuration = 'Release' if case == 'testReleaseClosed' else 'Debug'
                     result = output / (case + '.xcresult')
@@ -199,6 +214,16 @@ def main():
                     assert summary['passedTests'] == 1 and summary['failedTests'] == 0 and summary['skippedTests'] == 0
                     report['cases'][case] = 'PASS'; save()
                 report['database_proofs'] = {cid: proof(cid) for cid in specs}
+                if args.draft_status:
+                    report['cross_account_reads'] = {}
+                    with TestClient(app) as client:
+                        for cid, spec in specs.items():
+                            original = report['database_proofs'][cid]['message_id']
+                            if original is None: continue
+                            other = 'B' if spec['choice'] == 'A' else 'A'
+                            response = client.get('/v1/run-draft-status', params={'message_id': original}, headers={'Authorization': 'Bearer ' + tokens[other]})
+                            assert response.status_code != 200 and 'draft_outcome' not in response.json()
+                            report['cross_account_reads'][cid] = dict(status=response.status_code, private_result_absent=True)
                 assert not errors
                 container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
                 for path in container.rglob('*'):
@@ -206,7 +231,8 @@ def main():
                         data = path.read_bytes()
                         assert not any(t.encode() in data for t in tokens.values()), 'token in App files'
                 report['app_file_token_scan'] = 'PASS'
-                report['status'] = 'PARTIAL_PASS'  # Actual budget exhaustion remains unimplemented upstream.
+                report['status'] = 'PASS' if args.draft_status and not args.diagnostic_test else 'PARTIAL_PASS'
+                # #167 budget remains pending; #212 has its own bounded read-only scope.
             except BaseException as error:
                 report['status'] = 'FAIL'; report['error'] = type(error).__name__
                 report['failure_proofs'] = {}

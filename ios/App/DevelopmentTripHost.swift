@@ -207,7 +207,7 @@ import Observation
                 try lifetime.validate()
                 guard captured == operation, session.isCurrent(captured) else { throw RecoveryError.inactive }
                 return configuration.token
-            }, liveReadTransport: runReads, liveCancellationTransport: runStops)
+            }, liveReadTransport: runReads, liveCancellationTransport: runStops, readsDraftStatus: true)
         let runs = RunContainerHost(shell: shell)
         guard runs.configure(RunContainerConfiguration(model: runModel, session: session, operation: operation,
             generation: shell.generation, synthetic: false, followAcceptedMessages: true,

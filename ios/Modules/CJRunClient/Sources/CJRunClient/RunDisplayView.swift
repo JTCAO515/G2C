@@ -54,6 +54,16 @@ extension RunDisplayState {
                 Text(language.text("Received text · final state not yet verified", "已接收正文 · 最终状态尚未核实"))
                     .font(.caption)
             }
+            if model.readsDraftStatus {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(language.text("Draft result", "草稿结果")).font(.headline)
+                    Text(model.draftStatus.label(language)).accessibilityIdentifier("run.draft.status")
+                    if case .loaded(let value) = model.draftStatus {
+                        Text(language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(value.run_status.rawValue))
+                            .font(.caption).accessibilityIdentifier("run.draft.runStatus")
+                    }
+                }
+            }
             if model.supportsCancellation {
                 if model.cancellationState == .stopping {
                     Text(language.text("Stopping the original run…", "正在停止原运行…")).accessibilityIdentifier("run.stop.status")
@@ -77,6 +87,17 @@ extension RunDisplayState {
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active { model.invalidate() } }
         .onDisappear { model.invalidate() }
+    }
+    private func draftRunLabel(_ status: String) -> String {
+        switch status {
+        case "queued": language.text("Queued", "排队中")
+        case "running": language.text("Running", "运行中")
+        case "completed": language.text("Completed", "已完成")
+        case "failed": language.text("Failed", "失败")
+        case "cancelled": language.text("Cancelled", "已取消")
+        case "context_invalid": language.text("Context invalid", "上下文失效")
+        default: language.text("Unknown", "未知")
+        }
     }
     private func disabled(_ state: RunDisplayState) -> Bool {
         switch state { case .unselected, .loading: true; default: false }

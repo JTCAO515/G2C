@@ -23,6 +23,10 @@ import Foundation
         let provider_calls: Int
         let posts: Int
         let cancellations: Int
+        let draft_outcome: String?
+        let draft_calls: Int
+        let creation_intent: String?
+        let draft_reads: Int
         let forbidden_writes: Int
     }
     private func call(_ path: String, _ query: [String: String]) async throws -> Data {
@@ -82,6 +86,14 @@ import Foundation
         XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText(fixture.prompt)
         XCTAssertEqual(field.value as? String, fixture.prompt)
         if app.buttons["Done"].exists { tap("Done") } else if app.buttons["完成"].exists { tap("完成") }
+        let draft = mode.hasPrefix("draft_")
+        let stopping = mode == "stop" || mode == "draft_stop"
+        if draft {
+            let intent = app.switches["assistant.intent"]
+            XCTAssertTrue(intent.waitForExistence(timeout: 8))
+            intent.switches.firstMatch.tap()
+            XCTAssertEqual(intent.value as? String, "1")
+        }
         tap("assistant.send")
         if mode == "failure" {
             status(language == "en" ? "Failed" : "运行失败")
@@ -107,7 +119,7 @@ import Foundation
         let before = try await proof(fixture)
         XCTAssertEqual(before.status, "running"); XCTAssertTrue(before.text.hasPrefix(prefix))
         capture("stream-partial-" + language)
-        if mode == "stop" {
+        if stopping {
             tap("run.stop")
             status(language == "en" ? "Cancelled" : "已取消")
             XCTAssertEqual(app.staticTexts["run.display.text"].label, prefix)
@@ -117,23 +129,55 @@ import Foundation
             status(language == "en" ? "Completed" : "已完成")
         }
         let saved = try await proof(fixture)
-        XCTAssertEqual(saved.status, mode == "stop" ? "cancelled" : "completed")
+        XCTAssertEqual(saved.status, stopping ? "cancelled" : "completed")
         XCTAssertEqual(app.staticTexts["run.display.text"].label, saved.text)
-        XCTAssertEqual(saved.posts, 1); XCTAssertEqual(saved.receipts, 1); XCTAssertEqual(saved.provider_calls, 1)
-        XCTAssertEqual(saved.cancellations, mode == "stop" ? 1 : 0)
+        XCTAssertEqual(saved.posts, 1); XCTAssertEqual(saved.receipts, 1); XCTAssertEqual(saved.provider_calls, draft && !stopping ? 2 : 1)
+        XCTAssertEqual(saved.cancellations, stopping ? 1 : 0)
         XCTAssertEqual(saved.effects, 0); XCTAssertEqual(saved.forbidden_writes, 0)
+        if draft { checkDraft(mode, language: language, proof: saved) }
         capture(mode + "-persisted-" + language)
         try launch(fixture, language: language, restore: true)
         tap("assistant.history")
         tap("recovery.action." + (try XCTUnwrap(saved.message_id)))
         tap("assistant.panel.done")
-        status(language == "en" ? (mode == "stop" ? "Cancelled" : "Completed") : (mode == "stop" ? "已取消" : "已完成"))
+        status(language == "en" ? (stopping ? "Cancelled" : "Completed") : (stopping ? "已取消" : "已完成"))
         XCTAssertEqual(app.staticTexts["run.display.text"].label, saved.text)
         let reopened = try await proof(fixture)
-        XCTAssertEqual(reopened.provider_calls, 1); XCTAssertEqual(reopened.posts, 1)
+        XCTAssertEqual(reopened.provider_calls, saved.provider_calls); XCTAssertEqual(reopened.posts, 1)
         XCTAssertEqual(reopened.cancellations, saved.cancellations)
+        if draft { checkDraft(mode, language: language, proof: reopened) }
         capture(mode + "-read-after-reopen-" + language)
     }
+    private func checkDraft(_ mode: String, language: String, proof: Proof) {
+        let expected: String
+        let outcome: String?
+        switch mode {
+        case "draft_validation": expected = language == "en" ? "failed validation" : "草稿校验失败"; outcome = "validation_failed"
+        case "draft_provider": expected = language == "en" ? "generation failed" : "草稿生成失败"; outcome = "provider_failed"
+        case "draft_unknown": expected = language == "en" ? "result unknown" : "草稿生成结果未知"; outcome = "provider_unknown"
+        default: expected = language == "en" ? "No draft result recorded" : "尚无草稿结果记录"; outcome = nil
+        }
+        let value = app.staticTexts["run.draft.status"]
+        XCTAssertTrue(value.waitForExistence(timeout: 10))
+        let match = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object:value)
+        XCTAssertEqual(XCTWaiter.wait(for:[match], timeout:15), .completed)
+        let visible = NSPredicate(format:"exists == true AND hittable == true")
+        for _ in 0..<10 { if visible.evaluate(with:value) { break }; app.swipeUp() }
+        XCTAssertTrue(visible.evaluate(with:value))
+        XCTAssertEqual(proof.creation_intent, "consider_trip")
+        XCTAssertGreaterThanOrEqual(proof.draft_reads, 1)
+        XCTAssertEqual(proof.draft_outcome, outcome)
+        XCTAssertEqual(proof.draft_calls, mode == "draft_stop" ? 0 : 1)
+        XCTAssertFalse(value.label.contains("PRIVATE_SENTINEL"))
+    }
+    func testDraftValidationEnglish() async throws { try await run("draft_validation", language:"en") }
+    func testDraftValidationChinese() async throws { try await run("draft_validation", language:"zh-Hans") }
+    func testDraftProviderEnglish() async throws { try await run("draft_provider", language:"en") }
+    func testDraftProviderChinese() async throws { try await run("draft_provider", language:"zh-Hans") }
+    func testDraftUnknownEnglish() async throws { try await run("draft_unknown", language:"en") }
+    func testDraftUnknownChinese() async throws { try await run("draft_unknown", language:"zh-Hans") }
+    func testDraftStopEnglish() async throws { try await run("draft_stop", language:"en") }
+    func testDraftStopChinese() async throws { try await run("draft_stop", language:"zh-Hans") }
     func testStreamEnglish() async throws { try await run("normal", language: "en") }
     func testStreamChinese() async throws { try await run("normal", language: "zh-Hans") }
     func testStopEnglish() async throws { try await run("stop", language: "en") }
