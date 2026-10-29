@@ -133,7 +133,7 @@ struct MemoryContainerManual: View {
                 if let operationID = host.queriedOperationID {
                     Text(language.text("Result for operation: ", "操作结果：") + operationID).font(.caption)
                     if host.busy { ProgressView(language.text("Querying…", "查询中…")) }
-                    else { MemorySaveStatusView(state: host.saveState, language: language.memoryLanguage, queryOriginal: nil) }
+                    else { MemorySaveStatusView(state: host.saveState, language: language.memoryLanguage, queryOriginal: nil, statusIdentifier: "memory.original.status") }
                 }
                 Text(language.text("A past receipt does not establish current use. An unknown or missing receipt does not permit resending.", "历史回执不代表当前仍在使用；结果未知或未查到回执时，不可重新发送。"))
                     .font(.caption)
