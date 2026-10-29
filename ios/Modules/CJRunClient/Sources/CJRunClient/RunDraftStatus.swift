@@ -17,8 +17,8 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         case .unread: language.text("Draft result not read", "尚未读取草稿结果")
         case .loading: language.text("Reading draft result…", "正在读取草稿结果…")
         case .unavailable: language.text("Draft result unavailable; outcome unknown", "草稿结果不可用，结果未知")
-        case .loaded(let value): outcomeLabel(value.draft_outcome.rawValue, language)
-        case .loadedBudget(let value): outcomeLabel(value.draft_outcome.rawValue, language)
+        case .loaded(let value): outcomeLabel(value.draft_outcome, language)
+        case .loadedBudget(let value): outcomeLabel(value.draft_outcome, language)
         }
     }
     public var runStatus: String? {
@@ -37,16 +37,25 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         case .draft: return language.text("Budget exhausted before draft generation", "生成草稿前预算已耗尽")
         }
     }
-    private func outcomeLabel(_ outcome: String, _ language: RunDisplayLanguage) -> String {
+    private func outcomeLabel(_ outcome: Components.Schemas.RunDraftStatusResponse.draft_outcomePayload, _ language: RunDisplayLanguage) -> String {
         switch outcome {
-        case "not_requested": language.text("No draft was requested for this message", "此消息未请求草稿")
-        case "not_recorded": language.text("No draft result recorded; outcome unknown", "尚无草稿结果记录，结果未知")
-        case "published": language.text("Draft candidate recorded; not a saved trip", "已记录草稿候选，尚非正式行程")
-        case "validation_failed": language.text("Draft failed validation; no candidate published", "草稿校验失败，未发布候选")
-        case "provider_failed": language.text("Draft generation failed; no candidate published", "草稿生成失败，未发布候选")
-        case "provider_unknown": language.text("Draft generation result unknown; do not generate again", "草稿生成结果未知，请勿再次生成")
-        case "budget_exhausted": language.text("Draft generation budget exhausted", "草稿生成预算已耗尽")
-        default: language.text("Draft result unavailable; outcome unknown", "草稿结果不可用，结果未知")
+        case .not_requested: language.text("No draft was requested for this message", "此消息未请求草稿")
+        case .not_recorded: language.text("No draft result recorded; outcome unknown", "尚无草稿结果记录，结果未知")
+        case .published: language.text("Draft candidate recorded; not a saved trip", "已记录草稿候选，尚非正式行程")
+        case .validation_failed: language.text("Draft failed validation; no candidate published", "草稿校验失败，未发布候选")
+        case .provider_failed: language.text("Draft generation failed; no candidate published", "草稿生成失败，未发布候选")
+        case .provider_unknown: language.text("Draft generation result unknown; do not generate again", "草稿生成结果未知，请勿再次生成")
+        }
+    }
+    private func outcomeLabel(_ outcome: Components.Schemas.RunDraftStatusV2Response.draft_outcomePayload, _ language: RunDisplayLanguage) -> String {
+        switch outcome {
+        case .not_requested: language.text("No draft was requested for this message", "此消息未请求草稿")
+        case .not_recorded: language.text("No draft result recorded; outcome unknown", "尚无草稿结果记录，结果未知")
+        case .published: language.text("Draft candidate recorded; not a saved trip", "已记录草稿候选，尚非正式行程")
+        case .validation_failed: language.text("Draft failed validation; no candidate published", "草稿校验失败，未发布候选")
+        case .provider_failed: language.text("Draft generation failed; no candidate published", "草稿生成失败，未发布候选")
+        case .provider_unknown: language.text("Draft generation result unknown; do not generate again", "草稿生成结果未知，请勿再次生成")
+        case .budget_exhausted: language.text("Draft generation budget exhausted", "草稿生成预算已耗尽")
         }
     }
 }
