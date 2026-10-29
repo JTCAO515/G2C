@@ -64,6 +64,7 @@ def main():
     def save(): (output/'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     save()
     tokens = {}
+    audit = []
     try:
         with tempfile.TemporaryDirectory(prefix='cj228-', dir='/tmp') as temporary:
             root = Path(temporary)
@@ -87,7 +88,7 @@ def main():
                     CJ_LOCAL_RUN_CONTEXT=str(args.run_context.resolve()),CJ_LOCAL_MEMORY_POLICY=str(policy_path))
                 database = LocalDatabase(connection, run_context=context)
                 app = app_from_environment()
-                records, audit, errors, requests = {}, [], [], []
+                records, errors, requests = {}, [], []
                 stop=threading.Event(); lock=threading.Lock()
                 model=FakeProvider(chunks_per_reply=2)
                 def worker():
@@ -231,7 +232,9 @@ def main():
                     stop.set(); worker_thread.join(10); server.should_exit=True; api_thread.join(10); control.shutdown()
     except BaseException as error:
         report['status']='FAIL'; report['error']=type(error).__name__; raise
-    finally: save()
+    finally:
+        report['api_audit']=audit
+        save()
     print(json.dumps(report,ensure_ascii=False,indent=2))
 
 if __name__=='__main__': main()
