@@ -74,7 +74,8 @@ worker 新参数 `--memory-run-policy` / `CJ_LOCAL_MEMORY_RUN_POLICY` 指向 ope
 不会静默退回只看聊天的路径。没有 MEMORY scope 的旧消费者行为保留；启用后须
 提供配置。此进程检查不承诺防御任意旧二进制或恶意管理员绕过。
 
-此版本只允许 FakeProvider，运行策略不能启用真实模型/云服务。旧保存读取接口和
+worker同时要求B既有 `--run-context` / `CJ_LOCAL_RUN_CONTEXT`，支持已验收的@1/@2
+统一计量出口，不恢复未计量执行。此版本只允许 FakeProvider，不启用真实模型/云服务。旧保存读取接口和
 现有计量配置格式保留；#242 未合并消费者不会自动纳入本接口。后续 B 升级须用原
 RUN/计量/撤权反例验证此组合。编辑/启停/撤回写入仍由各生命周期 owner 提供，
 本接口只消费其 canonical 当前性，不授予这些写入权限。

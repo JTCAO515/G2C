@@ -37,9 +37,32 @@ class ObservedProvider(FakeProvider):
 
 class MemoryRuntimeChecks(Harness):
     # Reuse #226's real signed-API helpers, without inheriting/re-running its ACs.
-    setUp = helpers.MemorySaveReadChecks.setUp
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        import time
+        from cj_api.local_run_context import load_run_context
+        import local_run_context as operator
+        now=int(time.time())
+        cls.run_path=cls.auth/'memory-meter.json'
+        cls.run_path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@1',current=dict(meter=dict(
+            unit='provider_call',budget=100,period_start=now-60,period_end=now+3600,
+            max_steps=4,max_tools=1,max_output=10000,max_seconds=600),
+            output_limits=dict(answer=1000,draft=1000)),history=[])))
+        cls.run_context=load_run_context(cls.run_path)
+        for identity in ('alice','bob'):
+            operator.provision_budget(run_worker_database_path(),cls.run_context,identity)
+        cls.database=LocalDatabase(run_worker_database_path(),run_context=cls.run_context)
+
+    def setUp(self):
+        helpers.MemorySaveReadChecks.setUp(self)
+        self.runtime_expiry=self.policy['expires_at']
+
     write_policy = helpers.MemorySaveReadChecks.write_policy
-    app_from_policy = helpers.MemorySaveReadChecks.app_from_policy
+    def app_from_policy(self, *, enabled=True):
+        import os
+        with patch.dict(os.environ,{'CJ_LOCAL_RUN_CONTEXT':str(self.run_path)}):
+            return helpers.MemorySaveReadChecks.app_from_policy(self,enabled=enabled)
     raw = helpers.MemorySaveReadChecks.raw
     save = helpers.MemorySaveReadChecks.save
     receipt = helpers.MemorySaveReadChecks.receipt
@@ -47,15 +70,91 @@ class MemoryRuntimeChecks(Harness):
 
     def configuration(self):
         return RuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.1',
-            collection=self.policy, selections={identity: dict(subject='self',
+            collection=dict(self.policy,expires_at=self.runtime_expiry), selections={identity: dict(subject='self',
                 slots=[slot for slot,rule in self.policy['profiles'][identity]['slots'].items()
                        if rule['collection_allowed'] and rule['semantic_resolved']], max_bytes=32768)
                 for identity in ('alice','bob')})).encode())
 
     def execute(self, model):
         # Reconstruct the actual factory each time; no synthetic Context enters RUN.
-        return run_worker.run_once(LocalDatabase(run_worker_database_path()), model,
+        return run_worker.run_once(LocalDatabase(run_worker_database_path(),run_context=self.run_context), model,
                                    self.auth, memory_configuration=self.configuration())
+
+    def test_runtime_original_receipt_and_rollback_before_consume(self):
+        from contextlib import contextmanager
+        from cj_memory.postgres import Repository
+        from cj_memory.domain import CommitUnknown, Unavailable
+        transaction=Repository.transaction
+        with TestClient(self.memory_app) as client:
+            raw=self.raw('fact',text='Committed original / 已提交原文')
+            @contextmanager
+            def lost_ack(repository):
+                with transaction(repository) as tx: yield tx
+                raise CommitUnknown('fixture ACK lost after real commit')
+            with patch.object(Repository,'transaction',lost_ack):
+                unknown=self.save(client,raw)
+            self.assertEqual(unknown.status_code,503)
+            self.assertNotIn('receipt',unknown.json())
+            self.assertEqual(unknown.json()['error']['recovery'],'reconcile_original')
+            original=self.receipt(client,raw)
+            self.assertEqual(original.status_code,200)
+            self.assertEqual(original.json()['receipt']['item_id'],json.loads(raw)['item_id'])
+            self.assertEqual(self.save(client,raw).json()['receipt'],original.json()['receipt'])
+            failed=self.raw('experience',text='Rolled back / 已回滚')
+            @contextmanager
+            def rollback(repository):
+                with transaction(repository) as tx:
+                    yield tx
+                    raise Unavailable('fixture failure before real commit')
+            with patch.object(Repository,'transaction',rollback):
+                self.assertNotEqual(self.save(client,failed).status_code,200)
+            self.assertIsNone(self.receipt(client,failed).json()['receipt'])
+            mid,response=self.send(client,'alice','Use confirmed original only',conversation=self.chat_a)
+            self.assertEqual(response.status_code,200,response.text)
+            model=ObservedProvider();outcomes=self.execute(model)
+            self.assertEqual([o.status for o in outcomes if o.message_id==mid],['completed'])
+            data=json.loads(model.inputs[0][0][0]['content'].split('\n',1)[1])
+            self.assertEqual([i['text'] for i in data['items']],['Committed original / 已提交原文'])
+
+    def test_runtime_ineligible_rows_are_not_provider_context(self):
+        # Pre-existing invalid/inactive fixtures use the actual restricted role.
+        # This is filtering evidence, not a user pause/withdrawal acceptance claim.
+        from datetime import datetime,timedelta,timezone
+        scope=scope_for(ISSUER,'alice')
+        cases=[('candidate',dict(status='candidate',kind='inference')),
+               ('unconfirmed',dict(confirmed=False)),('unauthorized',dict(authorized=False)),
+               ('unresolved',dict(semantic_resolved=False)),('disabled',dict(status='disabled')),
+               ('withdrawn',dict(status='withdrawn')),('inactive-source',dict(active=False)),
+               ('expired',dict(expired=True))]
+        with self.database.connect(scope) as conn:
+            conn.execute('INSERT INTO cj_memory_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING',(scope,))
+            for name,changes in cases:
+                slot=name+'-'+self.tag
+                for profile in self.policy['profiles'].values():
+                    profile['slots'][slot]=dict(kind='fact',collection_allowed=True,semantic_resolved=True)
+                item='fixture-'+slot;source='source-'+slot
+                raw=json.dumps(dict(operation_id='op-'+item,item_id=item,subject='self',slot=slot,
+                    kind=changes.get('kind','fact'),text='Excluded '+name,extent='long_term',context_id=None,
+                    source_id=source,source_version=1,occurred_at='fixture; date unknown')).encode()
+                expires=datetime.now(timezone.utc)+timedelta(seconds=-1 if changes.get('expired') else 3600)
+                conn.execute('INSERT INTO cj_memory_source VALUES (%s,%s,1,%s,%s,%s,%s,%s,%s)',
+                    (scope,source,raw,changes.get('authorized',True),changes.get('confirmed',True),
+                     changes.get('semantic_resolved',True),changes.get('active',True),expires))
+                conn.execute('INSERT INTO cj_memory_item(scope,item_id,version,status,subject,slot,extent,context_id,source_id,source_version,original_input) '
+                    "VALUES (%s,%s,1,%s,'self',%s,'long_term','',%s,1,%s)",
+                    (scope,item,changes.get('status','active'),slot,source,raw))
+        self.write_policy();self.memory_app=self.app_from_policy()
+        with TestClient(self.memory_app) as client:
+            self.assertEqual(self.save(client,self.raw(text='合法原文 / valid original')).status_code,200)
+            self.assertEqual(self.save(client,self.raw(text='English synonym for same canonical slot')).status_code,409)
+            mid,response=self.send(client,'alice','Read current eligible data',conversation=self.chat_a)
+            self.assertEqual(response.status_code,200,response.text)
+            model=ObservedProvider();outcomes=self.execute(model)
+            self.assertEqual([o.status for o in outcomes if o.message_id==mid],['completed'])
+            data=json.loads(model.inputs[0][0][0]['content'].split('\n',1)[1])
+            self.assertEqual([i['text'] for i in data['items']],['合法原文 / valid original'])
+            self.assertEqual(data['items'][0]['source_version'],1)
+            self.assertEqual(data['items'][0]['subject'],'self')
 
     def test_runtime_current_next_chat_restart_and_scope(self):
         with TestClient(self.memory_app) as client:
@@ -89,13 +188,14 @@ class MemoryRuntimeChecks(Harness):
         # observed by the actual worker while its provider stream is in flight.
         from datetime import datetime,timedelta,timezone
         import time
-        self.policy['expires_at']=(datetime.now(timezone.utc)+timedelta(seconds=4)).isoformat()
+        deadline=datetime.now(timezone.utc)+timedelta(seconds=10)
+        self.policy['expires_at']=deadline.isoformat()
         self.write_policy(); self.memory_app=self.app_from_policy()
         with TestClient(self.memory_app) as client:
             self.assertEqual(self.save(client,self.raw()).status_code,200)
             mid,response=self.send(client,'alice','A short answer',conversation=self.chat_a)
             self.assertEqual(response.status_code,200,response.text)
-            model=ObservedProvider(after_first=lambda:time.sleep(4.1))
+            model=ObservedProvider(after_first=lambda:time.sleep(max(0,deadline.timestamp()-time.time())+.05))
             outcomes=self.execute(model)
             self.assertEqual([o.status for o in outcomes if o.message_id==mid],['context_invalid'])
             self.assertEqual(model.calls,1)
@@ -137,10 +237,10 @@ class MemoryRuntimeChecks(Harness):
         import local_run_context as operator
         now=int(time.time())
         path=self.auth/'runtime-meter.json'
-        path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@1',current=dict(meter=dict(
-            unit='provider_call',budget=20,period_start=now-60,period_end=now+3600,
+        path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
+            unit='provider_call',budget=100,period_start=now-60,period_end=now+3600,
             max_steps=4,max_tools=1,max_output=10000,max_seconds=600),
-            output_limits=dict(answer=1000,draft=1000)),history=[])))
+            output_limits=dict(model=1000,tool=1000,memory=1000)),history=[])))
         context=load_run_context(path)
         for identity in ('alice','bob'):
             operator.provision_budget(run_worker_database_path(),context,identity)
@@ -189,7 +289,7 @@ class MemoryRuntimeChecks(Harness):
             self.assertEqual(response.status_code,200,response.text)
             result=subprocess.run([sys.executable,'-B',str(ROOT/'scripts/run_worker.py'),
                 '--conninfo-json',run_worker_database_path(),'--auth-dir',str(self.auth),
-                '--memory-run-policy',str(path),'--once'],capture_output=True,text=True,timeout=60)
+                '--run-context',str(self.run_path),'--memory-run-policy',str(path),'--once'],capture_output=True,text=True,timeout=60)
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertIn('completed',result.stdout)
             self.assertEqual(self.events(client,'alice',mid)[-1][2],{'status':'completed'})
