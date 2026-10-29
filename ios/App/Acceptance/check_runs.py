@@ -167,7 +167,8 @@ def main():
                     account = ledger_scope_for(scope, context.current.meter)
                     ledger_row = conn.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s', (account,)).fetchone()
                     ledger = decode(ledger_row[0])
-                    fingerprint = hashlib.sha256(encode(ledger).encode()).hexdigest()
+                    encoded_ledger = encode(ledger)
+                    fingerprint = hashlib.sha256(encoded_ledger.encode()).hexdigest()
                 status, text, effects, draft_outcome = None, '', 0, None
                 pending_proposals, formal_trips, proposal_bindings = 0, 0, []
                 budget_stage = 'none'
@@ -187,7 +188,7 @@ def main():
                             formal_trips += trips.detail(detail.proposal.trip_id) is not None
                             proposal_bindings.append(identifier == detail.proposal.proposal_id == proposal_id_for(original.run_id))
                 return dict(runtime_role=role, pending_deliveries=pending, ledger_fingerprint=fingerprint,
-                    exposure=Meter.exposure(ledger), ledger=json.loads(encode(ledger)), ledger_attempts=len(ledger.attempts),
+                    exposure=Meter.exposure(ledger), ledger=json.loads(encoded_ledger), ledger_attempts=len(ledger.attempts),
                     usage_receipts=sum(a.receipt is not None for a in ledger.attempts.values()),
                     tool_steps=sum(run.tools for run in ledger.runs.values()), budget_stage=budget_stage,
                     requests=len(calls), status=status, text=text, effects=effects, message_id=rows[-1][0] if rows else None,

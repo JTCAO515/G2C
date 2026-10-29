@@ -130,3 +130,19 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B ios/App/Acceptance/
 Each named case remains PARTIAL_PASS until the complete required matrix is
 independently aggregated. Preserve every historical FAIL and xcresult. Real tools,
 real models/fees, cloud, physical VoiceOver/device and release remain separate.
+
+Complete matrix (23 named cases; each gets a fresh private DB and new subjects):
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B ios/App/Acceptance/check_run_budget.py \
+  --budget-one-context '<explicit-budget1-context>' --budget-two-context '<explicit-budget2-context>' \
+  --simulator '<iOS-17.5-UDID>' --output '<new-matrix-evidence-directory>' \
+  --build-dir '<external-build-cache>'
+```
+
+The orchestrator retains every prior case, adds bilingual quota and provider-unknown
+checks, pins the clean Git head and source hashes, and stops at any failed child.
+A producer `unavailable` stream is retained as unknown with hidden text; only one
+explicit original snapshot read may recover it after matching raw producer evidence,
+with unchanged POST/provider/ledger. A refused stable read fails the case. No
+automatic generation retry or v1 draft-status fallback is permitted.
