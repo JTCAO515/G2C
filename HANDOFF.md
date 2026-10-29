@@ -21,12 +21,12 @@
 | Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 must merge before any lane opens a feature PR. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). |
 | Accepted Issue | #151 / #196: parallel lanes A App, B backend message/run, C draft. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-29T01:43:39.334164+00:00 |
+| Last updated | 2026-10-29T02:42:23.919111+00:00 |
 
 ## Active Work
 
 - Lane A App: #164 (iOS candidate exists; waits #198) → #167 → #194 → #159 (#194/#159 wait for JT copy).
-- Lane B backend message/run: #198 (JT authorization https://github.com/JTCAO515/G2C/issues/198#issuecomment-6485249369) → #170 (waits #168) → split M2 #9.
+- Lane B: #198 backend Part1 merged via #206 (7b0c700), independent redline APPROVE and main CI40806401464 all green. #198 remains OPEN pending A #164 native history acceptance. #170 awaits JT scope decision for an independent persisted draft result and versioned protected read; no contract/event/migration edits performed.
 - Lane C draft: #168 Part2 close-out per JT decision https://github.com/JTCAO515/G2C/issues/168#issuecomment-6485249974 → #169 → split M2 #12.
 - #186 four cleanup PRs #187–#190 merged with exact-head review; #186 remains open for its owner (Claude). PR #195 (#194 insertion) and #197 (#186 handoff note) are superseded by this revision.
 
@@ -62,10 +62,7 @@
 
 | Path | Reason |
 | --- | --- |
-| `docs/adr/0007-issue-closure-workflow.md` | §2 parallel lanes (max 3, one parent and one open PR per lane, conflict rules; shared-file list delegated to issue-plan); §6 feature PRs do not edit handoff; decision record. |
-| `docs/plan/issue-plan.md` | Parallel-lane table rewritten for main 8d7a8c4 (A #164→#167→#194→#159; B #198→#170→M2 #9; C #168 Part2→#169→M2 #12); single authoritative shared-file list; #198 and #194 added to the M1 queue table and dependencies. |
-| `AGENTS.md` | Entry rules point to parallel lanes and the new handoff update rule. |
-| `docs/handoff.json, HANDOFF.md` | Lanes, JT decisions on #198/#168, #194 copy operator action; this PR's changed files and checks. |
+| `docs/handoff.json, HANDOFF.md` | Record B lane delivery and scope decision wait under ADR-0007 section 6; other lane work preserved. |
 
 ## Verification Evidence
 
@@ -79,12 +76,13 @@
 | fail | `[#201 (#168 Part1) 历史] pytest backend/agent/tests/test_draft.py baseline` | 4 failed /12 passed: duplicate fields accepted and Unicode error escaped the draft failure type. Evidence preserved outside repository. | — |
 | pass | `[#201 (#168 Part1) 历史] pytest backend/agent/tests/test_draft.py after structure repair` | 16/16 passed. Includes duplicate spellings, unpaired surrogate and parser recursion bound. | — |
 | pass | `[#201 (#168 Part1) 历史] uv run --locked python -B scripts/test.py; uv run --locked python -B scripts/pg_suites.py` | test57/57, PG11/11 including e2e29/29 with10 structural no-publication subcases. Later merged as PR #201 after exact-head CI and independent APPROVE (main CI 40702955553). Travel constraints and user-visible draft failure remain unresolved. | https://github.com/JTCAO515/G2C/pull/201#issuecomment-6471129685 |
+| pass | `B #198 PR206 exact head and post-merge CI` | Local test57/57, PG11/11 and formal factory PG passed; independent redline APPROVE a42cf199; merged7b0c700 main five jobs success. Native #164 remains UNRUN. | https://github.com/JTCAO515/G2C/issues/198#issuecomment-6486316117 |
 
 ## Blockers
 
 - #194 and #159 final bilingual copy (and DiDi brand name display for #194) await JT.
-- #170 waits #168 close-out; #164 waits #198 merge; #167 waits #164.
 - L2/cloud/OTP/real model/device resources, branch protection and production keys remain JT-owned.
+- Lane B: #198 native history evidence pending A #164; #170 new draft-result contract/migration scope awaits JT (issuecomment-6486383998 and 6486401741). #168 is closed, but this does not authorize new contracts. M2 #9 waits for B M1 queue completion.
 
 ## Risks
 
@@ -104,9 +102,9 @@
 
 ## Next Smallest Action
 
-- Action: Independent Codex review of #196 at exact head; merge locked head and verify main CI. Then start three lane sessions: A #164 (prep only until #198 merges), B #198, C #168 Part2. Each lane: one parent, at most one open PR, only its owned files; shared files one PR at a time; feature PRs do not edit handoff.
-- Expected observation: Each lane opens its first PR without touching other lanes' owned files; main CI stays green.
-- Resume command: `gh pr view 196 --repo JTCAO515/G2C`
+- Action: A: continue its issue-plan queue; #164 can consume merged #198 backend and must return native history evidence. B: await JT decision recorded in #170, keep #198 open until native evidence; then resume #170 and M2 #9 in order. C: continue its issue-plan queue after #168 closure. Shared files remain serialized; feature PRs do not edit handoff.
+- Expected observation: B resumes only within decided scope; native, backend and CI evidence remain separate.
+- Resume command: `gh issue view 170 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 
