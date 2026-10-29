@@ -51,8 +51,8 @@ import Foundation
         if app.buttons["Done"].exists { app.buttons["Done"].tap() }
         else if app.buttons["完成"].exists { app.buttons["完成"].tap() }
     }
-    func waitStatus(_ value: String) {
-        let target = app.staticTexts["memory.save.status"].firstMatch
+    func waitStatus(_ value: String, identifier: String = "memory.save.status") {
+        let target = app.staticTexts[identifier].firstMatch
         let match = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", value), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [match], timeout: 35), .completed, target.exists ? target.label : "missing status")
     }
@@ -131,9 +131,14 @@ import Foundation
             let buttons = app.buttons.matching(identifier: language == "en" ? "查询此原操作" : "Query this original operation")
             XCTAssertEqual(buttons.count, 3)
             buttons.element(boundBy: index).tap()
-            waitStatus(language == "en" ? "已保存" : "Saved.")
+            waitStatus(language == "en" ? "已保存" : "Saved.", identifier: "memory.original.status")
         }
-        capture("reopen-originals"); try await query(f, "reopen")
+        capture("reopen-originals"); back()
+        let switched = language == "en" ? "zh-Hans" : "en"
+        tap(switched == "en" ? "Load groups" : "读取分组")
+        tap("memory.group.0"); tap(switched == "en" ? "Load from start" : "从头读取")
+        for (_, value) in rows { XCTAssertTrue(app.staticTexts[value].waitForExistence(timeout: 10)) }
+        capture("same-originals-after-language-switch"); try await query(f, "reopen")
     }
     func testEnglish() async throws { try await success(language: "en") }
     func testChineseLargeText() async throws { try await success(language: "zh-Hans", large: true) }
@@ -144,7 +149,7 @@ import Foundation
         waitStatus("Result unknown"); capture("unknown")
         app.terminate(); try launch(f, language: "en", restore: true)
         tap("memory.add"); tap("Read original operations"); tap("Query this original operation")
-        waitStatus("Saved."); capture("original-reconciled")
+        waitStatus("Saved.", identifier: "memory.original.status"); capture("original-reconciled")
         try await query(f, "unknown-reopen")
     }
     func testRejected() async throws {
