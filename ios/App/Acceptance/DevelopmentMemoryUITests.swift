@@ -32,10 +32,20 @@ import Foundation
     }
     func back() { app.navigationBars.buttons.firstMatch.tap() }
     func text(_ identifier: String, _ value: String) {
-        let target = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+        let target: XCUIElement
+        if identifier == "memory.manual.text" || identifier == "assistant.draft" { target = app.textViews[identifier] }
+        else { target = app.textFields[identifier] }
         XCTAssertTrue(target.waitForExistence(timeout: 10), identifier)
-        target.tap(); target.typeText(value)
+        for _ in 0..<8 {
+            if target.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(target.isHittable, identifier)
+        target.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        target.typeText(value)
         if app.buttons["Done"].exists { app.buttons["Done"].tap() }
+        else if app.buttons["完成"].exists { app.buttons["完成"].tap() }
     }
     func waitStatus(_ value: String) {
         let target = app.staticTexts["memory.save.status"].firstMatch
@@ -61,9 +71,11 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for: [signed], timeout: 20), .completed)
         back()
     }
-    func prepare(_ mode: String) async throws -> Fixture {
+    func prepare(_ mode: String, caseID: String? = nil) async throws -> Fixture {
         continueAfterFailure = false
-        return try JSONDecoder().decode(Fixture.self, from: await call("/prepare", ["mode": mode]))
+        var values = ["mode": mode]
+        if let caseID { values["case"] = caseID }
+        return try JSONDecoder().decode(Fixture.self, from: await call("/prepare", values))
     }
     func save(_ slot: String, text value: String, language: String) {
         tap("memory.add"); tap("memory.manual.scope")
@@ -78,7 +90,7 @@ import Foundation
         _ = try await call("/verify", ["case": f.case_id, "stage": stage])
     }
     func success(language: String, large: Bool = false) async throws {
-        let f = try await prepare("success")
+        let f = try await prepare("success", caseID: large ? "testChineseLargeText" : "testEnglish")
         defer { app?.terminate() }
         try launch(f, language: language, large: large)
         let rows = [("fact", "Synthetic fact / 合成事实"), ("experience", "Synthetic experience / 合成经历"), ("food.spice", "cafe\u{301} / 合成偏好")]
@@ -103,10 +115,10 @@ import Foundation
         app.terminate()
         try launch(f, language: language == "en" ? "zh-Hans" : "en", restore: true)
         tap("memory.add"); tap(language == "en" ? "读取原操作" : "Read original operations")
-        for _ in 0..<3 {
+        for index in 0..<3 {
             let buttons = app.buttons.matching(identifier: language == "en" ? "查询此原操作" : "Query this original operation")
             XCTAssertEqual(buttons.count, 3)
-            buttons.element(boundBy: 0).tap()
+            buttons.element(boundBy: index).tap()
         }
         capture("reopen-originals"); try await query(f, "reopen")
     }
