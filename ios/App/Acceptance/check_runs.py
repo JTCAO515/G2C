@@ -121,7 +121,7 @@ def main():
 
             def proof(case_id):
                 with lock:
-                    spec = specs[case_id]; calls = list(audit[spec['audit_start']:]); failures = list(errors)
+                    spec = specs[case_id]; calls = list(audit[spec['audit_start']:spec.get('audit_end')]); failures = list(errors)
                 if failures: raise RuntimeError('worker failed: ' + ','.join(failures))
                 scope = scope_for(ISSUER, subjects[spec['choice']])
                 with database.connect(scope) as conn:
@@ -133,7 +133,7 @@ def main():
                     runs = RunService(database.run_repository(scope), valid=lambda b: messages.query(b.message_id) is not None)
                     state = runs.snapshot(Binding(scope, original.conversation_id, original.generation, original.message_id, original.run_id, original.sequence))
                     status, text, effects = state.status, state.text, len(state.effects)
-                return dict(status=status, text=text, effects=effects, message_id=rows[-1][0] if rows else None,
+                return dict(requests=len(calls), status=status, text=text, effects=effects, message_id=rows[-1][0] if rows else None,
                     receipts=len(rows), provider_calls=spec['calls'], posts=calls.count(('POST', '/v1/messages')),
                     cancellations=calls.count(('POST', '/v1/run-cancellations')),
                     forbidden_writes=sum(m not in ('GET', 'HEAD') and p not in ('/v1/messages', '/v1/run-cancellations') for m, p in calls))
@@ -151,7 +151,10 @@ def main():
                             prompt = f'CJ167 {mode} {cid} ' + ('北京行程测试' if choice == 'B' else 'Beijing travel test')
                             with TestClient(app) as client:
                                 client.put('/v1/conversations', params={'conversation_id': cid}, headers={'Authorization': 'Bearer ' + tokens[choice]}).raise_for_status()
-                            with lock: specs[cid] = dict(conversation=cid, mode=mode, prompt=prompt, choice=choice, calls=0, release=threading.Event(), audit_start=len(audit))
+                            with lock:
+                                for prior in specs.values():
+                                    if 'audit_end' not in prior: prior['audit_end'] = len(audit)
+                                specs[cid] = dict(conversation=cid, mode=mode, prompt=prompt, choice=choice, calls=0, release=threading.Event(), audit_start=len(audit))
                             value = dict(endpoint=endpoint, accounts=tokens, subjects=subjects, conversation=cid, prompt=prompt, choice=choice)
                         elif parsed.path == '/proof': value = proof(query['case'][0])
                         elif parsed.path == '/release':

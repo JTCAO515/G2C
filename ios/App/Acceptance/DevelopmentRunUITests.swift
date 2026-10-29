@@ -14,6 +14,7 @@ import Foundation
         let choice: String
     }
     private struct Proof: Decodable {
+        let requests: Int
         let status: String?
         let text: String
         let effects: Int
@@ -89,6 +90,7 @@ import Foundation
             let result = try await proof(fixture)
             XCTAssertEqual(result.status, "failed"); XCTAssertEqual(result.text, "")
             XCTAssertEqual(result.provider_calls, 1); XCTAssertEqual(result.posts, 1)
+            XCTAssertEqual(result.receipts, 1); XCTAssertEqual(result.cancellations, 0)
             XCTAssertEqual(result.effects, 0); XCTAssertEqual(result.forbidden_writes, 0)
             capture("provider-failed-" + language)
             return
@@ -150,6 +152,7 @@ import Foundation
         XCTAssertFalse(app.buttons["assistant.send"].exists)
         let result = try await proof(fixture)
         XCTAssertEqual(result.posts, 0); XCTAssertEqual(result.cancellations, 0); XCTAssertEqual(result.provider_calls, 0)
+        XCTAssertEqual(result.requests, 0)
         capture("release-run-closed")
     }
 }
