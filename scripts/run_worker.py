@@ -26,6 +26,8 @@ from cj_api.local_run_context import load_run_context
 from cj_api.local_worker_context import LocalBudgetRouter, checker_for, needs_lease_for
 from cj_auth.interfaces import AdmissionStatus
 from cj_needs.revision_lease import LeaseUnavailable
+from cj_memory.local_runtime import load_runtime_configuration
+from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 import dev_auth
 from cj_message.domain import Service as MessageService
 from cj_run.core import Service as RunService
@@ -67,11 +69,30 @@ class InvitedProvider:
         yield from self.model.stream(*args, **kwargs)
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker):
+def require_memory_configuration(database, scope, configuration):
+    if configuration is None:
+        with database.connect(scope) as conn:
+            if conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s', (scope,)).fetchone():
+                raise RuntimeDenied('existing memory requires explicit runtime configuration')
+
+
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None):
     database.require_execution(scope)
+    require_memory_configuration(database, scope, memory_configuration)
     messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
     subject = scope.removeprefix('local:' + ISSUER + ':')
     def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
+    memory_credential = token() if memory_configuration is not None else None
+    def memory_admit(credential=memory_credential, scope=scope):
+        decision = checker.check(credential)
+        if decision.status is AdmissionStatus.UNKNOWN:
+            raise RuntimeUnknown('memory admission unknown')
+        if decision.status is not AdmissionStatus.ALLOWED or scope_for(
+                decision.principal.issuer, decision.principal.subject) != scope:
+            raise RuntimeDenied('memory admission denied')
+        return decision.principal
+    memory = (memory_configuration.bind(database, scope, subject, memory_admit)
+              if memory_configuration is not None else None)
     def valid(binding, messages=messages, subject=subject, token=token):
         database.require_execution(binding.scope,binding)
         credential=token()
@@ -86,12 +107,13 @@ def _worker_for_scope(database,model,auth_dir,scope,checker):
     runs = RunService(database.run_repository(scope),valid=valid)
     drafts = DraftPublisher(database.trip_repository(scope))
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
+        memory=memory,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
         needs_lease=needs_lease_for(database,checker,token),
         budget_exit=LocalBudgetRouter(database))
 
 
-def run_once(database, model, auth_dir):
+def run_once(database, model, auth_dir, *, memory_configuration=None):
     pending_scopes=scopes(database,auth_dir)
     if not pending_scopes: return []
     if database.run_context is None:
@@ -101,7 +123,8 @@ def run_once(database, model, auth_dir):
     checker=checker_for(Path(auth_dir))
     results = []
     for scope in pending_scopes:
-        results += _worker_for_scope(database,model,auth_dir,scope,checker).process()
+        results += _worker_for_scope(database,model,auth_dir,scope,checker,
+                                     memory_configuration=memory_configuration).process()
     return results
 
 
@@ -110,6 +133,7 @@ def main():
     parser.add_argument('--conninfo-json', type=Path, required=True)
     parser.add_argument('--auth-dir', type=Path, default=os.environ.get('CJ_LOCAL_AUTH_DIR'))
     parser.add_argument('--run-context', type=Path, default=os.environ.get('CJ_LOCAL_RUN_CONTEXT'))
+    parser.add_argument('--memory-run-policy', type=Path, default=os.environ.get('CJ_LOCAL_MEMORY_RUN_POLICY'))
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
     parser.add_argument('--interval', type=float, default=0.5)
@@ -124,13 +148,16 @@ def main():
     audit.setLevel(logging.INFO)
     audit.addHandler(logging.StreamHandler(sys.stderr))
     audit.propagate=False
+    memory = load_runtime_configuration(args.memory_run_policy) if args.memory_run_policy is not None else None
     database=LocalDatabase(args.conninfo_json,run_context=context)
     # Protection metadata is checked before even loading real-provider credentials.
     # run_once repeats the check before accepting every original pending run.
-    for scope in scopes(database,args.auth_dir): database.require_execution(scope)
+    for scope in scopes(database,args.auth_dir):
+        database.require_execution(scope)
+        require_memory_configuration(database, scope, memory)
     model=provider(args.real)
     while True:
-        for outcome in run_once(database, model, args.auth_dir):
+        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory):
             print(f'{outcome.status} run={outcome.run_id}'
                   + (f' proposal={outcome.proposal_id}' if outcome.proposal_id else ''), flush=True)
         if args.once:

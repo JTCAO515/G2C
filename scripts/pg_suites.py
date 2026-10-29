@@ -285,9 +285,25 @@ def group_registered_exit():
     return script('backend/cj_api/tests/registered_exit_pg.py')
 
 
+def group_memory_run():
+    # #227: actual signed API/worker on the restricted runtime role, never --real.
+    sys.path.insert(0, str(ROOT / 'scripts'))
+    import migrate
+    import psycopg
+    with cluster('memory_run', port=55489, role='cj227_private',
+                 socket=f'/tmp/cj227-runtime-{os.getpid()}') as config:
+        with psycopg.connect(**config, autocommit=True) as conn:
+            migrate.up(conn, migrate.load(), migrate.load()[-1]['version'])
+        path = WORK / 'memory_run/conninfo.json'
+        path.write_text(json.dumps(config))
+        return script('backend/memory/tests/runtime_host_pg.py',
+                      env=dict(clean_env(), CJ_E2E_CONNINFO=str(path),
+                               PYTHONPATH=pythonpath(BACKEND / 'agent/tests', ROOT / 'scripts')))
+
+
 GROUPS = {'e2e': group_e2e, 'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners,
-          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema, 'local_run_host': group_local_run_host, 'registered_usage_schema': group_registered_usage_schema, 'registered_exit': group_registered_exit}
+          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema, 'local_run_host': group_local_run_host, 'registered_usage_schema': group_registered_usage_schema, 'registered_exit': group_registered_exit, 'memory_run': group_memory_run}
 
 
 def main(argv):

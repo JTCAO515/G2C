@@ -117,13 +117,17 @@ class LocalMemoryConfiguration:
             raise LocalMemoryConfigurationError('invalid local memory policy') from None
 
 
-def load_local_memory_configuration(path):
+def read_private_policy(path):
     try:
         path = Path(path)
         info = path.lstat()
         if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077
                 or not 0 < info.st_size <= 262144):
             raise LocalMemoryConfigurationError('private operator policy file required')
-        return LocalMemoryConfiguration.from_bytes(path.read_bytes())
+        return path.read_bytes()
     except (OSError, TypeError, ValueError):
         raise LocalMemoryConfigurationError('local memory policy unavailable') from None
+
+
+def load_local_memory_configuration(path):
+    return LocalMemoryConfiguration.from_bytes(read_private_policy(path))
