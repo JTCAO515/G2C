@@ -91,12 +91,14 @@ struct MemoryContainerManual: View {
         let action = host.captureAction()
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(language.text("Saving new memories is not available yet.", "暂不支持保存新记忆。"))
+                if !host.canSubmitManual {
+                    Text(language.text("Saving new memories is not available yet.", "暂不支持保存新记忆。"))
+                }
                 if let binding = host.manualBinding {
                     MemoryManualForm(binding: binding, currentBinding: { host.manualBinding },
                         options: host.manualOptions, language: language.memoryLanguage,
                         submit: { command in try await host.submitManual(command, context: action) },
-                        queryOriginal: { _ in throw MemoryFailure.liveWriteUnavailable })
+                        queryOriginal: { operationID in try await host.queryManual(operationID, context: host.captureAction()) })
                         .id(host.formIdentity)
                         .disabled(!host.canSubmitManual)
                 } else {
@@ -140,6 +142,47 @@ struct MemoryContainerManual: View {
                 host.leaveManagementPresentation(presentation)
                 presentation = nil
             }
+    }
+}
+#endif
+
+#if os(iOS)
+/// Optional entry beside chat. Every answer uses the same reviewed manual-save
+/// form and original-operation journal; merely viewing/skipping writes nothing.
+struct MemoryCollectionView: View {
+    let host: MemoryContainerHost
+    @Bindable var shell: ShellState
+    @Environment(\.dismiss) private var dismiss
+    @State private var index = 0
+    private var language: ShellLanguage { shell.language }
+    private var questions: [MemoryManualOption] { Array(host.manualOptions.prefix(3)) }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text(language.text("A few things to remember", "逐步了解你的旅行习惯")).font(.title2)
+                Text(language.text("These questions are optional. You can chat at any time. Only content you choose to save is submitted; guesses stay unconfirmed.", "这些问题均可跳过，随时可以聊天。只有你选择保存的内容才会提交，推断仍待确认。"))
+                if questions.indices.contains(index), let binding = host.manualBinding {
+                    Text(language.text("Question ", "问题 ") + "\(index + 1)/\(questions.count)")
+                        .accessibilityIdentifier("memory.collection.progress")
+                    MemoryManualForm(binding: binding, currentBinding: { host.manualBinding },
+                        options: [questions[index]], language: language.memoryLanguage,
+                        submit: { command in try await host.submitManual(command, context: host.captureAction()) },
+                        queryOriginal: { operationID in try await host.queryManual(operationID, context: host.captureAction()) })
+                        .id(questions[index].id)
+                    Button(language.text("Next question (optional)", "继续下一问（可跳过）")) {
+                        if index + 1 < questions.count { index += 1 }
+                        else { dismiss() }
+                    }.disabled(host.busy).accessibilityIdentifier("memory.collection.next")
+                } else {
+                    Text(language.text("Memory collection is unavailable.", "暂不能收集记忆。"))
+                }
+                Button(language.text("Skip for now and chat", "暂时跳过，开始聊天")) {
+                    dismiss(); shell.selectedTab = .assistant
+                }.accessibilityIdentifier("memory.collection.skip")
+                Text(language.text("If a save is unknown, check its original operation from Add memory. Skipping does not cancel or resend it.", "保存结果未知时，请在新增记忆页查询原操作。跳过不会取消或重发保存。"))
+                    .font(.footnote)
+            }.frame(maxWidth: .infinity, alignment: .leading).padding()
+        }.navigationTitle(language.text("Optional questions", "可选问题"))
     }
 }
 #endif

@@ -103,7 +103,7 @@ public struct MemoryManagementPresentationLifetime {
     public var formIdentity: UUID? { current ? binding?.id : nil }
     public var queriedOperationID: String? { current ? queriedID : nil }
     public var manualOptions: [MemoryManualOption] { current ? binding?.options ?? [] : [] }
-    public var canSubmitManual: Bool { false } // canonical public client has no production POST capability
+    public var canSubmitManual: Bool { current && binding?.client.manualWritesAvailable == true }
     public var hasMore: Bool { current && !busy && pages.last?.next != nil }
     public init(shell: ShellState) {
         self.shell = shell
@@ -231,12 +231,49 @@ public struct MemoryManagementPresentationLifetime {
         do {
             let result = try await context.binding.client.query(operationID:operationID,binding:context.binding.memory)
             guard owns(context.binding,token) else { return }
-            switch result { case .saved: saveValue = .saved; case .candidate: saveValue = .candidate; case .notObserved: saveValue = .notObserved }
+            saveValue = state(for: result)
             busy = false
         } catch { if owns(context.binding,token) { saveValue = .unknown; busy = false } }
     }
+    public func queryManual(_ operationID: String, context: MemoryContainerAction?) async throws -> MemorySaveResult {
+        guard let context, accepts(context) else { throw MemoryFailure.staleBinding }
+        let token = UUID(); epoch = token; busy = true; queriedID = operationID
+        do {
+            let result = try await context.binding.client.query(operationID: operationID, binding: context.binding.memory)
+            guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
+            saveValue = state(for: result); busy = false
+            return result
+        } catch {
+            if owns(context.binding, token) { saveValue = .unknown; busy = false }
+            throw error
+        }
+    }
+    private func state(for result: MemorySaveResult) -> MemorySaveState {
+        switch result {
+        case .saved: .saved
+        case .candidate: .candidate
+        case .notObserved: .notObserved
+        }
+    }
     public func submitManual(_ command: Components.Schemas.MemoryManualSaveCommand, context: MemoryContainerAction?) async throws -> MemorySaveResult {
-        // No public producer write capability exists. Do not substitute GET permission or an app Boolean.
-        throw MemoryFailure.liveWriteUnavailable
+        guard let context, accepts(context), context.binding.client.manualWritesAvailable else {
+            throw MemoryFailure.liveWriteUnavailable
+        }
+        let token = UUID(); epoch = token; busy = true; saveValue = .saving
+        queriedID = command.operation_id
+        do {
+            let result = try await context.binding.client.save(command, binding: context.binding.memory)
+            guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
+            saveValue = state(for: result)
+            busy = false
+            return result
+        } catch {
+            if owns(context.binding, token) {
+                if case MemoryFailure.rejected = error { saveValue = .failed }
+                else { saveValue = .unknown }
+                busy = false
+            }
+            throw error
+        }
     }
 }

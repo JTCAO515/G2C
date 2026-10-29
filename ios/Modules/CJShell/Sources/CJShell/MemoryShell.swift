@@ -14,6 +14,13 @@ struct MemoryShell: View {
         NavigationStack(path: $state.memoryPath) {
             List {
                 Section {
+                    if memoryHost.canSubmitManual && memoryHost.manualOptions.count >= 2 {
+                        NavigationLink {
+                            MemoryCollectionView(host: memoryHost, shell: state)
+                        } label: {
+                            Text(language.text("Optional travel questions", "可跳过的旅行问题"))
+                        }.accessibilityIdentifier("memory.collection.open")
+                    }
                     MemoryContainerGroups(host: memoryHost, state: state)
                     route(language.text("Add memory", "新增记忆"), to: .manualMemory, identifier: "memory.add")
                 } header: { ShellSectionHeading(title: language.text("Your memories", "你的记忆")) }
