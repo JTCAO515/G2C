@@ -165,7 +165,7 @@ import Foundation
         for _ in 0..<10 { if visible.evaluate(with:value) { break }; app.swipeUp() }
         XCTAssertTrue(visible.evaluate(with:value))
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .textClipped]) { issue in
-            print("DRAFT_AX \(language): \(issue.compactDescription)")
+            print("DRAFT_AX \(language): \(issue.compactDescription); \(issue.element?.label ?? "unavailable")")
             return false
         }
         XCTAssertEqual(proof.creation_intent, "consider_trip")
