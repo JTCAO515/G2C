@@ -105,7 +105,7 @@ class DraftPublisher:
         from cj_draft.provenance import SourceObservationBatch
         return SourceObservationBatch(binding, ()) if self.source_reader is None else self.source_reader(binding)
 
-    def publish_for_message(self, binding, original, current, model_text, observations):
+    def publish_for_message(self, binding, original, current, model_text, observations, *, before_publish=None):
         from cj_draft.provenance import build_document
         if (self.content_version != 'provenance.1' or observations.binding != binding
                 or current is None or current != original
@@ -125,9 +125,11 @@ class DraftPublisher:
                                 'run-' + binding.run_id, int(now) + PROPOSAL_TTL_SECONDS, content)
         except ValueError:
             raise DraftRejected('source document rejected') from None
+        if before_publish is not None:
+            before_publish()
         return Draft(proposal.proposal_id, proposal.trip_id, self.repository.publish(proposal))
 
-    def publish(self, run_id, model_text):
+    def publish(self, run_id, model_text, *, before_publish=None):
         if self.content_version != 'legacy':
             raise DraftRejected('provenance publication requires admitted original message')
         content = document_from_model(model_text)
@@ -136,4 +138,6 @@ class DraftPublisher:
                                 int(self.clock()) + PROPOSAL_TTL_SECONDS, content)
         except ValueError:
             raise DraftRejected('proposal validation failed') from None
+        if before_publish is not None:
+            before_publish()
         return Draft(proposal.proposal_id, proposal.trip_id, self.repository.publish(proposal))
