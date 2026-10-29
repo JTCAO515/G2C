@@ -215,8 +215,12 @@ private struct MemoryManualFormContent: View {
                 }
             } catch {
                 guard current() == binding, requestGeneration == token else { return }
-                if case MemoryFailure.rejected = error { state = .failed }
-                else { state = .unknown }
+                switch error {
+                case MemoryFailure.pendingRequiresQuery:
+                    originalID = nil; state = .failed
+                case MemoryFailure.rejected: state = .failed
+                default: state = .unknown
+                }
             }
         }
     }
