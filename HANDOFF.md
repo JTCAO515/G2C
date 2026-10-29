@@ -21,7 +21,7 @@
 | Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 merged; Lane A M1 App complete: #159/#194/#164/#212 and parents #7/#10 are closed; #167 PR253 locked head71e4cab merged1f960a1, all main CI40938740022 jobs green; #11 all seven frames have evidence and is closed. Native matrix04 23/23 PASS on the #249 backend combination; real models/tools remain L2 #32. M1 milestone remains open for JT. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). Lane B: #198/#170 and parent #19 closed; formal local NEEDS/provider_call host PR240 merged573faf1 with all main CI green. Persistent protection0016 prevents configuration downgrade. B M1 is complete; M2 #9 is split into #242/#243/#244 by PR245. First slice #242 has approved scope/design; producer PR249 is merged at beb05b5 with green main. Consumer candidate969b3e8 has local test57/PG18 and all head CI green, but awaits A #167 merge and green main before rebase/final review/merge. Lane C: #168/#169 and M2 #226 delivered with reviewed heads and green post-merge CI; #227/#228 remain future work and #12 stays open. |
 | Accepted Issue | Lane A: #167 and parent #11 closed with L1 evidence; requested M1 App goal complete, M1 milestone remains JT-owned. M2 A queue authorized by JT 2026-10-30: docs PR then #244, #228, #21 App; #244 depends on #242. Lane B: M1 #198/#170 and parent #19 complete; M2 #9 / #242 consumer awaiting A #167 merge and green main; #243/#244 depend on #242. Lane C: requested scope through #12/#226 complete; next queue is #227 then #228. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-29T19:28:43.760269+00:00 |
+| Last updated | 2026-10-29T20:11:13.033527+00:00 |
 
 ## Active Work
 
@@ -100,6 +100,7 @@
 | pass | `Lane A #167 PR253 exact-head review and locked merge` | Head71e4caba full CI40936684595 and lint40938671881 success, independent APPROVE6506103720, locked merge1f960a1. Fifteen actual native screenshots attached to PR. | https://github.com/JTCAO515/G2C/pull/253 |
 | pass | `Lane A #167 post-merge main CI40938740022 and parent closure` | All five main jobs success at1f960a1; #167 three frames and parent#11 seven frames linked to evidence and closed. #165/#166 remain closed; L2 #32 and memory fence #17 retained. M1 milestone remains open for JT. | https://github.com/JTCAO515/G2C/actions/runs/40938740022 |
 | pass | `A closeout: python3 -B scripts/handoff.py render; check; git diff --check` | A-only allowed handoff fields and generated Markdown; B/C text and all previous verification entries preserved. No executable changes. | — |
+| pass | `A M2 planning + M1 closeout: handoff render/check and git diff --check` | Three documentation files only; JT approved M2 lane ownership, queues and per-file locks on 2026-10-30. Open PR251 file list has no overlap with docs/plan/** or the handoff pair. New-head CI, final independent review and merge remain pending. | — |
 
 ## Blockers
 
