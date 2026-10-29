@@ -1586,6 +1586,11 @@ public struct Client: APIProtocol {
                     name: "after",
                     value: input.query.after
                 )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-CJ-Trip-Content",
+                    value: input.headers.X_hyphen_CJ_hyphen_Trip_hyphen_Content
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
@@ -1611,7 +1616,7 @@ public struct Client: APIProtocol {
                     switch chosenContentType {
                     case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.TripListResponse.self,
+                            Operations.listTrips.Output.Ok.Body.jsonPayload.self,
                             from: responseBody,
                             transforming: { value in
                                 .json(value)
@@ -1684,6 +1689,11 @@ public struct Client: APIProtocol {
                     name: "trip_id",
                     value: input.query.trip_id
                 )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-CJ-Trip-Content",
+                    value: input.headers.X_hyphen_CJ_hyphen_Trip_hyphen_Content
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
@@ -1709,7 +1719,7 @@ public struct Client: APIProtocol {
                     switch chosenContentType {
                     case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.TripDetailResponse.self,
+                            Operations.getTrip.Output.Ok.Body.jsonPayload.self,
                             from: responseBody,
                             transforming: { value in
                                 .json(value)
@@ -1782,6 +1792,11 @@ public struct Client: APIProtocol {
                     name: "proposal_id",
                     value: input.query.proposal_id
                 )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-CJ-Trip-Content",
+                    value: input.headers.X_hyphen_CJ_hyphen_Trip_hyphen_Content
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
@@ -1807,7 +1822,7 @@ public struct Client: APIProtocol {
                     switch chosenContentType {
                     case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.TripProposalResponse.self,
+                            Operations.getTripProposal.Output.Ok.Body.jsonPayload.self,
                             from: responseBody,
                             transforming: { value in
                                 .json(value)
@@ -3369,6 +3384,11 @@ public struct Client: APIProtocol {
                     method: .post
                 )
                 suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-CJ-Trip-Content",
+                    value: input.headers.X_hyphen_CJ_hyphen_Trip_hyphen_Content
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
@@ -3403,7 +3423,7 @@ public struct Client: APIProtocol {
                     switch chosenContentType {
                     case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.TripConfirmationResponse.self,
+                            Operations.prepareTripConfirmation.Output.Ok.Body.jsonPayload.self,
                             from: responseBody,
                             transforming: { value in
                                 .json(value)

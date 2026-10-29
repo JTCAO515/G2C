@@ -11,13 +11,13 @@ extension TripClient {
         return records
     }
     /// Superseded by `prepare` + `confirm`: a decision always needs a server-prepared original action.
-    public func choose(_ kind: TripActionKind, proposal: Components.Schemas.TripProposalSnapshot, binding: TripBinding) async throws -> TripActionResult {
+    public func choose(_ kind: TripActionKind, proposal: Components.Schemas.SourceTripProposalSnapshot, binding: TripBinding) async throws -> TripActionResult {
         _ = try capture(binding)
         throw TripFailure.liveWriteUnavailable
     }
     /// Asks the server to prepare one signed original action for the reviewed proposal. Read-only on
     /// the server. The response must repeat the exact reviewed proposal; any change needs a new review.
-    public func prepare(_ kind: TripActionKind, proposal reviewed: Components.Schemas.TripProposalSnapshot,
+    public func prepare(_ kind: TripActionKind, proposal reviewed: Components.Schemas.SourceTripProposalSnapshot,
                         binding: TripBinding) async throws -> TripPreparedAction {
         let token = try capture(binding)
         guard writesEnabled else { throw TripFailure.liveWriteUnavailable }
@@ -30,12 +30,12 @@ extension TripClient {
         let actionID = "a-" + UUID().uuidString.lowercased()
         let client = try await api(binding, token)
         let output = try await exchange(binding, token) {
-            try await client.prepareTripConfirmation(body: .json(.init(action_id: actionID, kind: requestKind,
+            try await client.prepareTripConfirmation(headers: .init(X_hyphen_CJ_hyphen_Trip_hyphen_Content: .provenance_period_1), body: .json(.init(action_id: actionID, kind: requestKind,
                 proposal_id: reviewed.proposal_id, candidate_hash: reviewed.candidate_hash)))
         }
         switch output {
         case .ok(let value):
-            let body = try value.body.json
+            let body = try value.body.json.sourcePreparation
             guard let bytes = Data(base64Encoded: body.action_utf8_base64), bytes.count <= endpoint.maximumRequestBytes else { throw TripFailure.invalidResponse }
             try validateProposal(body.proposal)
             let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]

@@ -89,7 +89,7 @@ public struct TripProposalCard: View {
             }
         }
     }
-    private func status(_ status: Components.Schemas.TripProposalSnapshot.statusPayload) -> String {
+    private func status(_ status: Components.Schemas.SourceTripProposalSnapshot.statusPayload) -> String {
         switch status {
         case .pending: language.text("Pending decision; eligibility is checked by the server", "待决定；是否有效由服务端核验")
         case .accepted: language.text("Accepted candidate", "候选已接受")
@@ -157,19 +157,36 @@ public struct TripDetailView: View {
 }
 
 private struct TripDocumentView: View {
-    let document: Components.Schemas.TripDocument
+    let document: Components.Schemas.SourceTripContent
     let language: TripLanguage
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(document.title).font(.title2)
-            ForEach(document.items, id: \.id) { item in
+            ForEach(document.displayItems, id: \.id) { item in
                 VStack(alignment: .leading, spacing: 4) {
+                    Text(item.categoryLabel(language)).font(.caption).fontWeight(.semibold)
                     Text(item.text).textSelection(.enabled)
+                    if item.category == .estimated {
+                        Text(language.text("Estimate at query time; not a future guarantee.", "查询时的估算，不保证未来实际情况。"))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    ForEach(document.sources.filter { item.sourceRefs.contains($0.id) }, id: \.id) { source in
+                        if source.evidence_level == .synthetic {
+                            Text(language.text("Synthetic example — not a live query", "合成样例，并非实时查询"))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                     Label(item.verification == .pending ? language.text("Pending verification", "待核实") : language.text("Evidence recorded", "已有核实依据"),
                           systemImage: item.verification == .pending ? "questionmark.circle" : "doc.text.magnifyingglass")
                         .font(.caption)
                     ForEach(Array(item.evidence.enumerated()), id: \.offset) { _, evidence in Text(evidence).font(.caption).textSelection(.enabled) }
                 }
+            }
+            if case .SourceDocumentV1(let sourceDocument) = document {
+                Text(sourceDocument.decisions.travel_dates == .undecided
+                     ? language.text("Travel dates not decided", "出行日期待决定")
+                     : language.text("Travel dates need confirmation", "请确认出行日期"))
+                    .font(.footnote)
             }
             Text(language.text("Accepting a trip does not verify pending facts.", "接受行程不代表待核实事实已获核实。"))
                 .font(.footnote).foregroundStyle(.secondary)

@@ -47,3 +47,16 @@ Structured itinerary time × NEEDS/FEAS conflict validation belongs to M2 before
 or within #21, requires a new owning TRIP contract and must reuse FEAS checks
 rather than invent NEEDS provenance or a parallel constraint engine. User-visible
 draft failure presentation belongs to #170; this slice adds no RUN event kind.
+
+
+## Source-aware local publication (#169)
+
+The independently versioned [provenance.1 contract](../../contracts/draft/PROVENANCE-V1.md)
+keeps original documents and action bytes intact. `cj_draft.provenance` builds
+source-bound documents only from host-acquired original records; model text has
+unknown provenance and cannot label itself queried or verified. The active
+publisher requires an explicit local opt-in; no live PLACE provider is enabled.
+
+Run its current monorepo tests with `uv run --locked python -m pytest backend/draft/tests`
+and the worker regressions with `uv run --locked python -m pytest backend/agent/tests`.
+Full local gates remain `scripts/test.py` and `scripts/pg_suites.py`.

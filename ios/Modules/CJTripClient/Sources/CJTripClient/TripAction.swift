@@ -24,7 +24,7 @@ public struct TripPreparedAction: Sendable {
     let owner: UUID
     let generation: UUID
     let binding: TripBinding
-    public var proposal: Components.Schemas.TripProposalSnapshot { pending.proposal }
+    public var proposal: Components.Schemas.SourceTripProposalSnapshot { pending.proposal }
     public var kind: TripActionKind { pending.kind }
 }
 
@@ -36,11 +36,11 @@ let confirmationClockMargin = 60
 public struct TripPending: Codable, Sendable {
     public let actionID: String
     public let kind: TripActionKind
-    public let proposal: Components.Schemas.TripProposalSnapshot
+    public let proposal: Components.Schemas.SourceTripProposalSnapshot
     public let originalUTF8: Data
 
     // Internal construction is restricted to test-held confirmation fixtures until an issuer is accepted.
-    init(actionID: String, kind: TripActionKind, proposal: Components.Schemas.TripProposalSnapshot, confirmationReference: String) throws {
+    init(actionID: String, kind: TripActionKind, proposal: Components.Schemas.SourceTripProposalSnapshot, confirmationReference: String) throws {
         try validateProposal(proposal)
         guard tripID(actionID), tripID(confirmationReference) else { throw TripFailure.invalidInput }
         self.actionID = actionID; self.kind = kind; self.proposal = proposal
@@ -48,7 +48,7 @@ public struct TripPending: Codable, Sendable {
         originalUTF8 = try encoder.encode([actionID, kind.rawValue, proposal.proposal_id, proposal.candidate_hash, confirmationReference])
     }
     /// Exact server-prepared bytes (`[action_id, kind, proposal_id, candidate_hash, confirmation_ref]`).
-    init(serverBytes: Data, proposal: Components.Schemas.TripProposalSnapshot) throws {
+    init(serverBytes: Data, proposal: Components.Schemas.SourceTripProposalSnapshot) throws {
         let fields = try JSONDecoder().decode([String].self, from: serverBytes)
         guard fields.count == 5, let kind = TripActionKind(rawValue: fields[1]) else { throw TripFailure.invalidResponse }
         actionID = fields[0]; self.kind = kind; self.proposal = proposal; originalUTF8 = serverBytes

@@ -38,9 +38,9 @@ public struct TripPresentationWork: Sendable {
     public private(set) var binding: TripBinding?
     public private(set) var selectedProposalID: String?
     public private(set) var selectedTripID: String?
-    public private(set) var proposal: Components.Schemas.TripProposalSnapshot?
-    public private(set) var trip: Components.Schemas.TripRecord?
-    public private(set) var trips: [Components.Schemas.TripRecord] = []
+    public private(set) var proposal: Components.Schemas.SourceTripProposalSnapshot?
+    public private(set) var trip: Components.Schemas.SourceTripRecord?
+    public private(set) var trips: [Components.Schemas.SourceTripRecord] = []
     public private(set) var proposalState: TripLoadState = .unavailable
     public private(set) var detailState: TripLoadState = .unavailable
     public private(set) var listState: TripLoadState = .unavailable

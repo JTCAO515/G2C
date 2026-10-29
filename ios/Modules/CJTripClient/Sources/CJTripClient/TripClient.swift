@@ -101,21 +101,21 @@ import OpenAPIRuntime
             throw TripFailure.exchangeUnknown
         }
     }
-    public func proposal(id: String, binding: TripBinding) async throws -> Components.Schemas.TripProposalSnapshot {
+    public func proposal(id: String, binding: TripBinding) async throws -> Components.Schemas.SourceTripProposalSnapshot {
         let token = try capture(binding)
         guard tripID(id) else { throw TripFailure.invalidInput }
         let client = try await api(binding, token)
-        let output = try await exchange(binding, token) { try await client.getTripProposal(query: .init(proposal_id: id)) }
+        let output = try await exchange(binding, token) { try await client.getTripProposal(query: .init(proposal_id: id), headers: .init(X_hyphen_CJ_hyphen_Trip_hyphen_Content: .provenance_period_1)) }
         switch output {
         case .ok(let value):
-            let proposal = try value.body.json.proposal
+            let proposal = try value.body.json.sourceProposal
             try validateProposal(proposal)
             guard same(proposal.proposal_id, id) else { throw TripFailure.invalidResponse }
             return proposal
         case .default(let status, let value): throw TripFailure.rejected(status, try value.body.json.error.code)
         }
     }
-    public func detail(id: String, binding: TripBinding) async throws -> Components.Schemas.TripRecord? {
+    public func detail(id: String, binding: TripBinding) async throws -> Components.Schemas.SourceTripRecord? {
         let previousSource = detailSnapshotSource
         let token = try capture(binding)
         guard tripID(id) else { throw TripFailure.invalidInput }
@@ -125,26 +125,23 @@ import OpenAPIRuntime
     }
     // Presentation work already retired/captured its source synchronously. Do not
     // retire a newer source by starting an older queued or in-flight UI read.
-    func selectedDetail(id: String, binding: TripBinding, source: UUID) async throws -> Components.Schemas.TripRecord? {
+    func selectedDetail(id: String, binding: TripBinding, source: UUID) async throws -> Components.Schemas.SourceTripRecord? {
         let token = try capture(binding)
         guard source == detailSnapshotSource else { throw TripFailure.staleBinding }
         guard tripID(id) else { throw TripFailure.invalidInput }
         return try await readDetail(id: id, binding: binding, token: token, source: source)
     }
     private func readDetail(id: String, binding: TripBinding, token: UUID,
-                            source: UUID? = nil) async throws -> Components.Schemas.TripRecord? {
+                            source: UUID? = nil) async throws -> Components.Schemas.SourceTripRecord? {
         let client = try await api(binding, token, detailSource: source)
-        let output = try await exchange(binding, token) { try await client.getTrip(query: .init(trip_id: id)) }
+        let output = try await exchange(binding, token) { try await client.getTrip(query: .init(trip_id: id), headers: .init(X_hyphen_CJ_hyphen_Trip_hyphen_Content: .provenance_period_1)) }
         if let source, detailSnapshotSource != source { throw TripFailure.staleBinding }
         switch output {
         case .ok(let value):
-            switch try value.body.json.trip {
-            case .TripRecord(let trip):
-                try validateRecord(trip)
-                guard same(trip.trip_id, id) else { throw TripFailure.invalidResponse }
-                return trip
-            case .case2(let null): guard null.value == nil else { throw TripFailure.invalidResponse }; return nil
-            }
+            guard let trip = try value.body.json.sourceTrip() else { return nil }
+            try validateRecord(trip)
+            guard same(trip.trip_id, id) else { throw TripFailure.invalidResponse }
+            return trip
         case .default(let status, let value): throw TripFailure.rejected(status, try value.body.json.error.code)
         }
     }
@@ -153,10 +150,10 @@ import OpenAPIRuntime
         guard (1...100).contains(limit) else { throw TripFailure.invalidInput }
         if let after { guard after.owner == owner, after.binding == binding else { throw TripFailure.staleBinding } }
         let client = try await api(binding, token)
-        let output = try await exchange(binding, token) { try await client.listTrips(query: .init(limit: limit, after: after?.after)) }
+        let output = try await exchange(binding, token) { try await client.listTrips(query: .init(limit: limit, after: after?.after), headers: .init(X_hyphen_CJ_hyphen_Trip_hyphen_Content: .provenance_period_1)) }
         switch output {
         case .ok(let value):
-            let body = try value.body.json
+            let body = try value.body.json.sourcePage
             guard body.trips.count <= limit else { throw TripFailure.invalidResponse }
             var previous = after?.after ?? ""
             for trip in body.trips {

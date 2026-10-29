@@ -8,9 +8,9 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_trip.confirmation import ConfirmationSigner
 from cj_trip.domain import Conflict
-from .generated import TripConfirmationRequest, TripConfirmationResponse
+from .generated import TripConfirmationRequest, TripConfirmationResponse, SourceTripConfirmationResponse
 from .message_routes import _error, _token
-from .trip_projection import proposal_projection
+from .trip_projection import proposal_projection, source_representation
 
 
 def register_trip_confirmations(app, boundary=None, configuration=None, modules=None, signer=None):
@@ -19,7 +19,7 @@ def register_trip_confirmations(app, boundary=None, configuration=None, modules=
                 or not modules or boundary.confirm is not signer):
             raise ValueError('same confirmation issuer and transaction validator required')
 
-    @app.post('/v1/trip-confirmations', response_model=TripConfirmationResponse)
+    @app.post('/v1/trip-confirmations', response_model=TripConfirmationResponse | SourceTripConfirmationResponse)
     async def prepare(request: Request):
         def unavailable():
             return _error(request, 503, 'TRIP_CONFIRMATION_UNAVAILABLE', 'dependency', 'unknown', 'retry_safe_read')
@@ -43,6 +43,7 @@ def register_trip_confirmations(app, boundary=None, configuration=None, modules=
             return result
 
         try:
+            source_view = source_representation(request)
             if request.scope['query_string']:
                 raise ValueError('no query parameters')
             chunks, size = [], 0
@@ -70,12 +71,16 @@ def register_trip_confirmations(app, boundary=None, configuration=None, modules=
             detail = ctx.proposal_detail(command.proposal_id)
             prepared = signer.issue(ctx.metadata.scope, detail, action_id=command.action_id,
                                     kind=command.kind, candidate_hash=command.candidate_hash)
-            payload = TripConfirmationResponse.model_validate({
+            model = SourceTripConfirmationResponse if source_view else TripConfirmationResponse
+            fields = {
                 'request_id': request.state.request_id,
                 'action_utf8_base64': base64.b64encode(prepared.action.raw()).decode('ascii'),
                 'expires_at': prepared.expires_at,
-                'proposal': proposal_projection(detail, modules['cj_trip.domain']).model_dump(mode='json'),
-            })
+                'proposal': proposal_projection(detail, modules['cj_trip.domain'], source_view).model_dump(mode='json'),
+            }
+            if source_view:
+                fields['representation'] = 'provenance.1'
+            payload = model.model_validate(fields)
             body = JSONResponse(payload.model_dump(mode='json')).body
             if len(body) > configuration.max_private_response_bytes:
                 raise ValueError('private response limit')

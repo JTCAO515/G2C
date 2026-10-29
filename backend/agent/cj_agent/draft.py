@@ -8,6 +8,9 @@ trusted publish ingress. The client never sends proposal content.
 from dataclasses import dataclass
 import hashlib
 import json
+import math
+import os
+from datetime import datetime, timezone
 import time
 
 from cj_trip.domain import Proposal, packed
@@ -80,10 +83,53 @@ class Draft:
 class DraftPublisher:
     """Host-side ingress; `repository` is cj_trip.postgres.Repository bound to the TRIP scope."""
 
-    def __init__(self, repository, clock=time.time):
+    def __init__(self, repository, clock=time.time, *, content_version=None,
+                 source_reader=None, max_source_age_seconds=None):
+        # Explicit local opt-in; absent configuration preserves every legacy host.
+        version = content_version if content_version is not None else os.environ.get('CJ_DRAFT_CONTENT_VERSION', 'legacy')
+        if version not in ('legacy', 'provenance.1'):
+            raise ValueError('unsupported draft content version')
+        if version == 'provenance.1' and os.environ.get('CJ_ENV') != 'local':
+            raise ValueError('provenance draft activation requires local environment')
+        if source_reader is not None and (version != 'provenance.1'
+                or type(max_source_age_seconds) not in (int, float)
+                or not math.isfinite(max_source_age_seconds) or max_source_age_seconds <= 0):
+            raise ValueError('explicit source freshness budget required')
         self.repository, self.clock = repository, clock
+        self.content_version, self.source_reader = version, source_reader
+        self.max_source_age_seconds = max_source_age_seconds
+
+    def sources_for(self, binding):
+        # This callback belongs to the trusted host. There is no HTTP/model source
+        # upload path. The worker reacquires its publication fence afterwards.
+        from cj_draft.provenance import SourceObservationBatch
+        return SourceObservationBatch(binding, ()) if self.source_reader is None else self.source_reader(binding)
+
+    def publish_for_message(self, binding, original, current, model_text, observations):
+        from cj_draft.provenance import build_document
+        if (self.content_version != 'provenance.1' or observations.binding != binding
+                or current is None or current != original
+                or (current.receipt.message_id, current.receipt.conversation_id,
+                    current.receipt.generation, current.receipt.sequence, current.receipt.run_id)
+                != (binding.message_id, binding.conversation_id, binding.generation,
+                    binding.message_sequence, binding.run_id)
+                or self.repository.scope != trip_scope_for(binding.scope)):
+            raise DraftRejected('source binding changed or unavailable')
+        content = document_from_model(model_text)
+        now = self.clock()
+        try:
+            content = build_document(content, current, observations.results,
+                                     now=datetime.fromtimestamp(now, timezone.utc),
+                                     max_age_seconds=self.max_source_age_seconds)
+            proposal = Proposal(proposal_id_for(binding.run_id), 'trip-' + binding.run_id, 0,
+                                'run-' + binding.run_id, int(now) + PROPOSAL_TTL_SECONDS, content)
+        except ValueError:
+            raise DraftRejected('source document rejected') from None
+        return Draft(proposal.proposal_id, proposal.trip_id, self.repository.publish(proposal))
 
     def publish(self, run_id, model_text):
+        if self.content_version != 'legacy':
+            raise DraftRejected('provenance publication requires admitted original message')
         content = document_from_model(model_text)
         try:
             proposal = Proposal(proposal_id_for(run_id), 'trip-' + run_id, 0, 'run-' + run_id,
