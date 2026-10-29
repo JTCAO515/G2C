@@ -12,13 +12,15 @@ struct MemoryTransport: ClientTransport {
     let endpoint: MemoryEndpoint
     let bearer: String
     let writeEnabled: Bool
+    let managementEnabled: Bool
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let paths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items", "applyMemoryManagementAction": "/v1/memory-management-actions", "queryMemoryManagementReceipt": "/v1/memory-management-receipts"]
         guard baseURL == endpoint.url, let path = paths[operationID],
               request.path?.split(separator: "?", maxSplits: 1).first.map(String.init) == path,
               request.method == (["saveMemory", "applyMemoryManagementAction"].contains(operationID) ? .post : .get),
-              !["saveMemory", "applyMemoryManagementAction", "queryMemoryManagementReceipt"].contains(operationID) || writeEnabled else { throw MemoryFailure.liveWriteUnavailable }
+              operationID != "saveMemory" || writeEnabled,
+              !["applyMemoryManagementAction", "queryMemoryManagementReceipt"].contains(operationID) || managementEnabled else { throw MemoryFailure.liveWriteUnavailable }
         var request = request
         request.headerFields[.authorization] = "Bearer " + bearer
         let data: Data?
@@ -63,6 +65,8 @@ public enum MemorySaveResult: Sendable {
     private let transport: any ClientTransport
     private let store: MemoryPendingStore?
     private let writeEnabled: Bool
+    private let managementEnabled: Bool
+    public let manualWritesAvailable: Bool
     private let managementStore: MemoryManagementPendingStore?
     private var acceptedManagementItems: [Data: MemoryAcceptedItem] = [:]
     private var managementConfirmed: Set<Data> = []
@@ -75,15 +79,31 @@ public enum MemorySaveResult: Sendable {
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore?,
                 liveReadTransport: NoRedirectTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
         self.endpoint = endpoint; self.credentials = credentials; current = currentBinding
-        store = pendingStore; transport = liveReadTransport; writeEnabled = false; managementStore = managementPendingStore
+        store = pendingStore; transport = liveReadTransport; writeEnabled = false; managementEnabled = false; manualWritesAvailable = false; managementStore = managementPendingStore
     }
     /// Internal capability: tests can intercept POST, public consumers cannot enable live writes.
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
          currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore?,
          interceptedTransport: any ClientTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
         self.endpoint = endpoint; self.credentials = credentials; current = currentBinding
-        store = pendingStore; transport = interceptedTransport; writeEnabled = true; managementStore = managementPendingStore
+        store = pendingStore; transport = interceptedTransport; writeEnabled = true; managementEnabled = true; manualWritesAvailable = false; managementStore = managementPendingStore
     }
+    #if DEBUG && targetEnvironment(simulator)
+    /// Only the explicit signed local MEMORY host (#226). Ordinary/Release
+    /// clients remain read-only; this does not enable lifecycle management.
+    public init(localEndpoint endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
+                currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore,
+                localTransport: NoRedirectTransport) throws {
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port, (1...65535).contains(port),
+              endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 1_000_000 else {
+            throw MemoryFailure.unconfigured
+        }
+        self.endpoint = endpoint; self.credentials = credentials; current = currentBinding
+        store = pendingStore; transport = localTransport; writeEnabled = true
+        managementEnabled = false; manualWritesAvailable = true; managementStore = nil
+    }
+    #endif
     private func check(_ binding: MemoryBinding, _ token: UUID) throws {
         guard generation == token else { throw MemoryFailure.staleBinding }
         let observed = current()
@@ -104,7 +124,7 @@ public enum MemorySaveResult: Sendable {
         try check(binding, token)
         guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MemoryFailure.unconfigured }
         return Client(serverURL: endpoint.url, configuration: .memory,
-                      transport: MemoryTransport(underlying: transport, endpoint: endpoint, bearer: bearer, writeEnabled: writeEnabled,
+                      transport: MemoryTransport(underlying: transport, endpoint: endpoint, bearer: bearer, writeEnabled: writeEnabled, managementEnabled: managementEnabled,
                         validate: { [self] in
                             try check(binding, token)
                             if let original {
@@ -255,7 +275,7 @@ public enum MemorySaveResult: Sendable {
 
 extension MemoryClient {
     /// Public live composition is unavailable while the root lifecycle factory is closed.
-    public var managementAvailable: Bool { writeEnabled && managementStore != nil && endpoint.maximumRequestBytes <= 32768 && endpoint.maximumResponseBytes <= 65536 }
+    public var managementAvailable: Bool { managementEnabled && managementStore != nil && endpoint.maximumRequestBytes <= 32768 && endpoint.maximumResponseBytes <= 65536 }
     func managementPresentationIsCurrent(_ binding: MemoryBinding) -> Bool {
         do { try check(binding, generation); return true } catch { return false }
     }

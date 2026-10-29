@@ -41,6 +41,7 @@ struct CJProbeApp: App {
             #if DEBUG && targetEnvironment(simulator)
             ShellView(state: shell, messageHost: developmentAccounts?.trip?.messages.messages ?? development?.messages.messages,
                       serverHistoryHost: developmentAccounts?.trip?.messages.history ?? development?.messages.history,
+                      memoryContainerHost: developmentAccounts?.trip?.memory?.host ?? development?.memory?.host,
                       tripContainerHost: developmentAccounts?.trip?.trips ?? development?.trips,
                       runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
                       developmentAccountHost: developmentAccounts?.accounts)
