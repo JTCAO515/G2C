@@ -92,6 +92,7 @@ public struct MemoryManagementPresentationLifetime {
         }
     }
     public var isConfigured: Bool { current }
+    public var managementAvailable: Bool { current && binding?.client.managementAvailable == true }
     public var isSynthetic: Bool { current && binding?.synthetic == true }
     public var groups: MemoryLoad<[Components.Schemas.MemoryGroup]> { current ? groupsValue : .unconfigured }
     public var items: MemoryLoad<[Components.Schemas.MemoryItem]> { current ? itemsValue : .unconfigured }
