@@ -157,7 +157,7 @@ import Foundation
         case "draft_unknown": expected = language == "en" ? "result unknown" : "草稿生成结果未知"; outcome = "provider_unknown"
         default: expected = language == "en" ? "No draft result recorded" : "尚无草稿结果记录"; outcome = nil
         }
-        let value = app.staticTexts["run.draft.status"]
+        let value = app.descendants(matching: .any).matching(identifier: "run.draft.status").firstMatch
         XCTAssertTrue(value.waitForExistence(timeout: 10))
         let match = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object:value)
         XCTAssertEqual(XCTWaiter.wait(for:[match], timeout:15), .completed)

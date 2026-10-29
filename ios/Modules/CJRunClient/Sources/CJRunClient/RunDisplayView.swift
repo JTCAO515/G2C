@@ -60,13 +60,15 @@ extension RunDisplayState {
                     Text(model.draftStatus.label(language))
                         .font(.body.leading(.loose)).lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true).padding(.vertical, 2)
-                        .accessibilityIdentifier("run.draft.status")
+
                     if case .loaded(let value) = model.draftStatus {
                         Text(language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(value.run_status.rawValue))
                             .font(.caption).fixedSize(horizontal: false, vertical: true)
-                            .accessibilityIdentifier("run.draft.runStatus")
+
                     }
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("run.draft.status")
             }
             if model.supportsCancellation {
                 if model.cancellationState == .stopping {
