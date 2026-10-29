@@ -53,7 +53,7 @@
 - #167 依赖 #164（App 能发消息）和 #165（停止接口）。
 - #170 依赖 #168 和 #165。
 - #170 的 App 草稿结果呈现由 A 线 [#212](https://github.com/JTCAO515/G2C/issues/212) 承接（父票 #19），依赖 #164 和 B 线版本化草稿结果切片；后端与原生证据分别回写。
-- **跨票转移：** #11 框 7 和 #19 框 6 中“记忆版本”的部分，转入 M2 的 [#17](https://github.com/JTCAO515/G2C/issues/17) CJ-019。M2 拆票时要把它补成 #17 的验收框。
+- **跨票转移：** #11 框 7 和 #19 框 6 中“记忆版本”的部分，转入 M2 的 [#17](https://github.com/JTCAO515/G2C/issues/17) CJ-019 的明确 fence 验收框；[#227](https://github.com/JTCAO515/G2C/issues/227) 复用其版本/撤回语义做消费验收，不另写约束引擎，也不以调用方 Context、版本或 hash 相等充当发布许可。
 - **跨票转移：** 按 [JT 对 #168 的决定](https://github.com/JTCAO515/G2C/issues/168#issuecomment-6485249974)，#19 框 2 的“结构化日程时间 × NEEDS/FEAS 冲突校验”转入 M2 [#204](https://github.com/JTCAO515/G2C/issues/204)，挂在 #21 每日时间线之前或之内；依赖 TRIP 结构化行程契约新版本，复用 FEAS `ITEM_TIME_*` 与现有重叠检查，不另写约束引擎。M1 #168 整份拒绝对象条目或结构化时间字段；文本时间仅为 `pending`、`evidence=[]` 的描述，服务端不做时间校验或已校验声明。用户可见的草稿校验失败状态由 B 线 #170 承接。
 
 本次插入段冻结求解预算数值、TIMEOUT/UNKNOWN 与既有断言，以及 RLS 隔离语义、运行角色权限上限、已应用迁移 1–11、契约和 CI 门禁。#176 先记录冷/热分阶段耗时，采用启动预载且失败即退出，最后在新 checkout 连续三次完整 PG 11/11；#182 必须覆盖 12 张 M1 表的同物理连接复用 SELECT/UPDATE/INSERT 负例并保留 #181 e2e。若修复需改变这些边界、碰云资源或真实账号，停止并在票中说明，等待 JT 决定。#159 文案、L2 授权、分支保护和生产 key 仍由 JT 决定。
@@ -66,7 +66,7 @@
 |---|---|---|---|
 | A App | #164 → #167 → #194 → #159（#194、#159 等 JT 确认文案后才做；未确认就跳过） | `ios/Modules/CJMessageClient/**`、`ios/Modules/CJRunClient/**`、`ios/Modules/CJShell/**`、`ios/App/**`、`ios/Modules/CJUsageClient` 测试夹具、`docs/ui.md` | #164 等 B 线 #198 合并；#170 若需要 App 端失败呈现，由 B 线拆子票交本线 |
 | B 后端消息与运行 | #198 → #170 → 按“M2 拆分预案”拆 #9 并开始第一张子票 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`scripts/dev_auth.py`、`backend/agent/cj_agent/worker.py`、`backend/agent/cj_agent/provider.py` | #170 等 C 线 #168 关闭 |
-| C 草稿 | #168 收尾（Part2）→ #169 → 按“M2 拆分预案”拆 #12 并开始第一张子票 | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`ios/Modules/CJTripClient/**`、`ios/Modules/CJMemoryClient/**` | #169 若要改 `worker.py` 等 B 线文件，先确认 B 线没有开着的 PR 改同一文件，否则等待 |
+| C 草稿 | #168 收尾（Part2）→ #169 → M2 #12：#226 保存/读取 → #227 跨会话使用 → #228 App 记忆页 | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`ios/Modules/CJTripClient/**`、`ios/Modules/CJMemoryClient/**` | 跨线文件须明确写权并无冲突；#226 本地 API/RLS 接入、#227 运行消费、#228 Shell/App 宿主按各票停点协调 |
 
 M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两张父票”），两条线的拆票都要改 `docs/plan/**`，按共享文件规则排队。
 共享文件（唯一权威清单，ADR-0007 第 2 条引用此处）同一时间只允许一个开着的 PR 修改：`contracts/**` 与生成代码（#169 会改 `openapi.json`）、`backend/migrations/**`、`scripts/test.py`、`scripts/pg_suites.py`、`docs/plan/**`、`docs/handoff.json` 与生成的 `HANDOFF.md`、`backend/agent/tests/e2e_local.py`。
@@ -92,12 +92,12 @@ M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两�
 
 ## M2 拆分预案
 
-M1 剩最后两张父票时，按下面的顺序把 M2 拆成子票。这里只是预案，开工时以代码实况为准。
+按上面的并行线规则，各线 M1 队列完成后滚动拆分 M2；已有子票按顺序执行，其余仍为预案，开工时以代码实况为准。
 
 | 序 | 父票 | 预计子票 |
 |---|---|---|
 | 1 | #9 CJ-008 用量与运行上限 | 统一计量出口与超限拒绝；并发/重复尝试不绕过限制；App 超限提示 |
-| 2 | #12 CJ-011 结构化长记忆 | 保存与读取；跨会话即时使用；App 记忆页 |
+| 2 | #12 CJ-011 结构化长记忆 | [#226](https://github.com/JTCAO515/G2C/issues/226) 保存与受保护读取 → [#227](https://github.com/JTCAO515/G2C/issues/227) 跨会话即时使用/版本消费 → [#228](https://github.com/JTCAO515/G2C/issues/228) App 记忆页/渐进收集；#226 不单独构成整张父票完成 |
 | 3 | #17 CJ-019 记忆编辑与启停 | 编辑/启停；旧结果不覆盖（含从 #11、#19 转入的记忆版本 fence） |
 | 4 | #14 CJ-013 需求整理与纠正 | 需求修订与固定事项；App 纠正入口 |
 | 5 | #13 CJ-012、#16 CJ-034 | 地点/路线与天气/时效：L1 用录制数据，真实接口 → L2 |
