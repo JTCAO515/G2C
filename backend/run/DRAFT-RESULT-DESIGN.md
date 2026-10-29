@@ -33,10 +33,23 @@ normal binding, sequence, event ID, exact replay and transaction fence rules app
 It does not alter RUN status, text, or effects. Reject a second contradictory draft
 outcome or a draft publication after a recorded failure; preserve exact replay.
 The worker catches each existing draft exception separately and appends its fixed
-outcome under the current RUN fence. If cancellation/context invalidation wins
+outcome under the current RUN fence. Each catch returns the UPDATED State from
+that append; the following completed event uses its next sequence, never the
+pre-outcome state. If cancellation/context invalidation wins
 first, do not append a late event; retain the terminal status. If recording the
 outcome has an uncertain commit, do not invent completed or retry the provider:
 recover the original RUN/event stream under existing unknown handling.
+
+Before starting the draft provider OR invoking drafts.publish, the worker checks
+the persisted draft outcome under its existing RUN transaction fence. Any existing
+failure/unknown outcome prohibits both calls. This must be a pre-invoke guard:
+_step currently invokes the independently committed TRIP publisher before recording
+the RUN effect, so a guard only in advance is too late to prevent a candidate.
+
+advance also enforces both directions: draft_outcome prevents a later trip_proposal
+effect, and an existing trip_proposal effect prevents a later draft_outcome. This
+restriction does not reject unrelated effect kinds. Exact original event replay
+continues to return the original state before these new-transition checks.
 
 Successful publication keeps the existing trusted trip_proposal effect path.
 Do not redesign TRIP publication atomicity or add a second candidate store here.
@@ -115,6 +128,11 @@ history reopen, and accessibility. A owns all iOS changes and native evidence.
 1. RUN state/replay tests: the three outcomes; invalid payloads; duplicate exact
    replay versus conflicting identity; cancellation/outcome and context/outcome
    interleavings; rejection after terminal; corrupt persisted event fail-closed.
+   Seed an existing outcome then invoke the actual worker draft entry: provider and
+   publisher call counts remain zero and PG has no candidate/effect. Test reverse
+   ordering (published effect then failure), unrelated effects and exact replay.
+   Verify each exception returns the updated State so completed has a contiguous
+   next sequence. Force cancellation before the guard and after outcome recording.
 2. Private PG: new migration up/down/up, down refusal with real outcome rows,
    preserved existing event rules/RLS/runtime role, original RUN recovery after
    process reconstruction, no candidate or effect on rejection.
