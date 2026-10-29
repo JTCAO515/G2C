@@ -4,6 +4,7 @@ import CJShell
 import CJTripClient
 import CJMessageHTTP
 import CJMessageClient
+import CJRunClient
 import CJMessageKeyBridge
 import CJMessageKeys
 import CJSession
@@ -100,7 +101,7 @@ import Observation
             throw TripFailure.staleBinding
         }
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
-                                               isCurrent: { lifetime.current != nil })
+                                               session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
         shell.selectedTab = .trips
         // Disk restoration only selects an original action for GET reconciliation;
         // it never prepares or submits another action, even while the API is offline.
@@ -149,11 +150,12 @@ import Observation
 @MainActor final class DevelopmentMessageHost {
     let messages: AssistantMessageHost
     let history: ServerHistoryHost
+    let runs: RunContainerHost
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState,
-         isCurrent: @escaping @MainActor () -> Bool) throws {
+         session: SessionLifecycle, operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
         let lifetime = DevelopmentMessageLifetime(isCurrent: isCurrent)
         let scope = try StorageScope(environment: configuration.environmentID.uuidString, account: configuration.accountID.uuidString)
         let namespace = MessageKeyNamespace(environment: configuration.environmentID, account: configuration.accountID,
@@ -198,13 +200,25 @@ import Observation
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
         }
+        let runReads = try NoRedirectTransport(requestTimeout: 15, resourceTimeout: 150)
+        let runStops = try RunCancellationTransport.development(endpoint: endpoint, validate: { try lifetime.validate() })
+        let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes: 256, maximumTextBytes: 200000,
+            credentials: { captured in
+                try lifetime.validate()
+                guard captured == operation, session.isCurrent(captured) else { throw RecoveryError.inactive }
+                return configuration.token
+            }, liveReadTransport: runReads, liveCancellationTransport: runStops)
+        let runs = RunContainerHost(shell: shell)
+        guard runs.configure(RunContainerConfiguration(model: runModel, session: session, operation: operation,
+            generation: shell.generation, synthetic: false, followAcceptedMessages: true,
+            isCurrent: { (try? lifetime.validate()) != nil })) else { throw RecoveryError.inactive }
         self.lifetime = lifetime; self.keyAdapter = keyAdapter
-        self.messages = messages; self.history = history
+        self.messages = messages; self.history = history; self.runs = runs
     }
 
     func invalidate() {
         lifetime.active = false
-        history.invalidate(); messages.invalidate(); keyAdapter.invalidate()
+        runs.invalidate(); history.invalidate(); messages.invalidate(); keyAdapter.invalidate()
     }
 }
 

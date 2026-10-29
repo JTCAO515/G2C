@@ -42,6 +42,7 @@ struct CJProbeApp: App {
             ShellView(state: shell, messageHost: developmentAccounts?.trip?.messages.messages ?? development?.messages.messages,
                       serverHistoryHost: developmentAccounts?.trip?.messages.history ?? development?.messages.history,
                       tripContainerHost: developmentAccounts?.trip?.trips ?? development?.trips,
+                      runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
                       developmentAccountHost: developmentAccounts?.accounts)
                 .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained
                 .safeAreaInset(edge: .top) {

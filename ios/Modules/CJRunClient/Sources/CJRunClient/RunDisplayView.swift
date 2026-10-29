@@ -33,7 +33,7 @@ extension RunDisplayState {
     }
 }
 /// Embeddable content only. Host owns navigation/source/selection and eager invalidation.
-/// Explicit snapshot or SSE read. No automatic reconnect, write or server cancellation.
+/// Explicit reads; cancellation is available only with the separate development capability.
 @MainActor public struct RunDisplayView: View {
     private let model: RunDisplayModel
     private let language: RunDisplayLanguage
@@ -54,15 +54,26 @@ extension RunDisplayState {
                 Text(language.text("Received text · final state not yet verified", "已接收正文 · 最终状态尚未核实"))
                     .font(.caption)
             }
+            if model.supportsCancellation {
+                if model.cancellationState == .stopping {
+                    Text(language.text("Stopping the original run…", "正在停止原运行…")).accessibilityIdentifier("run.stop.status")
+                } else if model.cancellationState == .unknown {
+                    Text(language.text("Stop result unknown. Check the original run before trying again.", "停止结果未知，请先查询原运行。")).accessibilityIdentifier("run.stop.status")
+                }
+                Button(language.text("Stop generation", "停止生成")) {
+                    let work = model.prepareCancellation()
+                    Task { await model.performCancellation(work) }
+                }.disabled(!model.canCancel).accessibilityIdentifier("run.stop")
+            }
             if case .loading = state { ProgressView() }
             Button(language.text("Read original run", "读取原运行")) {
                 let work = model.prepareRead()
                 Task { await model.perform(work) }
-            }.disabled(disabled(state))
+            }.disabled(disabled(state) || model.cancellationState == .stopping).accessibilityIdentifier("run.snapshot.read")
             Button(language.text("Follow / resume this answer", "接收／继续此回答")) {
                 let work = model.prepareStream()
                 Task { await model.perform(work) }
-            }.disabled(disabled(state)).accessibilityIdentifier("run.stream.read")
+            }.disabled(disabled(state) || model.cancellationState == .stopping).accessibilityIdentifier("run.stream.read")
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active { model.invalidate() } }
         .onDisappear { model.invalidate() }

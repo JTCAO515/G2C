@@ -27,9 +27,13 @@ private actor StreamTransport: ClientTransport {
     var finalText = answer
     var finalStatus = "completed"
     var status = 200
+    var snapshotStatus: Int?
+    func snapshotFailure(_ code: Int) { snapshotStatus = code }
     var contentType = "text/event-stream; charset=utf-8"
     var trace = streamTrace
     var requests: [(String, String)] = []
+    var startupFailures = 0
+    func failStartup(_ count: Int) { startupFailures = count }
     var hold = false
     var continuation: AsyncThrowingStream<ArraySlice<UInt8>, Error>.Continuation?
     init(_ wire: String) { self.wire = wire }
@@ -50,7 +54,11 @@ private actor StreamTransport: ClientTransport {
         requests.append((operationID, offset))
         let parts = try #require(URLComponents(string: request.path ?? ""))
         #expect(parts.queryItems == [URLQueryItem(name: "message_id", value: originalID)])
-        var response = HTTPResponse(status: .init(code: status))
+        if operationID == "streamRunEvents", startupFailures > 0 {
+            startupFailures -= 1
+            return (HTTPResponse(status: .serviceUnavailable), HTTPBody(Data()))
+        }
+        var response = HTTPResponse(status: .init(code: operationID == "getRunDisplaySnapshot" ? (snapshotStatus ?? status) : status))
         response.headerFields[HTTPField.Name("X-Request-ID")!] = trace
         response.headerFields[.cacheControl] = "no-store"
         if operationID == "streamRunEvents" {
@@ -64,6 +72,10 @@ private actor StreamTransport: ClientTransport {
         }
         #expect(operationID == "getRunDisplaySnapshot" && parts.path == "/v1/run-display")
         response.headerFields[.contentType] = "application/json"
+        if snapshotStatus == 503 {
+            let error: [String: Any] = ["request_id": streamTrace, "error": ["code": "RUN_UNAVAILABLE", "category": "dependency", "message_en": "Unavailable", "message_zh": "不可用", "outcome": "unknown", "recovery": "retry_safe_read"]]
+            return (response, HTTPBody(try JSONSerialization.data(withJSONObject: error)))
+        }
         let snapshot: [String: Any] = ["message_id": originalID, "conversation_id": "chat", "generation": "g",
             "run_id": "run", "message_sequence": 1, "event_highwater": 3, "status": finalStatus,
             "text": finalText, "text_state": finalStatus == "completed" ? "complete" : "partial"]
@@ -95,6 +107,43 @@ private actor StreamTransport: ClientTransport {
 @MainActor struct RunEventStreamTests {
     /// Opt-in real local HTTP/PG check; absent configuration is explicitly SKIPPED.
     /// The harness creates only disposable local identities and FakeProvider answers.
+    @Test func finalSnapshot503NeverRestartsAnObservedStream() async throws {
+        let f = try StreamFixture(complete()); await f.transport.snapshotFailure(503)
+        await f.model.performInitialStream(f.model.prepareStream())
+        #expect(await f.transport.requests.map { $0.0 } == ["streamRunEvents", "getRunDisplaySnapshot"])
+        guard case .unavailable(.rejected(status: 503)) = f.model.state else { Issue.record("snapshot failure hidden"); return }
+    }
+    @Test func initialRunStartupRetriesOnlyOriginalGET() async throws {
+        let f = try StreamFixture(complete())
+        await f.transport.failStartup(1)
+        await f.model.performInitialStream(f.model.prepareStream())
+        guard case .loaded(let value) = f.model.state else { Issue.record("startup did not recover"); return }
+        #expect(value.snapshot.text == answer)
+        #expect(await f.transport.requests.map { $0.0 } == ["streamRunEvents", "streamRunEvents", "getRunDisplaySnapshot"])
+    }
+    @Test func initialRunStartupHasFiniteReadBudget() async throws {
+        let f = try StreamFixture(complete()); await f.transport.failStartup(10)
+        await f.model.performInitialStream(f.model.prepareStream())
+        #expect(await f.transport.requests.count == 3)
+        guard case .unavailable(.rejected(status: 503)) = f.model.state else { Issue.record("persistent failure hidden"); return }
+    }
+    @Test(arguments: [401, 403, 429])
+    func initialRunDenialIsNotRetried(_ code: Int) async throws {
+        let f = try StreamFixture(complete()); await f.transport.configure(status: code)
+        await f.model.performInitialStream(f.model.prepareStream())
+        #expect(await f.transport.requests.count == 1)
+    }
+    @Test func initialReadDelayCannotOutliveSource() async throws {
+        let f = try StreamFixture(complete()); await f.transport.failStartup(10)
+        let work = f.model.prepareStream()
+        let task = Task { await f.model.performInitialStream(work) }
+        for _ in 0..<2000 { if await f.transport.requests.count == 1 { break }; await Task.yield() }
+        f.current = false
+        await task.value
+        #expect(await f.transport.requests.count == 1)
+        #expect(f.model.streamProgress == nil)
+    }
+
     @Test(.enabled(if: ProcessInfo.processInfo.environment["CJ_RUN_STREAM_TEST_URL"] != nil))
     func liveLoopback() async throws {
         let env = ProcessInfo.processInfo.environment
