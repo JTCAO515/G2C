@@ -132,7 +132,7 @@ public struct MemorySaveStatusView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(state.label(language)).accessibilityIdentifier("memory.save.status")
             if case .saving = state { ProgressView() }
-            if let query { Button(language.text("Query original operation", "查询原操作"), action: query) }
+            if let query { Button(language.text("Query original operation", "查询原操作"), action: query).accessibilityIdentifier("memory.save.query") }
         }
     }
 }
@@ -198,6 +198,7 @@ private struct MemoryManualFormContent: View {
          submit: @escaping (Components.Schemas.MemoryManualSaveCommand) async throws -> MemorySaveResult,
          query: @escaping (String) async throws -> MemorySaveResult) {
         self.binding = binding; self.current = current; self.options = options; self.language = language; self.submit = submit; self.query = query
+        _selection = State(initialValue: options.count == 1 ? options[0].id : nil)
     }
     private func run(_ action: @escaping () async throws -> MemorySaveResult) {
         guard current() == binding else { return }
@@ -214,7 +215,8 @@ private struct MemoryManualFormContent: View {
                 }
             } catch {
                 guard current() == binding, requestGeneration == token else { return }
-                state = .unknown
+                if case MemoryFailure.rejected = error { state = .failed }
+                else { state = .unknown }
             }
         }
     }
@@ -225,10 +227,10 @@ private struct MemoryManualFormContent: View {
                 Picker(language.text("Save scope", "保存范围"), selection: $selection) {
                     Text(language.text("Choose a scope", "请选择范围")).tag(Optional<UUID>.none)
                     ForEach(options) { option in Text(option.label).tag(Optional(option.id)) }
-                }.disabled(started)
+                }.disabled(started).accessibilityIdentifier("memory.manual.scope")
                 if let option = options.first(where: { $0.id == selection }) { Text(option.disclosure).font(.subheadline) }
-                TextField(language.text("Memory", "记忆内容"), text: $text, axis: .vertical).disabled(started)
-                TextField(language.text("Approximate time (required; describe if unknown)", "大致时间（必填，不清楚请明确说明）"), text: $occurredAt).disabled(started)
+                TextField(language.text("Memory", "记忆内容"), text: $text, axis: .vertical).disabled(started).accessibilityIdentifier("memory.manual.text")
+                TextField(language.text("Approximate time (required; describe if unknown)", "大致时间（必填，不清楚请明确说明）"), text: $occurredAt).disabled(started).accessibilityIdentifier("memory.manual.time")
                 Button(language.text("Save memory", "保存记忆")) {
                     guard !started, let option = options.first(where: { $0.id == selection }) else { return }
                     do {
@@ -237,7 +239,7 @@ private struct MemoryManualFormContent: View {
                         started = true; state = .saving; originalID = command.operation_id
                         run { try await submit(command) }
                     } catch { state = .unconfigured }
-                }.disabled(started || selection == nil || !memoryText(text) || !memoryText(occurredAt))
+                }.disabled(started || selection == nil || !memoryText(text) || !memoryText(occurredAt)).accessibilityIdentifier("memory.manual.save")
                 MemorySaveStatusView(state: state, language: language, queryOriginal: originalID.map { id in
                     { run { try await query(id) } }
                 })
