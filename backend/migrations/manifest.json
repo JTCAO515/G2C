@@ -122,6 +122,14 @@
       "sha256": "4638a2505badc09f909ae4a1c51e74b615abaff3ba77b12422276e3c8ffb7c63",
       "down": "backend/migrations/down/0015_memory_runtime_rls.down.sql",
       "down_sha256": "f27a376eab6a3b76838c3b461a24ca1cb6cbd76a73c374c67f7fef593909a57b"
+    },
+    {
+      "version": 16,
+      "name": "local_run_protection",
+      "file": "backend/migrations/0016_local_run_protection.sql",
+      "sha256": "2b8a21fc2937a7541604412d3d9dabc008d7c8b68e8784411fca0374999d9fc9",
+      "down": "backend/migrations/down/0016_local_run_protection.down.sql",
+      "down_sha256": "0752682918bb31f07972a56bbdd250177ea43c08d6223c042c8c60ebb5c1a403"
     }
   ]
 }
