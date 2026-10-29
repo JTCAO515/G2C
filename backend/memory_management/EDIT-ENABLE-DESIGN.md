@@ -26,14 +26,14 @@
 - 用户显式保存新文字是这次更正的输入；用当前服务器明确ManualPolicy/收集范围对**新确切字节**作批准，敏感/语义未决/无授权拒绝且旧值不变，不套用旧approved_input，也不增默认允许/默认TTL。
 - 生成独立server source ID和新source行，保留旧source原bytes/expiry/批准及原save回执；新来源的期限只能来自当前明确策略，不能续写旧来源。来源ID和原action关联由服务器生成/验证，客户端不能自证来源。
 - 同一canonical transaction：原action查询/同bytes重放或异bytes冲突→scope锁→当前item/source CAS→新来源批准和插入→item正文/source指针/version+1→scope epoch+1→原action receipt→commit。失败全回滚，ACK未知只查询原ID，不自动重试或换ID。
-- 编辑disabled项保持disabled，不能自动启用。必须保留其由本模块pause产生的因果：新edit-disabled回执携带server验证的pause anchor，resume只接受当前版本的合法pause或连续已验证edit-disabled因果。否则现有“当前版本必须有pause记录”会让编辑后的paused项永远无法resume。通用disabled/candidate来源仍拒绝恢复。
+- 编辑disabled项保持disabled，不能自动启用。必须保留其由本模块pause产生的因果：新edit-disabled回执携带server验证的本item pause版本anchor，resume只接受当前版本的合法pause或连续已验证edit-disabled因果。否则现有“当前版本必须有pause记录”会让编辑后的paused项永远无法resume。通用disabled/candidate来源仍拒绝恢复。
 - scope/item/source CAS、原回执和新的读取只复用原Memory engine/adapter，不另建语义/版本引擎；旧整理结果在#270按同一epoch/来源检查拒绝。
 
 ### C1追加迁移/最小运行权限（待批，不预占编号）
 
 在届时最新manifest后追加新up/down；不编辑已应用迁移。建议扩展现有唯一management action账本（不新建第二账本）：
 
-- operation约束增加edit，原pause/resume值和raw bytes不改；新增nullable previous_source_id、new_source_id、disabled_by_action_id，保留同scope FK和原(scope,item,version)唯一性。
+- operation约束增加edit，原pause/resume值和raw bytes不改；新增nullable previous_source_id、new_source_id、disabled_by_version，保留同scope FK和原(scope,item,version)唯一性。
 - 新edit行的来源关联必填；disabled编辑必须有经server校验的本item pause因果。旧动作新增列为NULL，不回填推测历史；DB读出边界核投影/原bytes/来源关联一次，之后信任不可变对象。
 - management表ENABLE+FORCE RLS，按原事务LOCAL cj.message_scope隔离；runtime只SELECT/INSERT，不授予改写/删除回执。
 - item仅增加UPDATE(status,version,original_input,source_id,source_version)所需列权限；scope UPDATE(epoch)复用原权限；source仅复用原SELECT/INSERT及scope列锁权限，不授予覆盖旧approved_input、授权字段或DELETE。已有Memory RLS不减弱，不加superuser/BYPASSRLS/SECURITY DEFINER。
@@ -68,3 +68,93 @@
 ## 请求JT决定
 
 请批准或修订：C1上述新编辑来源/历史/paused因果契约、追加迁移与最小列权限，以及逐文件列明的B管理API本地接入写权。批准前只交设计/拆票，不执行DDL或开启closed入口。C2最小撤回writer仍先交单独详细稿，不把本次批准推导成全量删除或未来typed迁移授权。
+
+
+## C1具体DDL审阅稿（未执行，不登记migration号）
+
+已在隔离空私有PG只应用现有Memory/management schema，读取pg_constraint确认现有
+operation/check/unique名称如下。下列新DDL没有执行；批准后才放入最新manifest后
+的新迁移，先核届时schema/ACL未漂移。若既有权限/RLS已变化则重审，不撤销他人新增权限。
+
+```sql
+-- up：仅审批稿；后续迁移由现有runner持有原子事务。
+ALTER TABLE cj_memory_management_action
+  ADD COLUMN previous_source_id text,
+  ADD COLUMN new_source_id text,
+  ADD COLUMN disabled_by_version bigint;
+ALTER TABLE cj_memory_management_action
+  DROP CONSTRAINT cj_memory_management_action_operation_check,
+  DROP CONSTRAINT cj_memory_management_action_check;
+ALTER TABLE cj_memory_management_action
+  ADD CONSTRAINT cj_memory_management_action_operation_check
+    CHECK (operation IN ('pause','resume','edit')),
+  ADD CONSTRAINT cj_memory_management_action_check CHECK (
+    (operation='pause' AND status='disabled') OR
+    (operation='resume' AND status='active') OR
+    (operation='edit' AND status IN ('active','disabled'))),
+  ADD CONSTRAINT cj_memory_edit_source_shape CHECK (
+    (operation IN ('pause','resume') AND previous_source_id IS NULL
+      AND new_source_id IS NULL AND disabled_by_version IS NULL) OR
+    (operation='edit' AND previous_source_id IS NOT NULL
+      AND new_source_id IS NOT NULL AND previous_source_id<>new_source_id
+      AND ((status='active' AND disabled_by_version IS NULL) OR
+           (status='disabled' AND disabled_by_version IS NOT NULL
+            AND disabled_by_version<version)))),
+  ADD CONSTRAINT cj_memory_edit_previous_source_fk
+    FOREIGN KEY(scope,previous_source_id) REFERENCES cj_memory_source(scope,source_id),
+  ADD CONSTRAINT cj_memory_edit_new_source_fk
+    FOREIGN KEY(scope,new_source_id) REFERENCES cj_memory_source(scope,source_id),
+  ADD CONSTRAINT cj_memory_edit_pause_anchor_fk
+    FOREIGN KEY(scope,item_id,disabled_by_version)
+    REFERENCES cj_memory_management_action(scope,item_id,version);
+ALTER TABLE cj_memory_management_action ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cj_memory_management_action FORCE ROW LEVEL SECURITY;
+CREATE POLICY cj_m2_memory_management_scope ON cj_memory_management_action TO cj_m1_runtime
+  USING (scope=nullif(current_setting('cj.message_scope',true),''))
+  WITH CHECK (scope=nullif(current_setting('cj.message_scope',true),''));
+GRANT SELECT,INSERT ON cj_memory_management_action TO cj_m1_runtime;
+GRANT UPDATE(status,version,original_input,source_id,source_version)
+  ON cj_memory_item TO cj_m1_runtime;
+```
+
+原unique(scope,item_id,version)被pause版本FK复用，不重复建立索引。FK只证明同scope/
+item的版本存在；DB行解码与guarded状态转换还须验证anchor确实为本模块pause，且
+当前版本的edit-disabled继承了合法因果；不允许客户端传anchor。原status/version/
+scope/item FK约束、Memory四表policy与source批准不可更新权限全部保留。
+
+```sql
+-- down：仅审批稿；新语义非空拒绝，不删任何业务数据。
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM cj_memory_management_action
+             WHERE operation='edit' OR previous_source_id IS NOT NULL
+                OR new_source_id IS NOT NULL OR disabled_by_version IS NOT NULL) THEN
+    RAISE EXCEPTION 'edit history is not empty; retain schema and reconcile originals';
+  END IF;
+END $$;
+REVOKE UPDATE(status,version,original_input,source_id,source_version)
+  ON cj_memory_item FROM cj_m1_runtime;
+REVOKE SELECT,INSERT ON cj_memory_management_action FROM cj_m1_runtime;
+DROP POLICY cj_m2_memory_management_scope ON cj_memory_management_action;
+ALTER TABLE cj_memory_management_action NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE cj_memory_management_action DISABLE ROW LEVEL SECURITY;
+ALTER TABLE cj_memory_management_action
+  DROP CONSTRAINT cj_memory_edit_pause_anchor_fk,
+  DROP CONSTRAINT cj_memory_edit_new_source_fk,
+  DROP CONSTRAINT cj_memory_edit_previous_source_fk,
+  DROP CONSTRAINT cj_memory_edit_source_shape,
+  DROP CONSTRAINT cj_memory_management_action_check,
+  DROP CONSTRAINT cj_memory_management_action_operation_check,
+  DROP COLUMN disabled_by_version,
+  DROP COLUMN new_source_id,
+  DROP COLUMN previous_source_id;
+ALTER TABLE cj_memory_management_action
+  ADD CONSTRAINT cj_memory_management_action_operation_check
+    CHECK (operation IN ('pause','resume')),
+  ADD CONSTRAINT cj_memory_management_action_check CHECK (
+    (operation='pause' AND status='disabled') OR
+    (operation='resume' AND status='active'));
+```
+
+这里down恢复0010/0015的原权限状态；只允许空的新edit语义，不改旧pause/resume
+回执及Memory条目。后续若C2或其他迁移增加依赖，必须先按链逆序回退，不能CASCADE
+强删依赖。未批准前不运行这些SQL；新能力/新DDL的up/down/RLS/并发专项均UNRUN。
