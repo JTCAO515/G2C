@@ -246,7 +246,12 @@ import Foundation
             XCTAssertFalse(app.staticTexts["run.display.text"].exists)
             XCTAssertFalse(app.staticTexts["run.stream.text"].exists)
         } else { XCTAssertEqual(app.staticTexts["run.display.text"].label, result.text) }
-        for _ in 0..<10 { if value.isHittable && value.frame.maxY < app.frame.height * 0.60 { break }; app.scrollViews.firstMatch.swipeUp() }
+        let scroll = app.scrollViews.firstMatch
+        for _ in 0..<8 {
+            if scroll.frame.contains(value.frame) && value.isHittable { break }
+            if value.frame.maxY > scroll.frame.maxY { scroll.swipeUp() } else { scroll.swipeDown() }
+        }
+        XCTAssertTrue(scroll.frame.contains(value.frame))
         XCTAssertTrue(value.isHittable)
         try audit("RUN_AX " + language)
     }
