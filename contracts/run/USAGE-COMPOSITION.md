@@ -1,5 +1,10 @@
 # RUN → USAGE synthetic first-step candidate (historical 448bcc)
 
+> #170 additive local contract: [LOCAL-USAGE.md](LOCAL-USAGE.md) and
+> [STEP-USAGE-BINDING.md](STEP-USAGE-BINDING.md) define a separate gated local
+> provider_call exit. Historical fixture restrictions and FAIL/HOLD below remain;
+> these classes are not enabled as real executors by the new contract.
+
 This records the parent candidate and its retained FAIL. The current bounded
 persistent-association repair and updated execution restriction are documented
 in [USAGE-BINDING.md](USAGE-BINDING.md); remaining production fences still HOLD.
