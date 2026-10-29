@@ -5,7 +5,7 @@ from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable, ChatSumma
 
 
 class Repository:
-    def __init__(self, connect, scope, *, bind_needs=False, local_run_mode=None):
+    def __init__(self, connect, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False):
         # Explicit local host opt-in; legacy callers remain unbound. Required mode
         # never falls back when selection/revision is missing or unreadable.
         # Internal partition key, NOT a principal schema or client-supplied owner.
@@ -16,6 +16,7 @@ class Repository:
         if local_run_mode is not None and type(local_run_mode) is not bool:
             raise ValueError('explicit local execution mode required')
         self.local_run_mode=local_run_mode
+        self.registered_usage=registered_usage
         self.connect, self.scope, self.bind_needs = connect, scope, bind_needs
 
     @contextmanager
@@ -46,7 +47,7 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
-                yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode)
+                yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode, registered_usage=self.registered_usage)
             except BaseException:
                 outcome = 'body_failed'
                 cleanup(conn.rollback, 'rollback')
@@ -66,18 +67,19 @@ class Repository:
 
 
 class Transaction:
-    def __init__(self, cursor, scope, *, bind_needs=False, local_run_mode=None):
+    def __init__(self, cursor, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False):
         self.cur, self.scope, self.bind_needs = cursor, scope, bind_needs
         self.local_run_mode=local_run_mode
+        self.registered_usage=registered_usage
 
     def local_execution(self, message_id=None, run_id=None):
         # None is the domain repository seam, never installed by LocalDatabase.
         if self.local_run_mode is None: return False
         from .local_protection import check, require_original
         if message_id is not None:
-            require_original(self.cur,self.scope,self.local_run_mode,message_id,run_id)
+            require_original(self.cur,self.scope,self.local_run_mode,message_id,run_id,self.registered_usage)
             return self.local_run_mode
-        return check(self.cur,self.scope,self.local_run_mode)
+        return check(self.cur,self.scope,self.local_run_mode,self.registered_usage)
 
     def lock_scope(self):
         self.cur.execute('SELECT scope FROM cj_message_scope WHERE scope = %s FOR UPDATE', (self.scope,))
@@ -119,7 +121,7 @@ class Transaction:
                          (self.scope, r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256, stored.raw))
         if protected:
             from .local_protection import capture as capture_requirement
-            capture_requirement(self.cur,self.scope,stored)
+            capture_requirement(self.cur,self.scope,stored,self.registered_usage)
         if self.bind_needs:
             from .needs_binding import capture
             capture(self.cur, self.scope, stored)

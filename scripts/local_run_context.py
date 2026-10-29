@@ -29,11 +29,14 @@ def provision_budget(conninfo, context, subject):
         connection.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE',(scope,))
         activated=connection.execute('SELECT version FROM cj_local_run_protection WHERE scope=%s',(scope,)).fetchone()
         if activated is None:
-            if connection.execute('SELECT 1 FROM cj_message_delivery WHERE scope=%s AND NOT acknowledged LIMIT 1',(scope,)).fetchone():
+            if context.version=='CJ-LOCAL-RUN@1' and connection.execute('SELECT 1 FROM cj_message_delivery WHERE scope=%s AND NOT acknowledged LIMIT 1',(scope,)).fetchone():
                 raise ValueError('original pending legacy work prevents activation')
             connection.execute("INSERT INTO cj_local_run_protection VALUES(%s,'local-budget-needs.1')",(scope,))
         elif activated!=('local-budget-needs.1',):
             raise ValueError('original protection unavailable')
+        if context.version=='CJ-LOCAL-RUN@2':
+            # The DB activation boundary owns the idle-work checks exactly once.
+            connection.execute("INSERT INTO cj_local_metered_profile VALUES(%s,'registered-exit.1') ON CONFLICT DO NOTHING",(scope,))
         row=connection.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s FOR UPDATE',(account,)).fetchone()
         if row is None:
             connection.execute('INSERT INTO cj_usage_ledger_candidate(scope_id,revision,format_version,ledger) VALUES(%s,0,1,%s::jsonb)',
