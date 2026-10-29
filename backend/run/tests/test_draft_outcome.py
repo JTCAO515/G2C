@@ -39,10 +39,10 @@ class DraftOutcomeTests(unittest.TestCase):
 
     def test_no_calls_after_persisted_failure(self):
         self.event('draft_outcome', 'provider_unknown')
-        provider, publisher = Mock(), Mock()
+        provider, publisher = Mock(), Mock(content_version='legacy')
         worker = RunWorker(scope='scope', messages=Mock(), runs=self.service, provider=provider, drafts=publisher)
         with self.assertRaises(Conflict):
-            worker._draft(self.binding, self.service.snapshot(self.binding), 'original')
+            worker._draft(self.binding, self.service.snapshot(self.binding), 'original', None)
         provider.stream.assert_not_called()
         publisher.publish.assert_not_called()
         invoke = Mock()
@@ -58,10 +58,10 @@ class DraftOutcomeTests(unittest.TestCase):
                     if exception is not DraftRejected: raise exception()
                     yield 'invalid draft'
                 provider = Mock(stream=stream)
-                publisher = Mock()
+                publisher = Mock(content_version='legacy')
                 publisher.publish.side_effect = DraftRejected()
                 worker = RunWorker(scope='scope', messages=Mock(), runs=self.service, provider=provider, drafts=publisher)
-                state, proposal = worker._draft(self.binding, self.service.snapshot(self.binding), 'original')
+                state, proposal = worker._draft(self.binding, self.service.snapshot(self.binding), 'original', None)
                 self.assertIsNone(proposal)
                 self.assertEqual((state.sequence, state.draft_outcome, state.status), (2, outcome, 'running'))
                 completed = worker._event(self.binding, state, 'completed')

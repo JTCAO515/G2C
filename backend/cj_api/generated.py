@@ -1634,3 +1634,180 @@ class RunDraftStatusResponse(BaseModel):
     version: Version2
     run_status: RunStatus
     draft_outcome: DraftOutcome
+
+
+class Kind7(StrEnum):
+    message = 'message'
+    place = 'place'
+    route_estimate = 'route_estimate'
+
+
+class EvidenceLevel(StrEnum):
+    user_statement = 'user_statement'
+    synthetic = 'synthetic'
+    unverified_bytes = 'unverified_bytes'
+
+
+class SourceRecordV1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    kind: Kind7
+    reference: constr(min_length=1)
+    text: constr(min_length=1)
+    snapshot_utf8_base64: constr(min_length=1)
+    snapshot_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+    evidence_level: EvidenceLevel
+
+
+class Verification1(StrEnum):
+    pending = 'pending'
+
+
+class EvidenceItem(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class SourceCategory(StrEnum):
+    queried = 'queried'
+    user_provided = 'user_provided'
+    estimated = 'estimated'
+    unknown = 'unknown'
+
+
+class SourceRef(RootModel[constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')]):
+    root: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+
+
+class SourceDocumentItemV1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    text: constr(min_length=1)
+    verification: Verification1
+    evidence: list[EvidenceItem] = Field(..., max_length=0)
+    source_category: SourceCategory
+    source_refs: list[SourceRef] = Field(..., max_length=1)
+
+
+class TravelDates(StrEnum):
+    unknown = 'unknown'
+    undecided = 'undecided'
+
+
+class Prompt(StrEnum):
+    decide_travel_dates = 'decide_travel_dates'
+
+
+class SourceDocumentDecisionsV1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    travel_dates: TravelDates
+    prompt: Prompt
+
+
+class ContentVersion(StrEnum):
+    provenance_1 = 'provenance.1'
+
+
+class SourceDocumentV1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content_version: ContentVersion
+    title: constr(min_length=1)
+    items: list[SourceDocumentItemV1] = Field(..., max_length=60, min_length=1)
+    sources: list[SourceRecordV1] = Field(..., max_length=40)
+    decisions: SourceDocumentDecisionsV1
+
+
+class SourceTripContent(RootModel[TripDocument | SourceDocumentV1]):
+    root: TripDocument | SourceDocumentV1
+
+
+class Status13(StrEnum):
+    pending = 'pending'
+    accepted = 'accepted'
+    rejected = 'rejected'
+    expired = 'expired'
+    superseded = 'superseded'
+
+
+class SourceTripProposalSnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    proposal_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    trip_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    expected_version: conint(ge=0, le=9223372036854775807)
+    basis_version: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    expires_at: conint(ge=1, le=9223372036854775807)
+    content_utf8_base64: constr(min_length=4) = Field(
+        ...,
+        description='RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.',
+    )
+    document: SourceTripContent
+    candidate_hash: constr(pattern=r'^[0-9a-f]{64}$')
+    status: Status13
+
+
+class SourceTripRecord(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    trip_id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
+    version: conint(ge=1, le=9223372036854775807)
+    content_utf8_base64: constr(min_length=4) = Field(
+        ...,
+        description='RFC4648 base64 of exact immutable canonical UTF8 content; not a reconstructed presentation string.',
+    )
+    document: SourceTripContent
+
+
+class Representation(StrEnum):
+    provenance_1 = 'provenance.1'
+
+
+class SourceTripProposalResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    proposal: SourceTripProposalSnapshot
+    representation: Representation
+
+
+class SourceTripDetailResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    trip: SourceTripRecord | Trip
+    representation: Representation
+
+
+class SourceTripListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    trips: list[SourceTripRecord]
+    next_after: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$') | NextAfter
+    representation: Representation
+
+
+class SourceTripConfirmationResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    action_utf8_base64: constr(min_length=1, max_length=8192) = Field(
+        ...,
+        description='Exact canonical original action bytes. Persist unchanged; submit only on explicit user confirmation. Unknown outcomes require querying the original action ID, never reissuing replacement bytes.',
+    )
+    expires_at: conint(ge=1)
+    proposal: SourceTripProposalSnapshot
+    representation: Representation

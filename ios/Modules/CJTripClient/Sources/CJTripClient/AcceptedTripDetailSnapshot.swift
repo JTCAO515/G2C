@@ -94,7 +94,7 @@ extension TripClient {
         switch output {
         case .ok(let value):
             do {
-                let body = try value.body.json
+                guard case .TripDetailResponse(let body) = try value.body.json else { throw TripFailure.invalidResponse }
                 switch body.trip {
                 case .TripRecord(let record):
                     try validateRecord(record)

@@ -3222,12 +3222,25 @@ public enum Operations {
             public var query: Operations.listTrips.Input.Query
             /// - Remark: Generated from `#/paths/v1/trips/GET/header`.
             public struct Headers: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/trips/GET/header/X-CJ-Trip-Content`.
+                @frozen public enum X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case provenance_period_1 = "provenance.1"
+                }
+                /// Explicit source-aware representation. Absent retains original V1 response and old-record support; unknown/duplicate values are rejected. Does not change candidate hashes, action bytes or authority.
+                ///
+                /// - Remark: Generated from `#/paths/v1/trips/GET/header/X-CJ-Trip-Content`.
+                public var X_hyphen_CJ_hyphen_Trip_hyphen_Content: Operations.listTrips.Input.Headers.X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload?
                 public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.listTrips.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
+                ///   - X_hyphen_CJ_hyphen_Trip_hyphen_Content: Explicit source-aware representation. Absent retains original V1 response and old-record support; unknown/duplicate values are rejected. Does not change candidate hashes, action bytes or authority.
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.listTrips.AcceptableContentType>] = .defaultValues()) {
+                public init(
+                    X_hyphen_CJ_hyphen_Trip_hyphen_Content: Operations.listTrips.Input.Headers.X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.listTrips.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_CJ_hyphen_Trip_hyphen_Content = X_hyphen_CJ_hyphen_Trip_hyphen_Content
                     self.accept = accept
                 }
             }
@@ -3263,13 +3276,48 @@ public enum Operations {
                 public var headers: Operations.listTrips.Output.Ok.Headers
                 /// - Remark: Generated from `#/paths/v1/trips/GET/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/trips/GET/responses/200/content/json`.
+                    @frozen public enum jsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/v1/trips/GET/responses/200/content/json/case1`.
+                        case TripListResponse(Components.Schemas.TripListResponse)
+                        /// - Remark: Generated from `#/paths/v1/trips/GET/responses/200/content/json/case2`.
+                        case SourceTripListResponse(Components.Schemas.SourceTripListResponse)
+                        public init(from decoder: any Swift.Decoder) throws {
+                            var errors: [any Swift.Error] = []
+                            do {
+                                self = .TripListResponse(try .init(from: decoder))
+                                return
+                            } catch {
+                                errors.append(error)
+                            }
+                            do {
+                                self = .SourceTripListResponse(try .init(from: decoder))
+                                return
+                            } catch {
+                                errors.append(error)
+                            }
+                            throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                                type: Self.self,
+                                codingPath: decoder.codingPath,
+                                errors: errors
+                            )
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            switch self {
+                            case let .TripListResponse(value):
+                                try value.encode(to: encoder)
+                            case let .SourceTripListResponse(value):
+                                try value.encode(to: encoder)
+                            }
+                        }
+                    }
                     /// - Remark: Generated from `#/paths/v1/trips/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.TripListResponse)
+                    case json(Operations.listTrips.Output.Ok.Body.jsonPayload)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
                     /// - Throws: An error if `self` is not `.json`.
                     /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.TripListResponse {
+                    public var json: Operations.listTrips.Output.Ok.Body.jsonPayload {
                         get throws {
                             switch self {
                             case let .json(body):
@@ -3433,12 +3481,25 @@ public enum Operations {
             public var query: Operations.getTrip.Input.Query
             /// - Remark: Generated from `#/paths/v1/trip-details/GET/header`.
             public struct Headers: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/trip-details/GET/header/X-CJ-Trip-Content`.
+                @frozen public enum X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case provenance_period_1 = "provenance.1"
+                }
+                /// Explicit source-aware representation. Absent retains original V1 response and old-record support; unknown/duplicate values are rejected. Does not change candidate hashes, action bytes or authority.
+                ///
+                /// - Remark: Generated from `#/paths/v1/trip-details/GET/header/X-CJ-Trip-Content`.
+                public var X_hyphen_CJ_hyphen_Trip_hyphen_Content: Operations.getTrip.Input.Headers.X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload?
                 public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTrip.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
+                ///   - X_hyphen_CJ_hyphen_Trip_hyphen_Content: Explicit source-aware representation. Absent retains original V1 response and old-record support; unknown/duplicate values are rejected. Does not change candidate hashes, action bytes or authority.
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTrip.AcceptableContentType>] = .defaultValues()) {
+                public init(
+                    X_hyphen_CJ_hyphen_Trip_hyphen_Content: Operations.getTrip.Input.Headers.X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTrip.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_CJ_hyphen_Trip_hyphen_Content = X_hyphen_CJ_hyphen_Trip_hyphen_Content
                     self.accept = accept
                 }
             }
@@ -3474,13 +3535,48 @@ public enum Operations {
                 public var headers: Operations.getTrip.Output.Ok.Headers
                 /// - Remark: Generated from `#/paths/v1/trip-details/GET/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/trip-details/GET/responses/200/content/json`.
+                    @frozen public enum jsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/v1/trip-details/GET/responses/200/content/json/case1`.
+                        case TripDetailResponse(Components.Schemas.TripDetailResponse)
+                        /// - Remark: Generated from `#/paths/v1/trip-details/GET/responses/200/content/json/case2`.
+                        case SourceTripDetailResponse(Components.Schemas.SourceTripDetailResponse)
+                        public init(from decoder: any Swift.Decoder) throws {
+                            var errors: [any Swift.Error] = []
+                            do {
+                                self = .TripDetailResponse(try .init(from: decoder))
+                                return
+                            } catch {
+                                errors.append(error)
+                            }
+                            do {
+                                self = .SourceTripDetailResponse(try .init(from: decoder))
+                                return
+                            } catch {
+                                errors.append(error)
+                            }
+                            throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                                type: Self.self,
+                                codingPath: decoder.codingPath,
+                                errors: errors
+                            )
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            switch self {
+                            case let .TripDetailResponse(value):
+                                try value.encode(to: encoder)
+                            case let .SourceTripDetailResponse(value):
+                                try value.encode(to: encoder)
+                            }
+                        }
+                    }
                     /// - Remark: Generated from `#/paths/v1/trip-details/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.TripDetailResponse)
+                    case json(Operations.getTrip.Output.Ok.Body.jsonPayload)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
                     /// - Throws: An error if `self` is not `.json`.
                     /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.TripDetailResponse {
+                    public var json: Operations.getTrip.Output.Ok.Body.jsonPayload {
                         get throws {
                             switch self {
                             case let .json(body):
@@ -3644,12 +3740,25 @@ public enum Operations {
             public var query: Operations.getTripProposal.Input.Query
             /// - Remark: Generated from `#/paths/v1/trip-proposals/GET/header`.
             public struct Headers: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/trip-proposals/GET/header/X-CJ-Trip-Content`.
+                @frozen public enum X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case provenance_period_1 = "provenance.1"
+                }
+                /// Explicit source-aware representation. Absent retains original V1 response and old-record support; unknown/duplicate values are rejected. Does not change candidate hashes, action bytes or authority.
+                ///
+                /// - Remark: Generated from `#/paths/v1/trip-proposals/GET/header/X-CJ-Trip-Content`.
+                public var X_hyphen_CJ_hyphen_Trip_hyphen_Content: Operations.getTripProposal.Input.Headers.X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload?
                 public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTripProposal.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
+                ///   - X_hyphen_CJ_hyphen_Trip_hyphen_Content: Explicit source-aware representation. Absent retains original V1 response and old-record support; unknown/duplicate values are rejected. Does not change candidate hashes, action bytes or authority.
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTripProposal.AcceptableContentType>] = .defaultValues()) {
+                public init(
+                    X_hyphen_CJ_hyphen_Trip_hyphen_Content: Operations.getTripProposal.Input.Headers.X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTripProposal.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_CJ_hyphen_Trip_hyphen_Content = X_hyphen_CJ_hyphen_Trip_hyphen_Content
                     self.accept = accept
                 }
             }
@@ -3685,13 +3794,48 @@ public enum Operations {
                 public var headers: Operations.getTripProposal.Output.Ok.Headers
                 /// - Remark: Generated from `#/paths/v1/trip-proposals/GET/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/trip-proposals/GET/responses/200/content/json`.
+                    @frozen public enum jsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/v1/trip-proposals/GET/responses/200/content/json/case1`.
+                        case TripProposalResponse(Components.Schemas.TripProposalResponse)
+                        /// - Remark: Generated from `#/paths/v1/trip-proposals/GET/responses/200/content/json/case2`.
+                        case SourceTripProposalResponse(Components.Schemas.SourceTripProposalResponse)
+                        public init(from decoder: any Swift.Decoder) throws {
+                            var errors: [any Swift.Error] = []
+                            do {
+                                self = .TripProposalResponse(try .init(from: decoder))
+                                return
+                            } catch {
+                                errors.append(error)
+                            }
+                            do {
+                                self = .SourceTripProposalResponse(try .init(from: decoder))
+                                return
+                            } catch {
+                                errors.append(error)
+                            }
+                            throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                                type: Self.self,
+                                codingPath: decoder.codingPath,
+                                errors: errors
+                            )
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            switch self {
+                            case let .TripProposalResponse(value):
+                                try value.encode(to: encoder)
+                            case let .SourceTripProposalResponse(value):
+                                try value.encode(to: encoder)
+                            }
+                        }
+                    }
                     /// - Remark: Generated from `#/paths/v1/trip-proposals/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.TripProposalResponse)
+                    case json(Operations.getTripProposal.Output.Ok.Body.jsonPayload)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
                     /// - Throws: An error if `self` is not `.json`.
                     /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.TripProposalResponse {
+                    public var json: Operations.getTripProposal.Output.Ok.Body.jsonPayload {
                         get throws {
                             switch self {
                             case let .json(body):
@@ -7017,12 +7161,25 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/v1/trip-confirmations/POST/header`.
             public struct Headers: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/trip-confirmations/POST/header/X-CJ-Trip-Content`.
+                @frozen public enum X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case provenance_period_1 = "provenance.1"
+                }
+                /// Explicit source-aware representation. Absent retains original V1 response and old-record support; unknown/duplicate values are rejected. Does not change candidate hashes, action bytes or authority.
+                ///
+                /// - Remark: Generated from `#/paths/v1/trip-confirmations/POST/header/X-CJ-Trip-Content`.
+                public var X_hyphen_CJ_hyphen_Trip_hyphen_Content: Operations.prepareTripConfirmation.Input.Headers.X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload?
                 public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.prepareTripConfirmation.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
+                ///   - X_hyphen_CJ_hyphen_Trip_hyphen_Content: Explicit source-aware representation. Absent retains original V1 response and old-record support; unknown/duplicate values are rejected. Does not change candidate hashes, action bytes or authority.
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.prepareTripConfirmation.AcceptableContentType>] = .defaultValues()) {
+                public init(
+                    X_hyphen_CJ_hyphen_Trip_hyphen_Content: Operations.prepareTripConfirmation.Input.Headers.X_hyphen_CJ_hyphen_Trip_hyphen_ContentPayload? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.prepareTripConfirmation.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_CJ_hyphen_Trip_hyphen_Content = X_hyphen_CJ_hyphen_Trip_hyphen_Content
                     self.accept = accept
                 }
             }
@@ -7064,13 +7221,48 @@ public enum Operations {
                 public var headers: Operations.prepareTripConfirmation.Output.Ok.Headers
                 /// - Remark: Generated from `#/paths/v1/trip-confirmations/POST/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/trip-confirmations/POST/responses/200/content/json`.
+                    @frozen public enum jsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/v1/trip-confirmations/POST/responses/200/content/json/case1`.
+                        case TripConfirmationResponse(Components.Schemas.TripConfirmationResponse)
+                        /// - Remark: Generated from `#/paths/v1/trip-confirmations/POST/responses/200/content/json/case2`.
+                        case SourceTripConfirmationResponse(Components.Schemas.SourceTripConfirmationResponse)
+                        public init(from decoder: any Swift.Decoder) throws {
+                            var errors: [any Swift.Error] = []
+                            do {
+                                self = .TripConfirmationResponse(try .init(from: decoder))
+                                return
+                            } catch {
+                                errors.append(error)
+                            }
+                            do {
+                                self = .SourceTripConfirmationResponse(try .init(from: decoder))
+                                return
+                            } catch {
+                                errors.append(error)
+                            }
+                            throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                                type: Self.self,
+                                codingPath: decoder.codingPath,
+                                errors: errors
+                            )
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            switch self {
+                            case let .TripConfirmationResponse(value):
+                                try value.encode(to: encoder)
+                            case let .SourceTripConfirmationResponse(value):
+                                try value.encode(to: encoder)
+                            }
+                        }
+                    }
                     /// - Remark: Generated from `#/paths/v1/trip-confirmations/POST/responses/200/content/application\/json`.
-                    case json(Components.Schemas.TripConfirmationResponse)
+                    case json(Operations.prepareTripConfirmation.Output.Ok.Body.jsonPayload)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
                     /// - Throws: An error if `self` is not `.json`.
                     /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.TripConfirmationResponse {
+                    public var json: Operations.prepareTripConfirmation.Output.Ok.Body.jsonPayload {
                         get throws {
                             switch self {
                             case let .json(body):

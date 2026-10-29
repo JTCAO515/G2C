@@ -155,12 +155,18 @@ class RunWorker:
             self.messages.acknowledge(receipt)
         return Outcome(receipt.message_id, receipt.run_id, state.status, proposal_id)
 
-    def _draft(self, binding, state, text):
+    def _draft(self, binding, state, text, original):
         """Second, non-streamed model call. A bad or unknown draft never fails the answer."""
         try:
             reply = ''.join(self._stream(binding, [{'role': 'user', 'content': text}], system=DRAFT_SYSTEM))
-            state, draft = self._step(binding, lambda: self.drafts.publish(binding.run_id, reply),
-                                      lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
+            if self.drafts.content_version == 'legacy':
+                state, draft = self._step(binding, lambda: self.drafts.publish(binding.run_id, reply),
+                                          lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
+            else:
+                _, sources = self._step(binding, lambda: self.drafts.sources_for(binding), draft=True)
+                state, draft = self._step(binding, lambda: self.drafts.publish_for_message(
+                    binding, original, self.messages.query(binding.message_id), reply, sources),
+                    lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
         except (DraftRejected, ProviderFailed, ProviderUnknown) as error:
             outcome = ('validation_failed' if isinstance(error, DraftRejected) else
                        'provider_failed' if isinstance(error, ProviderFailed) else 'provider_unknown')
@@ -226,7 +232,7 @@ class RunWorker:
             if buffer:
                 state = self._event(binding, state, 'text_delta', buffer)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
-                state, proposal_id = self._draft(binding, state, text)
+                state, proposal_id = self._draft(binding, state, text, stored)
             state = self._event(binding, state, 'completed')
         except ProviderFailed:
             state = self._event(binding, self.runs.snapshot(binding), 'failed')

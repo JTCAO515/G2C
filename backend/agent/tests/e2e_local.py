@@ -84,12 +84,13 @@ class Harness(unittest.TestCase):
                                headers={**self.headers(subject), 'Content-Type': 'application/octet-stream'})
         return mid, response
 
-    def work(self, subject, provider):
+    def work(self, subject, provider, *, content_version=None, source_reader=None):
         scope = scope_for(ISSUER, subject)
         messages = MessageService(self.database.message_repository(scope), new_run_id=lambda: None)
         runs = RunService(self.database.run_repository(scope),
                           valid=lambda binding: messages.query(binding.message_id) is not None)
-        drafts = DraftPublisher(self.database.trip_repository(scope))
+        drafts = DraftPublisher(self.database.trip_repository(scope), content_version=content_version,
+                                source_reader=source_reader, max_source_age_seconds=60 if source_reader else None)
         return RunWorker(scope=scope, messages=messages, runs=runs, provider=provider, drafts=drafts).process()
 
     def events(self, client, subject, mid, offset=None):
@@ -516,6 +517,65 @@ class SignedTripConfirmation(Harness):
                     headers=self.headers('alice')).json()['trip']
                 if kind == 'accept': self.assertEqual(detail['document'], snapshot['document'])
                 else: self.assertIsNone(detail)
+
+    def test_provenance_reopens_mixed_records_and_confirms_exact_sources(self):
+        from provenance_fixtures import source_observations
+        text = '出行日期尚未决定 / Travel dates not decided'
+        with TestClient(self.app) as client:
+            _, old = self.draft(client, 'alice', 'Legacy candidate')
+            mid, response = self.send(client, 'alice', text, conversation='source-' + uuid.uuid4().hex,
+                                      intent='consider_trip')
+            self.assertEqual(response.status_code, 200, response.text)
+            outcome = [value for value in self.work('alice', FakeProvider(), content_version='provenance.1',
+                       source_reader=source_observations) if value.message_id == mid][0]
+            self.assertEqual(outcome.status, 'completed')
+            self.assertIsNotNone(outcome.proposal_id)
+            headers = {**self.headers('alice'), 'X-CJ-Trip-Content': 'provenance.1'}
+            result = client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id}, headers=headers)
+            self.assertEqual(result.status_code, 200, result.text)
+            snapshot = result.json()['proposal']
+            self.assertEqual(result.json()['representation'], 'provenance.1')
+            document = snapshot['document']
+            self.assertEqual({i['source_category'] for i in document['items']},
+                             {'user_provided', 'queried', 'estimated', 'unknown'})
+            self.assertEqual(document['items'][0]['text'], text)
+            self.assertEqual(document['decisions'], {'travel_dates': 'unknown', 'prompt': 'decide_travel_dates'})
+            self.assertTrue(all(i['verification'] == 'pending' and i['evidence'] == [] for i in document['items']))
+            self.assertTrue(all(s['evidence_level'] == 'synthetic' for s in document['sources'][1:]))
+            self.assertEqual(json.loads(base64.b64decode(snapshot['content_utf8_base64'])), document)
+            # Legacy readers fail explicitly for new content rather than losing metadata.
+            self.assertEqual(client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id},
+                                        headers=self.headers('alice')).status_code, 503)
+            for original_headers in (self.headers('alice'), headers):
+                legacy = client.get('/v1/trip-proposals', params={'proposal_id': old.proposal_id}, headers=original_headers)
+                self.assertEqual(legacy.status_code, 200, legacy.text)
+                self.assertNotIn('content_version', legacy.json()['proposal']['document'])
+            self.assertEqual(client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id},
+                headers={**self.headers('bob'), 'X-CJ-Trip-Content': 'provenance.1'}).status_code, 503)
+            self.assertEqual(client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id},
+                headers={**self.headers('alice'), 'X-CJ-Trip-Content': 'unsupported'}).status_code, 400)
+        # Rebuild the actual API over the same PG data, not a cached client snapshot.
+        rebuilt = create_local_app(conninfo_path=CONNINFO, auth_dir=self.auth, confirmation_signer=self.signer)
+        with TestClient(rebuilt) as client:
+            reopened = client.get('/v1/trip-proposals', params={'proposal_id': outcome.proposal_id}, headers=headers)
+            self.assertEqual(reopened.json()['proposal'], snapshot)
+            command = dict(action_id='source-action-' + uuid.uuid4().hex, kind='accept',
+                           proposal_id=outcome.proposal_id, candidate_hash=snapshot['candidate_hash'])
+            prepared = client.post('/v1/trip-confirmations', json=command, headers=headers)
+            self.assertEqual(prepared.status_code, 200, prepared.text)
+            self.assertEqual(prepared.json()['proposal'], snapshot)
+            raw = base64.b64decode(prepared.json()['action_utf8_base64'])
+            self.assertEqual(self.post_action(client, raw, 'bob').status_code, 503)
+            committed = self.post_action(client, raw)
+            self.assertEqual(committed.status_code, 200, committed.text)
+            self.assertEqual(self.post_action(client, raw).json()['receipt'], committed.json()['receipt'])
+            detail = client.get('/v1/trip-details', params={'trip_id': snapshot['trip_id']}, headers=headers)
+            self.assertEqual(detail.status_code, 200, detail.text)
+            self.assertEqual(detail.json()['trip']['document'], document)
+            self.assertEqual(detail.json()['trip']['content_utf8_base64'], snapshot['content_utf8_base64'])
+            listed = client.get('/v1/trips', params={'limit': 50}, headers=headers)
+            self.assertEqual(listed.status_code, 200, listed.text)
+            self.assertIn(snapshot['trip_id'], [item['trip_id'] for item in listed.json()['trips']])
 
     def test_issuance_withholds_if_auth_changes_during_signing(self):
         from cj_trip.confirmation import ConfirmationSigner
