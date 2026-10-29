@@ -28,8 +28,11 @@ def _model_input(argument):
     # The enabled local provider policy is an execution boundary, not a shape probe.
     if not isinstance(provider,FakeProvider):
         raise BudgetUnknown('registered model adapter permits only FakeProvider')
-    raw=json.dumps({'messages':messages,'system':system},ensure_ascii=False,
-                   separators=(',',':'),allow_nan=False).encode('utf-8')
+    try:
+        raw=json.dumps({'messages':messages,'system':system},ensure_ascii=False,
+                       separators=(',',':'),allow_nan=False).encode('utf-8')
+    except UnicodeError:
+        raise BudgetUnknown('registered model input encoding unavailable') from None
     inputs=json.loads(raw)
     def materialize():
         send=provider.stream

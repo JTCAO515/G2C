@@ -33,7 +33,8 @@ sys.path.insert(0,str(ROOT/'scripts'))
 
 def exercise(auth,conninfo):
     import run_worker
-    subjects=['alice','draft','foreign','infra','assoc-ack','reserve-ack','claim-ack','settle-ack','rebuild','late-adapter','late-audit','late-time','unregistered','close-primary','close-complete']
+    subjects=['alice','draft','foreign','infra','assoc-ack','reserve-ack','claim-ack','settle-ack','rebuild','late-adapter','late-audit','late-time','unregistered','close-primary','close-complete',
+              'unicode-high','unicode-low','unicode-valid']
     harness.dev_auth.init(auth,subjects)
     tokens={s:harness.dev_auth.token(auth,s,30) for s in subjects}
     headers={s:{'Authorization':'Bearer '+v} for s,v in tokens.items()}
@@ -52,7 +53,7 @@ def exercise(auth,conninfo):
     with patch.dict(os.environ,env): app=app_from_environment()
     config=json.loads(conninfo.read_text());context=load_run_context(path)
     database=LocalDatabase(conninfo,run_context=context)
-    def send(client,subject,mid,intent='none'):
+    def send(client,subject,mid,intent='none',*,text='PRIVATE_PROMPT_SENTINEL'):
         cid='chat-'+mid
         chat=harness.expect(client.put('/v1/conversations',params={'conversation_id':cid},headers=headers[subject]))
         if intent=='consider_trip':
@@ -60,7 +61,7 @@ def exercise(auth,conninfo):
                 source={'kind':'manual','text':'explicit local input'},changes={'party_size':{'state':'known','value':1}})))
             operator(subject,'put-needs','--input-json',str(needs))
             operator(subject,'bind-needs','--conversation-id',cid,'--needs-id','needs')
-        raw=json.dumps(dict(version='MESSAGE-send.1',conversation_id=cid,message_id=mid,text='PRIVATE_PROMPT_SENTINEL',trip_id=None,
+        raw=json.dumps(dict(version='MESSAGE-send.1',conversation_id=cid,message_id=mid,text=text,trip_id=None,
             creation_intent=intent,expected_generation=chat['generation'],expected_sequence=0)).encode()
         return harness.expect(client.post('/v1/messages',content=raw,headers={**headers[subject],'Content-Type':'application/octet-stream'}))
     def status(client,subject,mid,code=200):
@@ -287,6 +288,29 @@ def exercise(auth,conninfo):
         attempt=next(iter(ledger.attempts.values()))
         assert attempt.state==('unknown' if primary_failure else 'settled')
         if primary_failure: assert primary.__notes__==['provider stream cleanup failed; original failure retained']
+    # ASCII JSON escapes can carry unpaired surrogates through MESSAGE acceptance.
+    # The actual CLI must terminalize those originals without starving a later scope.
+    with TestClient(app) as client:
+        send(client,'unicode-high','unicode-high',text='PRIVATE_UNICODE_SENTINEL'+chr(0xd800))
+        send(client,'unicode-low','unicode-low',text='PRIVATE_UNICODE_SENTINEL'+chr(0xdc00))
+        send(client,'unicode-valid','unicode-valid',text='中文地点与有效字符 🍵')
+    completed=subprocess.run([sys.executable,'-B',str(ROOT/'scripts/run_worker.py'),'--conninfo-json',str(conninfo),
+        '--auth-dir',str(auth),'--run-context',str(path),'--once'],env=env,capture_output=True,text=True,timeout=30)
+    assert completed.returncode==0,(completed.stdout,completed.stderr)
+    assert 'local_provider_calls=1' in completed.stdout
+    assert 'UnicodeEncodeError' not in completed.stderr and 'PRIVATE_UNICODE_SENTINEL' not in completed.stdout+completed.stderr
+    with TestClient(app) as client:
+        for subject in ('unicode-high','unicode-low'):
+            result=status(client,subject,subject)
+            assert result['run_status']=='unknown' and result['budget_exhausted_stage'] is None,result
+            ledger,operations=saved(subject)
+            assert not ledger.attempts and not operations and Meter.exposure(ledger)==0
+        assert status(client,'unicode-valid','unicode-valid')['run_status']=='completed'
+    originals={subject:saved(subject) for subject in ('unicode-high','unicode-low','unicode-valid')}
+    replay=FakeProvider()
+    assert run_worker.run_once(database,replay,auth)==[] and replay.calls==0
+    assert originals=={subject:saved(subject) for subject in originals}
+    print('PASS actual worker CLI contains unpaired Unicode input as original unknown with zero calls, continues valid Unicode scope and never replays')
     print('PASS unregistered exit has no association/claim, cleanup retains primary failure and never invents completion')
     print('PASS registered association/reserve/claim/settle ACK loss, immutable rebuild, audit/adapter revocation and deadline final checks')
     print('PASS three-kind registered infrastructure through canonical AUTH/RUN/PG, shared allowance and over-limit zero invocation')
