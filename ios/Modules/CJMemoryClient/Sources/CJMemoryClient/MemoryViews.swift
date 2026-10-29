@@ -113,7 +113,7 @@ public struct MemoryDetailView: View {
                     LabeledContent(language.text("Subject", "对象"), value: item.command.subject)
                     LabeledContent(language.text("Field", "字段"), value: item.command.slot)
                     LabeledContent(language.text("Kind", "类型"), value: item.command.kind.rawValue)
-                    LabeledContent { Text(item.command.extent.rawValue) } label: {
+                    LabeledContent { Text(item.command.extent.rawValue).accessibilityIdentifier("memory.detail.scope.value") } label: {
                         MemoryRowText(text: language.text("Scope", "范围"), style: .body)
                     }
                     if case .case1(let context) = item.command.context_id {
@@ -139,9 +139,14 @@ public struct MemorySaveStatusView: View {
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(state.label(language)).accessibilityIdentifier(statusIdentifier)
+            MemoryRowText(text: state.label(language), style: .body).accessibilityIdentifier(statusIdentifier)
             if case .saving = state { ProgressView() }
-            if let query { Button(language.text("Query original operation", "查询原操作"), action: query).accessibilityIdentifier("memory.save.query") }
+            if let query {
+                Button(action: query) {
+                    MemoryRowText(text: language.text("Query original operation", "查询原操作"), style: .body)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityIdentifier("memory.save.query")
+            }
         }
     }
 }
@@ -239,6 +244,14 @@ private struct MemoryManualFormContent: View {
         VStack(alignment: .leading, spacing: 12) {
             if options.isEmpty { Text(MemorySaveState.unconfigured.label(language)) }
             else {
+                if started {
+                    if let option = options.first(where: { $0.id == selection }) {
+                        MemoryRowText(text: option.label, style: .body)
+                        MemoryRowText(text: option.disclosure, style: .caption)
+                    }
+                    MemoryRowText(text: text, style: .body)
+                    MemoryRowText(text: occurredAt, style: .body)
+                } else {
                 Picker(language.text("Save scope", "保存范围"), selection: $selection) {
                     Text(language.text("Choose a scope", "请选择范围")).tag(Optional<UUID>.none)
                     ForEach(options) { option in Text(option.label).tag(Optional(option.id)) }
@@ -260,10 +273,11 @@ private struct MemoryManualFormContent: View {
                     do {
                         let command = try option.command(text: text, occurredAt: occurredAt)
                         guard current() == binding else { return }
-                        started = true; state = .saving; originalID = command.operation_id
+                        focusedInput = nil; started = true; state = .saving; originalID = command.operation_id
                         run { try await submit(command) }
                     } catch { state = .unconfigured }
                 }.disabled(started || selection == nil || !memoryText(text) || !memoryText(occurredAt)).accessibilityIdentifier("memory.manual.save")
+                }
                 MemorySaveStatusView(state: state, language: language, queryOriginal: originalID.map { id in
                     { run { try await query(id) } }
                 })
