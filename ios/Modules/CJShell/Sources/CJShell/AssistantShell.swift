@@ -148,10 +148,13 @@ struct AssistantShell: View {
                     Text(state.language.text("Conversation: ", "会话：") + conversation)
                         .font(.caption).accessibilityIdentifier("assistant.conversation")
                 }
-                Toggle(state.language.text("Trip planning", "规划行程"), isOn: Binding(
+                Toggle(isOn: Binding(
                     get: { messageHost.creationIntent == .considerTrip },
-                    set: { messageHost.creationIntent = $0 ? .considerTrip : .none }))
-                    .font(.caption).tint(Color(uiColor: .systemBlue)).disabled(messageHost.isBusy)
+                    set: { messageHost.creationIntent = $0 ? .considerTrip : .none })) {
+                    Text(state.language.text("Trip planning", "规划行程"))
+                        .font(.body).foregroundStyle(Color(uiColor: .label))
+                }
+                    .disabled(messageHost.isBusy)
                     .accessibilityIdentifier("assistant.intent")
             }
             HStack(alignment: .bottom, spacing: 4) {
