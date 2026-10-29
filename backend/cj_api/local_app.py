@@ -10,6 +10,8 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import stat
+import time
 import uuid
 
 import psycopg
@@ -163,7 +165,7 @@ class InvitedSubjects:
         return CJAccessFacts(principal, Fact.YES, Fact.YES, Fact.YES if invited else Fact.NO)
 
 
-def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None):
+def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -190,7 +192,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None):
         environment='local', jwt_configuration=config, verification_keys=keys,
         access_provider=InvitedSubjects(auth_dir / 'invited.json'),
         resolve_repository=message_repository, new_run_id=lambda: str(uuid.uuid4()),
-        max_body_bytes=16384,
+        max_body_bytes=16384, history_configuration=history_configuration,
         run_display_configuration=RunDisplayWireConfiguration(max_message_id_bytes=256, max_text_bytes=200000,
                                                               max_response_bytes=400000),
         resolve_run_display=run_repository,
@@ -218,12 +220,44 @@ def load_confirmation_signer(auth_dir):
     return ConfirmationSigner(key)
 
 
+HISTORY_KEY_FILE = 'history-cursor.key'
+
+
+def load_history_configuration(auth_dir):
+    """Load the dedicated local cursor key; never create or substitute key material."""
+    from .aead_cursor import AeadCursorCodec
+    from .history_config import CursorPolicy, HistoryWireConfiguration
+    if os.environ.get('CJ_ENV') != 'local':
+        raise CompositionUnavailable('CJ_ENV must explicitly be local')
+    path = Path(auth_dir) / HISTORY_KEY_FILE
+    try:
+        # Inspect and read the same descriptor; reject links, devices and unsafe modes.
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(fd, 'rb') as source:
+            metadata = os.fstat(source.fileno())
+            if not stat.S_ISREG(metadata.st_mode) or stat.S_IMODE(metadata.st_mode) != 0o600:
+                raise CompositionUnavailable('history cursor key must be a regular 0600 file')
+            key = source.read(33)
+    except OSError:
+        raise CompositionUnavailable('history cursor key unavailable; run scripts/dev_auth.py history-key') from None
+    if len(key) != 32:
+        raise CompositionUnavailable('history cursor key must be exactly 32 bytes')
+    codec = AeadCursorCodec(keys={'local-history-v1': key}, active_key_id='local-history-v1',
+                            version='local-history-v1', clock=lambda: int(time.time()),
+                            max_ttl_seconds=300, max_token_bytes=2048,
+                            max_plaintext_bytes=512, max_binding_bytes=2048)
+    return HistoryWireConfiguration(20, 16384, 1_000_000, CursorPolicy(codec, 300, 2048))
+
+
 def app_from_environment():
     """uvicorn factory: CJ_LOCAL_CONNINFO and CJ_LOCAL_AUTH_DIR point at local files.
 
     Always uses the signed Trip confirmation path. The permissive P2b validator remains
     reachable only through create_local_app's default for existing tests.
     """
+    if os.environ.get('CJ_ENV') != 'local':
+        raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = os.environ['CJ_LOCAL_AUTH_DIR']
     return create_local_app(conninfo_path=os.environ['CJ_LOCAL_CONNINFO'], auth_dir=auth_dir,
-                            confirmation_signer=load_confirmation_signer(auth_dir))
+                            confirmation_signer=load_confirmation_signer(auth_dir),
+                            history_configuration=load_history_configuration(auth_dir))
