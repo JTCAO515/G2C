@@ -18,14 +18,14 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 merged; lane A closed #159/#194 and parent #7 through PR #202/#211; #164 and parent #10 closed after PR #216; #167 local implementation in progress. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). Lane B: #198 closed; #213 draft-outcome backend merged with green main; #170 budget/NEEDS scope design reviewed, implementation awaits JT. |
-| Accepted Issue | Lane A: #11 / #167 stream/stop/failure UI; #164 and parent #10 closed. Other lane ownership remains unchanged. Lane B: #19 / #170 remaining host-budget and NEEDS scope decision. |
+| Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 merged; lane A closed #159/#194 and parent #7 through PR #202/#211; #164 and parent #10 closed after PR #216; #167 Part1 merged via PR229; native7/7 PASS, overall PARTIAL_PASS while real budget acceptance waits for B host. A next: #212. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). Lane B: #198 closed; #213 draft-outcome backend merged with green main; #170 budget/NEEDS scope design reviewed, implementation awaits JT. |
+| Accepted Issue | Lane A: #19 / #212 draft-result UI next; #11 / #167 budget acceptance deferred to B host readiness; #164/#159/#194 and parents #10/#7 closed. Lane B: #19 / #170 remaining host-budget and NEEDS scope decision. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-29T04:24:19.135124+00:00 |
+| Last updated | 2026-10-29T06:22:33.035079+00:00 |
 
 ## Active Work
 
-- Lane A App: #159/#194 and parent #7 closed; #164 PR216 merged at a4aa1b0 with exact-head CI and independent red-line APPROVE, main CI40815552071 all five success; parent #10 closed. Native08 all six Debug plus Release passed, with DB original-ID/bytes and no-extra-write proofs, app/artifact scans. Historical native FAIL/INTERRUPTED remains in evidence. #167 local work now adds bounded DEBUG Simulator original-run cancellation and existing stream-host composition; no native #167 acceptance claimed.
+- Lane A App: #159/#194 and parent#7, #164 and parent#10 closed. #167 Part1 PR229 merged67417ff; exact-head CI, final independent APPROVE6489275391, postmerge main40826910920 green. Native07 exact-head7/7 PASS (bilingual stream/reopen, stop, provider failure, Release closed); RUN45/Shell213. Overall PARTIAL_PASS: real budget exhaustion UNRUN awaiting B #170 formal host. Tool calls unrequested/effects0; no actual-tool proof. Historical native01..06 failures and native06 audit correction preserved. Next A parent#19 child#212 consumes merged draft-status.1; no budget/backend edits.
 - Lane B: #198 closed after backend PR206 and A native08 7/7 independently verified in PR216; #213 draft-outcome backend merged64a1966, main CI40811823761 all green. #212 App presentation remains A-owned. Budget/NEEDS design9748174 passed independent scope review only; JT implementation approval is pending, no RLS/grants/scope/host changes made.
 - Lane C draft: #168 Part2 close-out per JT decision https://github.com/JTCAO515/G2C/issues/168#issuecomment-6485249974 → #169 → split M2 #12.
 - #186 four cleanup PRs #187–#190 merged with exact-head review; #186 remains open for its owner (Claude). PR #195 (#194 insertion) and #197 (#186 handoff note) are superseded by this revision.
@@ -62,7 +62,7 @@
 
 | Path | Reason |
 | --- | --- |
-| `docs/handoff.json, HANDOFF.md` | Lane A #10 closeout and next #167; other lane entries preserved. |
+| `docs/handoff.json, HANDOFF.md` | Lane A #167 Part1 evidence, budget wait and next #212; other lane entries preserved. |
 
 ## Verification Evidence
 
@@ -82,11 +82,13 @@
 | pass | `Lane B #213 backend slice` | Independent redline review; test57/PG11 and dedicated PG/migration/cancellation evidence; locked-head merge64a1966 and all five main jobs green. Native #212 and budget/NEEDS remain unproven. | https://github.com/JTCAO515/G2C/issues/170#issuecomment-6487143581 |
 | pass | `Lane B budget/NEEDS design scope review` | Design9748174 revised after four findings; APPROVE-for-scope-review only. All new implementation checks UNRUN, JT scope approval pending. | https://github.com/JTCAO515/G2C/issues/170#issuecomment-6487473477 |
 | pass | `Lane A #164 PR216 closeout` | Native08 7/7; HTTP82+Recovery37, rebased Shell213; DB original-ID/bytes, zero extra writes and app/artifact scans. Exact-head CI and final independent red-line APPROVE; post-merge main40815552071 all five success; #164/#10 closed. Prior failed runs preserved as historical evidence. | https://github.com/JTCAO515/G2C/pull/216#issuecomment-6487560776 |
+| pass | `Lane A #167 Part1 PR229` | Exact head96e1973: native07 seven ready cases PASS; real budget UNRUN, overall PARTIAL_PASS. RUN45/Shell213; exact-head CI and independent final APPROVE; locked-head merge67417ff, main40826910920 green. Old failed runs retained. | https://github.com/JTCAO515/G2C/issues/167#issuecomment-6489552212 |
 
 ## Blockers
 
 - L2/cloud/OTP/real model/device resources, branch protection and production keys remain JT-owned.
 - Lane B #170: JT must approve reviewed provider_call quota semantics, original per-step attempt/NEEDS binding, new wire versions, minimum RLS/runtime grants/LOCAL scope and scripts/run_worker.py write scope. Design review is not implementation authorization. M2 #9 waits for B M1 completion; #212 native UI remains incomplete.
+- Lane A #167: real budget exhaustion native acceptance awaits B #170 USAGE/formal host implementation (JT approval6488161293 already granted; this is an implementation dependency). Actual tool execution remains unproven. Continue A #212 from merged v1 draft-result API; #167/#11 stay open.
 
 ## Risks
 
@@ -106,9 +108,9 @@
 
 ## Next Smallest Action
 
-- Action: A: complete #167 stream/stop/failure UI using original MESSAGE binding and frozen cancellation API, validate in Simulator with real local API/PG/FakeProvider, then exact-head CI and independent review. B: await JT approval of the reviewed #170 host-budget/NEEDS scope, then implement only approved boundaries; #198 is closed; M2 #9 follows B M1 completion; C: #168 Part2 → #169 → split M2 #12. B/C are the previously recorded queue paths retained for their owners, not a fresh status claim; current Issue/PR state takes precedence. One open PR per lane; shared files one PR at a time.
-- Expected observation: A: #167 displays real streamed/persisted text, preserves received text on confirmed stop, and exposes provider/limit failures without sample answers. #164 is complete at L0/L1; real services and device work remain separate.
-- Resume command: `gh issue view 167 --repo JTCAO515/G2C --comments`
+- Action: A: implement #212 original-message draft-result read-only bilingual UI using merged RUN-draft-status.1; validate real local API/PG/FakeProvider and original-session fences. Return to #167 real budget acceptance when B formal host is ready. B: await JT approval of the reviewed #170 host-budget/NEEDS scope, then implement only approved boundaries; #198 is closed; M2 #9 follows B M1 completion; C: #168 Part2 → #169 → split M2 #12. B/C are the previously recorded queue paths retained for their owners, not a fresh status claim; current Issue/PR state takes precedence. One open PR per lane; shared files one PR at a time.
+- Expected observation: A: answer text/run status remain independent of draft outcome; unknown/offline/old-session responses never become success or trigger new writes. #167 overall remains PARTIAL_PASS.
+- Resume command: `gh issue view 212 --repo JTCAO515/G2C --comments`
 
 ## Rollback
 
