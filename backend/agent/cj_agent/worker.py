@@ -9,7 +9,7 @@ owner or scope from request data. Recovery rules (ADR-0003):
 - a delivery is acknowledged only after RUN holds a terminal status.
 """
 from dataclasses import dataclass
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 import json
 
 # The worker must be ready (or fail startup) before accepting any work (#176).
@@ -17,6 +17,9 @@ from cj_feasibility import solver as _solver_runtime
 
 from cj_run.core import Binding, Conflict, Denied, Event, Service, TERMINAL, advance
 from cj_message.domain import Unavailable as MessageUnavailable
+
+from cj_needs.domain import Denied as NeedsDenied
+from cj_needs.revision_lease import LeaseUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
 from .provider import ProviderFailed, ProviderUnknown
@@ -47,6 +50,10 @@ def original_context_valid(binding, messages, admitted):
             == (binding.message_id, binding.conversation_id, binding.generation, binding.run_id, binding.message_sequence))
 
 
+class _PublicationUncertain(Exception):
+    pass
+
+
 class _Stopped(Exception):
     def __init__(self, state):
         super().__init__('original RUN is terminal')
@@ -62,13 +69,14 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
         with creation_intent `consider_trip` then also get a reviewable proposal.
         """
         self.scope, self.messages, self.runs, self.provider, self.drafts = scope, messages, runs, provider, drafts
+        self.needs_lease = needs_lease
 
     def process(self, limit=20):
         outcomes = []
@@ -111,26 +119,42 @@ class RunWorker:
         are an already-started call and do not hold the fence. Committed publication
         and its RUN receipt are ordered before any subsequent cancellation.
         """
-        with self.runs.repository.transaction() as tx:
-            state = tx.get(binding)
-            if state.status in TERMINAL:
-                raise _Stopped(state)
-            if state.status != 'running':
-                raise Conflict('step requires original running state')
-            if self.runs.valid(binding) is not True:
-                raise Denied('context invalid or unknown')
-            if tx.get(binding) != state:
-                raise Conflict('state changed during step guard')
-            if draft and state.draft_outcome is not None:
-                raise Conflict('draft result already recorded before invocation')
-            result = invoke()
-            if effect is not None:
-                updated = advance(state, Event(binding, state.sequence + 1,
-                                  f'{binding.run_id}:{state.sequence + 1}', 'effect_committed', effect(result)), self.runs.valid)
-                if tx.get(binding) != state:
-                    raise Conflict('state changed during publication')
-                tx.put(updated)
-                state = updated
+        publication_started = False
+        try:
+            with ExitStack() as leases:
+                with self.runs.repository.transaction() as tx:
+                    state = tx.get(binding)
+                    if state.status in TERMINAL:
+                        raise _Stopped(state)
+                    if state.status != 'running':
+                        raise Conflict('step requires original running state')
+                    if self.runs.valid(binding) is not True:
+                        raise Denied('context invalid or unknown')
+                    if tx.get(binding) != state:
+                        raise Conflict('state changed during step guard')
+                    if draft and state.draft_outcome is not None:
+                        raise Conflict('draft result already recorded before invocation')
+                    if draft and self.needs_lease is not None:
+                        if effect is not None:
+                            check_needs = leases.enter_context(self.needs_lease(binding))
+                            check_needs()
+                        else:
+                            # Do not hold a NEEDS lease over provider/source network IO.
+                            with self.needs_lease(binding) as check_needs:
+                                check_needs()
+                    publication_started = effect is not None
+                    result = invoke()
+                    if effect is not None:
+                        updated = advance(state, Event(binding, state.sequence + 1,
+                                          f'{binding.run_id}:{state.sequence + 1}', 'effect_committed', effect(result)), self.runs.valid)
+                        if tx.get(binding) != state:
+                            raise Conflict('state changed during publication')
+                        tx.put(updated)
+                        state = updated
+        except (NeedsDenied, LeaseUnavailable, Denied) as error:
+            if publication_started:
+                raise _PublicationUncertain() from error
+            raise
         return state, result
 
     def _stream(self, binding, messages, system=None):
@@ -189,6 +213,7 @@ class RunWorker:
                         check()
                     check()
             owned = RunWorker(scope=binding.scope, messages=messages, provider=provider, drafts=drafts,
+                              needs_lease=self.needs_lease,
                               runs=Service(OwnedRepository(), runs.valid))
             return owned._owned(receipt, binding)
 
@@ -197,7 +222,12 @@ class RunWorker:
             return self._execute(receipt, binding)
         except _Stopped as stopped:
             return self._finish(receipt, stopped.state)
-        except Denied:
+        except (LeaseUnavailable, _PublicationUncertain):
+            current = self.runs.snapshot(binding)
+            if current.status not in TERMINAL:
+                current = self._event(binding, current, 'unknown')
+            return self._finish(receipt, current)
+        except (Denied, NeedsDenied):
             current = self.runs.snapshot(binding)
             if current.status not in TERMINAL:
                 current = self._event(binding, current, 'context_invalid')
@@ -222,6 +252,9 @@ class RunWorker:
         stored = self.messages.query(receipt.message_id)
         command = json.loads(stored.raw)
         text = command['text']
+        if self.needs_lease is not None and command['creation_intent'] == 'consider_trip':
+            with self.needs_lease(binding) as check_needs:
+                check_needs()
         proposal_id = None
         buffer = ''
         try:

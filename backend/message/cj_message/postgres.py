@@ -5,11 +5,15 @@ from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable, ChatSumma
 
 
 class Repository:
-    def __init__(self, connect, scope):
+    def __init__(self, connect, scope, *, bind_needs=False):
+        # Explicit local host opt-in; legacy callers remain unbound. Required mode
+        # never falls back when selection/revision is missing or unreadable.
         # Internal partition key, NOT a principal schema or client-supplied owner.
         if not isinstance(scope, str) or not scope:
             raise ValueError('explicit internal scope required')
-        self.connect, self.scope = connect, scope
+        if type(bind_needs) is not bool:
+            raise ValueError('explicit NEEDS binding mode required')
+        self.connect, self.scope, self.bind_needs = connect, scope, bind_needs
 
     @contextmanager
     def transaction(self):
@@ -39,7 +43,7 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
-                yield Transaction(cur, self.scope)
+                yield Transaction(cur, self.scope, bind_needs=self.bind_needs)
             except BaseException:
                 outcome = 'body_failed'
                 cleanup(conn.rollback, 'rollback')
@@ -59,8 +63,8 @@ class Repository:
 
 
 class Transaction:
-    def __init__(self, cursor, scope):
-        self.cur, self.scope = cursor, scope
+    def __init__(self, cursor, scope, *, bind_needs=False):
+        self.cur, self.scope, self.bind_needs = cursor, scope, bind_needs
 
     def lock_scope(self):
         self.cur.execute('SELECT scope FROM cj_message_scope WHERE scope = %s FOR UPDATE', (self.scope,))
@@ -98,6 +102,9 @@ class Transaction:
         r = stored.receipt
         self.cur.execute('INSERT INTO cj_message_receipt (scope, message_id, conversation_id, generation, sequence, run_id, input_sha256, raw_input) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',
                          (self.scope, r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256, stored.raw))
+        if self.bind_needs:
+            from .needs_binding import capture
+            capture(self.cur, self.scope, stored)
         self.cur.execute('UPDATE cj_message_chat SET last_sequence = %s WHERE scope = %s AND conversation_id = %s AND generation = %s AND active', (r.sequence, self.scope, r.conversation_id, r.generation))
         if self.cur.rowcount != 1:
             raise Unavailable()
