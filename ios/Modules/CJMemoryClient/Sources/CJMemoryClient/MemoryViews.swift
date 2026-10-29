@@ -267,5 +267,14 @@ private struct MemoryManualFormContent: View {
                 })
             }
         }
+        #if os(iOS)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(language.text("Done", "完成")) { focusedInput = nil }
+                    .accessibilityIdentifier("memory.keyboard.done")
+            }
+        }
+        #endif
     }
 }
