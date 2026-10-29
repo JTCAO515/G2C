@@ -225,6 +225,7 @@ import Foundation
         XCTAssertEqual(result.pending_deliveries, 0)
         XCTAssertEqual(result.status, expectedStatus)
         XCTAssertFalse(app.buttons["run.stop"].isEnabled)
+        XCTAssertFalse(app.buttons["assistant.queryOriginal"].isEnabled)
         XCTAssertEqual(result.budget_stage, stage)
         XCTAssertEqual(result.posts, mode == "budget_answer" ? 2 : 1)
         XCTAssertEqual(result.receipts, mode == "budget_answer" ? 2 : 1)
