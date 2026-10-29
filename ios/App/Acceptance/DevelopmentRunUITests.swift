@@ -25,6 +25,7 @@ import Foundation
         let cancellations: Int
         let draft_outcome: String?
         let draft_calls: Int
+        let published_effects: Int
         let creation_intent: String?
         let draft_reads: Int
         let forbidden_writes: Int
@@ -133,7 +134,7 @@ import Foundation
         XCTAssertEqual(app.staticTexts["run.display.text"].label, saved.text)
         XCTAssertEqual(saved.posts, 1); XCTAssertEqual(saved.receipts, 1); XCTAssertEqual(saved.provider_calls, draft && !stopping ? 2 : 1)
         XCTAssertEqual(saved.cancellations, stopping ? 1 : 0)
-        XCTAssertEqual(saved.effects, 0); XCTAssertEqual(saved.forbidden_writes, 0)
+        XCTAssertEqual(saved.effects, mode == "draft_published" ? 1 : 0); XCTAssertEqual(saved.forbidden_writes, 0)
         if draft { try checkDraft(mode, language: language, proof: saved) }
         capture(mode + "-persisted-" + language)
         try launch(fixture, language: language, restore: true)
@@ -152,6 +153,7 @@ import Foundation
         let expected: String
         let outcome: String?
         switch mode {
+        case "draft_published": expected = language == "en" ? "Draft candidate recorded; not a saved trip" : "已记录草稿候选，尚非正式行程"; outcome = nil
         case "draft_validation": expected = language == "en" ? "Draft failed validation; no candidate published" : "草稿校验失败，未发布候选"; outcome = "validation_failed"
         case "draft_provider": expected = language == "en" ? "Draft generation failed; no candidate published" : "草稿生成失败，未发布候选"; outcome = "provider_failed"
         case "draft_unknown": expected = language == "en" ? "Draft generation result unknown; do not generate again" : "草稿生成结果未知，请勿再次生成"; outcome = "provider_unknown"
@@ -180,10 +182,13 @@ import Foundation
         }
         XCTAssertEqual(proof.creation_intent, "consider_trip")
         XCTAssertGreaterThanOrEqual(proof.draft_reads, 1)
+        XCTAssertEqual(proof.published_effects, mode == "draft_published" ? 1 : 0)
         XCTAssertEqual(proof.draft_outcome, outcome)
         XCTAssertEqual(proof.draft_calls, mode == "draft_stop" ? 0 : 1)
         XCTAssertFalse(value.label.contains("PRIVATE_SENTINEL"))
     }
+    func testDraftPublishedEnglish() async throws { try await run("draft_published", language:"en") }
+    func testDraftPublishedChinese() async throws { try await run("draft_published", language:"zh-Hans") }
     func testDraftValidationEnglish() async throws { try await run("draft_validation", language:"en") }
     func testDraftValidationChinese() async throws { try await run("draft_validation", language:"zh-Hans") }
     func testDraftProviderEnglish() async throws { try await run("draft_provider", language:"en") }
