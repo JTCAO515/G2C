@@ -14,7 +14,7 @@ struct MemoryShell: View {
         NavigationStack(path: $state.memoryPath) {
             List {
                 Section {
-                    if memoryHost.canSubmitManual && memoryHost.manualOptions.count >= 2 {
+                    if memoryHost.canSubmitManual && memoryHost.collectionOptions.count >= 2 {
                         NavigationLink {
                             MemoryCollectionView(host: memoryHost, shell: state)
                         } label: {

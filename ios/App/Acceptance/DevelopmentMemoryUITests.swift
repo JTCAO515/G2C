@@ -28,7 +28,8 @@ import Foundation
         let target = app.buttons.matching(identifier: name).firstMatch
         for _ in 0..<10 {
             if target.exists && target.isHittable { break }
-            app.swipeUp()
+            if target.exists && target.frame.maxY < app.navigationBars.firstMatch.frame.maxY { app.swipeDown() }
+            else { app.swipeUp() }
         }
         XCTAssertTrue(target.waitForExistence(timeout: 10), name)
         XCTAssertTrue(target.isHittable, name)
@@ -101,8 +102,6 @@ import Foundation
         tap("self · " + slot + " · Long term / 长期")
         text("memory.manual.text", value)
         text("memory.manual.time", "Synthetic date unknown / 合成时间不详")
-        // Dismiss the keyboard without submitting another action.
-        app.swipeUp()
         tap("memory.manual.save")
     }
     func query(_ f: Fixture, _ stage: String) async throws {
@@ -201,8 +200,14 @@ import Foundation
     func testSkipAndChat() async throws {
         let f = try await prepare("skip"); defer { app?.terminate() }
         try launch(f, language: "en")
-        tap("memory.collection.open"); capture("optional-questions")
-        tap("memory.collection.skip")
+        tap("memory.collection.open")
+        XCTAssertEqual(app.staticTexts["memory.collection.progress"].label, "Question 1/3")
+        XCTAssertTrue(app.staticTexts["memory.collection.question"].exists)
+        tap("memory.collection.next")
+        XCTAssertEqual(app.staticTexts["memory.collection.progress"].label, "Question 2/3")
+        tap("memory.collection.next")
+        XCTAssertEqual(app.staticTexts["memory.collection.progress"].label, "Question 3/3")
+        capture("optional-questions"); tap("memory.collection.skip")
         tap("assistant.serverHistory"); tap("history.loadConversations")
         tap("history.conversation." + f.conversation); tap("assistant.panel.done")
         text("assistant.draft", "Synthetic chat after skip")
