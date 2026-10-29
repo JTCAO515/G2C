@@ -21,11 +21,33 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         case .loadedBudget(let value): outcomeLabel(value.draft_outcome, language)
         }
     }
-    public var runStatus: String? {
+    public var runStatus: Components.Schemas.RunDisplaySnapshot.statusPayload? {
         switch self {
-        case .loaded(let value): value.run_status.rawValue
-        case .loadedBudget(let value): value.run_status.rawValue
-        default: nil
+        case .loaded(let value): displayStatus(value.run_status)
+        case .loadedBudget(let value): displayStatus(value.run_status)
+        case .unread, .loading, .unavailable: nil
+        }
+    }
+    private func displayStatus(_ status: Components.Schemas.RunDraftStatusResponse.run_statusPayload) -> Components.Schemas.RunDisplaySnapshot.statusPayload {
+        switch status {
+        case .queued: .queued
+        case .running: .running
+        case .completed: .completed
+        case .failed: .failed
+        case .cancelled: .cancelled
+        case .context_invalid: .context_invalid
+        case .unknown: .unknown
+        }
+    }
+    private func displayStatus(_ status: Components.Schemas.RunDraftStatusV2Response.run_statusPayload) -> Components.Schemas.RunDisplaySnapshot.statusPayload {
+        switch status {
+        case .queued: .queued
+        case .running: .running
+        case .completed: .completed
+        case .failed: .failed
+        case .cancelled: .cancelled
+        case .context_invalid: .context_invalid
+        case .unknown: .unknown
         }
     }
     /// Only the versioned persisted reason is displayed; failed/unknown never implies quota exhaustion.

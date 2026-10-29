@@ -102,15 +102,15 @@ extension RunDisplayState {
         return Button(action: action) { RunReadableText(text: title) }
             .accessibilityLabel(title).disabled(disabled).accessibilityIdentifier(id)
     }
-    private func draftRunLabel(_ status: String) -> String {
+    private func draftRunLabel(_ status: Components.Schemas.RunDisplaySnapshot.statusPayload) -> String {
         switch status {
-        case "queued": language.text("Queued", "排队中")
-        case "running": language.text("Running", "运行中")
-        case "completed": language.text("Completed", "已完成")
-        case "failed": language.text("Failed", "失败")
-        case "cancelled": language.text("Cancelled", "已取消")
-        case "context_invalid": language.text("Context invalid", "上下文失效")
-        default: language.text("Unknown", "未知")
+        case .queued: language.text("Queued", "排队中")
+        case .running: language.text("Running", "运行中")
+        case .completed: language.text("Completed", "已完成")
+        case .failed: language.text("Failed", "失败")
+        case .cancelled: language.text("Cancelled", "已取消")
+        case .context_invalid: language.text("Context invalid", "上下文失效")
+        case .unknown: language.text("Unknown", "未知")
         }
     }
     private func disabled(_ state: RunDisplayState) -> Bool {
