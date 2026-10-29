@@ -39,6 +39,7 @@ struct SendPermitState {
     var lease: Lease?
     var heads: [Data: Components.Schemas.MessageHead] = [:]
     var reads: [Data: UUID] = [:]
+    var refreshedDecisions: Set<Data> = []
     var historyEpochs: [Data: UUID] = [:]
     var historyHeads: [Data: Components.Schemas.MessageHead] = [:]
     var prepared: [Data: PreparedMessageSend] = [:]
@@ -102,10 +103,12 @@ extension MessageHTTPClient {
             if Data(cid.utf8) == conversation {
                 if reference.phase == .notAccepted {
                     let original = try OriginalMessageSend(raw: record.originalUTF8, maximumBytes: endpoint.maximumRequestBytes)
-                    if Data(original.head.generation.utf8) == Data(head.generation.utf8), head.last_sequence > original.head.last_sequence {
+                    if Data(original.head.generation.utf8) == Data(head.generation.utf8), head.last_sequence > original.head.last_sequence,
+                       !sendPermitState.refreshedDecisions.contains(Data(record.messageID.utf8)) {
                         guard let history = sendPermitState.historyHeads[conversation],
                               Data(history.generation.utf8) == Data(head.generation.utf8),
                               history.last_sequence >= head.last_sequence else { return nil }
+                        sendPermitState.refreshedDecisions.insert(Data(record.messageID.utf8))
                     }
                 } else { return nil }
             }
@@ -259,6 +262,7 @@ extension MessageHTTPClient {
             // The operation check above rejects stale concurrent replies before cache mutation.
             sendPermitState.decisions[key] = decision
             if decision == .notAccepted {
+                sendPermitState.refreshedDecisions.remove(key)
                 sendPermitState.historyEpochs[conversation] = UUID()
                 sendPermitState.historyHeads.removeValue(forKey: conversation)
             }

@@ -122,6 +122,11 @@ private actor PermitServer: ClientTransport {
         _ = try await reopened.history(conversationID: "chat", limit: 20, limits: limits, lease: next)
         try reopened.stageSend(messageID: "new", conversationID: "chat", text: "user chooses after refresh", lease: next)
         #expect(await server.posted.isEmpty)
+        await server.overrideStatus(nil)
+        _ = try await reopened.submitPrepared(messageID: "new", lease: next)
+        #expect(try reopened.canStartSend(conversationID: "chat", lease: next))
+        try reopened.stageSend(messageID: "next", conversationID: "chat", text: "normal next message", lease: next)
+        #expect(await server.posted.count == 1)
     }
 
     @Test func sequenceConflictRequiresOriginalStatusBeforeResubmission() async throws {

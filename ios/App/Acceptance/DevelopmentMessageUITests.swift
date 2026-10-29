@@ -39,17 +39,15 @@ import Foundation
     }
     private func tap(_ id: String, towardTop: Bool = false) {
         let button = app.buttons.matching(identifier: id).firstMatch
-        if !button.exists { _ = button.waitForExistence(timeout: 2) }
+        _ = button.waitForExistence(timeout: 2)
+        let visible = NSPredicate(format: "exists == true AND hittable == true")
         for _ in 0..<14 {
-            if button.exists && button.isHittable { break }
+            if visible.evaluate(with: button) { break }
             if towardTop { app.swipeDown() } else { app.swipeUp() }
         }
-        XCTAssertTrue(button.exists, id)
-        XCTAssertTrue(button.isHittable, id)
-        if !button.isEnabled {
-            let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
-            XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed, id)
-        }
+        XCTAssertTrue(visible.evaluate(with: button), id)
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed, id)
         button.tap()
     }
     private func status(_ fragment: String) {
@@ -92,7 +90,7 @@ import Foundation
         tap("assistant.panel.done")
         XCTAssertTrue(app.staticTexts["assistant.conversation"].waitForExistence(timeout: 10))
     }
-    private var field: XCUIElement { app.descendants(matching: .any).matching(identifier: "assistant.draft").firstMatch }
+    private var field: XCUIElement { app.textViews["assistant.draft"] }
     private func enter(_ text: String) {
         XCTAssertTrue(field.waitForExistence(timeout: 10))
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: field)
