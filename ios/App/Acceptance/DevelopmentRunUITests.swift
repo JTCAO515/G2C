@@ -243,6 +243,7 @@ import Foundation
         waitCard(expected)
         let value = app.descendants(matching: .any).matching(identifier: "run.draft.status").firstMatch
         let label = value.label
+        XCTAssertFalse(label.contains("PRIVATE_SENTINEL"))
         XCTAssertTrue(label.contains(language == "en" ? "Draft result" : "草稿结果"))
         let runLabel = expectedStatus == "failed" ? (language == "en" ? "Failed" : "失败") : expectedStatus == "unknown" ? (language == "en" ? "Unknown" : "未知") : expectedStatus == "cancelled" ? (language == "en" ? "Cancelled" : "已取消") : (language == "en" ? "Completed" : "已完成")
         XCTAssertTrue(label.contains((language == "en" ? "Run state at draft read: " : "读取草稿时的运行状态：") + runLabel))
