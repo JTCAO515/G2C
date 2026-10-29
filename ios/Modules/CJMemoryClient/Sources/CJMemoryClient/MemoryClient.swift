@@ -168,7 +168,10 @@ public enum MemorySaveResult: Sendable {
         let response = try await exchange(binding, token) { try await client.saveMemory(body: .binary(HTTPBody(record.originalUTF8))) }
         switch response {
         case .ok(let value): return try settle(value.body.json.receipt, record: record, binding: binding, token: token)
-        case .default(let status, let value): throw MemoryFailure.rejected(status, try value.body.json.error.code)
+        case .default(let status, let value):
+            let error = try value.body.json.error
+            guard error.outcome == .failed else { throw MemoryFailure.exchangeUnknown }
+            throw MemoryFailure.rejected(status, error.code)
         }
     }
     public func query(operationID: String, binding: MemoryBinding) async throws -> MemorySaveResult {
@@ -185,7 +188,10 @@ public enum MemorySaveResult: Sendable {
             case .MemoryReceipt(let receipt): return try settle(receipt, record: record, binding: binding, token: token)
             case .case2(let null): guard null.value == nil else { throw MemoryFailure.invalidResponse }; return .notObserved
             }
-        case .default(let status, let value): throw MemoryFailure.rejected(status, try value.body.json.error.code)
+        case .default(let status, let value):
+            let error = try value.body.json.error
+            guard error.outcome == .failed else { throw MemoryFailure.exchangeUnknown }
+            throw MemoryFailure.rejected(status, error.code)
         }
     }
     private func settle(_ receipt: Components.Schemas.MemoryReceipt, record: MemoryPending, binding: MemoryBinding, token: UUID) throws -> MemorySaveResult {

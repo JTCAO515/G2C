@@ -57,7 +57,8 @@ struct MemoryContainerItems: View {
             } else {
                 Text(state.language.text("Select a current memory group first.", "请先选择当前记忆分组。"))
             }
-        }.navigationTitle(state.language.text("Memories", "记忆列表"))
+        }.buttonStyle(.bordered).controlSize(.large)
+            .navigationTitle(state.language.text("Memories", "记忆列表"))
     }
 }
 
@@ -74,7 +75,8 @@ struct MemoryContainerDetail: View {
             Button(language.text("Load current detail", "读取当前详情")) {
                 Task { await host.loadDetail(context: action) }
             }.disabled(action == nil)
-        }.navigationTitle(language.text("Memory detail", "记忆详情"))
+        }.buttonStyle(.bordered).controlSize(.large)
+            .navigationTitle(language.text("Memory detail", "记忆详情"))
             .onAppear { presentation = host.beginManagementPresentation() }
             .onDisappear {
                 host.leaveManagementPresentation(presentation)
@@ -138,7 +140,8 @@ struct MemoryContainerManual: View {
                 Text(language.text("A past receipt does not establish current use. An unknown or missing receipt does not permit resending.", "历史回执不代表当前仍在使用；结果未知或未查到回执时，不可重新发送。"))
                     .font(.caption)
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
-        }.navigationTitle(language.text("Add memory", "新增记忆"))
+        }.buttonStyle(.bordered).controlSize(.large)
+            .navigationTitle(language.text("Add memory", "新增记忆"))
             .onAppear { presentation = host.beginManagementPresentation() }
             .onDisappear {
                 host.leaveManagementPresentation(presentation)
@@ -184,7 +187,8 @@ struct MemoryCollectionView: View {
                 Text(language.text("If a save is unknown, check its original operation from Add memory. Skipping does not cancel or resend it.", "保存结果未知时，请在新增记忆页查询原操作。跳过不会取消或重发保存。"))
                     .font(.footnote)
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
-        }.navigationTitle(language.text("Optional questions", "可选问题"))
+        }.buttonStyle(.bordered).controlSize(.large)
+            .navigationTitle(language.text("Optional questions", "可选问题"))
     }
 }
 #endif
