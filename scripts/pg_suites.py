@@ -255,9 +255,14 @@ def group_local_context_schema():
     return script('backend/cj_api/tests/local_context_schema_pg.py')
 
 
+def group_local_needs_fence():
+    # #170 module L1: canonical admission + runtime PG; formal host activates in PR4.
+    return script('backend/cj_api/tests/local_needs_fence_pg.py')
+
+
 GROUPS = {'e2e': group_e2e, 'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners,
-          'local_context_schema': group_local_context_schema}
+          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence}
 
 
 def main(argv):
