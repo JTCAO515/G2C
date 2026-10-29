@@ -141,8 +141,21 @@ import Foundation
             XCTAssertTrue(app.staticTexts[(language == "en" ? "Source, " : "来源, ") + source.source_id].exists)
             capture("detail-" + language); try audit("MEMORY_DETAIL_" + language); back()
         }
+        back(); tap("memory.language")
+        tap(language == "en" ? "简体中文" : "English")
+        back()
+        let switched = language == "en" ? "zh-Hans" : "en"
+        tap(switched == "en" ? "Load groups" : "读取分组")
+        tap("memory.group.0"); tap(switched == "en" ? "Load from start" : "从头读取")
+        for (slot, value) in rows {
+            let source = try XCTUnwrap(readProof.items.first { $0.slot == slot })
+            let item = app.buttons["memory.item." + source.item_id]
+            XCTAssertTrue(item.waitForExistence(timeout: 10))
+            XCTAssertEqual(item.label, value + ", " + (switched == "en" ? "Active" : "已启用"))
+        }
+        capture("same-records-after-settings-language-change")
         app.terminate()
-        try launch(f, language: language == "en" ? "zh-Hans" : "en", restore: true)
+        try launch(f, language: switched, restore: true)
         tap("memory.add"); tap(language == "en" ? "读取原操作" : "Read original operations")
         for index in 0..<3 {
             let buttons = app.buttons.matching(identifier: language == "en" ? "查询此原操作" : "Query this original operation")
@@ -151,7 +164,6 @@ import Foundation
             waitStatus(language == "en" ? "已保存" : "Saved.", identifier: "memory.original.status")
         }
         capture("reopen-originals"); back()
-        let switched = language == "en" ? "zh-Hans" : "en"
         tap(switched == "en" ? "Load groups" : "读取分组")
         tap("memory.group.0"); tap(switched == "en" ? "Load from start" : "从头读取")
         for (slot, value) in rows {
