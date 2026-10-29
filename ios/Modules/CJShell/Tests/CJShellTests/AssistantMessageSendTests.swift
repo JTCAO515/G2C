@@ -19,6 +19,8 @@ private actor SendServer: ClientTransport {
     var sequence = 0
     var posted: [Data] = []
     var losePost = false
+    var rejectPost = false
+    func rejectNextPost() { rejectPost = true }
     var postHook: (@Sendable () async -> Void)?
     func loseNextPost() { losePost = true }
     func beforePostReply(_ hook: @escaping @Sendable () async -> Void) { postHook = hook }
@@ -31,6 +33,14 @@ private actor SendServer: ClientTransport {
             let bytes = try await Data(collecting: body!, upTo: 10000)
             posted.append(bytes)
             if losePost { losePost = false; throw URLError(.networkConnectionLost) }
+            if rejectPost {
+                rejectPost = false
+                var response = HTTPResponse(status: .serviceUnavailable)
+                response.headerFields[.contentType] = "application/json"
+                response.headerFields[HTTPField.Name("X-Request-ID")!] = trace
+                let error: [String: Any] = ["request_id": trace, "error": ["code": "MESSAGE_OUTCOME_UNKNOWN", "category": "dependency", "message_en": "Unknown", "message_zh": "未知", "outcome": "unknown", "recovery": "reconcile_original"]]
+                return (response, HTTPBody(try JSONSerialization.data(withJSONObject: error)))
+            }
             sequence += 1
             let original = try JSONSerialization.jsonObject(with: bytes) as! [String: Any]
             value = ["request_id": trace, "receipt": ["conversation_id": "chat", "message_id": original["message_id"]!, "generation": "g1", "sequence": sequence, "run_id": "run1", "input_sha256": SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()]]
@@ -58,6 +68,20 @@ private actor SendServer: ClientTransport {
         #expect(host.bind(.init(recovery: state, scope: scope, lease: lease, generation: shell.generation,
                                synthetic: true, isCurrent: { true }, invalidateResources: {}, sendClient: client)))
         return host
+    }
+    @Test func unavailableResponseKeepsOriginalUnknownAndQueryOnly() async throws {
+        let shell = try shell(), recovery = MessageRecovery(storage: SendStore())
+        let scope = try StorageScope(environment: UUID().uuidString, account: "a")
+        let lease = try recovery.activate(scope), server = SendServer()
+        let host = try bind(shell: shell, state: recovery, scope: scope, lease: lease, server: server)
+        #expect(host.selectConversationForSending("chat")); await wait { !host.isBusy }
+        shell.draft = "original"; await server.rejectNextPost()
+        host.sendNew(); await wait { !host.isBusy }
+        #expect(host.activity == .unknown)
+        #expect(host.visibleRecord?.phase == .queryRequired)
+        #expect(host.canQuery && !host.canResubmit && !host.canSend)
+        #expect(shell.draft == "original")
+        #expect(await server.posted.count == 1)
     }
     @Test func oversizedInputIsNotReportedAsAnUnknownSubmittedAction() async throws {
         let shell = try shell(), recovery = MessageRecovery(storage: SendStore())

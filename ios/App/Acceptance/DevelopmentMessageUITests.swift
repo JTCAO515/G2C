@@ -127,12 +127,18 @@ import Foundation
         let text = "CJ164 " + choice + " 北京三日 / three days"
         enter(text)
         let intent = app.switches["assistant.intent"]
-        XCTAssertTrue(intent.waitForExistence(timeout: 8)); intent.tap()
+        XCTAssertTrue(intent.waitForExistence(timeout: 8))
+        let control = intent.switches.firstMatch
+        XCTAssertTrue(control.exists && control.isHittable)
+        control.tap()
+        capture("intent-after-tap-" + language)
+        XCTAssertEqual(intent.value as? String, "1", "Trip planning must be selected before changing language")
         let other = language == "en" ? "zh-Hans" : "en"
         self.language(from: language, to: other)
         XCTAssertEqual(field.value as? String, text)
         self.language(from: other, to: language)
         XCTAssertEqual(field.value as? String, text)
+        XCTAssertEqual(intent.value as? String, "1", "Language changes must preserve trip planning")
         tap("assistant.send")
         status(language == "en" ? "confirmed receipt" : "确认回执")
         let saved = try await proof(choice, cid)

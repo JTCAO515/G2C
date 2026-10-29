@@ -412,7 +412,7 @@ public enum MessageHostActivity: Equatable {
         }
         projection = try original.recovery.localProjection(scope: original.scope, lease: original.lease)
         runSelectionAllowed = record?.phase == .accepted
-        activity = .ready; task = nil
+        activity = record?.phase == .queryRequired ? .unknown : .ready; task = nil
         saveDraft()
     }
 
