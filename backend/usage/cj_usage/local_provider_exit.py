@@ -86,14 +86,16 @@ class LocalProviderExit:
                 if error.reason == 'limit_exceeded': raise BudgetExceeded(step.step_key) from None
                 raise BudgetUnknown('budget admission unavailable') from None
             meter.claim(command.attempt_id)
-            # Same RUN fence still held; no cancellation can interleave before call.
-            if call.guard() is not True: raise Denied('original authority unavailable after claim')
             with meter.repo.transaction() as ledger:
                 run_started=ledger.runs[command.run_id].started
                 previous=ledger.last_clock
             now=self._now(previous)
             if now-run_started >= self.config.max_seconds: raise BudgetExceeded(step.step_key)
             inputs=json.loads(step.original.input_bytes)
+            # All ledger IO/cleanup and input materialization precede final admission.
+            if call.guard() is not True: raise Denied('original authority unavailable before call')
+            now=self._now(now)
+            if now-run_started >= self.config.max_seconds: raise BudgetExceeded(step.step_key)
             stream=call.provider.stream(inputs['messages'],system=inputs['system'])
             output=0
             for chunk in stream:
@@ -104,6 +106,10 @@ class LocalProviderExit:
                 if output>command.output_limit or now-run_started>=self.config.max_seconds:
                     raise BudgetExceeded(step.step_key)
                 yield chunk
+            # EOF can itself arrive after the deadline without yielding a chunk.
+            now=self._now(now)
+            if now-run_started>=self.config.max_seconds: raise BudgetExceeded(step.step_key)
+            if call.guard() is not True: raise Denied('original authority unavailable at completion')
             # Only a complete local invocation supplies its original receipt.
             meter.settle(Receipt(command.attempt_id,'local:'+command.attempt_id,
                                  self.config.unit,1,output))
@@ -111,6 +117,22 @@ class LocalProviderExit:
             raise BudgetUnknown('original budget outcome unavailable') from None
         finally:
             if stream is not None: stream.close()
+
+    def check_publication(self, binding):
+        """Recheck total run time after settlement/source work, under RUN fence."""
+        from cj_run.step_usage import ledger_scope_for
+        account=ledger_scope_for(binding.scope,self.config)
+        meter=self.resolve_meter(binding,account)
+        if meter.repo.scope!=account or meter.config!=self.config:
+            raise BudgetUnknown('original publication budget unavailable')
+        try:
+            with meter.repo.transaction() as ledger:
+                started=ledger.runs[binding.run_id].started
+                previous=ledger.last_clock
+            if self._now(previous)-started>=self.config.max_seconds:
+                raise BudgetExceeded('draft')
+        except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
+            raise BudgetUnknown('original publication budget outcome unavailable') from None
 
     def stop(self, binding):
         """After RUN terminal is durable, cancel original unclaimed reserves only.

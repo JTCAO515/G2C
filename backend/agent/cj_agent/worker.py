@@ -144,6 +144,10 @@ class RunWorker:
                             # Do not hold a NEEDS lease over provider/source network IO.
                             with self.needs_lease(binding) as check_needs:
                                 check_needs()
+                    if draft and effect is not None and self.budget_exit is not None:
+                        self.budget_exit.check_publication(binding)
+                        if self.runs.valid(binding) is not True:
+                            raise Denied('authority changed before budgeted publication')
                     publication_started = effect is not None
                     result = invoke()
                     if effect is not None:
