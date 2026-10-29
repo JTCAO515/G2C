@@ -38,7 +38,12 @@
 
 - 父票保留原文，作为总验收。实际执行单位是 GitHub **子票**（sub-issue），使用 `.github/ISSUE_TEMPLATE/slice.md`：2–6 个验收框、每个框写明证据级别、预计 1–2 个 PR。
 - 父票的所有 L0/L1 框都能对应到已关闭的子票时，关闭父票。
-- **在制上限**：同一时间只有 1 张父票处于开发中，最多 2 个开着的 PR。剩余子票全部被停点卡住的父票算“挂起”，不占这个名额。
+- **在制上限**（2026-10-28 JT 修订）：最多 3 条并行线同时开发，每条线一个 Codex 会话、同一时间 1 张父票、最多 1 个开着的 PR。线的划分、各线拥有的文件和共享文件见 [docs/plan/issue-plan.md](../plan/issue-plan.md)“并行线”。剩余子票全部被停点卡住的父票算“挂起”，不占名额。
+- **并行线的冲突规则**：
+  - 一条线只改自己拥有的文件和票面允许的文件；需要改别的线拥有的文件时，算子票级停点（前置未就绪），跳过或等待。
+  - 共享文件同一时间只能有一个开着的 PR 修改。共享文件的唯一权威清单在 [docs/plan/issue-plan.md](../plan/issue-plan.md)“并行线”段，本 ADR 不另列，以免两份清单不一致。开 PR 前用 `gh pr list` 与 `gh pr diff --name-only` 检查；已被占用就先做本线不碰共享文件的部分，或等对方合并。
+  - 合并前 rebase 到最新 main，在新 head 上重新等 CI 全绿并重新审查；`--match-head-commit` 锁定该 head。
+  - main 变红时三条线都停止开新票；由引起问题的合并所在的线负责修复或 revert。
 - **队列**：以 [docs/plan/issue-plan.md](../plan/issue-plan.md) 为准（2026-10-27 修订，替代原先“#20 → #8 → #11 → #19 → #10 → #12”的写法），当前位置由 `docs/handoff.json` 的 `nextAction` 维护。
 - 继续执行 ADR-0004 第 7 条：P2 期间不铺新领域。
 
@@ -48,7 +53,7 @@
 
 - **审查者与作者分开。** 审查必须在不继承作者上下文的 Codex 会话里进行（新会话或 Codex 自带的 review 功能），对象是 PR 的精确 head。作者会话不能直接写 APPROVE。
 - **合并条件**：CI 全部 job 在精确 head 上全绿；审查者在 PR 评论写 `Review: APPROVE <head SHA>`，并附上逐项核对结果；合并时锁定该 head（`gh pr merge --match-head-commit <SHA>`）。
-- **所有 PR 的必查项**：改动只覆盖子票范围；每个验收框都有对应测试或命令；没有删除、跳过或放宽已有测试与 CI；没有秘密、本机路径或日志文件入库；handoff 已更新。
+- **所有 PR 的必查项**：改动只覆盖子票范围；每个验收框都有对应测试或命令；没有删除、跳过或放宽已有测试与 CI；没有秘密、本机路径或日志文件入库；进度已记在子票评论（handoff 按第 6 条另行更新）。
 - **红线 PR 的追加必查项**。只要触及下列任一项，就是红线 PR，审查评论必须逐条写明对应检查的结果：
   - `backend/migrations/**` 或表结构：新迁移的 up/down 在空库上往返通过；已应用的迁移文件未被改动；
   - `contracts/**`：已冻结版本未改；新冻结的契约有正负样例；
@@ -82,11 +87,12 @@
 ### 6. 文档精简（配套规则）
 
 - `docs/dispatch/` 下的现有派工单冻结为历史，不再追加实施记录。新的派工内容写在子票正文里。
-- `docs/handoff.json` 每个 PR 只更新 `currentPhase`、`acceptedIssue`、`activeWork`、`blockers`、`nextAction`、`lastUpdated`，以及本 PR 的 `verification` 和 `changedFiles`；其余字段只在决策变化时修改。改完运行 `python3 -B scripts/handoff.py render` 与 `check`。
+- 并行开发期间（2026-10-28 JT 修订），功能 PR 不改 `docs/handoff.json`；进度只记在子票和父票评论里。handoff 只在一条线的会话结束、碰到停点或关闭父票时，用一个只改 handoff 的 PR 更新：先 rebase 到最新 main，只改本线相关的条目，`nextAction` 按线分别写明（A / B / C 各自的下一张票）。
+- 更新 handoff 时只改 `currentPhase`、`acceptedIssue`、`activeWork`、`blockers`、`nextAction`、`lastUpdated`、`verification` 和 `changedFiles`；其余字段只在决策变化时修改。改完运行 `python3 -B scripts/handoff.py render` 与 `check`。
 
 ### 7. Codex 自动续作
 
-- 一张子票合并后，Codex 不等指派，直接按 `nextAction` 和第 2 条的队列取下一张子票。父票的验收框没有对应子票时，Codex 自己按模板拆出子票再继续。
+- 一张子票合并后，Codex 不等指派，直接按本线队列（第 2 条）取下一张子票。父票的验收框没有对应子票时，Codex 自己按模板拆出子票再继续。
 - 每次合并后先确认 main 上的 CI 全绿。main 变红时停止取新票，先在一个 PR 里修复；修不好就 revert 引起问题的合并提交。
 - 每关闭一张父票，在该父票下评论一份小结：关闭的子票、转到 L2/L3 的框、新开的 Issue、遗留风险。
 - 停点分两级（2026-10-27 修订，细则见 [docs/plan/issue-plan.md](../plan/issue-plan.md)“停点与跳过”）：
@@ -96,7 +102,7 @@
 
 ## 已确认 / 证据 / 待决 / 推断
 
-- **已确认用户决策**：第 1–4 条；第 3 条修订与第 7 条（JT，2026-10-27）；第 2 条队列与框数、第 7 条停点分级（Claude 规划修订，JT 授权，2026-10-27）。
+- **已确认用户决策**：第 1–4 条；第 3 条修订与第 7 条（JT，2026-10-27）；第 2 条队列与框数、第 7 条停点分级（Claude 规划修订，JT 授权，2026-10-27）；第 2 条并行线与第 6 条 handoff 更新方式（Claude 规划修订，JT 批准，2026-10-28）；并行线表按实况修订（Claude，JT 2026-10-29 要求）。
 - **仓库证据**：“背景”各条，均可在 main `4beb505` 和 GitHub 上复核。
 - **待决**：第 4 条 M1 清单的具体条目；是否在 main 启用分支保护。
 - **Claude 推断（待验证）**：M1 盘点后，相当一部分票的 L0/L1 框可以直接用已有代码和测试证明，从而先关闭一批。实际数量以盘点结果为准。

@@ -23,19 +23,19 @@
 
 ## M1 队列
 
-按顺序执行。一次只推进一张父票，最多 2 个开着的 PR。当前插入段的唯一顺序为 **#161 → #176 → #182 → #185 → #163**，之后继续原队列至 #170（JT 2026-10-28 授权）。#176 的方案以[收紧后的验收评论](https://github.com/JTCAO515/G2C/issues/176#issuecomment-6460752372)为准；票面早期“不进入 M1”是历史记录。
+剩余子票按下面“并行线”分三条线同时推进（2026-10-28 JT 批准）；每条线内按顺序执行。当前插入段的唯一顺序为 **#161 → #176 → #182 → #185 → #163**，之后继续原队列至 #170（JT 2026-10-28 授权）。#176 的方案以[收紧后的验收评论](https://github.com/JTCAO515/G2C/issues/176#issuecomment-6460752372)为准；票面早期“不进入 M1”是历史记录。
 
 | 序 | 父票 | 子票（按顺序） | 转 L2 #32 的框 |
 |---|---|---|---|
 | 0 | [#151](https://github.com/JTCAO515/G2C/issues/151) S0 关票流程 | Part 2/2：iOS 测试全部进 CI、pr-lint（在 #154 之后、#155 之前做） | — |
 | 1 | [#20](https://github.com/JTCAO515/G2C/issues/20) CJ-015 确认草稿保存正式行程 | [#154](https://github.com/JTCAO515/G2C/issues/154) DEBUG 会话与模拟器确认端到端（已关闭，PR #172）→ [#155](https://github.com/JTCAO515/G2C/issues/155) 服务端幂等/冲突/并发/原子性负例 | 无 |
 | 2 | [#5](https://github.com/JTCAO515/G2C/issues/5) CJ-005 工程基线 | [#156](https://github.com/JTCAO515/G2C/issues/156) 工程基线核验 | 框 2 |
-| 3 | [#7](https://github.com/JTCAO515/G2C/issues/7) CJ-006 四 Tab 外壳 | [#157](https://github.com/JTCAO515/G2C/issues/157) 结构与语言 → [#158](https://github.com/JTCAO515/G2C/issues/158) 无障碍与状态样例 → [#159](https://github.com/JTCAO515/G2C/issues/159) 帮助/隐私/支持（文案需 JT） | 无 |
+| 3 | [#7](https://github.com/JTCAO515/G2C/issues/7) CJ-006 四 Tab 外壳 | [#157](https://github.com/JTCAO515/G2C/issues/157) 结构与语言 → [#158](https://github.com/JTCAO515/G2C/issues/158) 无障碍与状态样例 → [#194](https://github.com/JTCAO515/G2C/issues/194) 插件 Tab 滴滴占位（文案需 JT）→ [#159](https://github.com/JTCAO515/G2C/issues/159) 帮助/隐私/支持（文案需 JT） | 无 |
 | 4 | [#8](https://github.com/JTCAO515/G2C/issues/8) CJ-007 账号与隔离 | [#160](https://github.com/JTCAO515/G2C/issues/160) API/DB 隔离与资格门禁 → [#161](https://github.com/JTCAO515/G2C/issues/161) App 开发身份登录与切换 | 框 6、8（真实 OTP 与 SDK 行为） |
 | 4.1 | M1 插入修复（关联 CJ-035 / #18，不提前启动 M2 整票） | [#176](https://github.com/JTCAO515/G2C/issues/176) 求解器冷启动测量、进程预载与预算回归（#161 之后） | 无 |
 | 4.2 | [#8](https://github.com/JTCAO515/G2C/issues/8) CJ-007 账号与隔离（续） | [#182](https://github.com/JTCAO515/G2C/issues/182) 事务级 scope、物理连接复用拒绝与 pooler 激活门禁（#176 之后） | 云端 pooler 实测留 C2，需 JT 资源授权 |
 | 4.3 | M1 基线规则补充（关联已关闭 #5，不重开整票） | [#185](https://github.com/JTCAO515/G2C/issues/185) 信任边界规则及三个限定例子的内部防御清理（#182 之后） | 无 |
-| 5 | [#10](https://github.com/JTCAO515/G2C/issues/10) CJ-009 聊天与消息 | [#162](https://github.com/JTCAO515/G2C/issues/162) 发送许可方案（**Claude**）→ [#163](https://github.com/JTCAO515/G2C/issues/163) 服务端实现 → [#164](https://github.com/JTCAO515/G2C/issues/164) App 发送与历史 | 无 |
+| 5 | [#10](https://github.com/JTCAO515/G2C/issues/10) CJ-009 聊天与消息 | [#162](https://github.com/JTCAO515/G2C/issues/162) 发送许可方案（**Claude**）→ [#163](https://github.com/JTCAO515/G2C/issues/163) 服务端实现 → [#198](https://github.com/JTCAO515/G2C/issues/198) 本地入口接历史配置 → [#164](https://github.com/JTCAO515/G2C/issues/164) App 发送与历史 | 无 |
 | 6 | [#11](https://github.com/JTCAO515/G2C/issues/11) CJ-010 流式与停止 | [#165](https://github.com/JTCAO515/G2C/issues/165) 停止生成接口 → [#166](https://github.com/JTCAO515/G2C/issues/166) 顺序/互斥/恢复 → [#167](https://github.com/JTCAO515/G2C/issues/167) App 流式与停止按钮 | 无（框 1 真实模型部分在子票内注明 → L2） |
 | 7 | [#19](https://github.com/JTCAO515/G2C/issues/19) CJ-014 草稿 | [#168](https://github.com/JTCAO515/G2C/issues/168) 约束校验 → [#169](https://github.com/JTCAO515/G2C/issues/169) 来源标注 → [#170](https://github.com/JTCAO515/G2C/issues/170) 失败路径与过期 fence | 框 1（真实工具与模型） |
 
@@ -47,13 +47,27 @@
 - #185 在 #182 完成后执行，先写规则，再处理三个限定例子；保留全部边界/安全检查，不作全仓库清理。
 - #163 依赖 #162、#182 和 #185；#164 依赖 #163。恢复 #163 时基于最新 main 重放其本地候选并遵循新规则，新迁移按最新 manifest 顺延到已应用 0011 之后，不覆盖 1–11。
 - 父票 #8 包含 #160、#161、#182；#161 完成后仍须等待 #182。其余未完成子票等待 #176 时，#8 按既有规则挂起，不占在制名额。
-- #159 依赖 #157；#169 依赖 #168。
+- #159 依赖 #157；#169 依赖 #168。#194（滴滴打车占位，JT 2026-10-28 授权）与 #159 都要等 JT 确认最终中英文案后再做。
 - #161 依赖 #157（账号入口在记忆页）和 #160。
+- #164 依赖 #198（本地正式入口接历史/游标配置，JT 2026-10-29 授权）。
 - #167 依赖 #164（App 能发消息）和 #165（停止接口）。
 - #170 依赖 #168 和 #165。
 - **跨票转移：** #11 框 7 和 #19 框 6 中“记忆版本”的部分，转入 M2 的 [#17](https://github.com/JTCAO515/G2C/issues/17) CJ-019。M2 拆票时要把它补成 #17 的验收框。
 
 本次插入段冻结求解预算数值、TIMEOUT/UNKNOWN 与既有断言，以及 RLS 隔离语义、运行角色权限上限、已应用迁移 1–11、契约和 CI 门禁。#176 先记录冷/热分阶段耗时，采用启动预载且失败即退出，最后在新 checkout 连续三次完整 PG 11/11；#182 必须覆盖 12 张 M1 表的同物理连接复用 SELECT/UPDATE/INSERT 负例并保留 #181 e2e。若修复需改变这些边界、碰云资源或真实账号，停止并在票中说明，等待 JT 决定。#159 文案、L2 授权、分支保护和生产 key 仍由 JT 决定。
+
+### 并行线（2026-10-28 起，2026-10-29 按实况修订）
+
+每条线一个 Codex 会话、同一时间 1 张父票、最多 1 个开着的 PR（ADR-0007 第 2 条）。线内依赖未满足时按子票级停点跳过或等待，不去碰别的线拥有的文件。已完成：#165、#166（原 B 线）、#168 Part1（PR #201）。
+
+| 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
+|---|---|---|---|
+| A App | #164 → #167 → #194 → #159（#194、#159 等 JT 确认文案后才做；未确认就跳过） | `ios/Modules/CJMessageClient/**`、`ios/Modules/CJRunClient/**`、`ios/Modules/CJShell/**`、`ios/App/**`、`ios/Modules/CJUsageClient` 测试夹具、`docs/ui.md` | #164 等 B 线 #198 合并；#170 若需要 App 端失败呈现，由 B 线拆子票交本线 |
+| B 后端消息与运行 | #198 → #170 → 按“M2 拆分预案”拆 #9 并开始第一张子票 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`scripts/dev_auth.py`、`backend/agent/cj_agent/worker.py`、`backend/agent/cj_agent/provider.py` | #170 等 C 线 #168 关闭 |
+| C 草稿 | #168 收尾（Part2）→ #169 → 按“M2 拆分预案”拆 #12 并开始第一张子票 | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`ios/Modules/CJTripClient/**`、`ios/Modules/CJMemoryClient/**` | #169 若要改 `worker.py` 等 B 线文件，先确认 B 线没有开着的 PR 改同一文件，否则等待 |
+
+M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两张父票”），两条线的拆票都要改 `docs/plan/**`，按共享文件规则排队。
+共享文件（唯一权威清单，ADR-0007 第 2 条引用此处）同一时间只允许一个开着的 PR 修改：`contracts/**` 与生成代码（#169 会改 `openapi.json`）、`backend/migrations/**`、`scripts/test.py`、`scripts/pg_suites.py`、`docs/plan/**`、`docs/handoff.json` 与生成的 `HANDOFF.md`、`backend/agent/tests/e2e_local.py`。
 
 ### 停点与跳过
 
@@ -63,7 +77,8 @@
   - 需要 JT 的文案或产品决策（例如 #159）；
   - owner 为 Claude 且未关闭（#162）；
   - 前置子票未关闭（例如 #162 未关时的 #163、#164，#164 未关时的 #167）；
-  - 同一张子票连续 3 轮审查未通过。
+  - 同一张子票连续 3 轮审查未通过；
+  - 需要改别的线拥有的文件，或共享文件正被别的线的 PR 占用（等待或先做别的部分）。
 - **仓库级**，停止整个会话：ADR-0007 第 3 条停点清单各项；main 变红且修复与 revert 都无法恢复；需要修改本文件的里程碑或队列结构。
 
 跳过的做法：

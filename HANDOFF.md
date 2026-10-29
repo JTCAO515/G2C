@@ -18,19 +18,17 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | M1 #166 merged/closed with green main; #168 structural ingress repair in progress, time mapping unresolved. #164/#167 remain blocked. |
-| Accepted Issue | #19 / #168: draft structure and travel constraints; current candidate is Part 1/2 (structure only). |
+| Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 must merge before any lane opens a feature PR. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). |
+| Accepted Issue | #151 / #196: parallel lanes A App, B backend message/run, C draft. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-28T13:53:18.747359+00:00 |
+| Last updated | 2026-10-29T01:43:39.334164+00:00 |
 
 ## Active Work
 
-- #166 PR #200 merged at96e97af88d71390a9f2609cd0eedbb670762b0be; exact head5abd322 CI/pr-lint and independent APPROVE6470507941 passed. Main CI40698481356 all five jobs green. Four child boxes and parent#11 account/authorization/order/recovery evidence backfilled; parent remains open for#167.
-- #167 skipped by accepted prerequisite rule: #164 still waits for#198 authorization. Existing #164 iOS work preserved; no backend/key workaround.
-- #168 base96e97af: reproduced duplicate model JSON fields silently replacing earlier values and unpaired Unicode escaping DraftRejected. Part1 rejects ambiguous JSON, parser nesting overflow and invalid Unicode before publishing; existing valid/prose-compatible input and all boundary/security checks remain.
-- #168 Part1 unit16/16, full test.py57/57 and pg_suites.py11/11 pass, including e2e29/29 with10 structural rejection subcases and all prior regression checks. Preparing exact-head CI and independent review; #168 remains open.
-- #168 time mapping remains unresolved: active Proposal stores title/items/id/text/verification/evidence only, while FEAS requires authentic structured NEEDS inputs. Free-form model text is not such an input; do not fabricate snapshots/history or change frozen contracts to claim travel validation.
-- #159/L2/cloud/production keys and branch protection remain JT-owned. Pending PR195/196/197 are not accepted main rules.
+- Lane A App: #164 (iOS candidate exists; waits #198) → #167 → #194 → #159 (#194/#159 wait for JT copy).
+- Lane B backend message/run: #198 (JT authorization https://github.com/JTCAO515/G2C/issues/198#issuecomment-6485249369) → #170 (waits #168) → split M2 #9.
+- Lane C draft: #168 Part2 close-out per JT decision https://github.com/JTCAO515/G2C/issues/168#issuecomment-6485249974 → #169 → split M2 #12.
+- #186 four cleanup PRs #187–#190 merged with exact-head review; #186 remains open for its owner (Claude). PR #195 (#194 insertion) and #197 (#186 handoff note) are superseded by this revision.
 
 ## Accepted Assumptions
 
@@ -64,26 +62,29 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/agent/cj_agent/draft.py` | Reject duplicate model JSON keys, excessive nesting and unencodable text as DraftRejected before persistence. |
-| `backend/agent/tests/test_draft.py, e2e_local.py` | Model-boundary regressions and real private-PG no-publication negatives; no existing tests removed. |
-| `backend/draft/README.md` | Distinguish structure-only repair from unresolved travel/time mapping and failure presentation. |
-| `docs/handoff.json, HANDOFF.md` | Record #166 closure, #167 prerequisite skip, #168 partial scope and pending decisions. |
+| `docs/adr/0007-issue-closure-workflow.md` | §2 parallel lanes (max 3, one parent and one open PR per lane, conflict rules; shared-file list delegated to issue-plan); §6 feature PRs do not edit handoff; decision record. |
+| `docs/plan/issue-plan.md` | Parallel-lane table rewritten for main 8d7a8c4 (A #164→#167→#194→#159; B #198→#170→M2 #9; C #168 Part2→#169→M2 #12); single authoritative shared-file list; #198 and #194 added to the M1 queue table and dependencies. |
+| `AGENTS.md` | Entry rules point to parallel lanes and the new handoff update rule. |
+| `docs/handoff.json, HANDOFF.md` | Lanes, JT decisions on #198/#168, #194 copy operator action; this PR's changed files and checks. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `#166 full local checks / independent review / exact-head CI` | test57/57, PG11/11 including e2e28; independent review reproduced e2e28/28, all head jobs green. | https://github.com/JTCAO515/G2C/pull/200#issuecomment-6470507941 |
-| pass | `#166 post-merge main CI40698481356` | Five jobs success on96e97af; #166 closed, parent evidence updated. | https://github.com/JTCAO515/G2C/actions/runs/40698481356 |
-| fail | `pytest backend/agent/tests/test_draft.py baseline` | 4 failed /12 passed: duplicate fields accepted and Unicode error escaped the draft failure type. Evidence preserved outside repository. | — |
-| pass | `pytest backend/agent/tests/test_draft.py after structure repair` | 16/16 passed. Includes duplicate spellings, unpaired surrogate and parser recursion bound. | — |
-| pass | `uv run --locked python -B scripts/test.py; uv run --locked python -B scripts/pg_suites.py` | test57/57, PG11/11 including e2e29/29 with10 structural no-publication subcases. CI and independent review still pending. Travel constraints and user-visible draft failure remain unresolved. | — |
+| pass | `python3 -B scripts/handoff.py render; python3 -B scripts/handoff.py check; git diff --check` | #196 docs-only change: HANDOFF.md matches docs/handoff.json; no whitespace errors. | — |
+| pass | `uv run --locked python -B scripts/test.py` | #196 local run 57/57 on the rebased branch (docs-only; no code, test, migration, contract or CI change). | — |
+| pending | `#196 exact-head CI and independent review` | Review of 6004dc6 requested changes (handoff fields, shared-file list); fixes in the next head need fresh CI and review. | https://github.com/JTCAO515/G2C/pull/196 |
+| pass | `[#200 (#166) 历史] #166 full local checks / independent review / exact-head CI` | test57/57, PG11/11 including e2e28; independent review reproduced e2e28/28, all head jobs green. | https://github.com/JTCAO515/G2C/pull/200#issuecomment-6470507941 |
+| pass | `[#200 (#166) 历史] #166 post-merge main CI40698481356` | Five jobs success on96e97af; #166 closed, parent evidence updated. | https://github.com/JTCAO515/G2C/actions/runs/40698481356 |
+| fail | `[#201 (#168 Part1) 历史] pytest backend/agent/tests/test_draft.py baseline` | 4 failed /12 passed: duplicate fields accepted and Unicode error escaped the draft failure type. Evidence preserved outside repository. | — |
+| pass | `[#201 (#168 Part1) 历史] pytest backend/agent/tests/test_draft.py after structure repair` | 16/16 passed. Includes duplicate spellings, unpaired surrogate and parser recursion bound. | — |
+| pass | `[#201 (#168 Part1) 历史] uv run --locked python -B scripts/test.py; uv run --locked python -B scripts/pg_suites.py` | test57/57, PG11/11 including e2e29/29 with10 structural no-publication subcases. Later merged as PR #201 after exact-head CI and independent APPROVE (main CI 40702955553). Travel constraints and user-visible draft failure remain unresolved. | https://github.com/JTCAO515/G2C/pull/201#issuecomment-6471129685 |
 
 ## Blockers
 
-- #164 awaits JT authorization for#198: formal local history configuration is missing (503); backend/key initialization is outside its iOS-only scope. #167 depends on#164.
-- #168 owning structured draft-time-to-NEEDS mapping is missing; frozen contracts cannot be changed under this ticket. Time conflict acceptance and explicit draft failure presentation remain unproven; #169/#170 depend on#168.
-- #159 copy, L2/cloud/real users/production key and branch protection decisions remain JT-owned.
+- #194 and #159 final bilingual copy (and DiDi brand name display for #194) await JT.
+- #170 waits #168 close-out; #164 waits #198 merge; #167 waits #164.
+- L2/cloud/OTP/real model/device resources, branch protection and production keys remain JT-owned.
 
 ## Risks
 
@@ -95,17 +96,17 @@
 
 ## Operator Actions
 
+- JT 确认 #194 滴滴占位的最终中英文案，以及 App 内能否显示“滴滴”文字名称。
 - JT 决定：是否启用 main 分支保护（仓库已 public，可免费启用）。
 - JT 确认 #159 帮助/隐私/支持文案。
 - JT 按需在 docs/authorizations/M1.md 批准 L2 外部资源；目前为空。
-- Claude 负责 #162 MESSAGE 发送许可方案。
 - 生产签名 key 来源/轮换、真实模型费用、真机/发布、许可证继续由 JT 决定。
 
 ## Next Smallest Action
 
-- Action: Publish #168 Part1 structure repair with Refs#168 Part1/2; obtain exact-head all-green CI and independent APPROVE, merge, verify main and update evidence. Keep both full #168 boxes open for the missing structured time/NEEDS mapping and failure presentation. Do not change frozen contracts or invent NEEDS provenance. Resume #198/#164 only when required authorization arrives.
-- Expected observation: Ambiguous/invalid model structures never create candidates, formal trips or RUN effects; time validation remains explicitly unresolved.
-- Resume command: `uv run --locked python -B scripts/pg_suites.py`
+- Action: Independent Codex review of #196 at exact head; merge locked head and verify main CI. Then start three lane sessions: A #164 (prep only until #198 merges), B #198, C #168 Part2. Each lane: one parent, at most one open PR, only its owned files; shared files one PR at a time; feature PRs do not edit handoff.
+- Expected observation: Each lane opens its first PR without touching other lanes' owned files; main CI stays green.
+- Resume command: `gh pr view 196 --repo JTCAO515/G2C`
 
 ## Rollback
 
