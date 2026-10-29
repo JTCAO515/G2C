@@ -103,7 +103,7 @@ private actor DraftTransport: ClientTransport {
     func serverRevocationHidesPrivateResults(_ status: String, _ version: RunDraftStatusVersion) async throws {
         let f = try DraftFixture(mutation:status, version:version); await f.read()
         if case .loaded = f.model.state { Issue.record("revoked answer visible") }
-        if case .loaded = f.model.draftStatus { Issue.record("revoked draft visible") }
+        switch f.model.draftStatus { case .unread, .unavailable: break; default: Issue.record("revoked draft visible") }
         #expect(await f.transport.paths.count == 2)
     }
     @Test func unknownEnumFailsClosed() async throws {
@@ -130,7 +130,7 @@ private actor DraftTransport: ClientTransport {
         default: f.model.invalidate()
         }
         await f.transport.release(); await task.value
-        if case .loaded = f.model.draftStatus { Issue.record("old private response published") }
+        switch f.model.draftStatus { case .unread, .unavailable: break; default: Issue.record("old private response published") }
         if case .loaded = f.model.state { Issue.record("old answer remained") }
         #expect(await f.transport.paths.count == 2)
     }
