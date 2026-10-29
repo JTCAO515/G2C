@@ -162,11 +162,23 @@ class LocalDatabase:
         """Trusted, idempotent scope provisioning for the local host only."""
         with self.connect(scope) as conn:
             conn.execute('INSERT INTO cj_message_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
+            conn.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE',(scope,))
+            if self.run_context is None and conn.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s',(scope,)).fetchone():
+                # Safe original history stays readable without creating new runtime
+                # state; writes/dispatch check protection inside their own scope lock.
+                return
             conn.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
             conn.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
 
     def message_repository(self, scope):
-        return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None)
+        return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None,
+                                 local_run_mode=self.run_context is not None)
+
+    def require_execution(self, scope, binding=None):
+        with self.message_repository(scope).transaction() as tx:
+            tx.lock_scope()
+            tx.local_execution(None if binding is None else binding.message_id,
+                               None if binding is None else binding.run_id)
 
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)

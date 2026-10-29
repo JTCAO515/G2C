@@ -5,7 +5,7 @@ from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable, ChatSumma
 
 
 class Repository:
-    def __init__(self, connect, scope, *, bind_needs=False):
+    def __init__(self, connect, scope, *, bind_needs=False, local_run_mode=None):
         # Explicit local host opt-in; legacy callers remain unbound. Required mode
         # never falls back when selection/revision is missing or unreadable.
         # Internal partition key, NOT a principal schema or client-supplied owner.
@@ -13,6 +13,9 @@ class Repository:
             raise ValueError('explicit internal scope required')
         if type(bind_needs) is not bool:
             raise ValueError('explicit NEEDS binding mode required')
+        if local_run_mode is not None and type(local_run_mode) is not bool:
+            raise ValueError('explicit local execution mode required')
+        self.local_run_mode=local_run_mode
         self.connect, self.scope, self.bind_needs = connect, scope, bind_needs
 
     @contextmanager
@@ -43,7 +46,7 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
-                yield Transaction(cur, self.scope, bind_needs=self.bind_needs)
+                yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode)
             except BaseException:
                 outcome = 'body_failed'
                 cleanup(conn.rollback, 'rollback')
@@ -63,8 +66,18 @@ class Repository:
 
 
 class Transaction:
-    def __init__(self, cursor, scope, *, bind_needs=False):
+    def __init__(self, cursor, scope, *, bind_needs=False, local_run_mode=None):
         self.cur, self.scope, self.bind_needs = cursor, scope, bind_needs
+        self.local_run_mode=local_run_mode
+
+    def local_execution(self, message_id=None, run_id=None):
+        # None is the domain repository seam, never installed by LocalDatabase.
+        if self.local_run_mode is None: return False
+        from .local_protection import check, require_original
+        if message_id is not None:
+            require_original(self.cur,self.scope,self.local_run_mode,message_id,run_id)
+            return self.local_run_mode
+        return check(self.cur,self.scope,self.local_run_mode)
 
     def lock_scope(self):
         self.cur.execute('SELECT scope FROM cj_message_scope WHERE scope = %s FOR UPDATE', (self.scope,))
@@ -89,6 +102,7 @@ class Transaction:
         return Chat(*row)
 
     def open_chat(self, cid, generation):
+        self.local_execution()
         self.cur.execute('INSERT INTO cj_message_chat (scope, conversation_id, generation, epoch) VALUES (%s,%s,%s,0) ON CONFLICT DO NOTHING RETURNING generation, epoch, last_sequence', (self.scope, cid, generation))
         row = self.cur.fetchone()
         return Chat(*row) if row else None
@@ -99,9 +113,13 @@ class Transaction:
         return Stored(bytes(row[0]), Receipt(*row[1:])) if row else None
 
     def insert(self, stored):
+        protected=self.local_execution()
         r = stored.receipt
         self.cur.execute('INSERT INTO cj_message_receipt (scope, message_id, conversation_id, generation, sequence, run_id, input_sha256, raw_input) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',
                          (self.scope, r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256, stored.raw))
+        if protected:
+            from .local_protection import capture as capture_requirement
+            capture_requirement(self.cur,self.scope,stored)
         if self.bind_needs:
             from .needs_binding import capture
             capture(self.cur, self.scope, stored)
@@ -117,6 +135,7 @@ class Transaction:
         return [Receipt(*row) for row in self.cur.fetchall()]
 
     def pending(self, limit):
+        self.local_execution()
         self.cur.execute('SELECT r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256 FROM cj_message_delivery d JOIN cj_message_receipt r ON (r.scope, r.message_id, r.run_id) = (d.scope, d.message_id, d.run_id) JOIN cj_message_chat c ON (c.scope, c.conversation_id, c.generation) = (r.scope, r.conversation_id, r.generation) WHERE d.scope = %s AND c.active AND NOT d.acknowledged ORDER BY r.conversation_id, r.sequence LIMIT %s', (self.scope, limit))
         return [Receipt(*row) for row in self.cur.fetchall()]
 
@@ -144,4 +163,5 @@ class Transaction:
         return Draft(row[0],row[1],row[2],bytes(row[3])) if row else None
 
     def save_draft(self, draft):
+        self.local_execution()
         self.cur.execute('INSERT INTO cj_message_draft(scope,conversation_id,generation,revision,original_utf8) VALUES (%s,%s,%s,%s,%s) ON CONFLICT(scope,conversation_id,generation) DO UPDATE SET revision=EXCLUDED.revision, original_utf8=EXCLUDED.original_utf8', (self.scope,draft.conversation_id,draft.generation,draft.revision,draft.original_utf8))

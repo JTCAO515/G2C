@@ -80,10 +80,12 @@ def run_once(database, model, auth_dir):
     checker=checker_for(Path(auth_dir)) if database.run_context is not None else None
     results = []
     for scope in scopes(database, auth_dir):
+        database.require_execution(scope)
         messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
         subject = scope.removeprefix('local:' + ISSUER + ':')
         def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
         def valid(binding, messages=messages, subject=subject, token=token):
+            database.require_execution(binding.scope,binding)
             if checker is None:
                 return original_context_valid(binding,messages,lambda:subject in invited_subjects(auth_dir))
             credential=token()
@@ -99,6 +101,7 @@ def run_once(database, model, auth_dir):
         drafts = DraftPublisher(database.trip_repository(scope))
         guarded_model = InvitedProvider(model, auth_dir, subject) if checker is None else model
         results += RunWorker(scope=scope, messages=messages, runs=runs, provider=guarded_model, drafts=drafts,
+            execution_guard=lambda binding:database.require_execution(binding.scope,binding),
             needs_lease=needs_lease_for(database,checker,token) if checker is not None else None,
             budget_exit=LocalBudgetRouter(database) if checker is not None else None).process()
     return results
@@ -118,7 +121,11 @@ def main():
     if args.run_context is not None and args.real:
         parser.error('local run context permits FakeProvider only; --real is unavailable')
     context=load_run_context(args.run_context) if args.run_context is not None else None
-    database, model = LocalDatabase(args.conninfo_json,run_context=context), provider(args.real)
+    database=LocalDatabase(args.conninfo_json,run_context=context)
+    # Protection metadata is checked before even loading real-provider credentials.
+    # run_once repeats the check before accepting every original pending run.
+    for scope in scopes(database,args.auth_dir): database.require_execution(scope)
+    model=provider(args.real)
     while True:
         for outcome in run_once(database, model, args.auth_dir):
             print(f'{outcome.status} message={outcome.message_id}'

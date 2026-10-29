@@ -5,7 +5,7 @@ only for `CJ_ENV=local`, a new private Unix-socket PostgreSQL database and
 `FakeProvider`. A `provider_call` is one complete local answer or draft invocation;
 it is not a token price, paid-model budget or production authorization.
 
-Apply the repository migration manifest through 0014 using the local initializer,
+Apply the repository migration manifest through 0016 using the local initializer,
 and initialize invited development subjects with `scripts/dev_auth.py`. The API
 and worker still connect as `cj_m1_runtime`; the initializer is used only by the
 operator CLI below. Never use cloud connection information here.
@@ -48,7 +48,14 @@ CJ_ENV=local uv run --locked python -B scripts/local_run_context.py \
   --subject alice init-budget
 ```
 
-Repeating identical initialization preserves the ledger; a changed budget for the
+First initialization records immutable scope protection in the same transaction as
+its explicit quota account, under the original MESSAGE scope lock. Unacknowledged
+legacy work (including inactive conversations) refuses first activation. Finish that
+original work first or use a new local subject; do not reset or delete it. All later
+messages in this activated scope require this mode, including ordinary messages.
+Their immutable requirement is committed with the receipt, NEEDS binding and outbox.
+
+Repeating identical initialization preserves activation and the ledger; a changed budget for the
 same account/period is rejected. To test answer refusal use budget1 and send two
 ordinary messages. To test draft refusal use budget1 and send one `consider_trip`
 message with the NEEDS registration below. Budget2 permits its answer and draft.
@@ -90,11 +97,15 @@ their exposure; there is no reset or automatic retry. Configuration-clock inject
 in the host test checks period selection, not elapsed wall-clock production behavior.
 
 If `CJ_LOCAL_RUN_CONTEXT` is absent, the prior local composition remains available
-for existing consumers. It does not satisfy #170 quota/NEEDS acceptance. Retire that
-compatibility path only after remaining local consumers explicitly adopt this mode.
-Rollback is reverting this host activation while retaining persisted migration14
-records and original period files for reconciliation; do not delete/reset ledgers
-or run migration down on a populated database.
+only for unactivated scopes. In an activated scope the API refuses new messages or
+write operations, and the worker refuses pending consumption before RUN acceptance
+or provider credential loading/calls. Original history remains a safe read; it is
+not execution permission. Unknown/missing protection metadata never means legacy.
+The old unactivated path does not satisfy #170 quota/NEEDS acceptance.
+
+Activation is one-way. Rollback must stop the worker and preserve migrations14–16,
+markers, ledgers and original period files. Do not restore a worker that ignores the
+markers, delete/reset accounting, or run down on populated protection tables.
 
 Evidence entry: `uv run --locked python -B scripts/pg_suites.py local_run_host`.
 It exercises the formal factory and actual operator/worker subprocesses, plus
