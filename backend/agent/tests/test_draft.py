@@ -34,6 +34,32 @@ def test_identifiers_are_valid_trip_identifiers():
     assert identifier(scope) == scope and scope != trip_scope_for('local:https://local.g2c.invalid:bob')
 
 
+@pytest.mark.parametrize('field', ['date', 'time', 'start', 'end', 'timezone'])
+@pytest.mark.parametrize('location', ['document', 'item'])
+def test_structured_time_rejects_entire_draft(field, location):
+    value = {'title': 'Beijing', 'items': ['Keep this text']}
+    if location == 'document':
+        value[field] = '2026-11-01T09:00:00+08:00'
+    else:
+        value['items'].append({'text': 'Forbidden City', field: '2026-11-01T09:00:00+08:00'})
+    with pytest.raises(DraftRejected):
+        document_from_model(json.dumps(value))
+
+
+def test_object_item_without_time_is_not_silently_flattened():
+    with pytest.raises(DraftRejected):
+        document_from_model(json.dumps({'title': 'Beijing', 'items': ['Keep this text', {'text': 'Temple'}]}))
+
+
+def test_time_descriptions_remain_unverified_text_without_time_validation():
+    items = ['09:00–11:00 故宫', '10:00–12:00 Temple of Heaven',
+             '18:00–09:00 倒序时间待核实', 'Date TBD / 日期待定']
+    doc = json.loads(document_from_model(json.dumps({'title': 'Beijing', 'items': items})))
+    assert doc == {'title': 'Beijing', 'items': [
+        {'id': f'item-{n}', 'text': text, 'verification': 'pending', 'evidence': []}
+        for n, text in enumerate(items, 1)]}
+
+
 @pytest.mark.parametrize('raw', [
     '{"title":"discarded","title":"replacement","items":["a"]}',
     '{"title":"x","items":[],"items":["a"]}',

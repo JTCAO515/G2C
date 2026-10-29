@@ -15,7 +15,7 @@ No installation, global package change, database, model, real tool, credentials
 or external resources are required. The existing FEAS NEEDS evaluator is imported
 directly; this slice does not load/install the solver's optional runtime.
 
-## M1 model-ingress structure check (#168, partial)
+## M1 model-ingress structure check (#168)
 
 The separate active ingress is `cj_agent.draft.DraftPublisher`. Its existing
 model shape is `{title: string, items: [string, ...]}`; the host assigns item IDs
@@ -33,6 +33,17 @@ This is structural validation only. The persisted Proposal has no structured
 date/time/place fields, and the model's free text is not a NEEDS declaration.
 The existing FEAS evaluator requires authentic NEEDS inputs and cannot be fed
 invented snapshots/revisions to claim that a draft passed travel constraints.
-The time-overlap requirement and explicit end-to-end draft failure presentation
-remain open on #168; no full #168 acceptance is claimed. A fixed owning mapping
-and any required new contract version must be settled before that part proceeds.
+Per [JT's Part2 decision](https://github.com/JTCAO515/G2C/issues/168#issuecomment-6485249974),
+object items and structured fields such as date/time/start/end/timezone reject
+the whole draft, including when mixed with otherwise valid text items. They are
+never silently flattened or discarded. Time descriptions in string items remain
+`verification=pending`, `evidence=[]`; overlapping, reversed or undecided times
+are not parsed or validated and receive no server verification claim.
+
+The private-PG worker regression checks structured-time rejection with
+`proposal_id=None`, no candidate/formal TRIP/RUN publication effect, and the
+unchanged completed answer. A separate read-back checks pending time text.
+Structured itinerary time × NEEDS/FEAS conflict validation belongs to M2 before
+or within #21, requires a new owning TRIP contract and must reuse FEAS checks
+rather than invent NEEDS provenance or a parallel constraint engine. User-visible
+draft failure presentation belongs to #170; this slice adds no RUN event kind.
