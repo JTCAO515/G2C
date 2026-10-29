@@ -57,10 +57,10 @@ extension RunDisplayState {
             if model.readsDraftStatus {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(language.text("Draft result", "草稿结果")).font(.headline)
-                    RunDraftOutcomeText(text: model.draftStatus.label(language))
+                    RunReadableText(text: model.draftStatus.label(language))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if let budget = model.draftStatus.budgetLabel(language) {
-                        RunDraftOutcomeText(text: budget).accessibilityIdentifier("run.budget.status")
+                        RunReadableText(text: budget).accessibilityIdentifier("run.budget.status")
                     }
                     if let status = model.draftStatus.runStatus {
                         Text(language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(status))

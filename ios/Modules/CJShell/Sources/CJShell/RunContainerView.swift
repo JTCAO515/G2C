@@ -34,8 +34,7 @@ struct RunContainerView: View {
             } else {
                 Text(language.text("Original-run reading is unavailable until trusted session and read resources are connected.", "可信会话和读取资源接入前，原运行读回尚不可用。"))
             }
-            Text(language.text("Reads the selected original answer. Stopping preserves received text and does not undo earlier actions.", "读取选中的原回答。停止会保留已收到的正文，不会撤销此前的操作。"))
-                .font(.caption)
+            RunReadableText(text: language.text("Reads the selected original answer. Stopping preserves received text and does not undo earlier actions.", "读取选中的原回答。停止会保留已收到的正文，不会撤销此前的操作。"), style: .caption)
         }
         .onAppear { host.setForeground(scenePhase == .active); followAcceptedMessage() }
         .onChange(of: acceptedMessageID) { _, _ in followAcceptedMessage() }
