@@ -67,7 +67,7 @@
 | C 草稿 | #168 收尾（Part2）→ #169 → 按“M2 拆分预案”拆 #12 并开始第一张子票 | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`ios/Modules/CJTripClient/**`、`ios/Modules/CJMemoryClient/**` | #169 若要改 `worker.py` 等 B 线文件，先确认 B 线没有开着的 PR 改同一文件，否则等待 |
 
 M2 拆票提前到各线 M1 队列做完时进行（不再等“M1 剩最后两张父票”），两条线的拆票都要改 `docs/plan/**`，按共享文件规则排队。
-共享文件同一时间只允许一个开着的 PR 修改：`contracts/**` 与生成代码（#169 会改 `openapi.json`）、`backend/migrations/**`、`scripts/test.py`、`scripts/pg_suites.py`、`docs/plan/**`、`docs/handoff.json`、`backend/agent/tests/e2e_local.py`。
+共享文件（唯一权威清单，ADR-0007 第 2 条引用此处）同一时间只允许一个开着的 PR 修改：`contracts/**` 与生成代码（#169 会改 `openapi.json`）、`backend/migrations/**`、`scripts/test.py`、`scripts/pg_suites.py`、`docs/plan/**`、`docs/handoff.json` 与生成的 `HANDOFF.md`、`backend/agent/tests/e2e_local.py`。
 
 ### 停点与跳过
 

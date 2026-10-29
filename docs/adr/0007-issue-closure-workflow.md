@@ -41,7 +41,7 @@
 - **在制上限**（2026-10-28 JT 修订）：最多 3 条并行线同时开发，每条线一个 Codex 会话、同一时间 1 张父票、最多 1 个开着的 PR。线的划分、各线拥有的文件和共享文件见 [docs/plan/issue-plan.md](../plan/issue-plan.md)“并行线”。剩余子票全部被停点卡住的父票算“挂起”，不占名额。
 - **并行线的冲突规则**：
   - 一条线只改自己拥有的文件和票面允许的文件；需要改别的线拥有的文件时，算子票级停点（前置未就绪），跳过或等待。
-  - 共享文件（契约与生成代码、迁移目录、`scripts/test.py`、`scripts/pg_suites.py`、`docs/plan/**`、`docs/handoff.json`）同一时间只能有一个开着的 PR 修改。开 PR 前用 `gh pr list` 与 `gh pr diff --name-only` 检查；已被占用就先做本线不碰共享文件的部分，或等对方合并。
+  - 共享文件同一时间只能有一个开着的 PR 修改。共享文件的唯一权威清单在 [docs/plan/issue-plan.md](../plan/issue-plan.md)“并行线”段，本 ADR 不另列，以免两份清单不一致。开 PR 前用 `gh pr list` 与 `gh pr diff --name-only` 检查；已被占用就先做本线不碰共享文件的部分，或等对方合并。
   - 合并前 rebase 到最新 main，在新 head 上重新等 CI 全绿并重新审查；`--match-head-commit` 锁定该 head。
   - main 变红时三条线都停止开新票；由引起问题的合并所在的线负责修复或 revert。
 - **队列**：以 [docs/plan/issue-plan.md](../plan/issue-plan.md) 为准（2026-10-27 修订，替代原先“#20 → #8 → #11 → #19 → #10 → #12”的写法），当前位置由 `docs/handoff.json` 的 `nextAction` 维护。

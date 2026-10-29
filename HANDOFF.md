@@ -21,7 +21,7 @@
 | Phase | M1 parallel lanes (ADR-0007 §2, JT approved 2026-10-28, lane table revised 2026-10-29): #196 must merge before any lane opens a feature PR. JT unblocked #198 (local history wiring) and decided #168 Part2 scope (transfer structured time to M2; user-visible draft failure to #170). |
 | Accepted Issue | #151 / #196: parallel lanes A App, B backend message/run, C draft. |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-10-29T01:27:08.033827+00:00 |
+| Last updated | 2026-10-29T01:43:39.334164+00:00 |
 
 ## Active Work
 
@@ -62,20 +62,23 @@
 
 | Path | Reason |
 | --- | --- |
-| `backend/agent/cj_agent/draft.py` | Reject duplicate model JSON keys, excessive nesting and unencodable text as DraftRejected before persistence. |
-| `backend/agent/tests/test_draft.py, e2e_local.py` | Model-boundary regressions and real private-PG no-publication negatives; no existing tests removed. |
-| `backend/draft/README.md` | Distinguish structure-only repair from unresolved travel/time mapping and failure presentation. |
-| `docs/handoff.json, HANDOFF.md` | Record #166 closure, #167 prerequisite skip, #168 partial scope and pending decisions. |
+| `docs/adr/0007-issue-closure-workflow.md` | §2 parallel lanes (max 3, one parent and one open PR per lane, conflict rules; shared-file list delegated to issue-plan); §6 feature PRs do not edit handoff; decision record. |
+| `docs/plan/issue-plan.md` | Parallel-lane table rewritten for main 8d7a8c4 (A #164→#167→#194→#159; B #198→#170→M2 #9; C #168 Part2→#169→M2 #12); single authoritative shared-file list; #198 and #194 added to the M1 queue table and dependencies. |
+| `AGENTS.md` | Entry rules point to parallel lanes and the new handoff update rule. |
+| `docs/handoff.json, HANDOFF.md` | Lanes, JT decisions on #198/#168, #194 copy operator action; this PR's changed files and checks. |
 
 ## Verification Evidence
 
 | Status | Command | Result | Artifact |
 | --- | --- | --- | --- |
-| pass | `#166 full local checks / independent review / exact-head CI` | test57/57, PG11/11 including e2e28; independent review reproduced e2e28/28, all head jobs green. | https://github.com/JTCAO515/G2C/pull/200#issuecomment-6470507941 |
-| pass | `#166 post-merge main CI40698481356` | Five jobs success on96e97af; #166 closed, parent evidence updated. | https://github.com/JTCAO515/G2C/actions/runs/40698481356 |
-| fail | `pytest backend/agent/tests/test_draft.py baseline` | 4 failed /12 passed: duplicate fields accepted and Unicode error escaped the draft failure type. Evidence preserved outside repository. | — |
-| pass | `pytest backend/agent/tests/test_draft.py after structure repair` | 16/16 passed. Includes duplicate spellings, unpaired surrogate and parser recursion bound. | — |
-| pass | `uv run --locked python -B scripts/test.py; uv run --locked python -B scripts/pg_suites.py` | test57/57, PG11/11 including e2e29/29 with10 structural no-publication subcases. CI and independent review still pending. Travel constraints and user-visible draft failure remain unresolved. | — |
+| pass | `python3 -B scripts/handoff.py render; python3 -B scripts/handoff.py check; git diff --check` | #196 docs-only change: HANDOFF.md matches docs/handoff.json; no whitespace errors. | — |
+| pass | `uv run --locked python -B scripts/test.py` | #196 local run 57/57 on the rebased branch (docs-only; no code, test, migration, contract or CI change). | — |
+| pending | `#196 exact-head CI and independent review` | Review of 6004dc6 requested changes (handoff fields, shared-file list); fixes in the next head need fresh CI and review. | https://github.com/JTCAO515/G2C/pull/196 |
+| pass | `[#200 (#166) 历史] #166 full local checks / independent review / exact-head CI` | test57/57, PG11/11 including e2e28; independent review reproduced e2e28/28, all head jobs green. | https://github.com/JTCAO515/G2C/pull/200#issuecomment-6470507941 |
+| pass | `[#200 (#166) 历史] #166 post-merge main CI40698481356` | Five jobs success on96e97af; #166 closed, parent evidence updated. | https://github.com/JTCAO515/G2C/actions/runs/40698481356 |
+| fail | `[#201 (#168 Part1) 历史] pytest backend/agent/tests/test_draft.py baseline` | 4 failed /12 passed: duplicate fields accepted and Unicode error escaped the draft failure type. Evidence preserved outside repository. | — |
+| pass | `[#201 (#168 Part1) 历史] pytest backend/agent/tests/test_draft.py after structure repair` | 16/16 passed. Includes duplicate spellings, unpaired surrogate and parser recursion bound. | — |
+| pass | `[#201 (#168 Part1) 历史] uv run --locked python -B scripts/test.py; uv run --locked python -B scripts/pg_suites.py` | test57/57, PG11/11 including e2e29/29 with10 structural no-publication subcases. Later merged as PR #201 after exact-head CI and independent APPROVE (main CI 40702955553). Travel constraints and user-visible draft failure remain unresolved. | https://github.com/JTCAO515/G2C/pull/201#issuecomment-6471129685 |
 
 ## Blockers
 
