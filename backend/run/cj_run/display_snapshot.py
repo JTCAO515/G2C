@@ -93,7 +93,15 @@ class DisplaySnapshotReader:
 
     def read_draft_status(self, token, message_id, request_id):
         """Versioned independent draft outcome, encoded before all final guards."""
+        return self._read_draft_status(token,message_id,request_id,version=1)
+
+    def read_draft_status_v2(self, token, message_id, request_id):
+        return self._read_draft_status(token,message_id,request_id,version=2)
+
+    def _read_draft_status(self, token, message_id, request_id, *, version):
         def encode(state, original):
+            if version == 1 and (state.draft_outcome == 'budget_exhausted' or state.budget_exhausted_stage != 'none'):
+                raise SnapshotUnavailable('budget result requires version 2')
             command = json.loads(original.raw)
             requested = command['creation_intent'] == 'consider_trip'
             published = any(effect.startswith('trip_proposal:') for effect in state.effects)
@@ -103,11 +111,12 @@ class DisplaySnapshotReader:
                        state.draft_outcome if state.draft_outcome is not None else
                        'published' if published else 'not_recorded')
             b = state.binding
-            return json.dumps(dict(request_id=request_id, version='RUN-draft-status.1',
+            payload = dict(request_id=request_id, version=f'RUN-draft-status.{version}',
                 conversation_id=b.conversation_id, generation=b.generation,
                 message_id=b.message_id, run_id=b.run_id, message_sequence=b.message_sequence,
-                run_status=state.status, event_highwater=state.sequence, draft_outcome=outcome),
-                ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
+                run_status=state.status, event_highwater=state.sequence, draft_outcome=outcome)
+            if version == 2: payload['budget_exhausted_stage']=state.budget_exhausted_stage
+            return json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
         return self._read_materialized(token, message_id, encode)
 
     def _read_materialized(self, token, message_id, encode):
