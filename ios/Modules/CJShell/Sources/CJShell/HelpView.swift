@@ -9,8 +9,8 @@ struct HelpView: View {
     var body: some View {
         List {
             Section {
-                Text(language.text("Help facts draft — for review", "帮助事实草稿，供审阅")).font(.headline)
-                paragraph("This guide reflects the current interface. Unavailable features remain unavailable; this draft does not grant access or promise a service outcome.", "本说明反映当前界面。尚未开放的功能仍不可用；此草稿不授予访问权限，也不承诺服务结果。")
+                Text(language.text("Help", "帮助")).font(.headline)
+                paragraph("This guide reflects the current interface. Unavailable features remain unavailable; this guide does not grant access or promise a service outcome.", "本说明反映当前界面。尚未开放的功能仍不可用；本说明不授予访问权限，也不承诺服务结果。")
             }
             Section(language.text("Getting started", "首次使用与建号")) {
                 paragraph("Use Assistant, Trips, Plugins and Memory. Account and language settings are in Memory. Plugins are not available yet.",
@@ -43,7 +43,7 @@ struct HelpView: View {
                           "此界面暂不提供记忆删除或账号注销。停止后续使用与清理关联存储是两项独立结果；条目不再显示不代表删除完成。配置后可用的本机退出并清理仅清理本机会话材料，不代表删除服务端记录、撤销服务端会话或核实未知动作。")
                 paragraph("No immediate remote wipe of a disconnected device is promised. Offline expiry, reconnection cleanup and data retention terms are not configured here. Previous-product data is outside these local cleanup actions.",
                           "不承诺即时远程擦除断网设备。离线失效、重连清理及数据留存条款尚未在此配置。旧产品数据不属于这些本机清理操作的范围。")
-                NavigationLink(language.text("Privacy facts draft", "隐私事实草稿"), value: MemoryRoute.privacy)
+                NavigationLink(language.text("Privacy notice (beta)", "隐私说明（内测版）"), value: MemoryRoute.privacy)
                 NavigationLink(language.text("Support and contact", "支持与联系"), value: MemoryRoute.support)
             }
             LaunchInformationSection(language: language)

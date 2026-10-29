@@ -26,7 +26,7 @@ struct MemoryShell: View {
                         ShellSectionHeading(title: language.text("Information", "说明")).padding(.top, 16).padding(.bottom, 8)
                         route(language.text("Help", "帮助"), to: .help, identifier: "memory.help")
                         Divider()
-                        route(language.text("Privacy facts draft", "隐私事实草稿"), to: .privacy, identifier: "memory.privacy")
+                        route(language.text("Privacy notice (beta)", "隐私说明（内测版）"), to: .privacy, identifier: "memory.privacy")
                         Divider()
                         route(language.text("Support", "支持"), to: .support, identifier: "memory.support")
                         Divider()
@@ -90,7 +90,7 @@ struct MemoryShell: View {
         case .help:
             HelpView(language: language)
         case .privacy:
-            PrivacyFactsDraftView(language: language)
+            PrivacyNoticeView(language: language)
         case .support:
             SupportInformationView(language: language)
         }
