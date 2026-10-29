@@ -129,12 +129,13 @@ public struct MemorySaveStatusView: View {
     let state: MemorySaveState
     let language: MemoryLanguage
     let query: (() -> Void)?
-    public init(state: MemorySaveState, language: MemoryLanguage, queryOriginal: (() -> Void)?) {
-        self.state = state; self.language = language; query = queryOriginal
+    let statusIdentifier: String
+    public init(state: MemorySaveState, language: MemoryLanguage, queryOriginal: (() -> Void)?, statusIdentifier: String = "memory.save.status") {
+        self.state = state; self.language = language; query = queryOriginal; self.statusIdentifier = statusIdentifier
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(state.label(language)).accessibilityIdentifier("memory.save.status")
+            Text(state.label(language)).accessibilityIdentifier(statusIdentifier)
             if case .saving = state { ProgressView() }
             if let query { Button(language.text("Query original operation", "查询原操作"), action: query).accessibilityIdentifier("memory.save.query") }
         }
