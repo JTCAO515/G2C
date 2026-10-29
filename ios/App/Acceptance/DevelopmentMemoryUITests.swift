@@ -50,7 +50,8 @@ import Foundation
         target.typeText(value)
         guard let entered = target.value as? String else { XCTFail("Native input has no text value"); return }
         XCTAssertEqual(Array(entered.utf8), Array(value.utf8))
-        if app.buttons["Done"].exists { app.buttons["Done"].tap() }
+        if app.buttons["memory.keyboard.done"].exists { app.buttons["memory.keyboard.done"].tap() }
+        else if app.buttons["Done"].exists { app.buttons["Done"].tap() }
         else if app.buttons["完成"].exists { app.buttons["完成"].tap() }
     }
     func waitStatus(_ value: String, identifier: String = "memory.save.status") {
