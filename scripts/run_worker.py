@@ -163,7 +163,7 @@ def main():
     parser.add_argument('--run-context', type=Path, default=os.environ.get('CJ_LOCAL_RUN_CONTEXT'))
     parser.add_argument('--memory-run-policy', type=Path, default=os.environ.get('CJ_LOCAL_MEMORY_RUN_POLICY'))
     parser.add_argument('--travel-context',choices=['message-travel.1'],default=os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT'))
-    parser.add_argument('--tools-profile',choices=['synthetic-v1','synthetic-needs-v1'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
+    parser.add_argument('--tools-profile',choices=['synthetic-v1','synthetic-fact-v1','synthetic-needs-v1'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
     parser.add_argument('--interval', type=float, default=0.5)
@@ -189,6 +189,9 @@ def main():
     if args.tools_profile=='synthetic-v1':
         from cj_api.local_tools import LocalTools,SyntheticToolModel
         tools=LocalTools();model=SyntheticToolModel()
+    elif args.tools_profile=='synthetic-fact-v1':
+        from cj_api.local_fact_tools import LocalFactTools,SyntheticFactModel
+        tools=LocalFactTools();model=SyntheticFactModel()
     elif args.tools_profile=='synthetic-needs-v1':
         from cj_api.local_needs_preview import LocalNeedsPreview,SyntheticNeedsModel
         tools=LocalNeedsPreview();model=SyntheticNeedsModel()
