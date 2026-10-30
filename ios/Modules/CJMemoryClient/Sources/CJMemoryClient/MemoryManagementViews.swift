@@ -34,8 +34,10 @@ private struct MemoryManagementControlsContent: View {
                 let result = try await action()
                 guard client.managementPresentationIsCurrent(binding), token == request, !Task.isCancelled else { return }
                 switch result {
-                case .historicalReceipt:
+                case .historicalReceipt, .historicalStopUseReceipt:
                     status = language.text("Original action confirmed. Refresh the item for its current state.", "原操作已确认；请刷新条目查看当前状态。")
+                case .rejected(let code, let reason):
+                    status = language.text("Action failed (", "操作失败（") + String(code) + ": " + reason + language.text("). Input retained; refresh and review before a new action.", "）。原输入保留，请刷新并重新审阅后再发起新操作。")
                 case .notObserved:
                     status = language.text("Original receipt not observed. Do not resend.", "尚未查到原回执，不可重新发送。")
                 }
@@ -112,7 +114,8 @@ private struct MemoryManagementRecoveryContent: View {
                         let result = try await client.queryManagement(actionID: pending.actionID, binding: binding)
                         guard client.managementPresentationIsCurrent(binding), !Task.isCancelled else { return }
                         switch result {
-                        case .historicalReceipt: message = language.text("Original action confirmed; refresh for current state.", "原操作已确认；请刷新查看当前状态。")
+                        case .historicalReceipt, .historicalStopUseReceipt: message = language.text("Original action confirmed; refresh for current state.", "原操作已确认；请刷新查看当前状态。")
+                        case .rejected(let code, let reason): message = language.text("Original action failed: ", "原操作已明确失败：") + String(code) + " / " + reason
                         case .notObserved: message = language.text("Receipt not observed; this does not allow resending.", "尚未查到回执；这不允许重新发送。")
                         }
                     } catch {
