@@ -123,6 +123,8 @@ C当前`MEMORY-RUN-CONSUME@1`明确按conversation选择，保持不改。新mod
 
 release/cleanup不再获取外层RUN/USAGE/NEEDS锁；若RUN/proposal已提交后读lease cleanup失败，只保留原事实与unknown/query-only，不报已回滚或重做。expiry最后检查发生在实际副作用前，不承诺提交瞬间的绝对时钟原子性。晚到可信费用回执只结算原ledger/attempt，不要求已失效context重新给执行许可。
 
+这里的live lease保护新provider步骤、text_delta、completed及新proposal/effect等可用输出。failed/cancelled/context_invalid/unknown/budget_denied等**原动作终态/诊断记账**沿既有RUN fence与原owner/origin规则处理，不要求已经失效的旅行/记忆重新授权；否则将无法记录拒绝。此豁免不允许新私密正文、计量派发或新业务effect，也不绕过canonical owner。started之前依赖未知的处理见下表，不扩展旧RUN状态机。
+
 ## 6. 失效与阶段语义
 
 | 阶段/情况 | 结果 |

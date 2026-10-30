@@ -131,7 +131,11 @@ CREATE FUNCTION public.cj_message_travel_receipt_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,public AS $$
 DECLARE enabled boolean;
 BEGIN
- SELECT EXISTS(SELECT 1 FROM public.cj_message_context_profile WHERE scope=NEW.scope) INTO enabled;
+ IF TG_OP='INSERT' THEN
+   SELECT EXISTS(SELECT 1 FROM public.cj_message_context_profile WHERE scope=NEW.scope) INTO enabled;
+ ELSE
+   SELECT EXISTS(SELECT 1 FROM public.cj_message_context_profile WHERE scope IN (OLD.scope,NEW.scope)) INTO enabled;
+ END IF;
  IF TG_OP='INSERT' THEN
    IF enabled THEN
      NEW.travel_reference_version:=1;
