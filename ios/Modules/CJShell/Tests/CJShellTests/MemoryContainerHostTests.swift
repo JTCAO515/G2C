@@ -4,6 +4,7 @@ import Observation
 import Testing
 import CJAPI
 import CJMessageClient
+import CJMessageKeys
 import CJMessageHTTP
 import OpenAPIRuntime
 import HTTPTypes
@@ -66,14 +67,35 @@ private actor MemoryHostTransport: ClientTransport {
     let longTerm: TypedMemoryManualOption
     let currentTravel: TypedMemoryManualOption
     let travel: TravelSelectionModel
-    init(shell: ShellState,transport: MemoryHostTransport) throws {
+    let legacyOriginal: MemoryPending?
+    let legacy: MemoryClient?
+    private var legacyRoots: [URL] = []
+    init(shell: ShellState,transport: MemoryHostTransport,withLegacyOriginal: Bool = false) throws {
         directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
-        let f = source,key = SymmetricKey(size:.bits256)
+        let f = source,key = SymmetricKey(size:.bits256),keyID = UUID()
+        let namespace = MessageKeyNamespace(environment:f.binding.environment,account:f.binding.account,purpose:.localMemoryPendingV1)
         let store = try TypedMemoryPendingStore(directory:directory,maximumBytes:100_000,maximumRecords:20,
-            namespace:.init(environment:f.binding.environment,account:f.binding.account,purpose:.localMemoryPendingV1),keyID:UUID(),key:{key})
+            namespace:namespace,keyID:keyID,key:{key})
         let endpoint = try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:32768,maximumResponseBytes:1_000_000)
-        client = TypedMemoryClient(endpoint:endpoint,credentials:{ _ in "SYNTHETIC" },currentBinding:{f.observed()},pendingStore:store,interceptedTransport:transport)
+        let oldClient: MemoryClient?,oldRecord: MemoryPending?
+        if withLegacyOriginal {
+            let manualRoot = directory.appendingPathExtension("legacy"),lifeRoot = directory.appendingPathExtension("legacy-life")
+            legacyRoots = [manualRoot,lifeRoot]
+            for root in [manualRoot,lifeRoot] { try FileManager.default.createDirectory(at:root,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700]) }
+            let oldStore = try MemoryPendingStore(directory:manualRoot,maximumBytes:100_000,maximumRecords:20,namespace:namespace,keyID:keyID,key:{key})
+            let lifeStore = try MemoryManagementPendingStore(directory:lifeRoot,maximumBytes:100_000,maximumRecords:20,namespace:namespace,keyID:keyID,key:{key})
+            let record = try MemoryPending(.init(operation_id:"legacy-original",item_id:"legacy-item",subject:"self",slot:"test",text:"original legacy input",occurred_at:"unknown",kind:.preference,extent:.long_term,context_id:.case2(nil)))
+            try oldStore.append(record,validateBinding:{})
+            let reads = try NoRedirectTransport(interceptedTransport:transport,previewEndpoint:nil,validatePreview:nil)
+            oldClient = MemoryClient(endpoint:endpoint,credentials:{_ in "SYNTHETIC"},currentBinding:{f.observed()},pendingStore:oldStore,liveReadTransport:reads,managementPendingStore:lifeStore)
+            oldRecord = record
+        } else { oldClient = nil;oldRecord = nil }
+        legacy = oldClient;legacyOriginal = oldRecord
+        client = TypedMemoryClient(endpoint:endpoint,credentials:{ _ in "SYNTHETIC" },currentBinding:{f.observed()},pendingStore:store,
+            interceptedTransport:transport,validatePriorOriginals:{
+                if let oldClient,try oldClient.requiresOriginalReconciliation(binding:f.binding) { throw MemoryFailure.pendingRequiresQuery }
+            })
         let recovery = MessageRecovery(storage:TypedHostTravelStorage())
         let scope = try StorageScope(environment:f.binding.environment.uuidString,account:f.binding.account.uuidString)
         let lease = try recovery.activate(scope)
@@ -81,12 +103,36 @@ private actor MemoryHostTransport: ClientTransport {
         travel = try TravelSelectionModel(ids:[],client:message,lease:lease,isCurrent:{f.current == f.binding})
         longTerm = TypedMemoryManualOption(label:"long-term",subject:"self",slot:"test",kind:.preference,scope:.longTerm)
         currentTravel = TypedMemoryManualOption(label:"current travel",subject:"self",slot:"test",kind:.preference,scope:.selectedTravel)
-        host = try TypedMemoryContainerHost(shell:shell,client:client,binding:f.binding,pageSize:2,options:[longTerm,currentTravel],travel:travel,currentBinding:{f.observed()})
+        host = try TypedMemoryContainerHost(shell:shell,client:client,binding:f.binding,pageSize:2,options:[longTerm,currentTravel],travel:travel,legacy:oldClient,currentBinding:{f.observed()})
     }
-    func cleanup() { try? FileManager.default.removeItem(at:directory) }
+    func cleanup() {
+        try? FileManager.default.removeItem(at:directory)
+        for root in legacyRoots { try? FileManager.default.removeItem(at:root) }
+    }
 }
 @MainActor private final class TypedSurfaceBox { var surface: TypedMemorySurface? }
 @Suite @MainActor struct MemoryContainerHostTests {
+    @Test func typedSurfaceQueriesLegacyJournalExplicitlyAndKeepsItsVersionAcrossNavigation() async throws {
+        let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire,withLegacyOriginal:true);defer {f.cleanup()}
+        let original = try #require(f.legacyOriginal),surface = try #require(f.host.enterSurface())
+        f.host.loadOriginals(surface:surface)
+        #expect(try rows(f.host.legacyOriginals).map(\.originalUTF8) == [original.originalUTF8])
+        #expect(try rows(f.host.originals).isEmpty)
+        guard case .requiresQuery = f.host.legacyRecoveryState else { Issue.record("old pending journal was ignored");return }
+        #expect(throws:MemoryFailure.pendingRequiresQuery) { try f.host.prepareSave(optionID:f.longTerm.id,text:"new input",occurredAt:"unknown",surface:surface) }
+        #expect(await wire.calls.isEmpty)
+        await wire.enqueue(try json(["receipt":["operation_id":original.operationID,"item_id":original.itemID,
+            "version":1,"status":"active","input_sha256":original.expectedSHA256]]))
+        await f.host.queryLegacySave(operationID:original.operationID,surface:surface)
+        guard case .saved = f.host.saveState else { Issue.record("legacy receipt did not settle");return }
+        #expect(f.host.originalReference == .legacySave(original.operationID))
+        let next = try #require(f.host.enterSurface());f.host.leaveSurface(surface)
+        f.host.loadOriginals(surface:next)
+        guard case .reconciled = f.host.legacyRecoveryState else { Issue.record("navigation lost a verified original receipt");return }
+        _ = try f.host.prepareSave(optionID:f.longTerm.id,text:"new input",occurredAt:"unknown",surface:next)
+        #expect(await wire.calls.map(\.0) == ["queryMemoryReceipt"])
+        #expect(try f.legacy?.pending(binding:f.source.binding).map(\.originalUTF8) == [original.originalUTF8])
+    }
     @Test func typedRepeatedConfirmationUsesOriginalQueryWithoutAnotherPOST() async throws {
         let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
         let surface = try #require(f.host.enterSurface())

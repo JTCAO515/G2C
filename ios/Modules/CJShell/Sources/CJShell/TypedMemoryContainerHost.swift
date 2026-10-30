@@ -38,6 +38,11 @@ public struct TypedMemorySurface: Sendable {
 public enum TypedMemoryManagementState {
     case ready,working,unknown,notObserved,rejected,needsOriginalQuery
     case historical(Components.Schemas.MemoryManagementReceiptV2)
+    case legacy(MemoryManagementResult)
+}
+public enum LegacyMemoryRecoveryState { case unconfigured,requiresQuery,reconciled,unavailable }
+public enum MemoryOriginalReference: Equatable,Sendable {
+    case save(String),legacySave(String),management(String),legacyManagement(String)
 }
 
 /// One typed consumer, one canonical account binding and explicit travel model.
@@ -48,6 +53,7 @@ public enum TypedMemoryManagementState {
     private let shell: ShellState
     private let generation: ShellGeneration
     private let client: TypedMemoryClient
+    private let legacy: MemoryClient?
     private let binding: MemoryBinding
     private let currentBinding: @MainActor () -> MemoryBinding?
     private let configuredOptions: [TypedMemoryManualOption]
@@ -63,15 +69,19 @@ public enum TypedMemoryManagementState {
     @ObservationIgnored private var detailValue: MemoryLoad<TypedMemoryRead?> = .unconfigured
     @ObservationIgnored private var originalValues: MemoryLoad<[TypedMemoryCommand]> = .unconfigured
     @ObservationIgnored private var managementOriginalValues: MemoryLoad<[TypedMemoryManagementPending]> = .unconfigured
+    @ObservationIgnored private var legacyOriginalValues: MemoryLoad<[MemoryPending]> = .unconfigured
+    @ObservationIgnored private var legacyManagementOriginalValues: MemoryLoad<[MemoryManagementPending]> = .unconfigured
+    @ObservationIgnored private var legacyRecoveryValue: LegacyMemoryRecoveryState = .unconfigured
+    @ObservationIgnored private var originalReferenceValue: MemoryOriginalReference?
     @ObservationIgnored private var saveValue: MemorySaveState = .ready
     @ObservationIgnored private var managementValue: TypedMemoryManagementState = .ready
     private var visibleEpoch: UUID?
 
     public init(shell: ShellState,client: TypedMemoryClient,binding: MemoryBinding,pageSize: Int,
-                options: [TypedMemoryManualOption],travel: TravelSelectionModel,
+                options: [TypedMemoryManualOption],travel: TravelSelectionModel,legacy: MemoryClient? = nil,
                 currentBinding: @escaping @MainActor () -> MemoryBinding?) throws {
         self.shell = shell;generation = shell.generation;self.client = client;self.binding = binding
-        self.pageSize = pageSize;configuredOptions = options;self.travel = travel;self.currentBinding = currentBinding
+        self.pageSize = pageSize;configuredOptions = options;self.travel = travel;self.legacy = legacy;self.currentBinding = currentBinding
         let predecessor = shell.typedMemoryContainerHost
         guard (1...100).contains(pageSize),current,shell.typedMemoryContainerHost === predecessor else { throw MemoryFailure.staleBinding }
         predecessor?.invalidate()
@@ -95,6 +105,10 @@ public enum TypedMemoryManagementState {
     public var detail: MemoryLoad<TypedMemoryRead?> { presented ? detailValue : .unconfigured }
     public var originals: MemoryLoad<[TypedMemoryCommand]> { presented ? originalValues : .unconfigured }
     public var managementOriginals: MemoryLoad<[TypedMemoryManagementPending]> { presented ? managementOriginalValues : .unconfigured }
+    public var legacyOriginals: MemoryLoad<[MemoryPending]> { presented ? legacyOriginalValues : .unconfigured }
+    public var legacyManagementOriginals: MemoryLoad<[MemoryManagementPending]> { presented ? legacyManagementOriginalValues : .unconfigured }
+    public var legacyRecoveryState: LegacyMemoryRecoveryState { presented ? legacyRecoveryValue : .unconfigured }
+    public var originalReference: MemoryOriginalReference? { presented ? originalReferenceValue : nil }
     public var saveState: MemorySaveState { presented ? saveValue : .unconfigured }
     public var managementState: TypedMemoryManagementState { presented ? managementValue : .unknown }
     public var hasMore: Bool { presented && !working && page != nil }
@@ -115,12 +129,15 @@ public enum TypedMemoryManagementState {
     private func clearValues() {
         page = nil;itemValues = .unconfigured;detailValue = .unconfigured
         originalValues = .unconfigured;managementOriginalValues = .unconfigured
+        legacyOriginalValues = .unconfigured;legacyManagementOriginalValues = .unconfigured
+        legacyRecoveryValue = .unconfigured;originalReferenceValue = nil
         saveValue = .ready;managementValue = .ready
     }
     public func invalidate() {
         guard !invalidating else { return }
         invalidating = true // fence before observable writes can reenter this method
         active = false;epoch = UUID();working = false;visibleEpoch = nil;clearValues();client.invalidate()
+        legacy?.invalidate()
     }
     public func suspendForBackground() { invalidate() }
     private func owns(_ surface: TypedMemorySurface) -> Bool {
@@ -179,14 +196,38 @@ public enum TypedMemoryManagementState {
     }
     public func loadOriginals(surface: TypedMemorySurface?) {
         guard let surface = begin(surface) else { return }
+        let saves = originalRead(surface) { try client.pending(binding:binding) }
+        guard owns(surface) else { return }
+        let management = originalRead(surface) { try client.managementPending(binding:binding) }
+        guard owns(surface) else { return }
+        let oldSaves: MemoryLoad<[MemoryPending]>,oldManagement: MemoryLoad<[MemoryManagementPending]>
+        if let legacy {
+            oldSaves = originalRead(surface) { try legacy.pending(binding:binding) }
+            guard owns(surface) else { return }
+            oldManagement = originalRead(surface) { try legacy.managementPending(binding:binding) }
+        } else { oldSaves = .unconfigured;oldManagement = .unconfigured }
+        guard owns(surface) else { return }
+        let prior = legacyState()
+        present(surface,{
+            originalValues = saves;managementOriginalValues = management
+            legacyOriginalValues = oldSaves;legacyManagementOriginalValues = oldManagement
+            legacyRecoveryValue = prior;working = false
+        })
+    }
+    private func originalRead<Value>(_ surface: TypedMemorySurface,_ read: () throws -> Value) -> MemoryLoad<Value> {
         do {
-            let saves = try client.pending(binding:binding)
-            guard owns(surface) else { return }
-            let management = try client.managementPending(binding:binding)
-            guard owns(surface) else { return }
-            present(surface,{ originalValues = .loaded(saves);managementOriginalValues = .loaded(management);working = false })
-        } catch {
-            present(surface,{ originalValues = .failed;managementOriginalValues = .failed;working = false })
+            let value = try read()
+            return owns(surface) ? .loaded(value) : .unconfigured
+        } catch { return owns(surface) ? .failed : .unconfigured }
+    }
+    private func legacyState() -> LegacyMemoryRecoveryState {
+        guard let legacy else { return .unconfigured }
+        do { return try legacy.requiresOriginalReconciliation(binding:binding) ? .requiresQuery : .reconciled }
+        catch { return .unavailable }
+    }
+    private func requirePriorOriginals() throws {
+        if let legacy,try legacy.requiresOriginalReconciliation(binding:binding) {
+            throw MemoryFailure.pendingRequiresQuery
         }
     }
     private func selectedTravel() throws -> (CapturedTravelSelection,MemoryTravelSelection) {
@@ -197,6 +238,7 @@ public enum TypedMemoryManagementState {
     }
     public func prepareSave(optionID: UUID,text: String,occurredAt: String,surface: TypedMemorySurface?) throws -> TypedMemorySaveWork {
         guard let surface,owns(surface),!working,let option = configuredOptions.first(where:{ $0.id == optionID }) else { throw MemoryFailure.staleBinding }
+        try requirePriorOriginals()
         let capture: CapturedTravelSelection?,context: MemoryTravelSelection?
         switch option.scope {
         case .longTerm:capture = nil;context = nil
@@ -209,14 +251,18 @@ public enum TypedMemoryManagementState {
     }
     public func performSave(_ work: TypedMemorySaveWork) async {
         guard let surface = begin(work.surface) else { return }
-        guard present(surface,{ saveValue = .saving }) else { return }
+        guard present(surface,{ saveValue = .saving;originalReferenceValue = .save(work.command.operationID) }) else { return }
         do {
             if let captured = work.travel { try travel.validate(captured) }
             guard owns(surface) else { return }
             let result = try await client.save(work.command,binding:binding)
             guard owns(surface) else { return }
             present(surface,{ publish(result);working = false })
-        } catch { present(surface,{ saveValue = saveFailure(error);working = false }) }
+        } catch { present(surface,{
+            saveValue = saveFailure(error)
+            if case .needsOriginalQuery = saveValue { originalReferenceValue = nil }
+            working = false
+        }) }
     }
     private func publish(_ result: MemorySaveResult) {
         switch result {
@@ -239,7 +285,7 @@ public enum TypedMemoryManagementState {
     }
     public func querySave(operationID: String,surface: TypedMemorySurface?) async {
         guard let surface = begin(surface) else { return }
-        guard present(surface,{ saveValue = .saving }) else { return }
+        guard present(surface,{ saveValue = .saving;originalReferenceValue = .save(operationID) }) else { return }
         do {
             let result = try await client.query(operationID:operationID,binding:binding)
             guard owns(surface) else { return }
@@ -248,6 +294,7 @@ public enum TypedMemoryManagementState {
     }
     public func prepareManagement(_ operation: TypedMemoryOperation,text: String? = nil,surface: TypedMemorySurface?) throws -> TypedMemoryManagementWork {
         guard let surface,owns(surface),!working,presented,case .loaded(let value) = detailValue,let read = value else { throw MemoryFailure.staleBinding }
+        try requirePriorOriginals()
         try client.validateRead(read,binding:binding)
         let capture: CapturedTravelSelection?,context: MemoryTravelSelection?
         if operation == .edit,case .travel(let original) = read.item.scope {
@@ -260,7 +307,7 @@ public enum TypedMemoryManagementState {
     }
     public func performManagement(_ work: TypedMemoryManagementWork) async {
         guard let surface = begin(work.surface) else { return }
-        guard present(surface,{ managementValue = .working }) else { return }
+        guard present(surface,{ managementValue = .working;originalReferenceValue = nil }) else { return }
         do {
             if let captured = work.travel { try travel.validate(captured) }
             guard owns(surface) else { return }
@@ -276,18 +323,40 @@ public enum TypedMemoryManagementState {
     }
     private func publish(_ result: TypedMemoryManagementResult) {
         switch result {
-        case .historicalReceipt(let receipt):managementValue = .historical(receipt)
+        case .historicalReceipt(let receipt):managementValue = .historical(receipt);originalReferenceValue = .management(receipt.action_id)
         case .notObserved:managementValue = .notObserved
         case .rejected:managementValue = .rejected
         }
     }
     public func queryManagement(actionID: String,surface: TypedMemorySurface?) async {
         guard let surface = begin(surface) else { return }
-        guard present(surface,{ managementValue = .working }) else { return }
+        guard present(surface,{ managementValue = .working;originalReferenceValue = .management(actionID) }) else { return }
         do {
             let result = try await client.queryManagement(actionID:actionID,binding:binding)
             guard owns(surface) else { return }
             present(surface,{ publish(result);working = false })
+        } catch { present(surface,{ managementValue = .unknown;working = false }) }
+    }
+    public func queryLegacySave(operationID: String,surface: TypedMemorySurface?) async {
+        guard let surface = begin(surface) else { return }
+        guard present(surface,{ saveValue = .saving;originalReferenceValue = .legacySave(operationID) }) else { return }
+        do {
+            guard let legacy else { throw MemoryFailure.unconfigured }
+            let result = try await legacy.query(operationID:operationID,binding:binding)
+            guard owns(surface) else { return }
+            let prior = legacyState()
+            present(surface,{ publish(result);legacyRecoveryValue = prior;working = false })
+        } catch { present(surface,{ saveValue = .unknown;working = false }) }
+    }
+    public func queryLegacyManagement(actionID: String,surface: TypedMemorySurface?) async {
+        guard let surface = begin(surface) else { return }
+        guard present(surface,{ managementValue = .working;originalReferenceValue = .legacyManagement(actionID) }) else { return }
+        do {
+            guard let legacy else { throw MemoryFailure.unconfigured }
+            let result = try await legacy.queryManagement(actionID:actionID,binding:binding)
+            guard owns(surface) else { return }
+            let prior = legacyState()
+            present(surface,{ managementValue = .legacy(result);legacyRecoveryValue = prior;working = false })
         } catch { present(surface,{ managementValue = .unknown;working = false }) }
     }
 }
