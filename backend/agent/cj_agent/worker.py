@@ -94,7 +94,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -108,6 +108,7 @@ class RunWorker:
         self.memory_run = None
         self.message_context=message_context
         self._publication_check=None
+        self.tools=tools
 
     def process(self, limit=20):
         outcomes = []
@@ -232,18 +233,27 @@ class RunWorker:
         return state, result
 
     def _stream(self, binding, messages, system=None):
-        stream = None
         prepared = None
         if self.budget_exit is not None:
             prepared = self.budget_exit.prepare(self.runs,binding,'draft' if system is not None else 'answer',
                                                 messages,system,self.provider)
+        def source():
+            return (self.budget_exit.stream(prepared) if prepared is not None else
+                    self.provider.stream(messages) if system is None else self.provider.stream(messages,system=system))
+        yield from self._stream_source(binding,source,draft=system is not None)
+
+    def _registered_stream(self,binding,key,registration,argument):
+        prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer')
+        yield from self._stream_source(binding,lambda:self.budget_exit.stream(prepared),draft=False)
+
+    def _stream_source(self,binding,source,*,draft):
+        stream=None
         def start():
             nonlocal stream
-            stream = (self.budget_exit.stream(prepared) if prepared is not None else
-                      self.provider.stream(messages) if system is None else self.provider.stream(messages, system=system))
+            stream=source()
             return next(stream, _END)
         try:
-            _, chunk = self._step(binding, start, draft=system is not None)
+            _, chunk = self._step(binding, start, draft=draft)
             while chunk is not _END:
                 self._running(binding)
                 yield chunk
@@ -322,6 +332,7 @@ class RunWorker:
                               needs_lease=self.needs_lease, budget_exit=self.budget_exit,
                               memory=self.memory,
                               message_context=self.message_context,
+                              tools=self.tools,
                               runs=Service(OwnedRepository(), runs.valid))
             return owned._owned(receipt, binding)
 
@@ -384,7 +395,8 @@ class RunWorker:
         try:
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
-            for chunk in self._stream(binding, inputs):
+            chunks=self._stream(binding,inputs) if self.tools is None else self.tools.answer(self,binding,inputs)
+            for chunk in chunks:
                 buffer += chunk
                 if len(buffer) >= FLUSH_CHARS:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''

@@ -22,7 +22,9 @@ def checker_for(auth_dir):
 
 
 class LocalBudgetRouter:
-    def __init__(self, database): self.database=database
+    def __init__(self, database, *, registrations=None):
+        self.database=database
+        self.registrations=MODEL_REGISTRY if registrations is None else registrations
 
     def stop(self, binding):
         raise BudgetUnknown('original quota period unresolved; cleanup withheld')
@@ -60,7 +62,7 @@ class LocalBudgetRouter:
             return Meter(PostgresRepository(lambda:self.database.connect(binding.scope,usage_profile=profile),account),profile.meter,time.time)
         if context.version=='CJ-LOCAL-RUN@2':
             return RegisteredExit(profile.meter,resolve,clock=time.time,output_limits=profile.output_limits,
-                                  environment='local',registrations=MODEL_REGISTRY)
+                                  environment='local',registrations=self.registrations)
         return LocalProviderExit(profile.meter,resolve,clock=time.time,
                                  output_limits=profile.output_limits,environment='local')
 
