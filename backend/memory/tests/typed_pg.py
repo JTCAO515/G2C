@@ -38,7 +38,7 @@ class TypedStorageChecks(Harness):
         cls.run_path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
             unit='provider_call',budget=100,period_start=now-60,period_end=now+3600,max_steps=20,
             max_tools=10,max_output=10000,max_seconds=600),
-            output_limits=dict(model=2000,tool=2000,memory=2000)),history=[])))
+            output_limits=dict(model=4000,tool=8000,memory=2000)),history=[])))
         cls.run_context=load_run_context(cls.run_path)
         for identity in ('alice','bob'):
             operator.provision_budget(CONNINFO,cls.run_context,identity)
@@ -384,6 +384,44 @@ class TypedStorageChecks(Harness):
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_source WHERE source_id=%s',(command.source_id,)).fetchone()[0],0)
         with self.assertRaises(psycopg.errors.InsufficientPrivilege):
             with self.database.connect(self.scope) as conn:conn.execute("UPDATE cj_memory_item SET context_kind='travel'")
+
+
+    def test_actual_typed_memory_and_registered_place_tool_loop(self):
+        from cj_api.local_tools import LocalTools,SyntheticToolModel
+        from cj_run.step_usage import ledger_scope_for
+        from cj_usage.codec import decode
+        from cj_usage.core import Meter
+        import run_worker
+        configuration,_=self.runtime_configuration()
+        def exposure():
+            with self.database.connect(self.scope) as conn:
+                row=conn.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',
+                    (ledger_scope_for(self.scope,self.run_context.current.meter),)).fetchone()
+                return Meter.exposure(decode(row[0]))
+        with TestClient(self.typed_app()) as api,TestClient(self.app) as messages:
+            result=api.post('/v2/memories',content=self.raw(self.travel[0],text='Travel A slow pace / 慢节奏'),
+                headers={**self.headers('alice'),'Content-Type':'application/octet-stream'})
+            self.assertEqual(result.status_code,200,result.text)
+            mid,_=self.send_v2(messages,self.tag,self.travel[0],text='查询合成酒店 / Find synthetic hotel')
+            class Observed(SyntheticToolModel):
+                def __init__(model):super().__init__();model.inputs=[]
+                def stream(model,inputs,system=None):
+                    model.inputs.append(inputs);yield from super().stream(inputs,system)
+            tools=LocalTools();model=Observed();before=exposure()
+            outcomes=run_worker.run_once(self.database,model,self.auth,memory_configuration=configuration,tools_configuration=tools)
+            status=messages.get('/v3/run-draft-status',params={'message_id':mid},headers=self.headers('alice'))
+            self.assertEqual([o.status for o in outcomes if o.message_id==mid],['completed'],status.text)
+            self.assertEqual((model.calls,tools.place.invocations,tools.place.transport_calls),(2,1,1))
+            self.assertEqual(exposure(),before+3)
+            for inputs in model.inputs:
+                memory=json.loads(inputs[0]['content'].split('\n',1)[1])
+                self.assertEqual([item['text'] for item in memory['items']],['Travel A slow pace / 慢节奏'])
+            display=messages.get('/v2/run-display',params={'message_id':mid},headers=self.headers('alice'))
+            self.assertEqual(display.status_code,200,display.text)
+            frames=[json.loads(line) for line in display.json()['snapshot']['text'].splitlines()]
+            self.assertEqual([f['version'] for f in frames],['TOOL-output.1','TOOL-answer.1'])
+            self.assertEqual(display.json()['reference']['context_id'],self.travel[0]['id'])
+            self.assertTrue(all(frame['data_origin']=='synthetic' for frame in frames))
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

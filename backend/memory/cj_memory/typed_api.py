@@ -7,6 +7,8 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 
 from cj_api.app import create_app
+from cj_api.generated import (MemorySaveV2Response,MemoryReceiptV2Response,MemoryDetailV2Response,
+    MemoryListV2Response,MemoryManagementApplyV2Response,MemoryManagementReceiptV2Response)
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import (LocalDatabase,scope_for,ISSUER,AUDIENCE,KEY_ID,InvitedSubjects)
 from cj_api.memory_boundary import (MemoryBoundary,MemoryBinding,MemoryAccessBlocked,
@@ -96,6 +98,10 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
         else:raise ValueError('unsupported typed projection')
         raw=json.dumps(dict(version='MEMORY-result.2',request_id=request.state.request_id,**result),
                        ensure_ascii=False,separators=(',',':')).encode()
+        models={'save':MemorySaveV2Response,'query':MemoryReceiptV2Response,'detail':MemoryDetailV2Response,
+                'list':MemoryListV2Response,'manage':MemoryManagementApplyV2Response,
+                'withdraw':MemoryManagementApplyV2Response,'management_query':MemoryManagementReceiptV2Response}
+        models[kind].model_validate_json(raw,strict=True)
         if len(raw)>max_response_bytes:raise ValueError('private output exceeds explicit limit')
         return raw
 
