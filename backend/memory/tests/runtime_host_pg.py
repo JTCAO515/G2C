@@ -301,4 +301,6 @@ def run_worker_database_path():
 
 
 if __name__=='__main__':
+    sys.path.insert(0, str(ROOT / 'backend/memory_management/tests'))
+    from edit_host_pg import EditManagementChecks
     unittest.main(verbosity=2)

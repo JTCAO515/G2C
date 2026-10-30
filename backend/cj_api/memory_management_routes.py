@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 from .generated import (MemoryManagementAction,MemoryManagementReceipt,
-    MemoryManagementApplyResponse,MemoryManagementReceiptResponse)
+    MemoryManagementApplyResponse,MemoryManagementReceiptResponse,MemoryManagementEditAction)
 from .history_routes import _query,PrivateOutputTooLarge
 from .message_routes import _error,_token
 from .memory_boundary import MemoryAccessBlocked
@@ -41,7 +41,8 @@ def register_memory_management(app,boundary=None,configuration=None):
             receipt=None
         else:
             if type(value) is not domain.Receipt:raise ValueError('Canonical stored receipt required')
-            expected=boundary.modules['cj_memory_management.domain'].Action.parse(argument).action_id if kind=='save' else argument
+            from cj_memory_management.edit import parse_action
+            expected=parse_action(argument).action_id if kind=='save' else argument
             if value.operation_id!=expected:raise ValueError('Wrong original receipt')
             receipt=MemoryManagementReceipt.model_validate_json(json.dumps(dict(action_id=value.operation_id,item_id=value.item_id,version=value.version,status=value.status,input_sha256=value.input_sha256)),strict=True)
         model=MemoryManagementApplyResponse if kind=='save' else MemoryManagementReceiptResponse
@@ -53,8 +54,7 @@ def register_memory_management(app,boundary=None,configuration=None):
             raw=await run_in_threadpool(boundary.invoke,token,kind,argument,lambda value:project(request,kind,argument,value))
             return Response(content=raw,media_type='application/json')
         except Exception as exc:return failure(request,kind=='save',exc)
-    @app.post('/v1/memory-management-actions',response_model=MemoryManagementApplyResponse)
-    async def apply(request:Request):
+    async def apply_action(request, *, edit=False):
         prepared=prepare(request,())
         if isinstance(prepared,JSONResponse):return prepared
         token,_=prepared
@@ -68,12 +68,23 @@ def register_memory_management(app,boundary=None,configuration=None):
                 if size>configuration.max_body_bytes:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
                 chunks.append(chunk)
             raw=b''.join(chunks)
-            action=boundary.modules['cj_memory_management.domain'].Action.parse(raw)
-            MemoryManagementAction.model_validate_json(raw,strict=True)
+            if edit:
+                from cj_memory_management.edit import Edit
+                action=Edit.parse(raw)
+                MemoryManagementEditAction.model_validate_json(raw,strict=True)
+            else:
+                action=boundary.modules['cj_memory_management.domain'].Action.parse(raw)
+                MemoryManagementAction.model_validate_json(raw,strict=True)
             action.action_id.encode('utf-8');action.item_id.encode('utf-8')
         except (ValueError,UnicodeError,domain.InvalidInput):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         except Exception:return failure(request,True)
         return await invoke(request,token,'save',raw)
+    @app.post('/v1/memory-management-actions',response_model=MemoryManagementApplyResponse)
+    async def apply(request:Request):
+        return await apply_action(request)
+    @app.post('/v1/memory-edit-actions',response_model=MemoryManagementApplyResponse)
+    async def edit(request:Request):
+        return await apply_action(request,edit=True)
     @app.get('/v1/memory-management-receipts',response_model=MemoryManagementReceiptResponse)
     async def query(request:Request):
         prepared=prepare(request,('action_id',))

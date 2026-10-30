@@ -1851,3 +1851,20 @@ class RunDraftStatusV2Response(BaseModel):
         ...,
         description='Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.',
     )
+
+
+class Operation2(StrEnum):
+    edit = 'edit'
+
+
+class MemoryManagementEditAction(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(min_length=1, max_length=4096)
+    operation: Operation2
+    item_id: constr(min_length=1, max_length=4096)
+    expected_version: conint(ge=1, le=9223372036854775807)
+    expected_source_version: conint(ge=1, le=9223372036854775807)
+    version: Literal['MEMORY-MANAGEMENT-EDIT@1']
+    text: constr(min_length=1, max_length=4096)

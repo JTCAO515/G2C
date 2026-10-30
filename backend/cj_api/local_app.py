@@ -304,6 +304,34 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
 CONFIRMATION_KEY_FILE = 'trip-confirmation.key'
 
 
+def create_local_memory_management_app(*, conninfo_path, auth_dir, memory_configuration):
+    """Explicit C1 local host, separately assembled from the old closed factory."""
+    from cj_memory.local import LocalMemoryConfiguration
+    from cj_memory.postgres import Repository
+    from cj_memory_management.guarded import GuardedService
+    from .memory_boundary import MemoryBinding, MemorySourceRejected
+    from .memory_management_boundary import (MemoryManagementConfiguration,
+        create_local_edit_management_app)
+    if os.environ.get('CJ_ENV') != 'local' or type(memory_configuration) is not LocalMemoryConfiguration:
+        raise CompositionUnavailable('explicit local management collection policy required')
+    database = LocalDatabase(conninfo_path)
+    auth_dir = Path(auth_dir)
+
+    def resolve(principal):
+        profile = memory_configuration.profiles.get(principal.subject)
+        if profile is None:
+            raise MemorySourceRejected()
+        scope = scope_for(principal.issuer, principal.subject)
+        repository = Repository(lambda: database.connect(scope), scope,
+                               transaction_binder=lambda conn, cursor: conn.bind_scope(cursor))
+        return MemoryBinding(scope, GuardedService(repository, manual_policy=profile.manual_policy()))
+
+    return create_local_edit_management_app(configuration=MemoryManagementConfiguration(32768,65536),
+        environment='local', jwt_configuration=JWTConfiguration(ISSUER,AUDIENCE,'RS256',0),
+        verification_keys=StaticPublicKeys({KEY_ID:VerificationKey('RS256',(auth_dir/'public.pem').read_bytes())}),
+        access_provider=InvitedSubjects(auth_dir/'invited.json'), resolve_binding=resolve)
+
+
 def load_confirmation_signer(auth_dir):
     """Dedicated local signing key created by scripts/dev_auth.py; never a default or generated here."""
     from cj_trip.confirmation import ConfirmationSigner
