@@ -31,6 +31,10 @@ import Foundation
             start.press(forDuration:0.05,thenDragTo:end)
         }
         let image = XCTAttachment(screenshot:app.screenshot());image.name = "not-visible-" + id;image.lifetime = .keepAlways;add(image)
+        if id == "travel.selection.status" {
+            for value in app.staticTexts.allElementsBoundByIndex.prefix(20) {print("TRAVEL_STATUS_STATIC",value.identifier,value.label,value.frame)}
+            for value in app.otherElements.matching(NSPredicate(format:"identifier == %@ OR label BEGINSWITH %@",id,"已选旅行")).allElementsBoundByIndex.prefix(5) {print("TRAVEL_STATUS_OTHER",value.identifier,value.label,value.frame)}
+        }
         XCTFail("Expected control within the visible page content: " + id)
     }
     private func tap(_ id: String) {
