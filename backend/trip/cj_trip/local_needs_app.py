@@ -26,7 +26,7 @@ from .domain import Conflict,Denied,identifier
 
 
 def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_signer,max_response_bytes=1_000_000):
-    if os.environ.get('CJ_ENV')!='local' or type(confirmation_signer) is not ConfirmationSigner or run_context is None:
+    if os.environ.get('CJ_ENV')!='local' or type(confirmation_signer) is not ConfirmationSigner or run_context is None or type(max_response_bytes) is not int or max_response_bytes<1:
         raise CompositionUnavailable('explicit local source-bound Trip host required')
     database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
     checker=checker_for(Path(auth_dir))
@@ -100,8 +100,9 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
             'dependency','unknown','reconcile_original' if kind in ('action','prepare','save') else 'retry_safe_read')
     @app.post('/v1/trip-needs-actions')
     async def action(request:Request):
-        if (request.query_params or request.headers.get('content-type','').split(';')[0]!='application/octet-stream'
-                or request.headers.get('content-encoding','identity')!='identity'):
+        media=request.headers.getlist('content-type')
+        if (request.query_params or len(media)!=1 or media[0].split(';')[0].strip().lower()!='application/octet-stream'
+                or request.headers.get('content-encoding','identity').lower()!='identity'):
             return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
         parts=[];size=0
         async for chunk in request.stream():
@@ -120,7 +121,8 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
     @app.get('/v2/trip-needs-proposals')
     async def proposal(request:Request):return await read(request,'proposal','proposal_id')
     async def edit_write(request,kind):
-        if request.query_params or request.headers.get('content-type','').split(';')[0]!='application/octet-stream':
+        media=request.headers.getlist('content-type')
+        if request.query_params or len(media)!=1 or media[0].split(';')[0].strip().lower()!='application/octet-stream' or request.headers.get('content-encoding','identity').lower()!='identity':
             return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
         parts=[];size=0
         async for chunk in request.stream():

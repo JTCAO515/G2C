@@ -52,9 +52,10 @@ CREATE POLICY cj_trip_needs_edit_owner ON cj_trip_needs_edit TO cj_m1_runtime
 GRANT SELECT,INSERT ON cj_trip_needs_edit TO cj_m1_runtime;
 
 CREATE TABLE cj_trip_needs_plan_context (
- scope text NOT NULL, proposal_id text NOT NULL, trip_id text NOT NULL,
- trip_version bigint NOT NULL CHECK(trip_version>0),
- original_content bytea NOT NULL CHECK(octet_length(original_content) BETWEEN 1 AND 1000000),
+ scope text NOT NULL, proposal_id text NOT NULL, trip_id text,
+ trip_version bigint CHECK(trip_version>0),
+ original_content bytea CHECK(octet_length(original_content) BETWEEN 1 AND 1000000),
+ CHECK((trip_id IS NULL AND trip_version IS NULL AND original_content IS NULL) OR (trip_id IS NOT NULL AND trip_version IS NOT NULL AND original_content IS NOT NULL)),
  PRIMARY KEY(scope,proposal_id),
  FOREIGN KEY(scope,proposal_id) REFERENCES cj_trip_needs_basis(scope,proposal_id),
  FOREIGN KEY(scope,trip_id) REFERENCES cj_trip_record(scope,trip_id)

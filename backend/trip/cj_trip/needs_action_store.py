@@ -48,6 +48,18 @@ class NeedsActions:
                 proposal,digest,status=repository._proposal(cur,request.proposal_id)
                 if digest!=request.candidate_hash:raise Conflict('original candidate changed')
                 check()
+                if request.kind=='accept':
+                    source_value=json.loads(raw)
+                    cur.execute('SELECT trip_id,trip_version,original_content FROM cj_trip_needs_plan_context WHERE scope=%s AND proposal_id=%s',
+                        (repository.scope,proposal.proposal_id))
+                    context=cur.fetchone()
+                    expected=None if context is None or context[0] is None else (context[0],context[1],bytes(context[2]))
+                    cur.execute('SELECT c.trip_id,c.trip_version,r.content FROM cj_trip_needs_current c JOIN cj_trip_record r '
+                        'ON (r.scope,r.trip_id)=(c.scope,c.trip_id) WHERE c.scope=%s AND c.needs_scope=%s AND c.needs_id=%s',
+                        (repository.scope,source_value['needs_scope'],source_value['needs_id']))
+                    current=cur.fetchone()
+                    actual=None if current is None else (current[0],current[1],bytes(current[2]))
+                    if actual!=expected:raise Conflict('adopted current Trip changed; retain original proposal')
                 action=repository.confirm.issue(repository.scope,ProposalDetail(proposal,digest,status),
                     action_id=request.action_id,kind=request.kind,candidate_hash=request.candidate_hash).action
                 receipt,pending=repository._act_in_tx(cur,action)
