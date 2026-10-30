@@ -146,3 +146,33 @@ A producer `unavailable` stream is retained as unknown with hidden text; only on
 explicit original snapshot read may recover it after matching raw producer evidence,
 with unchanged POST/provider/ledger. A refused stable read fails the case. No
 automatic generation retry or v1 draft-status fallback is permitted.
+
+
+## Registered @2 App acceptance (#244)
+
+`check_registered_runs.py` consumes explicit `CJ-LOCAL-RUN@2` budget1/budget2
+operator files (`output_limits` for model/tool/memory). It reuses #167's native
+budget/unknown/stop and original recovery UI; the new assertions inspect actual
+registered profile/requirement/binding/operation rows, IDs and immutable byte
+fingerprints before/after worker CLI restart and App reopening. The original @1
+matrix remains available through `check_run_budget.py`.
+
+The twelve named @2 cases cover bilingual answer/draft denial, unknown and stop,
+actual account switch/revocation, real signed-token expiry, and Release0 requests.
+Revocation edits only the isolated development invitation file. Expiry waits for
+an official one-minute development token and verifies actual API401; it does not
+inject an HTTP rejection. Restoration uses the same canonical subject and never
+reinitializes quotas or changes original periods/attempts. All AX issues remain
+failures; logs/App files are checked for every minted token, key and plaintext
+original. Real models/tools/fees/cloud/device acceptance remains separate.
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B ios/App/Acceptance/check_registered_runs.py \
+  --budget-one-context '<explicit-registered-budget1-context>' \
+  --budget-two-context '<explicit-registered-budget2-context>' \
+  --simulator '<iOS-17.5-UDID>' --output '<new-external-evidence-directory>' \
+  --build-dir '<external-build-cache>'
+```
+
+`--case` runs one diagnostic and records PARTIAL_PASS only. Retain prior FAIL,
+original reports and xcresults; a matrix PASS requires the complete named set.
