@@ -76,9 +76,11 @@ class _ScopedConnection:
                            (self._scope, trip_scope_for(self._scope)))
             cursor.execute("SELECT set_config('cj.message_context_abi',%s,true)",(TRAVEL_ABI,))
             if self._needs_scope is not None:
-                cursor.execute("SELECT set_config('cj.needs_scope',%s,true)",(self._needs_scope,))
-            if self._usage_scope is not None:
-                cursor.execute("SELECT set_config('cj.usage_scope',%s,true)",(self._usage_scope,))
+                if self._usage_scope is None:
+                    cursor.execute("SELECT set_config('cj.needs_scope',%s,true)",(self._needs_scope,))
+                else:
+                    cursor.execute("SELECT set_config('cj.needs_scope',%s,true), set_config('cj.usage_scope',%s,true)",
+                                   (self._needs_scope,self._usage_scope))
         except BaseException:
             self._connection.close()
             raise
