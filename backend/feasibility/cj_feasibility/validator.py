@@ -10,6 +10,8 @@ from hashlib import sha256
 import json
 from zoneinfo import ZoneInfo
 
+from .time_checks import known as _known, instant as _instant, overlaps as _overlaps
+
 from cj_needs.domain import (Command, InvalidInput, Revision, Snapshot, decode,
                              identifier, validate_fields)
 
@@ -112,31 +114,6 @@ def _evidence(fields, sources, *paths):
     return tuple(out)
 
 
-def _known(value):
-    return value['value'] if isinstance(value, dict) and value.get('state') == 'known' else None
-
-
-def _instant(event, path):
-    missing = tuple(f'{path}.{key}' for key in ('date', 'time', 'timezone')
-                    if _known(event[key]) is None)
-    if missing:
-        return None, missing, 'incomplete'
-    wall = datetime.fromisoformat(_known(event['date']) + 'T' + _known(event['time']))
-    zone = ZoneInfo(_known(event['timezone']))
-    instants = set()
-    for fold in (0, 1):
-        aware = wall.replace(tzinfo=zone, fold=fold)
-        try:
-            utc = aware.astimezone(timezone.utc)
-            if utc.astimezone(zone).replace(tzinfo=None) == wall:
-                instants.add(utc)
-        except OverflowError:
-            return None, (f'{path}.representable_instant',), 'out_of_range'
-    if len(instants) != 1:
-        return None, (f'{path}.unambiguous_instant',), 'ambiguous' if instants else 'nonexistent'
-    return instants.pop(), (), 'unique'
-
-
 def _report(snapshot, checks):
     status = ('INVALID' if any(c.status == 'INVALID' for c in checks) else
               'CONFLICT' if any(c.status == 'CONFLICT' for c in checks) else 'UNKNOWN')
@@ -208,7 +185,7 @@ def evaluate(snapshot: Snapshot, revisions: tuple[Revision, ...]) -> Report:
                 intervals.append((i, item, start, end))
     for n, (i, a, start, end) in enumerate(intervals):
         for j, b, bs, be in intervals[n + 1:]:
-            if start >= be or bs >= end:
+            if not _overlaps(start, end, bs, be):
                 continue
             sa, sb = set(a['applies_to']), set(b['applies_to'])
             shared = bool(sa & sb) or 'party' in sa or 'party' in sb
