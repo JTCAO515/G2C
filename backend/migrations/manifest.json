@@ -146,6 +146,14 @@
       "sha256": "b780b3fcc21108e2c4aaf3bada4238b855e1fef024efb79963992f0c2b62913b",
       "down": "backend/migrations/down/0018_travel_context.down.sql",
       "down_sha256": "ed994bd087af9a0844b74cc6956a85b09541096dc0a9d7403c7437d6160426f6"
+    },
+    {
+      "version": 19,
+      "name": "memory_edit",
+      "file": "backend/migrations/0019_memory_edit.sql",
+      "sha256": "8599f43b5881d3fa98d737252821b6714105b5ff25bb2b217f7ad4afe89a2fdb",
+      "down": "backend/migrations/down/0019_memory_edit.down.sql",
+      "down_sha256": "b96891f74e5520c5ada2a665d487a83d7e0cef687f0ab0ac1acf5718987394d2"
     }
   ]
 }

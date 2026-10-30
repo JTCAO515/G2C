@@ -16,7 +16,10 @@ class MemoryManagementBoundary(MemoryBoundary):
     def _service_type(self):
         return self.modules['cj_memory_management.guarded'].GuardedService
     def _command(self, kind, argument):
-        return self.modules['cj_memory_management.domain'].Action.parse(argument) if kind=='save' else None
+        if kind != 'save':
+            return None
+        from cj_memory_management.edit import parse_action
+        return parse_action(argument)
     def _context_value(self, context, kind, argument):
         if kind=='save':return context.apply(argument)
         if kind=='query':return context.query(argument)
@@ -36,3 +39,19 @@ def _candidate_boundary_from_checker(*,environment,checker,resolve_binding):
 def create_memory_management_app(*,configuration,environment,jwt_configuration,verification_keys,access_provider,resolve_binding):
     # No wire flag, host boolean, environment variable or checker can bypass pending gates.
     raise CompositionUnavailable('CJ019 a7 / CJ011 0045 independent gates pending; lifecycle factory closed')
+
+
+def create_local_edit_management_app(*, configuration, environment, jwt_configuration,
+                                     verification_keys, access_provider, resolve_binding):
+    """Explicit local-only C1 factory; the legacy pending factory stays closed."""
+    from .memory_boundary import build_memory_boundary
+    if type(configuration) is not MemoryManagementConfiguration:
+        raise CompositionUnavailable('explicit bounded management configuration required')
+    canonical = build_memory_boundary(environment=environment, jwt_configuration=jwt_configuration,
+        verification_keys=verification_keys, access_provider=access_provider,
+        resolve_binding=resolve_binding, source_policy=_existing_source_only)
+    boundary = MemoryManagementBoundary(canonical.checker, resolve_binding, _existing_source_only,
+                                         _internal_modules('memory_management'))
+    from .app import create_app
+    return create_app(_memory_management_boundary=boundary,
+                      _memory_management_configuration=configuration)
