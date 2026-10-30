@@ -216,3 +216,22 @@ A simulator SDK build is not simulator UI, VoiceOver, real App or physical-devic
 acceptance. SwiftUI task cancellation is cooperative; state ownership is rechecked
 separately so a canceled original-action read returns to unknown instead of staying
 busy ([Apple task cancellation](https://developer.apple.com/documentation/swift/task/cancel())).
+
+
+## PLACE@1.0 read-only data consumption (#266 L0)
+
+`PlaceResultV1.decode` consumes only `PLACE-result.1` from the frozen B contract.
+The schema and observed states are closed: missing/unknown/empty/null do not become
+zero coordinates, an address, an official translation or a different coordinate
+role. Decimal strings and exact original UTF8 are retained; JSON integer grammar
+is checked from original tokens, with no floating conversion. Source offset/fold
+and microsecond ordering are preserved. All validation is at this external data
+boundary; the resulting immutable values grant no AUTH, freshness, adoption or
+execution permission.
+
+The local golden resource is an exact SHA256-pinned copy of
+`contracts/place/v1-examples.json`; every value is synthetic. Positive and actual
+malformed-input decoding tests cover the contract's negative notes and producer
+vectors. This supplies no PLACE transport or tool dispatch and proves **L0 only**.
+#266/#21 PLACE/map L1 stays UNRUN until #265's actual producer is delivered; the
+legacy projection and current TRIP path remain unchanged.
