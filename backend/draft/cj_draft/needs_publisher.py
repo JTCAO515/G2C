@@ -20,12 +20,15 @@ class NeedsDraftPublisher:
         before,_=capture.records()
         return list(messages)+[dict(role='system',content=json.dumps(dict(version='TRIP-source-input.1',
             needs_id=before.needs_id,revision=before.version,fields=before.fields),ensure_ascii=False,separators=(',',':')))]
+    def build_plan(self,raw,capture):return build(raw,capture)
+    def check_trip_context(self,cur,binding,capture):return None
+    def retain_trip_context(self,cur,proposal,binding,capture):return None
     def publish_for_message(self,binding,original,current,reply,capture,*,before_publish=None):
         self.source.check(binding,capture)
         if (current is None or current!=original or capture.binding!=binding
                 or self.repository.scope!=trip_scope_for(binding.scope) or before_publish is None):
             raise DraftRejected('original publication authority unavailable')
-        try:content,candidate,report=build(reply.encode('utf8'),capture)
+        try:content,candidate,report=self.build_plan(reply.encode('utf8'),capture)
         except (ValueError,UnicodeError):raise DraftRejected('source-bound structured plan rejected') from None
         now=self.clock()
         proposal=Proposal(proposal_id_for(binding.run_id),'trip-'+binding.run_id,0,
@@ -36,6 +39,7 @@ class NeedsDraftPublisher:
             before_publish()  # Original final deadline remains last, no SQL after it.
         with self.repository.transaction(before_commit=final) as cur:
             self.source.check(binding,capture)
+            self.check_trip_context(cur,binding,capture)
             digest=self.repository._publish_in_tx(cur,proposal)
             cur.execute('SELECT source_sha256,proposed_input FROM cj_trip_needs_basis WHERE scope=%s AND proposal_id=%s',
                         (self.repository.scope,proposal.proposal_id))
@@ -46,4 +50,5 @@ class NeedsDraftPublisher:
                 cur.execute('INSERT INTO cj_trip_needs_basis(scope,proposal_id,message_scope,run_id,needs_scope,needs_id,needs_version,source_input,source_sha256,proposed_input) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
                     (self.repository.scope,proposal.proposal_id,binding.scope,binding.run_id,value['needs_scope'],
                      value['needs_id'],value['revision'],capture.raw,sha256(capture.raw).hexdigest(),candidate.content))
+            self.retain_trip_context(cur,proposal,binding,capture)
         return Draft(proposal.proposal_id,proposal.trip_id,digest)
