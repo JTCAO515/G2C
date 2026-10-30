@@ -24,7 +24,8 @@ STANDALONE = ('fact/tests/check_examples.py', 'fact/tests/independent_overflow_c
               'place/tests/trip_projection_checks.py', 'run/tests/display_projected_checks.py',
               'run/tests/display_snapshot_checks.py', 'run/tests/original_usage_read_checks.py',
               'run/tests/usage_boundary_probe.py', 'run/tests/usage_composition_checks.py',
-              'usage/tests/protected_status_checks.py', 'memory/tests/binding_checks.py')
+              'usage/tests/protected_status_checks.py', 'memory/tests/binding_checks.py',
+              'memory/tests/typed_unit.py')
 # Modules without a __main__ runner.
 STANDALONE_MODULES = (('message/tests', 'history_context_tests'),)
 CONTRACT_SCRIPTS = ('scripts/check_contract.py', 'contracts/auth/check.py', 'contracts/auth/check_email.py',

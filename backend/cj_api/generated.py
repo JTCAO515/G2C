@@ -2181,3 +2181,206 @@ class RunTravelCancellationResponse(BaseModel):
     event_highwater: conint(ge=1, le=9223372036854775807)
     version: Version13
     reference: MessageTravelReference
+
+
+class MemoryTravelSelectionV2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['travel']
+    id: constr(pattern=r'^[0-9a-f]{32}$')
+    expected_version: conint(ge=1, le=9223372036854775807)
+
+
+class Kind8(StrEnum):
+    legacy = 'legacy'
+    travel = 'travel'
+
+
+class MemoryStoredContextV2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind8
+    id: constr(min_length=1, max_length=4096)
+    expected_version: conint(ge=1, le=9223372036854775807) | None
+
+
+class Kind9(StrEnum):
+    fact = 'fact'
+    experience = 'experience'
+    preference = 'preference'
+    inference = 'inference'
+
+
+class MemoryManualSaveV2Command(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    operation_id: constr(min_length=1, max_length=4096)
+    item_id: constr(min_length=1, max_length=4096)
+    subject: constr(min_length=1, max_length=4096)
+    slot: constr(min_length=1, max_length=4096)
+    text: constr(min_length=1, max_length=4096)
+    occurred_at: constr(min_length=1, max_length=4096)
+    kind: Kind9
+    extent: Extent
+    version: Literal['MEMORY-manual.2']
+    context: MemoryTravelSelectionV2 | None
+
+
+class MemoryStoredCommandV2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    operation_id: constr(min_length=1, max_length=4096)
+    item_id: constr(min_length=1, max_length=4096)
+    subject: constr(min_length=1, max_length=4096)
+    slot: constr(min_length=1, max_length=4096)
+    text: constr(min_length=1, max_length=4096)
+    source_id: constr(min_length=1, max_length=4096)
+    occurred_at: constr(min_length=1, max_length=4096)
+    kind: Kind9
+    extent: Extent
+    source_version: conint(ge=1, le=9223372036854775807)
+    context: MemoryStoredContextV2 | None
+
+
+class Status16(StrEnum):
+    active = 'active'
+    candidate = 'candidate'
+    disabled = 'disabled'
+    withdrawn = 'withdrawn'
+
+
+class MemoryItemV2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    command: MemoryStoredCommandV2
+    version: conint(ge=1, le=9223372036854775807)
+    status: Status16
+    recorded_at: AwareDatetime
+
+
+class Operation5(StrEnum):
+    pause = 'pause'
+    resume = 'resume'
+
+
+class MemoryStatusActionV2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(min_length=1, max_length=4096)
+    operation: Operation5
+    item_id: constr(min_length=1, max_length=4096)
+    expected_version: conint(ge=1, le=9223372036854775807)
+    expected_source_version: conint(ge=1, le=9223372036854775807)
+    version: Literal['MEMORY-management.2']
+
+
+class MemoryEditActionV2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(min_length=1, max_length=4096)
+    operation: Literal['edit']
+    item_id: constr(min_length=1, max_length=4096)
+    expected_version: conint(ge=1, le=9223372036854775807)
+    expected_source_version: conint(ge=1, le=9223372036854775807)
+    version: Literal['MEMORY-management.2']
+    text: constr(min_length=1, max_length=4096)
+    context: MemoryTravelSelectionV2 | None
+
+
+class MemoryManagementActionV2(RootModel[MemoryStatusActionV2 | MemoryEditActionV2]):
+    root: MemoryStatusActionV2 | MemoryEditActionV2
+
+
+class Operation6(StrEnum):
+    withdraw = 'withdraw'
+
+
+class MemoryStopUseActionV2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(min_length=1, max_length=4096)
+    operation: Operation6
+    item_id: constr(min_length=1, max_length=4096)
+    expected_version: conint(ge=1, le=9223372036854775807)
+    expected_source_version: conint(ge=1, le=9223372036854775807)
+    version: Literal['MEMORY-STOP-USE@2']
+    source_id: constr(min_length=1, max_length=4096)
+
+
+class Status17(StrEnum):
+    active = 'active'
+    disabled = 'disabled'
+    withdrawn = 'withdrawn'
+
+
+class MemoryManagementReceiptV2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(min_length=1, max_length=4096)
+    item_id: constr(min_length=1, max_length=4096)
+    version: conint(ge=1, le=9223372036854775807)
+    status: Status17
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+
+
+class MemorySaveV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Literal['MEMORY-result.2']
+    request_id: RequestId
+    receipt: MemoryReceipt
+
+
+class MemoryReceiptV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Literal['MEMORY-result.2']
+    request_id: RequestId
+    receipt: MemoryReceipt | None
+
+
+class MemoryDetailV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Literal['MEMORY-result.2']
+    request_id: RequestId
+    item: MemoryItemV2 | None
+
+
+class MemoryListV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Literal['MEMORY-result.2']
+    request_id: RequestId
+    items: list[MemoryItemV2] = Field(..., max_length=100)
+
+
+class MemoryManagementApplyV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Literal['MEMORY-result.2']
+    request_id: RequestId
+    receipt: MemoryManagementReceiptV2
+
+
+class MemoryManagementReceiptV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Literal['MEMORY-result.2']
+    request_id: RequestId
+    receipt: MemoryManagementReceiptV2 | None

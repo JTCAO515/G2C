@@ -59,6 +59,19 @@ class OperationContext:
         self._check()
         return self._service.query(operation_id)
 
+    def save_manual_typed(self, raw, authority=None):
+        self._check()
+        if self._state['operation_id'] is not None:
+            raise RuntimeError('one save per operation context')
+        from .typed import parse_manual
+        command = parse_manual(raw)
+        self._state['operation_id'] = command.operation_id
+        self._state['writing'] = True
+        try:
+            return self._service.save_manual_typed(raw, authority, self._state['principal'])
+        finally:
+            self._state['writing'] = False
+
     def groups(self):
         self._check()
         return self._service.groups()
@@ -89,6 +102,12 @@ class OperationContext:
         from .consumption import consume_current
         return consume_current(self._service, self._state, subject, context_id,
                                consumer, max_result_bytes=max_result_bytes)
+
+    def consume_current_typed(self,subject,context,consumer,*,max_result_bytes):
+        self._check()
+        from .consumption import consume_current_typed
+        return consume_current_typed(self._service,self._state,subject,context,consumer,
+                                     max_result_bytes=max_result_bytes)
 
     def effective(self, subject, context_id=None):
         self._check()
@@ -126,6 +145,7 @@ def with_operation(service, guard, operation):
                 raise ValueError('invalid trusted binding')
             if bound is None:
                 bound = current
+                state['principal'] = current[0]
             elif current != bound:
                 raise ValueError('binding changed')
         except BaseException:
@@ -134,6 +154,8 @@ def with_operation(service, guard, operation):
             raise OperationWithheld(stage, state['operation_id'], state['commit_possible']) from None
 
     class GuardedRepository:
+        scope = repository.scope
+
         @contextmanager
         def transaction(self):
             check('transaction')

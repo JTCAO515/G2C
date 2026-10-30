@@ -3238,6 +3238,435 @@
           }
         ]
       }
+    },
+    "/v2/memories": {
+      "post": {
+        "operationId": "saveTypedMemory",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemorySaveV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact original UTF8 JSON conforming to MemoryManualSaveV2Command; application/octet-stream, local runtime only. Preserve original ID/bytes; no owner/source approval, automatic resend or context reinterpretation.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listTypedMemories",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryListV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        ]
+      }
+    },
+    "/v2/memory-items": {
+      "get": {
+        "operationId": "getTypedMemoryItem",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryDetailV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        ]
+      }
+    },
+    "/v2/memory-receipts": {
+      "get": {
+        "operationId": "getTypedMemoryReceipt",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryReceiptV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        ]
+      }
+    },
+    "/v2/memory-management-actions": {
+      "post": {
+        "operationId": "applyTypedMemoryManagement",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryManagementApplyV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact original UTF8 JSON conforming to MemoryManagementActionV2; application/octet-stream, local runtime only. Preserve original ID/bytes; no owner/source approval, automatic resend or context reinterpretation.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/memory-withdrawal-actions": {
+      "post": {
+        "operationId": "applyTypedMemoryStopUse",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryManagementApplyV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact original UTF8 JSON conforming to MemoryStopUseActionV2; application/octet-stream, local runtime only. Preserve original ID/bytes; no owner/source approval, automatic resend or context reinterpretation.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/memory-management-receipts": {
+      "get": {
+        "operationId": "getTypedMemoryManagementReceipt",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryManagementReceiptV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        ],
+        "description": "Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates."
+      }
     }
   },
   "components": {
@@ -8084,6 +8513,674 @@
           }
         },
         "description": "Original RUN terminal observed after a durable cancellation transaction. Existing terminals are retained. Prior text/effects remain readable through their original ledgers. Does not claim rollback/refund or physical abortion of an already-started provider request."
+      },
+      "MemoryTravelSelectionV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id",
+          "expected_version"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "travel"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          }
+        }
+      },
+      "MemoryStoredContextV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id",
+          "expected_version"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "legacy",
+              "travel"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "expected_version": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "legacy"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "expected_version": {
+                  "type": "null"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "expected_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9223372036854775807
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MemoryManualSaveV2Command": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "item_id",
+          "subject",
+          "slot",
+          "text",
+          "occurred_at",
+          "kind",
+          "extent",
+          "version",
+          "context"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "slot": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "occurred_at": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "experience",
+              "preference",
+              "inference"
+            ]
+          },
+          "extent": {
+            "type": "string",
+            "enum": [
+              "long_term",
+              "current"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "const": "MEMORY-manual.2"
+          },
+          "context": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemoryTravelSelectionV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "MEMORY-manual.2 exact original UTF8. Long-term context null; current requires genuine B-owned active travel/version lease. Server scope/source/approval/status are never client fields.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "extent": {
+                  "const": "long_term"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "context": {
+                  "type": "null"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "context": {
+                  "$ref": "#/components/schemas/MemoryTravelSelectionV2"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MemoryStoredCommandV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "item_id",
+          "subject",
+          "slot",
+          "text",
+          "source_id",
+          "occurred_at",
+          "kind",
+          "extent",
+          "source_version",
+          "context"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "slot": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "occurred_at": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "experience",
+              "preference",
+              "inference"
+            ]
+          },
+          "extent": {
+            "type": "string",
+            "enum": [
+              "long_term",
+              "current"
+            ]
+          },
+          "source_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "context": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemoryStoredContextV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "Strict exact-key original UTF8 JSON carried as octet-stream (maximum 32768 bytes, host may choose smaller). References are not authorization. Host validates canonical subject/slot/context/source; no owner, approval or policy fields. long_term requires context_id=null; current requires explicit validated nonempty context."
+      },
+      "MemoryItemV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command",
+          "version",
+          "status",
+          "recorded_at"
+        ],
+        "properties": {
+          "command": {
+            "$ref": "#/components/schemas/MemoryStoredCommandV2"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "candidate",
+              "disabled",
+              "withdrawn"
+            ]
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MemoryStatusActionV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "operation",
+          "item_id",
+          "expected_version",
+          "expected_source_version",
+          "version"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "pause",
+              "resume"
+            ]
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "expected_source_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "version": {
+            "type": "string",
+            "const": "MEMORY-management.2"
+          }
+        },
+        "description": "Exact five-key immutable UTF8 JSON; no trimming/normalization/re-encoding; pause/resume only. Existing source approval remains canonical; no text edit, candidate promotion or new approval."
+      },
+      "MemoryEditActionV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "operation",
+          "item_id",
+          "expected_version",
+          "expected_source_version",
+          "version",
+          "text",
+          "context"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "operation": {
+            "type": "string",
+            "const": "edit"
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "expected_source_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "version": {
+            "type": "string",
+            "const": "MEMORY-management.2"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "context": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemoryTravelSelectionV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "Exact five-key immutable UTF8 JSON; no trimming/normalization/re-encoding; pause/resume only. Existing source approval remains canonical; no text edit, candidate promotion or new approval."
+      },
+      "MemoryManagementActionV2": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MemoryStatusActionV2"
+          },
+          {
+            "$ref": "#/components/schemas/MemoryEditActionV2"
+          }
+        ]
+      },
+      "MemoryStopUseActionV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "operation",
+          "item_id",
+          "expected_version",
+          "expected_source_version",
+          "version",
+          "source_id"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "withdraw"
+            ]
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "expected_source_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "version": {
+            "type": "string",
+            "const": "MEMORY-STOP-USE@2"
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "description": "MEMORY-STOP-USE@1. Stop using the complete server-enumerated source history only; no deletion or cleanup. Exact original immutable UTF8 bytes, canonical scope/CAS/epoch and original action receipt."
+      },
+      "MemoryManagementReceiptV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "item_id",
+          "version",
+          "status",
+          "input_sha256"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "disabled",
+              "withdrawn"
+            ]
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "description": "Historical original lifecycle receipt. action_id is canonical Receipt.operation_id; hash comes from persisted original action bytes, not request recomputation."
+      },
+      "MemorySaveV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "MEMORY-result.2"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/MemoryReceipt"
+          }
+        }
+      },
+      "MemoryReceiptV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "MEMORY-result.2"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemoryReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MemoryDetailV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "request_id",
+          "item"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "MEMORY-result.2"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "item": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemoryItemV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MemoryListV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "request_id",
+          "items"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "MEMORY-result.2"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemoryItemV2"
+            },
+            "maxItems": 100
+          }
+        }
+      },
+      "MemoryManagementApplyV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "MEMORY-result.2"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/MemoryManagementReceiptV2"
+          }
+        }
+      },
+      "MemoryManagementReceiptV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "MEMORY-result.2"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemoryManagementReceiptV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
       }
     },
     "securitySchemes": {

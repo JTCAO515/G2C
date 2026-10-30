@@ -138,8 +138,11 @@ class StopUseCases:
             original=self.raw();self.assertEqual(self.save(api,original).status_code,200)
             raw=self.stop_action(self.service().detail(json.loads(original)['item_id']));self.stop(raw)
             with psycopg.connect(**json.loads(Path(CONNINFO).read_text()),autocommit=True) as conn:
-                with self.assertRaises(psycopg.errors.RaiseException):migrate.down(conn,migrate.load(),19)
-                self.assertEqual(migrate.applied(conn)[-1],20)
+                chain=migrate.load()
+                stop_migration=next(m for m in chain if m['name']=='memory_stop_use')
+                with self.assertRaises(psycopg.errors.RaiseException):
+                    with conn.transaction():conn.execute((migrate.ROOT/stop_migration['down']).read_text())
+                self.assertEqual(migrate.applied(conn)[-1],chain[-1]['version'])
             self.assertEqual(self.stopped_receipt(raw)['status'],'withdrawn')
 
     def test_lifecycle_changes_stop_actual_inflight_worker(self):

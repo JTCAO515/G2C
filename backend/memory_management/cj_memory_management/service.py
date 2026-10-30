@@ -1,19 +1,25 @@
 """Trusted domain-only lifecycle entry. HTTP/AUTH composition is not wired here."""
-from cj_memory.domain import CommitUnknown, Conflict, InvalidInput
+from cj_memory.domain import CommitUnknown, Conflict, InvalidInput, Unavailable
 from .domain import Action
 from .edit import Edit, parse_action
 from .postgres import Transaction
 
 
-def apply_in_transaction(transaction, action, policy=None):
+def apply_in_transaction(transaction, action, policy=None, before_change=None):
     """Consume the provided public transaction; never connect or commit here."""
-    tx = Transaction(transaction.cur, transaction.scope)
+    tx = Transaction(transaction.cur, transaction.scope,typed_context=transaction.typed_context)
     tx.lock_scope()
     stored = tx.action(action.action_id)
     if stored is not None:
         if stored[0] != action.raw:
             raise Conflict('action bytes differ')
         return stored[1]
+    from .typed import TypedEdit,TypedAction,TypedStopUse
+    if isinstance(action,(TypedEdit,TypedAction,TypedStopUse)) and not tx.typed_context:
+        raise Unavailable('typed lifecycle storage not enabled')
+    if isinstance(action,TypedEdit) and before_change is None:
+        raise Unavailable('typed edit current-context check not installed')
+    if before_change is not None:before_change(action)
     from cj_memory_withdrawal.stop_use import StopUse, withdraw
     if isinstance(action, StopUse):
         return withdraw(tx, action)
@@ -23,7 +29,7 @@ def apply_in_transaction(transaction, action, policy=None):
 def query_in_transaction(transaction, action_id):
     if type(action_id) is not str or not action_id.strip() or len(action_id) > 4096:
         raise InvalidInput('invalid action ID')
-    tx = Transaction(transaction.cur, transaction.scope)
+    tx = Transaction(transaction.cur, transaction.scope,typed_context=transaction.typed_context)
     tx.lock_scope()
     stored = tx.action(action_id)
     return stored[1] if stored is not None else None

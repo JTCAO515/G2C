@@ -28,6 +28,7 @@ from cj_auth.interfaces import AdmissionStatus
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_memory.local_runtime import load_runtime_configuration
 from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
+from cj_memory.typed_runtime import TypedRuntimeConfiguration
 import dev_auth
 from cj_message.domain import Service as MessageService
 from cj_run.core import Service as RunService, Denied
@@ -70,14 +71,14 @@ class InvitedProvider:
 
 
 def require_memory_configuration(database, scope, configuration):
-    if database.travel_profile(scope):
-        with database.connect(scope) as conn:
-            if conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s',(scope,)).fetchone():
-                raise RuntimeDenied('typed travel memory consumer is not installed')
-    if configuration is None:
-        with database.connect(scope) as conn:
-            if conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s', (scope,)).fetchone():
-                raise RuntimeDenied('existing memory requires explicit runtime configuration')
+    typed=type(configuration) is TypedRuntimeConfiguration
+    travel=database.travel_profile(scope)
+    if travel and configuration is not None and not typed:
+        raise RuntimeDenied('travel execution requires explicit typed memory configuration')
+    with database.connect(scope) as conn:
+        exists=conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s',(scope,)).fetchone() is not None
+    if exists and configuration is None:
+        raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
 def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None):
@@ -97,12 +98,10 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 decision.principal.issuer, decision.principal.subject) != scope:
             raise RuntimeDenied('memory admission denied')
         return decision.principal
-    memory = (memory_configuration.bind(database, scope, subject, memory_admit)
-              if memory_configuration is not None else None)
     message_context=None
-    if database.travel_profile(scope):
+    if database.travel_profile(scope) or type(memory_configuration) is TypedRuntimeConfiguration:
         from cj_message.travel_reference import MessageContextAuthority
-        credential=token()
+        credential=memory_credential if type(memory_configuration) is TypedRuntimeConfiguration else token()
         def travel_admit():
             decision=checker.check(credential)
             if decision.status is AdmissionStatus.UNKNOWN:
@@ -112,6 +111,11 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 raise Denied('travel admission denied')
             return decision.principal
         message_context=MessageContextAuthority(database.message_repository(scope),travel_admit)
+    if type(memory_configuration) is TypedRuntimeConfiguration:
+        memory=memory_configuration.bind(database,scope,subject,memory_admit,message_context=message_context)
+    else:
+        memory=(memory_configuration.bind(database,scope,subject,memory_admit)
+                if memory_configuration is not None else None)
     def valid(binding, messages=messages, subject=subject, token=token):
         if message_context is not None:
             return message_context.valid(binding)
