@@ -36,9 +36,23 @@ import Foundation
     }
     private func text(_ id: String,contains expected: String) {
         let label = app.staticTexts.matching(identifier:id).firstMatch
+        if id.hasPrefix("memory2.manage.review.") {
+            // Form creates offscreen sections lazily. Reveal the actual reviewed
+            // content before asserting it; no confirmation POST precedes this.
+            for _ in 0..<25 {
+                if label.exists && label.isHittable { break }
+                if label.exists && label.frame.midY < app.frame.midY {app.swipeDown()}
+                else {app.swipeUp()}
+            }
+            XCTAssertTrue(label.isHittable,"Expected visible review: " + id)
+        }
         XCTAssertTrue(label.waitForExistence(timeout:15),id)
         let value = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",expected),object:label)
-        XCTAssertEqual(XCTWaiter.wait(for:[value],timeout:30),.completed,id + " actual=" + label.label)
+        let result = XCTWaiter.wait(for:[value],timeout:30)
+        if result != .completed {
+            let image = XCTAttachment(screenshot:app.screenshot());image.name = "failed-" + id;image.lifetime = .keepAlways;add(image)
+        }
+        XCTAssertEqual(result,.completed,id + " actual=" + label.label)
     }
     private func back() {
         let target = app.navigationBars.firstMatch.buttons.firstMatch
