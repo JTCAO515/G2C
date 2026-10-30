@@ -21,6 +21,10 @@ class TripTimeReport:
 
 def evaluate(content:bytes):
     """Result checks explicit declarations only, never authority or real feasibility."""
+    return _evaluate(content,validate_document,VERSION)
+
+
+def _evaluate(content,validate_document,version):
     if type(content) is not bytes or not 0 < len(content) <= 1_000_000:
         raise ValueError('bounded immutable Trip bytes required')
     document=json.loads(content)
@@ -55,4 +59,4 @@ def evaluate(content:bytes):
     checks.append(Check('OVERALL_EVIDENCE_INCOMPLETE','UNKNOWN',(),('authorized_NEEDS','route','budget'),
         '时间结构不代表整体行程可行。','Temporal structure does not prove overall trip feasibility.'))
     return TripTimeReport('CONFLICT' if any(c.status=='CONFLICT' for c in checks) else 'UNKNOWN',
-                          tuple(checks),sha256(content).hexdigest())
+                          tuple(checks),sha256(content).hexdigest(),version)

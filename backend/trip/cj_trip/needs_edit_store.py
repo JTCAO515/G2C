@@ -12,6 +12,8 @@ from cj_feasibility.proposed import evaluate
 
 def checked(original,request,source,previous_fields):
     candidate=prepare(original,request.edit)
+    from cj_feasibility.trip_time_v2 import evaluate as evaluate_time
+    if evaluate_time(candidate.content).status=='CONFLICT':raise Conflict('explicit Trip time conflict')
     before,revisions=source.records()
     if before.needs_id!=request.needs_id or before.version!=request.needs_version:raise Denied('original current source mismatch')
     fields=deepcopy(before.fields);old={v['item_id']:v for v in fields.get('fixed_items',[])}
