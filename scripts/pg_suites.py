@@ -345,9 +345,14 @@ def group_needs_runtime():
     return script('backend/cj_api/tests/needs_runtime_pg.py')
 
 
+def group_feasibility_runtime():
+    return _fresh_runtime_check('feasibility_runtime',55498,'cj281_runtime',
+        f'/tmp/cj281-runtime-{os.getpid()}','backend/feasibility/tests/runtime_pg.py')
+
+
 GROUPS = {'e2e': group_e2e, 'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners,
-          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema, 'local_run_host': group_local_run_host, 'registered_usage_schema': group_registered_usage_schema, 'registered_exit': group_registered_exit, 'memory_run': group_memory_run, 'travel_context': group_travel_context, 'travel_message': group_travel_message, 'place_tool': group_place_tool,'memory_typed': group_memory_typed,'trip_manual': group_trip_manual,'fact_tool': group_fact_tool,'needs_runtime': group_needs_runtime}
+          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema, 'local_run_host': group_local_run_host, 'registered_usage_schema': group_registered_usage_schema, 'registered_exit': group_registered_exit, 'memory_run': group_memory_run, 'travel_context': group_travel_context, 'travel_message': group_travel_message, 'place_tool': group_place_tool,'memory_typed': group_memory_typed,'trip_manual': group_trip_manual,'fact_tool': group_fact_tool,'needs_runtime': group_needs_runtime,'feasibility_runtime': group_feasibility_runtime}
 
 
 def main(argv):
