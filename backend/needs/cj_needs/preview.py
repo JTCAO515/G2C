@@ -65,7 +65,7 @@ def _id(kind,clause):return kind+'-'+sha256(clause.encode('utf8')).hexdigest()[:
 
 def synthetic_extract(source):
     """Limited explicit synthetic statements; not a real-model quality claim."""
-    fields={};unresolved=[];long_term=[];coverage=[];items=[];conditions=[];companions={}
+    fields={};unresolved=[];long_term=[];coverage=[];items=[];conditions=[];companions={};budget_currencies=set()
     def unresolved_field(field,reason,clause):
         unresolved.append(dict(field=field,reason=reason,original_text=clause))
     for clause in re.split(r'[;；。\n]',source):
@@ -82,6 +82,7 @@ def synthetic_extract(source):
         budget=re.match(r'(?i)(?:budget|预算)\s*(USD|CNY|EUR)\s*(\d+(?:\.\d+)?)(?![0-9.])(.*)',clause)
         if budget:
             currency,amount,basis=budget.groups()
+            budget_currencies.add(currency.upper())
             fields['budget_currency']=_known(currency.upper())
             per=bool(re.search(r'(?i)per person|每人',basis));total=bool(re.search(r'(?i)\btotal\b|总计',basis))
             if per!=total:
@@ -138,4 +139,9 @@ def synthetic_extract(source):
     if items:fields['fixed_items']=items
     if conditions:fields['temporary_conditions']=conditions
     if companions:fields['companions']=companions
+    if len(budget_currencies)>1:
+        # One snapshot has one currency. Retain the conflicting declarations as
+        # uncertainty, never attach an old amount/paid amount to the latest code.
+        for key in ('budget_currency','budget_total','budget_per_person','budget_paid'):
+            if key in fields:fields[key]=dict(state='uncertain',note=source)
     return encode(dict(version=MODEL_VERSION,fields=fields,unresolved=unresolved,long_term_requests=long_term))

@@ -55,6 +55,17 @@ def test_paid_currency_and_negation_do_not_become_assumed_amounts():
     assert 'budget_paid' not in value['fields'] and 'fixed_items' not in value['fields']
 
 
+@pytest.mark.parametrize('source',[
+    'budget USD 1000 total; budget CNY 200 per person',
+    'budget USD 1000 total; paid USD 200; budget CNY 800 total',
+])
+def test_multiple_budget_currencies_never_relabel_earlier_amounts(source):
+    fields=extract(source)['fields']
+    for key in ('budget_currency','budget_total','budget_per_person','budget_paid'):
+        if key in fields:
+            assert fields[key]=={'state':'uncertain','note':source}
+
+
 @pytest.mark.parametrize('mutation', ['owner','source','clarification','known-question','memory'])
 def test_model_cannot_supply_authority_or_unbound_sources(mutation):
     source='budget USD 1000 total'
