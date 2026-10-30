@@ -242,9 +242,25 @@ import Foundation
         let f = try await prepare("rejected"); defer { app?.terminate() }
         try launch(f, language: "en")
         save("blocked", text: "Synthetic denied collection", language: "en")
-        waitStatus("Save not confirmed"); capture("real-policy-rejected")
+        waitStatus("Save rejected"); capture("real-policy-rejected")
         try audit("MEMORY_REJECTED")
         try await query(f, "rejected")
+    }
+    func testRejectedThenNewSave() async throws {
+        let f = try await prepare("rejected_new"); defer { app?.terminate() }
+        try launch(f, language: "en")
+        save("blocked", text: "Synthetic definite refusal before correction", language: "en")
+        waitStatus("Save rejected"); try await query(f, "rejected-new-before")
+        capture("definite-refusal-original")
+        app.terminate(); try launch(f, language: "en", restore: true)
+        tap("memory.add"); tap("Read original operations"); tap("Query this original operation")
+        waitStatus("Save rejected", identifier: "memory.original.status")
+        capture("reopened-definite-failure"); back()
+        _ = try await call("/enable-profile", ["case": f.case_id])
+        save("fact", text: "Synthetic distinct new authorized save", language: "en")
+        waitStatus("Saved."); capture("new-action-after-definite-refusal")
+        try audit("MEMORY_NEW_AFTER_REJECTION")
+        try await query(f, "rejected-new-after")
     }
     func testSkipAndChat() async throws {
         let f = try await prepare("skip"); defer { app?.terminate() }

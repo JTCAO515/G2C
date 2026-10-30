@@ -263,6 +263,7 @@ public struct MemoryManagementPresentationLifetime {
         case .saved: .saved
         case .candidate: .candidate
         case .notObserved: .notObserved
+        case .rejected: .rejected
         }
     }
     public func submitManual(_ command: Components.Schemas.MemoryManualSaveCommand, context: MemoryContainerAction?) async throws -> MemorySaveResult {
@@ -292,7 +293,8 @@ public struct MemoryManagementPresentationLifetime {
         } catch {
             if owns(context.binding, token) {
                 switch error {
-                case MemoryFailure.rejected, MemoryFailure.pendingRequiresQuery: saveValue = .failed
+                case MemoryFailure.rejected: saveValue = .rejected
+                case MemoryFailure.pendingRequiresQuery: saveValue = .failed
                 default: saveValue = .unknown
                 }
                 busy = false

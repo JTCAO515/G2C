@@ -60,6 +60,20 @@ protocol MemoryJournalRecord: Codable {
 }
 extension MemoryPending: MemoryJournalRecord { var journalID: String { operationID } }
 
+// A separate encrypted record preserves the immutable manual journal and old readers.
+struct MemoryRejectedOperation: MemoryJournalRecord {
+    let original: MemoryPending
+    let status: Int
+    let code: String
+    var journalID: String { original.operationID }
+    var originalUTF8: Data { original.originalUTF8 }
+    var expectedSHA256: String { original.expectedSHA256 }
+    func validate() throws {
+        try original.validate()
+        guard (400...599).contains(status), memoryText(code) else { throw MemoryFailure.invalidResponse }
+    }
+}
+
 /// Immutable, exclusive encrypted records. Reopening grants query only; no resend/delete API.
 @MainActor final class MemoryEncryptedRecords<Record: MemoryJournalRecord> {
     private let root: URL
@@ -96,6 +110,17 @@ extension MemoryPending: MemoryJournalRecord { var journalID: String { operation
         self.namespace = namespace; self.keyID = keyID; self.key = key; self.domain = domain
     }
     deinit { close(directory) }
+    func adjacentRecords<Other: MemoryJournalRecord>(domain: String, create: Bool) throws -> MemoryEncryptedRecords<Other>? {
+        try validateDirectory()
+        let target = root.appendingPathExtension(domain)
+        if !FileManager.default.fileExists(atPath: target.path) {
+            guard create else { return nil }
+            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false,
+                                                    attributes: [.posixPermissions: 0o700])
+        }
+        return try MemoryEncryptedRecords<Other>(directory: target, maximumBytes: maximumBytes,
+            maximumRecords: maximumRecords, namespace: namespace, keyID: keyID, domain: domain, key: key)
+    }
     func validate(_ binding: MemoryBinding) throws {
         guard namespace.environment == binding.environment, namespace.account == binding.account,
               namespace.purpose == .localMemoryPendingV1 else { throw MemoryFailure.staleBinding }
@@ -184,5 +209,20 @@ extension MemoryPending: MemoryJournalRecord { var journalID: String { operation
     func validateDirectory() throws { try storage.validateDirectory() }
     func append(_ pending: MemoryPending, validateBinding: () throws -> Void = {}) throws { try storage.append(pending, validateBinding: validateBinding) }
     func requireOriginal(_ expected: MemoryPending) throws { try storage.requireOriginal(expected) }
+    func rejection(for original: MemoryPending) throws -> MemoryRejectedOperation? {
+        let records: MemoryEncryptedRecords<MemoryRejectedOperation>? = try storage.adjacentRecords(domain: "CJMemoryRejections", create: false)
+        guard let record = try records?.pending().first(where: { same($0.journalID, original.operationID) }) else { return nil }
+        guard record.originalUTF8 == original.originalUTF8, record.expectedSHA256 == original.expectedSHA256 else {
+            throw MemoryFailure.storageUnavailable
+        }
+        return record
+    }
+    func recordRejection(_ original: MemoryPending, status: Int, code: String, validateBinding: () throws -> Void) throws {
+        try storage.requireOriginal(original)
+        guard let records: MemoryEncryptedRecords<MemoryRejectedOperation> = try storage.adjacentRecords(domain: "CJMemoryRejections", create: true) else {
+            throw MemoryFailure.storageUnavailable
+        }
+        try records.append(MemoryRejectedOperation(original: original, status: status, code: code), validateBinding: validateBinding)
+    }
     public func pending() throws -> [MemoryPending] { try storage.pending() }
 }
