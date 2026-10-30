@@ -212,6 +212,9 @@ def main():
                     with TestClient(apps['read']) as api:
                         for item in row['initial']:
                             denied=api.get('/v1/memory-items',params={'item_id':item['command']['item_id']},headers={'Authorization':'Bearer '+tokens[case]['B']});denied.raise_for_status();assert denied.json()['item'] is None
+                    if case=='testEnglish':
+                        for original in management[:3]:
+                            assert any(a['host']=='management' and a['path']=='/v1/memory-management-receipts' and a['query'].get('action_id')==[original['original']['action_id']] for a in audit[row['audit_start']:])
                     if case=='testUnknownReopen':
                         assert row['lost_actual_200']
                         assert any(a['host']=='management' and a['path']=='/v1/memory-management-receipts' and a['query'].get('action_id')==[row['last_action']] for a in audit[row['audit_start']:])
@@ -222,7 +225,7 @@ def main():
                         changed=snapshot(case,next(i['command']['item_id'] for i in row['initial'] if i['command']['kind']=='fact'))['command']['text']
                         for index,entry in enumerate(model.inputs):assert (changed in [item['text'] for item in entry['items']])==(index!=2)
                         assert sum(o['status']=='context_invalid' for o in worker_outcomes)==1 and sum(o['status']=='completed' for o in worker_outcomes)==4
-                        assert [m['original']['conversation_id'] for m in messages]==[row['conversations'][0]]*3+[row['conversations'][1],row['conversations'][0]]
+                        assert [m['original']['conversation_id'] for m in messages]==[row['conversations'][0]]*4+[row['conversations'][1]]
                     if case=='testReleaseClosed':assert not audit[row['audit_start']:]
                     value=dict(runtime_role='cj_m1_runtime',formal_worker_cycles=len(worker_cycles),provider_calls=model.calls,provider_inputs=model.inputs,worker_outcomes=worker_outcomes,posts=posts,ledger=[dict(action_id=a,operation=op,item_id=i,version=v,status=s) for a,op,_,i,v,s in ledger],original_sources_unchanged=True,cross_owner_empty=True,
                         items=[snapshot(case,i['command']['item_id']) for i in row['initial']])
@@ -236,6 +239,7 @@ def main():
                             elif path=='/snapshot':value=snapshot(case,query['item_id'][0])
                             elif path=='/verify':value=verify(case)
                             elif path=='/original':value=dict(action_id=records[case]['posts'][-1]['original']['action_id'],sha256=records[case]['posts'][-1]['sha256'])
+                            elif path=='/originals':value=[dict(action_id=p['original']['action_id'],sha256=p['sha256']) for p in records[case]['posts'] if p['host']=='management']
                             elif path=='/concurrent-edit':value=concurrent_edit(case,query['item_id'][0])
                             elif path=='/wait-held':
                                 if not records[case]['captured'].wait(10):raise TimeoutError('actual management response not captured')

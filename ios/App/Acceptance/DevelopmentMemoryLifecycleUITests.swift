@@ -24,6 +24,12 @@ import Foundation
         app.descendants(matching:.any).matching(identifier:id)
             .matching(NSPredicate(format:"elementType == %@",NSNumber(value:XCUIElement.ElementType.button.rawValue))).firstMatch
     }
+    func input(_ id: String) -> XCUIElement {
+        // SwiftUI vertical TextField exposes TextView on 17.5 and TextField on
+        // 26.5. Accept exactly those native input roles for the same stable ID.
+        app.descendants(matching:.any).matching(identifier:id).matching(NSPredicate(format:"elementType IN %@",
+            [NSNumber(value:XCUIElement.ElementType.textView.rawValue),NSNumber(value:XCUIElement.ElementType.textField.rawValue)])).firstMatch
+    }
     func tap(_ id: String, towardTop: Bool = false) {
         let target=button(id)
         if ["Memory","记忆","Assistant","助手","Trips","行程","assistant.panel.done"].contains(id) {
@@ -101,7 +107,7 @@ import Foundation
     }
     func enterEdit(_ text: String) {
         tap("memory.manage.edit")
-        let field=app.textViews["memory.manage.text"]
+        let field=input("memory.manage.text")
         XCTAssertTrue(field.waitForExistence(timeout:10))
         for _ in 0..<30 { if field.isHittable { break };app.swipeUp() }
         XCTAssertTrue(field.isHittable);field.tap();XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:5))
@@ -150,6 +156,20 @@ import Foundation
             back()
         }
         if !large {
+            // Keep all seven original actions, while exercising actual reopen
+            // recovery between the three-kind edits and the lifecycle sequence.
+            let originals=try JSONDecoder().decode([Original].self,from:await call("/originals",["case":f.case_id]))
+            XCTAssertEqual(originals.count,3)
+            try launch(f,language:language,large:false,restore:true)
+            tap("memory.manage.openOriginals",towardTop:true);tap("memory.manage.loadOriginals")
+            let prefix="memory.manage.recoveryQuery."
+            let queries=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@",prefix)).allElementsBoundByIndex.map(\.identifier)
+            XCTAssertEqual(Set(queries),Set(originals.map { prefix+$0.action_id }))
+            for query in queries {
+                tap(query)
+                status("Original action confirmed",id:"memory.manage.recoveryStatus."+String(query.dropFirst(prefix.count)))
+            }
+            back();list(language)
             open(fact.command.item_id);action("memory.manage.pause","Confirm pause",language:language)
             var current=try await refreshed(f,fact.command.item_id,language:language);XCTAssertEqual(current.status,"disabled")
             edit("Edited while paused / 暂停期间编辑",language:language)
@@ -225,7 +245,7 @@ import Foundation
     func send(_ text: String) {
         let intent=app.switches["assistant.intent"]
         if intent.exists && intent.value as? String=="1" { intent.tap() }
-        let field=app.textViews["assistant.draft"];XCTAssertTrue(field.waitForExistence(timeout:10));field.tap()
+        let field=input("assistant.draft");XCTAssertTrue(field.waitForExistence(timeout:10));field.tap()
         if let old=field.value as? String,old != "Start chatting",!old.isEmpty { field.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:old.count)) }
         field.typeText(text);XCTAssertEqual(field.value as? String,text)
         if app.buttons["Done"].exists { tap("Done") }
@@ -252,8 +272,8 @@ import Foundation
         runTextContains(current,present:true);capture("previously-published-prefix-marked-context-invalid")
         send("Synthetic same chat while paused");waitRun("Completed");runTextContains(current,present:false)
         tap("Memory");tap("memory.detail.refresh");action("memory.manage.resume","Confirm resume",language:"en");_ = try await refreshed(f,fact.command.item_id,language:"en")
-        selectConversation(f.conversations[1]);send("Synthetic new chat after resume");waitRun("Completed");runTextContains(current,present:true)
-        try launch(f,language:"en",large:false,restore:true);selectConversation(f.conversations[0]);send("Synthetic current state after App reopen");waitRun("Completed");runTextContains(current,present:true)
+        tap("Assistant");send("Synthetic same chat immediately after resume");waitRun("Completed");runTextContains(current,present:true)
+        try launch(f,language:"en",large:false,restore:true);selectConversation(f.conversations[1]);send("Synthetic new chat current state after App reopen");waitRun("Completed");runTextContains(current,present:true)
         capture("current-effective-values-after-reopen");_ = try await call("/verify",["case":f.case_id])
     }
     func testReleaseClosed() async throws {
