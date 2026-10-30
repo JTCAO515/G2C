@@ -34,6 +34,9 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,id);target.tap()
     }
     private func input(_ id: String,_ text: String) {
+        // At maximum text size the next Form row can sit below the keyboard.
+        // Close the previous editor before scrolling to that concrete field.
+        dismissKeyboard()
         let view = app.textViews.matching(identifier:id).firstMatch
         let field = view.exists ? view : app.textFields.matching(identifier:id).firstMatch
         XCTAssertTrue(field.waitForExistence(timeout:15),id)
