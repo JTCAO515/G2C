@@ -43,8 +43,9 @@ import Foundation
         let target: XCUIElement
         if ["Memory","Assistant","Trips","记忆","助手","行程"].contains(id) { target = app.tabBars.buttons.matching(identifier:id).firstMatch }
         else if id == "assistant.panel.done" { target = app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        else if ["Done","完成"].contains(id) {target = app.toolbars.buttons.matching(identifier:id).firstMatch}
         else { target = app.buttons.matching(identifier:id).firstMatch }
-        let fixed = ["Memory","Assistant","Trips","记忆","助手","行程","assistant.panel.done"].contains(id)
+        let fixed = ["Memory","Assistant","Trips","记忆","助手","行程","assistant.panel.done","Done","完成"].contains(id)
         reveal(target,id:id,fixed:fixed)
         XCTAssertTrue(target.waitForExistence(timeout:10),id);XCTAssertTrue(target.isHittable,id)
         let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
