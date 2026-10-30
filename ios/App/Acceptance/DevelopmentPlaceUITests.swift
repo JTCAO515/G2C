@@ -215,9 +215,22 @@ import Foundation
     func testExpired() async throws {
         let fixture = try await prepare("testExpired");defer { app?.terminate() }
         try launch(fixture,language:"en");openConversation(fixture);send("Find synthetic hotel")
-        completed(timeout:180);text("place.output.0.outcome",contains:"Expired result")
+        var physicallyExpired=false
+        for _ in 0..<90 {
+            let phase=try JSONSerialization.jsonObject(with:await call("/phase",fixture)) as! [String:Bool]
+            if phase["stale_finished"] == true { physicallyExpired=true;break }
+            try await Task.sleep(for:.seconds(1))
+        }
+        XCTAssertTrue(physicallyExpired)
+        let before=try await proof(fixture)
+        XCTAssertEqual(before.status,"completed");XCTAssertGreaterThanOrEqual(before.real_wait_seconds,60)
+        // A silent long-running stream may time out; recover by the existing
+        // original-result GET, never by another MESSAGE or PLACE invocation.
+        tap("run.snapshot.read");completed(timeout:180);text("place.output.0.outcome",contains:"Expired result")
         let saved = try await proof(fixture);XCTAssertGreaterThanOrEqual(saved.real_wait_seconds,60)
         XCTAssertEqual(saved.place_calls,1);XCTAssertEqual(saved.model_calls,2);try audit("PLACE_PHYSICAL_AGE")
+        XCTAssertEqual(saved.posts,before.posts);XCTAssertEqual(saved.place_calls,before.place_calls)
+        XCTAssertEqual(saved.model_calls,before.model_calls);XCTAssertEqual(saved.registered_sha256,before.registered_sha256)
     }
     func testSwitchLate() async throws {
         let fixture = try await prepare("testSwitchLate");defer { app?.terminate() }
