@@ -113,9 +113,16 @@ def behavior(auth,conninfo):
     assert decode_snapshot(reader.read(token,lambda op,ctx:encode_snapshot(op.detail('visit')))).version==3
     alice_scope=needs_scope_for(scope_for(ISSUER,'english'))
     with database.connect(scope_for(ISSUER,'bob')) as conn:
+        try:
+            with conn.transaction():conn.execute("UPDATE cj_needs_record SET version=version+1 WHERE needs_id='bob-record'")
+        except psycopg.errors.InsufficientPrivilege:pass
+        else:raise AssertionError('legacy context gained NEEDS write permission')
+    with database.connect(scope_for(ISSUER,'bob')) as conn:
+        conn.execute("SELECT set_config('cj.needs_runtime_abi','NEEDS-MANUAL-RUNTIME@1',true)")
         assert conn.execute('SELECT content FROM cj_needs_record WHERE scope=%s',(alice_scope,)).fetchone() is None
         assert conn.execute('UPDATE cj_needs_record SET version=version+1 WHERE scope=%s RETURNING needs_id',(alice_scope,)).fetchall()==[]
     with database.connect(scope_for(ISSUER,'bob')) as conn:
+        conn.execute("SELECT set_config('cj.needs_runtime_abi','NEEDS-MANUAL-RUNTIME@1',true)")
         try:conn.execute('INSERT INTO cj_needs_scope(scope) VALUES(%s)',(alice_scope,))
         except psycopg.errors.InsufficientPrivilege:pass
         else:raise AssertionError('cross-owner INSERT accepted')
@@ -265,7 +272,7 @@ def exercise(auth,conninfo):
     entry=next(e for e in migrate.load() if e['name']=='needs_runtime_write')
     with psycopg.connect(**json.loads(conninfo.read_text()),autocommit=True) as conn:
         try:conn.execute((harness.ROOT/entry['down']).read_text())
-        except psycopg.errors.ObjectNotInPrerequisiteState:pass
+        except psycopg.errors.RaiseException:pass
         else:raise AssertionError('nonempty NEEDS down accepted')
 
 

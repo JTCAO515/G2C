@@ -183,9 +183,9 @@
       "version": 23,
       "name": "needs_runtime_write",
       "file": "backend/migrations/0023_needs_runtime_write.sql",
-      "sha256": "152c03893bcc848660bbfcd8571c3aa7bad1d5a7be4d4e0564947ea26615358c",
+      "sha256": "80d069bf620e76ada0817a87d14bdc75d53c727beed61ffce75d9b8d8399b5a4",
       "down": "backend/migrations/down/0023_needs_runtime_write.down.sql",
-      "down_sha256": "382d956beb217ca064545228fe6342e11503e00c603c88ed7a4fa408c5f2045a"
+      "down_sha256": "673fbdbb881438263e4ffad859e7463512f2efe42a09d79b15f2f395a348545c"
     }
   ]
 }

@@ -14,6 +14,8 @@ class RuntimeRepository(Repository):
         mode = ' READ ONLY' if self.read_only else ''
         cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED'+mode)
         conn.bind_scope(cur)
+        if not self.read_only:
+            cur.execute("SELECT set_config('cj.needs_runtime_abi','NEEDS-MANUAL-RUNTIME@1',true)")
         cur.execute("SET LOCAL lock_timeout = '5s'")
         cur.execute("SET LOCAL statement_timeout = '10s'")
         # Writer fence precedes any row lock/write. Shared read projections do

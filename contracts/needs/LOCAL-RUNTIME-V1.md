@@ -31,6 +31,11 @@ The appended local migration grants only INSERT on scope/record and the explicit
 revision input columns, plus record(version,content) UPDATE. Existing forced RLS,
 immutable scope/write triggers and source constraints remain. No DELETE/TRUNCATE,
 new role, BYPASSRLS, SECURITY DEFINER, mutable history or recorded_at INSERT grant.
+Write policies additionally require transaction-local `cj.needs_runtime_abi` =
+`NEEDS-MANUAL-RUNTIME@1`, installed only by the explicit new writer. The old scoped
+runtime therefore retains its tested read-only behavior; an ABI marker alone is
+not identity or permission. Fresh checkout/transaction entry rejects retained ABI
+settings, and LOCAL removes them on commit/rollback.
 Its down refuses any retained NEEDS scope/record/revision before revoking rights;
 applied old migration bytes are unchanged. Disable the new producer to roll back
 behavior while retaining recognized records, consumers, original actions/history.

@@ -2,7 +2,7 @@
 DO $$ BEGIN
  IF EXISTS(SELECT 1 FROM public.cj_needs_scope) OR EXISTS(SELECT 1 FROM public.cj_needs_record)
     OR EXISTS(SELECT 1 FROM public.cj_needs_revision) THEN
-  RAISE EXCEPTION 'NEEDS runtime contains data; down refused' USING ERRCODE='55000';
+  RAISE EXCEPTION 'NEEDS runtime contains data; down refused';
  END IF;
 END $$;
 REVOKE INSERT(scope) ON public.cj_needs_scope FROM cj_m1_runtime;

@@ -48,7 +48,8 @@ def _require_unbound(cursor):
     """Reject any M1 authority GUC; never overwrite retained session authority."""
     cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true), "
                    "current_setting('cj.needs_scope',true), current_setting('cj.usage_scope',true), "
-                   "current_setting('cj.message_context_abi',true)")
+                   "current_setting('cj.message_context_abi',true), "
+                   "current_setting('cj.needs_runtime_abi',true)")
     if any(value not in (None, '') for value in cursor.fetchone()):
         raise CompositionUnavailable('database scope already present')
 
