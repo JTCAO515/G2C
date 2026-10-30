@@ -2519,6 +2519,185 @@
         },
         "description": "Read version 2 original-message draft status, including explicit local budget rejection; no write or retry capability."
       }
+    },
+    "/v1/travel-context-actions": {
+      "post": {
+        "operationId": "applyTravelContextAction",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "description": "TRAVEL-CONTEXT@1. Local runtime only. Exact TRAVEL-context-action.1 bytes; create/advance/deactivate and original receipt share one transaction. Original IDs/bytes retained on unknown ACK.",
+        "requestBody": {
+          "required": true,
+          "description": "Original immutable UTF8 JSON bytes satisfying fixed MESSAGE Command.parse; preserve before first send, never reconstruct for retries. Domain IDs remain opaque. Body bound is mandatory explicit host configuration, product value not selected.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fresh canonical owner read of the original action or current travel identity; never execution authority.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TravelActionResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/travel-context-actions/{action_id}": {
+      "get": {
+        "operationId": "getOriginalTravelContextAction",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[!-~]{1,96}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fresh canonical owner read of the original action or current travel identity; never execution authority.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TravelActionQueryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/travel-contexts/{context_id}": {
+      "get": {
+        "operationId": "getTravelContext",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "context_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fresh canonical owner read of the original action or current travel identity; never execution authority.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TravelContextReadResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6519,6 +6698,149 @@
           }
         },
         "description": "Version 2 original-message protected draft status; adds budget outcome and its persisted stage. run_status remains independent. No independent budget endpoint."
+      },
+      "TravelContextState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "active"
+        ]
+      },
+      "TravelActionReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "enum": [
+              "TRAVEL-context-receipt.1"
+            ]
+          },
+          "action_id": {
+            "type": "string",
+            "pattern": "^[!-~]{1,96}$"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "create",
+              "advance",
+              "deactivate"
+            ]
+          },
+          "travel_context": {
+            "$ref": "#/components/schemas/TravelContextState"
+          }
+        },
+        "required": [
+          "version",
+          "action_id",
+          "operation",
+          "travel_context"
+        ]
+      },
+      "TravelActionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/TravelActionReceipt"
+          }
+        },
+        "required": [
+          "request_id",
+          "receipt"
+        ]
+      },
+      "TravelActionQueryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TravelActionReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "receipt"
+        ]
+      },
+      "TravelContextReadResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "version": {
+            "type": "string",
+            "enum": [
+              "TRAVEL-context.1"
+            ]
+          },
+          "travel_context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "active",
+              "created_at"
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "version",
+          "travel_context"
+        ]
       }
     },
     "securitySchemes": {

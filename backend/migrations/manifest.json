@@ -138,6 +138,14 @@
       "sha256": "70da388b5d5311765cd29356a71e0a09e4b61cf0bd3010ef712bd946b57cf696",
       "down": "backend/migrations/down/0017_registered_usage_source.down.sql",
       "down_sha256": "6311e2d10a5f19236fb46baeafd989b0737b4e63073b1af4ae141f7b78f119fa"
+    },
+    {
+      "version": 18,
+      "name": "travel_context",
+      "file": "backend/migrations/0018_travel_context.sql",
+      "sha256": "b780b3fcc21108e2c4aaf3bada4238b855e1fef024efb79963992f0c2b62913b",
+      "down": "backend/migrations/down/0018_travel_context.down.sql",
+      "down_sha256": "ed994bd087af9a0844b74cc6956a85b09541096dc0a9d7403c7437d6160426f6"
     }
   ]
 }

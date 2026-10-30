@@ -46,7 +46,8 @@ def scope_for(issuer, subject):
 def _require_unbound(cursor):
     """Reject any M1 authority GUC; never overwrite retained session authority."""
     cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true), "
-                   "current_setting('cj.needs_scope',true), current_setting('cj.usage_scope',true)")
+                   "current_setting('cj.needs_scope',true), current_setting('cj.usage_scope',true), "
+                   "current_setting('cj.message_context_abi',true)")
     if any(value not in (None, '') for value in cursor.fetchone()):
         raise CompositionUnavailable('database scope already present')
 
@@ -225,6 +226,16 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         database.provision(scope)
         return database.message_repository(scope)
 
+    def travel_repository(principal):
+        # Identity exists before any chat/Trip/NEEDS or metered account. Provision
+        # only its canonical MESSAGE owner namespace, never those business rows.
+        from cj_message.travel import ABI
+        scope = scope_for(principal.issuer, principal.subject)
+        with database.connect(scope) as conn:
+            conn.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
+            conn.execute('INSERT INTO cj_message_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING', (scope,))
+        return MessageRepository(lambda: database.connect(scope), scope)
+
     def run_repository(principal, scope):
         if scope != scope_for(principal.issuer, principal.subject):
             raise CompositionUnavailable('scope mismatch')
@@ -290,6 +301,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         memory_source_policy=memory_source_policy,
         access_provider=InvitedSubjects(auth_dir / 'invited.json'),
         resolve_repository=message_repository, new_run_id=lambda: str(uuid.uuid4()),
+        resolve_travel_repository=travel_repository,
         max_body_bytes=16384, history_configuration=history_configuration,
         run_display_configuration=RunDisplayWireConfiguration(max_message_id_bytes=256, max_text_bytes=200000,
                                                               max_response_bytes=400000),

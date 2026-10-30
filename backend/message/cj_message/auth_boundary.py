@@ -120,20 +120,24 @@ class Boundary:
     verified TrustedPrincipal to a repository scoped to that identity/environment.
     Caller bodies cannot supply a repository, scope or principal.
     """
-    def __init__(self, checker, resolve_repository, new_run_id):
+    def __init__(self, checker, resolve_repository, new_run_id, *, resolve_travel_repository=None):
         if INTERFACE_VERSION != EXPECTED_AUTH or not isinstance(checker, AdmissionChecker):
             raise ValueError('fixed AUTH interface required')
         self.checker = checker
         self.resolve_repository = resolve_repository
         self.new_run_id = new_run_id
+        self.resolve_travel_repository = resolve_travel_repository
 
-    def _bind(self, token):
+    def _bind(self, token, *, travel=False):
         first = self.checker.check(token)
         if first.status is not AdmissionStatus.ALLOWED:
             raise AccessBlocked(first, 'entry')
         if not isinstance(first.principal, TrustedPrincipal):
             raise ValueError('AUTH allowed result missing principal')
-        repository = self.resolve_repository(first.principal)
+        resolver = self.resolve_travel_repository if travel else self.resolve_repository
+        if resolver is None:
+            raise Unavailable('travel identity composition unavailable')
+        repository = resolver(first.principal)
         bound_scope = repository.scope
 
         def guard(stage):
@@ -191,6 +195,18 @@ class Boundary:
 
     def receive(self, token, raw):
         return self._service(token).receive(raw)
+
+    def travel_action(self, token, raw):
+        from .travel import Service as TravelService
+        return TravelService(self._bind(token, travel=True)[0].repository).apply(raw)
+
+    def travel_action_status(self, token, action_id):
+        from .travel import Service as TravelService
+        return TravelService(self._bind(token, travel=True)[0].repository).query_action(action_id)
+
+    def travel_context(self, token, context_id):
+        from .travel import Service as TravelService
+        return TravelService(self._bind(token, travel=True)[0].repository).get(context_id)
 
     def query(self, token, message_id):
         return self._service(token).query(message_id)
