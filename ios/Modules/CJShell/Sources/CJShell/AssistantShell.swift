@@ -105,7 +105,11 @@ struct AssistantShell: View {
                     }
                 }
                 .toolbar { ToolbarItem(placement: .confirmationAction) {
-                    Button(state.language.text("Done", "完成")) { panel = nil }
+                    Button { panel = nil } label: {
+                        RunReadableText(text:state.language.text("Done", "完成"))
+                            .frame(minWidth:44,minHeight:44)
+                    }.buttonStyle(.plain)
+                        .accessibilityLabel(state.language.text("Done", "完成"))
                         .accessibilityIdentifier("assistant.panel.done")
                 }}
             }
