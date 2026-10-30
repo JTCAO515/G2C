@@ -221,7 +221,9 @@ import Foundation
         try launch(fixture,language:"en");openConversation(fixture);send("Find synthetic hotel");completed()
         let before = try await proof(fixture)
         _ = try await call("/hold-read",fixture);tap("run.snapshot.read");_ = try await call("/wait-read",fixture)
-        tap("Memory");tap("memory.account");tap("account.development.signout");tap("account.development.signin.B")
+        // The Memory tab retains the account route used during launch.
+        tap("Memory");text("account.development.status",contains:fixture.subjects["A"]!)
+        tap("account.development.signout");tap("account.development.signin.B")
         text("account.development.status",contains:fixture.subjects["B"]!)
         _ = try await call("/release-read",fixture);tap("Assistant")
         XCTAssertFalse(app.staticTexts.matching(identifier:"place.output.0.SYNTH_EAST.name").firstMatch.exists)
