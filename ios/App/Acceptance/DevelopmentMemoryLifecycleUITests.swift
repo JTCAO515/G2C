@@ -111,6 +111,22 @@ import Foundation
         XCTAssertTrue(field.waitForExistence(timeout:10))
         for _ in 0..<30 { if field.isHittable { break };app.swipeUp() }
         XCTAssertTrue(field.isHittable);field.tap();XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:5))
+        // On newer runtimes the keyboard toolbar can cover the focused field.
+        // Physically scroll its content into the visible area before selecting.
+        for _ in 0..<8 {
+            let bar=app.navigationBars.firstMatch
+            let top=bar.exists ? bar.frame.maxY : app.frame.minY
+            let done=button("memory.manage.keyboard.done")
+            let bottom=done.exists ? done.frame.minY-8 : app.keyboards.firstMatch.frame.minY-8
+            let frame=field.frame
+            if frame.minY>top && frame.maxY<bottom { break }
+            let origin=app.coordinate(withNormalizedOffset:CGVector(dx:0,dy:0))
+            let low=origin.withOffset(CGVector(dx:app.frame.midX,dy:bottom-16))
+            let high=origin.withOffset(CGVector(dx:app.frame.midX,dy:top+24))
+            if frame.maxY>=bottom { low.press(forDuration:0.05,thenDragTo:high) }
+            else { high.press(forDuration:0.05,thenDragTo:low) }
+        }
+        XCTAssertTrue(field.isHittable)
         field.press(forDuration:1)
         let names=NSPredicate(format:"label IN %@",["Select All","全选"])
         let menu=app.menuItems.matching(names).firstMatch
@@ -143,7 +159,7 @@ import Foundation
         let f=try JSONDecoder().decode(Fixture.self,from:await call("/prepare",["case":name]))
         defer { app?.terminate() };try launch(f,language:language,large:large);list(language)
         let fact=try XCTUnwrap(f.initial.first { $0.command.kind=="fact" })
-        for original in f.initial {
+        for (index,original) in f.initial.enumerated() {
             open(original.command.item_id)
             if !large || original.command.kind=="fact" {
                 let input="Updated "+original.command.kind+" / 合成编辑 e\u{301} retained"
@@ -153,7 +169,9 @@ import Foundation
                 XCTAssertNotEqual(current.command.source_id,original.command.source_id)
             }
             capture("current-source-"+original.command.kind+"-"+language);try audit("MEMORY_LIFECYCLE_"+language)
-            back()
+            // The English case immediately terminates/reopens after its final
+            // audited kind; do not add an unnecessary navigation snapshot first.
+            if large || index<f.initial.count-1 { back() }
         }
         if !large {
             // Keep all seven original actions, while exercising actual reopen
