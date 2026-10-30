@@ -11,14 +11,16 @@ class NeedsWireConfiguration:
             if type(value) is not int or not 1<=value<=maximum:
                 raise CompositionUnavailable('Explicit bounded NEEDS limits required')
 
-def build_needs_boundary(*,environment,jwt_configuration,verification_keys,access_provider,resolve):
+def build_needs_boundary(*,environment,jwt_configuration,verification_keys,access_provider,resolve,
+                         repository_factory=None):
     if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local NEEDS AUTH and trusted resolver required')
     modules=_internal_modules('needs');auth=modules['cj_auth.jwt_adapter']
     if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
         raise CompositionUnavailable('Fixed strict AUTH profile required')
     checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)
-    return modules['cj_needs.boundary'].Boundary(checker,resolve),modules
+    factory=modules['cj_needs.postgres'].Repository if repository_factory is None else repository_factory
+    return modules['cj_needs.boundary'].Boundary(checker,resolve,repository_factory=factory),modules
 
 def create_needs_composed_app(*,configuration,**dependencies):
     if type(configuration) is not NeedsWireConfiguration:raise CompositionUnavailable('Explicit NEEDS wire configuration required')

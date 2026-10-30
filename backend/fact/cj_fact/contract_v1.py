@@ -154,6 +154,8 @@ def decode_result(raw):
                 original = base64.b64decode(encoded, validate=True)
                 if base64.b64encode(original).decode('ascii') != encoded: raise ValueError()
             except (ValueError, binascii.Error): raise FactFailure('invalid_fact_source_bytes') from None
+            if type(source['media_type']) is not str:
+                raise FactFailure('invalid_fact_source_media_type')
             document = parse_document(source_url=source['source_url'], retrieved_at=read_stamp(source['retrieved_at']),
                 content_type=source['media_type'], body=original, policy=POLICY, synthetic=True)
             evidence.append(extract_structured_evidence(document, evidence_id=text(source['evidence_id']),

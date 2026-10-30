@@ -118,3 +118,10 @@ class FactV1Tests(unittest.TestCase):
             elif mutation=='span-type':value['sources'][0]['value']['start']=float(value['sources'][0]['value']['start'])
             else:value['sources'][0]['declarations']['published_at']['fold']=False
             with self.subTest(mutation=mutation),self.assertRaises(FactFailure):decode_result(dump(value))
+
+    def test_source_media_type_is_checked_at_the_new_wire_boundary(self):
+        original,_=self.result()
+        for media_type in (None,1,[],{}):
+            value=copy.deepcopy(original)
+            value['sources'][0]['media_type']=media_type
+            with self.subTest(media_type=media_type),self.assertRaises(FactFailure):decode_result(dump(value))

@@ -239,7 +239,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         access_provider, resolve_repository, new_run_id, max_body_bytes, history_configuration=None,
                         memory_configuration=None, resolve_memory_binding=None, memory_source_policy=None,
                         trip_configuration=None, resolve_trip=None, trip_confirmation_validator=None, trip_confirmation_signer=None,
-                        needs_configuration=None, resolve_needs=None,
+                        needs_configuration=None, resolve_needs=None, needs_repository_factory=None,
                         feedback_configuration=None, resolve_feedback=None, resolve_feedback_run=None,
                         run_display_configuration=None, resolve_run_display=None,manual_preview_configuration=None,
                         usage_status_configuration=None,resolve_usage_status=None,
@@ -287,12 +287,13 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
             verification_keys=verification_keys,access_provider=access_provider,
             resolve=resolve_trip,confirmation_validator=trip_confirmation_validator)
     needs_boundary = needs_modules = None
-    if needs_configuration is not None or resolve_needs is not None:
+    if needs_configuration is not None or resolve_needs is not None or needs_repository_factory is not None:
         from .needs_composition import NeedsWireConfiguration, build_needs_boundary
         if type(needs_configuration) is not NeedsWireConfiguration:
             raise CompositionUnavailable('Explicit NEEDS configuration/resolver required')
         needs_boundary,needs_modules = build_needs_boundary(environment=environment,jwt_configuration=jwt_configuration,
-            verification_keys=verification_keys,access_provider=access_provider,resolve=resolve_needs)
+            verification_keys=verification_keys,access_provider=access_provider,resolve=resolve_needs,
+            repository_factory=needs_repository_factory)
     feedback_boundary = feedback_modules = None
     if any(value is not None for value in (feedback_configuration,resolve_feedback,resolve_feedback_run)):
         from .feedback_composition import FeedbackWireConfiguration, _feedback_with_shared_message

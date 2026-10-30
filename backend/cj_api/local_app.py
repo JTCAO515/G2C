@@ -48,7 +48,8 @@ def _require_unbound(cursor):
     """Reject any M1 authority GUC; never overwrite retained session authority."""
     cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true), "
                    "current_setting('cj.needs_scope',true), current_setting('cj.usage_scope',true), "
-                   "current_setting('cj.message_context_abi',true)")
+                   "current_setting('cj.message_context_abi',true), "
+                   "current_setting('cj.needs_runtime_abi',true)")
     if any(value not in (None, '') for value in cursor.fetchone()):
         raise CompositionUnavailable('database scope already present')
 
@@ -76,8 +77,11 @@ class _ScopedConnection:
                            (self._scope, trip_scope_for(self._scope)))
             cursor.execute("SELECT set_config('cj.message_context_abi',%s,true)",(TRAVEL_ABI,))
             if self._needs_scope is not None:
-                cursor.execute("SELECT set_config('cj.needs_scope',%s,true), set_config('cj.usage_scope',%s,true)",
-                               (self._needs_scope,self._usage_scope))
+                if self._usage_scope is None:
+                    cursor.execute("SELECT set_config('cj.needs_scope',%s,true)",(self._needs_scope,))
+                else:
+                    cursor.execute("SELECT set_config('cj.needs_scope',%s,true), set_config('cj.usage_scope',%s,true)",
+                                   (self._needs_scope,self._usage_scope))
         except BaseException:
             self._connection.close()
             raise
@@ -108,12 +112,15 @@ def local_conninfo(conninfo_path):
 
 
 class LocalDatabase:
-    def __init__(self, conninfo_path, *, run_context=None, travel_context=False):
+    def __init__(self, conninfo_path, *, run_context=None, travel_context=False, needs_context=False):
         config = local_conninfo(conninfo_path)
         self.run_context = run_context
         if type(travel_context) is not bool:
             raise CompositionUnavailable('explicit travel capability required')
         self.travel_context=travel_context
+        if type(needs_context) is not bool:
+            raise CompositionUnavailable('explicit NEEDS capability required')
+        self.needs_context=needs_context
         # The initialization identity is never used for application/worker SQL.
         self._empty_passfile = tempfile.NamedTemporaryFile(prefix='cj-m1-runtime-', suffix='.pgpass')
         self.conninfo = dict(config, user='cj_m1_runtime', passfile=self._empty_passfile.name)
@@ -145,7 +152,7 @@ class LocalDatabase:
             conn.autocommit = False
             if self.run_context is None:
                 if usage_profile is not None: raise CompositionUnavailable('run context unavailable')
-                return _ScopedConnection(conn, scope)
+                return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope) if self.needs_context else None)
             profile=self.run_context.current if usage_profile is None else usage_profile
             if profile not in self.run_context.profiles:
                 raise CompositionUnavailable('unregistered original period')
@@ -228,11 +235,14 @@ class InvitedSubjects:
 
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
-                     memory_configuration=None, run_context=None, travel_context=False):
+                     memory_configuration=None, run_context=None, travel_context=False, needs_profile=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
-    database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context)
+    if needs_profile not in (None,'manual-v1'):
+        raise CompositionUnavailable('unknown local NEEDS profile')
+    database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context,
+                             needs_context=needs_profile is not None)
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
 
@@ -311,10 +321,21 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                 return row is not None and row[0] is True
             return True
 
+    needs_wire=needs_resolve=needs_factory=None
+    if needs_profile is not None:
+        from .needs_composition import NeedsWireConfiguration
+        from cj_needs.runtime import RuntimeRepository
+        needs_wire=NeedsWireConfiguration(131072,524288)
+        needs_factory=RuntimeRepository
+        def needs_resolve(principal):
+            scope=scope_for(principal.issuer,principal.subject)
+            return lambda:database.connect(scope),needs_scope_for(scope)
+
     return create_composed_app(
         environment='local', jwt_configuration=config, verification_keys=keys,
         memory_configuration=memory_wire, resolve_memory_binding=resolve_memory,
         memory_source_policy=memory_source_policy,
+        needs_configuration=needs_wire,resolve_needs=needs_resolve,needs_repository_factory=needs_factory,
         access_provider=InvitedSubjects(auth_dir / 'invited.json'),
         resolve_repository=message_repository, new_run_id=lambda: str(uuid.uuid4()),
         resolve_travel_repository=travel_repository,
@@ -423,6 +444,7 @@ def app_from_environment():
                             confirmation_signer=load_confirmation_signer(auth_dir),
                             history_configuration=load_history_configuration(auth_dir),
                             memory_configuration=memory_configuration,
+                            needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),
                             travel_context=travel_configuration(os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT')),
                             run_context=load_run_context(os.environ['CJ_LOCAL_RUN_CONTEXT'])
                             if 'CJ_LOCAL_RUN_CONTEXT' in os.environ else None)

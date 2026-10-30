@@ -33,8 +33,9 @@ class ProtectedReader:
     Fresh AUTH before and after the projection is enforced by the canonical AUTH
     boundary; host composition is trusted and not re-checked during the read.
     """
-    def __init__(self, auth, resolve, *, configuration):
+    def __init__(self, auth, resolve, *, configuration, repository_factory=Repository):
         self.auth, self.resolve, self.configuration = auth, resolve, configuration
+        self.repository_factory = repository_factory
 
     def read(self, token, project):
         config = self.configuration
@@ -55,7 +56,7 @@ class ProtectedReader:
 
             try:
                 connect, scope = self.resolve(principal, config.environment)
-                repository = Repository(connect, scope, guard, strict_close=True)
+                repository = self.repository_factory(connect, scope, guard, strict_close=True)
                 operation = Operation(repository, Metadata(principal, scope), state)
                 context_token = _active.set(operation)
                 result = project(operation, context)
