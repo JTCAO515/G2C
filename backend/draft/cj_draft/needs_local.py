@@ -1,4 +1,6 @@
 """Explicit local source-bound publisher composition, using B frozen authority."""
+import os
+from cj_api.composition import CompositionUnavailable
 from cj_api.local_needs import protected_reader
 from cj_api.local_app import ISSUER,AUDIENCE,scope_for
 from cj_message.needs_binding import needs_scope_for
@@ -10,6 +12,7 @@ from .needs_publisher import NeedsDraftPublisher
 
 
 def publisher(database,checker,message_context,token_supplier,scope):
+    if os.environ.get('CJ_ENV')!='local':raise CompositionUnavailable('explicit local source-bound publisher required')
     def resolve(principal):
         owner=scope_for(principal.issuer,principal.subject)
         return lambda:database.connect(owner),owner,needs_scope_for(owner)

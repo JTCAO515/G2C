@@ -56,7 +56,7 @@ class NeedsPlanChecks(Harness):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.host=RegisteredHost(cls.auth/'plans',Path(CONNINFO),{s:(12,2,30000) for s in ('valid','overlap','locked','changed','publish-first','new-item')})
+        cls.host=RegisteredHost(cls.auth/'plans',Path(CONNINFO),{s:(12,2,30000) for s in ('valid','overlap','locked','changed','publish-first','new-item','foreign','missing-context')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         for subject in cls.host.subjects:
             dev_auth.activate_travel(Path(CONNINFO),subject,cls.host.profiles[subject][1],ABI)
@@ -89,8 +89,15 @@ class NeedsPlanChecks(Harness):
 
     def test_real_bound_source_prompt_and_original_structured_proposal(self):
         receipt=self.setup_source('valid');model=PlanModel();worker,db=self.worker('valid',model)
-        outcome=worker.process()[0]
+        from cj_draft import needs_publisher
+        build_original=needs_publisher.build;reports=[]
+        def observed(*args,**kwargs):
+            value=build_original(*args,**kwargs);reports.append(value[2]);return value
+        with patch.object(needs_publisher,'build',observed):outcome=worker.process()[0]
         self.assertEqual(outcome.status,'completed');self.assertIsNotNone(outcome.proposal_id)
+        self.assertTrue(reports)
+        self.assertTrue(all(c.zh and c.en for c in reports[0].checks))
+        self.assertEqual(reports[0].status,'UNKNOWN')
         self.assertTrue(model.source_seen);self.assertEqual(model.calls,2)
         scope=scope_for(ISSUER,'valid');repository=Repository(lambda:db.connect(scope),trip_scope_for(scope),structured=True)
         detail=repository.proposal_detail(outcome.proposal_id);doc=json.loads(detail.proposal.content)
@@ -146,6 +153,22 @@ class NeedsPlanChecks(Harness):
             item=json.loads(bytes(original))['fixed_items'][-1]
             self.assertEqual(item['kind'],'intent');self.assertEqual(item['booking_status'],dict(state='unknown'))
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0],0)
+
+    def test_wrong_owner_or_missing_source_context_cannot_publish(self):
+        from cj_api.local_needs import protected_reader
+        for subject in ('foreign','missing-context'):
+            with self.subTest(subject=subject):
+                self.setup_source(subject);worker,db=self.worker(subject,PlanModel())
+                if subject=='foreign':
+                    worker.drafts.source.token_supplier=lambda:self.host.headers['valid']['Authorization'][7:]
+                else:
+                    worker.drafts.source.reader=protected_reader(LocalDatabase(CONNINFO),checker_for(self.host.auth))
+                outcome=worker.process()[0]
+                self.assertIsNone(outcome.proposal_id)
+                self.assertIn(outcome.status,('context_invalid','unknown'))
+                with db.connect(scope_for(ISSUER,subject)) as conn:
+                    self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0],0)
+                    self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_needs_basis').fetchone()[0],0)
 
     def test_real_writer_first_rejects_captured_old_result(self):
         self.setup_source('changed')
