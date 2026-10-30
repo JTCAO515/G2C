@@ -3,6 +3,7 @@ from copy import deepcopy
 from hashlib import sha256
 import json
 from cj_trip.domain import packed,Denied,Conflict
+from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.planning_context import read_current,current_in_tx,protect_model
 from cj_trip.needs_source import NeedsSourceAuthority
 from cj_trip.needs_plan import build as build_original,parse_model,_build
@@ -14,7 +15,8 @@ class ContextSource(NeedsSourceAuthority):
         super().__init__(*args,**kwargs);self.trip_repository=trip_repository;self.contexts={}
     def capture(self,binding):
         source=super().capture(binding);value=json.loads(source.raw)
-        self.contexts[binding]=read_current(self.trip_repository,value['needs_scope'],value['needs_id'])
+        try:self.contexts[binding]=read_current(self.trip_repository,value['needs_scope'],value['needs_id'])
+        except Denied as exc:raise LeaseUnavailable(str(exc)) from None
         return source
 
 
@@ -29,10 +31,10 @@ class ContextPublisher(NeedsDraftPublisher):
         context=self.source.contexts.get(capture.binding)
         if context is None:return build_original(raw,capture)
         value=parse_model(raw);document=dict(content_version='structured.2',title=value['title'],items=value['items'],sources=[])
-        try:protect_model(context.trip,document)
-        except Conflict as exc:raise ValueError(str(exc)) from None
         from cj_feasibility.trip_time_v2 import evaluate
         if evaluate(packed(document)).status=='CONFLICT':raise ValueError('explicit Trip time conflict')
+        try:protect_model(context.trip,document)
+        except Conflict as exc:raise ValueError(str(exc)) from None
         before,_=capture.records();source_items={item['item_id']:item for item in before.fields.get('fixed_items',[])}
         # Local Trip fixed intent is checked above and retained in Trip content;
         # it is not silently written back into canonical NEEDS declarations.
@@ -62,8 +64,9 @@ class ContextPublisher(NeedsDraftPublisher):
         return packed(document),candidate,report
     def check_trip_context(self,cur,binding,capture):
         value=json.loads(capture.raw)
-        current=current_in_tx(cur,self.repository,value['needs_scope'],value['needs_id'])
-        if current!=self.source.contexts.get(binding):raise Denied('captured current Trip changed before publication')
+        try:current=current_in_tx(cur,self.repository,value['needs_scope'],value['needs_id'])
+        except Denied as exc:raise LeaseUnavailable(str(exc)) from None
+        if current!=self.source.contexts.get(binding):raise LeaseUnavailable('captured current Trip changed before publication')
     def retain_trip_context(self,cur,proposal,binding,capture):
         context=self.source.contexts.get(binding)
         expected=(None,None,None) if context is None else (context.trip.trip_id,context.trip.version,context.trip.content)

@@ -25,7 +25,7 @@ class NeedsActionChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset')})
+        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset','malformed-model','edit-during-model')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer=ConfirmationSigner(b'synthetic-source-action-key-1234567890')
         for subject in cls.host.subjects:
@@ -304,6 +304,35 @@ class NeedsActionChecks(unittest.TestCase):
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal WHERE proposal_id=%s',(proposal_id_for(result.run_id),)).fetchone()[0],0)
             self.assertEqual(conn.execute("SELECT count(*) FROM cj_run_event WHERE run_id=%s AND kind='effect_committed'",(result.run_id,)).fetchone()[0],0)
             self.assertEqual(conn.execute('SELECT trip_version FROM cj_trip_needs_current').fetchone()[0],1)
+
+    def test_invalid_model_structure_preserves_answer_and_uses_original_rejection(self):
+        subject='malformed-model';app,outcome,db=self.plan(subject)
+        with TestClient(app) as client:
+            accepted=self.post(client,subject,self.action(subject,outcome,'accept'));self.assertEqual(accepted.status_code,200,accepted.text)
+        def malformed(document):del document['items'][1]['fixed']
+        result=self.replan(subject,'invalid-model-plan',malformed,False)
+        self.assertEqual(result.status,'completed')
+        with db.connect(scope_for(ISSUER,subject)) as conn:
+            self.assertEqual(conn.execute("SELECT value FROM cj_run_event WHERE run_id=%s AND kind='draft_outcome'",(result.run_id,)).fetchone()[0],'validation_failed')
+            self.assertEqual(conn.execute('SELECT trip_version FROM cj_trip_needs_current').fetchone()[0],1)
+            self.assertEqual(conn.execute("SELECT count(*) FROM cj_run_event WHERE run_id=%s AND kind='effect_committed'",(result.run_id,)).fetchone()[0],0)
+
+    def test_actual_manual_commit_during_model_io_rejects_old_publication(self):
+        subject='edit-during-model';app,outcome,db=self.plan(subject)
+        with TestClient(app) as client:
+            accepted=self.post(client,subject,self.action(subject,outcome,'accept'));self.assertEqual(accepted.status_code,200,accepted.text)
+            trip_id=accepted.json()['receipt']['trip_id']
+            def edit_during_model(document):
+                trip=client.get('/v4/trip-structured',params={'trip_id':trip_id},headers=self.host.headers[subject]).json()['trip']
+                p=self.prepare_request(client,subject,self.edit_request(subject,trip,'model-intervening-edit'))
+                saved=self.save_request(client,subject,p,'model-intervening-save');self.assertEqual(saved.status_code,200,saved.text)
+            result=self.replan(subject,'stale-current-plan',edit_during_model,False)
+            self.assertEqual(result.status,'unknown')
+            trip=client.get('/v4/trip-structured',params={'trip_id':trip_id},headers=self.host.headers[subject]).json()['trip']
+            self.assertEqual(trip['version'],2);self.assertEqual(trip['content']['title'],'explicit edited title')
+        with db.connect(scope_for(ISSUER,subject)) as conn:
+            self.assertEqual(conn.execute('SELECT trip_version FROM cj_trip_needs_current').fetchone()[0],2)
+            self.assertEqual(conn.execute("SELECT count(*) FROM cj_run_event WHERE run_id=%s AND kind='effect_committed'",(result.run_id,)).fetchone()[0],0)
 
     def test_actual_accept_original_replay_and_owner_source_context(self):
         app,outcome,db=self.plan('accept');raw=self.action('accept',outcome,'accept')
