@@ -69,10 +69,21 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let endpoint: MessageEndpoint
         let validate: @MainActor @Sendable () throws -> Void
     }
+    private enum MessageWire {
+        case legacy, travel
+        var path: String { self == .legacy ? "/v1/messages" : "/v2/messages" }
+        var operation: String { self == .legacy ? Operations.receiveMessage.id : Operations.receiveMessageV2.id }
+    }
+    private struct MessageCapability: Sendable {
+        let endpoint: MessageEndpoint
+        let validate: @MainActor @Sendable () throws -> Void
+        let wire: MessageWire
+        var boundary: EndpointCapability { EndpointCapability(endpoint:endpoint,validate:validate) }
+    }
     private let session: URLSession?
     private let transport: any ClientTransport
     private let preview: EndpointCapability?
-    private let messages: EndpointCapability?
+    private let messages: MessageCapability?
     private let memory: EndpointCapability?
     private let memoryManagement: EndpointCapability?
 
@@ -96,7 +107,21 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
               let port = endpoint.url.port, (1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
-            preview: nil, messages: EndpointCapability(endpoint: endpoint, validate: validate))
+            preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .legacy))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+
+    /// Explicit local send.2 capability. No legacy endpoint or travel actions
+    /// are enabled by this capability; selection is data in immutable originals.
+    public static func developmentTravelMessages(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http",endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port,(1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
+            preview:nil,messages:MessageCapability(endpoint:endpoint,validate:validate,wire:.travel))
         #else
         throw MessageHTTPFailure.productionActivationUnavailable
         #endif
@@ -130,7 +155,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         #endif
     }
 
-    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: EndpointCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil) throws {
+    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil) throws {
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
             throw MessageHTTPFailure.invalidConfiguration
         }
@@ -157,7 +182,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
         session = nil; transport = interceptedTransport; preview = nil; memory = nil; memoryManagement = nil
-        messages = EndpointCapability(endpoint: messageEndpoint, validate: validateMessage)
+        messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: .legacy)
+    }
+
+    /// Non-network typed MESSAGE transport seam for module boundary tests.
+    init(interceptedTransport: any ClientTransport,travelMessageEndpoint: MessageEndpoint,
+         validateMessage: @escaping @MainActor @Sendable () throws -> Void) {
+        session=nil;transport=interceptedTransport;preview=nil;memory=nil;memoryManagement=nil
+        messages=MessageCapability(endpoint:travelMessageEndpoint,validate:validateMessage,wire:.travel)
     }
 
     /// Non-network Memory boundary seam for deterministic transport tests.
@@ -175,7 +207,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     }
 
     @MainActor func validateMessageSending(to endpoint: MessageEndpoint) throws {
-        guard let messages, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
+        guard let messages, messages.wire == .legacy, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
+        try messages.validate()
+    }
+
+    @MainActor func validateTravelMessageSending(to endpoint: MessageEndpoint) throws {
+        guard let messages,messages.wire == .travel,messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
         try messages.validate()
     }
 
@@ -184,19 +221,19 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         if request.method == .get || request.method == .head {
             return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
         }
-        if let messages, request.method == .post, operationID == Operations.receiveMessage.id,
-           request.path == "/v1/messages", request.scheme == nil, request.authority == nil,
+        if let messages, request.method == .post, operationID == messages.wire.operation,
+           request.path == messages.wire.path, request.scheme == nil, request.authority == nil,
            baseURL == messages.endpoint.url,
            !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
             return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
-                                            capability: messages, originalMessage: true)
+                                            capability: messages.boundary, messageWire: messages.wire)
         }
         if let memory, request.method == .post, operationID == Operations.saveMemory.id,
            request.path == "/v1/memories", request.scheme == nil, request.authority == nil,
            baseURL == memory.endpoint.url,
            !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
             return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
-                                            capability: memory, originalMessage: false)
+                                            capability: memory, messageWire: nil)
         }
         let managementPaths = [Operations.applyMemoryManagementAction.id: "/v1/memory-management-actions",
             Operations.applyMemoryEditAction.id: "/v1/memory-edit-actions",
@@ -206,7 +243,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
            baseURL == memoryManagement.endpoint.url,
            !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
             return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
-                                            capability: memoryManagement, originalMessage: false)
+                                            capability: memoryManagement, messageWire: nil)
         }
         // No other write-shaped request is enabled. Exact official operation/path are
         // fixed here; calling an arbitrary request "readonly" cannot grant capability.
@@ -235,12 +272,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         return (response,HTTPBody(result))
     }
     private func sendLocalWrite(_ request: HTTPRequest, body: HTTPBody, baseURL: URL, operationID: String,
-                                capability: EndpointCapability, originalMessage: Bool) async throws -> (HTTPResponse, HTTPBody?) {
+                                capability: EndpointCapability, messageWire: MessageWire?) async throws -> (HTTPResponse, HTTPBody?) {
         let media = request.headerFields.filter { $0.name == .contentType }
         guard media.count == 1, media.first?.value == "application/octet-stream" else { throw MessageHTTPFailure.invalidConfiguration }
         try Task.checkCancellation()
         let bytes = try await Data(collecting: body, upTo: capability.endpoint.maximumRequestBytes)
-        if originalMessage { _ = try OriginalMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes) }
+        switch messageWire {
+        case .legacy: _ = try OriginalMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case .travel: _ = try OriginalTravelMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case nil: break
+        }
         try await capability.validate()
         try Task.checkCancellation()
         let (response, responseBody) = try await transport.send(request, body: HTTPBody(bytes), baseURL: baseURL, operationID: operationID)
