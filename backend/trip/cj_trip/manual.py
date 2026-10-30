@@ -95,6 +95,12 @@ def prepare(original: Trip, edit: ManualEdit):
         if item_id not in items: raise ValueError('unknown selected item')
         selected.setdefault(item_id, set()).add(field)
         items[item_id][field] = json.loads(raw)
+    for item_id in selected:
+        if items[item_id]['text'] != originals[item_id]['text']:
+            items[item_id].update(verification='pending', evidence=[],
+                                  source_category='user_provided', source_refs=[])
+    referenced = {ref for item in after['items'] for ref in item['source_refs']}
+    after['sources'] = [source for source in after['sources'] if source['id'] in referenced]
     validate_document(after)
     for item_id, fields in selected.items():
         old, new = originals[item_id], items[item_id]
