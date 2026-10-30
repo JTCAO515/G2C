@@ -25,7 +25,7 @@ class NeedsActionChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema')})
+        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer=ConfirmationSigner(b'synthetic-source-action-key-1234567890')
         for subject in cls.host.subjects:
@@ -246,6 +246,26 @@ class NeedsActionChecks(unittest.TestCase):
                 with admin.transaction():admin.execute((ROOT/'backend/migrations/down/0025_trip_needs_actions.down.sql').read_text())
             for table,count in counts.items():
                 self.assertEqual(admin.execute(sql.SQL('SELECT count(*) FROM {}').format(sql.Identifier(table))).fetchone()[0],count)
+
+    def test_actual_context_publication_replays_the_same_retained_basis(self):
+        from cj_draft.needs_context import publisher
+        from cj_api.local_worker_context import checker_for
+        import time
+        subject='publish-replay';self.setup_source(subject)
+        worker,db=self.worker(subject,source_fixture.PlanModel())
+        worker.drafts=publisher(db,checker_for(self.host.auth),worker.message_context,
+            lambda:self.host.headers[subject]['Authorization'][7:],scope_for(ISSUER,subject))
+        now=time.time();worker.drafts.clock=lambda:now
+        original=worker.drafts.publish_for_message;published=[]
+        def twice(*args,**kwargs):
+            first=original(*args,**kwargs);second=original(*args,**kwargs)
+            self.assertEqual(first,second);published.extend((first,second));return second
+        worker.drafts.publish_for_message=twice
+        result=worker.process()[0];self.assertIsNotNone(result.proposal_id);self.assertEqual(len(published),2)
+        with db.connect(scope_for(ISSUER,subject)) as conn:
+            row=conn.execute('SELECT trip_id,trip_version,original_content FROM cj_trip_needs_plan_context WHERE proposal_id=%s',(result.proposal_id,)).fetchone()
+            self.assertEqual(row,(None,None,None))
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal WHERE proposal_id=%s',(result.proposal_id,)).fetchone()[0],1)
 
     def test_actual_accept_original_replay_and_owner_source_context(self):
         app,outcome,db=self.plan('accept');raw=self.action('accept',outcome,'accept')

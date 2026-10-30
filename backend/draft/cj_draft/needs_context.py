@@ -56,9 +56,16 @@ class ContextPublisher(NeedsDraftPublisher):
         if current!=self.source.contexts.get(binding):raise Denied('captured current Trip changed before publication')
     def retain_trip_context(self,cur,proposal,binding,capture):
         context=self.source.contexts.get(binding)
+        expected=(None,None,None) if context is None else (context.trip.trip_id,context.trip.version,context.trip.content)
+        cur.execute('SELECT trip_id,trip_version,original_content FROM cj_trip_needs_plan_context WHERE scope=%s AND proposal_id=%s',
+            (self.repository.scope,proposal.proposal_id))
+        prior=cur.fetchone()
+        if prior is not None:
+            retained=(prior[0],prior[1],None if prior[2] is None else bytes(prior[2]))
+            if retained!=expected:raise Denied('original immutable Trip planning context changed')
+            return
         cur.execute('INSERT INTO cj_trip_needs_plan_context(scope,proposal_id,trip_id,trip_version,original_content) VALUES(%s,%s,%s,%s,%s)',
-            (self.repository.scope,proposal.proposal_id,None if context is None else context.trip.trip_id,
-             None if context is None else context.trip.version,None if context is None else context.trip.content))
+            (self.repository.scope,proposal.proposal_id,*expected))
 
 
 def publisher(database,checker,message_context,token_supplier,scope):
