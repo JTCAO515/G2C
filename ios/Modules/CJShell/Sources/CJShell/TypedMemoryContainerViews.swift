@@ -108,6 +108,9 @@ struct TypedMemoryManual: View {
     var body: some View {
         Form {
             Section {
+                if host.options.isEmpty {
+                    TypedMemoryText(text:language.text("No subject or scope is available for saving.", "当前没有可保存的对象或范围。"),id:"memory2.manual.unavailable")
+                }
                 Picker(language.text("Subject and scope", "对象与范围"),selection:$optionID) {
                     Text(language.text("Choose explicitly", "请明确选择")).tag(UUID?.none)
                     ForEach(host.options) { option in Text(option.label).tag(Optional(option.id)) }
@@ -302,6 +305,7 @@ struct TypedMemoryOriginals: View {
             Section {
                 switch host.originals {
                 case .loaded(let records):
+                    if records.isEmpty { noOriginals }
                     ForEach(records.indices,id:\.self) { index in
                         let original = records[index]
                         VStack(alignment:.leading,spacing:6) {
@@ -315,6 +319,7 @@ struct TypedMemoryOriginals: View {
             } header: { ShellSectionHeading(title:language.text("Current save originals", "本版保存原操作")) }
             Section {
                 if case .loaded(let records) = host.managementOriginals {
+                    if records.isEmpty { noOriginals }
                     ForEach(records.indices,id:\.self) { index in
                         let original = records[index]
                         queryButton(original.actionID,prefix:"memory2.action.query.") { let captured = surface;Task { await host.queryManagement(actionID:original.actionID,surface:captured) } }
@@ -323,6 +328,7 @@ struct TypedMemoryOriginals: View {
             } header: { ShellSectionHeading(title:language.text("Current lifecycle originals", "本版管理原动作")) }
             Section {
                 if case .loaded(let records) = host.legacyOriginals {
+                    if records.isEmpty { noOriginals }
                     ForEach(records.indices,id:\.self) { index in
                         let original = records[index]
                         queryButton(original.operationID,prefix:"memory2.legacy.query.") { let captured = surface;Task { await host.queryLegacySave(operationID:original.operationID,surface:captured) } }
@@ -331,6 +337,7 @@ struct TypedMemoryOriginals: View {
             } header: { ShellSectionHeading(title:language.text("Earlier save originals", "此前保存原操作")) }
             Section {
                 if case .loaded(let records) = host.legacyManagementOriginals {
+                    if records.isEmpty { noOriginals }
                     ForEach(records.indices,id:\.self) { index in
                         let original = records[index]
                         queryButton(original.actionID,prefix:"memory2.legacy.action.query.") { let captured = surface;Task { await host.queryLegacyManagement(actionID:original.actionID,surface:captured) } }
@@ -351,6 +358,7 @@ struct TypedMemoryOriginals: View {
             .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface))
     }
     private var journalError: some View { RunReadableText(text:language.text("This journal could not be read. Other originals can still be queried.", "无法读取这组日志，仍可查询其他原操作。")) }
+    private var noOriginals: some View { RunReadableText(text:language.text("No original operations found in this journal.", "这组日志中未发现原操作。")) }
     private func queryButton(_ id: String,prefix: String,action: @escaping () -> Void) -> some View {
         TypedMemoryButton(title:language.text("Query original: ", "查询原操作：") + id,id:prefix + id,enabled:surface != nil && !host.busy,action:action)
     }
