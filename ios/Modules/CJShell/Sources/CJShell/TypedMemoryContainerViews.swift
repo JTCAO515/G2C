@@ -342,7 +342,7 @@ struct TypedMemoryOriginals: View {
                 case .failed:journalError
                 default:EmptyView()
                 }
-            } header: { ShellSectionHeading(title:language.text("Current save originals", "本版保存原操作")) }
+            } header: { heading(language.text("Current save originals", "本版保存原操作")) }
             Section {
                 if case .loaded(let records) = host.managementOriginals {
                     if records.isEmpty { noOriginals }
@@ -358,7 +358,7 @@ struct TypedMemoryOriginals: View {
                         }
                     }
                 } else if case .failed = host.managementOriginals { journalError }
-            } header: { ShellSectionHeading(title:language.text("Current lifecycle originals", "本版管理原动作")) }
+            } header: { heading(language.text("Current lifecycle originals", "本版管理原动作")) }
             Section {
                 if case .loaded(let records) = host.legacyOriginals {
                     if records.isEmpty { noOriginals }
@@ -367,7 +367,7 @@ struct TypedMemoryOriginals: View {
                         queryButton(original.operationID,prefix:"memory2.legacy.query.") { let captured = surface;Task { await host.queryLegacySave(operationID:original.operationID,surface:captured) } }
                     }
                 } else if case .failed = host.legacyOriginals { journalError }
-            } header: { ShellSectionHeading(title:language.text("Earlier save originals", "此前保存原操作")) }
+            } header: { heading(language.text("Earlier save originals", "此前保存原操作")) }
             Section {
                 if case .loaded(let records) = host.legacyManagementOriginals {
                     if records.isEmpty { noOriginals }
@@ -376,7 +376,7 @@ struct TypedMemoryOriginals: View {
                         queryButton(original.actionID,prefix:"memory2.legacy.action.query.") { let captured = surface;Task { await host.queryLegacyManagement(actionID:original.actionID,surface:captured) } }
                     }
                 } else if case .failed = host.legacyManagementOriginals { journalError }
-            } header: { ShellSectionHeading(title:language.text("Earlier lifecycle originals", "此前管理原动作")) }
+            } header: { heading(language.text("Earlier lifecycle originals", "此前管理原动作")) }
             if let original = host.originalReference {
                 switch original {
                 case .save(let id),.legacySave(let id):
@@ -389,6 +389,10 @@ struct TypedMemoryOriginals: View {
             }
         }.navigationTitle(language.text("Previous operations", "此前的原操作"))
             .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface))
+    }
+    private func heading(_ title: String) -> some View {
+        RunReadableText(text:title,style:.headline).frame(maxWidth:.infinity,alignment:.leading)
+            .accessibilityAddTraits(.isHeader)
     }
     private var journalError: some View { RunReadableText(text:language.text("This journal could not be read. Other originals can still be queried.", "无法读取这组日志，仍可查询其他原操作。")) }
     private var noOriginals: some View { RunReadableText(text:language.text("No original operations found in this journal.", "这组日志中未发现原操作。")) }
