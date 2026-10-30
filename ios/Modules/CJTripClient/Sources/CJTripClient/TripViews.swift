@@ -150,6 +150,9 @@ public struct TripDetailView: View {
             TripLoadLabel(state: state.detailState, language: language)
             if let trip = state.trip {
                 Text(language.text("Current formal version \(trip.version)", "当前正式版本 \(trip.version)")).font(.headline)
+                    .accessibilityIdentifier("trip.detail.version")
+                Text(trip.trip_id).font(.caption.monospaced()).textSelection(.enabled)
+                    .accessibilityIdentifier("trip.detail.id")
                 TripDocumentView(document: trip.document, language: language)
             }
         }

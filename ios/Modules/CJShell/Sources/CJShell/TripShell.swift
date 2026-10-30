@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJTripClient
+import CJRunClient
 
 private extension ShellLanguage {
     var tripLanguage: TripLanguage { self == .english ? .english : .simplifiedChinese }
@@ -27,20 +28,22 @@ struct TripShell: View {
                                 if host.selectTrip(trip.trip_id, context: action) { state.tripPath.append(.detail) }
                             } label: {
                                 VStack(alignment: .leading) {
-                                    Text(trip.document.title)
-                                    Text(language.text("Current version \(trip.version)", "当前版本 \(trip.version)")).font(.caption)
-                                }
-                            }.disabled(action == nil)
+                                    RunReadableText(text: trip.document.title)
+                                    RunReadableText(text: language.text("Current version \(trip.version)", "当前版本 \(trip.version)"), style: .caption)
+                                    RunReadableText(text: trip.trip_id, style: .caption)
+                                }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                            }.buttonStyle(ShellReadableButtonStyle()).disabled(action == nil)
+                                .accessibilityIdentifier("trips.item." + trip.trip_id)
                         }
                         Button(language.text("Refresh trips", "刷新行程")) {
                             guard let work = host.prepareTrips(context: action) else { return }
                             Task { await host.perform(work) }
-                        }.disabled(action == nil)
+                        }.disabled(action == nil).accessibilityIdentifier("trips.refresh")
                         if presentation.next != nil {
                             Button(language.text("Load next page", "读取下一页")) {
                                 guard let work = host.prepareTrips(context: action, more: true) else { return }
                                 Task { await host.perform(work) }
-                            }.disabled(action == nil)
+                            }.disabled(action == nil).accessibilityIdentifier("trips.next")
                         }
                         Text(language.text("Live pages may change while browsing.", "浏览期间，分页内容可能更新。"))
                             .font(.caption)
@@ -143,7 +146,7 @@ private struct TripContainerDetail: View {
                     Button(language.text("Read current detail", "读取当前详情")) {
                         guard let work = host.prepareTrip(context: action) else { return }
                         Task { await host.perform(work) }
-                    }.disabled(action == nil)
+                    }.disabled(action == nil).accessibilityIdentifier("trips.detail.read")
                 } else { Text(language.text("Trip selection is unavailable.", "行程选择已不可用。")) }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }.navigationTitle(language.text("Trip details", "行程详情"))
