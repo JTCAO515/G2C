@@ -33,11 +33,13 @@ struct CheckedTransport: ClientTransport {
     let underlying: any ClientTransport
     let endpoint: MessageEndpoint
     let bearer: String
+    let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard baseURL == endpoint.url,
               (operationID == "receiveMessage" && request.method == .post && request.path == "/v1/messages") ||
               (operationID == "queryMessageReceipt" && request.method == .get && request.path?.hasPrefix("/v1/message-receipts?") == true) ||
               (operationID == "getMessageSendStatus" && request.method == .get && request.path?.hasPrefix("/v1/message-send-status?") == true) ||
+              (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == "readMessageHistory" && request.method == .get && request.path?.hasPrefix("/v1/message-history?") == true) ||
               (operationID == "readMessageDraft" && request.method == .get && request.path?.hasPrefix("/v1/message-drafts?") == true) ||
@@ -46,12 +48,15 @@ struct CheckedTransport: ClientTransport {
         }
         var request = request
         request.headerFields[.authorization] = "Bearer " + bearer
+        try await validate()
         let (response, body) = try await underlying.send(request, body: body, baseURL: baseURL, operationID: operationID)
+        try await validate()
         guard !(300..<400).contains(response.status.code) else { throw MessageHTTPFailure.redirectRejected }
         let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
         guard traces.count == 1, let header = traces.first?.value, UUID(uuidString: header) != nil,
               let body else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await Data(collecting: body, upTo: endpoint.maximumResponseBytes)
+        try await validate()
         var parser = StrictJSON(bytes: Array(bytes)); try parser.check()
         guard let json = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
               let trace = json["request_id"] as? String, trace == header else { throw MessageHTTPFailure.invalidResponse }
@@ -286,12 +291,13 @@ public enum MessageHTTPOutcome: Sendable {
         submissionEnabledForTest = false
         liveMessageTransport = liveReadTransport
     }
-    func client(_ lease: Lease) async throws -> Client {
+    func client(_ lease: Lease, configuration: Configuration = .init()) async throws -> Client {
         try recovery.validateScope(scope, lease: lease)
         let value = try await credentials.bearer(for: scope, lease: lease)
         try recovery.validateScope(scope, lease: lease)
         guard let value, !value.isEmpty, value.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MessageHTTPFailure.credentialsUnavailable }
-        return Client(serverURL: endpoint.url, transport: CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value))
+        return Client(serverURL: endpoint.url, configuration: configuration, transport: CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value,
+            validate: { [recovery,scope] in try recovery.validateScope(scope,lease:lease) }))
     }
     public func submit(messageID: String, lease: Lease) async throws -> MessageHTTPOutcome {
         if !submissionEnabledForTest { return try await submitPrepared(messageID: messageID, lease: lease) }
@@ -413,6 +419,24 @@ extension MessageHTTPClient {
     public func validateRead<Value>(_ result: MessageReadResult<Value>, lease: Lease) throws {
         try recovery.validateScope(scope, lease: lease)
         guard result.owner == readOwner, result.lease == lease else { throw RecoveryError.inactive }
+    }
+    /// Real owned B data under the current client/lease. This result never
+    /// substitutes for B's original accepted-message reference or effect lease.
+    public func readTravelContext(id: String, lease: Lease) async throws -> MessageReadResult<Components.Schemas.TravelContextReadResponse.travel_contextPayload> {
+        try recovery.validateScope(scope, lease: lease)
+        guard id.utf8.count == 32,id.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { throw RecoveryError.invalidInput }
+        let api = try await client(lease, configuration: .memory)
+        let output: Operations.getTravelContext.Output
+        do { output = try await api.getTravelContext(.init(path: .init(context_id: id))) }
+        catch { try recovery.validateScope(scope, lease: lease);throw MessageHTTPFailure.exchangeUnknown }
+        try recovery.validateScope(scope, lease: lease)
+        switch output {
+        case .ok(let response):
+            let body = try response.body.json
+            guard Data(body.travel_context.id.utf8) == Data(id.utf8),body.travel_context.version > 0 else { throw MessageHTTPFailure.invalidResponse }
+            return MessageReadResult(value: body.travel_context,next: nil,requestID: body.request_id,owner: readOwner,lease: lease)
+        case .default(let status,let response):throw MessageReadFailure.rejected(status: status,error: try response.body.json)
+        }
     }
     private func readCursor(_ cursor: MessageReadCursor?, purpose: Data, limit: Int, limits: MessageReadLimits, lease: Lease) throws {
         try recovery.validateScope(scope, lease: lease)
