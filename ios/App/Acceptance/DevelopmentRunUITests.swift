@@ -205,8 +205,10 @@ import Foundation
             let signed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", fixture.subjects["B"]!), object: app.staticTexts["account.development.status"])
             XCTAssertEqual(XCTWaiter.wait(for: [signed], timeout: 15), .completed)
         } else {
-            let rejected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Sign-in was rejected"), object: app.staticTexts["account.development.status"])
-            XCTAssertEqual(XCTWaiter.wait(for: [rejected], timeout: 15), .completed)
+            let expected = kind == "expired" ? "This session has expired" : "Sign-in was rejected"
+            let accountStatus = app.staticTexts["account.development.status"]
+            let rejected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: accountStatus)
+            XCTAssertEqual(XCTWaiter.wait(for: [rejected], timeout: 15), .completed, accountStatus.label)
         }
         if kind != "expired" { _ = try await call("/release-original-read", ["case": fixture.conversation]) }
         tap("Assistant")
