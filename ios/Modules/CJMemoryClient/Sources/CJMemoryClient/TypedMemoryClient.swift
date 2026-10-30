@@ -81,7 +81,12 @@ import OpenAPIRuntime
     public func save(_ command: TypedMemoryCommand,binding: MemoryBinding) async throws -> MemorySaveResult {
         let token = try begin(binding);try store.validate(binding)
         try validatePriorOriginals();try check(binding,token)
-        guard try store.records().allSatisfy({ record in
+        let originals = try store.records();try check(binding,token)
+        if let original = originals.first(where:{ same($0.operationID,command.operationID) }) {
+            guard original.originalUTF8 == command.originalUTF8 else { throw MemoryFailure.invalidInput }
+            throw MemoryFailure.pendingRequiresQuery // every existing original is GET-only
+        }
+        guard try originals.allSatisfy({ record in
             if confirmed.contains(Data(record.operationID.utf8)) { return true }
             return try store.rejection(for:record) != nil
         }) else { throw MemoryFailure.pendingRequiresQuery }

@@ -24,6 +24,8 @@ public struct TypedMemorySurface: Sendable {
     fileprivate let surface: TypedMemorySurface
     fileprivate let command: TypedMemoryCommand
     fileprivate let travel: CapturedTravelSelection?
+    /// Exact reviewed command data; exposing it confers no construction or dispatch authority.
+    public var original: TypedMemoryCommand { command }
 }
 @MainActor public struct TypedMemoryManagementWork {
     fileprivate let surface: TypedMemorySurface
@@ -34,7 +36,7 @@ public struct TypedMemorySurface: Sendable {
     fileprivate let travelValue: MemoryTravelSelection?
 }
 public enum TypedMemoryManagementState {
-    case ready,working,unknown,notObserved,rejected
+    case ready,working,unknown,notObserved,rejected,needsOriginalQuery
     case historical(Components.Schemas.MemoryManagementReceiptV2)
 }
 
@@ -229,6 +231,7 @@ public enum TypedMemoryManagementState {
             switch error {
             case .rejected:return .rejected
             case .invalidInput:return .failed
+            case .pendingRequiresQuery:return .needsOriginalQuery
             default:return .unknown
             }
         }
@@ -264,7 +267,12 @@ public enum TypedMemoryManagementState {
             let result = try await client.manage(work.operation,read:work.read,text:work.text,travelContext:work.travelValue,binding:binding)
             guard owns(surface) else { return }
             present(surface,{ detailValue = .unconfigured;publish(result);working = false })
-        } catch { present(surface,{ detailValue = .unconfigured;managementValue = .unknown;working = false }) }
+        } catch { present(surface,{
+            detailValue = .unconfigured
+            if let failure = error as? MemoryFailure,failure == .pendingRequiresQuery { managementValue = .needsOriginalQuery }
+            else { managementValue = .unknown }
+            working = false
+        }) }
     }
     private func publish(_ result: TypedMemoryManagementResult) {
         switch result {

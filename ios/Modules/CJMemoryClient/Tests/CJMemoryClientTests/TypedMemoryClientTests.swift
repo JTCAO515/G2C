@@ -104,6 +104,21 @@ private actor TypedMemoryWire: ClientTransport {
         #expect(await wire.posts.isEmpty)
         #expect(try client.pending(binding:f.binding).count == 1)
     }
+    @Test(arguments:[false,true]) func existingOriginalIsNeverPostedAgainEvenAfterSuccess(changedBytes: Bool) async throws {
+        let f = try Fixture();defer {f.cleanup()}
+        let wire = TypedMemoryWire(),client = try client(f,wire),first = try command()
+        _ = try await client.save(first,binding:f.binding)
+        let repeated: TypedMemoryCommand
+        if changedBytes {
+            repeated = try TypedMemoryCommand(operationID:first.operationID,itemID:first.itemID,subject:first.subject,
+                slot:first.slot,text:"different input",occurredAt:first.occurredAt,kind:first.kind,travelContext:first.travelContext)
+        } else { repeated = first }
+        await #expect(throws:changedBytes ? MemoryFailure.invalidInput : .pendingRequiresQuery) {
+            try await client.save(repeated,binding:f.binding)
+        }
+        #expect(await wire.posts == [first.originalUTF8])
+        #expect(try client.pending(binding:f.binding).map(\.originalUTF8) == [first.originalUTF8])
+    }
     @Test func lostACKReopenOnlyQueriesOriginalReceiptAndNeverRepeatsPOST() async throws {
         let f = try Fixture();defer { f.cleanup() }
         let wire = TypedMemoryWire(.lostACK),client = try client(f,wire),command = try command()

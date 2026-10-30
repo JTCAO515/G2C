@@ -26,6 +26,7 @@ private actor MemoryHostTransport: ClientTransport {
     var continuation: CheckedContinuation<Void, Never>?
     let holdFirst: Bool
     init(_ replies: [Data], holdFirst: Bool = false) { self.replies = replies; self.holdFirst = holdFirst }
+    func enqueue(_ bytes: Data) { replies.append(bytes) }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         calls.append((operationID, request.method, request.path ?? ""))
         guard !replies.isEmpty else { throw MemoryFailure.exchangeUnknown }
@@ -86,6 +87,21 @@ private actor MemoryHostTransport: ClientTransport {
 }
 @MainActor private final class TypedSurfaceBox { var surface: TypedMemorySurface? }
 @Suite @MainActor struct MemoryContainerHostTests {
+    @Test func typedRepeatedConfirmationUsesOriginalQueryWithoutAnotherPOST() async throws {
+        let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        let work = try f.host.prepareSave(optionID:f.longTerm.id,text:"explicit input",occurredAt:"unknown",surface:surface)
+        let original = work.original
+        let hash = SHA256.hash(data:original.originalUTF8).map {String(format:"%02x",$0)}.joined()
+        await wire.enqueue(try json(["version":"MEMORY-result.2","receipt":["operation_id":original.operationID,"item_id":original.itemID,
+            "version":1,"status":"active","input_sha256":hash]]))
+        await f.host.performSave(work)
+        guard case .saved = f.host.saveState else { Issue.record("first save did not settle");return }
+        await f.host.performSave(work)
+        guard case .needsOriginalQuery = f.host.saveState else { Issue.record("existing original shown as a fresh unknown submission");return }
+        #expect(await wire.calls.map(\.0) == ["saveTypedMemory"])
+        #expect(try f.client.pending(binding:f.source.binding).map(\.originalUTF8) == [original.originalUTF8])
+    }
     private func typedItem(_ id: String) -> [String:Any] {
         var value = item(id),command = value["command"] as! [String:Any]
         command.removeValue(forKey:"context_id");command["context"] = NSNull();value["command"] = command
