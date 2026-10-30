@@ -90,7 +90,7 @@ struct MemoryContainerDetail: View {
             }
             MemoryActionButton(title: language.text("Load current detail", "读取当前详情"), enabled: action != nil) {
                 Task { await host.loadDetail(context: action) }
-            }
+            }.accessibilityIdentifier("memory.detail.refresh")
         }
             .navigationTitle(language.text("Memory detail", "记忆详情")).navigationBarTitleDisplayMode(.inline)
             .onAppear { presentation = host.beginManagementPresentation() }

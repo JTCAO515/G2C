@@ -48,10 +48,10 @@ private struct MemoryManagementControlsContent: View {
         language.text("Original action failed: ", "原操作已明确失败：") + String(value.status) + " / " + value.code
             + language.text(". Original input retained. Refresh and review before a new action.", "。原输入保留，请刷新并重新审阅后再发起新操作。")
     }
-    private func perform(_ action: @escaping () async throws -> MemoryManagementResult) {
+    private func perform(queryOnly: Bool = false, _ action: @escaping () async throws -> MemoryManagementResult) {
         guard client.managementPresentationIsCurrent(binding) else { return }
         let token = UUID(); request = token
-        status = language.text("Checking original action…", "正在核对原操作…")
+        status = queryOnly ? language.text("Checking original action…", "正在核对原操作…") : language.text("Submitting original action…", "正在提交原操作…")
         Task {
             do {
                 guard client.managementPresentationIsCurrent(binding), token == request else { return }
@@ -120,7 +120,7 @@ private struct MemoryManagementControlsContent: View {
             if let originalActionID {
                 MemoryRowText(text: originalActionID, style: .caption).accessibilityIdentifier("memory.manage.actionID")
                 MemoryLifecycleButton(title: language.text("Query original action", "查询原操作"), identifier: "memory.manage.query", enabled: client.managementAvailable) {
-                    perform { try await client.queryManagement(actionID: originalActionID, binding: binding) }
+                    perform(queryOnly: true) { try await client.queryManagement(actionID: originalActionID, binding: binding) }
                 }
             }
         }
@@ -136,6 +136,15 @@ private struct MemoryManagementControlsContent: View {
                 }
                 Button(language.text("Cancel", "取消"), role: .cancel) { confirming = nil }
             }
+        #if os(iOS)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(language.text("Done", "完成")) { textFocused = false }
+                    .accessibilityIdentifier("memory.manage.keyboard.done")
+            }
+        }
+        #endif
     }
 }
 
