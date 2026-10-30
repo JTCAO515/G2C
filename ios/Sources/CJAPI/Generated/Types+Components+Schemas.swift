@@ -8970,5 +8970,2683 @@ extension Components {
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/TravelContextState`.
+        public struct TravelContextState: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TravelContextState/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TravelContextState/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/TravelContextState/active`.
+            public var active: Swift.Bool
+            /// Creates a new `TravelContextState`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - version:
+            ///   - active:
+            public init(
+                id: Swift.String,
+                version: Swift.Int,
+                active: Swift.Bool
+            ) {
+                self.id = id
+                self.version = version
+                self.active = active
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case version
+                case active
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.id = try container.decode(
+                    Swift.String.self,
+                    forKey: .id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.active = try container.decode(
+                    Swift.Bool.self,
+                    forKey: .active
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "id",
+                    "version",
+                    "active"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TravelActionReceipt`.
+        public struct TravelActionReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TravelActionReceipt/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case TRAVEL_hyphen_context_hyphen_receipt_period_1 = "TRAVEL-context-receipt.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/TravelActionReceipt/version`.
+            public var version: Components.Schemas.TravelActionReceipt.versionPayload
+            /// - Remark: Generated from `#/components/schemas/TravelActionReceipt/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TravelActionReceipt/operation`.
+            @frozen public enum operationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case create = "create"
+                case advance = "advance"
+                case deactivate = "deactivate"
+            }
+            /// - Remark: Generated from `#/components/schemas/TravelActionReceipt/operation`.
+            public var operation: Components.Schemas.TravelActionReceipt.operationPayload
+            /// - Remark: Generated from `#/components/schemas/TravelActionReceipt/travel_context`.
+            public var travel_context: Components.Schemas.TravelContextState
+            /// Creates a new `TravelActionReceipt`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - action_id:
+            ///   - operation:
+            ///   - travel_context:
+            public init(
+                version: Components.Schemas.TravelActionReceipt.versionPayload,
+                action_id: Swift.String,
+                operation: Components.Schemas.TravelActionReceipt.operationPayload,
+                travel_context: Components.Schemas.TravelContextState
+            ) {
+                self.version = version
+                self.action_id = action_id
+                self.operation = operation
+                self.travel_context = travel_context
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case action_id
+                case operation
+                case travel_context
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.TravelActionReceipt.versionPayload.self,
+                    forKey: .version
+                )
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.operation = try container.decode(
+                    Components.Schemas.TravelActionReceipt.operationPayload.self,
+                    forKey: .operation
+                )
+                self.travel_context = try container.decode(
+                    Components.Schemas.TravelContextState.self,
+                    forKey: .travel_context
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "action_id",
+                    "operation",
+                    "travel_context"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TravelActionResponse`.
+        public struct TravelActionResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TravelActionResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/TravelActionResponse/receipt`.
+            public var receipt: Components.Schemas.TravelActionReceipt
+            /// Creates a new `TravelActionResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.TravelActionReceipt
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.TravelActionReceipt.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TravelActionQueryResponse`.
+        public struct TravelActionQueryResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TravelActionQueryResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// Creates a new `TravelActionQueryResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            public init(request_id: Components.Schemas.RequestId) {
+                self.request_id = request_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse`.
+        public struct TravelContextReadResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case TRAVEL_hyphen_context_period_1 = "TRAVEL-context.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/version`.
+            public var version: Components.Schemas.TravelContextReadResponse.versionPayload
+            /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/travel_context`.
+            public struct travel_contextPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/travel_context/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/travel_context/version`.
+                public var version: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/travel_context/active`.
+                public var active: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/travel_context/created_at`.
+                public var created_at: Foundation.Date
+                /// Creates a new `travel_contextPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - version:
+                ///   - active:
+                ///   - created_at:
+                public init(
+                    id: Swift.String,
+                    version: Swift.Int,
+                    active: Swift.Bool,
+                    created_at: Foundation.Date
+                ) {
+                    self.id = id
+                    self.version = version
+                    self.active = active
+                    self.created_at = created_at
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case version
+                    case active
+                    case created_at
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.id = try container.decode(
+                        Swift.String.self,
+                        forKey: .id
+                    )
+                    self.version = try container.decode(
+                        Swift.Int.self,
+                        forKey: .version
+                    )
+                    self.active = try container.decode(
+                        Swift.Bool.self,
+                        forKey: .active
+                    )
+                    self.created_at = try container.decode(
+                        Foundation.Date.self,
+                        forKey: .created_at
+                    )
+                    try decoder.ensureNoAdditionalProperties(knownKeys: [
+                        "id",
+                        "version",
+                        "active",
+                        "created_at"
+                    ])
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TravelContextReadResponse/travel_context`.
+            public var travel_context: Components.Schemas.TravelContextReadResponse.travel_contextPayload
+            /// Creates a new `TravelContextReadResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - version:
+            ///   - travel_context:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                version: Components.Schemas.TravelContextReadResponse.versionPayload,
+                travel_context: Components.Schemas.TravelContextReadResponse.travel_contextPayload
+            ) {
+                self.request_id = request_id
+                self.version = version
+                self.travel_context = travel_context
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case version
+                case travel_context
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.version = try container.decode(
+                    Components.Schemas.TravelContextReadResponse.versionPayload.self,
+                    forKey: .version
+                )
+                self.travel_context = try container.decode(
+                    Components.Schemas.TravelContextReadResponse.travel_contextPayload.self,
+                    forKey: .travel_context
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "version",
+                    "travel_context"
+                ])
+            }
+        }
+        /// MEMORY-MANAGEMENT-EDIT@1 exact immutable original action bytes. New server-approved source; historical source and scope retained. No client scope, consent, expiry or enable fields.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction`.
+        public struct MemoryManagementEditAction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/operation`.
+            @frozen public enum operationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case edit = "edit"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/operation`.
+            public var operation: Components.Schemas.MemoryManagementEditAction.operationPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/expected_source_version`.
+            public var expected_source_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_MANAGEMENT_hyphen_EDIT_commat_1 = "MEMORY-MANAGEMENT-EDIT@1"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/version`.
+            public var version: Components.Schemas.MemoryManagementEditAction.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementEditAction/text`.
+            public var text: Swift.String
+            /// Creates a new `MemoryManagementEditAction`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - operation:
+            ///   - item_id:
+            ///   - expected_version:
+            ///   - expected_source_version:
+            ///   - version:
+            ///   - text:
+            public init(
+                action_id: Swift.String,
+                operation: Components.Schemas.MemoryManagementEditAction.operationPayload,
+                item_id: Swift.String,
+                expected_version: Swift.Int,
+                expected_source_version: Swift.Int,
+                version: Components.Schemas.MemoryManagementEditAction.versionPayload,
+                text: Swift.String
+            ) {
+                self.action_id = action_id
+                self.operation = operation
+                self.item_id = item_id
+                self.expected_version = expected_version
+                self.expected_source_version = expected_source_version
+                self.version = version
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case operation
+                case item_id
+                case expected_version
+                case expected_source_version
+                case version
+                case text
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.operation = try container.decode(
+                    Components.Schemas.MemoryManagementEditAction.operationPayload.self,
+                    forKey: .operation
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.expected_source_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_source_version
+                )
+                self.version = try container.decode(
+                    Components.Schemas.MemoryManagementEditAction.versionPayload.self,
+                    forKey: .version
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "operation",
+                    "item_id",
+                    "expected_version",
+                    "expected_source_version",
+                    "version",
+                    "text"
+                ])
+            }
+        }
+        /// MEMORY-STOP-USE@1. Stop using the complete server-enumerated source history only; no deletion or cleanup. Exact original immutable UTF8 bytes, canonical scope/CAS/epoch and original action receipt.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction`.
+        public struct MemoryStopUseAction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/operation`.
+            @frozen public enum operationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case withdraw = "withdraw"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/operation`.
+            public var operation: Components.Schemas.MemoryStopUseAction.operationPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/expected_source_version`.
+            public var expected_source_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_STOP_hyphen_USE_commat_1 = "MEMORY-STOP-USE@1"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/version`.
+            public var version: Components.Schemas.MemoryStopUseAction.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseAction/source_id`.
+            public var source_id: Swift.String
+            /// Creates a new `MemoryStopUseAction`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - operation:
+            ///   - item_id:
+            ///   - expected_version:
+            ///   - expected_source_version:
+            ///   - version:
+            ///   - source_id:
+            public init(
+                action_id: Swift.String,
+                operation: Components.Schemas.MemoryStopUseAction.operationPayload,
+                item_id: Swift.String,
+                expected_version: Swift.Int,
+                expected_source_version: Swift.Int,
+                version: Components.Schemas.MemoryStopUseAction.versionPayload,
+                source_id: Swift.String
+            ) {
+                self.action_id = action_id
+                self.operation = operation
+                self.item_id = item_id
+                self.expected_version = expected_version
+                self.expected_source_version = expected_source_version
+                self.version = version
+                self.source_id = source_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case operation
+                case item_id
+                case expected_version
+                case expected_source_version
+                case version
+                case source_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.operation = try container.decode(
+                    Components.Schemas.MemoryStopUseAction.operationPayload.self,
+                    forKey: .operation
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.expected_source_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_source_version
+                )
+                self.version = try container.decode(
+                    Components.Schemas.MemoryStopUseAction.versionPayload.self,
+                    forKey: .version
+                )
+                self.source_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .source_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "operation",
+                    "item_id",
+                    "expected_version",
+                    "expected_source_version",
+                    "version",
+                    "source_id"
+                ])
+            }
+        }
+        /// Historical original lifecycle receipt. action_id is canonical Receipt.operation_id; hash comes from persisted original action bytes, not request recomputation.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceipt`.
+        public struct MemoryStopUseReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceipt/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceipt/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceipt/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceipt/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case withdrawn = "withdrawn"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceipt/status`.
+            public var status: Components.Schemas.MemoryStopUseReceipt.statusPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceipt/input_sha256`.
+            public var input_sha256: Swift.String
+            /// Creates a new `MemoryStopUseReceipt`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - item_id:
+            ///   - version:
+            ///   - status:
+            ///   - input_sha256:
+            public init(
+                action_id: Swift.String,
+                item_id: Swift.String,
+                version: Swift.Int,
+                status: Components.Schemas.MemoryStopUseReceipt.statusPayload,
+                input_sha256: Swift.String
+            ) {
+                self.action_id = action_id
+                self.item_id = item_id
+                self.version = version
+                self.status = status
+                self.input_sha256 = input_sha256
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case item_id
+                case version
+                case status
+                case input_sha256
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.status = try container.decode(
+                    Components.Schemas.MemoryStopUseReceipt.statusPayload.self,
+                    forKey: .status
+                )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "item_id",
+                    "version",
+                    "status",
+                    "input_sha256"
+                ])
+            }
+        }
+        /// Receipt after canonical guarded commit and final fences only. Unknown outcome must query original action ID, never automatic resend/new ID.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryStopUseApplyResponse`.
+        public struct MemoryStopUseApplyResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseApplyResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseApplyResponse/receipt`.
+            public var receipt: Components.Schemas.MemoryStopUseReceipt
+            /// Creates a new `MemoryStopUseApplyResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryStopUseReceipt
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryStopUseReceipt.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// Required null receipt means not observed in this scoped lifecycle ledger; never proves noncommit or authorizes resend.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceiptResponse`.
+        public struct MemoryStopUseReceiptResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceiptResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceiptResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceiptResponse/receipt/case1`.
+                case MemoryStopUseReceipt(Components.Schemas.MemoryStopUseReceipt)
+                /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceiptResponse/receipt/case2`.
+                case case2(OpenAPIRuntime.OpenAPIValueContainer)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryStopUseReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .case2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryStopUseReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .case2(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseReceiptResponse/receipt`.
+            public var receipt: Components.Schemas.MemoryStopUseReceiptResponse.receiptPayload
+            /// Creates a new `MemoryStopUseReceiptResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryStopUseReceiptResponse.receiptPayload
+            ) {
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryStopUseReceiptResponse.receiptPayload.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel`.
+        public struct MessageTravelReferenceTravel: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MESSAGE_hyphen_travel_hyphen_reference_period_1 = "MESSAGE-travel-reference.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/version`.
+            public var version: Components.Schemas.MessageTravelReferenceTravel.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/sequence`.
+            public var sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/input_sha256`.
+            public var input_sha256: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/message_version`.
+            @frozen public enum message_versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MESSAGE_hyphen_send_period_2 = "MESSAGE-send.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/message_version`.
+            public var message_version: Components.Schemas.MessageTravelReferenceTravel.message_versionPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/context_kind`.
+            @frozen public enum context_kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case travel = "travel"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/context_kind`.
+            public var context_kind: Components.Schemas.MessageTravelReferenceTravel.context_kindPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/context_id`.
+            public var context_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/context_version`.
+            public var context_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceTravel/selection_epoch`.
+            public var selection_epoch: Swift.Int
+            /// Creates a new `MessageTravelReferenceTravel`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - sequence:
+            ///   - input_sha256:
+            ///   - message_version:
+            ///   - context_kind:
+            ///   - context_id:
+            ///   - context_version:
+            ///   - selection_epoch:
+            public init(
+                version: Components.Schemas.MessageTravelReferenceTravel.versionPayload,
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                sequence: Swift.Int,
+                input_sha256: Swift.String,
+                message_version: Components.Schemas.MessageTravelReferenceTravel.message_versionPayload,
+                context_kind: Components.Schemas.MessageTravelReferenceTravel.context_kindPayload,
+                context_id: Swift.String,
+                context_version: Swift.Int,
+                selection_epoch: Swift.Int
+            ) {
+                self.version = version
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.message_id = message_id
+                self.run_id = run_id
+                self.sequence = sequence
+                self.input_sha256 = input_sha256
+                self.message_version = message_version
+                self.context_kind = context_kind
+                self.context_id = context_id
+                self.context_version = context_version
+                self.selection_epoch = selection_epoch
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case conversation_id
+                case generation
+                case message_id
+                case run_id
+                case sequence
+                case input_sha256
+                case message_version
+                case context_kind
+                case context_id
+                case context_version
+                case selection_epoch
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MessageTravelReferenceTravel.versionPayload.self,
+                    forKey: .version
+                )
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .sequence
+                )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
+                self.message_version = try container.decode(
+                    Components.Schemas.MessageTravelReferenceTravel.message_versionPayload.self,
+                    forKey: .message_version
+                )
+                self.context_kind = try container.decode(
+                    Components.Schemas.MessageTravelReferenceTravel.context_kindPayload.self,
+                    forKey: .context_kind
+                )
+                self.context_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .context_id
+                )
+                self.context_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .context_version
+                )
+                self.selection_epoch = try container.decode(
+                    Swift.Int.self,
+                    forKey: .selection_epoch
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "conversation_id",
+                    "generation",
+                    "message_id",
+                    "run_id",
+                    "sequence",
+                    "input_sha256",
+                    "message_version",
+                    "context_kind",
+                    "context_id",
+                    "context_version",
+                    "selection_epoch"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone`.
+        public struct MessageTravelReferenceNone: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MESSAGE_hyphen_travel_hyphen_reference_period_1 = "MESSAGE-travel-reference.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/version`.
+            public var version: Components.Schemas.MessageTravelReferenceNone.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/sequence`.
+            public var sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/input_sha256`.
+            public var input_sha256: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/message_version`.
+            @frozen public enum message_versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MESSAGE_hyphen_send_period_2 = "MESSAGE-send.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/message_version`.
+            public var message_version: Components.Schemas.MessageTravelReferenceNone.message_versionPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/context_kind`.
+            @frozen public enum context_kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case none = "none"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/context_kind`.
+            public var context_kind: Components.Schemas.MessageTravelReferenceNone.context_kindPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/selection_epoch`.
+            public var selection_epoch: Swift.Int
+            /// Creates a new `MessageTravelReferenceNone`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - sequence:
+            ///   - input_sha256:
+            ///   - message_version:
+            ///   - context_kind:
+            ///   - selection_epoch:
+            public init(
+                version: Components.Schemas.MessageTravelReferenceNone.versionPayload,
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                sequence: Swift.Int,
+                input_sha256: Swift.String,
+                message_version: Components.Schemas.MessageTravelReferenceNone.message_versionPayload,
+                context_kind: Components.Schemas.MessageTravelReferenceNone.context_kindPayload,
+                selection_epoch: Swift.Int
+            ) {
+                self.version = version
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.message_id = message_id
+                self.run_id = run_id
+                self.sequence = sequence
+                self.input_sha256 = input_sha256
+                self.message_version = message_version
+                self.context_kind = context_kind
+                self.selection_epoch = selection_epoch
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case conversation_id
+                case generation
+                case message_id
+                case run_id
+                case sequence
+                case input_sha256
+                case message_version
+                case context_kind
+                case selection_epoch
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MessageTravelReferenceNone.versionPayload.self,
+                    forKey: .version
+                )
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .sequence
+                )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
+                self.message_version = try container.decode(
+                    Components.Schemas.MessageTravelReferenceNone.message_versionPayload.self,
+                    forKey: .message_version
+                )
+                self.context_kind = try container.decode(
+                    Components.Schemas.MessageTravelReferenceNone.context_kindPayload.self,
+                    forKey: .context_kind
+                )
+                self.selection_epoch = try container.decode(
+                    Swift.Int.self,
+                    forKey: .selection_epoch
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "conversation_id",
+                    "generation",
+                    "message_id",
+                    "run_id",
+                    "sequence",
+                    "input_sha256",
+                    "message_version",
+                    "context_kind",
+                    "selection_epoch"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy`.
+        public struct MessageTravelReferenceLegacy: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MESSAGE_hyphen_travel_hyphen_reference_period_1 = "MESSAGE-travel-reference.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/version`.
+            public var version: Components.Schemas.MessageTravelReferenceLegacy.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/sequence`.
+            public var sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/input_sha256`.
+            public var input_sha256: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/message_version`.
+            @frozen public enum message_versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MESSAGE_hyphen_send_period_1 = "MESSAGE-send.1"
+                case MESSAGE_hyphen_draft_period_1 = "MESSAGE-draft.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/message_version`.
+            public var message_version: Components.Schemas.MessageTravelReferenceLegacy.message_versionPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/context_kind`.
+            @frozen public enum context_kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case legacy = "legacy"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/context_kind`.
+            public var context_kind: Components.Schemas.MessageTravelReferenceLegacy.context_kindPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/context_id`.
+            public var context_id: Swift.String
+            /// Creates a new `MessageTravelReferenceLegacy`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - sequence:
+            ///   - input_sha256:
+            ///   - message_version:
+            ///   - context_kind:
+            ///   - context_id:
+            public init(
+                version: Components.Schemas.MessageTravelReferenceLegacy.versionPayload,
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                sequence: Swift.Int,
+                input_sha256: Swift.String,
+                message_version: Components.Schemas.MessageTravelReferenceLegacy.message_versionPayload,
+                context_kind: Components.Schemas.MessageTravelReferenceLegacy.context_kindPayload,
+                context_id: Swift.String
+            ) {
+                self.version = version
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.message_id = message_id
+                self.run_id = run_id
+                self.sequence = sequence
+                self.input_sha256 = input_sha256
+                self.message_version = message_version
+                self.context_kind = context_kind
+                self.context_id = context_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case conversation_id
+                case generation
+                case message_id
+                case run_id
+                case sequence
+                case input_sha256
+                case message_version
+                case context_kind
+                case context_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MessageTravelReferenceLegacy.versionPayload.self,
+                    forKey: .version
+                )
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .sequence
+                )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
+                self.message_version = try container.decode(
+                    Components.Schemas.MessageTravelReferenceLegacy.message_versionPayload.self,
+                    forKey: .message_version
+                )
+                self.context_kind = try container.decode(
+                    Components.Schemas.MessageTravelReferenceLegacy.context_kindPayload.self,
+                    forKey: .context_kind
+                )
+                self.context_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .context_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "conversation_id",
+                    "generation",
+                    "message_id",
+                    "run_id",
+                    "sequence",
+                    "input_sha256",
+                    "message_version",
+                    "context_kind",
+                    "context_id"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageTravelReference`.
+        @frozen public enum MessageTravelReference: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReference/MessageTravelReferenceLegacy`.
+            case legacy(Components.Schemas.MessageTravelReferenceLegacy)
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReference/MessageTravelReferenceNone`.
+            case none(Components.Schemas.MessageTravelReferenceNone)
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReference/MessageTravelReferenceTravel`.
+            case travel(Components.Schemas.MessageTravelReferenceTravel)
+            public enum CodingKeys: String, CodingKey {
+                case context_kind
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                let discriminator = try container.decode(
+                    Swift.String.self,
+                    forKey: .context_kind
+                )
+                switch discriminator {
+                case "legacy":
+                    self = .legacy(try .init(from: decoder))
+                case "none":
+                    self = .none(try .init(from: decoder))
+                case "travel":
+                    self = .travel(try .init(from: decoder))
+                default:
+                    throw Swift.DecodingError.unknownOneOfDiscriminator(
+                        discriminatorKey: CodingKeys.context_kind,
+                        discriminatorValue: discriminator,
+                        codingPath: decoder.codingPath
+                    )
+                }
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .legacy(value):
+                    try value.encode(to: encoder)
+                case let .none(value):
+                    try value.encode(to: encoder)
+                case let .travel(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageReceiveV2Response`.
+        public struct MessageReceiveV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageReceiveV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MessageReceiveV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MESSAGE_hyphen_accept_period_2 = "MESSAGE-accept.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageReceiveV2Response/version`.
+            public var version: Components.Schemas.MessageReceiveV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MessageReceiveV2Response/receipt`.
+            public var receipt: Components.Schemas.MessageReceipt
+            /// - Remark: Generated from `#/components/schemas/MessageReceiveV2Response/reference`.
+            public var reference: Components.Schemas.MessageTravelReference
+            /// Creates a new `MessageReceiveV2Response`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - version:
+            ///   - receipt:
+            ///   - reference:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                version: Components.Schemas.MessageReceiveV2Response.versionPayload,
+                receipt: Components.Schemas.MessageReceipt,
+                reference: Components.Schemas.MessageTravelReference
+            ) {
+                self.request_id = request_id
+                self.version = version
+                self.receipt = receipt
+                self.reference = reference
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case version
+                case receipt
+                case reference
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.version = try container.decode(
+                    Components.Schemas.MessageReceiveV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MessageReceipt.self,
+                    forKey: .receipt
+                )
+                self.reference = try container.decode(
+                    Components.Schemas.MessageTravelReference.self,
+                    forKey: .reference
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "version",
+                    "receipt",
+                    "reference"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response`.
+        public struct MessageSendStatusV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MESSAGE_hyphen_send_hyphen_status_period_2 = "MESSAGE-send-status.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/version`.
+            public var version: Components.Schemas.MessageSendStatusV2Response.versionPayload
+            /// Creates a new `MessageSendStatusV2Response`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - version:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                version: Components.Schemas.MessageSendStatusV2Response.versionPayload
+            ) {
+                self.request_id = request_id
+                self.version = version
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case version
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.version = try container.decode(
+                    Components.Schemas.MessageSendStatusV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "version"
+                ])
+            }
+        }
+        /// Read-only original MESSAGE-send.2 RUN and immutable reference under one canonical owner callback. Historical data only; no execution permission. Legacy messages use their existing read version.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunDisplayV2Response`.
+        public struct RunDisplayV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunDisplayV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/RunDisplayV2Response/snapshot`.
+            public var snapshot: Components.Schemas.RunDisplaySnapshot
+            /// - Remark: Generated from `#/components/schemas/RunDisplayV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case RUN_hyphen_display_period_2 = "RUN-display.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunDisplayV2Response/version`.
+            public var version: Components.Schemas.RunDisplayV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/RunDisplayV2Response/reference`.
+            public var reference: Components.Schemas.MessageTravelReference
+            /// Creates a new `RunDisplayV2Response`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - snapshot:
+            ///   - version:
+            ///   - reference:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                snapshot: Components.Schemas.RunDisplaySnapshot,
+                version: Components.Schemas.RunDisplayV2Response.versionPayload,
+                reference: Components.Schemas.MessageTravelReference
+            ) {
+                self.request_id = request_id
+                self.snapshot = snapshot
+                self.version = version
+                self.reference = reference
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case snapshot
+                case version
+                case reference
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.snapshot = try container.decode(
+                    Components.Schemas.RunDisplaySnapshot.self,
+                    forKey: .snapshot
+                )
+                self.version = try container.decode(
+                    Components.Schemas.RunDisplayV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.reference = try container.decode(
+                    Components.Schemas.MessageTravelReference.self,
+                    forKey: .reference
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "snapshot",
+                    "version",
+                    "reference"
+                ])
+            }
+        }
+        /// Original MESSAGE-send.2 status plus immutable travel reference. Same persisted-only budget stages; no inference, retry authorization or context rebind.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response`.
+        public struct RunDraftStatusV3Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/conversation_id`.
+            public var conversation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/generation`.
+            public var generation: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/message_sequence`.
+            public var message_sequence: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/event_highwater`.
+            public var event_highwater: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case RUN_hyphen_draft_hyphen_status_period_3 = "RUN-draft-status.3"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/version`.
+            public var version: Components.Schemas.RunDraftStatusV3Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/run_status`.
+            @frozen public enum run_statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case queued = "queued"
+                case running = "running"
+                case completed = "completed"
+                case failed = "failed"
+                case cancelled = "cancelled"
+                case context_invalid = "context_invalid"
+                case unknown = "unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/run_status`.
+            public var run_status: Components.Schemas.RunDraftStatusV3Response.run_statusPayload
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/draft_outcome`.
+            @frozen public enum draft_outcomePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case not_requested = "not_requested"
+                case not_recorded = "not_recorded"
+                case published = "published"
+                case validation_failed = "validation_failed"
+                case provider_failed = "provider_failed"
+                case provider_unknown = "provider_unknown"
+                case budget_exhausted = "budget_exhausted"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/draft_outcome`.
+            public var draft_outcome: Components.Schemas.RunDraftStatusV3Response.draft_outcomePayload
+            /// Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/budget_exhausted_stage`.
+            @frozen public enum budget_exhausted_stagePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case none = "none"
+                case answer = "answer"
+                case draft = "draft"
+            }
+            /// Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/budget_exhausted_stage`.
+            public var budget_exhausted_stage: Components.Schemas.RunDraftStatusV3Response.budget_exhausted_stagePayload
+            /// - Remark: Generated from `#/components/schemas/RunDraftStatusV3Response/reference`.
+            public var reference: Components.Schemas.MessageTravelReference
+            /// Creates a new `RunDraftStatusV3Response`.
+            ///
+            /// - Parameters:
+            ///   - conversation_id:
+            ///   - generation:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - message_sequence:
+            ///   - event_highwater:
+            ///   - request_id:
+            ///   - version:
+            ///   - run_status:
+            ///   - draft_outcome:
+            ///   - budget_exhausted_stage: Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.
+            ///   - reference:
+            public init(
+                conversation_id: Swift.String,
+                generation: Swift.String,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                message_sequence: Swift.Int,
+                event_highwater: Swift.Int,
+                request_id: Components.Schemas.RequestId,
+                version: Components.Schemas.RunDraftStatusV3Response.versionPayload,
+                run_status: Components.Schemas.RunDraftStatusV3Response.run_statusPayload,
+                draft_outcome: Components.Schemas.RunDraftStatusV3Response.draft_outcomePayload,
+                budget_exhausted_stage: Components.Schemas.RunDraftStatusV3Response.budget_exhausted_stagePayload,
+                reference: Components.Schemas.MessageTravelReference
+            ) {
+                self.conversation_id = conversation_id
+                self.generation = generation
+                self.message_id = message_id
+                self.run_id = run_id
+                self.message_sequence = message_sequence
+                self.event_highwater = event_highwater
+                self.request_id = request_id
+                self.version = version
+                self.run_status = run_status
+                self.draft_outcome = draft_outcome
+                self.budget_exhausted_stage = budget_exhausted_stage
+                self.reference = reference
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversation_id
+                case generation
+                case message_id
+                case run_id
+                case message_sequence
+                case event_highwater
+                case request_id
+                case version
+                case run_status
+                case draft_outcome
+                case budget_exhausted_stage
+                case reference
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.conversation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .conversation_id
+                )
+                self.generation = try container.decode(
+                    Swift.String.self,
+                    forKey: .generation
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.message_sequence = try container.decode(
+                    Swift.Int.self,
+                    forKey: .message_sequence
+                )
+                self.event_highwater = try container.decode(
+                    Swift.Int.self,
+                    forKey: .event_highwater
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.version = try container.decode(
+                    Components.Schemas.RunDraftStatusV3Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.run_status = try container.decode(
+                    Components.Schemas.RunDraftStatusV3Response.run_statusPayload.self,
+                    forKey: .run_status
+                )
+                self.draft_outcome = try container.decode(
+                    Components.Schemas.RunDraftStatusV3Response.draft_outcomePayload.self,
+                    forKey: .draft_outcome
+                )
+                self.budget_exhausted_stage = try container.decode(
+                    Components.Schemas.RunDraftStatusV3Response.budget_exhausted_stagePayload.self,
+                    forKey: .budget_exhausted_stage
+                )
+                self.reference = try container.decode(
+                    Components.Schemas.MessageTravelReference.self,
+                    forKey: .reference
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "conversation_id",
+                    "generation",
+                    "message_id",
+                    "run_id",
+                    "message_sequence",
+                    "event_highwater",
+                    "request_id",
+                    "version",
+                    "run_status",
+                    "draft_outcome",
+                    "budget_exhausted_stage",
+                    "reference"
+                ])
+            }
+        }
+        /// RUN-CANCEL@1. Body at most 4096 bytes; duplicate/unknown/missing keys rejected. Stable cancellation identity is trusted principal + cancel + original message_id; JSON whitespace does not create a new action.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunTravelCancellationRequest`.
+        public struct RunTravelCancellationRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationRequest/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case RUN_hyphen_cancel_period_2 = "RUN-cancel.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationRequest/version`.
+            public var version: Components.Schemas.RunTravelCancellationRequest.versionPayload
+            /// Original immutable ID; runtime bounds UTF8 to 16384 bytes and rejects NUL/blank. Full body limit65536 bytes supports every accepted send.2 ID.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationRequest/message_id`.
+            public var message_id: Swift.String
+            /// Creates a new `RunTravelCancellationRequest`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - message_id: Original immutable ID; runtime bounds UTF8 to 16384 bytes and rejects NUL/blank. Full body limit65536 bytes supports every accepted send.2 ID.
+            public init(
+                version: Components.Schemas.RunTravelCancellationRequest.versionPayload,
+                message_id: Swift.String
+            ) {
+                self.version = version
+                self.message_id = message_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case message_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.RunTravelCancellationRequest.versionPayload.self,
+                    forKey: .version
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "message_id"
+                ])
+            }
+        }
+        /// Original RUN terminal observed after a durable cancellation transaction. Existing terminals are retained. Prior text/effects remain readable through their original ledgers. Does not claim rollback/refund or physical abortion of an already-started provider request.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse`.
+        public struct RunTravelCancellationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/message_id`.
+            public var message_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/run_id`.
+            public var run_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case completed = "completed"
+                case failed = "failed"
+                case cancelled = "cancelled"
+                case context_invalid = "context_invalid"
+                case unknown = "unknown"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/status`.
+            public var status: Components.Schemas.RunTravelCancellationResponse.statusPayload
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/event_highwater`.
+            public var event_highwater: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case RUN_hyphen_cancel_period_2 = "RUN-cancel.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/version`.
+            public var version: Components.Schemas.RunTravelCancellationResponse.versionPayload
+            /// - Remark: Generated from `#/components/schemas/RunTravelCancellationResponse/reference`.
+            public var reference: Components.Schemas.MessageTravelReference
+            /// Creates a new `RunTravelCancellationResponse`.
+            ///
+            /// - Parameters:
+            ///   - request_id:
+            ///   - message_id:
+            ///   - run_id:
+            ///   - status:
+            ///   - event_highwater:
+            ///   - version:
+            ///   - reference:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                message_id: Swift.String,
+                run_id: Swift.String,
+                status: Components.Schemas.RunTravelCancellationResponse.statusPayload,
+                event_highwater: Swift.Int,
+                version: Components.Schemas.RunTravelCancellationResponse.versionPayload,
+                reference: Components.Schemas.MessageTravelReference
+            ) {
+                self.request_id = request_id
+                self.message_id = message_id
+                self.run_id = run_id
+                self.status = status
+                self.event_highwater = event_highwater
+                self.version = version
+                self.reference = reference
+            }
+            public enum CodingKeys: String, CodingKey {
+                case request_id
+                case message_id
+                case run_id
+                case status
+                case event_highwater
+                case version
+                case reference
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.message_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .message_id
+                )
+                self.run_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .run_id
+                )
+                self.status = try container.decode(
+                    Components.Schemas.RunTravelCancellationResponse.statusPayload.self,
+                    forKey: .status
+                )
+                self.event_highwater = try container.decode(
+                    Swift.Int.self,
+                    forKey: .event_highwater
+                )
+                self.version = try container.decode(
+                    Components.Schemas.RunTravelCancellationResponse.versionPayload.self,
+                    forKey: .version
+                )
+                self.reference = try container.decode(
+                    Components.Schemas.MessageTravelReference.self,
+                    forKey: .reference
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "request_id",
+                    "message_id",
+                    "run_id",
+                    "status",
+                    "event_highwater",
+                    "version",
+                    "reference"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryTravelSelectionV2`.
+        public struct MemoryTravelSelectionV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryTravelSelectionV2/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case travel = "travel"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryTravelSelectionV2/kind`.
+            public var kind: Components.Schemas.MemoryTravelSelectionV2.kindPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryTravelSelectionV2/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryTravelSelectionV2/expected_version`.
+            public var expected_version: Swift.Int
+            /// Creates a new `MemoryTravelSelectionV2`.
+            ///
+            /// - Parameters:
+            ///   - kind:
+            ///   - id:
+            ///   - expected_version:
+            public init(
+                kind: Components.Schemas.MemoryTravelSelectionV2.kindPayload,
+                id: Swift.String,
+                expected_version: Swift.Int
+            ) {
+                self.kind = kind
+                self.id = id
+                self.expected_version = expected_version
+            }
+            public enum CodingKeys: String, CodingKey {
+                case kind
+                case id
+                case expected_version
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.kind = try container.decode(
+                    Components.Schemas.MemoryTravelSelectionV2.kindPayload.self,
+                    forKey: .kind
+                )
+                self.id = try container.decode(
+                    Swift.String.self,
+                    forKey: .id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "kind",
+                    "id",
+                    "expected_version"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryStoredContextV2`.
+        public struct MemoryStoredContextV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredContextV2/value1`.
+            public var value1: OpenAPIRuntime.OpenAPIValueContainer
+            /// Creates a new `MemoryStoredContextV2`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            public init(value1: OpenAPIRuntime.OpenAPIValueContainer) {
+                self.value1 = value1
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+            }
+        }
+        /// MEMORY-manual.2 exact original UTF8. Long-term context null; current requires genuine B-owned active travel/version lease. Server scope/source/approval/status are never client fields.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryManualSaveV2Command`.
+        public struct MemoryManualSaveV2Command: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManualSaveV2Command/value1`.
+            public var value1: OpenAPIRuntime.OpenAPIValueContainer
+            /// Creates a new `MemoryManualSaveV2Command`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            public init(value1: OpenAPIRuntime.OpenAPIValueContainer) {
+                self.value1 = value1
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+            }
+        }
+        /// Strict exact-key original UTF8 JSON carried as octet-stream (maximum 32768 bytes, host may choose smaller). References are not authorization. Host validates canonical subject/slot/context/source; no owner, approval or policy fields. long_term requires context_id=null; current requires explicit validated nonempty context.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2`.
+        public struct MemoryStoredCommandV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/operation_id`.
+            public var operation_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/subject`.
+            public var subject: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/slot`.
+            public var slot: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/text`.
+            public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/source_id`.
+            public var source_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/occurred_at`.
+            public var occurred_at: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case fact = "fact"
+                case experience = "experience"
+                case preference = "preference"
+                case inference = "inference"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/kind`.
+            public var kind: Components.Schemas.MemoryStoredCommandV2.kindPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/extent`.
+            @frozen public enum extentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case long_term = "long_term"
+                case current = "current"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/extent`.
+            public var extent: Components.Schemas.MemoryStoredCommandV2.extentPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/source_version`.
+            public var source_version: Swift.Int
+            /// Creates a new `MemoryStoredCommandV2`.
+            ///
+            /// - Parameters:
+            ///   - operation_id:
+            ///   - item_id:
+            ///   - subject:
+            ///   - slot:
+            ///   - text:
+            ///   - source_id:
+            ///   - occurred_at:
+            ///   - kind:
+            ///   - extent:
+            ///   - source_version:
+            public init(
+                operation_id: Swift.String,
+                item_id: Swift.String,
+                subject: Swift.String,
+                slot: Swift.String,
+                text: Swift.String,
+                source_id: Swift.String,
+                occurred_at: Swift.String,
+                kind: Components.Schemas.MemoryStoredCommandV2.kindPayload,
+                extent: Components.Schemas.MemoryStoredCommandV2.extentPayload,
+                source_version: Swift.Int
+            ) {
+                self.operation_id = operation_id
+                self.item_id = item_id
+                self.subject = subject
+                self.slot = slot
+                self.text = text
+                self.source_id = source_id
+                self.occurred_at = occurred_at
+                self.kind = kind
+                self.extent = extent
+                self.source_version = source_version
+            }
+            public enum CodingKeys: String, CodingKey {
+                case operation_id
+                case item_id
+                case subject
+                case slot
+                case text
+                case source_id
+                case occurred_at
+                case kind
+                case extent
+                case source_version
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.operation_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .operation_id
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.subject = try container.decode(
+                    Swift.String.self,
+                    forKey: .subject
+                )
+                self.slot = try container.decode(
+                    Swift.String.self,
+                    forKey: .slot
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                self.source_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .source_id
+                )
+                self.occurred_at = try container.decode(
+                    Swift.String.self,
+                    forKey: .occurred_at
+                )
+                self.kind = try container.decode(
+                    Components.Schemas.MemoryStoredCommandV2.kindPayload.self,
+                    forKey: .kind
+                )
+                self.extent = try container.decode(
+                    Components.Schemas.MemoryStoredCommandV2.extentPayload.self,
+                    forKey: .extent
+                )
+                self.source_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .source_version
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "operation_id",
+                    "item_id",
+                    "subject",
+                    "slot",
+                    "text",
+                    "source_id",
+                    "occurred_at",
+                    "kind",
+                    "extent",
+                    "source_version"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryItemV2`.
+        public struct MemoryItemV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV2/command`.
+            public var command: Components.Schemas.MemoryStoredCommandV2
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV2/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV2/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case candidate = "candidate"
+                case disabled = "disabled"
+                case withdrawn = "withdrawn"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV2/status`.
+            public var status: Components.Schemas.MemoryItemV2.statusPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV2/recorded_at`.
+            public var recorded_at: Foundation.Date
+            /// Creates a new `MemoryItemV2`.
+            ///
+            /// - Parameters:
+            ///   - command:
+            ///   - version:
+            ///   - status:
+            ///   - recorded_at:
+            public init(
+                command: Components.Schemas.MemoryStoredCommandV2,
+                version: Swift.Int,
+                status: Components.Schemas.MemoryItemV2.statusPayload,
+                recorded_at: Foundation.Date
+            ) {
+                self.command = command
+                self.version = version
+                self.status = status
+                self.recorded_at = recorded_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case command
+                case version
+                case status
+                case recorded_at
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.command = try container.decode(
+                    Components.Schemas.MemoryStoredCommandV2.self,
+                    forKey: .command
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.status = try container.decode(
+                    Components.Schemas.MemoryItemV2.statusPayload.self,
+                    forKey: .status
+                )
+                self.recorded_at = try container.decode(
+                    Foundation.Date.self,
+                    forKey: .recorded_at
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "command",
+                    "version",
+                    "status",
+                    "recorded_at"
+                ])
+            }
+        }
+        /// Exact five-key immutable UTF8 JSON; no trimming/normalization/re-encoding; pause/resume only. Existing source approval remains canonical; no text edit, candidate promotion or new approval.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2`.
+        public struct MemoryStatusActionV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2/operation`.
+            @frozen public enum operationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pause = "pause"
+                case resume = "resume"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2/operation`.
+            public var operation: Components.Schemas.MemoryStatusActionV2.operationPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2/expected_source_version`.
+            public var expected_source_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_management_period_2 = "MEMORY-management.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStatusActionV2/version`.
+            public var version: Components.Schemas.MemoryStatusActionV2.versionPayload
+            /// Creates a new `MemoryStatusActionV2`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - operation:
+            ///   - item_id:
+            ///   - expected_version:
+            ///   - expected_source_version:
+            ///   - version:
+            public init(
+                action_id: Swift.String,
+                operation: Components.Schemas.MemoryStatusActionV2.operationPayload,
+                item_id: Swift.String,
+                expected_version: Swift.Int,
+                expected_source_version: Swift.Int,
+                version: Components.Schemas.MemoryStatusActionV2.versionPayload
+            ) {
+                self.action_id = action_id
+                self.operation = operation
+                self.item_id = item_id
+                self.expected_version = expected_version
+                self.expected_source_version = expected_source_version
+                self.version = version
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case operation
+                case item_id
+                case expected_version
+                case expected_source_version
+                case version
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.operation = try container.decode(
+                    Components.Schemas.MemoryStatusActionV2.operationPayload.self,
+                    forKey: .operation
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.expected_source_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_source_version
+                )
+                self.version = try container.decode(
+                    Components.Schemas.MemoryStatusActionV2.versionPayload.self,
+                    forKey: .version
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "operation",
+                    "item_id",
+                    "expected_version",
+                    "expected_source_version",
+                    "version"
+                ])
+            }
+        }
+        /// Exact five-key immutable UTF8 JSON; no trimming/normalization/re-encoding; pause/resume only. Existing source approval remains canonical; no text edit, candidate promotion or new approval.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2`.
+        public struct MemoryEditActionV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/operation`.
+            @frozen public enum operationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case edit = "edit"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/operation`.
+            public var operation: Components.Schemas.MemoryEditActionV2.operationPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/expected_source_version`.
+            public var expected_source_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_management_period_2 = "MEMORY-management.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/version`.
+            public var version: Components.Schemas.MemoryEditActionV2.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/text`.
+            public var text: Swift.String
+            /// Creates a new `MemoryEditActionV2`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - operation:
+            ///   - item_id:
+            ///   - expected_version:
+            ///   - expected_source_version:
+            ///   - version:
+            ///   - text:
+            public init(
+                action_id: Swift.String,
+                operation: Components.Schemas.MemoryEditActionV2.operationPayload,
+                item_id: Swift.String,
+                expected_version: Swift.Int,
+                expected_source_version: Swift.Int,
+                version: Components.Schemas.MemoryEditActionV2.versionPayload,
+                text: Swift.String
+            ) {
+                self.action_id = action_id
+                self.operation = operation
+                self.item_id = item_id
+                self.expected_version = expected_version
+                self.expected_source_version = expected_source_version
+                self.version = version
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case operation
+                case item_id
+                case expected_version
+                case expected_source_version
+                case version
+                case text
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.operation = try container.decode(
+                    Components.Schemas.MemoryEditActionV2.operationPayload.self,
+                    forKey: .operation
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.expected_source_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_source_version
+                )
+                self.version = try container.decode(
+                    Components.Schemas.MemoryEditActionV2.versionPayload.self,
+                    forKey: .version
+                )
+                self.text = try container.decode(
+                    Swift.String.self,
+                    forKey: .text
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "operation",
+                    "item_id",
+                    "expected_version",
+                    "expected_source_version",
+                    "version",
+                    "text"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementActionV2`.
+        @frozen public enum MemoryManagementActionV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementActionV2/case1`.
+            case MemoryStatusActionV2(Components.Schemas.MemoryStatusActionV2)
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementActionV2/case2`.
+            case MemoryEditActionV2(Components.Schemas.MemoryEditActionV2)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .MemoryStatusActionV2(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .MemoryEditActionV2(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .MemoryStatusActionV2(value):
+                    try value.encode(to: encoder)
+                case let .MemoryEditActionV2(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// MEMORY-STOP-USE@1. Stop using the complete server-enumerated source history only; no deletion or cleanup. Exact original immutable UTF8 bytes, canonical scope/CAS/epoch and original action receipt.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2`.
+        public struct MemoryStopUseActionV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/operation`.
+            @frozen public enum operationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case withdraw = "withdraw"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/operation`.
+            public var operation: Components.Schemas.MemoryStopUseActionV2.operationPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/expected_version`.
+            public var expected_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/expected_source_version`.
+            public var expected_source_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_STOP_hyphen_USE_commat_2 = "MEMORY-STOP-USE@2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/version`.
+            public var version: Components.Schemas.MemoryStopUseActionV2.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryStopUseActionV2/source_id`.
+            public var source_id: Swift.String
+            /// Creates a new `MemoryStopUseActionV2`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - operation:
+            ///   - item_id:
+            ///   - expected_version:
+            ///   - expected_source_version:
+            ///   - version:
+            ///   - source_id:
+            public init(
+                action_id: Swift.String,
+                operation: Components.Schemas.MemoryStopUseActionV2.operationPayload,
+                item_id: Swift.String,
+                expected_version: Swift.Int,
+                expected_source_version: Swift.Int,
+                version: Components.Schemas.MemoryStopUseActionV2.versionPayload,
+                source_id: Swift.String
+            ) {
+                self.action_id = action_id
+                self.operation = operation
+                self.item_id = item_id
+                self.expected_version = expected_version
+                self.expected_source_version = expected_source_version
+                self.version = version
+                self.source_id = source_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case operation
+                case item_id
+                case expected_version
+                case expected_source_version
+                case version
+                case source_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.operation = try container.decode(
+                    Components.Schemas.MemoryStopUseActionV2.operationPayload.self,
+                    forKey: .operation
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.expected_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_version
+                )
+                self.expected_source_version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .expected_source_version
+                )
+                self.version = try container.decode(
+                    Components.Schemas.MemoryStopUseActionV2.versionPayload.self,
+                    forKey: .version
+                )
+                self.source_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .source_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "operation",
+                    "item_id",
+                    "expected_version",
+                    "expected_source_version",
+                    "version",
+                    "source_id"
+                ])
+            }
+        }
+        /// Historical original lifecycle receipt. action_id is canonical Receipt.operation_id; hash comes from persisted original action bytes, not request recomputation.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2`.
+        public struct MemoryManagementReceiptV2: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2/action_id`.
+            public var action_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2/item_id`.
+            public var item_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case disabled = "disabled"
+                case withdrawn = "withdrawn"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2/status`.
+            public var status: Components.Schemas.MemoryManagementReceiptV2.statusPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2/input_sha256`.
+            public var input_sha256: Swift.String
+            /// Creates a new `MemoryManagementReceiptV2`.
+            ///
+            /// - Parameters:
+            ///   - action_id:
+            ///   - item_id:
+            ///   - version:
+            ///   - status:
+            ///   - input_sha256:
+            public init(
+                action_id: Swift.String,
+                item_id: Swift.String,
+                version: Swift.Int,
+                status: Components.Schemas.MemoryManagementReceiptV2.statusPayload,
+                input_sha256: Swift.String
+            ) {
+                self.action_id = action_id
+                self.item_id = item_id
+                self.version = version
+                self.status = status
+                self.input_sha256 = input_sha256
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action_id
+                case item_id
+                case version
+                case status
+                case input_sha256
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.action_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .action_id
+                )
+                self.item_id = try container.decode(
+                    Swift.String.self,
+                    forKey: .item_id
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.status = try container.decode(
+                    Components.Schemas.MemoryManagementReceiptV2.statusPayload.self,
+                    forKey: .status
+                )
+                self.input_sha256 = try container.decode(
+                    Swift.String.self,
+                    forKey: .input_sha256
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "action_id",
+                    "item_id",
+                    "version",
+                    "status",
+                    "input_sha256"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemorySaveV2Response`.
+        public struct MemorySaveV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemorySaveV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_result_period_2 = "MEMORY-result.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemorySaveV2Response/version`.
+            public var version: Components.Schemas.MemorySaveV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemorySaveV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemorySaveV2Response/receipt`.
+            public var receipt: Components.Schemas.MemoryReceipt
+            /// Creates a new `MemorySaveV2Response`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                version: Components.Schemas.MemorySaveV2Response.versionPayload,
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryReceipt
+            ) {
+                self.version = version
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MemorySaveV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryReceipt.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response`.
+        public struct MemoryReceiptV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_result_period_2 = "MEMORY-result.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response/version`.
+            public var version: Components.Schemas.MemoryReceiptV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// Creates a new `MemoryReceiptV2Response`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - request_id:
+            public init(
+                version: Components.Schemas.MemoryReceiptV2Response.versionPayload,
+                request_id: Components.Schemas.RequestId
+            ) {
+                self.version = version
+                self.request_id = request_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case request_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MemoryReceiptV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "request_id"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response`.
+        public struct MemoryDetailV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_result_period_2 = "MEMORY-result.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response/version`.
+            public var version: Components.Schemas.MemoryDetailV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// Creates a new `MemoryDetailV2Response`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - request_id:
+            public init(
+                version: Components.Schemas.MemoryDetailV2Response.versionPayload,
+                request_id: Components.Schemas.RequestId
+            ) {
+                self.version = version
+                self.request_id = request_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case request_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MemoryDetailV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "request_id"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryListV2Response`.
+        public struct MemoryListV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryListV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_result_period_2 = "MEMORY-result.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryListV2Response/version`.
+            public var version: Components.Schemas.MemoryListV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryListV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryListV2Response/items`.
+            public var items: [Components.Schemas.MemoryItemV2]
+            /// Creates a new `MemoryListV2Response`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - request_id:
+            ///   - items:
+            public init(
+                version: Components.Schemas.MemoryListV2Response.versionPayload,
+                request_id: Components.Schemas.RequestId,
+                items: [Components.Schemas.MemoryItemV2]
+            ) {
+                self.version = version
+                self.request_id = request_id
+                self.items = items
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case request_id
+                case items
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MemoryListV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.items = try container.decode(
+                    [Components.Schemas.MemoryItemV2].self,
+                    forKey: .items
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "request_id",
+                    "items"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementApplyV2Response`.
+        public struct MemoryManagementApplyV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementApplyV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_result_period_2 = "MEMORY-result.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementApplyV2Response/version`.
+            public var version: Components.Schemas.MemoryManagementApplyV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementApplyV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementApplyV2Response/receipt`.
+            public var receipt: Components.Schemas.MemoryManagementReceiptV2
+            /// Creates a new `MemoryManagementApplyV2Response`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - request_id:
+            ///   - receipt:
+            public init(
+                version: Components.Schemas.MemoryManagementApplyV2Response.versionPayload,
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryManagementReceiptV2
+            ) {
+                self.version = version
+                self.request_id = request_id
+                self.receipt = receipt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case request_id
+                case receipt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MemoryManagementApplyV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryManagementReceiptV2.self,
+                    forKey: .receipt
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "request_id",
+                    "receipt"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response`.
+        public struct MemoryManagementReceiptV2Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_result_period_2 = "MEMORY-result.2"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response/version`.
+            public var version: Components.Schemas.MemoryManagementReceiptV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// Creates a new `MemoryManagementReceiptV2Response`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - request_id:
+            public init(
+                version: Components.Schemas.MemoryManagementReceiptV2Response.versionPayload,
+                request_id: Components.Schemas.RequestId
+            ) {
+                self.version = version
+                self.request_id = request_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case request_id
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MemoryManagementReceiptV2Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "request_id"
+                ])
+            }
+        }
     }
 }
