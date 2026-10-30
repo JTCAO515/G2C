@@ -399,8 +399,15 @@ def exercise(auth,conninfo):
             old_pending,_=send('later','old-consumer','old-consumer',None)
             oldroot=auth.parent/'old-consumer';oldroot.mkdir()
             archive=auth.parent/'old-consumer.tar'
+            revision='e652453edb399158bbe9bc6e0115fb130888ae5b'
+            # Actions' PG checkout is shallow. Fetch only the fixed repository
+            # source fixture when absent; never replace/skip the old consumer.
+            present=subprocess.run(['git','cat-file','-e',revision+'^{commit}'],cwd=harness.ROOT,
+                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            if present.returncode!=0:
+                subprocess.run(['git','fetch','--no-tags','--depth=1','origin',revision],cwd=harness.ROOT,check=True)
             with archive.open('wb') as output:
-                subprocess.run(['git','archive','e652453edb399158bbe9bc6e0115fb130888ae5b','backend','scripts','contracts'],
+                subprocess.run(['git','archive',revision,'backend','scripts','contracts'],
                     cwd=harness.ROOT,stdout=output,check=True)
             with tarfile.open(archive) as source:source.extractall(oldroot,filter='data')
             oldenv=dict(os.environ,PYTHONPATH=os.pathsep.join([str(oldroot/'backend'),
