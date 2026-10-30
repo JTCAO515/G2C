@@ -17,30 +17,44 @@ import Foundation
         let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(url.url))
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200);return data
     }
+    func button(_ id: String) -> XCUIElement {
+        // Filter by identity before role. Filtering every node by Button first
+        // makes the injected XCTest support resolve attributes for the entire
+        // tree repeatedly; keep the same role constraint on the selected ID.
+        app.descendants(matching:.any).matching(identifier:id)
+            .matching(NSPredicate(format:"elementType == %@",NSNumber(value:XCUIElement.ElementType.button.rawValue))).firstMatch
+    }
     func tap(_ id: String, towardTop: Bool = false) {
-        let target = app.buttons.matching(identifier:id).firstMatch
-        let tab = app.tabBars.buttons.matching(identifier:id).firstMatch
-        if tab.exists { XCTAssertTrue(tab.isHittable); tab.tap(); return }
-        let nav = app.navigationBars.buttons.matching(identifier:id).firstMatch
-        if nav.exists { XCTAssertTrue(nav.isHittable);XCTAssertTrue(nav.isEnabled);nav.tap();return }
+        let target=button(id)
+        if ["Memory","记忆","Assistant","助手","Trips","行程","assistant.panel.done"].contains(id) {
+            XCTAssertTrue(target.waitForExistence(timeout:10),id);XCTAssertTrue(target.isHittable,id);XCTAssertTrue(target.isEnabled,id);target.tap();return
+        }
+        let bar=app.navigationBars.firstMatch, tabs=app.tabBars.firstMatch
+        let hasBar=bar.exists
+        let bottom=tabs.exists ? tabs.frame.minY : app.frame.maxY
         for _ in 0..<60 {
-            let bar=app.navigationBars.firstMatch, tabs=app.tabBars.firstMatch
-            let top=bar.exists ? bar.frame.maxY : app.frame.minY
-            let bottom=tabs.exists ? tabs.frame.minY : app.frame.maxY
-            if target.exists && target.isHittable && target.frame.midY>top && target.frame.midY<bottom { break }
-            if !target.exists { if towardTop { app.swipeDown() } else { app.swipeUp() } }
-            else if target.frame.midY<=top { app.swipeDown() } else { app.swipeUp() }
+            if target.exists {
+                let frame=target.frame
+                let top=hasBar ? bar.frame.maxY : app.frame.minY
+                if frame.midY>top && frame.midY<bottom && target.isHittable { break }
+                if frame.midY<=top { app.swipeDown() } else { app.swipeUp() }
+            } else if towardTop { app.swipeDown() } else { app.swipeUp() }
         }
         if !target.exists { XCTAssertTrue(target.waitForExistence(timeout:10),id) }
         XCTAssertTrue(target.exists,id);XCTAssertTrue(target.isHittable,id)
         if !target.isEnabled {
-            let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
+            let enabled=XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
             XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:15),.completed,id)
         }
         XCTAssertTrue(target.isEnabled,id)
         target.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).tap()
     }
-    func back() { app.navigationBars.buttons.firstMatch.tap() }
+    func back() {
+        let bar=app.navigationBars.firstMatch
+        XCTAssertTrue(bar.exists)
+        let target=bar.buttons.firstMatch
+        XCTAssertTrue(target.exists);XCTAssertTrue(target.isHittable);XCTAssertTrue(target.isEnabled);target.tap()
+    }
     func capture(_ name: String) { let a=XCTAttachment(screenshot:app.screenshot());a.name=name;a.lifetime = .keepAlways;add(a) }
     func audit(_ name: String) throws {
         var issues=0;continueAfterFailure=true;defer { continueAfterFailure=false }
@@ -71,7 +85,7 @@ import Foundation
         tap(language=="en" ? "Load groups":"读取分组",towardTop:true);tap("memory.group.0");tap(language=="en" ? "Load from start":"从头读取")
     }
     func open(_ id: String) {
-        let row=app.buttons["memory.item."+id]
+        let row=button("memory.item."+id)
         for _ in 0..<60 {
             if row.exists && row.isHittable && row.frame.midY>app.navigationBars.firstMatch.frame.maxY && row.frame.midY<app.tabBars.firstMatch.frame.minY { break }
             if row.exists && row.frame.midY<=app.navigationBars.firstMatch.frame.maxY { app.swipeDown() } else { app.swipeUp() }
