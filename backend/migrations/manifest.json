@@ -178,6 +178,14 @@
       "sha256": "4a5009634477076b9740f5d87b38f2cae4f0987c4dd59e3fe1822e2e8efe9815",
       "down": "backend/migrations/down/0022_trip_manual.down.sql",
       "down_sha256": "54a45d3e026ba15ba05e84b2ca2b528092192f4b23bc61007cba35b1ffcd223f"
+    },
+    {
+      "version": 23,
+      "name": "needs_runtime_write",
+      "file": "backend/migrations/0023_needs_runtime_write.sql",
+      "sha256": "152c03893bcc848660bbfcd8571c3aa7bad1d5a7be4d4e0564947ea26615358c",
+      "down": "backend/migrations/down/0023_needs_runtime_write.down.sql",
+      "down_sha256": "382d956beb217ca064545228fe6342e11503e00c603c88ed7a4fa408c5f2045a"
     }
   ]
 }
