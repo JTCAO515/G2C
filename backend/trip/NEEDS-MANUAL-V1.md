@@ -99,7 +99,10 @@ The original model-plan.1 grammar stays exact. Existing locally fixed items
 cannot be removed, unlocked or changed by the model. Already adopted model
 activities retain their actual prior NEEDS candidate kind, booking state and
 participants; they are not treated as newly invented activities. Only genuinely
-new IDs require explicit proposed_subjects. New activities remain intent with
+new IDs require explicit proposed_subjects. Confirmed UTC offsets are retained only when the entire original event is unchanged;
+new or changed model observations are refused. FEASIBILITY-TRIP@2.0 reuses the
+original explicit-time checker with the structured.2 validator, including observed
+offsets, without changing FEASIBILITY-TRIP@1.0. New activities remain intent with
 unknown booking/fixed state and unknown evidence. The actual committed Trip
 fixed state is kept in Trip content, while FEAS consumes the canonical source
 lock and history; neither projection manufactures a NEEDS snapshot/revision.

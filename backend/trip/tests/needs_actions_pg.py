@@ -25,7 +25,7 @@ class NeedsActionChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay')})
+        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer=ConfirmationSigner(b'synthetic-source-action-key-1234567890')
         for subject in cls.host.subjects:
@@ -69,7 +69,7 @@ class NeedsActionChecks(unittest.TestCase):
         return client.post('/v1/trip-needs-saves',content=raw,
             headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
 
-    def replan(self,subject,key):
+    def replan(self,subject,key,change=None,expect_proposal=True):
         with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
             chat=client.put('/v1/conversations',params={'conversation_id':key},headers=self.host.headers[subject]).json()
             raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id=key,message_id=key,text='continue original trip',trip_id=None,
@@ -86,11 +86,15 @@ class NeedsActionChecks(unittest.TestCase):
                 if system!=SYSTEM:
                     yield from super().stream(messages,system);return
                 self.calls+=1;source=json.loads(messages[-1]['content']);content=source['current_trip']['content']
-                yield json.dumps(dict(version='TRIP-model-plan.1',title=content['title'],items=content['items'],proposed_subjects={}),ensure_ascii=False)
+                value=dict(version='TRIP-model-plan.1',title=content['title'],items=content['items'],proposed_subjects={})
+                if change:change(value)
+                yield json.dumps(value,ensure_ascii=False)
         worker,db=self.worker(subject,OriginalContextModel())
         worker.drafts=publisher(db,checker_for(self.host.auth),worker.message_context,
             lambda:self.host.headers[subject]['Authorization'][7:],scope_for(ISSUER,subject))
-        result=worker.process()[0];self.assertIsNotNone(result.proposal_id)
+        result=worker.process()[0]
+        if expect_proposal:self.assertIsNotNone(result.proposal_id)
+        else:self.assertIsNone(result.proposal_id)
         return result
 
     def test_selected_trip_switch_refuses_old_prepare_and_pending_save(self):
@@ -266,6 +270,40 @@ class NeedsActionChecks(unittest.TestCase):
             row=conn.execute('SELECT trip_id,trip_version,original_content FROM cj_trip_needs_plan_context WHERE proposal_id=%s',(result.proposal_id,)).fetchone()
             self.assertEqual(row,(None,None,None))
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal WHERE proposal_id=%s',(result.proposal_id,)).fetchone()[0],1)
+
+    def test_explicit_saved_offset_survives_fixed_context(self):
+        from copy import deepcopy
+        subject='saved-offset';app,outcome,db=self.plan(subject)
+        with TestClient(app) as client:
+            accepted=self.post(client,subject,self.action(subject,outcome,'accept'));self.assertEqual(accepted.status_code,200,accepted.text)
+            trip_id=accepted.json()['receipt']['trip_id']
+            def current():return client.get('/v4/trip-structured',params={'trip_id':trip_id},headers=self.host.headers[subject]).json()['trip']
+            original=current();schedule=deepcopy(original['content']['items'][1]['schedule'])
+            for event in schedule.values():event['utc_offset']=dict(state='known',value='+08:00')
+            raw=json.loads(self.edit_request(subject,original,'saved-offset',title=None))
+            raw['edit']['changes']=[dict(item_id='b',field='schedule',value=schedule)]
+            p=self.prepare_request(client,subject,packed(raw));saved=self.save_request(client,subject,p,'save-observed-offset')
+            self.assertEqual(saved.status_code,200,saved.text)
+            raw=json.loads(self.edit_request(subject,current(),'lock-observed-offset',title=None))
+            raw['edit']['changes']=[dict(item_id='b',field='fixed',value=dict(state='known',value=True))]
+            p=self.prepare_request(client,subject,packed(raw));saved=self.save_request(client,subject,p,'lock-observed-offset')
+            self.assertEqual(saved.status_code,200,saved.text);original=current()
+        result=self.replan(subject,'retained-offset-plan')
+        with TestClient(app) as client:
+            proposed=client.get('/v2/trip-needs-proposals',params={'proposal_id':result.proposal_id},headers=self.host.headers[subject])
+            self.assertEqual(proposed.status_code,200,proposed.text)
+            self.assertEqual(proposed.json()['proposal']['content']['items'],original['content']['items'])
+    def test_model_cannot_add_an_offset_to_the_adopted_unknown_event(self):
+        from cj_agent.draft import proposal_id_for
+        subject='new-offset';app,outcome,db=self.plan(subject)
+        with TestClient(app) as client:
+            accepted=self.post(client,subject,self.action(subject,outcome,'accept'));self.assertEqual(accepted.status_code,200,accepted.text)
+        def invent(document):document['items'][1]['schedule']['start']['utc_offset']=dict(state='known',value='+08:00')
+        result=self.replan(subject,'invented-offset-plan',invent,False)
+        with db.connect(scope_for(ISSUER,subject)) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal WHERE proposal_id=%s',(proposal_id_for(result.run_id),)).fetchone()[0],0)
+            self.assertEqual(conn.execute("SELECT count(*) FROM cj_run_event WHERE run_id=%s AND kind='effect_committed'",(result.run_id,)).fetchone()[0],0)
+            self.assertEqual(conn.execute('SELECT trip_version FROM cj_trip_needs_current').fetchone()[0],1)
 
     def test_actual_accept_original_replay_and_owner_source_context(self):
         app,outcome,db=self.plan('accept');raw=self.action('accept',outcome,'accept')
