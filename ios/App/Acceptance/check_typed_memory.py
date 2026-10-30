@@ -8,6 +8,7 @@ import argparse,hashlib,importlib.util,json,os,plistlib,subprocess,sys,tempfile,
 from datetime import datetime,timedelta,timezone
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs,urlparse
 
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.typed-memory.acceptance'
@@ -42,11 +43,11 @@ def main():
     sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentTypedMemoryUITests.swift',Path(__file__)]
     for name in ('CJShell','CJMemoryClient','CJMessageClient','CJRunClient'):
         sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
-    report=dict(status='RUNNING',head=head,cases={},scope='partial typed App root/manual save/read; NOT complete #228 frame4',
+    report=dict(status='RUNNING',head=head,cases={},scope='partial typed App save/read plus actual same-conversation recall; NOT complete #228 frame4',
         source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
         git_trees={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=ROOT,text=True).strip() for name in ('ios','backend','contracts','scripts')},
         run_context=json.loads(args.run_context.read_text()),
-        unrun=['same-conversation/new-chat/restart/other-travel actual recall','complete #228 frame4','Chinese/max font','lifecycle/unknown/interoperability matrix','real services/models/cloud/fees','physical device/VoiceOver'])
+        unrun=['new-chat/restart/other-travel actual recall','complete #228 frame4','Chinese/max font','lifecycle/unknown/interoperability matrix','real services/models/cloud/fees','physical device/VoiceOver'])
     lock=threading.RLock()
     def save():
         with lock:(output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -76,6 +77,8 @@ def main():
                             action_id=uuid.uuid4().hex,operation='create',travel_context=None)).encode(),
                             headers={**headers['A'],'Content-Type':'application/octet-stream'})
                         response.raise_for_status();travels.append(response.json()['receipt']['travel_context']['id'])
+                    for conversation in ('typed-chat-1','typed-chat-2','typed-chat-3'):
+                        client.put('/v1/conversations',params={'conversation_id':conversation},headers=headers['A']).raise_for_status()
                 slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)}
                 profile=dict(subjects=['self'],slots=slots,extents=['long_term','current'],context_ids=[])
                 collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
@@ -86,11 +89,24 @@ def main():
                     selections={subject:dict(subject='self',slots=['preference'],max_bytes=2000) for subject in subjects.values()})).encode())
                 memory=create_local_typed_app(conninfo_path=conn,auth_dir=auth,configuration=typed)
                 database=LocalDatabase(conn,run_context=context,travel_context=True)
-                audit=[];errors=[];iterations=[0];stop=threading.Event();model=FakeProvider()
+                audit=[];errors=[];iterations=[0];outcomes=[];stop=threading.Event()
+                class ObservedMemoryProvider(FakeProvider):
+                    def __init__(self):super().__init__();self.memory_inputs=[]
+                    def stream(self,inputs,system=None):
+                        # Consume only the actual C snapshot injected by the formal
+                        # worker, never an expected test value or App chat cache.
+                        payload=json.loads(inputs[0]['content'].split('\n',1)[1])
+                        if payload['version']!='MEMORY-RUN-CONSUME@2':raise ValueError('typed runtime snapshot required')
+                        with lock:self.memory_inputs.append(payload)
+                        self.calls+=1
+                        yield 'Current persisted memory: ' + ' | '.join(item['text'] for item in payload['items'])
+                model=ObservedMemoryProvider()
                 def worker():
                     try:
                         while not stop.is_set():
-                            run_once(database,model,auth,memory_configuration=runtime);iterations[0]+=1;stop.wait(.1)
+                            completed=run_once(database,model,auth,memory_configuration=runtime)
+                            with lock:outcomes.extend(dict(message_id=o.message_id,run_id=o.run_id,status=o.status) for o in completed)
+                            iterations[0]+=1;stop.wait(.1)
                     except BaseException as error:errors.append(type(error).__name__);stop.set()
                 worker_thread=threading.Thread(target=worker,daemon=True);worker_thread.start()
                 def observed(application,label):
@@ -128,16 +144,25 @@ def main():
                     with database.connect(scope_for(ISSUER,subjects['A'])) as connection:
                         role=connection.execute('SELECT current_user,current_role').fetchone()
                         messages=connection.execute('SELECT count(*) FROM cj_message_receipt').fetchone()[0]
-                    result=dict(items=values,role=list(role),message_count=messages,model_calls=model.calls,formal_worker_iterations=iterations[0],worker_errors=list(errors),requests=list(audit))
+                        registered=connection.execute('SELECT kind,count(*) FROM cj_run_metered_operation GROUP BY kind ORDER BY kind').fetchall()
+                    result=dict(items=values,role=list(role),message_count=messages,model_calls=model.calls,formal_worker_iterations=iterations[0],
+                        worker_errors=list(errors),requests=list(audit),outcomes=list(outcomes),memory_inputs=list(model.memory_inputs),registered_operations=registered)
                     report['proof']=result;save();return result
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
                     def do_GET(self):
                         try:
-                            if self.path=='/prepare':value=dict(endpoint=endpoints[0],memory_endpoint=endpoints[1],accounts=tokens,subjects=subjects,travel_ids=travels,
+                            parsed=urlparse(self.path)
+                            if parsed.path=='/prepare':value=dict(endpoint=endpoints[0],memory_endpoint=endpoints[1],accounts=tokens,subjects=subjects,travel_ids=travels,
                                 travel_profile=json.dumps(dict(version='app-travel.1',travel_ids=travels)),
                                 memory_profile=json.dumps(dict(version='app-memory.2',subjects=['self'],slots=slots,extents=['long_term','current'])))
-                            elif self.path=='/items':value={('long_term' if x['command']['context'] is None else 'travel'):x['command']['item_id'] for x in items()}
+                            elif parsed.path=='/items':value={('long_term' if x['command']['context'] is None else 'travel'):x['command']['item_id'] for x in items()}
+                            elif parsed.path=='/wait-completed':
+                                count=int(parse_qs(parsed.query)['count'][0]);deadline=time.monotonic()+30
+                                while sum(o['status']=='completed' for o in outcomes)<count:
+                                    if errors or time.monotonic()>deadline:raise RuntimeError('formal worker did not complete requested messages')
+                                    time.sleep(.05)
+                                value=proof()
                             else:raise ValueError('unknown local control')
                             raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
                         except Exception as error:
@@ -167,7 +192,10 @@ def main():
                     (output/'english-summary.json').write_text(json.dumps(summary,indent=2))
                     assert (summary['passedTests'],summary['failedTests'],summary['skippedTests'])==(1,0,0)
                     assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and len(value['items'])==2 and not errors and iterations[0]>0
-                    assert value['message_count']==0 and model.calls==0
+                    assert value['message_count']==2 and model.calls==2
+                    assert dict(registered=value['registered_operations'])['registered'] and dict(value['registered_operations']).get('model')==2
+                    assert len(model.memory_inputs)==2
+                    assert all(payload['version']=='MEMORY-RUN-CONSUME@2' and [row['text'] for row in payload['items']]==['Travel A quiet room / 本次A安静房间'] for payload in model.memory_inputs)
                     by_text={item['command']['text']:item for item in value['items']}
                     assert by_text['Typed long-term tea / 新长期 e\u0301']['command']['context'] is None
                     assert by_text['Travel A quiet room / 本次A安静房间']['command']['context']==dict(kind='travel',id=travels[0],expected_version=1)

@@ -59,6 +59,15 @@ import Foundation
         tap("memory2.manual.confirm");text("memory2.save.status",contains:"Saved.")
         back()
     }
+    private func completedMessages(_ count: Int) async throws {
+        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/wait-completed?count=" + String(count))))
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
+        let value = try XCTUnwrap(JSONSerialization.jsonObject(with:data) as? [String:Any])
+        XCTAssertEqual(value["model_calls"] as? Int,count)
+        tap("run.snapshot.read")
+        text("run.display.status",contains:"Completed")
+        text("run.display.text",contains:"Travel A quiet room / 本次A安静房间")
+    }
     func testEnglishSaveReadAndOwnedTravel() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600
         let fixture = try await prepare()
@@ -96,5 +105,13 @@ import Foundation
             issues += 1;print("TYPED_MEMORY_DETAIL",issue.detailedDescription,issue.element?.label ?? "unavailable",issue.element?.frame ?? .zero);return false
         }
         continueAfterFailure = false;XCTAssertEqual(issues,0)
+        tap("Assistant");tap("assistant.serverHistory");tap("history.loadConversations")
+        tap("history.conversation.typed-chat-1");tap("assistant.panel.done")
+        input("assistant.draft","Recall current preferences from persisted memory")
+        if app.toolbars.buttons.matching(identifier:"Done").firstMatch.exists {tap("Done")}
+        tap("assistant.send");try await completedMessages(1)
+        input("assistant.draft","Use the current preference in the next turn")
+        if app.toolbars.buttons.matching(identifier:"Done").firstMatch.exists {tap("Done")}
+        tap("assistant.send");try await completedMessages(2)
     }
 }
