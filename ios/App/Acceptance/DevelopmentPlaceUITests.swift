@@ -40,7 +40,7 @@ import Foundation
             if element.isHittable { return }
             let menu = app.buttons.matching(identifier:"assistant.history").firstMatch
             let conversation = app.staticTexts.matching(identifier:"assistant.conversation").firstMatch
-            if menu.exists && conversation.exists {
+            if menu.exists && menu.isHittable && conversation.exists && conversation.isHittable {
                 // ScrollView reports the whole window, including the fixed composer.
                 // Derive gestures from the actual gap between fixed controls/input.
                 let top = menu.frame.maxY,bottom = conversation.frame.minY
@@ -69,7 +69,10 @@ import Foundation
         else if id == "assistant.panel.done" { button = app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else { button = app.buttons.matching(identifier:id).firstMatch }
         XCTAssertTrue(button.waitForExistence(timeout:15),id)
-        reveal(button)
+        if id == "assistant.panel.done" || ["Assistant","助手","Memory","记忆"].contains(id) {
+            let fixedControl = XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == true AND hittable == true"),object:button)
+            XCTAssertEqual(XCTWaiter.wait(for:[fixedControl],timeout:20),.completed,id)
+        } else { reveal(button) }
         XCTAssertTrue(button.isHittable,id)
         let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:button)
         XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,id);button.tap()
