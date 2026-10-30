@@ -35,6 +35,21 @@ import Foundation
         XCTAssertTrue(target.isHittable, name)
         target.tap()
     }
+    func openMemoryItem(_ id: String) {
+        let target = app.buttons["memory.item." + id]
+        XCTAssertTrue(target.waitForExistence(timeout: 10))
+        // XCTest's default list-row hit point can land at x=21, outside the
+        // native label. Tap the visible row centre, as a person would.
+        let top = app.navigationBars.firstMatch.frame.maxY
+        let bottom = app.tabBars.firstMatch.frame.minY
+        for _ in 0..<10 {
+            if target.isHittable && target.frame.midY > top && target.frame.midY < bottom { break }
+            if target.frame.midY <= top { app.swipeDown() } else { app.swipeUp() }
+        }
+        XCTAssertTrue(target.isHittable)
+        XCTAssertGreaterThan(target.frame.midY, top); XCTAssertLessThan(target.frame.midY, bottom)
+        target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    }
     func back() { app.navigationBars.buttons.firstMatch.tap() }
     func text(_ identifier: String, _ value: String) {
         let target: XCUIElement
@@ -199,7 +214,7 @@ import Foundation
             for (index, context) in contexts.enumerated() {
                 let source = try XCTUnwrap(proof.items.first { $0.context_id == context })
                 XCTAssertEqual(source.extent, "current")
-                tap("memory.item." + source.item_id)
+                openMemoryItem(source.item_id)
                 tap(selectedLanguage == "en" ? "Load current detail" : "读取当前详情")
                 XCTAssertTrue(app.staticTexts["Synthetic conversation memory " + String(index)].waitForExistence(timeout: 10))
                 XCTAssertEqual(app.staticTexts["memory.detail.scope.value"].label, selectedLanguage == "en" ? "Current conversation" : "当前会话")
