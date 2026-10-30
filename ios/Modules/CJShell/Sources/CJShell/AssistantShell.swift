@@ -18,7 +18,7 @@ struct AssistantShell: View {
     let runHost: RunContainerHost
     let usageHost: OriginalUsageContainerHost
     let bodyText: String?
-    private enum Panel: String, Identifiable { case local, server, needs, feedback, usage; var id: String { rawValue } }
+    private enum Panel: String, Identifiable { case local, server, needs, feedback, usage, travel; var id: String { rawValue } }
     @State private var panel: Panel?
     @State private var feedbackEntry: FeedbackContainerEntry?
     @FocusState private var draftFocused: Bool
@@ -46,6 +46,12 @@ struct AssistantShell: View {
                     .accessibilityIdentifier("assistant.serverHistory")
                 Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
+                if messageHost.travelSelection != nil {
+                    Button { panel = .travel } label: {
+                        RunReadableText(text:state.language.text("Choose travel context", "选择旅行上下文"))
+                            .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                    }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("assistant.travelContext")
+                }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language)
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if let text = messageHost.visibleOriginalText {
@@ -92,7 +98,13 @@ struct AssistantShell: View {
         .sheet(item: $panel) { selectedPanel in
             NavigationStack {
                 Group {
-                    if selectedPanel == .usage {
+                    if selectedPanel == .travel {
+                        if let travel = messageHost.travelSelection {
+                            TravelSelectionView(model:travel,language:state.language)
+                        } else {
+                            RunReadableText(text:state.language.text("Travel context unavailable", "旅行上下文不可用"))
+                        }
+                    } else if selectedPanel == .usage {
                         OriginalUsageContainerView(host: usageHost, messages: messageHost, language: state.language)
                     } else if selectedPanel == .feedback {
                         FeedbackContainerView(host: feedbackHost, entry: feedbackEntry, language: state.language)

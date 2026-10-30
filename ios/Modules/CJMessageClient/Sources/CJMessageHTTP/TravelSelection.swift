@@ -30,7 +30,7 @@ public struct CapturedTravelSelection: Sendable {
     private var revision = UUID()
     private var selected: State = .unselected
     public init(ids: [String],client: MessageHTTPClient,lease: Lease,isCurrent: @escaping @MainActor () -> Bool) throws {
-        guard !ids.isEmpty,Set(ids.map({ Data($0.utf8) })).count == ids.count,
+        guard Set(ids.map({ Data($0.utf8) })).count == ids.count,
               ids.allSatisfy({ $0.utf8.count == 32 && $0.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) }) else { throw MessageHTTPFailure.invalidConfiguration }
         configuredIDs = ids;self.client = client;self.lease = lease;current = isCurrent
     }

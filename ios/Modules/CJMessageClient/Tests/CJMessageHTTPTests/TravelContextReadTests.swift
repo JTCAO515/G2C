@@ -75,6 +75,18 @@ private actor TravelReadWire: ClientTransport {
 
 @MainActor private final class TravelSelectionBox { var model: TravelSelectionModel? }
 extension TravelContextReadTests {
+    @Test func noConfiguredTravelsStillRequiresExplicitNoneAndNeverDispatches() async throws {
+        let wire = TravelReadWire(id:id),(_,lease,client) = try setup(wire)
+        let model = try TravelSelectionModel(ids:[],client:client,lease:lease,isCurrent:{true})
+        #expect(model.ids.isEmpty)
+        #expect(throws:RecoveryError.queryOnly) { try model.capture() }
+        await model.selectTravel(id)
+        #expect(await wire.count == 0)
+        #expect(throws:RecoveryError.queryOnly) { try model.capture() }
+        try model.selectNone()
+        #expect(try model.capture().context == nil)
+        #expect(await wire.count == 0)
+    }
     @Test func explicitNoneAndOwnedTravelAreDifferentCapturesAndRetireOldChoice() async throws {
         let wire = TravelReadWire(id:id),(_,lease,client) = try setup(wire)
         let model = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true})

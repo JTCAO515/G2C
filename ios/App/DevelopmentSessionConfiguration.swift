@@ -3,6 +3,29 @@ import Foundation
 import CryptoKit
 #endif
 
+/// Operator-owned choices only. Actual travel ownership/currentness must be
+/// established by the existing signed GET before an explicit selection is used.
+struct DevelopmentTravelProfile: Decodable {
+    let version: String
+    let travel_ids: [String]
+    enum ConfigurationFailure: Error { case invalidTravelProfile }
+    static func read(_ environment: [String:String]) throws -> Self? {
+        #if DEBUG
+        guard let raw = environment["G2C_DEV_TRAVEL_PROFILE"] else { return nil }
+        guard let data = raw.data(using:.utf8),data.count <= 16384 else { throw ConfigurationFailure.invalidTravelProfile }
+        let value = try JSONDecoder().decode(Self.self,from:data)
+        guard value.version == "app-travel.1",value.travel_ids.count <= 100,
+              Set(value.travel_ids).count == value.travel_ids.count,
+              value.travel_ids.allSatisfy({ id in
+                  id.utf8.count == 32 && id.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) })
+              }) else { throw ConfigurationFailure.invalidTravelProfile }
+        return value
+        #else
+        return nil
+        #endif
+    }
+}
+
 /// Development-only input, never a production identity or an authorization proof.
 struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectable {
     var description: String { "<redacted development configuration>" }

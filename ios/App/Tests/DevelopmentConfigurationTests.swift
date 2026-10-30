@@ -84,6 +84,23 @@ extension DevelopmentConfigurationTests {
 
 
 extension DevelopmentConfigurationTests {
+    @Test func typedTravelChoicesAreExplicitVersionedAndNeverEnabledInRelease() throws {
+        let key = "G2C_DEV_TRAVEL_PROFILE"
+        let id = "0123456789abcdef0123456789abcdef"
+        let valid = "{\"version\":\"app-travel.1\",\"travel_ids\":[\"" + id + "\"]}"
+        #if DEBUG
+        #expect(try DevelopmentTravelProfile.read([:]) == nil)
+        #expect(try DevelopmentTravelProfile.read([key:valid])?.travel_ids == [id])
+        #expect(try DevelopmentTravelProfile.read([key:"{\"version\":\"app-travel.1\",\"travel_ids\":[]}"])?.travel_ids == [])
+        for raw in ["{}", "null", valid.replacingOccurrences(of:"app-travel.1",with:"future"),
+                    valid.replacingOccurrences(of:id,with:"legacy-conversation"),
+                    valid.replacingOccurrences(of:"[\"" + id + "\"]",with:"[\"" + id + "\",\"" + id + "\"]")] {
+            #expect(throws:(any Error).self) { try DevelopmentTravelProfile.read([key:raw]) }
+        }
+        #else
+        #expect(try DevelopmentTravelProfile.read([key:valid]) == nil)
+        #endif
+    }
     @Test func placeConsumerFormatIsExplicitAndReleaseRemainsClosed() throws {
         #if DEBUG
         #expect(try !DevelopmentSessionConfiguration.placeToolsEnabled([:]))
