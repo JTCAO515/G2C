@@ -147,9 +147,13 @@ def main():
                         role=connection.execute('SELECT current_user,current_role').fetchone()
                         messages=connection.execute('SELECT count(*) FROM cj_message_receipt').fetchone()[0]
                         registered=connection.execute('SELECT kind,count(*) FROM cj_run_metered_operation GROUP BY kind ORDER BY kind').fetchall()
+                        sources=connection.execute('SELECT source_id,version,active,approved_input FROM cj_memory_source ORDER BY source_id').fetchall()
                     result=dict(items=values,role=list(role),message_count=messages,model_calls=model.calls,formal_worker_iterations=iterations[0],
-                        worker_errors=list(errors),requests=list(audit),outcomes=list(outcomes),memory_inputs=list(model.memory_inputs),registered_operations=registered)
-                    report['proof']=result;save();return result
+                        worker_errors=list(errors),requests=list(audit),outcomes=list(outcomes),memory_inputs=list(model.memory_inputs),registered_operations=registered,
+                        source_rows=[dict(source_id=sid,version=version,active=active,approved_sha256=hashlib.sha256(bytes(raw)).hexdigest()) for sid,version,active,raw in sources])
+                    report['proof']=result
+                    report.setdefault('consumption_proofs',{})[str(messages)]=result
+                    save();return result
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
                     def do_GET(self):
@@ -203,7 +207,16 @@ def main():
                     assert len(model.memory_inputs)==len(expected)
                     for payload,text in zip(model.memory_inputs,expected):
                         assert payload['version']=='MEMORY-RUN-CONSUME@2' and [row['text'] for row in payload['items']]==[text]
-                    assert [payload['items'][0]['source_version'] for payload in model.memory_inputs]==[1,2,2,2,1,1]
+                    # The frozen edit creates a NEW source at source_version=1;
+                    # it increments the ITEM version, never the new source's version.
+                    assert [payload['items'][0]['version'] for payload in model.memory_inputs]==[1,2,2,2,1,1]
+                    assert [payload['items'][0]['source_version'] for payload in model.memory_inputs]==[1]*6
+                    old_source=model.memory_inputs[0]['items'][0]['source_id'];new_source=model.memory_inputs[1]['items'][0]['source_id']
+                    assert old_source!=new_source
+                    assert all(payload['items'][0]['source_id']==new_source for payload in model.memory_inputs[1:4])
+                    before={row['source_id']:row for row in report['consumption_proofs']['1']['source_rows']}
+                    after={row['source_id']:row for row in value['source_rows']}
+                    assert old_source in after and new_source in after and after[old_source]['approved_sha256']==before[old_source]['approved_sha256']
                     by_text={item['command']['text']:item for item in value['items']}
                     assert by_text['Typed long-term tea / 新长期 e\u0301']['command']['context'] is None
                     assert by_text['Travel A updated value / A当前新值']['command']['context']==dict(kind='travel',id=travels[0],expected_version=1)
