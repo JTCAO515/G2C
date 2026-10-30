@@ -12,7 +12,7 @@ class Repository(MemoryRepository):
     def transaction(self):
         # Reuse rollback, BaseException/commit uncertainty and resource cleanup.
         with super().transaction() as tx:
-            yield Transaction(tx.cur, tx.scope)
+            yield Transaction(tx.cur, tx.scope,typed_context=tx.typed_context)
 
 
 class Transaction(MemoryTransaction):
@@ -36,7 +36,8 @@ class Transaction(MemoryTransaction):
             history = self.cur.fetchone()
             if history is None:
                 raise Unavailable('edit history unavailable')
-            previous = Command.parse(bytes(history[3]))
+            from cj_memory.typed import parse_stored
+            previous = parse_stored(bytes(history[3])) if self.typed_context else Command.parse(bytes(history[3]))
             current = action.command(previous)
             if (previous.item_id != action.item_id or previous.source_id != history[0]
                     or previous.source_version != action.expected_source_version
@@ -85,6 +86,10 @@ class Transaction(MemoryTransaction):
         if item.version != action.expected_version:
             raise Conflict('item version changed')
         original = item.command
+        if original.schema_version==2:
+            from .typed import TypedEdit
+            if type(action) is not TypedEdit:
+                raise Unavailable('typed source requires typed edit and current authority')
         if original.source_version != action.expected_source_version:
             raise Conflict('source version changed')
         if item.status not in ('active', 'disabled') or original.kind == 'inference':
@@ -146,11 +151,10 @@ class Transaction(MemoryTransaction):
             # A generic disabled row could have been a candidate, or disabled by
             # another lifecycle for a different reason. Only undo our own pause.
             self.pause_anchor(item)
-            self.cur.execute('''SELECT 1 FROM cj_memory_item WHERE scope=%s
-                AND subject=%s AND slot=%s AND extent=%s AND context_id=%s
-                AND status='active' ''',
-                             (self.scope, command.subject, command.slot,
-                              command.extent, command.context_id or ''))
+            args=(self.scope,command.subject,command.slot,command.extent,command.context_id or '')
+            condition=' AND context_kind=%s' if self.typed_context else ''
+            if self.typed_context:args+=(command.context_kind,)
+            self.cur.execute("SELECT 1 FROM cj_memory_item WHERE scope=%s AND subject=%s AND slot=%s AND extent=%s AND context_id=%s AND status='active'"+condition,args)
             if self.cur.fetchone() is not None:
                 raise Conflict('canonical slot occupied; review current item')
             status = 'active'

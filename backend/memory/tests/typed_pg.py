@@ -108,4 +108,80 @@ class TypedStorageChecks(Harness):
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(self.scope,)).fetchone()[0],0)
 
 
+    def typed_app(self):
+        from copy import deepcopy
+        from cj_memory.typed_api import create_local_typed_app
+        from cj_memory.typed_local import TypedConfiguration
+        profile=dict(subjects=['self'],slots={'pace-'+self.tag:dict(kind='preference',collection_allowed=True,semantic_resolved=True)},
+                     extents=['long_term','current'],context_ids=[])
+        value=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+            expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),
+            profiles={'alice':profile,'bob':deepcopy(profile)}),travel_contexts={'alice':[x['id'] for x in self.travel],'bob':[]})
+        config=TypedConfiguration.from_bytes(json.dumps(value).encode())
+        return create_local_typed_app(conninfo_path=CONNINFO,auth_dir=self.auth,configuration=config)
+
+    def test_actual_typed_api_receipt_projection_reopen_and_foreign_scope(self):
+        raw=self.raw(self.travel[0],text='API typed / 本次旅行')
+        with TestClient(self.typed_app()) as client:
+            headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
+            saved=client.post('/v2/memories',content=raw,headers=headers)
+            self.assertEqual(saved.status_code,200,saved.text)
+            receipt=saved.json()['receipt']
+            self.assertEqual(receipt['input_sha256'],hashlib.sha256(raw).hexdigest())
+            self.assertEqual(client.post('/v2/memories',content=raw,headers=headers).json()['receipt'],receipt)
+            item=client.get('/v2/memory-items',params={'item_id':receipt['item_id']},headers=self.headers('alice'))
+            self.assertEqual(item.status_code,200,item.text)
+            self.assertEqual(item.json()['item']['command']['context'],dict(kind='travel',id=self.travel[0]['id'],expected_version=1))
+            self.assertIsNone(client.get('/v2/memory-items',params={'item_id':receipt['item_id']},headers=self.headers('bob')).json()['item'])
+            listing=client.get('/v2/memories',params={'limit':'100'},headers=self.headers('alice'))
+            self.assertEqual(listing.status_code,200,listing.text)
+            self.assertIn(receipt['item_id'],[i['command']['item_id'] for i in listing.json()['items']])
+            bad=json.loads(raw);bad['owner']='bob'
+            self.assertEqual(client.post('/v2/memories',content=json.dumps(bad).encode(),headers=headers).status_code,400)
+        with TestClient(self.typed_app()) as client:
+            read=client.get('/v2/memory-receipts',params={'operation_id':json.loads(raw)['operation_id']},headers=self.headers('alice'))
+            self.assertEqual(read.status_code,200,read.text);self.assertEqual(read.json()['receipt'],receipt)
+
+
+    def test_typed_edit_pause_resume_stop_and_new_context_version(self):
+        with TestClient(self.typed_app()) as client,TestClient(self.app) as identity:
+            headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
+            raw=self.raw(self.travel[0],text='Old typed / 原值')
+            result=client.post('/v2/memories',content=raw,headers=headers)
+            self.assertEqual(result.status_code,200,result.text);iid=result.json()['receipt']['item_id']
+            def action(op,version,context=None,text=None):
+                value=dict(version='MEMORY-management.2',action_id='action-'+uuid.uuid4().hex,
+                    operation=op,item_id=iid,expected_version=version,expected_source_version=1)
+                if op=='edit':value.update(context=context,text=text)
+                return json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()
+            def post(body):return client.post('/v2/memory-management-actions',content=body,headers=headers)
+            pause=post(action('pause',1));self.assertEqual(pause.status_code,200,pause.text)
+            original_context=dict(kind='travel',id=self.travel[0]['id'],expected_version=1)
+            edit=action('edit',2,original_context,'New typed / 新值')
+            changed=post(edit);self.assertEqual(changed.status_code,200,changed.text)
+            self.assertEqual((changed.json()['receipt']['status'],changed.json()['receipt']['version']),('disabled',3))
+            self.assertEqual(post(action('resume',3)).status_code,200)
+            request=dict(version='TRAVEL-context-action.1',action_id='advance-'+self.tag,operation='advance',
+                travel_context=dict(id=self.travel[0]['id'],expected_version=1))
+            advanced=identity.post('/v1/travel-context-actions',content=json.dumps(request).encode(),headers=headers)
+            self.assertEqual(advanced.status_code,200,advanced.text)
+            self.assertNotEqual(post(action('edit',4,original_context,'stale context')).status_code,200)
+            current_context=dict(original_context,expected_version=2)
+            updated=post(action('edit',4,current_context,'Current version / 新旅行版本'))
+            self.assertEqual(updated.status_code,200,updated.text)
+            self.assertEqual(post(edit).json()['receipt'],changed.json()['receipt'])
+            current=client.get('/v2/memory-items',params={'item_id':iid},headers=self.headers('alice')).json()['item']
+            self.assertEqual(current['version'],5);self.assertEqual(current['command']['context'],current_context)
+            wrong=dict(kind='travel',id=self.travel[1]['id'],expected_version=1)
+            self.assertEqual(post(action('edit',5,wrong,'retarget')).status_code,409)
+            stop=dict(version='MEMORY-STOP-USE@2',action_id='stop-'+self.tag,operation='withdraw',item_id=iid,
+                      expected_version=5,source_id=current['command']['source_id'],expected_source_version=1)
+            stopped=client.post('/v2/memory-withdrawal-actions',content=json.dumps(stop).encode(),headers=headers)
+            self.assertEqual(stopped.status_code,200,stopped.text)
+            self.assertEqual((stopped.json()['receipt']['status'],stopped.json()['receipt']['version']),('withdrawn',6))
+            self.assertNotEqual(post(action('resume',6)).status_code,200)
+            with self.database.connect(self.scope) as conn:
+                self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_source WHERE source_id IN (SELECT previous_source_id FROM cj_memory_management_action WHERE item_id=%s) AND active',(iid,)).fetchone()[0],0)
+
+
 if __name__=='__main__':unittest.main(verbosity=2)

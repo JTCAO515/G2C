@@ -65,7 +65,8 @@ def source_history(tx, item):
         row=tx.cur.fetchone()
         if row is None:
             raise Unavailable('source history unavailable')
-        command=Command.parse(bytes(row[1]))
+        from cj_memory.typed import parse_stored
+        command=parse_stored(bytes(row[1])) if tx.typed_context else Command.parse(bytes(row[1]))
         if (command.item_id != item.command.item_id or command.source_id != source_id
                 or command.source_version != row[0]):
             raise Unavailable('source history projection mismatch')
