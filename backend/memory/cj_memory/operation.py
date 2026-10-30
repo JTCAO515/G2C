@@ -103,6 +103,12 @@ class OperationContext:
         return consume_current(self._service, self._state, subject, context_id,
                                consumer, max_result_bytes=max_result_bytes)
 
+    def consume_current_typed(self,subject,context,consumer,*,max_result_bytes):
+        self._check()
+        from .consumption import consume_current_typed
+        return consume_current_typed(self._service,self._state,subject,context,consumer,
+                                     max_result_bytes=max_result_bytes)
+
     def effective(self, subject, context_id=None):
         self._check()
         return self._service.effective(subject, context_id)

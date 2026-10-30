@@ -43,10 +43,26 @@ def consume_current(service, state, subject, context_id, consumer, *, max_result
             or not callable(consumer)):
         state['blocked'] = True
         raise InvalidInput('explicit subject/context, synchronous consumer and byte bound required')
+    return _consume(service,state,subject,context_id,consumer,max_result_bytes=max_result_bytes)
+
+
+def consume_current_typed(service,state,subject,context,consumer,*,max_result_bytes):
+    from .typed import ContextRef
+    if (type(subject) is not str or not subject.strip()
+            or context is not None and type(context) is not ContextRef
+            or type(max_result_bytes) is not int or max_result_bytes<1 or consumer is None):
+        state['blocked']=True
+        raise InvalidInput('explicit typed selector and byte bound required')
+    return _consume(service,state,subject,context,consumer,max_result_bytes=max_result_bytes,typed=True)
+
+
+def _consume(service,state,subject,context_id,consumer,*,max_result_bytes,typed=False):
     view = None
     state['consuming'] = True
     try:
         with service.repository.transaction() as tx:
+            if typed and not tx.typed_context:
+                raise InvalidInput('typed storage not enabled')
             snapshot = current_context(tx, subject, context_id)
             tx.require_current(snapshot, subject, context_id)
             view = CurrentMemory(snapshot, state, _factory=_FACTORY)
