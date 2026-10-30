@@ -46,6 +46,9 @@ def main():
     from cj_api.local_app import app_from_environment,LocalDatabase,ISSUER,scope_for,create_local_memory_management_app
     from cj_api.local_run_context import load_run_context
     from cj_memory.local import LocalMemoryConfiguration
+    from cj_memory.local_runtime import load_runtime_configuration
+    from cj_agent.provider import FakeProvider
+    from run_worker import run_once
     context=load_run_context(args.run_context)
     sources=[*list((ROOT/'ios/App').glob('*.swift')),*list((ROOT/'ios/Modules/CJMemoryClient/Sources').rglob('*.swift')),
         *list((ROOT/'ios/Modules/CJShell/Sources').rglob('*.swift')),*list((ROOT/'ios/Modules/CJMessageClient/Sources').rglob('*.swift')),
@@ -68,10 +71,19 @@ def main():
                 profile=dict(subjects=['self'],slots={slot:dict(kind=kind,collection_allowed=True,semantic_resolved=True) for slot,kind in (('fact','fact'),('experience','experience'),('food.spice','preference'))},extents=['long_term'],context_ids=[])
                 policy=dict(version='local-memory-policy.1',expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={s:profile for row in subjects.values() for s in row.values()})
                 policy_path=root/'memory-policy.json';policy_path.write_text(json.dumps(policy));policy_path.chmod(0o600)
-                for target in (env,os.environ):target.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_RUN_CONTEXT=str(args.run_context.resolve()),CJ_LOCAL_MEMORY_POLICY=str(policy_path))
+                runtime_path=root/'memory-run-policy.json';runtime_path.write_text(json.dumps(dict(version='local-memory-run.1',collection=policy,selections={s:dict(subject='self',slots=['fact','experience','food.spice'],max_bytes=32768) for s in policy['profiles']})));runtime_path.chmod(0o600)
+                runtime_configuration=load_runtime_configuration(runtime_path)
+                for target in (env,os.environ):target.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_RUN_CONTEXT=str(args.run_context.resolve()),CJ_LOCAL_MEMORY_POLICY=str(policy_path),CJ_LOCAL_MEMORY_RUN_POLICY=str(runtime_path))
                 database=LocalDatabase(connection,run_context=context)
                 apps=dict(read=app_from_environment(),management=create_local_memory_management_app(conninfo_path=connection,auth_dir=auth,memory_configuration=LocalMemoryConfiguration.from_bytes(policy_path.read_bytes())))
                 servers=[];threads=[];endpoints={}
+                worker_stop=threading.Event();worker_errors=[];worker_cycles=[];model=FakeProvider(chunks_per_reply=2)
+                def worker():
+                    try:
+                        while not worker_stop.is_set():
+                            outcomes=run_once(database,model,auth,memory_configuration=runtime_configuration);worker_cycles.append(len(outcomes));worker_stop.wait(.1)
+                    except Exception as error:worker_errors.append(type(error).__name__);worker_stop.set()
+                worker_thread=threading.Thread(target=worker,daemon=True);worker_thread.start()
                 def observer(name,app):
                     async def observed(scope,receive,send):
                         if scope['type']!='http':return await app(scope,receive,send)
@@ -124,6 +136,7 @@ def main():
                         response=api.get('/v1/memory-items',params={'item_id':item_id},headers={'Authorization':'Bearer '+tokens[case]['A']});response.raise_for_status();return response.json()['item']
                 def verify(case):
                     row=records[case];scope=scope_for(ISSUER,subjects[case]['A']);posts=row['posts'];expected=7 if case=='testEnglish' else 1
+                    assert worker_cycles and not worker_errors
                     assert len(posts)==expected and all(p['host']=='management' and p['status']==200 for p in posts)
                     assert not any(a['method']=='POST' and a['case'] is None for a in audit[row['audit_start']:])
                     with database.connect(scope) as conn:
@@ -145,7 +158,7 @@ def main():
                     with TestClient(apps['read']) as api:
                         for item in row['initial']:
                             denied=api.get('/v1/memory-items',params={'item_id':item['command']['item_id']},headers={'Authorization':'Bearer '+tokens[case]['B']});denied.raise_for_status();assert denied.json()['item'] is None
-                    value=dict(runtime_role='cj_m1_runtime',posts=posts,ledger=[dict(action_id=a,operation=op,item_id=i,version=v,status=s) for a,op,_,i,v,s in ledger],original_sources_unchanged=True,cross_owner_empty=True,
+                    value=dict(runtime_role='cj_m1_runtime',formal_worker_cycles=len(worker_cycles),provider_calls=model.calls,posts=posts,ledger=[dict(action_id=a,operation=op,item_id=i,version=v,status=s) for a,op,_,i,v,s in ledger],original_sources_unchanged=True,cross_owner_empty=True,
                         items=[snapshot(case,i['command']['item_id']) for i in row['initial']])
                     report['checks'][case]=value;save();return value
                 class Control(BaseHTTPRequestHandler):
@@ -186,6 +199,8 @@ def main():
                             raw=file.read_bytes();assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values());assert b'-----BEGIN PRIVATE KEY-----' not in raw
                     report['token_key_scan']='PASS';report['status']='PARTIAL_PASS'
                 finally:
+                    worker_stop.set();worker_thread.join(10)
+                    report['worker_errors']=worker_errors
                     for server in servers:server.should_exit=True
                     for thread in threads:thread.join(10)
                     control.shutdown();control.server_close()
