@@ -17,8 +17,8 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     let subject: String
     let expiresAt: Double?
 
-    static func readEndpoint(_ environment: [String: String]) -> URL? {
-        guard let rawURL = environment["G2C_DEV_API_BASE_URL"],
+    static func readEndpoint(_ environment: [String: String], key: String = "G2C_DEV_API_BASE_URL") -> URL? {
+        guard let rawURL = environment[key],
               var url = URLComponents(string: rawURL), url.scheme == "http", url.host == "127.0.0.1",
               let port = url.port, (1...65535).contains(port), url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, ["", "/"].contains(url.path) else { return nil }
@@ -90,6 +90,12 @@ struct DevelopmentMemoryProfile: Decodable {
         }
         return value
     }
-    enum ConfigurationFailure: Error { case invalidMemoryProfile }
+    static func managementEndpoint(_ environment: [String: String]) throws -> URL? {
+        let key = "G2C_DEV_MEMORY_MANAGEMENT_URL"
+        guard environment[key] != nil else { return nil }
+        guard let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment, key: key) else { throw ConfigurationFailure.invalidManagementEndpoint }
+        return endpoint
+    }
+    enum ConfigurationFailure: Error { case invalidMemoryProfile, invalidManagementEndpoint }
 }
 #endif

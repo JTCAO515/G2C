@@ -137,6 +137,78 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v2/run-draft-status`.
     /// - Remark: Generated from `#/paths//v2/run-draft-status/get(getRunDraftStatusV2)`.
     func getRunDraftStatusV2(_ input: Operations.getRunDraftStatusV2.Input) async throws -> Operations.getRunDraftStatusV2.Output
+    /// TRAVEL-CONTEXT@1. Local runtime only. Exact TRAVEL-context-action.1 bytes; create/advance/deactivate and original receipt share one transaction. Original IDs/bytes retained on unknown ACK.
+    ///
+    /// - Remark: HTTP `POST /v1/travel-context-actions`.
+    /// - Remark: Generated from `#/paths//v1/travel-context-actions/post(applyTravelContextAction)`.
+    func applyTravelContextAction(_ input: Operations.applyTravelContextAction.Input) async throws -> Operations.applyTravelContextAction.Output
+    /// - Remark: HTTP `GET /v1/travel-context-actions/{action_id}`.
+    /// - Remark: Generated from `#/paths//v1/travel-context-actions/{action_id}/get(getOriginalTravelContextAction)`.
+    func getOriginalTravelContextAction(_ input: Operations.getOriginalTravelContextAction.Input) async throws -> Operations.getOriginalTravelContextAction.Output
+    /// - Remark: HTTP `GET /v1/travel-contexts/{context_id}`.
+    /// - Remark: Generated from `#/paths//v1/travel-contexts/{context_id}/get(getTravelContext)`.
+    func getTravelContext(_ input: Operations.getTravelContext.Input) async throws -> Operations.getTravelContext.Output
+    /// - Remark: HTTP `POST /v1/memory-edit-actions`.
+    /// - Remark: Generated from `#/paths//v1/memory-edit-actions/post(applyMemoryEditAction)`.
+    func applyMemoryEditAction(_ input: Operations.applyMemoryEditAction.Input) async throws -> Operations.applyMemoryEditAction.Output
+    /// - Remark: HTTP `POST /v1/memory-withdrawal-actions`.
+    /// - Remark: Generated from `#/paths//v1/memory-withdrawal-actions/post(applyMemoryStopUseAction)`.
+    func applyMemoryStopUseAction(_ input: Operations.applyMemoryStopUseAction.Input) async throws -> Operations.applyMemoryStopUseAction.Output
+    /// Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates.
+    ///
+    /// - Remark: HTTP `GET /v1/memory-withdrawal-receipts`.
+    /// - Remark: Generated from `#/paths//v1/memory-withdrawal-receipts/get(getMemoryStopUseReceipt)`.
+    func getMemoryStopUseReceipt(_ input: Operations.getMemoryStopUseReceipt.Input) async throws -> Operations.getMemoryStopUseReceipt.Output
+    /// Frozen MESSAGE-send.2: original bytes include mandatory travel_context and needs_reference. Canonical owner, exact expected head and original receipt take priority. New producer needs explicit activated local travel profile. Historical receipt/ref is data, never execution authority.
+    ///
+    /// - Remark: HTTP `POST /v2/messages`.
+    /// - Remark: Generated from `#/paths//v2/messages/post(receiveMessageV2)`.
+    func receiveMessageV2(_ input: Operations.receiveMessageV2.Input) async throws -> Operations.receiveMessageV2.Output
+    /// Read original receipt and active conversation head under the same scope lock
+    ///
+    /// Original receipt/head/reference in one canonical-owner scope snapshot; missing persisted send.2 metadata is unavailable/unknown, never none. Null does not prove noncommit or allow a new ID.
+    ///
+    /// - Remark: HTTP `GET /v2/message-send-status`.
+    /// - Remark: Generated from `#/paths//v2/message-send-status/get(getMessageSendStatusV2)`.
+    func getMessageSendStatusV2(_ input: Operations.getMessageSendStatusV2.Input) async throws -> Operations.getMessageSendStatusV2.Output
+    /// New original MESSAGE-send.2 protected read with immutable reference. Legacy read schemas and source semantics remain unchanged. Data is not a live effect lease.
+    ///
+    /// - Remark: HTTP `GET /v2/run-display`.
+    /// - Remark: Generated from `#/paths//v2/run-display/get(getTravelRunDisplay)`.
+    func getTravelRunDisplay(_ input: Operations.getTravelRunDisplay.Input) async throws -> Operations.getTravelRunDisplay.Output
+    /// New original MESSAGE-send.2 protected read with immutable reference. Legacy read schemas and source semantics remain unchanged. Data is not a live effect lease.
+    ///
+    /// - Remark: HTTP `GET /v3/run-draft-status`.
+    /// - Remark: Generated from `#/paths//v3/run-draft-status/get(getTravelRunDraftStatus)`.
+    func getTravelRunDraftStatus(_ input: Operations.getTravelRunDraftStatus.Input) async throws -> Operations.getTravelRunDraftStatus.Output
+    /// RUN-CANCEL@2. Canonical owner and original send.2 receipt/ref, then original RUN fence; no live travel selection/version or active chat permit is required to stop. Immutable original reference returned, never rebinding or dispatching. Legacy cancellation version stays unchanged.
+    ///
+    /// - Remark: HTTP `POST /v2/run-cancellations`.
+    /// - Remark: Generated from `#/paths//v2/run-cancellations/post(cancelOriginalTravelRun)`.
+    func cancelOriginalTravelRun(_ input: Operations.cancelOriginalTravelRun.Input) async throws -> Operations.cancelOriginalTravelRun.Output
+    /// - Remark: HTTP `GET /v2/memories`.
+    /// - Remark: Generated from `#/paths//v2/memories/get(listTypedMemories)`.
+    func listTypedMemories(_ input: Operations.listTypedMemories.Input) async throws -> Operations.listTypedMemories.Output
+    /// - Remark: HTTP `POST /v2/memories`.
+    /// - Remark: Generated from `#/paths//v2/memories/post(saveTypedMemory)`.
+    func saveTypedMemory(_ input: Operations.saveTypedMemory.Input) async throws -> Operations.saveTypedMemory.Output
+    /// - Remark: HTTP `GET /v2/memory-items`.
+    /// - Remark: Generated from `#/paths//v2/memory-items/get(getTypedMemoryItem)`.
+    func getTypedMemoryItem(_ input: Operations.getTypedMemoryItem.Input) async throws -> Operations.getTypedMemoryItem.Output
+    /// - Remark: HTTP `GET /v2/memory-receipts`.
+    /// - Remark: Generated from `#/paths//v2/memory-receipts/get(getTypedMemoryReceipt)`.
+    func getTypedMemoryReceipt(_ input: Operations.getTypedMemoryReceipt.Input) async throws -> Operations.getTypedMemoryReceipt.Output
+    /// - Remark: HTTP `POST /v2/memory-management-actions`.
+    /// - Remark: Generated from `#/paths//v2/memory-management-actions/post(applyTypedMemoryManagement)`.
+    func applyTypedMemoryManagement(_ input: Operations.applyTypedMemoryManagement.Input) async throws -> Operations.applyTypedMemoryManagement.Output
+    /// - Remark: HTTP `POST /v2/memory-withdrawal-actions`.
+    /// - Remark: Generated from `#/paths//v2/memory-withdrawal-actions/post(applyTypedMemoryStopUse)`.
+    func applyTypedMemoryStopUse(_ input: Operations.applyTypedMemoryStopUse.Input) async throws -> Operations.applyTypedMemoryStopUse.Output
+    /// Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates.
+    ///
+    /// - Remark: HTTP `GET /v2/memory-management-receipts`.
+    /// - Remark: Generated from `#/paths//v2/memory-management-receipts/get(getTypedMemoryManagementReceipt)`.
+    func getTypedMemoryManagementReceipt(_ input: Operations.getTypedMemoryManagementReceipt.Input) async throws -> Operations.getTypedMemoryManagementReceipt.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -563,6 +635,222 @@ extension APIProtocol {
         headers: Operations.getRunDraftStatusV2.Input.Headers = .init()
     ) async throws -> Operations.getRunDraftStatusV2.Output {
         try await getRunDraftStatusV2(Operations.getRunDraftStatusV2.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// TRAVEL-CONTEXT@1. Local runtime only. Exact TRAVEL-context-action.1 bytes; create/advance/deactivate and original receipt share one transaction. Original IDs/bytes retained on unknown ACK.
+    ///
+    /// - Remark: HTTP `POST /v1/travel-context-actions`.
+    /// - Remark: Generated from `#/paths//v1/travel-context-actions/post(applyTravelContextAction)`.
+    public func applyTravelContextAction(
+        headers: Operations.applyTravelContextAction.Input.Headers = .init(),
+        body: Operations.applyTravelContextAction.Input.Body
+    ) async throws -> Operations.applyTravelContextAction.Output {
+        try await applyTravelContextAction(Operations.applyTravelContextAction.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/travel-context-actions/{action_id}`.
+    /// - Remark: Generated from `#/paths//v1/travel-context-actions/{action_id}/get(getOriginalTravelContextAction)`.
+    public func getOriginalTravelContextAction(
+        path: Operations.getOriginalTravelContextAction.Input.Path,
+        headers: Operations.getOriginalTravelContextAction.Input.Headers = .init()
+    ) async throws -> Operations.getOriginalTravelContextAction.Output {
+        try await getOriginalTravelContextAction(Operations.getOriginalTravelContextAction.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/travel-contexts/{context_id}`.
+    /// - Remark: Generated from `#/paths//v1/travel-contexts/{context_id}/get(getTravelContext)`.
+    public func getTravelContext(
+        path: Operations.getTravelContext.Input.Path,
+        headers: Operations.getTravelContext.Input.Headers = .init()
+    ) async throws -> Operations.getTravelContext.Output {
+        try await getTravelContext(Operations.getTravelContext.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/memory-edit-actions`.
+    /// - Remark: Generated from `#/paths//v1/memory-edit-actions/post(applyMemoryEditAction)`.
+    public func applyMemoryEditAction(
+        headers: Operations.applyMemoryEditAction.Input.Headers = .init(),
+        body: Operations.applyMemoryEditAction.Input.Body
+    ) async throws -> Operations.applyMemoryEditAction.Output {
+        try await applyMemoryEditAction(Operations.applyMemoryEditAction.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/memory-withdrawal-actions`.
+    /// - Remark: Generated from `#/paths//v1/memory-withdrawal-actions/post(applyMemoryStopUseAction)`.
+    public func applyMemoryStopUseAction(
+        headers: Operations.applyMemoryStopUseAction.Input.Headers = .init(),
+        body: Operations.applyMemoryStopUseAction.Input.Body
+    ) async throws -> Operations.applyMemoryStopUseAction.Output {
+        try await applyMemoryStopUseAction(Operations.applyMemoryStopUseAction.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates.
+    ///
+    /// - Remark: HTTP `GET /v1/memory-withdrawal-receipts`.
+    /// - Remark: Generated from `#/paths//v1/memory-withdrawal-receipts/get(getMemoryStopUseReceipt)`.
+    public func getMemoryStopUseReceipt(
+        query: Operations.getMemoryStopUseReceipt.Input.Query,
+        headers: Operations.getMemoryStopUseReceipt.Input.Headers = .init()
+    ) async throws -> Operations.getMemoryStopUseReceipt.Output {
+        try await getMemoryStopUseReceipt(Operations.getMemoryStopUseReceipt.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Frozen MESSAGE-send.2: original bytes include mandatory travel_context and needs_reference. Canonical owner, exact expected head and original receipt take priority. New producer needs explicit activated local travel profile. Historical receipt/ref is data, never execution authority.
+    ///
+    /// - Remark: HTTP `POST /v2/messages`.
+    /// - Remark: Generated from `#/paths//v2/messages/post(receiveMessageV2)`.
+    public func receiveMessageV2(
+        headers: Operations.receiveMessageV2.Input.Headers = .init(),
+        body: Operations.receiveMessageV2.Input.Body
+    ) async throws -> Operations.receiveMessageV2.Output {
+        try await receiveMessageV2(Operations.receiveMessageV2.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read original receipt and active conversation head under the same scope lock
+    ///
+    /// Original receipt/head/reference in one canonical-owner scope snapshot; missing persisted send.2 metadata is unavailable/unknown, never none. Null does not prove noncommit or allow a new ID.
+    ///
+    /// - Remark: HTTP `GET /v2/message-send-status`.
+    /// - Remark: Generated from `#/paths//v2/message-send-status/get(getMessageSendStatusV2)`.
+    public func getMessageSendStatusV2(
+        query: Operations.getMessageSendStatusV2.Input.Query,
+        headers: Operations.getMessageSendStatusV2.Input.Headers = .init()
+    ) async throws -> Operations.getMessageSendStatusV2.Output {
+        try await getMessageSendStatusV2(Operations.getMessageSendStatusV2.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// New original MESSAGE-send.2 protected read with immutable reference. Legacy read schemas and source semantics remain unchanged. Data is not a live effect lease.
+    ///
+    /// - Remark: HTTP `GET /v2/run-display`.
+    /// - Remark: Generated from `#/paths//v2/run-display/get(getTravelRunDisplay)`.
+    public func getTravelRunDisplay(
+        query: Operations.getTravelRunDisplay.Input.Query,
+        headers: Operations.getTravelRunDisplay.Input.Headers = .init()
+    ) async throws -> Operations.getTravelRunDisplay.Output {
+        try await getTravelRunDisplay(Operations.getTravelRunDisplay.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// New original MESSAGE-send.2 protected read with immutable reference. Legacy read schemas and source semantics remain unchanged. Data is not a live effect lease.
+    ///
+    /// - Remark: HTTP `GET /v3/run-draft-status`.
+    /// - Remark: Generated from `#/paths//v3/run-draft-status/get(getTravelRunDraftStatus)`.
+    public func getTravelRunDraftStatus(
+        query: Operations.getTravelRunDraftStatus.Input.Query,
+        headers: Operations.getTravelRunDraftStatus.Input.Headers = .init()
+    ) async throws -> Operations.getTravelRunDraftStatus.Output {
+        try await getTravelRunDraftStatus(Operations.getTravelRunDraftStatus.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// RUN-CANCEL@2. Canonical owner and original send.2 receipt/ref, then original RUN fence; no live travel selection/version or active chat permit is required to stop. Immutable original reference returned, never rebinding or dispatching. Legacy cancellation version stays unchanged.
+    ///
+    /// - Remark: HTTP `POST /v2/run-cancellations`.
+    /// - Remark: Generated from `#/paths//v2/run-cancellations/post(cancelOriginalTravelRun)`.
+    public func cancelOriginalTravelRun(
+        headers: Operations.cancelOriginalTravelRun.Input.Headers = .init(),
+        body: Operations.cancelOriginalTravelRun.Input.Body
+    ) async throws -> Operations.cancelOriginalTravelRun.Output {
+        try await cancelOriginalTravelRun(Operations.cancelOriginalTravelRun.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v2/memories`.
+    /// - Remark: Generated from `#/paths//v2/memories/get(listTypedMemories)`.
+    public func listTypedMemories(
+        query: Operations.listTypedMemories.Input.Query,
+        headers: Operations.listTypedMemories.Input.Headers = .init()
+    ) async throws -> Operations.listTypedMemories.Output {
+        try await listTypedMemories(Operations.listTypedMemories.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v2/memories`.
+    /// - Remark: Generated from `#/paths//v2/memories/post(saveTypedMemory)`.
+    public func saveTypedMemory(
+        headers: Operations.saveTypedMemory.Input.Headers = .init(),
+        body: Operations.saveTypedMemory.Input.Body
+    ) async throws -> Operations.saveTypedMemory.Output {
+        try await saveTypedMemory(Operations.saveTypedMemory.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v2/memory-items`.
+    /// - Remark: Generated from `#/paths//v2/memory-items/get(getTypedMemoryItem)`.
+    public func getTypedMemoryItem(
+        query: Operations.getTypedMemoryItem.Input.Query,
+        headers: Operations.getTypedMemoryItem.Input.Headers = .init()
+    ) async throws -> Operations.getTypedMemoryItem.Output {
+        try await getTypedMemoryItem(Operations.getTypedMemoryItem.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v2/memory-receipts`.
+    /// - Remark: Generated from `#/paths//v2/memory-receipts/get(getTypedMemoryReceipt)`.
+    public func getTypedMemoryReceipt(
+        query: Operations.getTypedMemoryReceipt.Input.Query,
+        headers: Operations.getTypedMemoryReceipt.Input.Headers = .init()
+    ) async throws -> Operations.getTypedMemoryReceipt.Output {
+        try await getTypedMemoryReceipt(Operations.getTypedMemoryReceipt.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v2/memory-management-actions`.
+    /// - Remark: Generated from `#/paths//v2/memory-management-actions/post(applyTypedMemoryManagement)`.
+    public func applyTypedMemoryManagement(
+        headers: Operations.applyTypedMemoryManagement.Input.Headers = .init(),
+        body: Operations.applyTypedMemoryManagement.Input.Body
+    ) async throws -> Operations.applyTypedMemoryManagement.Output {
+        try await applyTypedMemoryManagement(Operations.applyTypedMemoryManagement.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /v2/memory-withdrawal-actions`.
+    /// - Remark: Generated from `#/paths//v2/memory-withdrawal-actions/post(applyTypedMemoryStopUse)`.
+    public func applyTypedMemoryStopUse(
+        headers: Operations.applyTypedMemoryStopUse.Input.Headers = .init(),
+        body: Operations.applyTypedMemoryStopUse.Input.Body
+    ) async throws -> Operations.applyTypedMemoryStopUse.Output {
+        try await applyTypedMemoryStopUse(Operations.applyTypedMemoryStopUse.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates.
+    ///
+    /// - Remark: HTTP `GET /v2/memory-management-receipts`.
+    /// - Remark: Generated from `#/paths//v2/memory-management-receipts/get(getTypedMemoryManagementReceipt)`.
+    public func getTypedMemoryManagementReceipt(
+        query: Operations.getTypedMemoryManagementReceipt.Input.Query,
+        headers: Operations.getTypedMemoryManagementReceipt.Input.Headers = .init()
+    ) async throws -> Operations.getTypedMemoryManagementReceipt.Output {
+        try await getTypedMemoryManagementReceipt(Operations.getTypedMemoryManagementReceipt.Input(
             query: query,
             headers: headers
         ))

@@ -61,11 +61,11 @@ protocol MemoryJournalRecord: Codable {
 extension MemoryPending: MemoryJournalRecord { var journalID: String { operationID } }
 
 // A separate encrypted record preserves the immutable manual journal and old readers.
-struct MemoryRejectedOperation: MemoryJournalRecord {
-    let original: MemoryPending
+struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalRecord {
+    let original: Original
     let status: Int
     let code: String
-    var journalID: String { original.operationID }
+    var journalID: String { original.journalID }
     var originalUTF8: Data { original.originalUTF8 }
     var expectedSHA256: String { original.expectedSHA256 }
     func validate() throws {
@@ -209,8 +209,8 @@ struct MemoryRejectedOperation: MemoryJournalRecord {
     func validateDirectory() throws { try storage.validateDirectory() }
     func append(_ pending: MemoryPending, validateBinding: () throws -> Void = {}) throws { try storage.append(pending, validateBinding: validateBinding) }
     func requireOriginal(_ expected: MemoryPending) throws { try storage.requireOriginal(expected) }
-    func rejection(for original: MemoryPending) throws -> MemoryRejectedOperation? {
-        let records: MemoryEncryptedRecords<MemoryRejectedOperation>? = try storage.adjacentRecords(domain: "CJMemoryRejections", create: false)
+    func rejection(for original: MemoryPending) throws -> MemoryRejectedOperation<MemoryPending>? {
+        let records: MemoryEncryptedRecords<MemoryRejectedOperation<MemoryPending>>? = try storage.adjacentRecords(domain: "CJMemoryRejections", create: false)
         guard let record = try records?.pending().first(where: { same($0.journalID, original.operationID) }) else { return nil }
         guard record.originalUTF8 == original.originalUTF8, record.expectedSHA256 == original.expectedSHA256 else {
             throw MemoryFailure.storageUnavailable
@@ -219,7 +219,7 @@ struct MemoryRejectedOperation: MemoryJournalRecord {
     }
     func recordRejection(_ original: MemoryPending, status: Int, code: String, validateBinding: () throws -> Void) throws {
         try storage.requireOriginal(original)
-        guard let records: MemoryEncryptedRecords<MemoryRejectedOperation> = try storage.adjacentRecords(domain: "CJMemoryRejections", create: true) else {
+        guard let records: MemoryEncryptedRecords<MemoryRejectedOperation<MemoryPending>> = try storage.adjacentRecords(domain: "CJMemoryRejections", create: true) else {
             throw MemoryFailure.storageUnavailable
         }
         try records.append(MemoryRejectedOperation(original: original, status: status, code: code), validateBinding: validateBinding)

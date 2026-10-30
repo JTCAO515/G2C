@@ -45,7 +45,7 @@ public enum TripRoute: Hashable, Sendable { case detail, proposal, originalActio
 public enum MemoryRoute: Hashable, Sendable {
     case group(MemoryGroup)
     case account, language, help, privacy, support
-    case memoryItems, memoryDetail, manualMemory
+    case memoryItems, memoryDetail, manualMemory, memoryActions
     case feedback(FeedbackContainerEntry?)
 }
 

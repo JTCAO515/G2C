@@ -82,3 +82,70 @@ private actor MemoryExitSpy: ClientTransport {
         #expect(await spy.calls == 1)
     }
 }
+
+extension MemoryLocalTransportTests {
+    @Test func defaultRejectsEveryLifecyclePostAndNonSimulatorFactory() async throws {
+        let spy = MemoryExitSpy(), endpoint = try endpoint()
+        let transport = try NoRedirectTransport(interceptedTransport: spy, previewEndpoint: nil, validatePreview: nil)
+        for (path, operation) in [("/v1/memory-management-actions", Operations.applyMemoryManagementAction.id),
+                                  ("/v1/memory-edit-actions", Operations.applyMemoryEditAction.id),
+                                  ("/v1/memory-withdrawal-actions", Operations.applyMemoryStopUseAction.id)] {
+            await #expect(throws: (any Error).self) {
+                _ = try await transport.send(request(path: path), body: HTTPBody("{}".utf8), baseURL: endpoint.url, operationID: operation)
+            }
+        }
+        #expect(await spy.calls == 0)
+        #if !os(iOS)
+        #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+            try NoRedirectTransport.developmentMemoryManagement(endpoint: endpoint, requestTimeout: 1, resourceTimeout: 1, validate: {})
+        }
+        #endif
+    }
+    @Test func lifecycleCapabilityIsExactAndDoesNotGrantManualOrMessageSending() async throws {
+        let spy = MemoryExitSpy(), lease = MemoryExitLease(), endpoint = try endpoint()
+        let transport = NoRedirectTransport(interceptedTransport: spy, memoryManagementEndpoint: endpoint, validateManagement: { try lease.validate() })
+        let original = Data(" {\"x\":\"e\u{301}\"}\n".utf8)
+        for (path, operation) in [("/v1/memory-management-actions", Operations.applyMemoryManagementAction.id),
+                                  ("/v1/memory-edit-actions", Operations.applyMemoryEditAction.id),
+                                  ("/v1/memory-withdrawal-actions", Operations.applyMemoryStopUseAction.id)] {
+            _ = try await transport.send(request(path: path), body: HTTPBody(original), baseURL: endpoint.url, operationID: operation)
+        }
+        #expect(await spy.bodies == [original, original, original])
+        for (path, operation) in [("/v1/memories", Operations.saveMemory.id), ("/v1/messages", Operations.receiveMessage.id),
+                                  ("/v1/trip-manual-previews", Operations.previewManualTripEdit.id),
+                                  ("/v1/memory-edit-actions?owner=other", Operations.applyMemoryEditAction.id),
+                                  ("/v1/memory-management-actions", Operations.applyMemoryEditAction.id)] {
+            await #expect(throws: (any Error).self) {
+                _ = try await transport.send(request(path: path), body: HTTPBody(original), baseURL: endpoint.url, operationID: operation)
+            }
+        }
+        #expect(await spy.calls == 3)
+    }
+    @Test func staleLifecycleLeaseWithholdsBeforeAndAfterActualDispatch() async throws {
+        let endpoint = try endpoint(), lease = MemoryExitLease()
+        let spy = MemoryExitSpy(after: { await MainActor.run { lease.active = false } })
+        let transport = NoRedirectTransport(interceptedTransport: spy, memoryManagementEndpoint: endpoint, validateManagement: { try lease.validate() })
+        await #expect(throws: MessageHTTPFailure.credentialsUnavailable) {
+            _ = try await transport.send(request(path: "/v1/memory-edit-actions"), body: HTTPBody("{}".utf8), baseURL: endpoint.url, operationID: Operations.applyMemoryEditAction.id)
+        }
+        #expect(await spy.calls == 1)
+        await #expect(throws: MessageHTTPFailure.credentialsUnavailable) {
+            _ = try await transport.send(request(path: "/v1/memory-withdrawal-actions"), body: HTTPBody("{}".utf8), baseURL: endpoint.url, operationID: Operations.applyMemoryStopUseAction.id)
+        }
+        #expect(await spy.calls == 1)
+    }
+    @Test func lifecycleHostAuthorityMediaAndBodyBoundsRemainClosed() async throws {
+        let endpoint = try endpoint(), spy = MemoryExitSpy()
+        let transport = NoRedirectTransport(interceptedTransport: spy, memoryManagementEndpoint: endpoint, validateManagement: {})
+        var wrongMedia = request(path: "/v1/memory-edit-actions"); wrongMedia.headerFields[.contentType] = "application/json"
+        var host = request(path: "/v1/memory-edit-actions"); host.headerFields[HTTPField.Name("Host")!] = "other.invalid"
+        let authority = HTTPRequest(method: .post, scheme: "http", authority: "other.invalid", path: "/v1/memory-edit-actions")
+        for req in [wrongMedia, host, authority] {
+            await #expect(throws: (any Error).self) { _ = try await transport.send(req, body: HTTPBody("{}".utf8), baseURL: endpoint.url, operationID: Operations.applyMemoryEditAction.id) }
+        }
+        await #expect(throws: (any Error).self) {
+            _ = try await transport.send(request(path: "/v1/memory-edit-actions"), body: HTTPBody(Data(repeating: 1, count: 33)), baseURL: endpoint.url, operationID: Operations.applyMemoryEditAction.id)
+        }
+        #expect(await spy.calls == 0)
+    }
+}
