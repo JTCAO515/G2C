@@ -112,27 +112,13 @@ import Foundation
         XCTAssertTrue(field.waitForExistence(timeout:10))
         for _ in 0..<30 { if field.isHittable { break };app.swipeUp() }
         XCTAssertTrue(field.isHittable);field.tap();XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:5))
-        // On newer runtimes the keyboard toolbar can cover the focused field.
-        // Physically scroll its content into the visible area before selecting.
-        for _ in 0..<8 {
-            let bar=app.navigationBars.firstMatch
-            let top=bar.exists ? bar.frame.maxY : app.frame.minY
-            let done=button("memory.manage.keyboard.done")
-            let bottom=done.exists ? done.frame.minY-8 : app.keyboards.firstMatch.frame.minY-8
-            let frame=field.frame
-            if frame.minY>top && frame.maxY<bottom { break }
-            let origin=app.coordinate(withNormalizedOffset:CGVector(dx:0,dy:0))
-            let low=origin.withOffset(CGVector(dx:app.frame.midX,dy:bottom-16))
-            let high=origin.withOffset(CGVector(dx:app.frame.midX,dy:top+24))
-            if frame.maxY>=bottom { low.press(forDuration:0.05,thenDragTo:high) }
-            else { high.press(forDuration:0.05,thenDragTo:low) }
-        }
-        XCTAssertTrue(field.isHittable)
-        // Use actual caret placement and keyboard deletion rather than a
-        // runtime-specific edit-menu label. Verify empty and final UTF-8 bytes.
-        field.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.9)).tap()
-        guard let old=field.value as? String else { XCTFail("Native input has no text value");return }
-        field.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:old.count))
+        // Use the native editing menu verified on the 17.5 acceptance target.
+        field.press(forDuration:1)
+        let names=NSPredicate(format:"label IN %@",["Select All","全选"])
+        let menu=app.menuItems.matching(names).firstMatch
+        let selectAll=menu.waitForExistence(timeout:2) ? menu : app.buttons.matching(names).firstMatch
+        XCTAssertTrue(selectAll.waitForExistence(timeout:5));XCTAssertTrue(selectAll.isEnabled);selectAll.tap()
+        field.typeText(XCUIKeyboardKey.delete.rawValue)
         XCTAssertEqual(field.value as? String,"")
         field.typeText(text);XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
         tap("memory.manage.keyboard.done")
