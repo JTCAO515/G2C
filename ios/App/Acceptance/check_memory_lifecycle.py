@@ -261,7 +261,12 @@ def main():
                     builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
                     (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentMemoryLifecycleUITests.swift').read_text().replace('__FIXTURE_URL__',f'http://127.0.0.1:{control.server_port}'))
                     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';text=pbx.read_text().replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
-                    entitlements=builder.directory/'Lifecycle.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}));text=text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlements)));pbx.write_text(text)
+                    entitlements=builder.directory/'Lifecycle.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}));text=text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlements)))
+                    # Reuse #228's existing Release runner configuration; the App's
+                    # own Release configuration remains unchanged.
+                    line=next(l for l in text.splitlines() if l.startswith('A00000000000000000000004 = {isa = XCBuildConfiguration; name = Debug;'))
+                    text=text.replace(line,line+'\n'+line.replace('A00000000000000000000004','A0000000000000000000000C',1).replace('name = Debug;','name = Release;',1)).replace('buildConfigurations = (A00000000000000000000004);','buildConfigurations = (A00000000000000000000004, A0000000000000000000000C);')
+                    pbx.write_text(text)
                     for case in ([args.case] if args.case else CASES):
                         if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise RuntimeError('candidate changed')
                         result=output/(case+'.xcresult')
@@ -279,7 +284,9 @@ def main():
                     for file in [*container.rglob('*'),*output.rglob('*')]:
                         if file.is_file():
                             raw=file.read_bytes();assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values());assert b'-----BEGIN PRIVATE KEY-----' not in raw
-                            if file.is_relative_to(container):assert not any(text.encode() in raw for text in private_texts)
+                            if file.is_relative_to(container):
+                                assert not any(text.encode() in raw for text in private_texts)
+                                if file.suffix=='.memory':assert file.stat().st_mode & 0o777==0o600 and file.parent.stat().st_mode & 0o777==0o700
                     report['token_key_scan']='PASS';report['plaintext_scan']='PASS';report['status']='PARTIAL_PASS' if args.case else 'PASS'
                 finally:
                     model.release.set()
