@@ -29,7 +29,9 @@ import Foundation
         let field = view.exists ? view : app.textFields.matching(identifier:id).firstMatch
         XCTAssertTrue(field.waitForExistence(timeout:15),id)
         for _ in 0..<20 { if field.isHittable { break };app.swipeUp() }
-        XCTAssertTrue(field.isHittable,id);field.tap();field.typeText(text)
+        XCTAssertTrue(field.isHittable,id);field.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:10),"Expected keyboard focus for " + id)
+        field.typeText(text)
         XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
     }
     private func text(_ id: String,contains expected: String) {
