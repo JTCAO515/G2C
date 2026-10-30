@@ -65,7 +65,7 @@
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
 | A App | 文档 PR（M1 交接 + 本次规划修订）→ #244 → #228 → #21（App 部分）；#194、#159 等 JT 文案 | 整个 `ios/**`、`docs/ui.md`；包括从原 C 线移入的 `CJMemoryClient`、`CJTripClient` 等全部 iOS 模块；#228 整体归 A | #244 等 #242 关闭，复用 #167 预算呈现，M2 新消费边界单独实测；#242 未关闭时先做 #228 框 1–3（只依赖 #226），框 4 等 C 线 #227 当前上下文冻结；#21 App 等 B 线 #13 PLACE 契约冻结 |
-| B 后端消息与运行 | #242 → #243 → [#273](https://github.com/JTCAO515/G2C/issues/273)（B旅行上下文/MESSAGE引用，父#12；JT 2026-10-30插队）→ #13 → #16 → #14 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | 实际工具/后台生产者按功能票接入，不以 fixture 替代；#13 冻结 PLACE 契约供 A 线 #21 消费 |
+| B 后端消息与运行 | #242 → #243 → [#273](https://github.com/JTCAO515/G2C/issues/273) → #13 → [#303](https://github.com/JTCAO515/G2C/issues/303)（#14契约先行）→ [#306](https://github.com/JTCAO515/G2C/issues/306)（#16合成）→ [#305](https://github.com/JTCAO515/G2C/issues/305)（#14后端） | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | 实际工具/后台生产者按功能票接入，不以通用回调代替；#265 PLACE供A266/#21，#306 FACT供A321，#305 NEEDS供C281与A320；后台整理仍由#23接入 |
 | C 后端记忆与草稿 | 已关闭#269/#270/#227/#280；#281正式适配Part1已合PR314 → B305实际生产者 → #204来源发布 → #285 needs-bound/后续规划（PR311 unbound已交）；App#286归A | `backend/trip/**`（JT 2026-10-30转归C）、`backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`backend/memory_management/**`、`backend/memory_jobs/**`、`backend/memory_withdrawal/**`、`backend/manual_edit/**`；只做后端 | C独立后端已交付含Trip ownership/设计与PR316字节修复；PLACE/NEEDS数据已冻结，真实签名NEEDS/runtime writer与最终发布依赖B305，排在B306后（快照时A313占生成组锁）。281/204/285保持OPEN，不再等Trip owner或重复JT批准；12仅在227+228均关后由最后关票方关闭。 |
 
 - 未列出的目录由 JT 指定归属；本线只改拥有且获准的文件。A 同时只推进一张父票（#244 属 #9，#228 属 #12）；当前票剩余框全部被前置卡住时，先记停点再换另一张。
@@ -100,10 +100,10 @@
 | 序 | 父票 | 预计子票 |
 |---|---|---|
 | 1 | #9 CJ-008 用量与运行上限 | [#242](https://github.com/JTCAO515/G2C/issues/242) 统一计量出口与超限拒绝 → [#243](https://github.com/JTCAO515/G2C/issues/243) 并发/重复与工具后台限额；[#244](https://github.com/JTCAO515/G2C/issues/244) App超限/未知用量/原结果恢复（A线，依赖#242，复用#167） |
-| 2 | #12 CJ-011 结构化长记忆 | [#226](https://github.com/JTCAO515/G2C/issues/226) 保存/受保护读取；B [#273](https://github.com/JTCAO515/G2C/issues/273) 旅行上下文身份、MESSAGE新引用/lease供 C [#227](https://github.com/JTCAO515/G2C/issues/227) 框2和 A [#228](https://github.com/JTCAO515/G2C/issues/228) 框4消费；#228框1–3可先于#227。合同/DDL/权限细稿等JT冻结批准，B桥接票不代闭#227/#228或父#12 |
+| 2 | #12 CJ-011 结构化长记忆 | [#226](https://github.com/JTCAO515/G2C/issues/226) 保存/受保护读取；B [#273](https://github.com/JTCAO515/G2C/issues/273) 旅行上下文身份、MESSAGE新引用/lease供 C [#227](https://github.com/JTCAO515/G2C/issues/227) 框2和 A [#228](https://github.com/JTCAO515/G2C/issues/228) 框4消费；#228框1–3可先于#227。新增版本/追加本地迁移与最小列权限按JT常设授权，敏感资源例外交JT；B桥接票不代闭#227/#228或父#12 |
 | 3 | #17 CJ-019 记忆编辑与启停 | [#269](https://github.com/JTCAO515/G2C/issues/269) 后端编辑/逐条启停 → [#270](https://github.com/JTCAO515/G2C/issues/270) 旧结果覆盖与版本/撤回fence；[#271](https://github.com/JTCAO515/G2C/issues/271) App编辑/启停交A。#270回补#227框4；新增版本、追加本地迁移/最小列权限按JT2026-10-30常设授权执行，仅既有门禁/冻结版本/外部资源等例外停JT |
-| 4 | #14 CJ-013 需求整理与纠正 | 需求修订与固定事项；App 纠正入口 |
-| 5 | #13 CJ-012、#16 CJ-034 | #13已滚动拆 [#263](https://github.com/JTCAO515/G2C/issues/263) 合同producer → [#264](https://github.com/JTCAO515/G2C/issues/264) 解析/来源 → [#265](https://github.com/JTCAO515/G2C/issues/265) 正式工具出口；[#266](https://github.com/JTCAO515/G2C/issues/266) App引用交A/#21。先完成B #273再回本队列；PLACE/FACT均先草案等JT冻结及L1源决定，真实采集需L2授权，手写样例不称录制。#16开工时再拆 |
+| 4 | #14 CJ-013 需求整理与纠正 | [#303](https://github.com/JTCAO515/G2C/issues/303) 正式契约先于#16；[#305](https://github.com/JTCAO515/G2C/issues/305) B本地提取预览/显式纠正/版本持久与当前性；[#320](https://github.com/JTCAO515/G2C/issues/320) A原生查看/纠正与原动作恢复，排期由A/JT决定 |
+| 5 | #13 CJ-012、#16 CJ-034 | #13子票[#263](https://github.com/JTCAO515/G2C/issues/263) PLACE合同、[#264](https://github.com/JTCAO515/G2C/issues/264) 解析/来源、[#265](https://github.com/JTCAO515/G2C/issues/265) 正式工具；A[#266](https://github.com/JTCAO515/G2C/issues/266) App引用。#16 B[#306](https://github.com/JTCAO515/G2C/issues/306) 合成FACT正式工具、A[#321](https://github.com/JTCAO515/G2C/issues/321) App来源/时效。真实接口与采集→L2 #32须资源授权，合成不称录制；按JT顺序在#303之后、#305之前实施#306 |
 | 6 | #18 CJ-035 可行性 | [#280](https://github.com/JTCAO515/G2C/issues/280) FEASIBILITY@1.0核心/有界求解复用；[#281](https://github.com/JTCAO515/G2C/issues/281) B正式PLACE/NEEDS producer与来源/当前性组合。原六框保留，未冻结字段只阻相应子票，不以candidate冒称正式合同 |
 | 7 | #21 CJ-016 行程页 | 每日时间线、地图与地点信息 |
 | 8 | #22 CJ-017、#25 CJ-018 | #22拆[#285](https://github.com/JTCAO515/G2C/issues/285) C后端正式手动保存/固定状态/共享可行性保护、[#286](https://github.com/JTCAO515/G2C/issues/286) A App编辑/diff/确认与恢复；原五框保留。Trip typed/time/lock与受保护manual ingress由C负责；NEEDS未冻结仅阻相应来源/发布组合。#204由C在draft/feasibility/trip接共享校验；#25后续助手限定修改单独执行 |
@@ -127,5 +127,5 @@
 ### B线旅行上下文插队（JT 2026-10-30）
 
 - #243框3的实际工具/后台生产者依赖保持在#13/#16/#23对应功能票，不制造回调验收；按子票级停点挂起后先取#273。这里只记录依赖/队列结构，进度以Issue为准。
-- #273归B且挂父#12，先与C的3b1c0df typed设计对齐身份、MESSAGE新引用、lease/键和锁序。方向已批准；新合同仍须具体冻结，新DDL/up-down/RLS/权限须具体批准后才实施。
-- #273不修改MESSAGE-send.1、MEMORY旧语义、已应用迁移或C/ios文件；交付后在#227/#228通知真实冻结版本/键及head。随后回#13→#16→#14，PLACE先前子票保留，未在插队期间实施。
+- #273归B且挂父#12，先与C的3b1c0df typed设计对齐身份、MESSAGE新引用、lease/键和锁序。方向及新增版本/追加本地迁移/最小列权限按JT2026-10-30常设授权；具体设计和证据记对应Issue，敏感资源例外仍停JT。
+- #273不修改MESSAGE-send.1、MEMORY旧语义、已应用迁移或C/ios文件；交付后在#227/#228通知真实冻结版本/键及head。随后回#13→#303（NEEDS契约先行）→#306（#16合成）→#305（#14后端）；App与后台生产者按各自owner子票验收，不代闭父票。
