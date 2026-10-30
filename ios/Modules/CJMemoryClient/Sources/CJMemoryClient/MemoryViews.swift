@@ -68,6 +68,14 @@ extension Components.Schemas.MemoryItem {
     // Swift String equality normalizes canonical equivalents; wire IDs do not.
     var memoryRowIdentity: Data { Data(command.item_id.utf8) }
 }
+// Match the Shell's native-readable button style; PlainButtonStyle can select
+// a list-row edge outside the represented label's actual hit region on iOS 17.
+private struct MemoryRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.65 : 1)
+    }
+}
+
 public struct MemoryItemsView: View {
     let state: MemoryLoad<[Components.Schemas.MemoryItem]>
     let language: MemoryLanguage
@@ -90,7 +98,7 @@ public struct MemoryItemsView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     .contentShape(Rectangle())
-                }.buttonStyle(.plain).contentShape(Rectangle())
+                }.buttonStyle(MemoryRowButtonStyle())
                     .accessibilityLabel(item.command.text + ", " + statusLabel(item.status.rawValue, language))
                     .accessibilityIdentifier("memory.item." + item.command.item_id)
             }
