@@ -82,7 +82,14 @@ def main():
                         for chunk in super().stream(messages,system=system):
                             value=json.loads(chunk)
                             if active[0] and specs[active[0]]['mode']=='limit' and value['kind']=='tool':value['calls']*=2
-                            yield json.dumps(value,ensure_ascii=False)
+                            encoded=json.dumps(value,ensure_ascii=False)
+                            if active[0] and specs[active[0]]['mode']=='cancel' and messages[-1]['role']!='tool':
+                                row=specs[active[0]]
+                                yield encoded[:1]
+                                row['entered'].set()
+                                if not row['release'].wait(90):raise TimeoutError('test model stream gate')
+                                yield encoded[1:]
+                            else:yield encoded
                 def worker():
                     try:
                         while not stop.is_set():
@@ -120,13 +127,6 @@ def main():
                     row=dict(mode=mode,model=Model(),tools=LocalTools(),outcomes=[],audit_start=len(audit),
                         entered=threading.Event(),release=threading.Event(),read_entered=threading.Event(),read_release=threading.Event(),hold_read=False)
                     row['read_release'].set()
-                    if mode=='cancel':
-                        original=row['tools'].place.prepare_call
-                        def held_prepare(query,request_ref):
-                            invoke=original(query,request_ref);row['entered'].set()
-                            if not row['release'].wait(90):raise TimeoutError('test source preparation gate')
-                            return invoke
-                        row['tools'].place.prepare_call=held_prepare
                     if mode=='stale':
                         count=[0]
                         def physical_clock():
