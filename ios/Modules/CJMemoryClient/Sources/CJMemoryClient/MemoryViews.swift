@@ -10,7 +10,7 @@ public enum MemoryLoad<Value> {
     case unconfigured, loading, loaded(Value), failed
 }
 public enum MemorySaveState {
-    case unconfigured, ready, saving, saved, candidate, unknown, notObserved, failed
+    case unconfigured, ready, saving, saved, candidate, unknown, notObserved, rejected, failed
     public func label(_ language: MemoryLanguage) -> String {
         switch self {
         case .unconfigured: language.text("Saving is not configured", "保存尚未配置")
@@ -20,6 +20,7 @@ public enum MemorySaveState {
         case .candidate: language.text("Saved as a candidate, not a confirmed fact", "已保存为待确认候选，尚非确认事实")
         case .unknown: language.text("Result unknown. Query the original operation.", "结果未知，请查询原操作。")
         case .notObserved: language.text("Original receipt not observed. Do not resend.", "尚未查到原回执，不可重新发送。")
+        case .rejected: language.text("Save rejected. You may start a new save; the original is never resent.", "保存已被拒绝；可以发起新保存，原操作不会重发。")
         case .failed: language.text("Save not confirmed. Check the original operation.", "尚未确认保存，请核查原操作。")
         }
     }
@@ -89,7 +90,7 @@ public struct MemoryItemsView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     .contentShape(Rectangle())
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).contentShape(Rectangle())
                     .accessibilityLabel(item.command.text + ", " + statusLabel(item.status.rawValue, language))
                     .accessibilityIdentifier("memory.item." + item.command.item_id)
             }
@@ -232,13 +233,14 @@ private struct MemoryManualFormContent: View {
                 case .saved: state = .saved
                 case .candidate: state = .candidate
                 case .notObserved: state = .notObserved
+                case .rejected: state = .rejected
                 }
             } catch {
                 guard current() == binding, requestGeneration == token else { return }
                 switch error {
                 case MemoryFailure.pendingRequiresQuery:
                     originalID = nil; state = .failed
-                case MemoryFailure.rejected: state = .failed
+                case MemoryFailure.rejected: state = .rejected
                 default: state = .unknown
                 }
             }
