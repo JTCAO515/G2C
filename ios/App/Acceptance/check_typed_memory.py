@@ -17,7 +17,9 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulator',required=True);parser.add_argument('--run-context',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--build-dir',type=Path,required=True)
+    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall'],default='testEnglishSaveReadAndOwnedTravel')
     args=parser.parse_args();output=args.output.resolve();build=args.build_dir.resolve()
+    chinese=args.case=='testChineseLargeSaveReadAndRecall'
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):raise ValueError('external evidence required')
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
     os.umask(0o077);output.mkdir(parents=True,mode=0o700)
@@ -43,11 +45,11 @@ def main():
     sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentTypedMemoryUITests.swift',Path(__file__)]
     for name in ('CJShell','CJMemoryClient','CJMessageClient','CJRunClient'):
         sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
-    report=dict(status='RUNNING',head=head,cases={},scope='English typed App save/read/edit, consecutive/new-chat/restart/other-travel recall; full matrix still incomplete',
+    report=dict(status='RUNNING',head=head,cases={},scope=('Chinese maximum-font typed save/read and actual recall' if chinese else 'English typed App save/read/edit, consecutive/new-chat/restart/other-travel recall')+'; full matrix still incomplete',
         source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
         git_trees={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=ROOT,text=True).strip() for name in ('ios','backend','contracts','scripts')},
         run_context=json.loads(args.run_context.read_text()),
-        unrun=['complete #228 frame4 matrix','Chinese/max font','lifecycle/unknown/interoperability matrix','real services/models/cloud/fees','physical device/VoiceOver'])
+        unrun=['complete #228 frame4 matrix','other native cases','lifecycle/unknown/interoperability matrix','real services/models/cloud/fees','physical device/VoiceOver'])
     lock=threading.RLock()
     def save():
         with lock:(output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -189,41 +191,43 @@ def main():
                         '-destination','platform=iOS Simulator,id='+args.simulator,'-derivedDataPath',str(build),'-resultBundlePath',str(output/'english.xcresult'),
                         '-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never',
                         'ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-',
-                        '-only-testing:G2CControl/DevelopmentTypedMemoryUITests/testEnglishSaveReadAndOwnedTravel','test']
+                        '-only-testing:G2CControl/DevelopmentTypedMemoryUITests/'+args.case,'test']
                     result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
                     log=result.stdout+result.stderr
                     for token in tokens.values():log=log.replace(token,'<redacted-local-token>')
                     (output/'english.log').write_text(log)
-                    report['cases']['testEnglishSaveReadAndOwnedTravel']='PASS' if result.returncode==0 else 'FAIL'
+                    report['cases'][args.case]='PASS' if result.returncode==0 else 'FAIL'
                     value=proof();result.check_returncode()
                     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(output/'english.xcresult')]))
                     (output/'english-summary.json').write_text(json.dumps(summary,indent=2))
                     assert (summary['passedTests'],summary['failedTests'],summary['skippedTests'])==(1,0,0)
-                    assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and len(value['items'])==3 and not errors and iterations[0]>0
-                    assert value['message_count']==6 and model.calls==6
-                    assert dict(value['registered_operations']).get('model')==6
-                    expected=['Travel A quiet room / 本次A安静房间',*['Travel A updated value / A当前新值']*3,
+                    assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and len(value['items'])==(2 if chinese else 3) and not errors and iterations[0]>0
+                    calls=1 if chinese else 6
+                    assert value['message_count']==calls and model.calls==calls
+                    assert dict(value['registered_operations']).get('model')==calls
+                    expected=['中文本次偏好 / 安静房间 e\u0301'] if chinese else ['Travel A quiet room / 本次A安静房间',*['Travel A updated value / A当前新值']*3,
                         'Typed long-term tea / 新长期 e\u0301','Travel B separate value / B独立值']
                     assert len(model.memory_inputs)==len(expected)
                     for payload,text in zip(model.memory_inputs,expected):
                         assert payload['version']=='MEMORY-RUN-CONSUME@2' and [row['text'] for row in payload['items']]==[text]
                     # The frozen edit creates a NEW source at source_version=1;
                     # it increments the ITEM version, never the new source's version.
-                    assert [payload['items'][0]['version'] for payload in model.memory_inputs]==[1,2,2,2,1,1]
-                    assert [payload['items'][0]['source_version'] for payload in model.memory_inputs]==[1]*6
-                    old_source=model.memory_inputs[0]['items'][0]['source_id'];new_source=model.memory_inputs[1]['items'][0]['source_id']
-                    assert old_source!=new_source
-                    assert all(payload['items'][0]['source_id']==new_source for payload in model.memory_inputs[1:4])
-                    before={row['source_id']:row for row in report['consumption_proofs']['1']['source_rows']}
-                    after={row['source_id']:row for row in value['source_rows']}
-                    assert old_source in after and new_source in after and after[old_source]['approved_sha256']==before[old_source]['approved_sha256']
+                    assert [payload['items'][0]['version'] for payload in model.memory_inputs]==([1] if chinese else [1,2,2,2,1,1])
+                    assert [payload['items'][0]['source_version'] for payload in model.memory_inputs]==[1]*calls
+                    if not chinese:
+                        old_source=model.memory_inputs[0]['items'][0]['source_id'];new_source=model.memory_inputs[1]['items'][0]['source_id']
+                        assert old_source!=new_source
+                        assert all(payload['items'][0]['source_id']==new_source for payload in model.memory_inputs[1:4])
+                        before={row['source_id']:row for row in report['consumption_proofs']['1']['source_rows']}
+                        after={row['source_id']:row for row in value['source_rows']}
+                        assert old_source in after and new_source in after and after[old_source]['approved_sha256']==before[old_source]['approved_sha256']
                     by_text={item['command']['text']:item for item in value['items']}
-                    assert by_text['Typed long-term tea / 新长期 e\u0301']['command']['context'] is None
-                    assert by_text['Travel A updated value / A当前新值']['command']['context']==dict(kind='travel',id=travels[0],expected_version=1)
-                    assert by_text['Travel B separate value / B独立值']['command']['context']==dict(kind='travel',id=travels[1],expected_version=1)
+                    assert by_text['中文长期偏好 / 长期 e\u0301' if chinese else 'Typed long-term tea / 新长期 e\u0301']['command']['context'] is None
+                    assert by_text['中文本次偏好 / 安静房间 e\u0301' if chinese else 'Travel A updated value / A当前新值']['command']['context']==dict(kind='travel',id=travels[0],expected_version=1)
+                    if not chinese:assert by_text['Travel B separate value / B独立值']['command']['context']==dict(kind='travel',id=travels[1],expected_version=1)
                     posts=[event for event in audit if event['host']=='memory' and event['method']=='POST']
-                    assert len(posts)==4 and all(event['status']==200 for event in posts)
-                    assert sum(event['path']=='/v2/memories' for event in posts)==3 and sum(event['path']=='/v2/memory-management-actions' for event in posts)==1
+                    assert len(posts)==(2 if chinese else 4) and all(event['status']==200 for event in posts)
+                    assert sum(event['path']=='/v2/memories' for event in posts)==(2 if chinese else 3) and sum(event['path']=='/v2/memory-management-actions' for event in posts)==(0 if chinese else 1)
                     assert not any(event['method']=='POST' and event['path'].startswith('/v1/trip') for event in audit)
                     with TestClient(memory) as client:
                         for event in posts:

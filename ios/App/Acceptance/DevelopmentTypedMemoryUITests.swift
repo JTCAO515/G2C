@@ -5,6 +5,8 @@ import Foundation
 @MainActor final class DevelopmentTypedMemoryUITests: XCTestCase {
     private let control = "__FIXTURE_URL__"
     private var app: XCUIApplication!
+    private var chinese = false
+    private func localized(_ english: String,_ zh: String) -> String {chinese ? zh : english}
     private struct Fixture: Decodable {
         let endpoint: String;let memory_endpoint: String;let accounts: [String:String];let subjects: [String:String]
         let travel_ids: [String];let travel_profile: String;let memory_profile: String
@@ -20,11 +22,12 @@ import Foundation
         XCTAssertTrue(element.exists && element.isHittable,"Expected visible control: " + element.identifier)
     }
     private func tap(_ id: String) {
+        let id = chinese ? (["Memory":"记忆","Assistant":"助手","Trips":"行程","Done":"完成"][id] ?? id) : id
         let target: XCUIElement
-        if ["Memory","Assistant","Trips"].contains(id) { target = app.tabBars.buttons.matching(identifier:id).firstMatch }
+        if ["Memory","Assistant","Trips","记忆","助手","行程"].contains(id) { target = app.tabBars.buttons.matching(identifier:id).firstMatch }
         else if id == "assistant.panel.done" { target = app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else { target = app.buttons.matching(identifier:id).firstMatch }
-        let fixed = ["Memory","Assistant","Trips","assistant.panel.done"].contains(id)
+        let fixed = ["Memory","Assistant","Trips","记忆","助手","行程","assistant.panel.done"].contains(id)
         reveal(target,fixed:fixed)
         XCTAssertTrue(target.waitForExistence(timeout:10),id);XCTAssertTrue(target.isHittable,id)
         let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
@@ -66,10 +69,10 @@ import Foundation
         tap("memory.add");tap("memory2.manual.option")
         tap("self · preference · " + scope)
         input("memory2.manual.text",value);input("memory2.manual.time","time unknown / 时间不详")
-        if app.toolbars.buttons.matching(identifier:"Done").firstMatch.exists { tap("Done") }
+        dismissKeyboard()
         tap("memory2.manual.review")
         text("memory2.review.text",contains:value)
-        tap("memory2.manual.confirm");text("memory2.save.status",contains:"Saved.")
+        tap("memory2.manual.confirm");text("memory2.save.status",contains:localized("Saved.","已保存"))
         back()
     }
     private func completedMessages(_ count: Int,expected: String = "Travel A quiet room / 本次A安静房间") async throws {
@@ -78,7 +81,7 @@ import Foundation
         let value = try XCTUnwrap(JSONSerialization.jsonObject(with:data) as? [String:Any])
         XCTAssertEqual(value["model_calls"] as? Int,count)
         tap("run.snapshot.read")
-        text("run.display.status",contains:"Completed")
+        text("run.display.status",contains:localized("Completed","已完成"))
         text("run.display.text",contains:expected)
     }
     private func openChat(_ id: String) {
@@ -89,12 +92,13 @@ import Foundation
     }
     private func ask(_ prompt: String,count: Int,expected: String) async throws {
         input("assistant.draft",prompt)
-        if app.toolbars.buttons.matching(identifier:"Done").firstMatch.exists {tap("Done")}
+        dismissKeyboard()
         tap("assistant.send");try await completedMessages(count,expected:expected)
     }
     private func launch(_ fixture: Fixture,restore: Bool) throws {
         app?.terminate();app = XCUIApplication(bundleIdentifier:"space.go2china.typed-memory.acceptance")
-        app.launchArguments = ["-cj.ui.language.v1","en"]
+        app.launchArguments = ["-cj.ui.language.v1",chinese ? "zh-Hans" : "en"]
+        if chinese {app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"]}
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1",
             "G2C_DEV_API_BASE_URL":fixture.endpoint,"G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(fixture.accounts),encoding:.utf8)!,
             "G2C_DEV_TRAVEL_PROFILE":fixture.travel_profile,"G2C_DEV_TYPED_MEMORY_PROFILE":fixture.memory_profile,
@@ -110,6 +114,28 @@ import Foundation
             if ready.exists {break};_ = ready.waitForExistence(timeout:1)
         }
         XCTAssertTrue(ready.waitForExistence(timeout:15))
+    }
+    private func dismissKeyboard() {
+        if app.toolbars.buttons.matching(identifier:localized("Done","完成")).firstMatch.exists {tap("Done")}
+    }
+    func testChineseLargeSaveReadAndRecall() async throws {
+        continueAfterFailure = false;executionTimeAllowance = 600;chinese = true
+        let fixture = try await prepare();defer {app?.terminate()}
+        try launch(fixture,restore:false)
+        save("中文长期偏好 / 长期 e\u{301}",scope:"Long term / 长期")
+        tap("Assistant");chooseTravel(fixture.travel_ids[0]);tap("Memory")
+        let value = "中文本次偏好 / 安静房间 e\u{301}"
+        save(value,scope:"Selected travel / 所选旅行")
+        tap("memory2.items.open");tap("memory2.items.read")
+        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/items")))
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
+        let ids = try JSONDecoder().decode([String:String].self,from:data)
+        tap("memory2.item." + (try XCTUnwrap(ids["travel"])));tap("memory2.detail.read")
+        text("memory2.detail.text",contains:value);text("memory2.detail.scope",contains:fixture.travel_ids[0])
+        var issues = 0;continueAfterFailure = true
+        try app.performAccessibilityAudit(for:.all) {issue in issues += 1;print("TYPED_MEMORY_ZH_LARGE",issue.detailedDescription,issue.element?.label ?? "unavailable",issue.element?.frame ?? .zero);return false}
+        continueAfterFailure = false;XCTAssertEqual(issues,0)
+        tap("Assistant");openChat("typed-chat-1");try await ask("请按当前旅行偏好回答",count:1,expected:value)
     }
     func testEnglishSaveReadAndOwnedTravel() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600
