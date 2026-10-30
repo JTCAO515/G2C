@@ -217,7 +217,13 @@ def main():
                         log=run.stdout+run.stderr
                         for pair in tokens.values():
                             for token in pair.values():log=log.replace(token,'<redacted-local-token>')
-                        (output/(case+'.log')).write_text(log);run.check_returncode()
+                        (output/(case+'.log')).write_text(log)
+                        if run.returncode:
+                            report['cases'][case]='FAIL'
+                            try:report.setdefault('failure_proofs',{})[case]=proof(case,settled=False)
+                            except Exception as error:report.setdefault('failure_proof_errors',{})[case]=type(error).__name__
+                            save()
+                        run.check_returncode()
                         summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],env=env))
                         (output/(case+'-summary.json')).write_text(json.dumps(summary,indent=2))
                         assert summary['passedTests']==1 and summary['failedTests']==0 and summary['skippedTests']==0

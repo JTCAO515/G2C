@@ -78,7 +78,9 @@ import Foundation
         let value = app.staticTexts.matching(identifier:id).firstMatch
         XCTAssertTrue(value.waitForExistence(timeout:timeout),id)
         let expected = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",contains),object:value)
-        XCTAssertEqual(XCTWaiter.wait(for:[expected],timeout:timeout),.completed,id)
+        let waited = XCTWaiter.wait(for:[expected],timeout:timeout)
+        if waited != .completed { capture("failed-" + id) }
+        XCTAssertEqual(waited,.completed,id + " actual=" + value.label)
         if id.hasPrefix("place.") { reveal(value);XCTAssertTrue(value.isHittable,id) }
         return value.label
     }
