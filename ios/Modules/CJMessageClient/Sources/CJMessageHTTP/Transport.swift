@@ -39,6 +39,8 @@ struct CheckedTransport: ClientTransport {
               (operationID == "receiveMessage" && request.method == .post && request.path == "/v1/messages") ||
               (operationID == "queryMessageReceipt" && request.method == .get && request.path?.hasPrefix("/v1/message-receipts?") == true) ||
               (operationID == "getMessageSendStatus" && request.method == .get && request.path?.hasPrefix("/v1/message-send-status?") == true) ||
+              (operationID == Operations.getMessageSendStatusV2.id && request.method == .get && request.path?.hasPrefix("/v2/message-send-status?") == true) ||
+              (operationID == Operations.receiveMessageV2.id && request.method == .post && request.path == "/v2/messages") ||
               (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == "readMessageHistory" && request.method == .get && request.path?.hasPrefix("/v1/message-history?") == true) ||
@@ -314,6 +316,7 @@ public enum MessageHTTPOutcome: Sendable {
     let submissionEnabledForTest: Bool
     let liveMessageTransport: NoRedirectTransport?
     var sendPermitState = SendPermitState()
+    var travelSendPermitState = SendPermitState()
     private let readOwner = UUID()
     /// Test seam only: caller must supply a non-network interceptor, never a live transport.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,

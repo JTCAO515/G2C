@@ -52,7 +52,7 @@ struct TravelMessageReceiptTests {
         #expect(throws: (any Error).self) { try ValidatedTravelMessageReceipt(receipt:receipt,reference:reference(receipt),original:original) }
         let none = Components.Schemas.MessageTravelReference.none(.init(version:.MESSAGE_hyphen_travel_hyphen_reference_period_1,
             conversation_id:receipt.conversation_id,generation:receipt.generation,message_id:receipt.message_id,run_id:receipt.run_id,
-            sequence:receipt.sequence,input_sha256:receipt.input_sha256,message_version:.MESSAGE_hyphen_send_period_2,context_kind:.none,selection_epoch:1))
+            sequence:receipt.sequence,input_sha256:receipt.input_sha256,message_version:.MESSAGE_hyphen_send_period_2,context_kind:.none,context_id:.init(),context_version:.init(),selection_epoch:1))
         _ = try ValidatedTravelMessageReceipt(receipt:receipt,reference:none,original:original)
     }
 }
