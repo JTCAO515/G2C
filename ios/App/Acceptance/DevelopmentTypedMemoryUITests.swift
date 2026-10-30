@@ -92,7 +92,9 @@ import Foundation
         text("memory2.detail.scope",contains:fixture.travel_ids[0]);text("memory2.detail.status",contains:"Active")
         let image = XCTAttachment(screenshot:app.screenshot());image.name = "typed-memory-real-detail";image.lifetime = .keepAlways;add(image)
         var issues = 0;continueAfterFailure = true
-        try app.performAccessibilityAudit(for:.all) {issue in issues += 1;print("TYPED_MEMORY_DETAIL",issue.detailedDescription);return false}
+        try app.performAccessibilityAudit(for:.all) {issue in
+            issues += 1;print("TYPED_MEMORY_DETAIL",issue.detailedDescription,issue.element?.label ?? "unavailable",issue.element?.frame ?? .zero);return false
+        }
         continueAfterFailure = false;XCTAssertEqual(issues,0)
     }
 }

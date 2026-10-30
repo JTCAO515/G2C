@@ -205,7 +205,12 @@ struct TypedMemoryDetail: View {
                                 TextField(language.text("Replacement text", "新的原文"),text:$replacement,axis:.vertical)
                                     .textFieldStyle(.roundedBorder).focused($editFocused).frame(minHeight:44).contentShape(Rectangle())
                                     .onTapGesture { editFocused = true }.accessibilityIdentifier("memory2.edit.text")
-                                if let travel = host.travelSelection { NavigationLink { TravelSelectionView(model:travel,language:language) } label: { Text(language.text("Verify travel context", "核实旅行上下文")) } }
+                                if let travel = host.travelSelection {
+                                    NavigationLink { TravelSelectionView(model:travel,language:language) } label: {
+                                        RunReadableText(text:language.text("Verify travel context", "核实旅行上下文"))
+                                            .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).foregroundStyle(.primary)
+                                    }
+                                }
                                 reviewButton(.edit,title:language.text("Review text change", "核对文字修改"),enabled:!replacement.isEmpty)
                             }
                             if status == "active" { reviewButton(.pause,title:language.text("Review pause", "核对暂停")) }
@@ -234,8 +239,11 @@ struct TypedMemoryDetail: View {
                 } header: { ShellSectionHeading(title:language.text("Review change", "核对修改")) }
             }
             TypedMemoryManagementOutcome(host:host,language:language)
-            NavigationLink { TypedMemoryOriginals(host:host,language:language) } label: { Text(language.text("Previous operations", "此前的原操作")) }
-        }.navigationTitle(language.text("Memory detail", "记忆详情"))
+            NavigationLink { TypedMemoryOriginals(host:host,language:language) } label: {
+                RunReadableText(text:language.text("Previous operations", "此前的原操作"))
+                    .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).foregroundStyle(.primary)
+            }
+        }.navigationTitle(language.text("Memory", "记忆")).navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)
             .toolbar { ToolbarItemGroup(placement:.keyboard) {
                 Spacer();Button(language.text("Done", "完成")) { editFocused = false }
