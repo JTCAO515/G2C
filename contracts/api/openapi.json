@@ -2698,6 +2698,66 @@
           }
         }
       }
+    },
+    "/v1/memory-edit-actions": {
+      "post": {
+        "operationId": "applyMemoryEditAction",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryManagementApplyResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact original UTF8 JSON conforming to MemoryManagementEditAction (MEMORY-MANAGEMENT-EDIT@1), application/octet-stream; local runtime only. Original action receipt query shares the immutable management ledger. No retry on unknown.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6841,6 +6901,57 @@
           "version",
           "travel_context"
         ]
+      },
+      "MemoryManagementEditAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "operation",
+          "item_id",
+          "expected_version",
+          "expected_source_version",
+          "version",
+          "text"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "edit"
+            ]
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "expected_source_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "version": {
+            "type": "string",
+            "const": "MEMORY-MANAGEMENT-EDIT@1"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "description": "MEMORY-MANAGEMENT-EDIT@1 exact immutable original action bytes. New server-approved source; historical source and scope retained. No client scope, consent, expiry or enable fields."
       }
     },
     "securitySchemes": {

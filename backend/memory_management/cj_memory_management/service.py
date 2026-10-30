@@ -1,10 +1,11 @@
 """Trusted domain-only lifecycle entry. HTTP/AUTH composition is not wired here."""
 from cj_memory.domain import CommitUnknown, Conflict, InvalidInput
 from .domain import Action
+from .edit import Edit, parse_action
 from .postgres import Transaction
 
 
-def apply_in_transaction(transaction, action):
+def apply_in_transaction(transaction, action, policy=None):
     """Consume the provided public transaction; never connect or commit here."""
     tx = Transaction(transaction.cur, transaction.scope)
     tx.lock_scope()
@@ -13,7 +14,7 @@ def apply_in_transaction(transaction, action):
         if stored[0] != action.raw:
             raise Conflict('action bytes differ')
         return stored[1]
-    return tx.change_status(action)
+    return tx.edit(action, policy) if isinstance(action, Edit) else tx.change_status(action)
 
 
 def query_in_transaction(transaction, action_id):
@@ -35,14 +36,15 @@ class ActionUnknown(CommitUnknown):
 
 
 class Service:
-    def __init__(self, repository):
+    def __init__(self, repository, *, manual_policy=None):
         self.repository = repository
+        self.manual_policy = manual_policy
 
     def apply(self, original_utf8):
-        action = Action.parse(original_utf8)
+        action = parse_action(original_utf8)
         try:
             with self.repository.transaction() as tx:
-                result = apply_in_transaction(tx, action)
+                result = apply_in_transaction(tx, action, self.manual_policy)
         except CommitUnknown:
             raise ActionUnknown(action.action_id) from None
         return result

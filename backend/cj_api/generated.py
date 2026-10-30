@@ -1919,3 +1919,20 @@ class TravelContextReadResponse(BaseModel):
     request_id: RequestId
     version: Version5
     travel_context: TravelContext
+
+
+class Operation3(StrEnum):
+    edit = 'edit'
+
+
+class MemoryManagementEditAction(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_id: constr(min_length=1, max_length=4096)
+    operation: Operation3
+    item_id: constr(min_length=1, max_length=4096)
+    expected_version: conint(ge=1, le=9223372036854775807)
+    expected_source_version: conint(ge=1, le=9223372036854775807)
+    version: Literal['MEMORY-MANAGEMENT-EDIT@1']
+    text: constr(min_length=1, max_length=4096)
