@@ -63,3 +63,26 @@ def test_invalid_owner_field_or_noncanonical_input_or_foreign_id_refused():
     with pytest.raises(ValueError): ManualEdit.parse(packed(request) + b' ')
     request['changes'] = [dict(item_id='foreign', field='text', value='changed')]
     with pytest.raises(ValueError): prepare(trip, ManualEdit.parse(packed(request)))
+
+
+def test_changed_queried_text_does_not_keep_old_source_or_verified_claim():
+    import base64
+    trip, request = setup()
+    doc = json.loads(trip.content)
+    text = doc['items'][0]['text']
+    snapshot = packed(dict(display_text=text, record=dict(
+        source=dict(request_ref='query-1', evidence='synthetic'), query={}, place=dict(name_zh=text))))
+    doc['sources'] = [dict(id='source-1', kind='place', reference='query-1', text=text,
+        snapshot_utf8_base64=base64.b64encode(snapshot).decode(),
+        snapshot_sha256=sha256(snapshot).hexdigest(), evidence_level='synthetic')]
+    doc['items'][0].update(source_category='queried', source_refs=['source-1'])
+    trip = Trip(trip.trip_id, trip.version, packed(doc))
+    request['original_hash'] = sha256(trip.content).hexdigest()
+    request['changes'] = [dict(item_id='item-1', field='text', value='用户重新声明')]
+    result = prepare(trip, ManualEdit.parse(packed(request)))
+    after = json.loads(result.content)
+    assert after['sources'] == []
+    assert after['items'][0]['source_category'] == 'user_provided'
+    assert after['items'][0]['source_refs'] == []
+    assert after['items'][1] == doc['items'][1]
+    assert json.loads(result.original.content)['sources'] == doc['sources']
