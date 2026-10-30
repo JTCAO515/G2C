@@ -187,7 +187,14 @@ import Foundation
     func testOverLimit() async throws {
         let fixture = try await prepare("testOverLimit");defer { app?.terminate() }
         try launch(fixture,language:"en");openConversation(fixture);send("SYNTH_DOUBLE_TOOL")
-        text("run.display.status",contains:"Failed");text("run.budget.status",contains:"Budget exhausted")
+        text("run.display.status",contains:"Failed")
+        // The accepted RUN view combines draft/budget children into this card;
+        // verify its complete spoken content, as the existing #244 tests do.
+        let group = app.otherElements.matching(identifier:"run.draft.status").firstMatch
+        let budget = group.waitForExistence(timeout:5) ? group : app.staticTexts.matching(identifier:"run.draft.status").firstMatch
+        XCTAssertTrue(budget.waitForExistence(timeout:20));reveal(budget)
+        let budgetVisible = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@","Budget exhausted before answer generation"),object:budget)
+        XCTAssertEqual(XCTWaiter.wait(for:[budgetVisible],timeout:30),.completed,budget.label)
         text("place.output.0.SYNTH_EAST.providerID",contains:"SYNTH_EAST")
         let saved = try await proof(fixture);XCTAssertEqual(saved.status,"failed");XCTAssertEqual(saved.budget_stage,"answer")
         XCTAssertEqual(saved.model_calls,1);XCTAssertEqual(saved.place_calls,1);XCTAssertEqual(saved.posts,1)
