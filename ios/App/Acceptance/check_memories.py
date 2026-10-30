@@ -25,7 +25,7 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 BUNDLE = 'space.go2china.memory.acceptance'
-CASES = ['testEnglish', 'testChineseLargeText', 'testUnknownReopen', 'testRejected', 'testSkipAndChat', 'testCandidate', 'testServerUnknown', 'testSwitchLateRead', 'testRevokedLateRead', 'testReleaseClosed', 'testCurrentEnglish', 'testCurrentChineseLargeText']
+CASES = ['testEnglish', 'testChineseLargeText', 'testUnknownReopen', 'testRejected', 'testSkipAndChat', 'testCandidate', 'testServerUnknown', 'testSwitchLateRead', 'testRevokedLateRead', 'testReleaseClosed', 'testCurrentEnglish', 'testCurrentChineseLargeText', 'testRejectedThenNewSave']
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 
@@ -90,15 +90,16 @@ def main():
                 current_contexts = {case: ['memory-'+uuid.uuid4().hex[:12] for _ in range(2)]
                                     for case in ('testCurrentEnglish', 'testCurrentChineseLargeText')}
                 profiles = {s:json.loads(json.dumps(profile)) for row in subjects.values() for s in row.values()
-                            if s != subjects['testRejected']['A']}
+                            if s not in (subjects['testRejected']['A'],subjects['testRejectedThenNewSave']['A'])}
                 for case, contexts in current_contexts.items():
                     profiles[subjects[case]['A']].update(extents=['current'], context_ids=contexts)
                 policy = dict(version='local-memory-policy.1',expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),
                               profiles=profiles)
                 policy_path=root/'memory-policy.json'; policy_path.write_text(json.dumps(policy)); policy_path.chmod(0o600)
                 runtime_path=root/'memory-run-policy.json'
-                runtime_path.write_text(json.dumps(dict(version='local-memory-run.1', collection=policy,
-                    selections={s:dict(subject='self', slots=['fact','experience','food.spice'], max_bytes=32768) for s in profiles})))
+                runtime_policy=dict(version='local-memory-run.1', collection=policy,
+                    selections={s:dict(subject='self', slots=['fact','experience','food.spice'], max_bytes=32768) for s in profiles})
+                runtime_path.write_text(json.dumps(runtime_policy))
                 runtime_path.chmod(0o600)
                 runtime_configuration=load_runtime_configuration(runtime_path)
                 report['runtime_memory_configuration']='explicit local-memory-run.1; approved canonical slots only'
@@ -170,10 +171,10 @@ def main():
                         role=conn.execute('SELECT current_user').fetchone()[0]
                         operations=conn.execute('SELECT operation_id,item_id,original_input,version,status FROM cj_memory_operation WHERE scope=%s ORDER BY operation_id',(scope,)).fetchall()
                     assert role=='cj_m1_runtime'
-                    expected={'three-saves':3,'reopen':3,'unknown-reopen':1,'rejected':0,'skip':0,'release':0,'candidate':1,'server-unknown':0,'switch':1,'revoke':1,'current-saves':2,'current-reopen':2}[stage]
+                    expected={'three-saves':3,'reopen':3,'unknown-reopen':1,'rejected':0,'skip':0,'release':0,'candidate':1,'server-unknown':0,'switch':1,'revoke':1,'current-saves':2,'current-reopen':2,'rejected-new-before':0,'rejected-new-after':1}[stage]
                     assert len(operations)==expected
                     posts=row['posts']
-                    assert len(posts)==(1 if stage in ('rejected','server-unknown') else expected)
+                    assert len(posts)==(1 if stage in ('rejected','server-unknown','rejected-new-before') else 2 if stage=='rejected-new-after' else expected)
                     originals={p:hashlib.sha256(p).hexdigest() for p in posts}
                     items=[]
                     for oid,iid,raw,version,status in operations:
@@ -188,8 +189,15 @@ def main():
                         items.append(dict(slot=item['slot'],source_id=item['source_id'],item_id=iid,
                                           extent=item['extent'],context_id=item['context_id']))
                     current=[dict(operation_id=o,item_id=i,sha256=hashlib.sha256(bytes(raw)).hexdigest(),version=v,status=s) for o,i,raw,v,s in operations]
-                    if 'baseline' in row: assert row['baseline']==current
-                    else: row['baseline']=current
+                    if stage=='rejected-new-before': row['rejected_original']=posts[0]
+                    else:
+                        if 'baseline' in row: assert row['baseline']==current
+                        else: row['baseline']=current
+                    if stage=='rejected-new-after':
+                        assert posts[0]==row['rejected_original'] and bytes(operations[0][2])==posts[1]
+                        old,new=map(json.loads,posts)
+                        assert old['operation_id']!=new['operation_id'] and old['item_id']!=new['item_id']
+                        assert old['slot']=='blocked' and new['slot']=='fact'
                     foreign=[]
                     with TestClient(app) as client:
                         for oid,iid,*_ in operations:
@@ -209,7 +217,7 @@ def main():
                     if stage=='reopen':
                         native=[a['query']['operation_id'][0] for a in audit if a['path']=='/v1/memory-receipts'][-3:]
                         assert len(native)==3 and set(native)=={o for o,*_ in operations}
-                    if stage=='rejected':
+                    if stage in ('rejected','rejected-new-before'):
                         denied=[a for a in audit if a['path']=='/v1/memories' and a['status']==403]
                         assert denied and denied[-1]['server_error']==dict(code='MEMORY_SOURCE_DENIED',outcome='failed',recovery='do_not_retry')
                     if stage=='server-unknown':
@@ -226,12 +234,13 @@ def main():
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*args): pass
                     def do_GET(self):
+                        nonlocal app, runtime_configuration
                         try:
                             query=parse_qs(urlsplit(self.path).query)
                             if urlsplit(self.path).path=='/prepare':
                                 mode=query['mode'][0]
                                 case={'success': query.get('case',['testEnglish'])[0], 'current':query.get('case',['testCurrentEnglish'])[0],
-                                      'unknown':'testUnknownReopen','rejected':'testRejected','skip':'testSkipAndChat','candidate':'testCandidate','server_unknown':'testServerUnknown','switch':'testSwitchLateRead','revoke':'testRevokedLateRead','release':'testReleaseClosed'}[mode]
+                                      'unknown':'testUnknownReopen','rejected':'testRejected','rejected_new':'testRejectedThenNewSave','skip':'testSkipAndChat','candidate':'testCandidate','server_unknown':'testServerUnknown','switch':'testSwitchLateRead','revoke':'testRevokedLateRead','release':'testReleaseClosed'}[mode]
                                 with lock: tokens[case]={a:dev_auth.token(auth,s,120) for a,s in subjects[case].items()}
                                 for subject in subjects[case].values():
                                     command=[sys.executable,'-B',str(ROOT/'scripts/local_run_context.py'),'--conninfo-json',str(connection),
@@ -243,8 +252,22 @@ def main():
                                         client.put('/v1/conversations',params={'conversation_id':owned},headers={'Authorization':'Bearer '+tokens[case]['A']}).raise_for_status()
                                 records[case]=dict(posts=[],request_start=len(requests),provider_start=model.calls,held=threading.Event(),release=threading.Event(),released=threading.Event())
                                 display=json.loads(json.dumps(profiles.get(subjects[case]['A'],profile)))
-                                if mode=='rejected': display['slots']['blocked']['collection_allowed']=True
+                                if mode in ('rejected','rejected_new'): display['slots']['blocked']['collection_allowed']=True
                                 value=dict(endpoint=endpoint,accounts=tokens[case],subjects=subjects[case],case_id=case,conversation=conversation,profile=json.dumps(display))
+                            elif urlsplit(self.path).path=='/enable-profile':
+                                case=query['case'][0]
+                                assert case=='testRejectedThenNewSave'
+                                subject=subjects[case]['A']
+                                # Explicit operator reconfiguration and real factory reload,
+                                # not a manufactured API refusal or response substitution.
+                                profiles[subject]=json.loads(json.dumps(profile))
+                                policy_path.write_text(json.dumps(policy))
+                                runtime_policy['selections'][subject]=dict(subject='self', slots=['fact','experience','food.spice'], max_bytes=32768)
+                                runtime_path.write_text(json.dumps(runtime_policy))
+                                runtime_configuration=load_runtime_configuration(runtime_path)
+                                app=app_from_environment()
+                                report['explicit_collection_reload']='missing identity profile restored through operator configuration'
+                                save(); value={}
                             elif urlsplit(self.path).path=='/hold-read':
                                 case=query['case'][0]; records[case]['hold_path']='/v1/memory-groups'; value={}
                             elif urlsplit(self.path).path=='/wait-held':

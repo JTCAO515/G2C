@@ -47,7 +47,10 @@ let trace = "00000000-0000-0000-0000-000000000001"
         try MemoryClient(endpoint: endpoint, credentials: credentials ?? { _ in "test-credential" },
             currentBinding: { [self] in current }, pendingStore: store(), interceptedTransport: transport)
     }
-    func cleanup() { try? FileManager.default.removeItem(at: root) }
+    func cleanup() {
+        try? FileManager.default.removeItem(at: root)
+        try? FileManager.default.removeItem(at: root.appendingPathExtension("CJMemoryRejections"))
+    }
 }
 func command(_ text: String = "cafe\u{301}", inference: Bool = false) -> Components.Schemas.MemoryManualSaveCommand {
     .init(operation_id: UUID().uuidString.lowercased(), item_id: UUID().uuidString.lowercased(), subject: "self", slot: "test",

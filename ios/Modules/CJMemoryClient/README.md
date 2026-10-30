@@ -151,3 +151,9 @@ Real HTTPS reads, actual private-platform storage lifecycle, CJShell integration
 visual/VoiceOver runtime validation, real manual save, next-answer context,
 new-session/device travel use, and independent Review/Testing are **UNRUN** here.
 Issue #12 remains open and is not closeable from this package evidence.
+
+Definitive manual-save failures are retained separately in an encrypted
+`CJMemoryRejections` adjacent journal using the same account/key namespace and
+a distinct authenticated domain. Existing manual ciphertext/files are unchanged.
+Receipt null alone remains unknown; only the matched direct server failure allows
+a distinct new action. Reopening never resends the failed original.

@@ -56,6 +56,7 @@ public enum MemorySaveResult: Sendable {
     case saved(Components.Schemas.MemoryReceipt)
     case candidate(Components.Schemas.MemoryReceipt)
     case notObserved // Still pending; explicitly not write permission.
+    case rejected(Int, String) // Durable explicit server failure, never inferred from null.
 }
 
 @MainActor public final class MemoryClient {
@@ -158,7 +159,10 @@ public enum MemorySaveResult: Sendable {
         guard writeEnabled else { throw MemoryFailure.liveWriteUnavailable }
         guard let store else { throw MemoryFailure.unconfigured }
         try store.validate(binding)
-        guard try store.pending().allSatisfy({ confirmed.contains(Data($0.operationID.utf8)) }) else { throw MemoryFailure.pendingRequiresQuery }
+        guard try store.pending().allSatisfy({ original in
+            if confirmed.contains(Data(original.operationID.utf8)) { return true }
+            return try store.rejection(for: original) != nil
+        }) else { throw MemoryFailure.pendingRequiresQuery }
         try check(binding, token)
         let record = try MemoryPending(command)
         guard record.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
@@ -171,6 +175,8 @@ public enum MemorySaveResult: Sendable {
         case .default(let status, let value):
             let error = try value.body.json.error
             guard error.outcome == .failed else { throw MemoryFailure.exchangeUnknown }
+            try store.recordRejection(record, status: status, code: error.code) { try check(binding, token) }
+            try check(binding, token)
             throw MemoryFailure.rejected(status, error.code)
         }
     }
@@ -179,14 +185,20 @@ public enum MemorySaveResult: Sendable {
         guard let store else { throw MemoryFailure.unconfigured }
         try store.validate(binding)
         guard let record = try store.pending().first(where: { same($0.operationID, operationID) }) else { throw MemoryFailure.invalidInput }
+        let rejection = try store.rejection(for: record)
         try check(binding, token)
         let client = try await api(binding, token)
         let response = try await exchange(binding, token) { try await client.queryMemoryReceipt(query: .init(operation_id: record.operationID)) }
         switch response {
         case .ok(let value):
             switch try value.body.json.receipt {
-            case .MemoryReceipt(let receipt): return try settle(receipt, record: record, binding: binding, token: token)
-            case .case2(let null): guard null.value == nil else { throw MemoryFailure.invalidResponse }; return .notObserved
+            case .MemoryReceipt(let receipt):
+                guard rejection == nil else { throw MemoryFailure.invalidResponse }
+                return try settle(receipt, record: record, binding: binding, token: token)
+            case .case2(let null):
+                guard null.value == nil else { throw MemoryFailure.invalidResponse }
+                if let rejection { return .rejected(rejection.status, rejection.code) }
+                return .notObserved
             }
         case .default(let status, let value):
             let error = try value.body.json.error

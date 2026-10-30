@@ -134,10 +134,17 @@ Memory unconfigured; an invalid explicit profile fails composition visibly.
 Release and physical devices do not compile this write initializer/root.
 
 Manual saves retain their exact original operation and bytes before dispatch in
-an account-scoped encrypted Memory journal. Reopen only queries originals; missing
-receipts never authorize resend. Up to three optional questions reuse this form
+an account-scoped encrypted Memory journal. Definitive server failures use a
+separate encrypted adjacent journal; old ciphertext and IDs remain unchanged.
+A reopened failed original stays rejected when its receipt is absent, while a
+missing receipt without that failure record remains unknown. A distinct explicit
+new save is allowed after definite failure; the original is never resent. Up to three optional questions reuse this form
 and can be skipped to chat. #227 effective-context consumption remains separate.
 The native harness is `ios/App/Acceptance/check_memories.py` with explicit
 `--run-context`, `--simulator`, external `--output` and `--build-dir`; it runs the
-formal signed local API, fresh private PG and `run_once`/FakeProvider. New L1
+formal signed local API, fresh private PG and `run_once`/FakeProvider with an
+explicit `local-memory-run.1` policy. Current-scope choices identify the actual
+MESSAGE conversation, never a formal Trip. The matrix also verifies two owned
+conversations and an actual refusal followed by operator policy reload and a
+distinct new save. New L1
 results are pending until actual reports exist; no real service is used.
