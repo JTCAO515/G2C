@@ -8,6 +8,7 @@ import uuid
 
 if TYPE_CHECKING:
     from .travel import Selection
+    from .travel_reference import OriginalMessageContextRef
 
 
 class InvalidInput(ValueError):
@@ -150,6 +151,19 @@ class SendStatus:
 
 
 @dataclass(frozen=True)
+class TravelAcceptance:
+    receipt: Receipt
+    reference: OriginalMessageContextRef
+
+
+@dataclass(frozen=True)
+class TravelSendStatus:
+    stored: Stored | None
+    head: Chat | None
+    reference: OriginalMessageContextRef | None
+
+
+@dataclass(frozen=True)
 class Cursor:
     # Internal repository value only. Must never be deserialized from caller fields.
     scope: str
@@ -171,7 +185,13 @@ class Service:
         self.new_run_id = new_run_id
 
     def receive(self, raw):
-        command = Command.parse(raw)
+        return self._receive(raw, travel=False)
+
+    def receive_v2(self, raw):
+        return self._receive(raw, travel=True)
+
+    def _receive(self, raw, *, travel):
+        command = Command.parse_v2(raw) if travel else Command.parse(raw)
         with self.repository.transaction() as tx:
             # Scope lock serializes same-ID requests even across conversations.
             tx.lock_scope()
@@ -184,13 +204,25 @@ class Service:
                 chat = tx.chat(command.conversation_id)
                 if (chat.generation, chat.last_sequence) != (command.expected_generation, command.expected_sequence):
                     raise SequenceConflict()
+                if travel:
+                    from .travel_reference import require_producer
+                    require_producer(tx,command)
                 receipt = Receipt(command.message_id, command.conversation_id,
                                   chat.generation, chat.last_sequence + 1,
                                   self.new_run_id(), hashlib.sha256(raw).hexdigest())
-                tx.insert(Stored(raw, receipt))
+                stored=Stored(raw,receipt)
+                if travel:
+                    from .travel_reference import insert_reference
+                    tx.insert(stored,command=command)
+                    insert_reference(tx,stored,command)
+                else:
+                    tx.insert(stored)
                 tx.enqueue(receipt)
+            if travel:
+                from .travel_reference import read_reference
+                reference=read_reference(tx,Stored(raw,receipt))
         # Only leave the transaction with a receipt after commit has succeeded.
-        return receipt
+        return TravelAcceptance(receipt,reference) if travel else receipt
 
     def open_conversation(self, conversation_id):
         """Idempotently create an active chat for this scope; never reactivates an inactive one."""
@@ -217,6 +249,12 @@ class Service:
         return old
 
     def send_status(self, conversation_id, message_id=None):
+        return self._send_status(conversation_id,message_id,travel=False)
+
+    def send_status_v2(self, conversation_id, message_id=None):
+        return self._send_status(conversation_id,message_id,travel=True)
+
+    def _send_status(self, conversation_id, message_id, *, travel):
         if (type(conversation_id) is not str or not conversation_id.strip()
                 or len(conversation_id.encode('utf-8')) > 256 or '\x00' in conversation_id
                 or (message_id is not None and (type(message_id) is not str or not message_id.strip()))):
@@ -229,7 +267,11 @@ class Service:
             if stored is not None and stored.receipt.conversation_id != conversation_id:
                 stored = None
             head = tx.active_head(conversation_id)
-        return SendStatus(stored, head)
+            reference=None
+            if travel and stored is not None:
+                from .travel_reference import read_reference
+                reference=read_reference(tx,stored)
+        return TravelSendStatus(stored,head,reference) if travel else SendStatus(stored, head)
 
     def page(self, conversation_id, cursor=None, limit=20):
         if type(limit) is not int or not 1 <= limit <= 100:
