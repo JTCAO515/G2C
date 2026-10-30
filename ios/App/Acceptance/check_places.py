@@ -23,7 +23,9 @@ def main():
     output=args.output.resolve();build=args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):raise ValueError('external evidence required')
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
-    output.mkdir(parents=True)
+    os.umask(0o077)
+    output.mkdir(parents=True,mode=0o700)
+    output.chmod(0o700)
     if (output/'report.json').exists():raise ValueError('preserve prior report')
     env={k:v for k,v in os.environ.items() if not k.startswith(('PG','LIBPQ','SIMCTL_CHILD_','G2C_DEV_','CJ_LOCAL_'))}
     for key in tuple(os.environ):
@@ -228,13 +230,16 @@ def main():
                             assert foreign.status_code==503 and 'snapshot' not in foreign.json()
                     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
                     private_tokens=[token.encode() for pair in tokens.values() for token in pair.values()]
+                    plaintext=[value.encode() for value in ('Find synthetic hotel / \u67e5\u8be2\u5408\u6210\u9152\u5e97 e\u0301','SYNTH_MISSING','SYNTH_BAD_JSON','SYNTH_TIMEOUT','SYNTH_DOUBLE_TOOL')]
                     for path in container.rglob('*'):
                         if path.is_file() and not path.is_symlink():
                             data=path.read_bytes();assert not any(token in data for token in private_tokens) and b'-----BEGIN PRIVATE KEY-----' not in data
-                    report['token_key_scan']='PASS';report['status']='PASS' if not args.case else 'PARTIAL_PASS';save()
+                            assert not any(value in data for value in plaintext),'plaintext original input in App files'
+                    report['token_key_scan']='PASS';report['plaintext_scan']='PASS';report['status']='PASS' if not args.case else 'PARTIAL_PASS';save()
                 finally:
                     for row in specs.values():row['release'].set();row['read_release'].set()
                     stop.set();worker_thread.join(10);server.should_exit=True;thread.join(10);control.shutdown();control.server_close()
+            report['private_pg_stopped']=True;save()
     except BaseException as error:report['status']='FAIL';report['error']=type(error).__name__;raise
     finally:save()
 
