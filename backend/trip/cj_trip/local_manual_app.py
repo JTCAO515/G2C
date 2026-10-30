@@ -17,6 +17,7 @@ from .auth_boundary import Boundary
 from .confirmation import ConfirmationSigner
 from .domain import Conflict, Denied, identifier
 from .manual import ManualEdit, ManualSave
+from .initialization import Initialization, InitializationSave
 from .structured import validate_document
 
 
@@ -52,7 +53,7 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
         from cj_feasibility.trip_time import evaluate
         report=evaluate(original.content)
         return dict(proposal_id=original.proposal_id,trip_id=original.trip_id,
-            expected_version=original.expected_version,basis='manual-unbound.1',
+            expected_version=original.expected_version,basis=original.basis_version,
             expires_at=original.expires_at,candidate_hash=detail.candidate_hash,status=detail.status,
             content=json.loads(original.content),diff=json.loads(value.diff),
             feasibility=dict(version=report.version,status=report.status,
@@ -61,9 +62,11 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
                         for c in report.checks]))
 
     def project(request, kind, value):
-        body=dict(version='TRIP-manual-result.1',request_id=request.state.request_id)
-        if kind in ('prepare','preparation'):body['preparation']=proposal(value)
-        elif kind in ('save','receipt'):body['receipt']=receipt(value)
+        initialization=kind in ('initialize','initialization','initialize_save','initialize_receipt')
+        body=dict(version='TRIP-initialize-result.1' if initialization else 'TRIP-manual-result.1',request_id=request.state.request_id)
+        if kind in ('initialize','initialization'):body['initialization']=proposal(value)
+        elif kind in ('prepare','preparation'):body['preparation']=proposal(value)
+        elif kind in ('save','receipt','initialize_save','initialize_receipt'):body['receipt']=receipt(value)
         else:
             if value is None:body['trip']=None
             else:
@@ -78,7 +81,11 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
         def operation():
             def callback(context):
-                if kind=='prepare':result=context.prepare_manual(ManualEdit.parse(value))
+                if kind=='initialize':result=context.prepare_initialization(Initialization.parse(value))
+                elif kind=='initialize_save':result=context.save_initialization(InitializationSave.parse(value))
+                elif kind=='initialization':result=context.initialization(value)
+                elif kind=='initialize_receipt':result=context.query_action(value)
+                elif kind=='prepare':result=context.prepare_manual(ManualEdit.parse(value))
                 elif kind=='save':result=context.save_manual(ManualSave.parse(value))
                 elif kind=='preparation':result=context.manual_preparation(value)
                 elif kind=='receipt':result=context.query_action(value)
@@ -89,7 +96,7 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
         except Conflict:return _error(request,409,'TRIP_CONFLICT','conflict','failed','do_not_retry')
         except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         except Exception as error:
-            write=kind in ('prepare','save')
+            write=kind in ('prepare','save','initialize','initialize_save')
             return _error(request,503,'TRIP_ACCESS_UNAVAILABLE' if isinstance(error,Denied) else 'TRIP_OUTCOME_UNKNOWN' if write else 'TRIP_UNAVAILABLE',
                 'dependency','unknown','reconcile_original' if write else 'retry_safe_read')
 
@@ -102,7 +109,7 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
             query(request,());parts=[];size=0
             async for part in request.stream():
                 size+=len(part)
-                if size>(1_000_000 if kind=='prepare' else 32768):
+                if size>(1_000_000 if kind in ('prepare','initialize') else 32768):
                     return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
                 parts.append(part)
         except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
@@ -127,5 +134,17 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
 
     @app.get('/v3/trip-structured')
     async def detail(request:Request):return await read(request,'detail','trip_id')
+
+    @app.post('/v1/trip-structured-initializations')
+    async def initialize(request:Request):return await write(request,'initialize')
+
+    @app.get('/v1/trip-structured-initializations')
+    async def initialization_query(request:Request):return await read(request,'initialization','request_id')
+
+    @app.post('/v1/trip-structured-initialization-saves')
+    async def initialize_save(request:Request):return await write(request,'initialize_save')
+
+    @app.get('/v1/trip-structured-initialization-receipts')
+    async def initialize_receipt(request:Request):return await read(request,'initialize_receipt','action_id')
 
     return app

@@ -138,6 +138,53 @@ class ManualChecks(Harness):
             self.assertEqual(self.write(client,'/v1/trip-manual-preparations',packed(edit)).status_code,409)
             self.assertEqual(self.repository.detail(self.trip_id),current)
 
+    def test_legacy_formal_trip_explicit_initialization_then_same_manual_editor(self):
+        from cj_api.local_app import create_local_app
+        legacy=packed(dict(title='原正式详情 / existing formal Trip',items=[
+            dict(id='legacy-item',text='Tomorrow is still only text',verification='pending',evidence=[])]))
+        proposal=Proposal('legacy-'+self.tag,self.trip_id,1,'legacy-reviewed',int(time.time())+300,legacy)
+        digest=self.repository.publish(proposal)
+        action=self.signer.issue(self.scope,self.repository.proposal_detail(proposal.proposal_id),
+            action_id='legacy-seed-'+self.tag,kind='accept',candidate_hash=digest).action
+        self.repository.act(action)
+        # Read the actual existing CJ015 minimal endpoint, not a constructed DTO.
+        with TestClient(create_local_app(conninfo_path=CONNINFO,auth_dir=self.auth)) as original_client:
+            old=original_client.get('/v1/trip-details',params={'trip_id':self.trip_id},headers=self.headers('alice'))
+            self.assertEqual(old.status_code,200,old.text)
+        event={name:{'state':'unknown'} for name in ('date','time','timezone','utc_offset')}
+        request=packed(dict(version='TRIP-initialize.1',request_id='initialize-'+self.tag,trip_id=self.trip_id,
+            expected_version=2,original_hash=sha256(legacy).hexdigest(),items=[dict(id='legacy-item',
+                schedule=dict(start=event,end=event),fixed={'state':'known','value':False})]))
+        with TestClient(self.app) as client:
+            response=self.write(client,'/v1/trip-structured-initializations',request)
+            self.assertEqual(response.status_code,200,response.text)
+            preparation=response.json()['initialization']
+            self.assertEqual(response.json()['version'],'TRIP-initialize-result.1')
+            self.assertEqual(self.repository.detail(self.trip_id).content,legacy)
+            save=packed(dict(version='TRIP-initialize-save.1',action_id='initialize-save-'+self.tag,
+                proposal_id=preparation['proposal_id'],candidate_hash=preparation['candidate_hash']))
+            saved=self.write(client,'/v1/trip-structured-initialization-saves',save)
+            self.assertEqual(saved.status_code,200,saved.text)
+            self.assertEqual(saved.json()['receipt']['committed_version'],3)
+            current=self.repository.detail(self.trip_id);content=json.loads(current.content)
+            self.assertEqual(content['title'],json.loads(legacy)['title'])
+            self.assertEqual(content['items'][0]['text'],json.loads(legacy)['items'][0]['text'])
+            self.assertEqual(content['items'][0]['source_category'],'unknown')
+            self.assertEqual(content['items'][0]['schedule']['start']['date'],{'state':'unknown'})
+            self.assertEqual(self.write(client,'/v1/trip-structured-initialization-saves',save).json()['receipt'],saved.json()['receipt'])
+            self.assertNotEqual(self.write(client,'/v1/trip-structured-initialization-saves',save,'bob').status_code,200)
+            wrong=json.loads(save);wrong['version']='TRIP-manual-save.1';wrong['action_id']='wrong-path-'+self.tag
+            self.assertNotEqual(self.write(client,'/v1/trip-manual-saves',packed(wrong)).status_code,200)
+            self.assertIsNone(self.repository.query_action(wrong['action_id']))
+            edit=json.loads(self.edit);edit.update(request_id='after-initialize-'+self.tag,expected_version=3,
+                original_hash=sha256(current.content).hexdigest(),title=None,
+                changes=[dict(item_id='legacy-item',field='text',value='明确手动改写 / explicit manual edit')])
+            edited=self.write(client,'/v1/trip-manual-preparations',packed(edit))
+            self.assertEqual(edited.status_code,200,edited.text)
+            committed=self.write(client,'/v1/trip-manual-saves',self.save(edited.json()['preparation']))
+            self.assertEqual(committed.status_code,200,committed.text)
+            self.assertEqual(committed.json()['receipt']['committed_version'],4)
+
     def test_ack_unknown_reconciles_original_and_rollback_retains_trip(self):
         from unittest.mock import patch
         from cj_api.local_app import LocalDatabase

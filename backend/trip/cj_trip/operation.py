@@ -45,14 +45,16 @@ class OperationContext:
         self.__check()
         s = self.__state
         try:
-            if name in ('act', 'save_manual', 'prepare_manual'):
+            if name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization'):
                 from .manual import ManualSave, ManualEdit
+                from .initialization import Initialization, InitializationSave
                 if s['action_id'] is not None: raise ValueError('one action per operation')
-                expected = Action if name == 'act' else ManualSave if name == 'save_manual' else ManualEdit
+                expected = {'act':Action,'save_manual':ManualSave,'prepare_manual':ManualEdit,
+                            'prepare_initialization':Initialization,'save_initialization':InitializationSave}[name]
                 if not isinstance(args[0], expected): raise ValueError('validated original action required')
-                s['action_id'] = args[0].request_id if name == 'prepare_manual' else args[0].action_id
+                s['action_id'] = args[0].request_id if name in ('prepare_manual','prepare_initialization') else args[0].action_id
             result = getattr(self.__repository, name)(*args)
-            if name in ('act', 'save_manual', 'prepare_manual'): s['commit_possible'] = True
+            if name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization'): s['commit_possible'] = True
             return result
         except BaseException as exc:
             s['blocked'] = True
@@ -61,6 +63,9 @@ class OperationContext:
                 raise OperationWithheld(s['action_id'], s['commit_possible']) from None
             raise
 
+    def prepare_initialization(self, value): return self.__call('prepare_initialization', value)
+    def save_initialization(self, value): return self.__call('save_initialization', value)
+    def initialization(self, request_id): return self.__call('initialization', request_id)
     def act(self, action): return self.__call('act', action)
     def prepare_manual(self, edit): return self.__call('prepare_manual', edit)
     def save_manual(self, save): return self.__call('save_manual', save)

@@ -139,11 +139,15 @@ class ManualSave:
 
     @classmethod
     def parse(cls, raw):
+        return cls._parse(raw, 'TRIP-manual-save.1')
+
+    @classmethod
+    def _parse(cls, raw, version):
         if type(raw) is not bytes or not 0 < len(raw) <= 32768:
             raise ValueError('bounded immutable save input required')
         doc = json.loads(raw)
         if (type(doc) is not dict or set(doc) != {'version', 'action_id', 'proposal_id', 'candidate_hash'}
-                or doc['version'] != 'TRIP-manual-save.1' or packed(doc) != raw):
+                or doc['version'] != version or packed(doc) != raw):
             raise ValueError('exact canonical manual save input required')
         identifier(doc['action_id']); identifier(doc['proposal_id'])
         digest = doc['candidate_hash']

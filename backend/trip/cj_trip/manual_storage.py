@@ -31,6 +31,10 @@ def _record(cur, repository, trip_id):
 
 
 def prepare_manual(repository, edit):
+    return _prepare(repository, edit, prepare, 'manual-unbound.1')
+
+
+def _prepare(repository, edit, builder, basis_version):
     _configured(repository)
     with repository.transaction() as cur:
         cur.execute('SELECT original_input,proposal_id,diff FROM cj_trip_manual_basis WHERE scope=%s AND request_id=%s',
@@ -41,7 +45,7 @@ def prepare_manual(repository, edit):
             proposal, digest, status = repository._proposal(cur, previous[1])
             return PreparedManual(ProposalDetail(proposal,digest,status), bytes(previous[2]))
         original = _record(cur, repository, edit.trip_id)
-        candidate = prepare(original, edit)
+        candidate = builder(original, edit)
         # Import locally: FEAS uses Trip's strict grammar; neither module owns a
         # second time parser/constraint engine or an inferred NEEDS snapshot.
         from cj_feasibility.trip_time import evaluate
@@ -51,7 +55,7 @@ def prepare_manual(repository, edit):
         expires_at = int(cur.fetchone()[0]) + 300
         proposal_id = 'manual.' + sha256(edit.raw).hexdigest()
         proposal = Proposal(proposal_id, original.trip_id, original.version,
-                            'manual-unbound.1', expires_at, candidate.content)
+                            basis_version, expires_at, candidate.content)
         digest = repository._publish_in_tx(cur, proposal)
         cur.execute('INSERT INTO cj_trip_manual_basis(scope,request_id,proposal_id,original_input,original_content,diff) VALUES (%s,%s,%s,%s,%s,%s)',
                     (repository.scope,edit.request_id,proposal_id,edit.raw,original.content,candidate.diff))
@@ -59,6 +63,11 @@ def prepare_manual(repository, edit):
 
 
 def save_manual(repository, save):
+    from .manual import ManualEdit
+    return _save(repository, save, ManualEdit.parse, prepare, 'manual-unbound.1')
+
+
+def _save(repository, save, parse_basis, builder, basis_version):
     _configured(repository)
     # The accepted host issuer is mandatory. Do not infer or reflect an issuer
     # from an arbitrary confirmation callback accepted by the legacy writer.
@@ -86,10 +95,10 @@ def save_manual(repository, save):
                     (repository.scope,save.proposal_id))
         basis = cur.fetchone()
         if basis is None: raise Denied('manual preparation basis unavailable')
-        from .manual import ManualEdit
-        edit = ManualEdit.parse(bytes(basis[1]))
+        if proposal.basis_version != basis_version: raise Denied('original preparation version mismatch')
+        edit = parse_basis(bytes(basis[1]))
         current = _record(cur,repository,proposal.trip_id)
-        candidate = prepare(current,edit)
+        candidate = builder(current,edit)
         if (current.content != bytes(basis[2]) or proposal.content != candidate.content
                 or proposal.expected_version != current.version):
             raise Conflict('original manual basis changed')
@@ -102,7 +111,7 @@ def save_manual(repository, save):
         return receipt
 
 
-def manual_preparation(repository, request_id):
+def manual_preparation(repository, request_id, *, basis_version="manual-unbound.1"):
     _configured(repository)
     identifier(request_id)
     with repository.transaction() as cur:
@@ -111,4 +120,15 @@ def manual_preparation(repository, request_id):
         row=cur.fetchone()
         if row is None:return None
         proposal,digest,status=repository._proposal(cur,row[0])
+        if proposal.basis_version != basis_version: raise Denied('preparation version mismatch')
         return PreparedManual(ProposalDetail(proposal,digest,status),bytes(row[1]))
+
+
+def prepare_initialization(repository, request):
+    from .initialization import initialize, BASIS
+    return _prepare(repository, request, initialize, BASIS)
+
+
+def save_initialization(repository, save):
+    from .initialization import Initialization, initialize, BASIS
+    return _save(repository, save, Initialization.parse, initialize, BASIS)

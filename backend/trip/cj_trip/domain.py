@@ -148,6 +148,24 @@ def validate_provenance_document(doc):
         raise ValueError('unreferenced source')
 
 
+def validate_legacy_document(doc):
+    if set(doc) != {'title', 'items'} or not isinstance(doc['title'], str) or not doc['title'].strip():
+        raise ValueError('title and items required')
+    if not isinstance(doc['items'], list) or not doc['items']:
+        raise ValueError('empty trip rejected')
+    seen = set()
+    for item in doc['items']:
+        if not isinstance(item, dict) or set(item) != {'id', 'text', 'verification', 'evidence'}:
+            raise ValueError('explicit fact state required')
+        identifier(item['id'])
+        if item['id'] in seen: raise ValueError('duplicate item')
+        seen.add(item['id'])
+        if not isinstance(item['text'], str) or not item['text'].strip(): raise ValueError('empty text')
+        if item['verification'] not in ('pending', 'verified'): raise ValueError('unknown fact state')
+        if not isinstance(item['evidence'], list) or not all(isinstance(x, str) and x for x in item['evidence']): raise ValueError('invalid evidence')
+        if item['verification'] == 'verified' and not item['evidence']: raise ValueError('verified needs evidence')
+
+
 @dataclass(frozen=True)
 class Proposal:
     proposal_id: str
@@ -176,21 +194,7 @@ class Proposal:
             validate_provenance_document(doc)
             if packed(doc) != self.content: raise ValueError('canonical content required')
             return
-        if set(doc) != {'title', 'items'} or not isinstance(doc['title'], str) or not doc['title'].strip():
-            raise ValueError('title and items required')
-        if not isinstance(doc['items'], list) or not doc['items']:
-            raise ValueError('empty trip rejected')
-        seen = set()
-        for item in doc['items']:
-            if not isinstance(item, dict) or set(item) != {'id', 'text', 'verification', 'evidence'}:
-                raise ValueError('explicit fact state required')
-            identifier(item['id'])
-            if item['id'] in seen: raise ValueError('duplicate item')
-            seen.add(item['id'])
-            if not isinstance(item['text'], str) or not item['text'].strip(): raise ValueError('empty text')
-            if item['verification'] not in ('pending', 'verified'): raise ValueError('unknown fact state')
-            if not isinstance(item['evidence'], list) or not all(isinstance(x, str) and x for x in item['evidence']): raise ValueError('invalid evidence')
-            if item['verification'] == 'verified' and not item['evidence']: raise ValueError('verified needs evidence')
+        validate_legacy_document(doc)
         # Reject duplicate JSON keys / alternate encodings: preserve accepted original bytes.
         if packed(doc) != self.content: raise ValueError('canonical content required')
 

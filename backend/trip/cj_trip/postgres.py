@@ -175,6 +175,19 @@ class Repository:
         from .manual_storage import save_manual
         return save_manual(self, save)
 
+    def prepare_initialization(self, request):
+        from .manual_storage import prepare_initialization
+        return prepare_initialization(self, request)
+
+    def save_initialization(self, save):
+        from .manual_storage import save_initialization
+        return save_initialization(self, save)
+
+    def initialization(self, request_id):
+        from .manual_storage import manual_preparation
+        from .initialization import BASIS
+        return manual_preparation(self, request_id, basis_version=BASIS)
+
     def retire(self, proposal_id, state, replacement_id=None):
         """Trusted lifecycle; generation cancellation must never call this method."""
         if state not in ('expired','superseded'): raise ValueError('invalid retirement')
