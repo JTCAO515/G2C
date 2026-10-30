@@ -1,5 +1,11 @@
 # CJ-012 PLACE adapter candidate
 
+New explicit data contract: [PLACE@1.0](../../contracts/place/PLACE-V1.md),
+`cj_place.contract_v1` query/result codecs and `publish_response` over the same
+existing parser. This is a synthetic/offline data slice (#263), not dispatch.
+Legacy versions and the closed `execute` below remain unchanged; actual registered
+business integration is tracked by #265. All new examples are labeled synthetic.
+
 Pure Python >=3.12,<3.15, standard library only. No installation or root lock
 change is needed. Public contract and current limitations:
 [contracts/place](../../contracts/place/README.md).

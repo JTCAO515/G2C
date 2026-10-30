@@ -1,0 +1,370 @@
+{
+  "data_origin": "synthetic",
+  "positive": [
+    {
+      "version": "PLACE-result.1",
+      "query": {
+        "kind": "Search",
+        "keyword": "合成地点",
+        "city": "合成城市",
+        "page": 1,
+        "page_size": 20
+      },
+      "outcome": "ok",
+      "reason": "page_results",
+      "source": {
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider": "gaode",
+        "api_version": "v3",
+        "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+        "request_ref": "synthetic-consumer",
+        "binding_digest": "e14b537aed90bb04ac1d332093e66732637e31af9a9f95c7885838f910640253",
+        "query_started_at": {
+          "iso8601": "2026-10-22T12:00:00.000000+00:00",
+          "fold": 0
+        },
+        "received_at": {
+          "iso8601": "2026-10-22T12:00:01.000000+00:00",
+          "fold": 0
+        },
+        "provider_updated_at": null,
+        "evidence_kind": "synthetic",
+        "recording_ref": null
+      },
+      "places": [
+        {
+          "provider": "gaode",
+          "provider_id": "SYNTH_EAST",
+          "name_zh": "合成酒店",
+          "address_zh": {
+            "state": "present",
+            "value": "合成东路一号"
+          },
+          "coordinate": {
+            "state": "present",
+            "value": {
+              "raw": "116.1,39.1",
+              "longitude": "116.1",
+              "latitude": "39.1",
+              "crs": "GCJ-02"
+            }
+          },
+          "entrance_coordinate": {
+            "state": "present",
+            "value": {
+              "raw": "116.1001,39.1001",
+              "longitude": "116.1001",
+              "latitude": "39.1001",
+              "crs": "GCJ-02"
+            }
+          },
+          "exit_coordinate": {
+            "state": "missing",
+            "value": null
+          },
+          "parent_id": {
+            "state": "missing",
+            "value": null
+          },
+          "navigation_id": {
+            "state": "missing",
+            "value": null
+          },
+          "typecode": {
+            "state": "missing",
+            "value": null
+          },
+          "official_name_en": {
+            "state": "unknown",
+            "value": null
+          },
+          "official_address_en": {
+            "state": "unknown",
+            "value": null
+          }
+        },
+        {
+          "provider": "gaode",
+          "provider_id": "SYNTH_WEST",
+          "name_zh": "合成酒店",
+          "address_zh": {
+            "state": "empty_array",
+            "value": null
+          },
+          "coordinate": {
+            "state": "present",
+            "value": {
+              "raw": "116.2,39.2",
+              "longitude": "116.2",
+              "latitude": "39.2",
+              "crs": "GCJ-02"
+            }
+          },
+          "entrance_coordinate": {
+            "state": "missing",
+            "value": null
+          },
+          "exit_coordinate": {
+            "state": "missing",
+            "value": null
+          },
+          "parent_id": {
+            "state": "missing",
+            "value": null
+          },
+          "navigation_id": {
+            "state": "missing",
+            "value": null
+          },
+          "typecode": {
+            "state": "missing",
+            "value": null
+          },
+          "official_name_en": {
+            "state": "unknown",
+            "value": null
+          },
+          "official_address_en": {
+            "state": "unknown",
+            "value": null
+          }
+        }
+      ],
+      "routes": [],
+      "provider_code": "10000",
+      "provider_count": 2
+    },
+    {
+      "version": "PLACE-result.1",
+      "query": {
+        "kind": "RouteQuery",
+        "origin": {
+          "provider_id": "SYNTH_EAST",
+          "coordinate": {
+            "raw": "116.1001,39.1001",
+            "longitude": "116.1001",
+            "latitude": "39.1001",
+            "crs": "GCJ-02"
+          },
+          "coordinate_role": "entrance"
+        },
+        "destination": {
+          "provider_id": "SYNTH_WEST",
+          "coordinate": {
+            "raw": "116.2,39.2",
+            "longitude": "116.2",
+            "latitude": "39.2",
+            "crs": "GCJ-02"
+          },
+          "coordinate_role": "poi_center"
+        },
+        "mode": "walking",
+        "departure": {
+          "condition": "at_query_time",
+          "at": null
+        }
+      },
+      "outcome": "ok",
+      "reason": "route_estimates",
+      "source": {
+        "endpoint": "https://restapi.amap.com/v3/direction/walking",
+        "provider": "gaode",
+        "api_version": "v3",
+        "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+        "request_ref": "synthetic-consumer",
+        "binding_digest": "9e2755fd4949210ac0509822bb09892f88da5b0e97ac2b34f16a5dd6603cd4a9",
+        "query_started_at": {
+          "iso8601": "2026-10-22T12:00:00.000000+00:00",
+          "fold": 0
+        },
+        "received_at": {
+          "iso8601": "2026-10-22T12:00:01.000000+00:00",
+          "fold": 0
+        },
+        "provider_updated_at": null,
+        "evidence_kind": "synthetic",
+        "recording_ref": null
+      },
+      "places": [],
+      "routes": [
+        {
+          "query": {
+            "kind": "RouteQuery",
+            "origin": {
+              "provider_id": "SYNTH_EAST",
+              "coordinate": {
+                "raw": "116.1001,39.1001",
+                "longitude": "116.1001",
+                "latitude": "39.1001",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "entrance"
+            },
+            "destination": {
+              "provider_id": "SYNTH_WEST",
+              "coordinate": {
+                "raw": "116.2,39.2",
+                "longitude": "116.2",
+                "latitude": "39.2",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center"
+            },
+            "mode": "walking",
+            "departure": {
+              "condition": "at_query_time",
+              "at": null
+            }
+          },
+          "distance": {
+            "state": "present",
+            "value": {
+              "raw": "100",
+              "value": "100",
+              "unit": "m"
+            }
+          },
+          "duration": {
+            "state": "present",
+            "value": {
+              "raw": "90",
+              "value": "90",
+              "unit": "s"
+            }
+          },
+          "time_semantics": "provider_estimate_at_query_time",
+          "future_guaranteed": false
+        }
+      ],
+      "provider_code": "10000",
+      "provider_count": 1
+    },
+    {
+      "version": "PLACE-result.1",
+      "query": {
+        "kind": "Detail",
+        "provider_id": "SYNTH_OTHER"
+      },
+      "outcome": "binding_mismatch",
+      "reason": "detail_identity",
+      "source": {
+        "endpoint": "https://restapi.amap.com/v3/place/detail",
+        "provider": "gaode",
+        "api_version": "v3",
+        "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+        "request_ref": "synthetic-consumer",
+        "binding_digest": "d37a2ef1e394ca1138a2fc9f962742a2109c6535ecd119d04b96c4d2877829fa",
+        "query_started_at": {
+          "iso8601": "2026-10-22T12:00:00.000000+00:00",
+          "fold": 0
+        },
+        "received_at": {
+          "iso8601": "2026-10-22T12:00:01.000000+00:00",
+          "fold": 0
+        },
+        "provider_updated_at": null,
+        "evidence_kind": "synthetic",
+        "recording_ref": null
+      },
+      "places": [],
+      "routes": [],
+      "provider_code": null,
+      "provider_count": null
+    },
+    {
+      "version": "PLACE-result.1",
+      "query": {
+        "kind": "Search",
+        "keyword": "合成地点",
+        "city": "合成城市",
+        "page": 1,
+        "page_size": 20
+      },
+      "outcome": "no_results",
+      "reason": "empty_page",
+      "source": {
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider": "gaode",
+        "api_version": "v3",
+        "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+        "request_ref": "synthetic-consumer",
+        "binding_digest": "e14b537aed90bb04ac1d332093e66732637e31af9a9f95c7885838f910640253",
+        "query_started_at": {
+          "iso8601": "2026-10-22T12:00:00.000000+00:00",
+          "fold": 0
+        },
+        "received_at": {
+          "iso8601": "2026-10-22T12:00:01.000000+00:00",
+          "fold": 0
+        },
+        "provider_updated_at": null,
+        "evidence_kind": "synthetic",
+        "recording_ref": null
+      },
+      "places": [],
+      "routes": [],
+      "provider_code": "10000",
+      "provider_count": 0
+    },
+    {
+      "version": "PLACE-result.1",
+      "query": {
+        "kind": "Search",
+        "keyword": "合成地点",
+        "city": "合成城市",
+        "page": 1,
+        "page_size": 20
+      },
+      "outcome": "rate_limited",
+      "reason": "provider_rejected",
+      "source": {
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider": "gaode",
+        "api_version": "v3",
+        "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+        "request_ref": "synthetic-consumer",
+        "binding_digest": "e14b537aed90bb04ac1d332093e66732637e31af9a9f95c7885838f910640253",
+        "query_started_at": {
+          "iso8601": "2026-10-22T12:00:00.000000+00:00",
+          "fold": 0
+        },
+        "received_at": {
+          "iso8601": "2026-10-22T12:00:01.000000+00:00",
+          "fold": 0
+        },
+        "provider_updated_at": null,
+        "evidence_kind": "synthetic",
+        "recording_ref": null
+      },
+      "places": [],
+      "routes": [],
+      "provider_code": "10044",
+      "provider_count": null
+    },
+    {
+      "version": "PLACE-result.1",
+      "query": {
+        "kind": "Search",
+        "keyword": "合成地点",
+        "city": "合成城市",
+        "page": 1,
+        "page_size": 20
+      },
+      "outcome": "unavailable",
+      "reason": "canonical_dispatch_not_connected",
+      "source": null,
+      "places": [],
+      "routes": [],
+      "provider_code": null,
+      "provider_count": null
+    }
+  ],
+  "negative_notes": [
+    "duplicate/unknown fields",
+    "coordinate association/CRS",
+    "empty/unknown preservation",
+    "original route/time/ID",
+    "fake authority/evidence",
+    "source chronology"
+  ]
+}
