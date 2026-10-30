@@ -12,7 +12,7 @@ import Foundation
         let travel_ids: [String];let travel_profile: String;let memory_profile: String;let legacy_profile: String
     }
     private func reveal(_ element: XCUIElement,id: String,fixed: Bool = false) {
-        for _ in 0..<40 {
+        for attempt in 0..<40 {
             var top = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : app.frame.minY + 60
             var bottom = app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.maxY - 20
             let header = app.otherElements.matching(identifier:"assistant.header").firstMatch
@@ -23,13 +23,15 @@ import Foundation
             let frame = element.exists ? element.frame : .zero
             if element.exists && element.isHittable && (fixed || frame.midY > top && frame.midY < bottom) {return}
             if fixed {_ = element.waitForExistence(timeout:1);continue}
-            let down = frame != .zero && frame.midY <= top
+            // Lazy Lists can omit a row on either side of the viewport. Search
+            // both directions when its concrete snapshot is absent.
+            let down = frame == .zero ? (attempt / 6) % 2 == 1 : frame.midY <= top
             let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:(down ? top + 20 : bottom - 20)))
             let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:(down ? bottom - 20 : top + 20)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         let image = XCTAttachment(screenshot:app.screenshot());image.name = "not-visible-" + id;image.lifetime = .keepAlways;add(image)
-        XCTAssertTrue(element.exists && element.isHittable,"Expected visible control: " + id)
+        XCTFail("Expected control within the visible page content: " + id)
     }
     private func tap(_ id: String) {
         let id = chinese ? (["Memory":"记忆","Assistant":"助手","Trips":"行程","Done":"完成"][id] ?? id) : id
