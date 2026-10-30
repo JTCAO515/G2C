@@ -2,6 +2,7 @@
 import SwiftUI
 import CJMessageHTTP
 import CJRunClient
+import UIKit
 
 private struct ShellHeaderHeight: PreferenceKey {
     static let defaultValue: CGFloat = 0
@@ -105,8 +106,7 @@ struct AssistantShell: View {
                     }
                 }
                 .toolbar { ToolbarItem(placement: .confirmationAction) {
-                    Button(state.language.text("Done", "完成")) { panel = nil }
-                        .accessibilityIdentifier("assistant.panel.done")
+                    AssistantPanelDoneButton(title:state.language.text("Done", "完成")) { panel = nil }
                 }}
             }
         }
@@ -207,6 +207,37 @@ struct AssistantShell: View {
         }
             .disabled(true)
             .accessibilityLabel(state.language.text(english, chinese))
+    }
+}
+
+/// A toolbar hosts this complete native control, preserving both UIKit hit
+/// testing and content-size-category updates; a label-only bridge loses the hit.
+private struct AssistantPanelDoneButton: UIViewRepresentable {
+    let title: String
+    let action: @MainActor () -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(action) }
+    func makeUIView(context: Context) -> UIButton {
+        let button=UIButton(type:.system)
+        button.titleLabel?.adjustsFontForContentSizeCategory=true
+        button.accessibilityIdentifier="assistant.panel.done"
+        button.addTarget(context.coordinator,action:#selector(Coordinator.activate),for:.touchUpInside)
+        return button
+    }
+    func updateUIView(_ button: UIButton,context: Context) {
+        context.coordinator.action=action
+        button.setTitle(title,for:.normal)
+        button.setTitleColor(.label,for:.normal)
+        button.titleLabel?.font=UIFont.preferredFont(forTextStyle:.body,compatibleWith:button.traitCollection)
+        button.accessibilityLabel=title
+    }
+    func sizeThatFits(_ proposal: ProposedViewSize,uiView: UIButton,context: Context) -> CGSize? {
+        let size=uiView.intrinsicContentSize
+        return CGSize(width:max(44,size.width),height:max(44,size.height))
+    }
+    final class Coordinator: NSObject {
+        var action: @MainActor () -> Void
+        init(_ action: @escaping @MainActor () -> Void) { self.action=action }
+        @MainActor @objc func activate() { action() }
     }
 }
 #endif

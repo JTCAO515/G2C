@@ -195,3 +195,74 @@ private func changedPlace(_ body: [String: Any], _ edit: (inout [String: Any]) -
     }
 
 }
+
+private let placeToolRunID = "run-e\u{301}"
+private func boundToolResult(_ index: Int = 0,key: String = "tool.0.0") throws -> Data {
+    var result = try goldenPlaces()[index]
+    if var source = result["source"] as? [String:Any] {
+        source["request_ref"] = "op-" + SHA256.hash(data:Data((placeToolRunID + "\0" + key).utf8)).map { String(format:"%02x",$0) }.joined()
+        result["source"] = source
+    }
+    return try placeBytes(result)
+}
+private func placeToolFrame(_ result: Data,key: String = "tool.0.0") -> Data {
+    Data("{\"version\":\"TOOL-output.1\",\"data_origin\":\"synthetic\",\"name\":\"place\",\"operation_key\":\"\(key)\",\"result\":".utf8) + result + Data("}\n".utf8)
+}
+private func placeToolAnswer() -> Data {
+    Data("{\"version\":\"TOOL-answer.1\",\"data_origin\":\"synthetic\",\"text_zh\":\"合成说明\\n仍待核实\",\"text_en\":\"Synthetic description\\nnot official\"}\n".utf8)
+}
+
+extension PlaceV1Tests {
+    @Test func fixedToolFramesPreserveExactNestedBytesAndBilingualAnswer() throws {
+        let original = String(decoding:try boundToolResult(),as:UTF8.self).replacingOccurrences(of:",\"places\"",with:", \"places\"")
+        let bytes = Data(original.utf8),wire = placeToolFrame(bytes) + placeToolAnswer()
+        let value = try PlaceToolTranscriptV1.decode(wire,runID:placeToolRunID,completed:true)
+        #expect(value.originalUTF8 == wire && value.outputs[0].result.originalUTF8 == bytes)
+        #expect(value.outputs[0].result.places.map(\.providerID) == ["SYNTH_EAST","SYNTH_WEST"])
+        #expect(value.answer?.chinese == "合成说明\n仍待核实" && value.answer?.english == "Synthetic description\nnot official")
+        #expect(!value.hasPendingFrame)
+    }
+    @Test func incompleteStreamNeverBecomesACompletedEmptyResult() throws {
+        let complete = placeToolFrame(try boundToolResult()),fragment = Data("{\"version\":\"TOOL-answer".utf8)
+        let value = try PlaceToolTranscriptV1.decode(complete + fragment,runID:placeToolRunID,completed:false)
+        #expect(value.outputs.count == 1 && value.answer == nil && value.hasPendingFrame)
+        #expect(throws:TripFailure.invalidResponse) { try PlaceToolTranscriptV1.decode(complete,runID:placeToolRunID,completed:true) }
+        let empty = try PlaceToolTranscriptV1.decode(Data(),runID:placeToolRunID,completed:false)
+        #expect(empty.outputs.isEmpty && empty.answer == nil && !empty.hasPendingFrame)
+        #expect(throws:TripFailure.invalidResponse) { try PlaceToolTranscriptV1.decode(Data(),runID:placeToolRunID,completed:true) }
+    }
+    @Test func frameCannotBorrowAnotherRunOrChangeLogicalOperation() throws {
+        let first = placeToolFrame(try boundToolResult())
+        #expect(throws:TripFailure.invalidResponse) { try PlaceToolTranscriptV1.decode(first,runID:"another-run",completed:false) }
+        #expect(throws:TripFailure.invalidResponse) { try PlaceToolTranscriptV1.decode(first + first,runID:placeToolRunID,completed:false) }
+        let second = placeToolFrame(try boundToolResult(1,key:"tool.0.1"),key:"tool.0.1")
+        #expect(try PlaceToolTranscriptV1.decode(first + second + placeToolAnswer(),runID:placeToolRunID,completed:true).outputs.count == 2)
+        #expect(throws:TripFailure.invalidResponse) { try PlaceToolTranscriptV1.decode(second,runID:placeToolRunID,completed:false) }
+    }
+    @Test(arguments:Array(0..<9)) func malformedToolFramesFailClosedWithoutPlainTextFallback(vector: Int) throws {
+        var text = String(decoding:placeToolFrame(try boundToolResult()) + placeToolAnswer(),as:UTF8.self)
+        switch vector {
+        case 0:text = text.replacingOccurrences(of:"TOOL-output.1",with:"TOOL-output.2")
+        case 1:text = text.replacingOccurrences(of:"\"name\":\"place\"",with:"\"name\":\"unknown\"")
+        case 2:text = text.replacingOccurrences(of:"\"data_origin\":\"synthetic\"",with:"\"data_origin\":\"live_provider\"")
+        case 3:text = text.replacingOccurrences(of:"\"operation_key\":",with:"\"accepted\":true,\"operation_key\":")
+        case 4:text = text.replacingOccurrences(of:"\"version\":\"TOOL-output.1\"",with:"\"version\":\"TOOL-output.1\",\"version\":\"TOOL-output.1\"")
+        case 5:text = text.replacingOccurrences(of:"\"provider_count\":2",with:"\"provider_count\":2.0")
+        case 6:text = text.replacingOccurrences(of:"tool.0.0",with:"tool.00.0")
+        case 7:text = text.replacingOccurrences(of:"tool.0.0",with:"tool.0.16")
+        default:text = String(decoding:placeToolAnswer() + placeToolFrame(try boundToolResult()),as:UTF8.self)
+        }
+        #expect(throws:TripFailure.invalidResponse) { try PlaceToolTranscriptV1.decode(Data(text.utf8),runID:placeToolRunID,completed:true) }
+    }
+}
+
+
+extension PlaceV1Tests {
+    @Test func toolFrameRejectsNonUTF8JSONInsteadOfUsingFoundationEncodingGuess() throws {
+        let valid = String(decoding:placeToolFrame(try boundToolResult()) + placeToolAnswer(),as:UTF8.self)
+        for encoding in [String.Encoding.utf16LittleEndian,.utf16BigEndian,.utf32LittleEndian] {
+            let invalid = try #require(valid.data(using:encoding))
+            #expect(throws:TripFailure.invalidResponse) { try PlaceToolTranscriptV1.decode(invalid,runID:placeToolRunID,completed:true) }
+        }
+    }
+}

@@ -315,6 +315,7 @@ import Observation
         let runs = RunContainerHost(shell: shell)
         guard runs.configure(RunContainerConfiguration(model: runModel, session: session, operation: operation,
             generation: shell.generation, synthetic: false, followAcceptedMessages: true,
+            answerFormat:try DevelopmentSessionConfiguration.placeToolsEnabled(ProcessInfo.processInfo.environment) ? .placeToolV1 : .plainText,
             isCurrent: { (try? lifetime.validate()) != nil })) else { throw RecoveryError.inactive }
         self.lifetime = lifetime; self.keyAdapter = keyAdapter
         self.messages = messages; self.history = history; self.runs = runs

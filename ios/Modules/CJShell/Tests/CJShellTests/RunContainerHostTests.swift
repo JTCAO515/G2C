@@ -97,14 +97,14 @@ private actor RunHostWire: ClientTransport {
         await wire.addReceipt(Data(json.utf8))
         guard case .accepted = try await messageClient.query(messageID: id, lease: lease) else { Issue.record("Canonical MESSAGE query not accepted"); return }
     }
-    func bind(_ id: String?) throws {
+    func bind(_ id: String?,answerFormat: RunAnswerFormat = .plainText) throws {
         let value = AssistantMessageBinding(recovery: recovery, scope: scope, lease: lease, generation: shell.generation,
             conversationID: "chat-e\u{301}", messageID: id, synthetic: true,
             isCurrent: { [self] in let callback = messageCallback; messageCallback = nil; callback?(); return messageCurrent },
             invalidateResources: {}, queryOriginal: { [self] id, lease in _ = try await messageClient.query(messageID: id, lease: lease) })
         #expect(messages.bind(value))
         let config = RunContainerConfiguration(model: model, session: session, operation: operation, generation: shell.generation,
-            synthetic: true, isCurrent: { [self] in let callback = admissionCallback; admissionCallback = nil; callback?(); return admission })
+            synthetic: true,answerFormat:answerFormat, isCurrent: { [self] in let callback = admissionCallback; admissionCallback = nil; callback?(); return admission })
         #expect(host.configure(config))
         host.setForeground(true)
     }
@@ -307,5 +307,39 @@ private actor RunHostWire: ClientTransport {
         guard case .unavailable = f.model.state else { Issue.record("Old answer still published"); return }
         #expect(f.host.isShowingOriginal && s.assistantBody == "Existing unrelated answer")
         // AssistantShell hides its plain-body/old Feedback entry while original RUN mode is active.
+    }
+}
+
+
+extension RunContainerHostTests {
+    @Test func explicitPlaceFormatProjectsOnlyTheProtectedOriginalAndRetiresOnAdmissionLoss() async throws {
+        let f = try RunHostFixture(shell:shell());try await f.accept("A");try f.bind("A",answerFormat:.placeToolV1)
+        #expect(f.host.selectAcceptedMessage(from:f.messages))
+        let text = "{\"version\":\"TOOL-answer.1\",\"data_origin\":\"synthetic\",\"text_zh\":\"合成说明\",\"text_en\":\"Synthetic explanation\"}\n"
+        await f.wire.addSnapshot(try f.snapshot("A",status:"completed",text:text))
+        await f.model.perform(f.model.prepareRead())
+        guard case .loaded(let value) = f.host.placeProjection else { Issue.record("place projection missing");return }
+        #expect(value.answer?.english == "Synthetic explanation" && value.outputs.isEmpty)
+        f.shell.selectLanguage(.chinese)
+        guard case .loaded(let same) = f.host.placeProjection else { Issue.record("language replaced original source");return }
+        #expect(same.originalUTF8 == value.originalUTF8)
+        f.admission = false
+        guard case .unavailable = f.host.placeProjection else { Issue.record("retired admission exposed place data");return }
+        #expect(f.host.answerFormat == nil)
+    }
+    @Test func malformedPlacePayloadIsUnavailableInsteadOfPlainTextFallback() async throws {
+        let f = try RunHostFixture(shell:shell());try await f.accept("A");try f.bind("A",answerFormat:.placeToolV1)
+        #expect(f.host.selectAcceptedMessage(from:f.messages))
+        await f.wire.addSnapshot(try f.snapshot("A",status:"completed",text:"{\"version\":\"TOOL-answer.9\"}\n"))
+        await f.model.perform(f.model.prepareRead())
+        guard case .loaded = f.model.state,case .unavailable = f.host.placeProjection else { Issue.record("unknown place payload accepted");return }
+    }
+    @Test func reentrantSelectionRetirementCannotReturnPreviousPlaceProjection() async throws {
+        let f = try RunHostFixture(shell:shell());try await f.accept("A");try await f.accept("B");try f.bind("A",answerFormat:.placeToolV1)
+        #expect(f.host.selectAcceptedMessage(from:f.messages))
+        await f.wire.addSnapshot(try f.snapshot("A",status:"completed",text:"{\"version\":\"TOOL-answer.1\",\"data_origin\":\"synthetic\",\"text_zh\":\"A原文\",\"text_en\":\"A original\"}\n"))
+        await f.model.perform(f.model.prepareRead())
+        f.admissionCallback = { do { try f.selectMessage("B") } catch { Issue.record(error) } }
+        guard case .unavailable = f.host.placeProjection else { Issue.record("A projection survived B selection");return }
     }
 }

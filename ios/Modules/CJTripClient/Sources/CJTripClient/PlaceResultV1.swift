@@ -263,10 +263,10 @@ private func decimal(_ raw: String, wire: TripJSONValue) throws -> PlaceDecimalV
     guard try wire.text() == canonical, let value = Decimal(string: canonical, locale: Locale(identifier: "en_US_POSIX")) else { throw TripFailure.invalidResponse }
     return .init(text: canonical, value: value)
 }
-private extension String {
+extension String {
     func matches(_ expression: String) -> Bool { range(of: "^(?:"+expression+")$", options: .regularExpression) == startIndex..<endIndex }
 }
-private extension TripJSONValue {
+extension TripJSONValue {
     func object() throws -> [String: Self] { guard case .object(let value) = self else { throw TripFailure.invalidResponse }; return value }
     func fields(_ expected: String) throws -> [String: Self] {
         let value = try object(); guard Set(value.keys) == Set(expected.split(separator: " ").map(String.init)) else { throw TripFailure.invalidResponse }; return value
@@ -284,6 +284,6 @@ private extension TripJSONValue {
     }
     func nullable<T>(_ decode: (Self) throws -> T) throws -> T? { if case .null = self { return nil }; return try decode(self) }
 }
-private extension Dictionary where Key == String, Value == TripJSONValue {
+extension Dictionary where Key == String, Value == TripJSONValue {
     func required(_ key: String) throws -> Value { guard let value = self[key] else { throw TripFailure.invalidResponse }; return value }
 }

@@ -200,10 +200,13 @@ private struct TripDocumentView: View {
 }
 // Local rendering adapter follows MemoryRowText's audited native measurement.
 // Avoid a new Trip -> Run dependency for the largest dynamic type size.
+enum TripReadableTextStyle { case body,caption }
 #if os(iOS)
 import UIKit
-private struct TripVerificationText: UIViewRepresentable {
+struct TripVerificationText: UIViewRepresentable {
     let text: String
+    let style: TripReadableTextStyle
+    init(text: String,style: TripReadableTextStyle = .caption) { self.text = text;self.style = style }
     func makeUIView(context: Context) -> UILabel {
         let label = UILabel()
         label.numberOfLines = 0
@@ -215,7 +218,7 @@ private struct TripVerificationText: UIViewRepresentable {
     }
     func updateUIView(_ label: UILabel, context: Context) {
         label.text = text
-        label.font = UIFont.preferredFont(forTextStyle: .caption1, compatibleWith: label.traitCollection)
+        label.font = UIFont.preferredFont(forTextStyle:style == .body ? .body : .caption1,compatibleWith:label.traitCollection)
     }
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
@@ -224,9 +227,11 @@ private struct TripVerificationText: UIViewRepresentable {
     static func dismantleUIView(_ uiView: UILabel, coordinator: ()) { uiView.text = nil }
 }
 #else
-private struct TripVerificationText: View {
+struct TripVerificationText: View {
     let text: String
-    var body: some View { Text(text).font(.caption).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
+    let style: TripReadableTextStyle
+    init(text: String,style: TripReadableTextStyle = .caption) { self.text = text;self.style = style }
+    var body: some View { Text(text).font(style == .body ? .body : .caption).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
 }
 #endif
 private struct TripLoadLabel: View {
