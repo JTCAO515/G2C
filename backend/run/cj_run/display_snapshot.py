@@ -98,8 +98,18 @@ class DisplaySnapshotReader:
     def read_draft_status_v2(self, token, message_id, request_id):
         return self._read_draft_status(token,message_id,request_id,version=2)
 
+    def read_draft_status_v3(self, token, message_id, request_id):
+        return self._read_draft_status(token,message_id,request_id,version=3)
+
+    def read_travel_display(self,token,message_id,request_id):
+        def encode(state,original,reference):
+            value=dict(request_id=request_id,version='RUN-display.2',
+                snapshot=json.loads(_encode_snapshot(state,self.configuration)),reference=reference.public_value())
+            return json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
+        return self._read_materialized(token,message_id,encode,travel=True)
+
     def _read_draft_status(self, token, message_id, request_id, *, version):
-        def encode(state, original):
+        def encode(state, original, reference=None):
             if version == 1 and (state.draft_outcome == 'budget_exhausted' or state.budget_exhausted_stage != 'none'):
                 raise SnapshotUnavailable('budget result requires version 2')
             command = json.loads(original.raw)
@@ -115,11 +125,12 @@ class DisplaySnapshotReader:
                 conversation_id=b.conversation_id, generation=b.generation,
                 message_id=b.message_id, run_id=b.run_id, message_sequence=b.message_sequence,
                 run_status=state.status, event_highwater=state.sequence, draft_outcome=outcome)
-            if version == 2: payload['budget_exhausted_stage']=state.budget_exhausted_stage
+            if version >= 2: payload['budget_exhausted_stage']=state.budget_exhausted_stage
+            if version == 3: payload['reference']=reference.public_value()
             return json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
-        return self._read_materialized(token, message_id, encode)
+        return self._read_materialized(token, message_id, encode,travel=version==3)
 
-    def _read_materialized(self, token, message_id, encode):
+    def _read_materialized(self, token, message_id, encode, *, travel=False):
         if type(message_id) is not str or not message_id.strip():
             raise ValueError('original message ID required')
         configuration = self.configuration  # Freeze bounds for this read.
@@ -128,21 +139,23 @@ class DisplaySnapshotReader:
             if type(ctx) is not HistoryReadContext:
                 raise SnapshotUnavailable('MESSAGE context unavailable')
             principal, scope = ctx.principal, ctx.scope
-            original = ctx.query_message(message_id)
-            if original is None:
+            query=ctx.query_travel_message if travel else ctx.query_message
+            record=query(message_id)
+            if record is None:
                 raise SnapshotUnavailable('original message unavailable')
+            original=record.stored if travel else record
             r = original.receipt
             binding = Binding(scope, r.conversation_id, r.generation, r.message_id, r.run_id, r.sequence)
             repository = self.resolve_run_repository(principal, scope)
 
             def source_guard():
                 if (ctx.principal != principal or ctx.scope != scope or repository.scope != scope
-                        or ctx.query_message(message_id) != original):
+                        or query(message_id) != record):
                     raise SnapshotChanged('original source changed')
 
             source_guard()  # Resolver callbacks cannot replace the original source.
             first = _checked_recovery(repository, binding)
-            encoded = encode(first.state, original)
+            encoded = encode(first.state,original,record.reference) if travel else encode(first.state, original)
             if type(encoded) is not bytes:
                 if inspect.iscoroutine(encoded):
                     encoded.close()

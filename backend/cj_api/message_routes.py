@@ -28,13 +28,37 @@ def _token(request):
     return token
 
 
+class BodyError(Exception):
+    def __init__(self,status,code):
+        self.status,self.code=status,code
+
+
+async def _read_body(request,max_body_bytes):
+    media=request.headers.getlist('content-type')
+    if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream'
+            or request.headers.get('content-encoding','identity').lower()!='identity'):
+        raise BodyError(415,'UNSUPPORTED_MEDIA_TYPE')
+    chunks,total=[],0
+    try:
+        async for chunk in request.stream():
+            total+=len(chunk)
+            if total>max_body_bytes:
+                raise BodyError(413,'BODY_TOO_LARGE')
+            chunks.append(chunk)
+    except BodyError:
+        raise
+    except Exception as exc:
+        raise BodyError(503,'BODY_UNAVAILABLE') from exc
+    return b''.join(chunks)
+
+
 def register_message_routes(app, boundary=None, max_body_bytes=None):
     from .travel_routes import register_travel_routes
     register_travel_routes(app, boundary, max_body_bytes)
     if boundary is not None:
         from cj_auth.interfaces import AdmissionReason, AdmissionStatus
         from cj_message.auth_boundary import Boundary, AccessBlocked, IdentityChanged
-        from cj_message.domain import CommitUnknown, InputConflict, SequenceConflict, InvalidInput, Stored, Receipt
+        from cj_message.domain import CommitUnknown, InputConflict, SequenceConflict, InvalidInput, Unavailable, Stored, Receipt
         if (not isinstance(boundary, Boundary) or type(max_body_bytes) is not int or max_body_bytes <= 0):
             raise ValueError('Explicit pinned MESSAGE boundary and body limit required')
 
@@ -51,6 +75,8 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
                         'request_id':request.state.request_id, 'receipt':None})
                 if type(value) is not Stored:
                     raise ValueError('Invalid internal result')
+                if value.travel_reference_version is not None:
+                    raise Unavailable('v1 cannot strip a travel reference')
                 value = value.receipt  # never serialize Stored or its private original bytes
             if type(value) is not Receipt:
                 raise ValueError('Invalid internal receipt')
@@ -83,6 +109,9 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
         # Includes unavailable repositories and invalid projection after a possible commit.
         return unavailable(request, write)
 
+    from .message_travel_routes import register_message_travel_routes
+    register_message_travel_routes(app,boundary,max_body_bytes,failure)
+
     @app.put('/v1/conversations')
     async def open_conversation(request: Request):
         """Idempotent create of an active conversation (P2a); first message needs one."""
@@ -112,20 +141,12 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
         token = _token(request)
         if token is None:
             return _error(request, 401, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
-        media = request.headers.getlist('content-type')
-        if (len(media) != 1 or media[0].split(';',1)[0].strip().lower() != 'application/octet-stream'
-                or request.headers.get('content-encoding', 'identity').lower() != 'identity'):
-            return _error(request, 415, 'UNSUPPORTED_MEDIA_TYPE', 'input', 'failed', 'do_not_retry')
-        chunks, total = [], 0
         try:
-            async for chunk in request.stream():
-                total += len(chunk)
-                if total > max_body_bytes:
-                    return _error(request, 413, 'BODY_TOO_LARGE', 'input', 'failed', 'do_not_retry')
-                chunks.append(chunk)
-        except Exception:
-            return unavailable(request, True)
-        return await invoke(request, token, True, b''.join(chunks))
+            raw=await _read_body(request,max_body_bytes)
+        except BodyError as exc:
+            if exc.status==503:return unavailable(request,True)
+            return _error(request,exc.status,exc.code,'input','failed','do_not_retry')
+        return await invoke(request, token, True, raw)
 
     @app.get('/v1/message-receipts', response_model=MessageReceiptQueryResponse)
     async def query(request: Request):

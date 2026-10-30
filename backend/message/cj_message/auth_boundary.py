@@ -83,6 +83,14 @@ class HistoryReadContext:
             raise Unavailable()
         return stored
 
+    def query_travel_message(self,message_id, *, require_active=True):
+        self._check()
+        if type(message_id) is not str or not message_id.strip():
+            raise InvalidInput('message ID required')
+        result=self._service.query_travel_message(message_id,require_active=require_active)
+        self._check()
+        return result
+
     def conversations(self, cursor=None, limit=20):
         self._check()
         return self._service.conversations(cursor, limit)
@@ -195,6 +203,12 @@ class Boundary:
 
     def receive(self, token, raw):
         return self._service(token).receive(raw)
+
+    def receive_v2(self, token, raw):
+        return self._service(token).receive_v2(raw)
+
+    def send_status_v2(self, token, conversation_id, message_id=None):
+        return self._service(token).send_status_v2(conversation_id,message_id)
 
     def travel_action(self, token, raw):
         from .travel import Service as TravelService

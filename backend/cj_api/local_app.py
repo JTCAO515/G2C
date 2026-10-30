@@ -27,6 +27,7 @@ from cj_agent.draft import trip_scope_for
 from .composition import CompositionUnavailable, create_composed_app
 from .local_run_context import load_run_context
 from cj_message.needs_binding import needs_scope_for
+from cj_message.travel import ABI as TRAVEL_ABI, PROFILE as TRAVEL_PROFILE
 from cj_run.step_usage import ledger_scope_for
 from cj_usage.codec import decode as decode_ledger
 from .run_display_composition import RunDisplayWireConfiguration
@@ -73,6 +74,7 @@ class _ScopedConnection:
             _require_unbound(cursor)
             cursor.execute("SELECT set_config('cj.message_scope',%s,true), set_config('cj.trip_scope',%s,true)",
                            (self._scope, trip_scope_for(self._scope)))
+            cursor.execute("SELECT set_config('cj.message_context_abi',%s,true)",(TRAVEL_ABI,))
             if self._needs_scope is not None:
                 cursor.execute("SELECT set_config('cj.needs_scope',%s,true), set_config('cj.usage_scope',%s,true)",
                                (self._needs_scope,self._usage_scope))
@@ -106,9 +108,12 @@ def local_conninfo(conninfo_path):
 
 
 class LocalDatabase:
-    def __init__(self, conninfo_path, *, run_context=None):
+    def __init__(self, conninfo_path, *, run_context=None, travel_context=False):
         config = local_conninfo(conninfo_path)
         self.run_context = run_context
+        if type(travel_context) is not bool:
+            raise CompositionUnavailable('explicit travel capability required')
+        self.travel_context=travel_context
         # The initialization identity is never used for application/worker SQL.
         self._empty_passfile = tempfile.NamedTemporaryFile(prefix='cj-m1-runtime-', suffix='.pgpass')
         self.conninfo = dict(config, user='cj_m1_runtime', passfile=self._empty_passfile.name)
@@ -174,13 +179,24 @@ class LocalDatabase:
     def message_repository(self, scope):
         return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None,
                                  local_run_mode=self.run_context is not None,
-                                 registered_usage=self.run_context is not None and self.run_context.version=='CJ-LOCAL-RUN@2')
+                                 registered_usage=self.run_context is not None and self.run_context.version=='CJ-LOCAL-RUN@2',
+                                 travel_mode=self.travel_context,travel_metadata=True)
+
+    def travel_profile(self,scope):
+        from cj_message.travel_reference import profile
+        with self.connect(scope) as conn:
+            with conn.cursor() as cursor:
+                return profile(cursor,scope)
 
     def require_execution(self, scope, binding=None):
         with self.message_repository(scope).transaction() as tx:
             tx.lock_scope()
             tx.local_execution(None if binding is None else binding.message_id,
                                None if binding is None else binding.run_id)
+            from cj_message.travel_reference import profile
+            if profile(tx.cur,scope) and (not self.travel_context or self.run_context is None
+                    or self.run_context.version!='CJ-LOCAL-RUN@2'):
+                raise CompositionUnavailable('travel execution requires explicit compatible M2 configuration')
 
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
@@ -212,11 +228,11 @@ class InvitedSubjects:
 
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
-                     memory_configuration=None, run_context=None):
+                     memory_configuration=None, run_context=None, travel_context=False):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
-    database = LocalDatabase(conninfo_path,run_context=run_context)
+    database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context)
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
 
@@ -407,5 +423,14 @@ def app_from_environment():
                             confirmation_signer=load_confirmation_signer(auth_dir),
                             history_configuration=load_history_configuration(auth_dir),
                             memory_configuration=memory_configuration,
+                            travel_context=travel_configuration(os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT')),
                             run_context=load_run_context(os.environ['CJ_LOCAL_RUN_CONTEXT'])
                             if 'CJ_LOCAL_RUN_CONTEXT' in os.environ else None)
+
+
+def travel_configuration(value):
+    if value is None:
+        return False
+    if value!=TRAVEL_PROFILE:
+        raise CompositionUnavailable('unknown local travel capability')
+    return True

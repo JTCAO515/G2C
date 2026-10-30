@@ -2,7 +2,7 @@
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
-from .generated import RunDisplayResponse
+from .generated import RunDisplayResponse,RunDisplayV2Response
 from .history_routes import _query
 from .message_routes import _error,_token
 from .run_display_composition import RunDisplayWireConfiguration
@@ -18,8 +18,7 @@ def register_run_display_route(app,reader=None,configuration=None,modules=None):
             or type(reader) is not modules['cj_run.display_snapshot'].DisplaySnapshotReader):
         raise ValueError('Pinned protected display reader required')
     def unavailable(request):return _error(request,503,'RUN_DISPLAY_UNAVAILABLE','dependency','unknown','retry_safe_read')
-    @app.get('/v1/run-display',response_model=RunDisplayResponse)
-    async def read(request:Request):
+    async def read_version(request:Request, *, version):
         if reader is None:return unavailable(request)
         token=_token(request)
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
@@ -32,6 +31,7 @@ def register_run_display_route(app,reader=None,configuration=None,modules=None):
         request_id=request.state.request_id
         def invoke():
             try:
+                if version==2:return reader.read_travel_display(token,mid,request_id)
                 return reader.read_projected(token,mid,lambda nine:encode_response(nine,request_id))
             except BaseException as exc:
                 if isinstance(exc,Exception):raise
@@ -44,3 +44,9 @@ def register_run_display_route(app,reader=None,configuration=None,modules=None):
         except modules['cj_run.display_snapshot'].SnapshotTooLarge:
             return _error(request,413,'RUN_DISPLAY_TOO_LARGE','input','failed','retry_safe_read')
         except Exception:return unavailable(request)
+
+    @app.get('/v1/run-display',response_model=RunDisplayResponse)
+    async def read(request:Request):return await read_version(request,version=1)
+
+    @app.get('/v2/run-display',response_model=RunDisplayV2Response)
+    async def read_v2(request:Request):return await read_version(request,version=2)
