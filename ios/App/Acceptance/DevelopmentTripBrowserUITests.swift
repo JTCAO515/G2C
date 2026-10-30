@@ -15,7 +15,7 @@ import Foundation
         let target=app.buttons.matching(identifier:id).firstMatch
         for _ in 0..<80 {
             if target.isHittable { break }
-            if target.frame.maxY < app.navigationBars.firstMatch.frame.maxY { app.swipeDown() } else { app.swipeUp() }
+            if target.exists && target.frame.maxY < app.navigationBars.firstMatch.frame.maxY { app.swipeDown() } else { app.swipeUp() }
         }
         XCTAssertTrue(target.waitForExistence(timeout:10),id)
         XCTAssertTrue(target.isHittable,id)

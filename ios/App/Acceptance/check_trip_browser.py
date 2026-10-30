@@ -133,6 +133,7 @@ def main():
                         foreign=client.get('/v1/trip-details',params={'trip_id':row['formal'][0]['trip_id']},headers={'Authorization':'Bearer '+tokens[case]['B'],'X-CJ-Trip-Content':'provenance.1'})
                         assert foreign.status_code!=200 and 'trip' not in foreign.json()
                     requests=audit[row['audit_start']:]
+                    report.setdefault('verification_requests',{})[case]=requests;save()
                     assert all(x['method'] in ('GET','HEAD') for x in requests) and models[case].calls==row['calls']
                     if stage=='browse':
                         pages=[x for x in requests if x['path']=='/v1/trips']
@@ -165,7 +166,8 @@ def main():
                             else:raise ValueError('unknown control route')
                             raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
                         except Exception as error:
-                            report.setdefault('control_errors',[]).append(type(error).__name__);save()
+                            import traceback
+                            report.setdefault('control_errors',[]).append(dict(type=type(error).__name__,frames=[dict(function=f.name,line=f.lineno) for f in traceback.extract_tb(error.__traceback__)]));save()
                             self.send_response(500);self.end_headers();self.wfile.write(type(error).__name__.encode())
                 control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
                 try:
