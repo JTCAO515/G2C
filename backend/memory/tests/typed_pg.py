@@ -25,6 +25,28 @@ from cj_message.travel import Selection
 
 
 class TypedStorageChecks(Harness):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        import time
+        import local_run_context as operator
+        import dev_auth as local_auth
+        from cj_api.local_app import create_local_app
+        from cj_api.local_run_context import load_run_context
+        from cj_message.travel import ABI
+        now=int(time.time());cls.run_path=cls.auth/'typed-run.json'
+        cls.run_path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
+            unit='provider_call',budget=100,period_start=now-60,period_end=now+3600,max_steps=20,
+            max_tools=10,max_output=10000,max_seconds=600),
+            output_limits=dict(model=2000,tool=2000,memory=2000)),history=[])))
+        cls.run_context=load_run_context(cls.run_path)
+        for identity in ('alice','bob'):
+            operator.provision_budget(CONNINFO,cls.run_context,identity)
+            local_auth.activate_travel(CONNINFO,identity,cls.run_context,ABI)
+        cls.database=LocalDatabase(CONNINFO,run_context=cls.run_context,travel_context=True)
+        cls.app=create_local_app(conninfo_path=CONNINFO,auth_dir=cls.auth,
+                                run_context=cls.run_context,travel_context=True)
+
     def setUp(self):
         self.tag=uuid.uuid4().hex
         self.scope=scope_for(ISSUER,'alice')
@@ -108,7 +130,7 @@ class TypedStorageChecks(Harness):
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(self.scope,)).fetchone()[0],0)
 
 
-    def typed_app(self):
+    def typed_configuration(self):
         from copy import deepcopy
         from cj_memory.typed_api import create_local_typed_app
         from cj_memory.typed_local import TypedConfiguration
@@ -118,7 +140,11 @@ class TypedStorageChecks(Harness):
             expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),
             profiles={'alice':profile,'bob':deepcopy(profile)}),travel_contexts={'alice':[x['id'] for x in self.travel],'bob':[]})
         config=TypedConfiguration.from_bytes(json.dumps(value).encode())
-        return create_local_typed_app(conninfo_path=CONNINFO,auth_dir=self.auth,configuration=config)
+        return config
+
+    def typed_app(self):
+        from cj_memory.typed_api import create_local_typed_app
+        return create_local_typed_app(conninfo_path=CONNINFO,auth_dir=self.auth,configuration=self.typed_configuration())
 
     def test_actual_typed_api_receipt_projection_reopen_and_foreign_scope(self):
         raw=self.raw(self.travel[0],text='API typed / 本次旅行')
@@ -182,6 +208,179 @@ class TypedStorageChecks(Harness):
             self.assertNotEqual(post(action('resume',6)).status_code,200)
             with self.database.connect(self.scope) as conn:
                 self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_source WHERE source_id IN (SELECT previous_source_id FROM cj_memory_management_action WHERE item_id=%s) AND active',(iid,)).fetchone()[0],0)
+
+
+    def runtime_configuration(self):
+        from cj_memory.typed_runtime import TypedRuntimeConfiguration
+        # Serialize the operator document explicitly; never fabricate Context or lease.
+        from copy import deepcopy
+        profile=dict(subjects=['self'],slots={'pace-'+self.tag:dict(kind='preference',collection_allowed=True,semantic_resolved=True)},
+                     extents=['long_term','current'],context_ids=[])
+        collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+            expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),profiles={'alice':profile,'bob':deepcopy(profile)}),
+            travel_contexts={'alice':[x['id'] for x in self.travel],'bob':[]})
+        value=dict(version='local-memory-run.2',collection=collection,selections={identity:dict(subject='self',
+            slots=['pace-'+self.tag],max_bytes=32768) for identity in ('alice','bob')})
+        return TypedRuntimeConfiguration.from_bytes(json.dumps(value).encode()),value
+
+    def send_v2(self,client,conversation,selected,text='Current explicit request'):
+        head=client.put('/v1/conversations',params={'conversation_id':conversation},headers=self.headers('alice'))
+        self.assertEqual(head.status_code,200,head.text);head=head.json()['head'] if 'head' in head.json() else head.json()
+        # Root PUT currently returns the head object directly (request_id aside).
+        if 'generation' not in head:
+            status=client.get('/v2/message-send-status',params={'conversation_id':conversation},headers=self.headers('alice'))
+            self.assertEqual(status.status_code,200,status.text);head=status.json()['head']
+        mid='message-'+uuid.uuid4().hex
+        raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id=conversation,message_id=mid,text=text,trip_id=None,
+            creation_intent='none',expected_generation=head['generation'],expected_sequence=head['last_sequence'],
+            travel_context=None if selected is None else dict(id=selected['id'],expected_version=selected['version']),
+            needs_reference=None),ensure_ascii=False).encode()
+        result=client.post('/v2/messages',content=raw,headers={**self.headers('alice'),'Content-Type':'application/octet-stream'})
+        self.assertEqual(result.status_code,200,result.text)
+        return mid,result.json()
+
+    def test_actual_worker_same_conversation_other_travel_none_and_process(self):
+        from cj_agent.provider import FakeProvider
+        import run_worker
+        configuration,document=self.runtime_configuration()
+        with TestClient(self.typed_app()) as api,TestClient(self.app) as messages:
+            for context,text in ((None,'Long-term 原长期'),(self.travel[0],'Only A 仅A'),(self.travel[1],'Only B 仅B')):
+                result=api.post('/v2/memories',content=self.raw(context,text=text),
+                    headers={**self.headers('alice'),'Content-Type':'application/octet-stream'})
+                self.assertEqual(result.status_code,200,result.text)
+            class Observed(FakeProvider):
+                def __init__(model):super().__init__();model.inputs=[]
+                def stream(model,inputs,system=None):
+                    model.inputs.append(inputs);yield from super().stream(inputs,system)
+            for chat,travel,expected in ((self.tag,self.travel[0],'Only A 仅A'),(self.tag,self.travel[1],'Only B 仅B'),
+                                         ('other-'+self.tag,self.travel[0],'Only A 仅A'),(self.tag,None,'Long-term 原长期')):
+                mid,_=self.send_v2(messages,chat,travel)
+                model=Observed();outcomes=run_worker.run_once(self.database,model,self.auth,memory_configuration=configuration)
+                self.assertEqual([o.status for o in outcomes if o.message_id==mid],['completed'])
+                data=json.loads(model.inputs[0][0]['content'].split('\n',1)[1])
+                self.assertEqual(data['version'],'MEMORY-RUN-CONSUME@2')
+                self.assertEqual([i['text'] for i in data['items']],[expected])
+            mid,_=self.send_v2(messages,'process-'+self.tag,self.travel[0])
+            path=self.auth/('typed-runtime-'+self.tag+'.json');path.write_text(json.dumps(document));path.chmod(0o600)
+            import subprocess
+            result=subprocess.run([sys.executable,'-B',str(ROOT/'scripts/run_worker.py'),'--conninfo-json',CONNINFO,
+                '--auth-dir',str(self.auth),'--run-context',str(self.run_path),'--travel-context','message-travel.1',
+                '--memory-run-policy',str(path),'--once'],capture_output=True,text=True,timeout=60)
+            self.assertEqual(result.returncode,0,result.stderr);self.assertIn('completed',result.stdout)
+            legacy=messages.get('/v1/run-events',params={'message_id':mid},headers=self.headers('alice'))
+            self.assertEqual(legacy.status_code,503)  # Old read must not strip the new reference.
+            status=messages.get('/v3/run-draft-status',params={'message_id':mid},headers=self.headers('alice'))
+            self.assertEqual(status.status_code,200,status.text)
+            self.assertEqual(status.json()['run_status'],'completed')
+            self.assertEqual(status.json()['reference']['context_id'],self.travel[0]['id'])
+
+    def test_actual_worker_aba_and_old_runtime_configuration_refused(self):
+        from cj_agent.provider import FakeProvider
+        from cj_memory.runtime import RuntimeDenied
+        import run_worker
+        configuration,_=self.runtime_configuration()
+        with TestClient(self.typed_app()) as api,TestClient(self.app) as messages:
+            result=api.post('/v2/memories',content=self.raw(self.travel[0],text='A only'),
+                headers={**self.headers('alice'),'Content-Type':'application/octet-stream'})
+            self.assertEqual(result.status_code,200,result.text)
+            a,_=self.send_v2(messages,self.tag,self.travel[0]);b,_=self.send_v2(messages,self.tag,self.travel[1]);again,_=self.send_v2(messages,self.tag,self.travel[0])
+            model=FakeProvider();outcomes=run_worker.run_once(self.database,model,self.auth,memory_configuration=configuration)
+            states={o.message_id:o.status for o in outcomes}
+            self.assertEqual((states[a],states[b],states[again]),('context_invalid','context_invalid','completed'))
+            self.assertEqual(model.calls,1)
+            pending,_=self.send_v2(messages,'missing-'+self.tag,self.travel[0])
+            denied=FakeProvider()
+            with self.assertRaises(RuntimeDenied):run_worker.run_once(self.database,denied,self.auth)
+            self.assertEqual(denied.calls,0)
+            configured=FakeProvider()
+            resumed=run_worker.run_once(self.database,configured,self.auth,memory_configuration=configuration)
+            self.assertEqual([o.status for o in resumed if o.message_id==pending],['completed'])
+            self.assertEqual(configured.calls,1)  # Original queued run; no prior dispatch or replacement ID.
+
+
+    def test_typed_rollback_lost_ack_rebuild_and_nonempty_down(self):
+        from contextlib import contextmanager
+        from unittest.mock import patch
+        from cj_memory.domain import CommitUnknown,Unavailable
+        import psycopg,migrate
+        transaction=Repository.transaction
+        with TestClient(self.typed_app()) as api:
+            headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
+            rollback=self.raw(self.travel[0],text='Rollback 原值不得出现')
+            def wrapped(fail_after_commit,target):
+                @contextmanager
+                def use(repository):
+                    changed=False
+                    with transaction(repository) as tx:
+                        yield tx
+                        changed=tx.operation(json.loads(target)['operation_id']) is not None
+                        if changed and not fail_after_commit:raise Unavailable('fixture rollback before real commit')
+                    if changed and fail_after_commit:raise CommitUnknown('fixture lost actual commit ACK')
+                return use
+            with patch.object(Repository,'transaction',wrapped(False,rollback)):
+                failed=api.post('/v2/memories',content=rollback,headers=headers)
+            self.assertNotEqual(failed.status_code,200)
+            found=api.get('/v2/memory-receipts',params={'operation_id':json.loads(rollback)['operation_id']},headers=self.headers('alice'))
+            self.assertIsNone(found.json()['receipt'])
+            lost=self.raw(self.travel[0],text='Independent lost ACK / 新原动作')
+            with patch.object(Repository,'transaction',wrapped(True,lost)):
+                unknown=api.post('/v2/memories',content=lost,headers=headers)
+            self.assertEqual(unknown.status_code,503);self.assertEqual(unknown.json()['error']['recovery'],'reconcile_original')
+            found=api.get('/v2/memory-receipts',params={'operation_id':json.loads(lost)['operation_id']},headers=self.headers('alice'))
+            self.assertEqual(found.status_code,200,found.text)
+            self.assertEqual(found.json()['receipt']['input_sha256'],hashlib.sha256(lost).hexdigest())
+            config=json.loads(Path(CONNINFO).read_text())
+            with psycopg.connect(**config,autocommit=True) as conn:
+                chain=migrate.load();typed=next(m for m in chain if m['name']=='memory_typed_context')
+                with self.assertRaises(psycopg.errors.RaiseException):
+                    with conn.transaction():conn.execute((ROOT/typed['down']).read_text())
+                self.assertEqual(migrate.applied(conn)[-1],typed['version'])
+        with TestClient(self.typed_app()) as api:
+            self.assertEqual(api.get('/v2/memory-receipts',params={'operation_id':json.loads(lost)['operation_id']},
+                headers=self.headers('alice')).json()['receipt'],found.json()['receipt'])
+
+    def test_actual_worker_rejects_typed_edit_after_capture(self):
+        from cj_agent.provider import FakeProvider
+        import run_worker
+        configuration,_=self.runtime_configuration()
+        with TestClient(self.typed_app()) as api,TestClient(self.app) as messages:
+            headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
+            saved=api.post('/v2/memories',content=self.raw(self.travel[0],text='Captured old typed value'),headers=headers)
+            self.assertEqual(saved.status_code,200,saved.text);iid=saved.json()['receipt']['item_id']
+            mid,_=self.send_v2(messages,self.tag,self.travel[0])
+            def edit():
+                value=dict(version='MEMORY-management.2',action_id='edit-'+self.tag,operation='edit',item_id=iid,
+                    expected_version=1,expected_source_version=1,text='Current new typed value',
+                    context=dict(kind='travel',id=self.travel[0]['id'],expected_version=1))
+                response=api.post('/v2/memory-management-actions',content=json.dumps(value).encode(),headers=headers)
+                self.assertEqual(response.status_code,200,response.text)
+            class Changed(FakeProvider):
+                def stream(model,inputs,system=None):
+                    for index,chunk in enumerate(super().stream(inputs,system)):
+                        yield chunk
+                        if index==0:edit()
+            model=Changed();outcomes=run_worker.run_once(self.database,model,self.auth,memory_configuration=configuration)
+            self.assertEqual([o.status for o in outcomes if o.message_id==mid],['context_invalid'])
+            self.assertEqual(model.calls,1)
+            status=messages.get('/v3/run-draft-status',params={'message_id':mid},headers=self.headers('alice'))
+            self.assertEqual(status.status_code,200,status.text);self.assertEqual(status.json()['run_status'],'context_invalid')
+
+    def test_runtime_role_wrong_owner_typed_fk_and_immutable_context_kind(self):
+        import psycopg
+        from cj_memory.typed import parse_manual
+        bob=scope_for(ISSUER,'bob')
+        with self.database.connect(bob) as conn:
+            conn.execute('INSERT INTO cj_memory_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(bob,))
+        command=parse_manual(self.raw(self.travel[0]))
+        other=Repository(lambda:self.database.connect(bob),bob,
+            transaction_binder=lambda conn,cur:conn.bind_scope(cur),typed_context=True)
+        with self.assertRaises(psycopg.errors.ForeignKeyViolation):
+            with other.transaction() as tx:
+                tx.lock_scope();tx.create_manual_source(command,True,self.service.manual_policy.expires_at);tx.insert(command,'active')
+        with self.database.connect(bob) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_source WHERE source_id=%s',(command.source_id,)).fetchone()[0],0)
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+            with self.database.connect(self.scope) as conn:conn.execute("UPDATE cj_memory_item SET context_kind='travel'")
 
 
 if __name__=='__main__':unittest.main(verbosity=2)
