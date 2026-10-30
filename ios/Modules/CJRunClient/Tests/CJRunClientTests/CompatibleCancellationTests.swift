@@ -25,7 +25,7 @@ private actor CancellationWireProbe: ClientTransport {
             let operation = travel ? "cancelOriginalTravelRun" : "cancelOriginalRun"
             var request = HTTPRequest(method:.post,scheme:nil,authority:nil,path:path)
             request.headerFields[.contentType] = "application/json"
-            let bytes = Data((travel ? "{\"version\":\"RUN-cancel.2\",\"message_id\":\"original\"}" : "{\"message_id\":\"original\"}").utf8)
+            let bytes = Data((travel ? "{\"version\":\"RUN-cancel.2\",\"message_id\":\"original\"}" : "{\"version\":\"RUN-cancel.1\",\"message_id\":\"original\"}").utf8)
             let allowed = mode == "compatible" || (travel ? mode == "travel" : mode == "legacy")
             if allowed {
                 _ = try await transport.sendBound(request,body:HTTPBody(bytes),baseURL:endpoint.url,operationID:operation,validateOriginal:{})

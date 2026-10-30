@@ -69,6 +69,18 @@ struct DevelopmentMemoryConfigurationTests {
 
 #if DEBUG
 extension DevelopmentConfigurationTests {
+    @Test func typedActivationRemainsClosedInRelease() throws {
+        #if !DEBUG
+        let environment = ["G2C_DEV_TRAVEL_PROFILE":"{\"version\":\"app-travel.1\",\"travel_ids\":[]}",
+            "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"test\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\"]}",
+            "G2C_DEV_TYPED_MEMORY_URL":"http://127.0.0.1:8765"]
+        #expect(try DevelopmentTypedMode.read(environment) == nil)
+        #expect(try DevelopmentTypedMemoryProfile.read(environment) == nil)
+        #expect(try DevelopmentTravelProfile.read(environment) == nil)
+        #else
+        #expect(try DevelopmentTypedMode.read([:]) == nil)
+        #endif
+    }
     @Test func typedModeRequiresBothProfilesAndAnExplicitLoopbackMemoryHost() throws {
         let travel = "{\"version\":\"app-travel.1\",\"travel_ids\":[]}"
         let memory = "{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"test\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}"
