@@ -105,10 +105,17 @@ def main():
                 async def observed(scope,receive,send):
                     if scope['type']!='http':return await app(scope,receive,send)
                     with lock:key=active[0];row=specs.get(key)
-                    event=dict(case=key,method=scope['method'],path=scope['path'])
+                    event=dict(case=key,method=scope['method'],path=scope['path'],query=scope.get('query_string',b'').decode('ascii'),started=time.monotonic())
                     with lock:audit.append(event)
                     async def capture(message):
-                        if message['type']=='http.response.start':event['status']=message['status']
+                        if message['type']=='http.response.start':event['status']=message['status'];event['headers_at']=time.monotonic()
+                        if message['type']=='http.response.body' and not message.get('more_body',False):
+                            event['finished_at']=time.monotonic()
+                            if event.get('status',200)!=200:
+                                try:
+                                    error=json.loads(message.get('body',b''))['error']
+                                    event['error']={name:error[name] for name in ('code','category','outcome','recovery')}
+                                except (ValueError,KeyError):pass
                         if (row and row['hold_read'] and scope['path']=='/v1/run-display' and message['type']=='http.response.body' and event.get('status')==200):
                             row['hold_read']=False;row['read_entered'].set()
                             await asyncio.to_thread(row['read_release'].wait,90)
@@ -173,7 +180,7 @@ def main():
                         registered_sha256=hashlib.sha256(b''.join(str(x[:3]).encode()+bytes(x[3])+bytes(x[4]) for x in operations)).hexdigest(),
                         ledger_sha256=hashlib.sha256(encode(ledger).encode()).hexdigest(),
                         forbidden_writes=sum(e['method'] not in ('GET','HEAD') and e['path'].startswith('/v1/trip') for e in events),
-                        worker_errors=worker_errors,real_wait_seconds=row.get('real_wait_seconds',0))
+                        worker_errors=worker_errors,real_wait_seconds=row.get('real_wait_seconds',0),responses=events)
                     assert role=='cj_m1_runtime' and not worker_errors and not result['forbidden_writes'] and not effects
                     if settled:assert not pending
                     report.setdefault('proofs',{})[case]=result;save();return result
