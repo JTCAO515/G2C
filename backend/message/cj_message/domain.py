@@ -1,8 +1,13 @@
 """Pure message rules; does not import contract fixtures or authenticate callers."""
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 import hashlib
 import json
 import uuid
+
+if TYPE_CHECKING:
+    from .travel import Selection
 
 
 class InvalidInput(ValueError):
@@ -36,6 +41,8 @@ class Command:
     raw: bytes
     expected_generation: str | None = None
     expected_sequence: int | None = None
+    travel_context: Selection | None = None
+    needs_reference: tuple[str, int] | None = None
 
     @classmethod
     def parse(cls, raw):
@@ -47,7 +54,11 @@ class Command:
         return cls._parse(raw, stored=True)
 
     @classmethod
-    def _parse(cls, raw, *, stored):
+    def parse_v2(cls, raw):
+        return cls._parse(raw, stored=False, travel=True)
+
+    @classmethod
+    def _parse(cls, raw, *, stored, travel=False):
         def pairs(items):
             result = {}
             for k, v in items:
@@ -67,6 +78,8 @@ class Command:
         version = obj.get('version')
         if version == 'MESSAGE-send.1':
             fields |= {'expected_generation', 'expected_sequence'}
+        elif version == 'MESSAGE-send.2' and travel:
+            fields |= {'expected_generation', 'expected_sequence', 'travel_context', 'needs_reference'}
         elif version != 'MESSAGE-draft.1' or not stored:
             raise InvalidInput('unsupported version')
         if set(obj) != fields:
@@ -77,13 +90,34 @@ class Command:
             raise InvalidInput('non-null Trip not supported')
         if obj['creation_intent'] not in ('none', 'consider_trip'):
             raise InvalidInput('unsupported intent')
-        if version == 'MESSAGE-send.1':
+        if travel and version != 'MESSAGE-send.2':
+            raise InvalidInput('send.2 required')
+        selection, needs = None, None
+        if version == 'MESSAGE-send.2':
+            from .travel import Selection
+            from cj_needs.domain import identifier, InvalidInput as NeedsInvalid
+            if obj['travel_context'] is not None:
+                selection = Selection.parse(obj['travel_context'])
+            value = obj['needs_reference']
+            if obj['creation_intent'] == 'none':
+                if value is not None:
+                    raise InvalidInput('none intent requires null NEEDS reference')
+            else:
+                if (type(value) is not dict or set(value) != {'id', 'expected_version'}
+                        or type(value['expected_version']) is not int
+                        or not 1 <= value['expected_version'] <= 9223372036854775807):
+                    raise InvalidInput('explicit NEEDS reference required')
+                try:
+                    needs = (identifier(value['id']), value['expected_version'])
+                except NeedsInvalid as exc:
+                    raise InvalidInput('invalid NEEDS identity') from exc
+        if version in ('MESSAGE-send.1', 'MESSAGE-send.2'):
             if (len(obj['conversation_id'].encode('utf-8')) > 256 or '\x00' in obj['conversation_id']
                     or type(obj['expected_generation']) is not str or not obj['expected_generation'].strip()
                     or type(obj['expected_sequence']) is not int or obj['expected_sequence'] < 0):
                 raise InvalidInput('invalid expected head')
         return cls(obj['conversation_id'], obj['message_id'], raw,
-                   obj.get('expected_generation'), obj.get('expected_sequence'))
+                   obj.get('expected_generation'), obj.get('expected_sequence'), selection, needs)
 
 
 @dataclass(frozen=True)
