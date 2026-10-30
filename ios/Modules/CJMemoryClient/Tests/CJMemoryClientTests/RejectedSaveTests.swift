@@ -8,7 +8,8 @@ import HTTPTypes
 private actor RejectionTransport: ClientTransport {
     var posts: [Data] = []
     let outcome: String
-    init(outcome: String = "failed") { self.outcome = outcome }
+    let denyQueries: Bool
+    init(outcome: String = "failed", denyQueries: Bool = false) { self.outcome = outcome; self.denyQueries = denyQueries }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let status: HTTPResponse.Status
         let json: String
@@ -22,6 +23,9 @@ private actor RejectionTransport: ClientTransport {
             } else {
                 status = .ok; json = try receipt(bytes)
             }
+        } else if denyQueries {
+            status = .forbidden
+            json = "{\"request_id\":\"\(trace)\",\"error\":{\"code\":\"MEMORY_SOURCE_DENIED\",\"category\":\"access\",\"message_en\":\"Denied\",\"message_zh\":\"拒绝\",\"outcome\":\"failed\",\"recovery\":\"do_not_retry\"}}"
         } else {
             status = .ok; json = "{\"request_id\":\"\(trace)\",\"receipt\":null}"
         }
@@ -68,6 +72,16 @@ private actor RejectionTransport: ClientTransport {
         await #expect(throws: MemoryFailure.pendingRequiresQuery) { try await reopened.save(command(), binding: f.binding) }
         #expect(await transport.posts.count == 1)
         #expect(!FileManager.default.fileExists(atPath: f.root.appendingPathExtension("CJMemoryRejections").path))
+    }
+    @Test func deniedReadCannotTurnUnknownWriteIntoDefiniteFailure() async throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        let transport = RejectionTransport(outcome: "unknown", denyQueries: true)
+        let original = command(); let first = try client(f, transport)
+        await #expect(throws: MemoryFailure.exchangeUnknown) { try await first.save(original, binding: f.binding) }
+        let reopened = try client(f, transport)
+        await #expect(throws: MemoryFailure.exchangeUnknown) { try await reopened.query(operationID: original.operation_id, binding: f.binding) }
+        await #expect(throws: MemoryFailure.pendingRequiresQuery) { try await reopened.save(command(), binding: f.binding) }
+        #expect(await transport.posts.count == 1)
     }
     @Test func tamperedFailureCannotAuthorizeNewAction() async throws {
         let f = try Fixture(); defer { f.cleanup() }

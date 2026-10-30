@@ -200,10 +200,9 @@ public enum MemorySaveResult: Sendable {
                 if let rejection { return .rejected(rejection.status, rejection.code) }
                 return .notObserved
             }
-        case .default(let status, let value):
-            let error = try value.body.json.error
-            guard error.outcome == .failed else { throw MemoryFailure.exchangeUnknown }
-            throw MemoryFailure.rejected(status, error.code)
+        case .default:
+            // A denied GET says nothing about the original POST's outcome.
+            throw MemoryFailure.exchangeUnknown
         }
     }
     private func settle(_ receipt: Components.Schemas.MemoryReceipt, record: MemoryPending, binding: MemoryBinding, token: UUID) throws -> MemorySaveResult {
