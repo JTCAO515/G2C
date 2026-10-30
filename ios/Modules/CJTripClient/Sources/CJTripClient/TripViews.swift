@@ -41,7 +41,7 @@ public struct TripProposalCard: View {
                         .font(.footnote)
                 }
                 Text(language.text("Rejecting a draft and stopping generation are separate actions.", "拒绝已生成草稿与停止生成是不同操作。"))
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.primary)
             }
         }.accessibilityElement(children: .contain)
     }
@@ -128,7 +128,7 @@ public struct TripListView: View {
                 }
                 Button(language.text("Refresh trips", "刷新行程")) { if let work = state.prepareTrips(limit: pageSize) { Task { await state.perform(work) } } }
                 Text(language.text("Live pages may change while browsing.", "浏览期间，分页内容可能更新。"))
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.primary)
             }
             Section(language.text("Original actions", "原动作")) {
                 TripLoadLabel(state: state.pendingState, language: language)
@@ -152,6 +152,7 @@ public struct TripDetailView: View {
                 Text(language.text("Current formal version \(trip.version)", "当前正式版本 \(trip.version)")).font(.headline)
                     .accessibilityIdentifier("trip.detail.version")
                 Text(trip.trip_id).font(.caption.monospaced()).textSelection(.enabled)
+                    .frame(minHeight: 44)
                     .accessibilityIdentifier("trip.detail.id")
                 TripDocumentView(document: trip.document, language: language)
             }
@@ -192,7 +193,7 @@ private struct TripDocumentView: View {
                     .font(.footnote)
             }
             Text(language.text("Accepting a trip does not verify pending facts.", "接受行程不代表待核实事实已获核实。"))
-                .font(.footnote).foregroundStyle(.secondary)
+                .font(.footnote).foregroundStyle(.primary)
         }
     }
 }

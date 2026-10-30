@@ -129,13 +129,16 @@ private struct TripContainerDetail: View {
                 if let presentation = host.presentation, host.canLoadDetail {
                     if host.showsSelectedDetail { TripDetailView(state: presentation, language: language.tripLanguage) }
                     else { Text(language.text("Read the selected trip to view its current version.", "读取选中行程以查看当前版本。")) }
-                    Button(language.text("Edit a local draft", "编辑本地草稿")) {
+                    Button {
                         guard let work = host.prepareManualEditor(context: action) else { return }
                         Task {
                             guard let entry = await host.performManualEditor(work), host.manualEditor(for: entry) != nil else { return }
                             openManual(entry)
                         }
-                    }.disabled(action == nil || !host.canPrepareManualEditor)
+                    } label: {
+                        RunReadableText(text: language.text("Edit a local draft", "编辑本地草稿"))
+                            .frame(minHeight: 44)
+                    }.buttonStyle(ShellReadableButtonStyle()).disabled(action == nil || !host.canPrepareManualEditor)
                     if !host.hasManualResources {
                         Text(language.text("Local editing resources are unavailable.", "本地编辑资源尚不可用。"))
                     } else if host.manualEditorState == .loading {

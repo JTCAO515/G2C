@@ -131,7 +131,7 @@ def main():
                             response=client.get('/v1/trip-details',params={'trip_id':expected['trip_id']},headers=headers);response.raise_for_status();trip=response.json()['trip']
                             assert trip['version']==expected['version'] and hashlib.sha256(base64.b64decode(trip['content_utf8_base64'])).hexdigest()==expected['sha256']
                         foreign=client.get('/v1/trip-details',params={'trip_id':row['formal'][0]['trip_id']},headers={'Authorization':'Bearer '+tokens[case]['B'],'X-CJ-Trip-Content':'provenance.1'})
-                        assert foreign.status_code!=200 and 'trip' not in foreign.json()
+                        assert foreign.status_code==200 and foreign.json()['trip'] is None
                     requests=audit[row['audit_start']:]
                     report.setdefault('verification_requests',{})[case]=requests;save()
                     assert all(x['method'] in ('GET','HEAD') for x in requests) and models[case].calls==row['calls']
