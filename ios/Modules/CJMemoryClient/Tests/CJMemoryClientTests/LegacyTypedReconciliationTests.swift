@@ -8,10 +8,20 @@ import HTTPTypes
 
 /// L0 non-network interceptors only. These cases do not claim signed API/PG L1.
 @MainActor struct LegacyTypedReconciliationTests {
+    private func manualStore(_ f: ManagementFixture) throws -> MemoryPendingStore {
+        let directory = f.base.root.appendingPathComponent("manual-v1")
+        if !FileManager.default.fileExists(atPath:directory.path) {
+            try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        }
+        let secret = f.base.secret
+        return try MemoryPendingStore(directory:directory,maximumBytes:100_000,maximumRecords:20,
+            namespace:.init(environment:f.base.binding.environment,account:f.base.binding.account,purpose:.localMemoryPendingV1),
+            keyID:f.base.keyID,key:{secret})
+    }
     private func readOnly(_ f: ManagementFixture,wire: Interceptor) throws -> MemoryClient {
         let transport = try NoRedirectTransport(interceptedTransport:wire,previewEndpoint:nil,validatePreview:nil)
         return MemoryClient(endpoint:f.base.endpoint,credentials:{_ in "synthetic-only"},currentBinding:{f.base.current},
-            pendingStore:try f.base.store(),liveReadTransport:transport,managementPendingStore:try f.store(),managementReadEndpoint:f.endpoint)
+            pendingStore:try manualStore(f),liveReadTransport:transport,managementPendingStore:try f.store(),managementReadEndpoint:f.endpoint)
     }
     private func typed(_ f: ManagementFixture,legacy: MemoryClient,wire: Interceptor) throws -> TypedMemoryClient {
         let root = f.base.root.appendingPathComponent("typed-v2")
@@ -37,9 +47,11 @@ import HTTPTypes
     func oldUnknownCannotBeBypassedByANewWireVersion(_ result: String) async throws {
         let f = try ManagementFixture();defer {f.cleanup()}
         let old = command(),original = try MemoryPending(old)
-        let writer = try f.base.client(Interceptor {_,_,operation in
+        let lostACK = Interceptor {_,_,operation in
             #expect(operation == "saveMemory");throw URLError(.networkConnectionLost)
-        })
+        }
+        let writer = MemoryClient(endpoint:f.base.endpoint,credentials:{_ in "synthetic-only"},currentBinding:{f.base.current},
+            pendingStore:try manualStore(f),interceptedTransport:lostACK)
         await #expect(throws:MemoryFailure.exchangeUnknown) { try await writer.save(old,binding:f.base.binding) }
         let readerWire = Interceptor(status:result == "denied" ? .forbidden : .ok) {_,_,operation in
             #expect(operation == "queryMemoryReceipt")
@@ -106,10 +118,10 @@ import HTTPTypes
         let original = try #require(try f.store().pending().first)
         let transport = try NoRedirectTransport(interceptedTransport:server,previewEndpoint:nil,validatePreview:nil)
         let unconfigured = MemoryClient(endpoint:f.endpoint,credentials:{_ in "synthetic-only"},currentBinding:{f.base.current},
-            pendingStore:try f.base.store(),liveReadTransport:transport,managementPendingStore:try f.store())
+            pendingStore:try manualStore(f),liveReadTransport:transport,managementPendingStore:try f.store())
         await #expect(throws:MemoryFailure.unconfigured) { try await unconfigured.queryManagement(actionID:original.actionID,binding:f.base.binding) }
         let reader = MemoryClient(endpoint:f.base.endpoint,credentials:{_ in "synthetic-only"},currentBinding:{f.base.current},
-            pendingStore:try f.base.store(),liveReadTransport:transport,managementPendingStore:try f.store(),managementReadEndpoint:f.endpoint)
+            pendingStore:try manualStore(f),liveReadTransport:transport,managementPendingStore:try f.store(),managementReadEndpoint:f.endpoint)
         #expect(try reader.requiresOriginalReconciliation(binding:f.base.binding))
         guard case .historicalReceipt = try await reader.queryManagement(actionID:original.actionID,binding:f.base.binding) else { Issue.record("read-only original receipt unavailable");return }
         #expect(try !reader.requiresOriginalReconciliation(binding:f.base.binding))
