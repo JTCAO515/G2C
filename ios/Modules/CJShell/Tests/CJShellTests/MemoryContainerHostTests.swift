@@ -5,7 +5,7 @@ import Testing
 import CJAPI
 import CJMessageClient
 import CJMessageKeys
-import CJMessageHTTP
+@testable import CJMessageHTTP
 import OpenAPIRuntime
 import HTTPTypes
 @testable import CJMemoryClient
