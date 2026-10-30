@@ -28,6 +28,15 @@ def decode(raw, *, maximum=32768):
     return value
 
 
+def travel_selection(value):
+    from cj_message.travel import Selection
+    from cj_message.domain import InvalidInput as MessageInvalidInput
+    try:
+        return Selection.parse(value)
+    except MessageInvalidInput as error:
+        raise InvalidInput('invalid original travel selection') from error
+
+
 def packed(value):
     try:
         return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode()
@@ -95,8 +104,8 @@ def parse_manual(raw):
                 or context['kind'] != 'travel' or type(context['expected_version']) is not int
                 or context['expected_version'] < 1):
             raise InvalidInput('explicit original travel reference required')
-        ref = ContextRef(context['kind'], context['id'])
-        kind, identifier, version = ref.kind, ref.id, context['expected_version']
+        selected=travel_selection({'id':context['id'],'expected_version':context['expected_version']})
+        kind, identifier, version = 'travel', selected.id, selected.expected_version
     else:
         raise InvalidInput('unsupported extent')
     stored = {key:value[key] for key in fields}
