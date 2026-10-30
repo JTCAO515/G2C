@@ -1,5 +1,6 @@
 """Actual accepted MESSAGE -> model/tool/model -> PLACE readback; synthetic data."""
-import json,os,sys,time
+import json,os,sys,time,subprocess
+from datetime import datetime,timedelta,timezone
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 import psycopg
@@ -17,7 +18,7 @@ import local_run_context as operator
 
 def exercise(auth,conninfo):
     import run_worker
-    subjects=['alice','bob','steps','tools','output','revoke','deadline','cancel','missing','rate','malformed']
+    subjects=['alice','bob','steps','tools','output','revoke','deadline','cancel','missing','rate','malformed','timeout','stale','cli']
     harness.dev_auth.init(auth,subjects)
     now=int(time.time())
     def profile(subject,steps=8,tools=2,output=8000):
@@ -135,16 +136,41 @@ def exercise(auth,conninfo):
         assert worker.process()[0].status=='cancelled' and tools.place.invocations==1 and model.calls==2
         display=harness.expect(client.get('/v1/run-display',params={'message_id':'cancel'},headers=headers['cancel']))
         assert [json.loads(line)['version'] for line in display['snapshot']['text'].splitlines()]==['TOOL-output.1']
+    with api('timeout') as client:
+        send(client,'timeout','timeout','SYNTH_TIMEOUT')
+        tools=LocalTools();model=SyntheticToolModel();worker=host('timeout',model,tools)
+        assert worker.process()[0].status=='unknown' and model.calls==1
+        assert tools.place.invocations==tools.place.transport_calls==1
+        assert host('timeout',model,tools).process()==[] and tools.place.invocations==1
+    with api('stale') as client:
+        send(client,'stale','stale','查询合成酒店')
+        tools=LocalTools();model=SyntheticToolModel();worker=host('stale',model,tools)
+        at=datetime(2026,10,30,tzinfo=timezone.utc)
+        ticks=iter([at,at+timedelta(seconds=1),at+timedelta(seconds=61)])
+        tools.place.clock=lambda:next(ticks)
+        assert worker.process()[0].status=='completed'
+        text=harness.expect(client.get('/v1/run-display',params={'message_id':'stale'},headers=headers['stale']))['snapshot']['text']
+        assert json.loads(text.splitlines()[0])['result']['outcome']=='stale' and '待核实' in json.loads(text.splitlines()[1])['text_zh']
+    with api('cli') as client:
+        send(client,'cli','cli','Find synthetic hotel')
+        completed=subprocess.run([sys.executable,'-B',str(harness.ROOT/'scripts/run_worker.py'),
+            '--conninfo-json',str(conninfo),'--auth-dir',str(auth),'--run-context',str(profiles['cli'][0]),
+            '--tools-profile','synthetic-v1','--once'],env=dict(os.environ),capture_output=True,text=True,timeout=30)
+        assert completed.returncode==0,(completed.stdout,completed.stderr)
+        assert 'local_provider_calls=2' in completed.stdout
+        display=harness.expect(client.get('/v1/run-display',params={'message_id':'cli'},headers=headers['cli']))
+        assert display['snapshot']['status']=='completed' and json.loads(display['snapshot']['text'].splitlines()[0])['name']=='place'
     with psycopg.connect(**config) as admin:
         rows=admin.execute('SELECT kind,operation_key FROM cj_run_metered_operation WHERE scope=%s AND run_id=%s ORDER BY operation_key',
             (scope_for(ISSUER,'alice'),receipt['run_id'])).fetchall()
         assert rows==[('model','model.tool_turn.0'),('model','model.tool_turn.1'),('tool','tool.0.0')],rows
-        for subject in ('alice','steps','output','revoke','deadline','cancel'):
+        for subject in ('alice','steps','output','revoke','deadline','cancel','timeout','stale','cli'):
             account=ledger_scope_for(scope_for(ISSUER,subject),profiles[subject][1].current.meter)
             ledger=decode(admin.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0])
             assert Meter.exposure(ledger)>0
             if subject in ('revoke','deadline'):assert Meter.exposure(ledger)==2
             if subject=='cancel':assert Meter.exposure(ledger)==3
+            if subject=='timeout':assert Meter.exposure(ledger)==2
     print('PASS actual signed MESSAGE/model-tool-model/Meter/PLACE/source readback, route/query identity, owner, stable ops/no redispatch, step/output denial; all data synthetic, real services UNRUN')
 
 

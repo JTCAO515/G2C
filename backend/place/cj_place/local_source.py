@@ -42,8 +42,8 @@ class LocalPlaceProducer:
     def _invoke_prepared(self,request):
         self.invocations+=1
         query=request.query
-        status,payload=self._response(query)
         self.transport_calls+=1
+        status,payload=self._response(query)
         raw=payload if type(payload) is bytes else json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf8')
         response=Response(request.binding_digest,request.origin,request.path,status,raw,self.clock())
         return publish_response(self.config,request,response,now=self.clock(),evidence_kind='synthetic')
@@ -53,6 +53,7 @@ class LocalPlaceProducer:
         pois=[dict(id='SYNTH_EAST',name='合成酒店',address='合成东路一号',location='116.100000,39.100000',entr_location='116.100100,39.100100'),
               dict(id='SYNTH_WEST',name='合成酒店',address=[],location='116.200000,39.200000')]
         if type(query) is Search:
+            if query.keyword=='SYNTH_TIMEOUT':raise TimeoutError('synthetic transport completion unknown')
             if query.keyword=='SYNTH_RATE_LIMIT':return 429,b'SYNTHETIC_PRIVATE_SUPPLIER_BODY'
             if query.keyword=='SYNTH_BAD_JSON':return 200,b'{SYNTHETIC_PRIVATE_SUPPLIER_BODY'
             if query.keyword=='SYNTH_MISSING':items=[]

@@ -10,6 +10,7 @@ from cj_place.gaode import Config
 from cj_place.models import ORIGIN
 from cj_place.local_source import LocalPlaceProducer
 from cj_usage.registered_exit import MODEL_REGISTRY,InvocationInput,Registration
+from cj_usage.metered_exit import BudgetUnknown
 from cj_run.tool_turn import parse_turn
 from cj_agent.provider import FakeProvider,ProviderUnknown
 
@@ -34,7 +35,9 @@ class LocalTools:
                 separators=(',',':')).encode('utf8')
             def materialize():
                 invoke=self.place.prepare_call(query,argument.request_ref)
-                def stream():yield invoke().decode('utf8')
+                def stream():
+                    try:yield invoke().decode('utf8')
+                    except TimeoutError:raise BudgetUnknown('original tool completion unavailable') from None
                 return stream
             return InvocationInput(original,materialize)
         self.registrations=MappingProxyType({**MODEL_REGISTRY,
@@ -96,7 +99,7 @@ class SyntheticToolModel(FakeProvider):
             elif 'SYNTH_EAST' in text or 'SYNTH_WEST' in text:
                 query=dict(kind='Detail',provider_id='SYNTH_EAST' if 'SYNTH_EAST' in text else 'SYNTH_WEST')
             else:
-                keyword=next((v for v in ('SYNTH_MISSING','SYNTH_RATE_LIMIT','SYNTH_BAD_JSON') if v in text),'合成酒店')
+                keyword=next((v for v in ('SYNTH_MISSING','SYNTH_RATE_LIMIT','SYNTH_BAD_JSON','SYNTH_TIMEOUT') if v in text),'合成酒店')
                 query=dict(kind='Search',keyword=keyword,city='合成城市',page=1,page_size=20)
             value=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,
                 calls=[dict(name='place',arguments={'version':'PLACE-query.1','query':query})])
