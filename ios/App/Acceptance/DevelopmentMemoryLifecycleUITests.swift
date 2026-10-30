@@ -17,7 +17,7 @@ import Foundation
         let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(url.url))
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200);return data
     }
-    func tap(_ id: String) {
+    func tap(_ id: String, towardTop: Bool = false) {
         let target = app.buttons.matching(identifier:id).firstMatch
         let tab = app.tabBars.buttons.matching(identifier:id).firstMatch
         if tab.exists { XCTAssertTrue(tab.isHittable); tab.tap(); return }
@@ -28,7 +28,8 @@ import Foundation
             let top=bar.exists ? bar.frame.maxY : app.frame.minY
             let bottom=tabs.exists ? tabs.frame.minY : app.frame.maxY
             if target.exists && target.isHittable && target.frame.midY>top && target.frame.midY<bottom { break }
-            if target.exists && target.frame.midY<=top { app.swipeDown() } else { app.swipeUp() }
+            if !target.exists { if towardTop { app.swipeDown() } else { app.swipeUp() } }
+            else if target.frame.midY<=top { app.swipeDown() } else { app.swipeUp() }
         }
         if !target.exists { XCTAssertTrue(target.waitForExistence(timeout:10),id) }
         XCTAssertTrue(target.exists,id);XCTAssertTrue(target.isHittable,id)
@@ -67,7 +68,7 @@ import Foundation
         XCTAssertTrue(ready.waitForExistence(timeout:10),app.debugDescription)
     }
     func list(_ language: String) {
-        tap(language=="en" ? "Load groups":"读取分组");tap("memory.group.0");tap(language=="en" ? "Load from start":"从头读取")
+        tap(language=="en" ? "Load groups":"读取分组",towardTop:true);tap("memory.group.0");tap(language=="en" ? "Load from start":"从头读取")
     }
     func open(_ id: String) {
         let row=app.buttons["memory.item."+id]
@@ -156,7 +157,7 @@ import Foundation
         return try JSONDecoder().decode(Fixture.self,from:await call("/prepare",["case":caseID]))
     }
     func recover(_ original: Original, input: String, expected: String) {
-        tap("memory.manage.openOriginals");tap("memory.manage.loadOriginals")
+        tap("memory.manage.openOriginals",towardTop:true);tap("memory.manage.loadOriginals")
         let text=app.staticTexts["memory.manage.recoveredText"]
         XCTAssertTrue(text.waitForExistence(timeout:10));XCTAssertEqual(Array(text.label.utf8),Array(input.utf8))
         tap("memory.manage.recoveryQuery."+original.action_id)
@@ -232,7 +233,9 @@ import Foundation
         _ = try await call("/wait-provider",["case":f.case_id])
         tap("Memory");tap("memory.detail.refresh");action("memory.manage.pause","Confirm pause",language:"en")
         _ = try await refreshed(f,fact.command.item_id,language:"en")
-        _ = try await call("/release-provider",["case":f.case_id]);tap("Assistant");waitRun("Context invalid");runTextContains(current,present:false);capture("actual-old-context-invalid")
+        _ = try await call("/release-provider",["case":f.case_id]);tap("Assistant");waitRun("Context invalid")
+        XCTAssertTrue(app.staticTexts["run.display.status"].label.contains("partial text"))
+        runTextContains(current,present:true);capture("previously-published-prefix-marked-context-invalid")
         send("Synthetic same chat while paused");waitRun("Completed");runTextContains(current,present:false)
         tap("Memory");tap("memory.detail.refresh");action("memory.manage.resume","Confirm resume",language:"en");_ = try await refreshed(f,fact.command.item_id,language:"en")
         selectConversation(f.conversations[1]);send("Synthetic new chat after resume");waitRun("Completed");runTextContains(current,present:true)

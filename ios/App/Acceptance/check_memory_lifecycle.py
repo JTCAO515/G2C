@@ -85,11 +85,15 @@ def main():
                     def stream(self,messages,system=None):
                         payload=json.loads(messages[0]['content'].split('\n',1)[1])
                         self.inputs.append(dict(items=payload['items'],prompt=messages[-1]['content']))
-                        if self.hold:
-                            self.hold=False;self.entered.set()
-                            if not self.release.wait(60):raise TimeoutError('actual provider release missing')
+                        hold=self.hold;self.hold=False
                         for i,chunk in enumerate(super().stream(messages,system)):
                             yield (('Memory: '+';'.join(item['text'] for item in payload['items'])+'\n') if i==0 and system is None else '')+chunk
+                            # Match the frozen lifecycle adapter's real publication order:
+                            # first valid chunk commits, then a lifecycle writer wins
+                            # before the next effect. Historical output is retained.
+                            if i==0 and hold:
+                                self.entered.set()
+                                if not self.release.wait(60):raise TimeoutError('actual provider release missing')
                 model=RecordedFake()
                 def worker():
                     try:
