@@ -69,6 +69,8 @@ def source_history(tx, item):
         if (command.item_id != item.command.item_id or command.source_id != source_id
                 or command.source_version != row[0]):
             raise Unavailable('source history projection mismatch')
+        if source_id == item.command.source_id and bytes(row[1]) != item.command.raw:
+            raise Unavailable('current source bytes differ from item')
         tx.cur.execute('''SELECT item_id FROM cj_memory_item WHERE scope=%s AND source_id=%s
             UNION SELECT item_id FROM cj_memory_management_action
             WHERE scope=%s AND (previous_source_id=%s OR new_source_id=%s)''',
@@ -84,6 +86,12 @@ def withdraw(tx, action):
     item=tx.detail(action.item_id)
     if item is None:
         raise Unavailable('memory unavailable')
+    tx.cur.execute('''SELECT source_id,source_version FROM cj_memory_item
+        WHERE scope=%s AND item_id=%s FOR UPDATE''',(tx.scope,action.item_id))
+    physical=tx.cur.fetchone()
+    if (item.command.item_id != action.item_id or physical !=
+            (item.command.source_id,item.command.source_version)):
+        raise Unavailable('item source projection mismatch')
     if item.version != action.expected_version:
         raise Conflict('item version changed')
     if (item.command.source_id != action.source_id
@@ -97,9 +105,13 @@ def withdraw(tx, action):
         tx.cur.execute('UPDATE cj_memory_source SET active=false WHERE scope=%s AND source_id=%s',
                        (tx.scope,source.source_id))
     tx.cur.execute('''UPDATE cj_memory_item SET status='withdrawn',version=version+1
-        WHERE scope=%s AND item_id=%s AND version=%s RETURNING version''',
-                   (tx.scope,action.item_id,action.expected_version))
-    version=tx.cur.fetchone()[0]
+        WHERE scope=%s AND item_id=%s AND version=%s AND source_id=%s
+        AND source_version=%s RETURNING version''',
+                   (tx.scope,action.item_id,action.expected_version,action.source_id,action.expected_source_version))
+    updated=tx.cur.fetchone()
+    if updated is None:
+        raise Conflict('item or source version changed')
+    version=updated[0]
     tx.cur.execute('UPDATE cj_memory_scope SET epoch=epoch+1 WHERE scope=%s RETURNING epoch',(tx.scope,))
     epoch=tx.cur.fetchone()[0]
     encoded=json.dumps([dict(source_id=s.source_id,source_version=s.source_version,item_ids=s.item_ids)
