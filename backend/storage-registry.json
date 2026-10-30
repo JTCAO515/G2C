@@ -19,7 +19,11 @@
             "cj_message_chat",
             "cj_message_receipt",
             "cj_message_delivery",
-            "cj_message_draft"
+            "cj_message_draft",
+            "cj_travel_context",
+            "cj_travel_context_action",
+            "cj_message_context_profile",
+            "cj_message_travel_reference"
           ],
           "source": "backend/message/sql/candidate.sql@b722281001f57cc7bc1c7df8dd38f2543e7dc250",
           "status": "candidate_or_local_only; production_not_provisioned",
@@ -28,11 +32,27 @@
             "raw_input bytes",
             "draft original_utf8",
             "conversation/message/run IDs and receipts",
-            "delivery state/history metadata"
+            "delivery state/history metadata",
+            "travel_reference_version and immutable owner/message/run/generation/sequence/raw-input hash binding",
+            "travel context identity/version/active and original action/receipt bytes",
+            "per-conversation selection_epoch and explicit travel/none reference; no Trip or Memory facts"
           ],
           "retention": "UNDECIDED; activation blocked",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/TTL API; future cleanup must serialize the scope lock",
-          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
+          "travel_context_local": {
+            "contract": [
+              "TRAVEL-CONTEXT@1",
+              "MESSAGE-send.2",
+              "MESSAGE-TRAVEL-REFERENCE@1",
+              "MESSAGE-TRAVEL-LEASE@1"
+            ],
+            "source": "backend/migrations/0018_travel_context.sql",
+            "status": "local_runtime_only; cloud_and_production_not_authorized",
+            "principal_binding": "canonical MESSAGE owner scope; fresh AUTH plus original binding; LOCAL consumer ABI is not authorization",
+            "cleanup_hook": "UNIMPLEMENTED #27; no DELETE/TRUNCATE grants, no real-user activation",
+            "restore_fence": "UNIMPLEMENTED #27; retain original action/ref/profile, reject nonempty down; no identity recycling"
+          }
         },
         {
           "id": "usage",

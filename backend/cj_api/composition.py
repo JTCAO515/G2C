@@ -208,7 +208,7 @@ def _internal_modules(set_name='composition'):
 
 
 def build_message_boundary(*, environment, jwt_configuration, verification_keys,
-                           access_provider, resolve_repository, new_run_id):
+                           access_provider, resolve_repository, new_run_id, resolve_travel_repository=None):
     """Host-provided dependencies only; caller request fields cannot configure this.
 
     Repository resolution must bind approved environment/profile and verified
@@ -231,7 +231,8 @@ def build_message_boundary(*, environment, jwt_configuration, verification_keys,
         raise CompositionUnavailable('This composition slice requires the strict JWT profile')
     verifier = auth.PyJWTVerifier(jwt_configuration, verification_keys)
     checker = modules['cj_auth.admission'].AdmissionChecker(verifier, access_provider)
-    return modules['cj_message.auth_boundary'].Boundary(checker, resolve_repository, new_run_id)
+    return modules['cj_message.auth_boundary'].Boundary(checker, resolve_repository, new_run_id,
+                                                      resolve_travel_repository=resolve_travel_repository)
 
 
 def create_composed_app(*, environment, jwt_configuration, verification_keys,
@@ -244,7 +245,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         usage_status_configuration=None,resolve_usage_status=None,
                         original_usage_configuration=None,resolve_original_usage_run=None,
                         cleanup_progress_configuration=None,resolve_cleanup_progress=None,
-                        run_events_configuration=None):
+                        run_events_configuration=None, resolve_travel_repository=None):
     """No zero-argument/public production configuration exists."""
     if type(max_body_bytes) is not int or max_body_bytes <= 0:
         raise CompositionUnavailable('Explicit positive body byte limit required')
@@ -259,7 +260,8 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
         raise CompositionUnavailable('Explicit run ID factory required')
     boundary = build_message_boundary(environment=environment, jwt_configuration=jwt_configuration,
         verification_keys=verification_keys, access_provider=access_provider,
-        resolve_repository=resolve_repository, new_run_id=checked_run_id)
+        resolve_repository=resolve_repository, new_run_id=checked_run_id,
+        resolve_travel_repository=resolve_travel_repository)
     from .history_config import HistoryWireConfiguration
     if history_configuration is not None and not isinstance(history_configuration,HistoryWireConfiguration):
         raise CompositionUnavailable('Explicit history configuration required')

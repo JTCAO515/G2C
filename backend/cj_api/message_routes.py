@@ -29,6 +29,8 @@ def _token(request):
 
 
 def register_message_routes(app, boundary=None, max_body_bytes=None):
+    from .travel_routes import register_travel_routes
+    register_travel_routes(app, boundary, max_body_bytes)
     if boundary is not None:
         from cj_auth.interfaces import AdmissionReason, AdmissionStatus
         from cj_message.auth_boundary import Boundary, AccessBlocked, IdentityChanged

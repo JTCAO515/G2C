@@ -1851,3 +1851,71 @@ class RunDraftStatusV2Response(BaseModel):
         ...,
         description='Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.',
     )
+
+
+class TravelContextState(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[0-9a-f]{32}$')
+    version: conint(ge=1, le=9223372036854775807)
+    active: bool
+
+
+class Version4(StrEnum):
+    TRAVEL_context_receipt_1 = 'TRAVEL-context-receipt.1'
+
+
+class Operation2(StrEnum):
+    create = 'create'
+    advance = 'advance'
+    deactivate = 'deactivate'
+
+
+class TravelActionReceipt(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Version4
+    action_id: constr(pattern=r'^[!-~]{1,96}$')
+    operation: Operation2
+    travel_context: TravelContextState
+
+
+class TravelActionResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: TravelActionReceipt
+
+
+class TravelActionQueryResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    receipt: TravelActionReceipt | None
+
+
+class Version5(StrEnum):
+    TRAVEL_context_1 = 'TRAVEL-context.1'
+
+
+class TravelContext(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[0-9a-f]{32}$')
+    version: conint(ge=1, le=9223372036854775807)
+    active: bool
+    created_at: AwareDatetime
+
+
+class TravelContextReadResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    version: Version5
+    travel_context: TravelContext
