@@ -30,7 +30,7 @@ def tools():
 
 def exercise(auth,conninfo):
     subjects=['alice','bob','expired','conflict','unknown','missing','injection','rate','malformed',
-              'oversize','redirect','timeout','steps','tools','output','revoke','deadline','cancel','cli','invalid']
+              'oversize','redirect','timeout','steps','tools','output','revoke','deadline','cancel','cli','invalid','future','clarify']
     limits={s:(1 if s=='steps' else 8,1 if s=='tools' else 2,16 if s=='output' else 50000) for s in subjects}
     host=RegisteredHost(auth,conninfo,limits)
     with host.api('alice') as client:
@@ -66,6 +66,20 @@ def exercise(auth,conninfo):
             if status!='supported':assert value['original_value'] is None
             assert frames[1]['text_zh'] and frames[1]['text_en']
             assert 'SYNTHETIC_PRIVATE_FACT_SENTINEL' not in snapshot['text']
+    with host.api('future') as client:
+        host.send(client,'future','future',PROMPT.replace('2026-10-30','2026-11-10'))
+        producer=tools();model=SyntheticFactModel()
+        assert host.worker('future',model,producer).process()[0].status=='completed'
+        value=json.loads(host.display(client,'future','future')['text'].splitlines()[0])['result']
+        assert value['status']=='unsupported_or_out_of_range' and value['original_value'] is None
+        assert model.calls==2 and producer.fact.invocations==1
+    with host.api('clarify') as client:
+        host.send(client,'clarify','clarify','synthetic-city weather')
+        producer=tools();model=SyntheticFactModel()
+        assert host.worker('clarify',model,producer).process()[0].status=='completed'
+        frames=[json.loads(l) for l in host.display(client,'clarify','clarify')['text'].splitlines()]
+        assert [f['version'] for f in frames]==['FACT-answer.1']
+        assert 'Specify' in frames[0]['text_en'] and producer.fact.invocations==0 and model.calls==1
     for subject in ('steps','output'):
         with host.api(subject) as client:
             host.send(client,subject,subject,PROMPT)

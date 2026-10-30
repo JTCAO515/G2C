@@ -2,6 +2,7 @@
 import copy
 from datetime import date, datetime, timezone
 import json
+from pathlib import Path
 import unittest
 
 from cj_fact.contract_v1 import decode_query, decode_result, dump, encode_query
@@ -37,6 +38,13 @@ class FactV1Tests(unittest.TestCase):
     def test_original_query_roundtrip(self):
         original=query('entry_notice',conditions=(('calendar_timezone','Asia/Shanghai'),('category','synthetic')))
         self.assertEqual(decode_query(encode_query(original),evaluated_at=NOW),original)
+
+    def test_published_v1_vectors(self):
+        examples=json.loads((Path(__file__).resolve().parents[3]/'contracts/fact/v1-examples.json').read_text())
+        decode_query(dump(examples['query']),evaluated_at=NOW)
+        decode_result(dump(examples['positive']))
+        for case in examples['invalid']:
+            with self.subTest(case=case['name']),self.assertRaises(FactFailure):decode_result(dump(case['value']))
 
     def test_statuses_and_failures_stay_distinct(self):
         cases={'expired':('ok','expired'),'conflict':('ok','conflicting'),
