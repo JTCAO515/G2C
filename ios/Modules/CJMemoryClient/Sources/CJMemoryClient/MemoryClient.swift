@@ -310,7 +310,7 @@ public enum MemorySaveResult: Sendable {
 }
 
 extension MemoryClient {
-    /// Public live composition is unavailable while the root lifecycle factory is closed.
+    /// Only an explicit local simulator composition enables management; public live clients remain read-only.
     public var managementAvailable: Bool { managementEnabled && managementStore != nil && managementEndpoint.maximumRequestBytes <= 32768 && managementEndpoint.maximumResponseBytes <= 65536 }
     func managementPresentationIsCurrent(_ binding: MemoryBinding) -> Bool {
         do { try check(binding, generation); return true } catch { return false }

@@ -66,3 +66,18 @@ struct DevelopmentMemoryConfigurationTests {
     }
 }
 #endif
+
+#if DEBUG
+extension DevelopmentConfigurationTests {
+    @Test func managementEndpointIsExplicitAndLoopbackOnly() throws {
+        #expect(try DevelopmentMemoryProfile.managementEndpoint([:]) == nil)
+        let key = "G2C_DEV_MEMORY_MANAGEMENT_URL"
+        #expect(try DevelopmentMemoryProfile.managementEndpoint([key: "http://127.0.0.1:8766/"])?.absoluteString == "http://127.0.0.1:8766")
+        for value in ["", "https://127.0.0.1:8766", "http://localhost:8766", "http://127.0.0.1:8766/path", "http://127.0.0.1:8766?x=1", "http://u@127.0.0.1:8766", "http://127.0.0.1"] {
+            #expect(throws: DevelopmentMemoryProfile.ConfigurationFailure.self) {
+                try DevelopmentMemoryProfile.managementEndpoint([key: value])
+            }
+        }
+    }
+}
+#endif
