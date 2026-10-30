@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 import json
 from cj_memory.domain import Command,Conflict,InvalidInput
-from cj_memory.typed import ContextRef,decode,packed,TypedCommand
+from cj_memory.typed import ContextRef,decode,packed,TypedCommand,travel_selection
 from .domain import Action
 from .edit import Edit
 from cj_memory_withdrawal.stop_use import StopUse
@@ -34,8 +34,7 @@ class TypedEdit(Edit):
             if (type(context) is not dict or set(context)!={'kind','id','expected_version'}
                     or context['kind']!='travel' or type(context['expected_version']) is not int
                     or context['expected_version']<1):raise InvalidInput('typed edit context shape')
-            from cj_message.travel import Selection
-            context=Selection.parse({'id':context['id'],'expected_version':context['expected_version']})
+            context=travel_selection({'id':context['id'],'expected_version':context['expected_version']})
         old=Edit.parse(packed(dict(value,version='MEMORY-MANAGEMENT-EDIT@1')))
         return cls(old.action_id,old.operation,old.item_id,old.expected_version,old.expected_source_version,
                    old.text,raw,context)

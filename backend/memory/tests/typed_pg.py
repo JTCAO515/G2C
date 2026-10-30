@@ -187,6 +187,9 @@ class TypedStorageChecks(Harness):
             changed=post(edit);self.assertEqual(changed.status_code,200,changed.text)
             self.assertEqual((changed.json()['receipt']['status'],changed.json()['receipt']['version']),('disabled',3))
             self.assertEqual(post(action('resume',3)).status_code,200)
+            invalid=dict(kind='travel',id='invalid',expected_version=1)
+            self.assertEqual(post(action('edit',4,invalid,'invalid syntax')).status_code,400)
+
             request=dict(version='TRAVEL-context-action.1',action_id='advance-'+self.tag,operation='advance',
                 travel_context=dict(id=self.travel[0]['id'],expected_version=1))
             advanced=identity.post('/v1/travel-context-actions',content=json.dumps(request).encode(),headers=headers)
