@@ -48,6 +48,7 @@ public struct TypedMemoryRead: Sendable {
     let owner: UUID
     let generation: UUID
     let binding: MemoryBinding
+    let stamp: UUID
 }
 public struct TypedMemoryCursor: Sendable {
     let owner: UUID

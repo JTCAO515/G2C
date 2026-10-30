@@ -27,6 +27,9 @@ import CJMessageKeys
     func recordRejection(_ original: TypedMemoryPending,status: Int,code: String,validateBinding: () throws -> Void) throws {
         try storage.recordRejection(original,status:status,code:code,domain:"CJMemoryTypedRejectionsV2",validateBinding:validateBinding)
     }
+    func managementRecords(create: Bool) throws -> MemoryEncryptedRecords<TypedMemoryManagementPending>? {
+        try storage.adjacentRecords(domain:"CJMemoryTypedManagementV2",create:create)
+    }
     public func pending() throws -> [TypedMemoryCommand] {
         try storage.pending().map { try TypedMemoryCommand(originalUTF8:$0.originalUTF8) }
     }
