@@ -9,17 +9,23 @@ import Foundation
         let endpoint: String;let memory_endpoint: String;let accounts: [String:String];let subjects: [String:String]
         let travel_ids: [String];let travel_profile: String;let memory_profile: String
     }
+    private func reveal(_ element: XCUIElement,fixed: Bool = false) {
+        for _ in 0..<40 {
+            if element.exists && element.isHittable {return}
+            if fixed {_ = element.waitForExistence(timeout:1);continue}
+            if element.exists && element.frame != .zero && element.frame.midY < app.frame.midY {app.swipeDown()}
+            else {app.swipeUp()}
+        }
+        let image = XCTAttachment(screenshot:app.screenshot());image.name = "not-visible-" + element.identifier;image.lifetime = .keepAlways;add(image)
+        XCTAssertTrue(element.exists && element.isHittable,"Expected visible control: " + element.identifier)
+    }
     private func tap(_ id: String) {
         let target: XCUIElement
         if ["Memory","Assistant","Trips"].contains(id) { target = app.tabBars.buttons.matching(identifier:id).firstMatch }
         else if id == "assistant.panel.done" { target = app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else { target = app.buttons.matching(identifier:id).firstMatch }
         let fixed = ["Memory","Assistant","Trips","assistant.panel.done"].contains(id)
-        for _ in 0..<30 {
-            if target.exists && target.isHittable { break }
-            if fixed { _ = target.waitForExistence(timeout:1) }
-            else { app.swipeUp() }
-        }
+        reveal(target,fixed:fixed)
         XCTAssertTrue(target.waitForExistence(timeout:10),id);XCTAssertTrue(target.isHittable,id)
         let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
         XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,id);target.tap()
@@ -28,7 +34,7 @@ import Foundation
         let view = app.textViews.matching(identifier:id).firstMatch
         let field = view.exists ? view : app.textFields.matching(identifier:id).firstMatch
         XCTAssertTrue(field.waitForExistence(timeout:15),id)
-        for _ in 0..<20 { if field.isHittable { break };app.swipeUp() }
+        reveal(field)
         XCTAssertTrue(field.isHittable,id);field.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:10),"Expected keyboard focus for " + id)
         field.typeText(text)
@@ -36,16 +42,9 @@ import Foundation
     }
     private func text(_ id: String,contains expected: String) {
         let label = app.staticTexts.matching(identifier:id).firstMatch
-        if id.hasPrefix("memory2.manage.review.") {
-            // Form creates offscreen sections lazily. Reveal the actual reviewed
-            // content before asserting it; no confirmation POST precedes this.
-            for _ in 0..<25 {
-                if label.exists && label.isHittable { break }
-                if label.exists && label.frame.midY < app.frame.midY {app.swipeDown()}
-                else {app.swipeUp()}
-            }
-            XCTAssertTrue(label.isHittable,"Expected visible review: " + id)
-        }
+        // Form sections are lazy, including the original-result footer. Read
+        // actual visible content rather than relying on an offscreen snapshot.
+        reveal(label)
         XCTAssertTrue(label.waitForExistence(timeout:15),id)
         let value = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",expected),object:label)
         let result = XCTWaiter.wait(for:[value],timeout:30)
