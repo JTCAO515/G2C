@@ -11,15 +11,25 @@ import Foundation
         let endpoint: String;let memory_endpoint: String;let accounts: [String:String];let subjects: [String:String]
         let travel_ids: [String];let travel_profile: String;let memory_profile: String
     }
-    private func reveal(_ element: XCUIElement,fixed: Bool = false) {
+    private func reveal(_ element: XCUIElement,id: String,fixed: Bool = false) {
         for _ in 0..<40 {
-            if element.exists && element.isHittable {return}
+            var top = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : app.frame.minY + 60
+            var bottom = app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.maxY - 20
+            let header = app.otherElements.matching(identifier:"assistant.header").firstMatch
+            let composer = app.otherElements.matching(identifier:"assistant.composer").firstMatch
+            if !fixed && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
+                top = max(top,header.frame.maxY + 8);bottom = min(bottom,composer.frame.minY)
+            }
+            let frame = element.exists ? element.frame : .zero
+            if element.exists && element.isHittable && (fixed || frame.midY > top && frame.midY < bottom) {return}
             if fixed {_ = element.waitForExistence(timeout:1);continue}
-            if element.exists && element.frame != .zero && element.frame.midY < app.frame.midY {app.swipeDown()}
-            else {app.swipeUp()}
+            let down = frame != .zero && frame.midY <= top
+            let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:(down ? top + 20 : bottom - 20)))
+            let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:(down ? bottom - 20 : top + 20)))
+            start.press(forDuration:0.05,thenDragTo:end)
         }
-        let image = XCTAttachment(screenshot:app.screenshot());image.name = "not-visible-" + element.identifier;image.lifetime = .keepAlways;add(image)
-        XCTAssertTrue(element.exists && element.isHittable,"Expected visible control: " + element.identifier)
+        let image = XCTAttachment(screenshot:app.screenshot());image.name = "not-visible-" + id;image.lifetime = .keepAlways;add(image)
+        XCTAssertTrue(element.exists && element.isHittable,"Expected visible control: " + id)
     }
     private func tap(_ id: String) {
         let id = chinese ? (["Memory":"记忆","Assistant":"助手","Trips":"行程","Done":"完成"][id] ?? id) : id
@@ -28,10 +38,10 @@ import Foundation
         else if id == "assistant.panel.done" { target = app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else { target = app.buttons.matching(identifier:id).firstMatch }
         let fixed = ["Memory","Assistant","Trips","记忆","助手","行程","assistant.panel.done"].contains(id)
-        reveal(target,fixed:fixed)
+        reveal(target,id:id,fixed:fixed)
         XCTAssertTrue(target.waitForExistence(timeout:10),id);XCTAssertTrue(target.isHittable,id)
         let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
-        XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,id);target.tap()
+        XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,id);target.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).tap()
     }
     private func input(_ id: String,_ text: String) {
         // At maximum text size the next Form row can sit below the keyboard.
@@ -40,7 +50,7 @@ import Foundation
         let view = app.textViews.matching(identifier:id).firstMatch
         let field = view.exists ? view : app.textFields.matching(identifier:id).firstMatch
         XCTAssertTrue(field.waitForExistence(timeout:15),id)
-        reveal(field)
+        reveal(field,id:id)
         XCTAssertTrue(field.isHittable,id);field.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:10),"Expected keyboard focus for " + id)
         field.typeText(text)
@@ -50,7 +60,7 @@ import Foundation
         let label = app.staticTexts.matching(identifier:id).firstMatch
         // Form sections are lazy, including the original-result footer. Read
         // actual visible content rather than relying on an offscreen snapshot.
-        reveal(label)
+        reveal(label,id:id)
         XCTAssertTrue(label.waitForExistence(timeout:15),id)
         let value = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",expected),object:label)
         let result = XCTWaiter.wait(for:[value],timeout:30)
