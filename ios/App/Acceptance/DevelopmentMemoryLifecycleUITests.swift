@@ -23,8 +23,10 @@ import Foundation
         if tab.exists { XCTAssertTrue(tab.isHittable); tab.tap(); return }
         let nav = app.navigationBars.buttons.matching(identifier:id).firstMatch
         if nav.exists { XCTAssertTrue(nav.isHittable);XCTAssertTrue(nav.isEnabled);nav.tap();return }
-        let top=app.navigationBars.firstMatch.frame.maxY,bottom=app.tabBars.firstMatch.frame.minY
         for _ in 0..<60 {
+            let bar=app.navigationBars.firstMatch, tabs=app.tabBars.firstMatch
+            let top=bar.exists ? bar.frame.maxY : app.frame.minY
+            let bottom=tabs.exists ? tabs.frame.minY : app.frame.maxY
             if target.exists && target.isHittable && target.frame.midY>top && target.frame.midY<bottom { break }
             if target.exists && target.frame.midY<=top { app.swipeDown() } else { app.swipeUp() }
         }
@@ -52,7 +54,17 @@ import Foundation
         app.launch();tap(language=="en" ? "Memory":"记忆");tap("memory.account")
         if restore { tap("account.development.restore") } else { tap("account.development.signout");tap("account.development.signin.A") }
         let signed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",f.subjects["A"]!),object:app.staticTexts["account.development.status"])
-        XCTAssertEqual(XCTWaiter.wait(for:[signed],timeout:20),.completed);back()
+        XCTAssertEqual(XCTWaiter.wait(for:[signed],timeout:20),.completed)
+        // The verified root finishes assembling after the account label changes
+        // and chooses Trips. Wait for its actual management capability in Memory.
+        let ready=app.buttons["memory.manage.openOriginals"]
+        for _ in 0..<10 {
+            tap(language=="en" ? "Memory":"记忆")
+            if app.staticTexts["account.development.status"].exists { back() }
+            if ready.exists { break }
+            _ = ready.waitForExistence(timeout:1)
+        }
+        XCTAssertTrue(ready.waitForExistence(timeout:10),app.debugDescription)
     }
     func list(_ language: String) {
         tap(language=="en" ? "Load groups":"读取分组");tap("memory.group.0");tap(language=="en" ? "Load from start":"从头读取")
