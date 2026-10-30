@@ -26,6 +26,13 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
         return url.url
     }
 
+    static func placeToolsEnabled(_ environment: [String:String]) throws -> Bool {
+        guard let value = environment["G2C_DEV_PLACE_TOOLS"] else { return false }
+        guard value == "synthetic-v1" else { throw DevelopmentToolsFailure.invalidProfile }
+        return true
+    }
+    enum DevelopmentToolsFailure: Error { case invalidProfile }
+
     static func environmentNamespace(_ endpoint: URL) -> UUID {
         namespace("G2C.DEBUG.TRIP.environment|" + endpoint.absoluteString)
     }

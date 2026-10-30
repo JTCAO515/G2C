@@ -81,3 +81,20 @@ extension DevelopmentConfigurationTests {
     }
 }
 #endif
+
+
+extension DevelopmentConfigurationTests {
+    @Test func placeConsumerFormatIsExplicitAndReleaseRemainsClosed() throws {
+        #if DEBUG
+        #expect(try !DevelopmentSessionConfiguration.placeToolsEnabled([:]))
+        #expect(try DevelopmentSessionConfiguration.placeToolsEnabled(["G2C_DEV_PLACE_TOOLS":"synthetic-v1"]))
+        for value in ["", "true", "live", "synthetic-v2"] {
+            #expect(throws:DevelopmentSessionConfiguration.DevelopmentToolsFailure.invalidProfile) {
+                try DevelopmentSessionConfiguration.placeToolsEnabled(["G2C_DEV_PLACE_TOOLS":value])
+            }
+        }
+        #else
+        #expect(DevelopmentSessionConfiguration.read(["G2C_DEV_PLACE_TOOLS":"synthetic-v1","G2C_DEV_API_BASE_URL":"http://127.0.0.1:8765","G2C_DEV_TOKEN":try token()]) == nil)
+        #endif
+    }
+}

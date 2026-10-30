@@ -11,10 +11,14 @@ indirect enum TripJSONValue {
 struct StrictTripJSON {
     var bytes: [UInt8]
     var index = 0
+    private(set) var rootMemberRanges: [String:Range<Int>] = [:]
     mutating func check() throws {
         _ = try document()
     }
     mutating func document() throws -> TripJSONValue {
+        // Foundation may auto-detect UTF-16/32, while this token parser is UTF-8.
+        // Raw NUL is never legal JSON UTF-8, including inside string literals.
+        guard !bytes.contains(0),String(bytes:bytes,encoding:.utf8) != nil else { throw TripFailure.invalidResponse }
         _ = try JSONSerialization.jsonObject(with: Data(bytes))
         let result = try value(depth: 0)
         whitespace()
@@ -46,7 +50,10 @@ struct StrictTripJSON {
                 whitespace(); let key = try string()
                 guard fields[key] == nil else { throw TripFailure.invalidResponse }
                 whitespace(); index += 1 // colon: grammar already validated
-                fields[key] = try value(depth: depth + 1); whitespace()
+                whitespace();let start = index
+                fields[key] = try value(depth: depth + 1)
+                if depth == 0 { rootMemberRanges[key] = start..<index }
+                whitespace()
                 if bytes[index] == 125 { index += 1; break }
                 index += 1
             }
