@@ -127,11 +127,12 @@ import Foundation
             else { high.press(forDuration:0.05,thenDragTo:low) }
         }
         XCTAssertTrue(field.isHittable)
-        field.press(forDuration:1)
-        let names=NSPredicate(format:"label IN %@",["Select All","全选"])
-        let menu=app.menuItems.matching(names).firstMatch
-        let selectAll=menu.waitForExistence(timeout:2) ? menu : app.buttons.matching(names).firstMatch
-        XCTAssertTrue(selectAll.waitForExistence(timeout:5));selectAll.tap()
+        // Use actual caret placement and keyboard deletion rather than a
+        // runtime-specific edit-menu label. Verify empty and final UTF-8 bytes.
+        field.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.9)).tap()
+        let old=try! XCTUnwrap(field.value as? String)
+        field.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:old.count))
+        XCTAssertEqual(field.value as? String,"")
         field.typeText(text);XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
         tap("memory.manage.keyboard.done")
     }
