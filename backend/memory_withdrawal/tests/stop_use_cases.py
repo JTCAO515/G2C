@@ -392,7 +392,7 @@ class StopUseCases:
                             # while MEMORY still blocks the actual source writer.
                             with self.database.connect(scope) as conn:
                                 self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0],1)
-                            self.assertIsNotNone(state['worker'].runs.snapshot(binding).draft_outcome)
+                            self.assertTrue(any(effect.startswith('trip_proposal:') for effect in state['worker'].runs.snapshot(binding).effects))
                             self.assertFalse(future.done())
                     if drain:
                         state['drained']=True
