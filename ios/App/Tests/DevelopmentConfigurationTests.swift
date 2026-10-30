@@ -67,7 +67,6 @@ struct DevelopmentMemoryConfigurationTests {
 }
 #endif
 
-#if DEBUG
 extension DevelopmentConfigurationTests {
     @Test func typedActivationRemainsClosedInRelease() throws {
         #if !DEBUG
@@ -131,6 +130,7 @@ extension DevelopmentConfigurationTests {
         try Data().write(to:another.appendingPathExtension("journal"))
         #expect(try !DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:another))
     }
+    #if DEBUG
     @Test func managementEndpointIsExplicitAndLoopbackOnly() throws {
         #expect(try DevelopmentMemoryProfile.managementEndpoint([:]) == nil)
         let key = "G2C_DEV_MEMORY_MANAGEMENT_URL"
@@ -141,8 +141,8 @@ extension DevelopmentConfigurationTests {
             }
         }
     }
+    #endif
 }
-#endif
 
 
 extension DevelopmentConfigurationTests {
