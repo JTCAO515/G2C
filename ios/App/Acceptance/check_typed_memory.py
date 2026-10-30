@@ -222,7 +222,7 @@ def main():
                                 row['receipt']=value['receipt']
                                 if row['receipt']['input_sha256']!=row['input_sha256'] or row['receipt']['version']!=2:raise RuntimeError('real concurrent receipt mismatch')
                             elif parsed.path=='/items':value={('long_term' if x['command']['context'] is None else 'travel'):x['command']['item_id'] for x in items()}
-                            elif parsed.path=='/originals':value=dict(legacy=[x['operation_id'] for x in audit if x['method']=='POST' and x['path']=='/v1/memories' and x['status']==200],saves=[x['operation_id'] for x in audit if x['host']=='memory' and x['method']=='POST' and x['path']=='/v2/memories' and x['status']==200],
+                            elif parsed.path=='/originals':value=dict(legacy=[x['operation_id'] for x in audit if x['method']=='POST' and x['path']=='/v1/memories' and x['status']==200],saves=[x['operation_id'] for x in audit if x['host']=='memory' and x['method']=='POST' and x['path']=='/v2/memories'],
                                 management=[x['action_id'] for x in audit if x['host']=='memory' and x['method']=='POST' and x['path']=='/v2/memory-management-actions' and not x.get('fixture',False)])
                             elif parsed.path=='/wait-completed':
                                 count=int(parse_qs(parsed.query)['count'][0]);deadline=time.monotonic()+30
@@ -292,13 +292,16 @@ def main():
                         assert set(by_text)==set(expected[:2]) and by_text[expected[0]]['status']=='disabled' and by_text[expected[0]]['version']==2
                         assert by_text[expected[1]]['status']=='active' and by_text[expected[1]]['version']==1
                     elif legacy:
-                        expected=['Legacy unresolved original / 旧版未知原文 e\u0301','Fresh typed save after legacy reconciliation / 核实后新保存']
+                        expected=['Legacy unresolved original / 旧版未知原文 e\u0301','Fresh typed save after legacy reconciliation / 核实后新保存','Duplicate active long-term / 保留原条目']
                         assert len(value['items'])==2 and value['message_count']==model.calls==0
-                        assert {item['command']['text'] for item in value['items']}==set(expected)
+                        by_text={item['command']['text']:item for item in value['items']}
+                        assert set(by_text)==set(expected[:2]) and by_text[expected[0]]['command']['context'] is None
+                        assert by_text[expected[1]]['command']['context']==dict(kind='travel',id=travels[0],expected_version=1)
                         posts=[event for event in audit if event['method']=='POST' and event['path'] in ('/v1/memories','/v2/memories')]
-                        assert len(posts)==2 and all(event['status']==200 for event in posts)
-                        assert [event['path'] for event in posts]==['/v1/memories','/v2/memories']
+                        assert len(posts)==3 and [event['status'] for event in posts]==[200,200,503]
+                        assert [event['path'] for event in posts]==['/v1/memories','/v2/memories','/v2/memories']
                         assert posts[0].get('actual_200_ack_lost') and not posts[1].get('actual_200_ack_lost')
+                        assert posts[2]['producer_error']['outcome']=='unknown'
                         assert any(event['path']=='/v1/memory-receipts' and event['method']=='GET' and event['status']==200 for event in audit)
                     elif switching:
                         expected=['Account A delayed original / A迟到原文']
@@ -347,7 +350,9 @@ def main():
                             else:receipt=client.get(path,params=query,headers=headers['A'])
                             receipt.raise_for_status()
                             if event['status']==200:assert receipt.json()['receipt']['input_sha256']==event['input_sha256']
-                            else:assert conflict and receipt.json()['receipt'] is None and event['producer_error']['outcome']=='failed'
+                            else:
+                                assert receipt.json()['receipt'] is None
+                                assert conflict and event['producer_error']['outcome']=='failed' or legacy and event['producer_error']['outcome']=='unknown'
                             if path.startswith('/v1/'):
                                 with TestClient(app) as old:foreign=old.get(path,params=query,headers=headers['B'])
                             else:foreign=client.get(path,params=query,headers=headers['B'])

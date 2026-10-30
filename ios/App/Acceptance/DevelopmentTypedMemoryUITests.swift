@@ -254,7 +254,18 @@ import Foundation
         let originals = try JSONDecoder().decode([String:[String]].self,from:await call("/originals"))
         let old = try XCTUnwrap(originals["legacy"]);XCTAssertEqual(old.count,1)
         tap("memory2.legacy.query." + (try XCTUnwrap(old.first)));text("memory2.save.status",contains:"Saved.")
-        back();save("Fresh typed save after legacy reconciliation / 核实后新保存",scope:"Long term / 长期")
+        back();tap("Assistant");chooseTravel(f.travel_ids[0]);tap("Memory")
+        save("Fresh typed save after legacy reconciliation / 核实后新保存",scope:"Selected travel / 所选旅行")
+        // The frozen canonical long-term slot is shared by V1/V2. A second
+        // active entry cannot be treated as a successful new namespace.
+        save("Duplicate active long-term / 保留原条目",scope:"Long term / 长期",expected:"Result unknown")
+        tap("memory.manage.openOriginals");tap("memory2.originals.read")
+        let all = try JSONDecoder().decode([String:[String]].self,from:await call("/originals"))
+        let typed = try XCTUnwrap(all["saves"]);XCTAssertEqual(typed.count,2)
+        tap("memory2.original.query." + (try XCTUnwrap(typed.last)))
+        text("memory2.save.status",contains:"Original receipt not observed")
+        back();tap("Assistant");chooseTravel(f.travel_ids[1]);tap("Memory")
+        save("Must not bypass unobserved typed original",scope:"Selected travel / 所选旅行",expected:"Query the earlier original operation first")
     }
     func testRealConflictKeepsOriginalAndAllowsFreshSave() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600
