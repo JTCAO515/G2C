@@ -30,7 +30,7 @@ from cj_message.auth_boundary import Boundary
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_api.composition import CompositionUnavailable
 from cj_run.core import Binding,Denied
-from cj_api.generated import MessageReceiveV2Response,MessageSendStatusV2Response,RunDisplayV2Response,RunDraftStatusV3Response
+from cj_api.generated import MessageReceiveV2Response,MessageSendStatusV2Response,RunDisplayV2Response,RunDraftStatusV3Response,RunTravelCancellationResponse
 import local_history_pg as harness
 
 sys.path.insert(0,str(harness.ROOT/'scripts'))
@@ -509,6 +509,50 @@ def exercise(auth,conninfo):
                 with current_authority.hold_current(Selection.parse({'id':slash['id'],'expected_version':1})):
                     raise AssertionError('foreign current context granted')
             except LeaseUnavailable:pass
+            # P1 regression: the new producer must have a working public Stop.
+            # Cancellation uses historical ownership/origin, never a live context
+            # lease, so deactivation and chat closure cannot prevent stopping.
+            def cancel(subject,mid,code=200):
+                response=client.post('/v2/run-cancellations',json={'version':'RUN-cancel.2','message_id':mid},headers=headers[subject])
+                result=expect(response,code)
+                if code==200:RunTravelCancellationResponse.model_validate_json(response.content,strict=True)
+                return result
+            cancel_context=action('alice','cancel-context')
+            queued_cancel,_=send('alice','cancel-queued','cancel-queued',cancel_context)
+            expect(client.post('/v1/run-cancellations',json={'version':'RUN-cancel.1','message_id':'cancel-queued'},headers=headers['alice']),503)
+            action('alice','deactivate-for-stop','deactivate',{'id':cancel_context['id'],'expected_version':1})
+            cancel('bob','cancel-queued',503)
+            cancelled=cancel('alice','cancel-queued')
+            assert cancelled['status']=='cancelled' and cancelled['reference']==queued_cancel['reference']
+            repeat=cancel('alice','cancel-queued')
+            assert repeat['event_highwater']==cancelled['event_highwater'] and repeat['run_id']==cancelled['run_id']
+            stopped=worker('alice',FakeProvider())
+            assert stopped.process()[0].status=='cancelled' and stopped.provider.calls==0
+            in_flight,_=send('alice','cancel-running','cancel-running',None)
+            class CancellingProvider(FakeProvider):
+                def stream(self,messages,system=None):
+                    self.calls+=1
+                    yield 'old'
+                    assert cancel('alice','cancel-running')['status']=='cancelled'
+                    yield 'SYNTHETIC_LATE_OUTPUT_AFTER_STOP'
+            in_flight_model=CancellingProvider();in_flight_host=worker('alice',in_flight_model)
+            assert in_flight_host.process()[0].status=='cancelled' and in_flight_model.calls==1
+            stopped_state=in_flight_host.runs.snapshot(binding('alice',in_flight))
+            assert stopped_state.text=='' and not stopped_state.effects
+            # IDs larger than the old 256-byte cancel grammar are valid send.2
+            # identities. The new version preserves the full original ID.
+            large_id='long-'+('x'*4096)
+            large,_=send('alice','large-id',large_id,None)
+            assert cancel('alice',large_id)['run_id']==large['receipt']['run_id']
+            assert worker('alice',FakeProvider()).process()[0].status=='cancelled'
+            closed,_=send('alice','closed-stop','closed-stop',None)
+            with psycopg.connect(**config) as admin:
+                admin.execute('UPDATE cj_message_chat SET active=false WHERE scope=%s AND conversation_id=%s',
+                    (scope_for(ISSUER,'alice'),'closed-stop'))
+            assert cancel('alice','closed-stop')['status']=='cancelled'
+            with psycopg.connect(**config) as admin:
+                assert admin.execute('SELECT count(*) FROM cj_run_metered_operation WHERE scope=%s AND run_id IN (%s,%s,%s)',
+                    (scope_for(ISSUER,'alice'),queued_cancel['receipt']['run_id'],large['receipt']['run_id'],closed['receipt']['run_id'])).fetchone()[0]==0
         # New app instance reads the original immutable association without dispatch.
         with TestClient(app_from_environment()) as reopened:
             response=reopened.get('/v2/message-send-status',params={'conversation_id':'same','message_id':'a-first'},headers=headers['alice'])
@@ -521,6 +565,7 @@ def exercise(auth,conninfo):
             (first['receipt']['run_id'],second['receipt']['run_id'])).fetchone()[0]==0
     print('PASS synthetic MESSAGE2/API/worker: immutable origins, same-chat ABA, same-travel cross-chat, none, owner, version, original replay/rebuild, zero pre-dispatch invalid attempts, slash original GET')
     print('PASS actual leases/owner/thread/lifetime, explicit NEEDS, UNKNOWN queued, both PG lock orders, SQL-free deadline/monotonic clock, before/after ACK atomicity, fixed old CLI refusal and SIGKILL recovery with original exposure')
+    print('PASS public RUN-cancel.2: queued zero dispatch, in-flight late output refusal, deactivated context/closed chat, cross-owner, full original large ID and idempotent terminal')
 
 
 if __name__=='__main__':

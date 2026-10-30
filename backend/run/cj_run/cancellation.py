@@ -10,6 +10,7 @@ import json
 from .core import Binding, Service
 
 MAX_CANCEL_BYTES = 4096
+MAX_TRAVEL_CANCEL_BYTES = 65536
 
 
 class CancellationUnavailable(Exception):
@@ -47,12 +48,27 @@ class CancelCommand:
 
     @classmethod
     def parse(cls, raw):
+        return cls._parse(raw,'RUN-cancel.1',MAX_CANCEL_BYTES)
+
+    @classmethod
+    def _parse(cls,raw,version,limit):
         if type(raw) is not bytes: raise ValueError('immutable JSON bytes required')
-        if len(raw) > MAX_CANCEL_BYTES: raise CancellationInputTooLarge()
+        if len(raw) > limit: raise CancellationInputTooLarge()
         obj = json.loads(raw.decode('utf-8'), object_pairs_hook=_unique, parse_constant=_constant)
-        if type(obj) is not dict or set(obj) != {'version', 'message_id'} or obj['version'] != 'RUN-cancel.1':
+        if type(obj) is not dict or set(obj) != {'version', 'message_id'} or obj['version'] != version:
             raise ValueError('unsupported cancellation')
         return cls(obj['message_id'])
+
+
+class TravelCancelCommand(CancelCommand):
+    def __post_init__(self):
+        if (type(self.message_id) is not str or not self.message_id.strip()
+                or '\x00' in self.message_id or len(self.message_id.encode('utf8'))>16384):
+            raise ValueError('bounded original travel message ID required')
+
+    @classmethod
+    def parse(cls,raw):
+        return cls._parse(raw,'RUN-cancel.2',MAX_TRAVEL_CANCEL_BYTES)
 
 
 class CancellationHandler:
@@ -61,13 +77,21 @@ class CancellationHandler:
         self.resolve_run_repository = resolve_run_repository
 
     def cancel_projected(self, token, command, project):
+        return self._cancel_projected(token,command,project,travel=False)
+
+    def cancel_travel_projected(self,token,command,project):
+        return self._cancel_projected(token,command,project,travel=True)
+
+    def _cancel_projected(self,token,command,project, *, travel):
         attempted = False
 
         def operation(context):
             nonlocal attempted
             principal, scope = context.principal, context.scope
-            original = context.query_message(command.message_id)
-            if original is None: raise CancellationUnavailable()
+            query=(lambda mid:context.query_travel_message(mid,require_active=False)) if travel else context.query_message
+            record=query(command.message_id)
+            if record is None: raise CancellationUnavailable()
+            original=record.stored if travel else record
             repository = self.resolve_run_repository(principal, scope)
             receipt = original.receipt
             binding = Binding(scope, receipt.conversation_id, receipt.generation,
@@ -75,7 +99,7 @@ class CancellationHandler:
 
             def guard():
                 if (context.principal != principal or context.scope != scope or repository.scope != scope
-                        or context.query_message(command.message_id) != original):
+                        or query(command.message_id) != record):
                     raise CancellationUnavailable()
 
             class GuardedRun:
@@ -89,7 +113,7 @@ class CancellationHandler:
             guard()
             attempted = True
             state = Service(GuardedRun()).cancel(binding)
-            encoded = project(state)
+            encoded = project(state,record.reference) if travel else project(state)
             guard()
             return encoded
 

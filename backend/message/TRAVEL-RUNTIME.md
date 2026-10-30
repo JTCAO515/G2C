@@ -26,6 +26,8 @@ API 组装显式设置 `CJ_LOCAL_TRAVEL_CONTEXT=message-travel.1`；worker 同�
 合同分别见 contracts/message。无旅行是显式 null，不回退 conversation current。
 新 RUN 读取为 `/v2/run-display`、`/v3/run-draft-status`，附原 reference；旧读拒绝新消息，
 不剥掉引用。历史读取或原回执重放不产生执行许可。
+send.2 停止使用 `/v2/run-cancellations` 与 RUN-cancel.2 原 message_id；停止只核原
+owner/origin/RUN fence，不因旅行停用或 chat inactive 要求新的执行许可。旧取消版本不改。
 
 B 内部 MessageContextAuthority 提供 read_original/hold_for_effect/hold_current/valid；
 lease.reference、lease.original_message() 在同连接生命周期内使用。实际持锁为
