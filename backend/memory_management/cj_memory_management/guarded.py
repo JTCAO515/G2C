@@ -6,6 +6,7 @@ here. Those remain the original MEMORY Service's responsibility.
 from cj_memory.domain import Service as MemoryService
 from cj_memory.lifecycle import INTERFACE_VERSION, LifecycleAdapter
 from .domain import Action
+from .edit import parse_action
 from .service import apply_in_transaction, query_in_transaction
 
 if INTERFACE_VERSION != 'MEMORY-lifecycle-adapter.1':
@@ -13,11 +14,11 @@ if INTERFACE_VERSION != 'MEMORY-lifecycle-adapter.1':
 
 
 def original_action_id(raw):
-    return Action.parse(raw).action_id
+    return parse_action(raw).action_id
 
 
 def apply(transaction, raw):
-    return apply_in_transaction(transaction, Action.parse(raw))
+    return apply_in_transaction(transaction, parse_action(raw))
 
 
 ADAPTER = LifecycleAdapter(original_action_id, apply, query_in_transaction)
@@ -37,9 +38,14 @@ class ManagementContext:
 
 class GuardedService(MemoryService):
     def __init__(self, repository, *, manual_policy=None, lifecycle_adapter=ADAPTER):
-        if manual_policy is not None or lifecycle_adapter is not ADAPTER:
+        if type(lifecycle_adapter) is not LifecycleAdapter:
             raise ValueError('fixed management adapter required')
-        super().__init__(repository, lifecycle_adapter=ADAPTER)
+        adapter = lifecycle_adapter
+        if manual_policy is not None and adapter is ADAPTER:
+            adapter = LifecycleAdapter(original_action_id,
+                lambda tx, raw: apply_in_transaction(tx, parse_action(raw), manual_policy),
+                query_in_transaction)
+        super().__init__(repository, manual_policy=manual_policy, lifecycle_adapter=adapter)
 
     def with_operation(self, guard, operation):
         return super().with_operation(

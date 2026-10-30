@@ -1,4 +1,6 @@
-# #17 后端编辑/启停与记忆 fence 设计（提请 JT 批准，未实施）
+# #17 后端编辑/启停与记忆 fence 设计
+
+> 2026-10-30 JT已批准C1及追加本地迁移/列权限/API写权；以下审批稿保留为设计依据，旧“未批准/未实施”描述属于历史。实施契约见 `contracts/memory-management/edit-v1.md`。C2最小stop-use writer同日另获先写详细稿后直接实施的授权，仍不涉及物理删除或账号清理。
 
 ## 已核实的 owning source
 

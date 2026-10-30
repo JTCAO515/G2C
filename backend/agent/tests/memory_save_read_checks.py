@@ -225,13 +225,21 @@ class MemorySaveReadChecks(Harness):
                 ('INSERT INTO cj_memory_source VALUES (%s,%s,1,%s,false,false,false,false,clock_timestamp())', (foreign, 'forbidden', b'{}')),
                 ('INSERT INTO cj_memory_item VALUES (%s,%s,1,\'candidate\',\'self\',\'s\',\'long_term\',\'\',\'absent\',1,%s,clock_timestamp())', (foreign, 'forbidden', b'{}')),
                 ('INSERT INTO cj_memory_operation VALUES (%s,%s,%s,\'absent\',1,\'candidate\')', (foreign, 'forbidden', b'{}')),
-                ('UPDATE cj_memory_item SET status=\'active\' WHERE scope=%s', (foreign,)),
                 ('UPDATE cj_memory_operation SET status=\'active\' WHERE scope=%s', (foreign,)),
                 ('UPDATE cj_memory_source SET authorized=true WHERE scope=%s', (scope,)),
             ]
             for statement, args in attempts:
                 with self.subTest(statement=statement), self.assertRaises(psycopg.errors.InsufficientPrivilege):
                     with self.database.connect(scope) as conn: conn.execute(statement, args)
+            # The approved lifecycle now has column-level status UPDATE. RLS
+            # must still hide every other owner's target and leave it unchanged.
+            with self.database.connect(foreign) as owner:
+                before = owner.execute('SELECT item_id,status,version FROM cj_memory_item WHERE scope=%s ORDER BY item_id', (foreign,)).fetchall()
+            self.assertTrue(before)
+            with self.database.connect(scope) as conn:
+                self.assertEqual(conn.execute("UPDATE cj_memory_item SET status='active' WHERE scope=%s", (foreign,)).rowcount, 0)
+            with self.database.connect(foreign) as owner:
+                self.assertEqual(owner.execute('SELECT item_id,status,version FROM cj_memory_item WHERE scope=%s ORDER BY item_id', (foreign,)).fetchall(), before)
             connection = self.database.connect(scope)
             with connection.cursor() as cursor:
                 cursor.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED'); connection.bind_scope(cursor)
