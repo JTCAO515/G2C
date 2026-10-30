@@ -76,8 +76,9 @@ class Operation:
 
 
 class Boundary:
-    def __init__(self, checker=None, resolve=None):
+    def __init__(self, checker=None, resolve=None, *, repository_factory=Repository):
         self.checker, self.resolve = checker, resolve
+        self.repository_factory = repository_factory
 
     def with_operation(self, token, callback):
         state = dict(active=True, blocked=False, action_id=None, commit_possible=False, write_started=False,
@@ -107,7 +108,7 @@ class Boundary:
                     state['blocked'] = True
                     raise
 
-            repository = Repository(connect, scope, guard)
+            repository = self.repository_factory(connect, scope, guard)
             operation = Operation(repository, Metadata(first.principal, scope), state)
             context_token = _active.set(operation)
             guard('entry')
