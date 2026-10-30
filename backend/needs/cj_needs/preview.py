@@ -51,8 +51,8 @@ def preview(raw, *, message_id, run_id, source_text):
             text_utf8_base64=base64.b64encode(original).decode('ascii'),text_sha256=sha256(original).hexdigest()),
         fields=value['fields'],unresolved=value['unresolved'],questions=questions,
         deferred_memory_requests=value['long_term_requests'],
-        text_zh='请核对提取值；尚未保存需求或长期记忆。',
-        text_en='Check the extracted values; no NEEDS record or long-term memory has been saved.'))
+        text_zh='请核对提取值；这些改动尚未保存到本次需求或长期记忆。',
+        text_en='Check the extracted values. These changes have not been saved to your trip requirements or long-term memory.'))
     if len(result)>131072:raise InvalidInput('NEEDS preview output bound exceeded')
     return result
 
