@@ -38,13 +38,28 @@ import Foundation
         // This does not omit any issue from the complete accessibility audit.
         for _ in 0..<40 {
             if element.isHittable { return }
-            let scroll = app.scrollViews.firstMatch
-            let list = app.collectionViews.firstMatch
-            let container = scroll.exists ? scroll : list
-            if container.exists {
-                if element.frame.midY < container.frame.midY { container.swipeDown() }
-                else { container.swipeUp() }
-            } else { app.swipeUp() }
+            let menu = app.buttons.matching(identifier:"assistant.history").firstMatch
+            let conversation = app.staticTexts.matching(identifier:"assistant.conversation").firstMatch
+            if menu.exists && conversation.exists {
+                // ScrollView reports the whole window, including the fixed composer.
+                // Derive gestures from the actual gap between fixed controls/input.
+                let top = menu.frame.maxY,bottom = conversation.frame.minY
+                XCTAssertGreaterThan(bottom - top,80)
+                let window = app.frame
+                let high = top + (bottom - top) * 0.35,low = top + (bottom - top) * 0.85
+                let highPoint = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:window.midX,dy:high))
+                let lowPoint = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:window.midX,dy:low))
+                print("PLACE_VISIBLE_SCROLL",element.identifier,element.frame,top,bottom)
+                if element.frame.midY < (top + bottom) / 2 { highPoint.press(forDuration:0.05,thenDragTo:lowPoint) }
+                else { lowPoint.press(forDuration:0.05,thenDragTo:highPoint) }
+            } else {
+                let scroll = app.scrollViews.firstMatch,list = app.collectionViews.firstMatch
+                let container = scroll.exists ? scroll : list
+                if container.exists {
+                    if element.frame.midY < container.frame.midY { container.swipeDown() }
+                    else { container.swipeUp() }
+                } else { app.swipeUp() }
+            }
         }
         XCTAssertTrue(element.isHittable,"Expected visible element: " + element.identifier)
     }
