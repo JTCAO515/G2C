@@ -15,10 +15,11 @@ import CJMessageClient
 private actor TravelReadWire: ClientTransport {
     let id: String
     let timestamp: String
+    let active: Bool
     let after: @Sendable () async -> Void
     var count = 0
-    init(id: String,timestamp: String = "2026-10-30T11:12:13.123456Z",after: @escaping @Sendable () async -> Void = {}) {
-        self.id = id;self.timestamp = timestamp;self.after = after
+    init(id: String,timestamp: String = "2026-10-30T11:12:13.123456Z",active: Bool = true,after: @escaping @Sendable () async -> Void = {}) {
+        self.id = id;self.timestamp = timestamp;self.active = active;self.after = after
     }
     func send(_ request: HTTPRequest,body: HTTPBody?,baseURL: URL,operationID: String) async throws -> (HTTPResponse,HTTPBody?) {
         count += 1
@@ -28,7 +29,7 @@ private actor TravelReadWire: ClientTransport {
         let trace = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
         var response = HTTPResponse(status: .ok)
         response.headerFields[.contentType] = "application/json";response.headerFields[HTTPField.Name("X-Request-ID")!] = trace
-        let raw = try JSONSerialization.data(withJSONObject: ["request_id":trace,"version":"TRAVEL-context.1","travel_context":["id":id,"version":2,"active":true,"created_at":timestamp]])
+        let raw = try JSONSerialization.data(withJSONObject: ["request_id":trace,"version":"TRAVEL-context.1","travel_context":["id":id,"version":2,"active":active,"created_at":timestamp]])
         return (response,HTTPBody(raw))
     }
 }
@@ -68,5 +69,53 @@ private actor TravelReadWire: ClientTransport {
         let wire = TravelReadWire(id:id);let (_,lease,client) = try setup(wire)
         await #expect(throws: RecoveryError.invalidInput) { try await client.readTravelContext(id:value,lease:lease) }
         #expect(await wire.count == 0)
+    }
+}
+
+
+@MainActor private final class TravelSelectionBox { var model: TravelSelectionModel? }
+extension TravelContextReadTests {
+    @Test func explicitNoneAndOwnedTravelAreDifferentCapturesAndRetireOldChoice() async throws {
+        let wire = TravelReadWire(id:id),(_,lease,client) = try setup(wire)
+        let model = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true})
+        #expect(throws:RecoveryError.queryOnly) { try model.capture() }
+        try model.selectNone();let none = try model.capture();#expect(none.context == nil)
+        await model.selectTravel(id)
+        let travel = try model.capture();#expect(travel.context?.value.id == id && travel.context?.value.version == 2)
+        #expect(throws:(any Error).self) { try model.validate(none) }
+        try model.validate(travel)
+        let other = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true})
+        try other.selectNone()
+        #expect(throws:(any Error).self) { try other.validate(travel) }
+    }
+    @Test func retiredScopeRemovesChoicesAndNeverTurnsIntoExplicitNone() throws {
+        let wire = TravelReadWire(id:id), (recovery,lease,client) = try setup(wire)
+        let model = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true})
+        try model.selectNone();let capture = try model.capture();recovery.invalidate()
+        guard case .unavailable = model.state else { Issue.record("stale scope still visible");return }
+        #expect(model.ids.isEmpty)
+        #expect(throws:(any Error).self) { try model.capture() }
+        #expect(throws:(any Error).self) { try model.validate(capture) }
+    }
+    @Test func unknownOrInactiveTravelNeverBecomesNoneOrDispatchPermission() async throws {
+        let wire = TravelReadWire(id:id,active:false),(_,lease,client) = try setup(wire)
+        let model = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true})
+        await model.selectTravel(String(repeating:"f",count:32));#expect(await wire.count == 0)
+        #expect(throws:(any Error).self) { try model.capture() }
+        await model.selectTravel(id);#expect(await wire.count == 1)
+        guard case .unavailable = model.state else { Issue.record("inactive travel accepted");return }
+        #expect(throws:(any Error).self) { try model.capture() }
+    }
+    @Test func lateTravelReadCannotReplaceExplicitLaterNone() async throws {
+        let box = TravelSelectionBox()
+        let wire = TravelReadWire(id:id,after:{ await MainActor.run {
+            do { let model = try #require(box.model);try model.selectNone() }
+            catch { Issue.record(error) }
+        } })
+        let (_,lease,client) = try setup(wire)
+        let model = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true});box.model = model
+        await model.selectTravel(id)
+        guard case .none = model.state else { Issue.record("late read overwrote later explicit choice");return }
+        #expect(try model.capture().context == nil)
     }
 }

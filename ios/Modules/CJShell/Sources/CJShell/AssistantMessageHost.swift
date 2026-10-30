@@ -18,18 +18,21 @@ import CJAPI
     let invalidateResources: @MainActor () -> Void
     let queryOriginal: (@MainActor (String, Lease) async throws -> Void)?
     let sendClient: MessageHTTPClient?
+    let travelSelection: TravelSelectionModel?
+    let currentNeeds: (@MainActor () -> MessageNeedsSelection?)?
 
     public init(recovery: MessageRecovery, scope: StorageScope, lease: Lease,
                 generation: ShellGeneration, conversationID: String? = nil, messageID: String? = nil,
                 synthetic: Bool, isCurrent: @escaping @MainActor () -> Bool,
                 invalidateResources: @escaping @MainActor () -> Void,
                 queryOriginal: (@MainActor (String, Lease) async throws -> Void)? = nil,
-                sendClient: MessageHTTPClient? = nil) {
+                sendClient: MessageHTTPClient? = nil,travelSelection: TravelSelectionModel? = nil,
+                currentNeeds: (@MainActor () -> MessageNeedsSelection?)? = nil) {
         self.recovery = recovery; self.scope = scope; self.lease = lease
         self.generation = generation; self.conversationID = conversationID; self.messageID = messageID
         self.synthetic = synthetic; self.isCurrent = isCurrent; self.queryOriginal = queryOriginal
         self.invalidateResources = invalidateResources
-        self.sendClient = sendClient
+        self.sendClient = sendClient;self.travelSelection = travelSelection;self.currentNeeds = currentNeeds
     }
 }
 
@@ -37,11 +40,12 @@ import CJAPI
 /// No public initializer, credentials, or UI-derived message/run identifiers.
 @MainActor public final class AcceptedMessageRunReceipt: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     let receipt: Components.Schemas.MessageReceipt
+    let travelReference: Components.Schemas.MessageTravelReference?
     let isCurrent: @MainActor () -> Bool
     let isStillOwned: @MainActor () -> Bool
-    fileprivate init(receipt: Components.Schemas.MessageReceipt, isCurrent: @escaping @MainActor () -> Bool,
+    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil, isCurrent: @escaping @MainActor () -> Bool,
                      isStillOwned: @escaping @MainActor () -> Bool) {
-        self.receipt = receipt; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
+        self.receipt = receipt;self.travelReference = travelReference; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
     }
     public nonisolated var description: String { "<redacted accepted message receipt>" }
     public nonisolated var debugDescription: String { description }
@@ -78,6 +82,7 @@ public enum MessageHostActivity: Equatable {
     fileprivate let binding: AssistantMessageBinding
     fileprivate let messageID: String
     fileprivate let revision: UUID
+    fileprivate let wire: MessageSendWireVersion
 }
 
 @MainActor @Observable public final class AssistantMessageHost {
@@ -97,6 +102,7 @@ public enum MessageHostActivity: Equatable {
     public var creationIntent: MessageCreationIntent = .none
     public var isBusy: Bool { activity == .preparing || activity == .sending || activity == .querying }
     public var selectedConversation: String? { bindingIsCurrent ? selectedConversationID : nil }
+    public var travelSelection: TravelSelectionModel? { bindingIsCurrent ? binding?.travelSelection : nil }
     public var supportsSending: Bool { bindingIsCurrent && binding?.sendClient != nil }
     public var visibleOriginalText: String? {
         guard let record = visibleRecord,
@@ -122,6 +128,10 @@ public enum MessageHostActivity: Equatable {
     public var canStartMessage: Bool {
         guard bindingIsCurrent, !isBusy, let binding, let client = binding.sendClient,
               let conversation = selectedConversationID else { return false }
+        if let travel = binding.travelSelection {
+            guard (try? travel.capture()) != nil,creationIntent == .none || binding.currentNeeds?() != nil else { return false }
+            return (try? client.canStartTravelSend(conversationID:conversation,lease:binding.lease)) == true
+        }
         return (try? client.canStartSend(conversationID: conversation, lease: binding.lease)) == true
     }
     public var canSend: Bool { canStartMessage && !shell.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -129,7 +139,13 @@ public enum MessageHostActivity: Equatable {
         guard bindingIsCurrent, !isBusy, let binding, let client = binding.sendClient,
               let record, record.phase == .notObserved,
               let cid = try? originalConversation(record), selectedConversationID.map({ Data($0.utf8) == Data(cid.utf8) }) == true else { return false }
-        return (try? client.sendDecision(messageID: record.messageID, lease: binding.lease)) == .resubmitOriginal
+        switch try? client.originalSendVersion(messageID:record.messageID,lease:binding.lease) {
+        case .travel:
+            return binding.travelSelection != nil && (try? client.travelSendDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
+        case .legacy:
+            return binding.travelSelection == nil && (try? client.sendDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
+        case .historicalDraft,nil:return false
+        }
     }
 
     public init(shell: ShellState) {
@@ -227,14 +243,24 @@ public enum MessageHostActivity: Equatable {
     /// accepted recovery state, original bytes/hash, lease and current selection agree.
     public func captureAcceptedRunReceipt() -> AcceptedMessageRunReceipt? {
         let revision = runSelectionRevision
-        guard let originalBinding = binding, runSelectionAllowed, let id = selectedMessageID,
-              bindingIsCurrent, isSameBinding(originalBinding), revision == runSelectionRevision,
-              let record = try? originalBinding.recovery.action(messageID: id, lease: originalBinding.lease),
-              record.phase == .accepted, let bytes = record.receipt,
-              let receipt = try? JSONDecoder().decode(Components.Schemas.MessageReceipt.self, from: bytes),
-              Data(receipt.message_id.utf8) == Data(record.messageID.utf8), receipt.input_sha256 == record.inputSHA256,
-              ownsRunReceipt(record, binding: originalBinding, revision: revision) else { return nil }
-        return AcceptedMessageRunReceipt(receipt: receipt, isCurrent: { [weak self] in
+        guard let originalBinding = binding,runSelectionAllowed,let id = selectedMessageID,
+              bindingIsCurrent,isSameBinding(originalBinding),revision == runSelectionRevision,
+              let record = try? originalBinding.recovery.action(messageID:id,lease:originalBinding.lease),record.phase == .accepted,
+              let bytes = record.receipt,ownsRunReceipt(record,binding:originalBinding,revision:revision) else { return nil }
+        let receipt: Components.Schemas.MessageReceipt
+        let reference: Components.Schemas.MessageTravelReference?
+        do {
+            if let client = originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .travel {
+                let accepted = try client.acceptedTravelMessage(messageID:id,lease:originalBinding.lease)
+                try client.validateRead(accepted,lease:originalBinding.lease)
+                receipt = accepted.value.receipt;reference = accepted.value.reference
+            } else {
+                receipt = try JSONDecoder().decode(Components.Schemas.MessageReceipt.self,from:bytes);reference = nil
+            }
+            guard Data(receipt.message_id.utf8) == Data(record.messageID.utf8),receipt.input_sha256 == record.inputSHA256,
+                  ownsRunReceipt(record,binding:originalBinding,revision:revision) else { return nil }
+        } catch { return nil }
+        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference, isCurrent: { [weak self] in
             self?.ownsRunReceipt(record, binding: originalBinding, revision: revision) == true
         }, isStillOwned: { [weak self] in
             self?.ownsRunReceiptWithoutCallbacks(record, binding: originalBinding, revision: revision) == true
@@ -286,7 +312,13 @@ public enum MessageHostActivity: Equatable {
         activity = .querying
         task = Task { [weak self] in
             do {
-                if let client = binding.sendClient { _ = try await client.reconcileSend(messageID: messageID, lease: binding.lease) }
+                if let client = binding.sendClient {
+                    switch try client.originalSendVersion(messageID:messageID,lease:binding.lease) {
+                    case .legacy:_ = try await client.reconcileSend(messageID:messageID,lease:binding.lease)
+                    case .travel:_ = try await client.reconcileTravelSend(messageID:messageID,lease:binding.lease)
+                    case .historicalDraft:throw RecoveryError.queryOnly
+                    }
+                }
                 else if let query = binding.queryOriginal { try await query(messageID, binding.lease) }
                 guard let self, self.isSameBinding(binding) else { return }
                 guard self.bindingIsCurrent else { self.blockStorage(for: binding); return }
@@ -338,7 +370,10 @@ public enum MessageHostActivity: Equatable {
             activity = .preparing
             task = Task { [weak self] in
                 do {
-                    if needsHead { _ = try await client.readSendHead(conversationID: conversationID, lease: binding.lease) }
+                    if needsHead {
+                        if binding.travelSelection != nil { _ = try await client.readTravelSendHead(conversationID:conversationID,lease:binding.lease) }
+                        else { _ = try await client.readSendHead(conversationID:conversationID,lease:binding.lease) }
+                    }
                     guard let self, self.isSameBinding(binding), self.runSelectionRevision == revision else { return }
                     guard self.bindingIsCurrent else { self.blockStorage(for: binding); return }
                     self.activity = .ready; self.task = nil
@@ -356,14 +391,25 @@ public enum MessageHostActivity: Equatable {
         let revision = runSelectionRevision
         activity = .sending
         do {
-            let original = try client.stageSend(messageID: UUID().uuidString, conversationID: conversation,
-                                                text: text, creationIntent: creationIntent, lease: binding.lease)
+            let original: ActionRecord
+            let travelWire = binding.travelSelection != nil
+            if let travel = binding.travelSelection {
+                let selection = try travel.capture()
+                let needs = creationIntent == .none ? nil : binding.currentNeeds?()
+                try travel.validate(selection)
+                guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding) else { return }
+                original = try client.stageTravelSend(messageID:UUID().uuidString,conversationID:conversation,text:text,
+                    creationIntent:creationIntent,travelContext:selection.context,needsReference:needs,lease:binding.lease)
+            } else {
+                original = try client.stageSend(messageID:UUID().uuidString,conversationID:conversation,text:text,creationIntent:creationIntent,lease:binding.lease)
+            }
             guard isSameBinding(binding), bindingIsCurrent, isSameBinding(binding) else { return }
             record = original; selectedMessageID = original.messageID
             projection = try binding.recovery.localProjection(scope: binding.scope, lease: binding.lease)
             task = Task { [weak self] in
                 do {
-                    _ = try await client.submitPrepared(messageID: original.messageID, lease: binding.lease)
+                    if travelWire { _ = try await client.submitPreparedTravelSend(messageID:original.messageID,lease:binding.lease) }
+                    else { _ = try await client.submitPrepared(messageID:original.messageID,lease:binding.lease) }
                     try self?.sendFinished(binding, messageID: original.messageID, revision: revision,
                                           clearEditorRevision: editorRevision)
                 } catch { self?.sendFailed(binding, revision: revision) }
@@ -377,10 +423,13 @@ public enum MessageHostActivity: Equatable {
     }
 
     public func captureResubmission() -> MessageResubmissionContext? {
-        guard canResubmit, let binding, let client = binding.sendClient, let record,
-              let confirmation = try? client.requiresResubmissionConfirmation(messageID: record.messageID, lease: binding.lease) else { return nil }
-        return MessageResubmissionContext(requiresConfirmation: confirmation, binding: binding,
-                                          messageID: record.messageID, revision: runSelectionRevision)
+        guard canResubmit,let binding,let client = binding.sendClient,let record else { return nil }
+        do {
+            let wire = try client.originalSendVersion(messageID:record.messageID,lease:binding.lease)
+            let confirmation = try wire == .travel ? client.requiresTravelResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
+                : client.requiresResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
+            return MessageResubmissionContext(requiresConfirmation:confirmation,binding:binding,messageID:record.messageID,revision:runSelectionRevision,wire:wire)
+        } catch { return nil }
     }
 
     public func resubmitOriginal(_ context: MessageResubmissionContext, confirmed: Bool) {
@@ -392,7 +441,11 @@ public enum MessageHostActivity: Equatable {
         activity = .sending
         task = Task { [weak self] in
             do {
-                _ = try await client.submitPrepared(messageID: context.messageID, lease: binding.lease, confirmRestored: confirmed)
+                switch context.wire {
+                case .legacy:_ = try await client.submitPrepared(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
+                case .travel:_ = try await client.submitPreparedTravelSend(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
+                case .historicalDraft:throw RecoveryError.queryOnly
+                }
                 try self?.sendFinished(binding, messageID: context.messageID, revision: revision)
             } catch { self?.sendFailed(binding, revision: revision) }
         }

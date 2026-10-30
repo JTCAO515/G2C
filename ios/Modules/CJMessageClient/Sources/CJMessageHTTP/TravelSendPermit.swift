@@ -149,6 +149,9 @@ extension MessageHTTPClient {
             try recovery.observeUnknown(submission.operation);throw MessageHTTPFailure.exchangeUnknown
         }
     }
+    public func requiresTravelResubmissionConfirmation(messageID: String,lease: Lease) throws -> Bool {
+        try checkTravelSendLease(lease);return !travelSendPermitState.intents.contains(Data(messageID.utf8))
+    }
     public func travelSendDecision(messageID: String,lease: Lease) throws -> MessageSendDecision? {
         try checkTravelSendLease(lease);return travelSendPermitState.decisions[Data(messageID.utf8)]
     }

@@ -96,7 +96,7 @@ import CJSession
         let token = UUID(); selection = token; origin = source; sourceUnavailable = false
         do {
             let configurationID = configuration.id
-            let runSource = try RunDisplaySource(receipt: source.receipt, session: configuration.session, operation: configuration.operation,
+            let runSource = try RunDisplaySource(receipt: source.receipt,travelReference:source.travelReference, session: configuration.session, operation: configuration.operation,
                 isCurrent: { [weak self] in self?.sourceIsCurrent(source, configurationID: configurationID, token: token) == true })
             let accepted = configuration.model.select(runSource)
             guard ownsConfiguration(configuration), origin === source, selection == token else { return false }

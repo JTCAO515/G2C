@@ -501,6 +501,24 @@ extension MessageHTTPClient {
         try recovery.validateScope(scope, lease: lease)
         guard result.owner == readOwner, result.lease == lease else { throw RecoveryError.inactive }
     }
+    public func originalSendVersion(messageID: String,lease: Lease) throws -> MessageSendWireVersion {
+        try recovery.validateScope(scope,lease:lease)
+        guard let record = try recovery.action(messageID:messageID,lease:lease) else { throw RecoveryError.invalidInput }
+        var parser = StrictJSON(bytes:Array(record.originalUTF8));try parser.check()
+        guard let object = try JSONSerialization.jsonObject(with:record.originalUTF8) as? [String:Any],
+              let raw = object["version"] as? String,let version = MessageSendWireVersion(rawValue:raw) else { throw RecoveryError.invalidSnapshot }
+        return version
+    }
+    public func acceptedTravelMessage(messageID: String,lease: Lease) throws -> MessageReadResult<Components.Schemas.MessageReceiveV2Response> {
+        try recovery.validateScope(scope,lease:lease)
+        guard let record = try recovery.action(messageID:messageID,lease:lease),record.phase == .accepted,
+              let bytes = record.receipt else { throw RecoveryError.queryOnly }
+        let original = try OriginalTravelMessageSend(raw:record.originalUTF8,maximumBytes:endpoint.maximumRequestBytes,expectedMessageID:messageID)
+        let value = try JSONDecoder().decode(Components.Schemas.MessageReceiveV2Response.self,from:bytes)
+        _ = try ValidatedTravelMessageReceipt(receipt:value.receipt,reference:value.reference,original:original)
+        try recovery.validateScope(scope,lease:lease)
+        return MessageReadResult(value:value,next:nil,requestID:value.request_id,owner:readOwner,lease:lease)
+    }
     /// Real owned B data under the current client/lease. This result never
     /// substitutes for B's original accepted-message reference or effect lease.
     public func readTravelContext(id: String, lease: Lease) async throws -> MessageReadResult<Components.Schemas.TravelContextReadResponse.travel_contextPayload> {
