@@ -17,6 +17,7 @@ class Repository:
         self.confirm = confirm
         self.guard = guard or (lambda stage: None)
         self.structured = structured
+        self.manual_origin = None
 
     @contextmanager
     def transaction(self, before_commit=None):

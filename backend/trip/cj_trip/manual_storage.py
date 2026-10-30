@@ -45,6 +45,8 @@ def _prepare(repository, edit, builder, basis_version):
             proposal, digest, status = repository._proposal(cur, previous[1])
             return PreparedManual(ProposalDetail(proposal,digest,status), bytes(previous[2]))
         original = _record(cur, repository, edit.trip_id)
+        if repository.manual_origin is None:raise Denied('original source reader required')
+        repository.manual_origin.check(cur,original)
         candidate = builder(original, edit)
         # Import locally: FEAS uses Trip's strict grammar; neither module owns a
         # second time parser/constraint engine or an inferred NEEDS snapshot.
@@ -98,6 +100,8 @@ def _save(repository, save, parse_basis, builder, basis_version):
         if proposal.basis_version != basis_version: raise Denied('original preparation version mismatch')
         edit = parse_basis(bytes(basis[1]))
         current = _record(cur,repository,proposal.trip_id)
+        if repository.manual_origin is None:raise Denied('original source reader required')
+        repository.manual_origin.check(cur,current)
         candidate = builder(current,edit)
         if (current.content != bytes(basis[2]) or proposal.content != candidate.content
                 or proposal.expected_version != current.version):

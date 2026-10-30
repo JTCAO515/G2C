@@ -22,18 +22,33 @@ from .structured import validate_document
 
 
 def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
-                            max_response_bytes=1_000_000):
+                            max_response_bytes=1_000_000, run_context=None):
     if (os.environ.get('CJ_ENV') != 'local' or type(confirmation_signer) is not ConfirmationSigner
             or type(max_response_bytes) is not int or max_response_bytes < 1):
         raise CompositionUnavailable('explicit bounded local structured manual host required')
-    database = LocalDatabase(conninfo_path)
+    from cj_api.local_run_context import LocalRunContext
+    if run_context is not None and type(run_context) is not LocalRunContext:
+        raise CompositionUnavailable('canonical explicit local run context required')
+    database = LocalDatabase(conninfo_path,run_context=run_context)
     def resolve(principal):
         message_scope=scope_for(principal.issuer,principal.subject)
         scope=trip_scope_for(message_scope)
         with database.connect(message_scope) as conn:
             conn.execute('INSERT INTO cj_trip_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
         return lambda:database.connect(message_scope),scope
-    boundary=Boundary(checker_for(Path(auth_dir)),resolve,confirmation_signer,structured=True)
+    class ManualBoundary(Boundary):
+        def _bind(self,token):
+            repository,principal,check=super()._bind(token)
+            from .manual_origin import ManualOrigin
+            from cj_message.needs_binding import needs_scope_for
+            scope=scope_for(principal.issuer,principal.subject)
+            origin=ManualOrigin(scope,trip_scope_for(scope),needs_scope_for(scope) if run_context is not None else None)
+            repository.manual_origin=origin
+            def guard(stage):
+                check(stage)
+                if repository.manual_origin is not origin:raise Denied('original source reader changed')
+            return repository,principal,guard
+    boundary=ManualBoundary(checker_for(Path(auth_dir)),resolve,confirmation_signer,structured=True)
     app=create_app()
 
     def query(request, fields):
