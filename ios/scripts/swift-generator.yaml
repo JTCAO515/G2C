@@ -1,0 +1,7 @@
+generate:
+  - types
+  - client
+accessModifier: public
+typeOverrides:
+  schemas:
+    CJExplicitJSONNull: ExplicitJSONNull

@@ -9131,15 +9131,58 @@ extension Components {
         public struct TravelActionQueryResponse: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/TravelActionQueryResponse/request_id`.
             public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/TravelActionQueryResponse/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TravelActionQueryResponse/receipt/case1`.
+                case TravelActionReceipt(Components.Schemas.TravelActionReceipt)
+                /// - Remark: Generated from `#/components/schemas/TravelActionQueryResponse/receipt/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .TravelActionReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .TravelActionReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TravelActionQueryResponse/receipt`.
+            public var receipt: Components.Schemas.TravelActionQueryResponse.receiptPayload
             /// Creates a new `TravelActionQueryResponse`.
             ///
             /// - Parameters:
             ///   - request_id:
-            public init(request_id: Components.Schemas.RequestId) {
+            ///   - receipt:
+            public init(
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.TravelActionQueryResponse.receiptPayload
+            ) {
                 self.request_id = request_id
+                self.receipt = receipt
             }
             public enum CodingKeys: String, CodingKey {
                 case request_id
+                case receipt
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -9147,8 +9190,13 @@ extension Components {
                     Components.Schemas.RequestId.self,
                     forKey: .request_id
                 )
+                self.receipt = try container.decode(
+                    Components.Schemas.TravelActionQueryResponse.receiptPayload.self,
+                    forKey: .receipt
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
-                    "request_id"
+                    "request_id",
+                    "receipt"
                 ])
             }
         }
@@ -9855,6 +9903,10 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/context_kind`.
             public var context_kind: Components.Schemas.MessageTravelReferenceNone.context_kindPayload
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/context_id`.
+            public var context_id: Components.Schemas.CJExplicitJSONNull
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/context_version`.
+            public var context_version: Components.Schemas.CJExplicitJSONNull
             /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceNone/selection_epoch`.
             public var selection_epoch: Swift.Int
             /// Creates a new `MessageTravelReferenceNone`.
@@ -9869,6 +9921,8 @@ extension Components {
             ///   - input_sha256:
             ///   - message_version:
             ///   - context_kind:
+            ///   - context_id:
+            ///   - context_version:
             ///   - selection_epoch:
             public init(
                 version: Components.Schemas.MessageTravelReferenceNone.versionPayload,
@@ -9880,6 +9934,8 @@ extension Components {
                 input_sha256: Swift.String,
                 message_version: Components.Schemas.MessageTravelReferenceNone.message_versionPayload,
                 context_kind: Components.Schemas.MessageTravelReferenceNone.context_kindPayload,
+                context_id: Components.Schemas.CJExplicitJSONNull,
+                context_version: Components.Schemas.CJExplicitJSONNull,
                 selection_epoch: Swift.Int
             ) {
                 self.version = version
@@ -9891,6 +9947,8 @@ extension Components {
                 self.input_sha256 = input_sha256
                 self.message_version = message_version
                 self.context_kind = context_kind
+                self.context_id = context_id
+                self.context_version = context_version
                 self.selection_epoch = selection_epoch
             }
             public enum CodingKeys: String, CodingKey {
@@ -9903,6 +9961,8 @@ extension Components {
                 case input_sha256
                 case message_version
                 case context_kind
+                case context_id
+                case context_version
                 case selection_epoch
             }
             public init(from decoder: any Swift.Decoder) throws {
@@ -9943,6 +10003,14 @@ extension Components {
                     Components.Schemas.MessageTravelReferenceNone.context_kindPayload.self,
                     forKey: .context_kind
                 )
+                self.context_id = try container.decode(
+                    Components.Schemas.CJExplicitJSONNull.self,
+                    forKey: .context_id
+                )
+                self.context_version = try container.decode(
+                    Components.Schemas.CJExplicitJSONNull.self,
+                    forKey: .context_version
+                )
                 self.selection_epoch = try container.decode(
                     Swift.Int.self,
                     forKey: .selection_epoch
@@ -9957,6 +10025,8 @@ extension Components {
                     "input_sha256",
                     "message_version",
                     "context_kind",
+                    "context_id",
+                    "context_version",
                     "selection_epoch"
                 ])
             }
@@ -9996,6 +10066,10 @@ extension Components {
             public var context_kind: Components.Schemas.MessageTravelReferenceLegacy.context_kindPayload
             /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/context_id`.
             public var context_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/context_version`.
+            public var context_version: Components.Schemas.CJExplicitJSONNull
+            /// - Remark: Generated from `#/components/schemas/MessageTravelReferenceLegacy/selection_epoch`.
+            public var selection_epoch: Components.Schemas.CJExplicitJSONNull
             /// Creates a new `MessageTravelReferenceLegacy`.
             ///
             /// - Parameters:
@@ -10009,6 +10083,8 @@ extension Components {
             ///   - message_version:
             ///   - context_kind:
             ///   - context_id:
+            ///   - context_version:
+            ///   - selection_epoch:
             public init(
                 version: Components.Schemas.MessageTravelReferenceLegacy.versionPayload,
                 conversation_id: Swift.String,
@@ -10019,7 +10095,9 @@ extension Components {
                 input_sha256: Swift.String,
                 message_version: Components.Schemas.MessageTravelReferenceLegacy.message_versionPayload,
                 context_kind: Components.Schemas.MessageTravelReferenceLegacy.context_kindPayload,
-                context_id: Swift.String
+                context_id: Swift.String,
+                context_version: Components.Schemas.CJExplicitJSONNull,
+                selection_epoch: Components.Schemas.CJExplicitJSONNull
             ) {
                 self.version = version
                 self.conversation_id = conversation_id
@@ -10031,6 +10109,8 @@ extension Components {
                 self.message_version = message_version
                 self.context_kind = context_kind
                 self.context_id = context_id
+                self.context_version = context_version
+                self.selection_epoch = selection_epoch
             }
             public enum CodingKeys: String, CodingKey {
                 case version
@@ -10043,6 +10123,8 @@ extension Components {
                 case message_version
                 case context_kind
                 case context_id
+                case context_version
+                case selection_epoch
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -10086,6 +10168,14 @@ extension Components {
                     Swift.String.self,
                     forKey: .context_id
                 )
+                self.context_version = try container.decode(
+                    Components.Schemas.CJExplicitJSONNull.self,
+                    forKey: .context_version
+                )
+                self.selection_epoch = try container.decode(
+                    Components.Schemas.CJExplicitJSONNull.self,
+                    forKey: .selection_epoch
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "version",
                     "conversation_id",
@@ -10096,7 +10186,9 @@ extension Components {
                     "input_sha256",
                     "message_version",
                     "context_kind",
-                    "context_id"
+                    "context_id",
+                    "context_version",
+                    "selection_epoch"
                 ])
             }
         }
@@ -10217,21 +10309,144 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/version`.
             public var version: Components.Schemas.MessageSendStatusV2Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/receipt/case1`.
+                case MessageReceipt(Components.Schemas.MessageReceipt)
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/receipt/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MessageReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MessageReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/receipt`.
+            public var receipt: Components.Schemas.MessageSendStatusV2Response.receiptPayload
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/head`.
+            @frozen public enum headPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/head/case1`.
+                case MessageHead(Components.Schemas.MessageHead)
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/head/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MessageHead(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MessageHead(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/head`.
+            public var head: Components.Schemas.MessageSendStatusV2Response.headPayload
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/reference`.
+            @frozen public enum referencePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/reference/case1`.
+                case MessageTravelReference(Components.Schemas.MessageTravelReference)
+                /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/reference/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MessageTravelReference(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MessageTravelReference(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MessageSendStatusV2Response/reference`.
+            public var reference: Components.Schemas.MessageSendStatusV2Response.referencePayload
             /// Creates a new `MessageSendStatusV2Response`.
             ///
             /// - Parameters:
             ///   - request_id:
             ///   - version:
+            ///   - receipt:
+            ///   - head:
+            ///   - reference:
             public init(
                 request_id: Components.Schemas.RequestId,
-                version: Components.Schemas.MessageSendStatusV2Response.versionPayload
+                version: Components.Schemas.MessageSendStatusV2Response.versionPayload,
+                receipt: Components.Schemas.MessageSendStatusV2Response.receiptPayload,
+                head: Components.Schemas.MessageSendStatusV2Response.headPayload,
+                reference: Components.Schemas.MessageSendStatusV2Response.referencePayload
             ) {
                 self.request_id = request_id
                 self.version = version
+                self.receipt = receipt
+                self.head = head
+                self.reference = reference
             }
             public enum CodingKeys: String, CodingKey {
                 case request_id
                 case version
+                case receipt
+                case head
+                case reference
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -10243,9 +10458,24 @@ extension Components {
                     Components.Schemas.MessageSendStatusV2Response.versionPayload.self,
                     forKey: .version
                 )
+                self.receipt = try container.decode(
+                    Components.Schemas.MessageSendStatusV2Response.receiptPayload.self,
+                    forKey: .receipt
+                )
+                self.head = try container.decode(
+                    Components.Schemas.MessageSendStatusV2Response.headPayload.self,
+                    forKey: .head
+                )
+                self.reference = try container.decode(
+                    Components.Schemas.MessageSendStatusV2Response.referencePayload.self,
+                    forKey: .reference
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "request_id",
-                    "version"
+                    "version",
+                    "receipt",
+                    "head",
+                    "reference"
                 ])
             }
         }
@@ -10499,7 +10729,7 @@ extension Components {
                 ])
             }
         }
-        /// RUN-CANCEL@1. Body at most 4096 bytes; duplicate/unknown/missing keys rejected. Stable cancellation identity is trusted principal + cancel + original message_id; JSON whitespace does not create a new action.
+        /// RUN-CANCEL@2. Body at most 65536 bytes; message_id at most 16384 UTF8 bytes. Duplicate/unknown/missing keys rejected. Cancellation binds canonical owner and the original send.2 receipt/reference plus RUN fence; live travel selection or active chat is not required. JSON whitespace does not create a new action.
         ///
         /// - Remark: Generated from `#/components/schemas/RunTravelCancellationRequest`.
         public struct RunTravelCancellationRequest: Codable, Hashable, Sendable {
@@ -10779,6 +11009,43 @@ extension Components {
             public var extent: Components.Schemas.MemoryStoredCommandV2.extentPayload
             /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/source_version`.
             public var source_version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/context`.
+            @frozen public enum contextPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/context/case1`.
+                case MemoryStoredContextV2(Components.Schemas.MemoryStoredContextV2)
+                /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/context/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryStoredContextV2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryStoredContextV2(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryStoredCommandV2/context`.
+            public var context: Components.Schemas.MemoryStoredCommandV2.contextPayload
             /// Creates a new `MemoryStoredCommandV2`.
             ///
             /// - Parameters:
@@ -10792,6 +11059,7 @@ extension Components {
             ///   - kind:
             ///   - extent:
             ///   - source_version:
+            ///   - context:
             public init(
                 operation_id: Swift.String,
                 item_id: Swift.String,
@@ -10802,7 +11070,8 @@ extension Components {
                 occurred_at: Swift.String,
                 kind: Components.Schemas.MemoryStoredCommandV2.kindPayload,
                 extent: Components.Schemas.MemoryStoredCommandV2.extentPayload,
-                source_version: Swift.Int
+                source_version: Swift.Int,
+                context: Components.Schemas.MemoryStoredCommandV2.contextPayload
             ) {
                 self.operation_id = operation_id
                 self.item_id = item_id
@@ -10814,6 +11083,7 @@ extension Components {
                 self.kind = kind
                 self.extent = extent
                 self.source_version = source_version
+                self.context = context
             }
             public enum CodingKeys: String, CodingKey {
                 case operation_id
@@ -10826,6 +11096,7 @@ extension Components {
                 case kind
                 case extent
                 case source_version
+                case context
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -10869,6 +11140,10 @@ extension Components {
                     Swift.Int.self,
                     forKey: .source_version
                 )
+                self.context = try container.decode(
+                    Components.Schemas.MemoryStoredCommandV2.contextPayload.self,
+                    forKey: .context
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "operation_id",
                     "item_id",
@@ -10879,7 +11154,8 @@ extension Components {
                     "occurred_at",
                     "kind",
                     "extent",
-                    "source_version"
+                    "source_version",
+                    "context"
                 ])
             }
         }
@@ -11069,6 +11345,43 @@ extension Components {
             public var version: Components.Schemas.MemoryEditActionV2.versionPayload
             /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/text`.
             public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/context`.
+            @frozen public enum contextPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/context/case1`.
+                case MemoryTravelSelectionV2(Components.Schemas.MemoryTravelSelectionV2)
+                /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/context/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryTravelSelectionV2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryTravelSelectionV2(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryEditActionV2/context`.
+            public var context: Components.Schemas.MemoryEditActionV2.contextPayload
             /// Creates a new `MemoryEditActionV2`.
             ///
             /// - Parameters:
@@ -11079,6 +11392,7 @@ extension Components {
             ///   - expected_source_version:
             ///   - version:
             ///   - text:
+            ///   - context:
             public init(
                 action_id: Swift.String,
                 operation: Components.Schemas.MemoryEditActionV2.operationPayload,
@@ -11086,7 +11400,8 @@ extension Components {
                 expected_version: Swift.Int,
                 expected_source_version: Swift.Int,
                 version: Components.Schemas.MemoryEditActionV2.versionPayload,
-                text: Swift.String
+                text: Swift.String,
+                context: Components.Schemas.MemoryEditActionV2.contextPayload
             ) {
                 self.action_id = action_id
                 self.operation = operation
@@ -11095,6 +11410,7 @@ extension Components {
                 self.expected_source_version = expected_source_version
                 self.version = version
                 self.text = text
+                self.context = context
             }
             public enum CodingKeys: String, CodingKey {
                 case action_id
@@ -11104,6 +11420,7 @@ extension Components {
                 case expected_source_version
                 case version
                 case text
+                case context
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -11135,6 +11452,10 @@ extension Components {
                     Swift.String.self,
                     forKey: .text
                 )
+                self.context = try container.decode(
+                    Components.Schemas.MemoryEditActionV2.contextPayload.self,
+                    forKey: .context
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "action_id",
                     "operation",
@@ -11142,7 +11463,8 @@ extension Components {
                     "expected_version",
                     "expected_source_version",
                     "version",
-                    "text"
+                    "text",
+                    "context"
                 ])
             }
         }
@@ -11426,21 +11748,62 @@ extension Components {
             public var version: Components.Schemas.MemoryReceiptV2Response.versionPayload
             /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response/request_id`.
             public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response/receipt/case1`.
+                case MemoryReceipt(Components.Schemas.MemoryReceipt)
+                /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response/receipt/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryReceipt(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryReceipt(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryReceiptV2Response/receipt`.
+            public var receipt: Components.Schemas.MemoryReceiptV2Response.receiptPayload
             /// Creates a new `MemoryReceiptV2Response`.
             ///
             /// - Parameters:
             ///   - version:
             ///   - request_id:
+            ///   - receipt:
             public init(
                 version: Components.Schemas.MemoryReceiptV2Response.versionPayload,
-                request_id: Components.Schemas.RequestId
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryReceiptV2Response.receiptPayload
             ) {
                 self.version = version
                 self.request_id = request_id
+                self.receipt = receipt
             }
             public enum CodingKeys: String, CodingKey {
                 case version
                 case request_id
+                case receipt
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -11452,9 +11815,14 @@ extension Components {
                     Components.Schemas.RequestId.self,
                     forKey: .request_id
                 )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryReceiptV2Response.receiptPayload.self,
+                    forKey: .receipt
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "version",
-                    "request_id"
+                    "request_id",
+                    "receipt"
                 ])
             }
         }
@@ -11468,21 +11836,62 @@ extension Components {
             public var version: Components.Schemas.MemoryDetailV2Response.versionPayload
             /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response/request_id`.
             public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response/item`.
+            @frozen public enum itemPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response/item/case1`.
+                case MemoryItemV2(Components.Schemas.MemoryItemV2)
+                /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response/item/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryItemV2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryItemV2(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV2Response/item`.
+            public var item: Components.Schemas.MemoryDetailV2Response.itemPayload
             /// Creates a new `MemoryDetailV2Response`.
             ///
             /// - Parameters:
             ///   - version:
             ///   - request_id:
+            ///   - item:
             public init(
                 version: Components.Schemas.MemoryDetailV2Response.versionPayload,
-                request_id: Components.Schemas.RequestId
+                request_id: Components.Schemas.RequestId,
+                item: Components.Schemas.MemoryDetailV2Response.itemPayload
             ) {
                 self.version = version
                 self.request_id = request_id
+                self.item = item
             }
             public enum CodingKeys: String, CodingKey {
                 case version
                 case request_id
+                case item
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -11494,9 +11903,14 @@ extension Components {
                     Components.Schemas.RequestId.self,
                     forKey: .request_id
                 )
+                self.item = try container.decode(
+                    Components.Schemas.MemoryDetailV2Response.itemPayload.self,
+                    forKey: .item
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "version",
-                    "request_id"
+                    "request_id",
+                    "item"
                 ])
             }
         }
@@ -11616,21 +12030,62 @@ extension Components {
             public var version: Components.Schemas.MemoryManagementReceiptV2Response.versionPayload
             /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response/request_id`.
             public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response/receipt`.
+            @frozen public enum receiptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response/receipt/case1`.
+                case MemoryManagementReceiptV2(Components.Schemas.MemoryManagementReceiptV2)
+                /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response/receipt/case2`.
+                case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self = .MemoryManagementReceiptV2(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self = .CJExplicitJSONNull(try .init(from: decoder))
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    switch self {
+                    case let .MemoryManagementReceiptV2(value):
+                        try value.encode(to: encoder)
+                    case let .CJExplicitJSONNull(value):
+                        try value.encode(to: encoder)
+                    }
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryManagementReceiptV2Response/receipt`.
+            public var receipt: Components.Schemas.MemoryManagementReceiptV2Response.receiptPayload
             /// Creates a new `MemoryManagementReceiptV2Response`.
             ///
             /// - Parameters:
             ///   - version:
             ///   - request_id:
+            ///   - receipt:
             public init(
                 version: Components.Schemas.MemoryManagementReceiptV2Response.versionPayload,
-                request_id: Components.Schemas.RequestId
+                request_id: Components.Schemas.RequestId,
+                receipt: Components.Schemas.MemoryManagementReceiptV2Response.receiptPayload
             ) {
                 self.version = version
                 self.request_id = request_id
+                self.receipt = receipt
             }
             public enum CodingKeys: String, CodingKey {
                 case version
                 case request_id
+                case receipt
             }
             public init(from decoder: any Swift.Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -11642,11 +12097,18 @@ extension Components {
                     Components.Schemas.RequestId.self,
                     forKey: .request_id
                 )
+                self.receipt = try container.decode(
+                    Components.Schemas.MemoryManagementReceiptV2Response.receiptPayload.self,
+                    forKey: .receipt
+                )
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "version",
-                    "request_id"
+                    "request_id",
+                    "receipt"
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/CJExplicitJSONNull`.
+        public typealias CJExplicitJSONNull = ExplicitJSONNull
     }
 }
