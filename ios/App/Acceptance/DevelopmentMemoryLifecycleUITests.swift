@@ -18,17 +18,18 @@ import Foundation
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200);return data
     }
     func button(_ id: String) -> XCUIElement {
-        // Filter by identity before role. Filtering every node by Button first
-        // makes the injected XCTest support resolve attributes for the entire
-        // tree repeatedly; keep the same role constraint on the selected ID.
-        app.descendants(matching:.any).matching(identifier:id)
-            .matching(NSPredicate(format:"elementType == %@",NSNumber(value:XCUIElement.ElementType.button.rawValue))).firstMatch
+        // Resolve a concrete control type, never walk descendants(.any).
+        if ["Memory","记忆","Assistant","助手","Trips","行程"].contains(id) {
+            return app.tabBars.buttons.matching(identifier:id).firstMatch
+        }
+        if id=="assistant.panel.done" { return app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        return app.buttons.matching(identifier:id).firstMatch
     }
     func input(_ id: String) -> XCUIElement {
-        // SwiftUI vertical TextField exposes TextView on 17.5 and TextField on
-        // 26.5. Accept exactly those native input roles for the same stable ID.
-        app.descendants(matching:.any).matching(identifier:id).matching(NSPredicate(format:"elementType IN %@",
-            [NSNumber(value:XCUIElement.ElementType.textView.rawValue),NSNumber(value:XCUIElement.ElementType.textField.rawValue)])).firstMatch
+        // The same vertical SwiftUI TextField has these two native roles.
+        let view=app.textViews.matching(identifier:id).firstMatch
+        if view.exists { return view }
+        return app.textFields.matching(identifier:id).firstMatch
     }
     func tap(_ id: String, towardTop: Bool = false) {
         let target=button(id)
@@ -71,7 +72,7 @@ import Foundation
         app?.terminate();app=XCUIApplication(bundleIdentifier:"space.go2china.memory-lifecycle.acceptance")
         app.launchArguments=["-cj.ui.language.v1",language]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
-        app.launchEnvironment=["G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]
+        app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]
         app.launch();tap(language=="en" ? "Memory":"记忆");tap("memory.account")
         if restore { tap("account.development.restore") } else { tap("account.development.signout");tap("account.development.signin.A") }
         let signed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",f.subjects["A"]!),object:app.staticTexts["account.development.status"])
@@ -130,7 +131,7 @@ import Foundation
         // Use actual caret placement and keyboard deletion rather than a
         // runtime-specific edit-menu label. Verify empty and final UTF-8 bytes.
         field.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.9)).tap()
-        let old=try! XCTUnwrap(field.value as? String)
+        guard let old=field.value as? String else { XCTFail("Native input has no text value");return }
         field.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:old.count))
         XCTAssertEqual(field.value as? String,"")
         field.typeText(text);XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
@@ -299,7 +300,7 @@ import Foundation
         let f=try await fixture("testReleaseClosed");defer { app?.terminate() }
         app=XCUIApplication(bundleIdentifier:"space.go2china.memory-lifecycle.acceptance")
         app.launchArguments=["-cj.ui.language.v1","en"]
-        app.launchEnvironment=["G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]
+        app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]
         app.launch();tap("Memory")
         XCTAssertFalse(app.buttons["account.development.signin.A"].exists)
         XCTAssertFalse(app.buttons["memory.manage.edit"].exists);XCTAssertFalse(app.buttons["memory.manage.pause"].exists)
