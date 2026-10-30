@@ -174,6 +174,13 @@ import Foundation
     private func originalFence(_ fixture: Fixture, saved: Proof, kind: String) async throws {
         XCTAssertNotNil(saved.registered_fingerprint)
         XCTAssertGreaterThan(saved.registered_operations, 0)
+        if kind == "switch" {
+            // The earlier no-injected-token reopen remains checked. This phase
+            // loads the explicit account choices before holding the old read.
+            try launch(fixture, language: "en")
+            tap("assistant.history"); tap("recovery.action." + (try XCTUnwrap(saved.message_id))); tap("assistant.panel.done")
+            try await terminal(fixture, expected: "failed", language: "en")
+        }
         if kind == "expired" {
             let short = try JSONDecoder().decode(Fixture.self, from: await call("/renew-short-token", ["case": fixture.conversation]))
             try launch(short, language: "en")

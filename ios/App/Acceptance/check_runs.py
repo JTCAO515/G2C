@@ -353,15 +353,21 @@ def main():
                         elif parsed.path == '/wait-real-expiry':
                             case_id = query['case'][0]; spec = specs[case_id]
                             while time.time() <= spec['short_expiry']: time.sleep(.2)
+                            original = proof(case_id)['message_id']
+                            headers = {'Authorization':'Bearer '+tokens[spec['choice']]}
                             with TestClient(app) as client:
-                                response = client.get('/v2/run-draft-status',params={'message_id':proof(case_id)['message_id']},
-                                    headers={'Authorization':'Bearer '+tokens[spec['choice']]})
-                            assert response.status_code == 401
+                                admission = client.get('/v1/message-receipts',params={'message_id':original},headers=headers)
+                                response = client.get('/v2/run-draft-status',params={'message_id':original},headers=headers)
                             payload = response.json()
-                            assert not {'run_id','conversation_id','draft_outcome','budget_exhausted_stage'} & payload.keys()
-                            report.setdefault('auth_events', []).append(dict(case=case_id,expired=True,status=response.status_code,
-                                error=payload['error']['code'],private_result_absent=True))
-                            save(); value = {}
+                            private_absent = not {'run_id','conversation_id','draft_outcome','budget_exhausted_stage'} & payload.keys()
+                            report.setdefault('auth_events', []).append(dict(case=case_id,expired=True,status=admission.status_code,
+                                original_status=response.status_code,error=payload['error']['code'],private_result_absent=private_absent))
+                            save()
+                            assert admission.status_code == 401 and admission.json()['error']['code']=='ACCESS_DENIED'
+                            assert response.status_code == 503 and private_absent
+                            assert {key:payload['error'][key] for key in ('code','outcome','recovery')} == dict(
+                                code='RUN_DRAFT_STATUS_UNAVAILABLE',outcome='unknown',recovery='retry_safe_read')
+                            value = {}
                         elif parsed.path == '/release':
                             with lock: specs[query['case'][0]]['release'].set()
                             value = {}

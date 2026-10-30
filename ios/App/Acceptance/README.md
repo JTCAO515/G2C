@@ -160,7 +160,8 @@ matrix remains available through `check_run_budget.py`.
 The twelve named @2 cases cover bilingual answer/draft denial, unknown and stop,
 actual account switch/revocation, real signed-token expiry, and Release0 requests.
 Revocation edits only the isolated development invitation file. Expiry waits for
-an official one-minute development token and verifies actual API401; it does not
+an official one-minute development token and verifies the actual admission API401
+and protected original-status API503/unknown semantics; it does not
 inject an HTTP rejection. Restoration uses the same canonical subject and never
 reinitializes quotas or changes original periods/attempts. All AX issues remain
 failures; logs/App files are checked for every minted token, key and plaintext
