@@ -43,11 +43,11 @@ def main():
     sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentTypedMemoryUITests.swift',Path(__file__)]
     for name in ('CJShell','CJMemoryClient','CJMessageClient','CJRunClient'):
         sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
-    report=dict(status='RUNNING',head=head,cases={},scope='partial typed App save/read plus actual same-conversation recall; NOT complete #228 frame4',
+    report=dict(status='RUNNING',head=head,cases={},scope='English typed App save/read/edit, consecutive/new-chat/restart/other-travel recall; full matrix still incomplete',
         source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
         git_trees={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=ROOT,text=True).strip() for name in ('ios','backend','contracts','scripts')},
         run_context=json.loads(args.run_context.read_text()),
-        unrun=['new-chat/restart/other-travel actual recall','complete #228 frame4','Chinese/max font','lifecycle/unknown/interoperability matrix','real services/models/cloud/fees','physical device/VoiceOver'])
+        unrun=['complete #228 frame4 matrix','Chinese/max font','lifecycle/unknown/interoperability matrix','real services/models/cloud/fees','physical device/VoiceOver'])
     lock=threading.RLock()
     def save():
         with lock:(output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -124,7 +124,9 @@ def main():
                         await application(scope,received,sent)
                         if raw:
                             event['input_sha256']=hashlib.sha256(raw).hexdigest()
-                            if event['status']==200:event['operation_id']=json.loads(raw)['operation_id']
+                            if event['status']==200:
+                                field='operation_id' if scope['path']=='/v2/memories' else 'action_id'
+                                event[field]=json.loads(raw)[field]
                     return invoke
                 servers=[];threads=[]
                 for application,label in ((app,'main'),(memory,'memory')):
@@ -157,6 +159,8 @@ def main():
                                 travel_profile=json.dumps(dict(version='app-travel.1',travel_ids=travels)),
                                 memory_profile=json.dumps(dict(version='app-memory.2',subjects=['self'],slots=slots,extents=['long_term','current'])))
                             elif parsed.path=='/items':value={('long_term' if x['command']['context'] is None else 'travel'):x['command']['item_id'] for x in items()}
+                            elif parsed.path=='/originals':value=dict(saves=[x['operation_id'] for x in audit if x['host']=='memory' and x['method']=='POST' and x['path']=='/v2/memories' and x['status']==200],
+                                management=[x['action_id'] for x in audit if x['host']=='memory' and x['method']=='POST' and x['path']=='/v2/memory-management-actions' and x['status']==200])
                             elif parsed.path=='/wait-completed':
                                 count=int(parse_qs(parsed.query)['count'][0]);deadline=time.monotonic()+30
                                 while sum(o['status']=='completed' for o in outcomes)<count:
@@ -191,20 +195,28 @@ def main():
                     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(output/'english.xcresult')]))
                     (output/'english-summary.json').write_text(json.dumps(summary,indent=2))
                     assert (summary['passedTests'],summary['failedTests'],summary['skippedTests'])==(1,0,0)
-                    assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and len(value['items'])==2 and not errors and iterations[0]>0
-                    assert value['message_count']==2 and model.calls==2
-                    assert dict(registered=value['registered_operations'])['registered'] and dict(value['registered_operations']).get('model')==2
-                    assert len(model.memory_inputs)==2
-                    assert all(payload['version']=='MEMORY-RUN-CONSUME@2' and [row['text'] for row in payload['items']]==['Travel A quiet room / 本次A安静房间'] for payload in model.memory_inputs)
+                    assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and len(value['items'])==3 and not errors and iterations[0]>0
+                    assert value['message_count']==6 and model.calls==6
+                    assert dict(value['registered_operations']).get('model')==6
+                    expected=['Travel A quiet room / 本次A安静房间',*['Travel A updated value / A当前新值']*3,
+                        'Typed long-term tea / 新长期 e\u0301','Travel B separate value / B独立值']
+                    assert len(model.memory_inputs)==len(expected)
+                    for payload,text in zip(model.memory_inputs,expected):
+                        assert payload['version']=='MEMORY-RUN-CONSUME@2' and [row['text'] for row in payload['items']]==[text]
+                    assert [payload['items'][0]['source_version'] for payload in model.memory_inputs]==[1,2,2,2,1,1]
                     by_text={item['command']['text']:item for item in value['items']}
                     assert by_text['Typed long-term tea / 新长期 e\u0301']['command']['context'] is None
-                    assert by_text['Travel A quiet room / 本次A安静房间']['command']['context']==dict(kind='travel',id=travels[0],expected_version=1)
+                    assert by_text['Travel A updated value / A当前新值']['command']['context']==dict(kind='travel',id=travels[0],expected_version=1)
+                    assert by_text['Travel B separate value / B独立值']['command']['context']==dict(kind='travel',id=travels[1],expected_version=1)
                     posts=[event for event in audit if event['host']=='memory' and event['method']=='POST']
-                    assert len(posts)==2 and all(event['path']=='/v2/memories' and event['status']==200 for event in posts)
+                    assert len(posts)==4 and all(event['status']==200 for event in posts)
+                    assert sum(event['path']=='/v2/memories' for event in posts)==3 and sum(event['path']=='/v2/memory-management-actions' for event in posts)==1
                     assert not any(event['method']=='POST' and event['path'].startswith('/v1/trip') for event in audit)
                     with TestClient(memory) as client:
                         for event in posts:
-                            receipt=client.get('/v2/memory-receipts',params={'operation_id':event['operation_id']},headers=headers['A'])
+                            if event['path']=='/v2/memories':path='/v2/memory-receipts';query={'operation_id':event['operation_id']}
+                            else:path='/v2/memory-management-receipts';query={'action_id':event['action_id']}
+                            receipt=client.get(path,params=query,headers=headers['A'])
                             receipt.raise_for_status();assert receipt.json()['receipt']['input_sha256']==event['input_sha256']
                         for item in value['items']:
                             foreign=client.get('/v2/memory-items',params={'item_id':item['command']['item_id']},headers=headers['B'])
@@ -214,7 +226,7 @@ def main():
                         if path.is_file() and not path.is_symlink():
                             data=path.read_bytes()
                             assert not any(token.encode() in data for token in tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in data
-                            assert not any(text.encode() in data for text in ('Typed long-term tea / 新长期 e\u0301','Travel A quiet room / 本次A安静房间'))
+                            assert not any(text.encode() in data for text in expected)
                     report.update(status='PARTIAL_PASS',token_key_scan='PASS',plaintext_scan='PASS');save()
                 finally:
                     stop.set();worker_thread.join(10)

@@ -59,26 +59,36 @@ import Foundation
         tap("memory2.manual.confirm");text("memory2.save.status",contains:"Saved.")
         back()
     }
-    private func completedMessages(_ count: Int) async throws {
+    private func completedMessages(_ count: Int,expected: String = "Travel A quiet room / 本次A安静房间") async throws {
         let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/wait-completed?count=" + String(count))))
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
         let value = try XCTUnwrap(JSONSerialization.jsonObject(with:data) as? [String:Any])
         XCTAssertEqual(value["model_calls"] as? Int,count)
         tap("run.snapshot.read")
         text("run.display.status",contains:"Completed")
-        text("run.display.text",contains:"Travel A quiet room / 本次A安静房间")
+        text("run.display.text",contains:expected)
     }
-    func testEnglishSaveReadAndOwnedTravel() async throws {
-        continueAfterFailure = false;executionTimeAllowance = 600
-        let fixture = try await prepare()
-        app = XCUIApplication(bundleIdentifier:"space.go2china.typed-memory.acceptance")
-        defer {app.terminate()}
+    private func openChat(_ id: String) {
+        tap("assistant.serverHistory");tap("history.loadConversations");tap("history.conversation." + id);tap("assistant.panel.done")
+    }
+    private func chooseTravel(_ id: String) {
+        tap("assistant.travelContext");tap("travel.selection." + id);text("travel.selection.status",contains:id);tap("assistant.panel.done")
+    }
+    private func ask(_ prompt: String,count: Int,expected: String) async throws {
+        input("assistant.draft",prompt)
+        if app.toolbars.buttons.matching(identifier:"Done").firstMatch.exists {tap("Done")}
+        tap("assistant.send");try await completedMessages(count,expected:expected)
+    }
+    private func launch(_ fixture: Fixture,restore: Bool) throws {
+        app?.terminate();app = XCUIApplication(bundleIdentifier:"space.go2china.typed-memory.acceptance")
         app.launchArguments = ["-cj.ui.language.v1","en"]
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1",
-            "G2C_DEV_API_BASE_URL":fixture.endpoint,"G2C_DEV_ACCOUNTS":String(data:try JSONEncoder().encode(fixture.accounts),encoding:.utf8)!,
+            "G2C_DEV_API_BASE_URL":fixture.endpoint,"G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(fixture.accounts),encoding:.utf8)!,
             "G2C_DEV_TRAVEL_PROFILE":fixture.travel_profile,"G2C_DEV_TYPED_MEMORY_PROFILE":fixture.memory_profile,
             "G2C_DEV_TYPED_MEMORY_URL":fixture.memory_endpoint]
-        app.launch();tap("Memory");tap("memory.account");tap("account.development.signout");tap("account.development.signin.A")
+        app.launch();tap("Memory");tap("memory.account")
+        if restore {tap("account.development.restore")}
+        else {tap("account.development.signout");tap("account.development.signin.A")}
         text("account.development.status",contains:fixture.subjects["A"]!)
         let ready = app.buttons.matching(identifier:"memory2.items.open").firstMatch
         for _ in 0..<12 {
@@ -87,6 +97,12 @@ import Foundation
             if ready.exists {break};_ = ready.waitForExistence(timeout:1)
         }
         XCTAssertTrue(ready.waitForExistence(timeout:15))
+    }
+    func testEnglishSaveReadAndOwnedTravel() async throws {
+        continueAfterFailure = false;executionTimeAllowance = 600
+        let fixture = try await prepare()
+        defer {app.terminate()}
+        try launch(fixture,restore:false)
         save("Typed long-term tea / 新长期 e\u{301}",scope:"Long term / 长期")
         tap("Assistant");tap("assistant.travelContext");tap("travel.selection." + fixture.travel_ids[0])
         text("travel.selection.status",contains:fixture.travel_ids[0]);tap("assistant.panel.done");tap("Memory")
@@ -105,13 +121,32 @@ import Foundation
             issues += 1;print("TYPED_MEMORY_DETAIL",issue.detailedDescription,issue.element?.label ?? "unavailable",issue.element?.frame ?? .zero);return false
         }
         continueAfterFailure = false;XCTAssertEqual(issues,0)
-        tap("Assistant");tap("assistant.serverHistory");tap("history.loadConversations")
-        tap("history.conversation.typed-chat-1");tap("assistant.panel.done")
-        input("assistant.draft","Recall current preferences from persisted memory")
+        tap("Assistant");openChat("typed-chat-1")
+        try await ask("Recall current preferences from persisted memory",count:1,expected:"Travel A quiet room / 本次A安静房间")
+        // Edit through the actual App/API, then prove the following turn reads
+        // the new source version rather than the previous chat answer.
+        let updated = "Travel A updated value / A当前新值"
+        tap("Memory");tap("memory2.detail.read");input("memory2.edit.text",updated)
         if app.toolbars.buttons.matching(identifier:"Done").firstMatch.exists {tap("Done")}
-        tap("assistant.send");try await completedMessages(1)
-        input("assistant.draft","Use the current preference in the next turn")
-        if app.toolbars.buttons.matching(identifier:"Done").firstMatch.exists {tap("Done")}
-        tap("assistant.send");try await completedMessages(2)
+        tap("memory2.manage.review.edit");text("memory2.manage.review.after",contains:updated);tap("memory2.manage.confirm")
+        text("memory2.manage.status",contains:"Original receipt verified")
+        tap("Assistant");try await ask("Use the current preference in the next turn",count:2,expected:updated)
+        openChat("typed-chat-2");try await ask("Use persisted preferences in this new chat",count:3,expected:updated)
+        try launch(fixture,restore:true)
+        tap("Assistant");chooseTravel(fixture.travel_ids[0]);openChat("typed-chat-3")
+        try await ask("Use current memory after restarting the App",count:4,expected:updated)
+        chooseTravel(fixture.travel_ids[1])
+        try await ask("Use only this other travel and long-term memory",count:5,expected:"Typed long-term tea / 新长期 e\u{301}")
+        // The reopened client must query original save/lifecycle receipts before
+        // a fresh save; navigating away does not erase verified completions.
+        tap("Memory");tap("memory.manage.openOriginals");tap("memory2.originals.read")
+        let (originalData,originalResponse) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/originals")))
+        XCTAssertEqual((originalResponse as? HTTPURLResponse)?.statusCode,200)
+        let originals = try JSONDecoder().decode([String:[String]].self,from:originalData)
+        for original in try XCTUnwrap(originals["saves"]) {tap("memory2.original.query." + original);text("memory2.save.status",contains:"Saved.")}
+        for original in try XCTUnwrap(originals["management"]) {tap("memory2.action.query." + original);text("memory2.manage.status",contains:"Original receipt verified")}
+        back()
+        save("Travel B separate value / B独立值",scope:"Selected travel / 所选旅行")
+        tap("Assistant");try await ask("Use this travel's own updated preference",count:6,expected:"Travel B separate value / B独立值")
     }
 }
