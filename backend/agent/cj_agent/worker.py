@@ -190,7 +190,10 @@ class RunWorker:
                     if draft and state.draft_outcome is not None:
                         raise Conflict('draft result already recorded before invocation')
                     check_needs=None
-                    if draft and self.needs_lease is not None:
+                    if draft and effect is not None and self.drafts.content_version=='structured.2':
+                        check_needs=leases.enter_context(self.drafts.hold_for_publication(binding))
+                        check_needs()
+                    elif draft and self.needs_lease is not None:
                         if effect is not None:
                             check_needs = leases.enter_context(self.needs_lease(binding))
                             check_needs()
@@ -286,7 +289,13 @@ class RunWorker:
         try:
             messages = ([{'role': 'user', 'content': text}] if self.memory_run is None
                         else self.memory_run.messages(text))
-            reply = ''.join(self._stream(binding, messages, system=DRAFT_SYSTEM))
+            sources=None
+            structured=self.drafts.content_version=='structured.2'
+            if structured:
+                if self.message_context is None:raise DraftRejected('canonical original message context required')
+                _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)
+                messages=self.drafts.model_messages(binding,text,sources,messages)
+            reply = ''.join(self._stream(binding, messages, system=self.drafts.system if structured else DRAFT_SYSTEM))
             if self.drafts.content_version == 'legacy':
                 def publish():
                     check=self._publication_check or (self.memory_run.check if self.memory_run is not None else None)
@@ -294,7 +303,8 @@ class RunWorker:
                 state, draft = self._step(binding, publish,
                                           lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
             else:
-                _, sources = self._step(binding, lambda: self.drafts.sources_for(binding), draft=True)
+                if not structured:
+                    _, sources = self._step(binding, lambda: self.drafts.sources_for(binding), draft=True)
                 def publish():
                     check=self._publication_check or (self.memory_run.check if self.memory_run is not None else None)
                     current=(self.message_context.active_original(binding) if self.message_context is not None

@@ -72,8 +72,12 @@ def _fixed(value):
 
 def validate_document(document):
     """Validate shape; even all known fields cannot attest actual feasibility."""
+    return _document(document, VERSION, event)
+
+
+def _document(document, version, check_event):
     if (type(document) is not dict or set(document)!={'content_version','title','items','sources'}
-            or document['content_version']!=VERSION):raise ValueError('structured.1 document required')
+            or document['content_version']!=version):raise ValueError(version+' document required')
     _text(document['title'],MAX_TITLE)
     if type(document['items']) is not list or not 1<=len(document['items'])<=MAX_ITEMS:
         raise ValueError('bounded structured items required')
@@ -93,7 +97,7 @@ def validate_document(document):
         if item['verification']=='verified' and not evidence:raise ValueError('verified requires evidence')
         schedule=item['schedule']
         if type(schedule) is not dict or set(schedule)!={'start','end'}:raise ValueError('explicit start/end required')
-        event(schedule['start']);event(schedule['end']);observation(item['fixed'],_fixed)
+        check_event(schedule['start']);check_event(schedule['end']);observation(item['fixed'],_fixed)
         category,refs=item['source_category'],item['source_refs']
         if type(refs) is not list or len(refs)>1:raise ValueError('bounded source references required')
         if category=='unknown':
