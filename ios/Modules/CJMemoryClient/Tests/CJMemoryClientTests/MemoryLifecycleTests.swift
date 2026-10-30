@@ -131,3 +131,27 @@ actor LifecycleWire: ClientTransport {
         #expect(await wire.calls.filter { $0.0 == "applyMemoryEditAction" }.isEmpty)
     }
 }
+
+extension MemoryLifecycleTests {
+    @Test func viewRetirementPreservesOnlyKnownOriginalCompletionAndRequiresFreshRead() async throws {
+        let f = try ManagementFixture(); defer { f.cleanup() }; let wire = LifecycleWire(); let client = try f.client(wire)
+        let original = try await f.selection(client, id: wire.id)
+        _ = try await client.editMemory(text: "first explicit edit", selection: original, binding: f.base.binding)
+        client.invalidate()
+        #expect(throws: MemoryFailure.staleBinding) { try client.managementSelection(itemID: wire.id, binding: f.base.binding) }
+        await #expect(throws: MemoryFailure.staleBinding) { try await client.stopUsingMemory(selection: original, binding: f.base.binding) }
+        let fresh = try await f.selection(client, id: wire.id)
+        guard case .historicalReceipt = try await client.editMemory(text: "second fresh edit", selection: fresh, binding: f.base.binding) else { Issue.record("view retirement blocked a fresh action"); return }
+        #expect(await wire.calls.filter { $0.0 == "applyMemoryEditAction" }.count == 2)
+        #expect(try f.store().pending().count == 2)
+    }
+    @Test func viewRetirementNeverTurnsUnknownIntoCompleted() async throws {
+        let f = try ManagementFixture(); defer { f.cleanup() }; let wire = LifecycleWire(); let client = try f.client(wire)
+        let original = try await f.selection(client, id: wire.id); await wire.configure(loseReply: true)
+        await #expect(throws: MemoryFailure.exchangeUnknown) { try await client.editMemory(text: "retain the actual unknown", selection: original, binding: f.base.binding) }
+        client.invalidate()
+        let fresh = try await f.selection(client, id: wire.id)
+        await #expect(throws: MemoryFailure.pendingRequiresQuery) { try await client.stopUsingMemory(selection: fresh, binding: f.base.binding) }
+        #expect(await wire.calls.filter { $0.0 == "applyMemoryEditAction" }.count == 1)
+    }
+}

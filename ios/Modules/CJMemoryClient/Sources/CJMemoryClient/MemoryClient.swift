@@ -133,7 +133,7 @@ public enum MemorySaveResult: Sendable {
         try check(binding, token)
         return token
     }
-    public func invalidate() { generation = UUID(); confirmed.removeAll(); acceptedManagementItems.removeAll(); managementConfirmed.removeAll(); usedManagementSelections.removeAll(); managementIDsBySelection.removeAll() }
+    public func invalidate() { generation = UUID(); confirmed.removeAll(); acceptedManagementItems.removeAll(); usedManagementSelections.removeAll(); managementIDsBySelection.removeAll() }
     private func api(_ binding: MemoryBinding, _ token: UUID, original: MemoryPending? = nil, managementOriginal: MemoryManagementPending? = nil, managementTarget: MemoryManagementSelection? = nil) async throws -> Client {
         try check(binding, token)
         let bearer: String?
@@ -310,6 +310,13 @@ public enum MemorySaveResult: Sendable {
 }
 
 extension MemoryClient {
+    // Historical completion of exact immutable bytes survives a view retirement.
+    // It is never current authority: invalidate still removes every sealed read,
+    // selection/action mapping and dispatch generation. Reopening a new client
+    // remains query-only until its original server receipts are reconciled.
+    private func managementReceiptKey(_ original: MemoryManagementPending) -> Data {
+        Data(original.actionID.utf8) + Data(original.expectedSHA256.utf8)
+    }
     /// Only an explicit local simulator composition enables management; public live clients remain read-only.
     public var managementAvailable: Bool { managementEnabled && managementStore != nil && managementEndpoint.maximumRequestBytes <= 32768 && managementEndpoint.maximumResponseBytes <= 65536 }
     func managementPresentationIsCurrent(_ binding: MemoryBinding) -> Bool {
@@ -383,7 +390,7 @@ extension MemoryClient {
                                   binding: MemoryBinding, token: UUID) async throws -> MemoryManagementResult {
         guard let managementStore else { throw MemoryFailure.unconfigured }
         try managementStore.validate(binding)
-        for pending in try managementStore.pending() where !managementConfirmed.contains(Data(pending.actionID.utf8)) {
+        for pending in try managementStore.pending() where !managementConfirmed.contains(managementReceiptKey(pending)) {
             guard try managementStore.rejection(for: pending) != nil else { throw MemoryFailure.pendingRequiresQuery }
         }
         guard !usedManagementSelections.contains(selection.readStamp) else { throw MemoryFailure.pendingRequiresQuery }
@@ -488,7 +495,7 @@ extension MemoryClient {
         guard same(receipt.action_id, original.actionID), same(receipt.item_id, h.item),
               same(receipt.input_sha256, original.expectedSHA256), receipt.version == h.version + 1,
               receipt.status == expected else { throw MemoryFailure.invalidResponse }
-        managementConfirmed.insert(Data(original.actionID.utf8))
+        managementConfirmed.insert(managementReceiptKey(original))
         return .historicalReceipt(receipt)
     }
     private func settleStopUse(_ receipt: Components.Schemas.MemoryStopUseReceipt, original: MemoryManagementPending,
@@ -498,7 +505,7 @@ extension MemoryClient {
               same(receipt.action_id, original.actionID), same(receipt.item_id, action.item_id),
               same(receipt.input_sha256, original.expectedSHA256), receipt.version == action.expected_version + 1,
               receipt.status == .withdrawn else { throw MemoryFailure.invalidResponse }
-        managementConfirmed.insert(Data(original.actionID.utf8))
+        managementConfirmed.insert(managementReceiptKey(original))
         return .historicalStopUseReceipt(receipt)
     }
 }

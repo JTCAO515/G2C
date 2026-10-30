@@ -19,9 +19,12 @@ import Foundation
     }
     func tap(_ id: String) {
         let target = app.buttons.matching(identifier:id).firstMatch
+        let tab = app.tabBars.buttons.matching(identifier:id).firstMatch
+        if tab.exists { XCTAssertTrue(tab.isHittable); tab.tap(); return }
+        let top=app.navigationBars.firstMatch.frame.maxY,bottom=app.tabBars.firstMatch.frame.minY
         for _ in 0..<60 {
-            if target.exists && target.isHittable { break }
-            if target.exists && target.frame.maxY < app.navigationBars.firstMatch.frame.maxY { app.swipeDown() } else { app.swipeUp() }
+            if target.exists && target.isHittable && target.frame.midY>top && target.frame.midY<bottom { break }
+            if target.exists && target.frame.midY<=top { app.swipeDown() } else { app.swipeUp() }
         }
         XCTAssertTrue(target.waitForExistence(timeout:10),id);XCTAssertTrue(target.isHittable,id)
         let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
