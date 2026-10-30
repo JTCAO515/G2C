@@ -105,6 +105,8 @@ struct TypedMemoryManual: View {
     @State private var occurredAt = ""
     @State private var review: TypedMemorySaveWork?
     @State private var reviewFailed = false
+    private enum Input: Hashable { case text,time }
+    @FocusState private var focusedInput: Input?
     var body: some View {
         Form {
             Section {
@@ -121,12 +123,14 @@ struct TypedMemoryManual: View {
                     }.accessibilityIdentifier("memory2.manual.travel")
                 }
                 TextField(language.text("Memory", "记忆内容"),text:$text,axis:.vertical)
-                    .frame(minHeight:44).accessibilityIdentifier("memory2.manual.text")
+                    .focused($focusedInput,equals:.text).frame(minHeight:44).accessibilityIdentifier("memory2.manual.text")
                 TextField(language.text("Approximate time; state if unknown", "大致时间；不清楚请明确说明"),text:$occurredAt)
+                    .focused($focusedInput,equals:.time).submitLabel(.done).onSubmit { focusedInput = nil }
                     .frame(minHeight:44).accessibilityIdentifier("memory2.manual.time")
                 TypedMemoryText(text:language.text("Only the subject, field and scope you review will be submitted. Inference remains an unconfirmed candidate.", "只提交你核对的对象、字段和范围；推断保持待确认候选。"),id:"memory2.manual.disclosure")
                 TypedMemoryButton(title:language.text("Review before saving", "保存前核对"),id:"memory2.manual.review",enabled:surface != nil && !host.busy && optionID != nil && !text.isEmpty && !occurredAt.isEmpty) {
                     do {
+                        focusedInput = nil
                         guard let optionID else { return }
                         review = try host.prepareSave(optionID:optionID,text:text,occurredAt:occurredAt,surface:surface);reviewFailed = false
                     } catch { review = nil;reviewFailed = true }
@@ -151,8 +155,12 @@ struct TypedMemoryManual: View {
                 RunReadableText(text:language.text("Previous operations", "此前的原操作"))
             }.accessibilityIdentifier("memory2.originals.open")
         }.navigationTitle(language.text("Add memory", "新增记忆"))
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar { ToolbarItemGroup(placement:.keyboard) {
+                Spacer();Button(language.text("Done", "完成")) { focusedInput = nil }
+            } }
             .onChange(of:text) { _,_ in review = nil }.onChange(of:occurredAt) { _,_ in review = nil }.onChange(of:optionID) { _,_ in review = nil }
-            .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface,onBegin:{ review = nil;reviewFailed = false }))
+            .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface,onBegin:{ focusedInput = nil;review = nil;reviewFailed = false }))
     }
 }
 
@@ -164,6 +172,7 @@ struct TypedMemoryDetail: View {
     @State private var replacement = ""
     @State private var review: TypedMemoryManagementWork?
     @State private var reviewFailed = false
+    @FocusState private var editFocused: Bool
     var body: some View {
         Form {
             TypedMemoryButton(title:language.text("Read current detail", "读取当前详情"),id:"memory2.detail.read",enabled:surface != nil && !host.busy) {
@@ -191,7 +200,7 @@ struct TypedMemoryDetail: View {
                             if case .legacyConversation = read.item.scope {
                                 TypedMemoryText(text:language.text("The original conversation scope is retained. Editing that scope is unavailable in this entry.", "原会话范围保持；当前入口不支持编辑该范围。"),id:"memory2.detail.legacy")
                             } else {
-                                TextField(language.text("Replacement text", "新的原文"),text:$replacement,axis:.vertical).frame(minHeight:44).accessibilityIdentifier("memory2.edit.text")
+                                TextField(language.text("Replacement text", "新的原文"),text:$replacement,axis:.vertical).focused($editFocused).frame(minHeight:44).accessibilityIdentifier("memory2.edit.text")
                                 if let travel = host.travelSelection { NavigationLink { TravelSelectionView(model:travel,language:language) } label: { Text(language.text("Verify travel context", "核实旅行上下文")) } }
                                 reviewButton(.edit,title:language.text("Review text change", "核对文字修改"),enabled:!replacement.isEmpty)
                             }
@@ -223,8 +232,12 @@ struct TypedMemoryDetail: View {
             TypedMemoryManagementOutcome(host:host,language:language)
             NavigationLink { TypedMemoryOriginals(host:host,language:language) } label: { Text(language.text("Previous operations", "此前的原操作")) }
         }.navigationTitle(language.text("Memory detail", "记忆详情"))
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar { ToolbarItemGroup(placement:.keyboard) {
+                Spacer();Button(language.text("Done", "完成")) { editFocused = false }
+            } }
             .onChange(of:replacement) { _,_ in review = nil }
-            .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface,onBegin:{review = nil;reviewFailed = false}))
+            .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface,onBegin:{editFocused = false;review = nil;reviewFailed = false}))
     }
     private func operationLabel(_ operation: TypedMemoryOperation) -> String {
         switch operation {
@@ -236,6 +249,7 @@ struct TypedMemoryDetail: View {
     }
     private func reviewButton(_ operation: TypedMemoryOperation,title: String,enabled: Bool = true) -> some View {
         TypedMemoryButton(title:title,id:"memory2.manage.review." + operation.rawValue,enabled:enabled && !host.busy) {
+            editFocused = false
             do { review = try host.prepareManagement(operation,text:operation == .edit ? replacement : nil,surface:surface);reviewFailed = false }
             catch { review = nil;reviewFailed = true }
         }
