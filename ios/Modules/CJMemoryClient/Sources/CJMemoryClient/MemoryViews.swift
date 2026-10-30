@@ -113,11 +113,15 @@ public struct MemoryDetailView: View {
                     LabeledContent(language.text("Subject", "对象"), value: item.command.subject)
                     LabeledContent(language.text("Field", "字段"), value: item.command.slot)
                     LabeledContent(language.text("Kind", "类型"), value: item.command.kind.rawValue)
-                    LabeledContent { MemoryRowText(text: item.command.extent.rawValue, style: .body).accessibilityIdentifier("memory.detail.scope.value") } label: {
+                    LabeledContent { MemoryRowText(text: item.command.extent == .current ? language.text("Current conversation", "当前会话") : item.command.extent.rawValue, style: .body).accessibilityIdentifier("memory.detail.scope.value") } label: {
                         MemoryRowText(text: language.text("Scope", "范围"), style: .body)
                     }
                     if case .case1(let context) = item.command.context_id {
-                        LabeledContent(language.text("Context", "适用上下文"), value: context)
+                        LabeledContent {
+                            MemoryRowText(text: context, style: .body).accessibilityIdentifier("memory.detail.conversation.value")
+                        } label: {
+                            MemoryRowText(text: language.text("Conversation", "会话"), style: .body)
+                        }
                     }
                     LabeledContent(language.text("Source", "来源"), value: item.command.source_id)
                     LabeledContent(language.text("Source version", "来源版本"), value: String(item.command.source_version))
