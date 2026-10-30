@@ -60,7 +60,11 @@ def parse_action(raw):
     try:
         return Action.parse(raw)
     except InvalidInput:
-        return Edit.parse(raw)
+        try:
+            return Edit.parse(raw)
+        except InvalidInput:
+            from cj_memory_withdrawal.stop_use import StopUse
+            return StopUse.parse(raw)
 
 
 def approve_edit(policy, command, raw):

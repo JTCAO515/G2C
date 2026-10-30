@@ -2758,6 +2758,127 @@
           }
         }
       }
+    },
+    "/v1/memory-withdrawal-actions": {
+      "post": {
+        "operationId": "applyMemoryStopUseAction",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryStopUseApplyResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exact MEMORY-STOP-USE@1 original UTF8 JSON conforming to MemoryStopUseAction, application/octet-stream; local runtime only. Retain original ID/bytes, query new withdrawal receipt after unknown. No physical deletion, provider retry or cleanup.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory-withdrawal-receipts": {
+      "get": {
+        "operationId": "getMemoryStopUseReceipt",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized MEMORY wire candidate response; no production channel enabled.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryStopUseReceiptResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        ],
+        "description": "Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates."
+      }
     }
   },
   "components": {
@@ -6952,6 +7073,139 @@
           }
         },
         "description": "MEMORY-MANAGEMENT-EDIT@1 exact immutable original action bytes. New server-approved source; historical source and scope retained. No client scope, consent, expiry or enable fields."
+      },
+      "MemoryStopUseAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "operation",
+          "item_id",
+          "expected_version",
+          "expected_source_version",
+          "version",
+          "source_id"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "withdraw"
+            ]
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "expected_source_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "version": {
+            "type": "string",
+            "const": "MEMORY-STOP-USE@1"
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "description": "MEMORY-STOP-USE@1. Stop using the complete server-enumerated source history only; no deletion or cleanup. Exact original immutable UTF8 bytes, canonical scope/CAS/epoch and original action receipt."
+      },
+      "MemoryStopUseReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "item_id",
+          "version",
+          "status",
+          "input_sha256"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "withdrawn"
+            ]
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "description": "Historical original lifecycle receipt. action_id is canonical Receipt.operation_id; hash comes from persisted original action bytes, not request recomputation."
+      },
+      "MemoryStopUseApplyResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/MemoryStopUseReceipt"
+          }
+        },
+        "description": "Receipt after canonical guarded commit and final fences only. Unknown outcome must query original action ID, never automatic resend/new ID."
+      },
+      "MemoryStopUseReceiptResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "receipt"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemoryStopUseReceipt"
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "description": "Required null receipt means not observed in this scoped lifecycle ledger; never proves noncommit or authorizes resend."
       }
     },
     "securitySchemes": {
