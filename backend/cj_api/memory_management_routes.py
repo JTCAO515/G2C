@@ -4,7 +4,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 from .generated import (MemoryManagementAction,MemoryManagementReceipt,
-    MemoryManagementApplyResponse,MemoryManagementReceiptResponse,MemoryManagementEditAction)
+    MemoryManagementApplyResponse,MemoryManagementReceiptResponse,MemoryManagementEditAction,
+    MemoryStopUseAction,MemoryStopUseReceipt,MemoryStopUseApplyResponse,MemoryStopUseReceiptResponse)
 from .history_routes import _query,PrivateOutputTooLarge
 from .message_routes import _error,_token
 from .memory_boundary import MemoryAccessBlocked
@@ -35,7 +36,7 @@ def register_memory_management(app,boundary=None,configuration=None):
                 value.encode('utf-8')
         except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         return token,q
-    def project(request,kind,argument,value):
+    def project(request,kind,argument,value,*,stop_use=False):
         if value is None:
             if kind=='save':raise ValueError('Missing action receipt')
             receipt=None
@@ -44,17 +45,21 @@ def register_memory_management(app,boundary=None,configuration=None):
             from cj_memory_management.edit import parse_action
             expected=parse_action(argument).action_id if kind=='save' else argument
             if value.operation_id!=expected:raise ValueError('Wrong original receipt')
-            receipt=MemoryManagementReceipt.model_validate_json(json.dumps(dict(action_id=value.operation_id,item_id=value.item_id,version=value.version,status=value.status,input_sha256=value.input_sha256)),strict=True)
-        model=MemoryManagementApplyResponse if kind=='save' else MemoryManagementReceiptResponse
+            receipt_type=MemoryStopUseReceipt if stop_use else MemoryManagementReceipt
+            receipt=receipt_type.model_validate_json(json.dumps(dict(action_id=value.operation_id,item_id=value.item_id,version=value.version,status=value.status,input_sha256=value.input_sha256)),strict=True)
+        if stop_use:
+            model=MemoryStopUseApplyResponse if kind=='save' else MemoryStopUseReceiptResponse
+        else:
+            model=MemoryManagementApplyResponse if kind=='save' else MemoryManagementReceiptResponse
         raw=JSONResponse(model.model_validate({'request_id':request.state.request_id,'receipt':receipt}).model_dump(mode='json')).body
         if len(raw)>configuration.max_private_response_bytes:raise PrivateOutputTooLarge()
         return raw
-    async def invoke(request,token,kind,argument):
+    async def invoke(request,token,kind,argument,*,stop_use=False):
         try:
-            raw=await run_in_threadpool(boundary.invoke,token,kind,argument,lambda value:project(request,kind,argument,value))
+            raw=await run_in_threadpool(boundary.invoke,token,kind,argument,lambda value:project(request,kind,argument,value,stop_use=stop_use))
             return Response(content=raw,media_type='application/json')
         except Exception as exc:return failure(request,kind=='save',exc)
-    async def apply_action(request, *, edit=False):
+    async def apply_action(request, *, edit=False,stop_use=False):
         prepared=prepare(request,())
         if isinstance(prepared,JSONResponse):return prepared
         token,_=prepared
@@ -68,7 +73,12 @@ def register_memory_management(app,boundary=None,configuration=None):
                 if size>configuration.max_body_bytes:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
                 chunks.append(chunk)
             raw=b''.join(chunks)
-            if edit:
+            if stop_use:
+                from cj_memory_withdrawal.stop_use import StopUse
+                action=StopUse.parse(raw)
+                MemoryStopUseAction.model_validate_json(raw,strict=True)
+                action.source_id.encode('utf-8')
+            elif edit:
                 from cj_memory_management.edit import Edit
                 action=Edit.parse(raw)
                 MemoryManagementEditAction.model_validate_json(raw,strict=True)
@@ -78,13 +88,22 @@ def register_memory_management(app,boundary=None,configuration=None):
             action.action_id.encode('utf-8');action.item_id.encode('utf-8')
         except (ValueError,UnicodeError,domain.InvalidInput):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         except Exception:return failure(request,True)
-        return await invoke(request,token,'save',raw)
+        return await invoke(request,token,'save',raw,stop_use=stop_use)
     @app.post('/v1/memory-management-actions',response_model=MemoryManagementApplyResponse)
     async def apply(request:Request):
         return await apply_action(request)
     @app.post('/v1/memory-edit-actions',response_model=MemoryManagementApplyResponse)
     async def edit(request:Request):
         return await apply_action(request,edit=True)
+    @app.post('/v1/memory-withdrawal-actions',response_model=MemoryStopUseApplyResponse)
+    async def withdraw(request:Request):
+        return await apply_action(request,stop_use=True)
+    @app.get('/v1/memory-withdrawal-receipts',response_model=MemoryStopUseReceiptResponse)
+    async def withdrawal_receipt(request:Request):
+        prepared=prepare(request,('action_id',))
+        if isinstance(prepared,JSONResponse):return prepared
+        token,q=prepared
+        return await invoke(request,token,'query',q['action_id'],stop_use=True)
     @app.get('/v1/memory-management-receipts',response_model=MemoryManagementReceiptResponse)
     async def query(request:Request):
         prepared=prepare(request,('action_id',))

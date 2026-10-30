@@ -4,7 +4,7 @@ No AUTH types, decisions, request state or transaction lifetime are implemented
 here. Those remain the original MEMORY Service's responsibility.
 """
 from cj_memory.domain import Service as MemoryService
-from cj_memory.lifecycle import INTERFACE_VERSION, LifecycleAdapter
+from cj_memory.lifecycle import INTERFACE_VERSION, LifecycleAdapter, LifecycleAdapterV2
 from .domain import Action
 from .edit import parse_action
 from .service import apply_in_transaction, query_in_transaction
@@ -38,11 +38,11 @@ class ManagementContext:
 
 class GuardedService(MemoryService):
     def __init__(self, repository, *, manual_policy=None, lifecycle_adapter=ADAPTER):
-        if type(lifecycle_adapter) is not LifecycleAdapter:
+        if type(lifecycle_adapter) not in (LifecycleAdapter, LifecycleAdapterV2):
             raise ValueError('fixed management adapter required')
         adapter = lifecycle_adapter
         if manual_policy is not None and adapter is ADAPTER:
-            adapter = LifecycleAdapter(original_action_id,
+            adapter = LifecycleAdapterV2(original_action_id,
                 lambda tx, raw: apply_in_transaction(tx, parse_action(raw), manual_policy),
                 query_in_transaction)
         super().__init__(repository, manual_policy=manual_policy, lifecycle_adapter=adapter)

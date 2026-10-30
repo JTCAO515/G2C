@@ -48,7 +48,11 @@ class Transaction(MemoryTransaction):
                                  (self.scope,action.item_id,history[2]))
                 if self.cur.fetchone() is None:
                     raise Unavailable('edit pause history unavailable')
-        return raw, Receipt(*row[1:], hashlib.sha256(raw).hexdigest())
+        receipt = Receipt(*row[1:], hashlib.sha256(raw).hexdigest())
+        from cj_memory_withdrawal.stop_use import StopUse, validate_stored
+        if isinstance(action, StopUse):
+            validate_stored(self, action, receipt)
+        return raw, receipt
 
     def pause_anchor(self, item):
         self.cur.execute('''SELECT operation,status FROM cj_memory_management_action

@@ -7,6 +7,7 @@ from .domain import InvalidInput, Receipt, Unavailable
 from .postgres import Transaction
 
 INTERFACE_VERSION = 'MEMORY-lifecycle-adapter.1'
+INTERFACE_VERSION_2 = 'MEMORY-lifecycle-adapter.2'
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,11 @@ class LifecycleAdapter:
     action_id: Callable[[bytes], str]
     apply: Callable[[Transaction, bytes], Receipt]
     query: Callable[[Transaction, str], Receipt | None]
+
+
+@dataclass(frozen=True)
+class LifecycleAdapterV2(LifecycleAdapter):
+    """Additive stop-use receipt support; V1's accepted statuses stay fixed."""
 
 def _materialized(value):
     # Transaction lifetime guard: deferred work must not escape the owner fence.
@@ -36,14 +42,14 @@ def _id(value):
     return value
 
 
-def _receipt(value, action_id, *, allow_absent=False):
+def _receipt(value, action_id, *, allow_absent=False, stop_use=False):
     value = _materialized(value)
     if value is None and allow_absent:
         return None
     if (type(value) is not Receipt or value.operation_id != action_id
             or type(value.item_id) is not str or not value.item_id.strip()
             or type(value.version) is not int or value.version < 1
-            or value.status not in ('active', 'disabled')
+            or value.status not in (('active', 'disabled', 'withdrawn') if stop_use else ('active', 'disabled'))
             or type(value.input_sha256) is not str or len(value.input_sha256) != 64
             or any(c not in '0123456789abcdef' for c in value.input_sha256)):
         raise Unavailable('lifecycle receipt unavailable')
@@ -51,7 +57,7 @@ def _receipt(value, action_id, *, allow_absent=False):
 
 
 def _adapter(service):
-    if type(service.lifecycle_adapter) is not LifecycleAdapter:
+    if type(service.lifecycle_adapter) not in (LifecycleAdapter, LifecycleAdapterV2):
         raise Unavailable('lifecycle adapter unavailable')
     return service.lifecycle_adapter
 
@@ -70,10 +76,11 @@ def apply_lifecycle(service, state, raw):
         state['writing'] = True
         with service.repository.transaction() as tx:
             tx.lock_scope()
-            result = _receipt(adapter.apply(tx, raw), action_id)
+            stop_use = type(adapter) is LifecycleAdapterV2
+            result = _receipt(adapter.apply(tx, raw), action_id, stop_use=stop_use)
             # Query the SAME domain ledger on the SAME transaction. Do not manufacture
             # a receipt from caller bytes; this hash is only a validation comparison.
-            stored = _receipt(adapter.query(tx, action_id), action_id)
+            stored = _receipt(adapter.query(tx, action_id), action_id, stop_use=stop_use)
             if stored != result or stored.input_sha256 != hashlib.sha256(raw).hexdigest():
                 raise Unavailable('original lifecycle receipt mismatch')
         return stored
@@ -98,7 +105,8 @@ def query_lifecycle(service, state, action_id):
         state['lifecycle_busy'] = True
         with service.repository.transaction() as tx:
             tx.lock_scope()
-            result = _receipt(adapter.query(tx, action_id), action_id, allow_absent=True)
+            result = _receipt(adapter.query(tx, action_id), action_id, allow_absent=True,
+                              stop_use=type(adapter) is LifecycleAdapterV2)
         return result
     except BaseException:
         state['blocked'] = True
