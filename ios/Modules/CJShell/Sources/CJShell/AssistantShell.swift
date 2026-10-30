@@ -23,6 +23,7 @@ struct AssistantShell: View {
         let answerEntry = feedbackHost.captureEntry()
         VStack(spacing:0) {
             floatingControls
+            GeometryReader { viewport in
             ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if !messageHost.isConfigured {
@@ -51,7 +52,11 @@ struct AssistantShell: View {
             .padding(.bottom)
         }
         .scrollDismissesKeyboard(.interactively)
+        .frame(width:viewport.size.width,height:viewport.size.height)
         .clipped()
+        .accessibilityElement(children:.contain)
+        .accessibilityIdentifier("assistant.content")
+            }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .toolbar {
