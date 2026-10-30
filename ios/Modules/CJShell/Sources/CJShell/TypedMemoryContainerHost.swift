@@ -30,10 +30,12 @@ public struct TypedMemorySurface: Sendable {
 @MainActor public struct TypedMemoryManagementWork {
     fileprivate let surface: TypedMemorySurface
     fileprivate let read: TypedMemoryRead
-    fileprivate let operation: TypedMemoryOperation
-    fileprivate let text: String?
+    public let operation: TypedMemoryOperation
+    public let text: String?
     fileprivate let travel: CapturedTravelSelection?
     fileprivate let travelValue: MemoryTravelSelection?
+    public var originalItem: TypedMemoryItem { read.item }
+    public var selectedTravel: MemoryTravelSelection? { travelValue }
 }
 public enum TypedMemoryManagementState {
     case ready,working,unknown,notObserved,rejected,needsOriginalQuery
@@ -101,6 +103,7 @@ public enum MemoryOriginalReference: Equatable,Sendable {
     public var isConfigured: Bool { current }
     public var busy: Bool { presented && working }
     public var options: [TypedMemoryManualOption] { current ? configuredOptions : [] }
+    public var travelSelection: TravelSelectionModel? { current ? travel : nil }
     public var items: MemoryLoad<[TypedMemoryRead]> { presented ? itemValues : .unconfigured }
     public var detail: MemoryLoad<TypedMemoryRead?> { presented ? detailValue : .unconfigured }
     public var originals: MemoryLoad<[TypedMemoryCommand]> { presented ? originalValues : .unconfigured }
@@ -193,6 +196,14 @@ public enum MemoryOriginalReference: Equatable,Sendable {
             guard owns(surface) else { return }
             present(surface,{ detailValue = .loaded(value);working = false })
         } catch { present(surface,{ detailValue = .failed;working = false }) }
+    }
+    public func detailRoute(for read: TypedMemoryRead,surface: TypedMemorySurface?) -> MemoryRoute? {
+        guard let surface,owns(surface),!working,presented else { return nil }
+        do {
+            try client.validateRead(read,binding:binding)
+            guard owns(surface),!working else { return nil }
+            return .typedMemoryDetail(owner:id,itemID:Data(read.item.value.command.item_id.utf8))
+        } catch { return nil }
     }
     public func loadOriginals(surface: TypedMemorySurface?) {
         guard let surface = begin(surface) else { return }

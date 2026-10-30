@@ -112,6 +112,21 @@ private actor MemoryHostTransport: ClientTransport {
 }
 @MainActor private final class TypedSurfaceBox { var surface: TypedMemorySurface? }
 @Suite @MainActor struct MemoryContainerHostTests {
+    @Test func typedDetailRoutesKeepRawUTF8IdentityAndRetireWithTheSurface() async throws {
+        let first = "cafe\u{301}",second = "café"
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","items":[typedItem(first),typedItem(second)]])])
+        let f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        await f.host.loadItems(surface:surface)
+        let values = try rows(f.host.items)
+        let a = try #require(f.host.detailRoute(for:values[0],surface:surface))
+        let b = try #require(f.host.detailRoute(for:values[1],surface:surface))
+        #expect(a != b)
+        guard case .typedMemoryDetail(let owner,let raw) = a else { Issue.record("missing typed route");return }
+        #expect(owner == f.host.id && raw == Data(first.utf8))
+        f.host.leaveSurface(surface)
+        #expect(f.host.detailRoute(for:values[0],surface:surface) == nil)
+    }
     @Test func typedSurfaceQueriesLegacyJournalExplicitlyAndKeepsItsVersionAcrossNavigation() async throws {
         let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire,withLegacyOriginal:true);defer {f.cleanup()}
         let original = try #require(f.legacyOriginal),surface = try #require(f.host.enterSurface())

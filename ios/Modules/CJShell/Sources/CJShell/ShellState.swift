@@ -46,6 +46,7 @@ public enum MemoryRoute: Hashable, Sendable {
     case group(MemoryGroup)
     case account, language, help, privacy, support
     case memoryItems, memoryDetail, manualMemory, memoryActions
+    case typedMemoryDetail(owner: UUID,itemID: Data)
     case feedback(FeedbackContainerEntry?)
 }
 
