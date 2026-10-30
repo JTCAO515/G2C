@@ -12,9 +12,9 @@ JT 2026-10-30已批准跨线方向并将本B票插在#243之后、#13之前，�
 
 本次请JT审阅的**具体**增量：
 
-1. `TRAVEL-CONTEXT@1`、`MESSAGE-send.2`、`MESSAGE-TRAVEL-REFERENCE@1`、`MESSAGE-TRAVEL-LEASE@1`及新消费者的`USAGE-REGISTERED-EXIT@2`最终租约hook。旧@1及MESSAGE-send.1原样保留。
+1. `TRAVEL-CONTEXT@1`、`MESSAGE-send.2`、`MESSAGE-TRAVEL-REFERENCE@1`、`MESSAGE-TRAVEL-LEASE@1`。计量继续复用`USAGE-REGISTERED-EXIT@1`既有可信guard注入点与唯一MeteredExitCore，不另发布计量协议或复制算法。
 2. 四张新元数据表、receipt新增一个nullable协议标记列/约束、八张既有MESSAGE/RUN表追加restrictive RLS；新增的精确权限见第8节。**方向批准不包含这些变更。**
-3. 本票需新增四个存储登记。`backend/storage-registry.json`不在原B文件清单，申请仅追加本票登记的写权；未批准前不修改。A生成/消费所有ios产物，C实现typed-memory，不由B代改。
+3. 本票需按现有registry归组登记四张表及message新标记/敏感字段，不机械创建四个同义domain store。`backend/storage-registry.json`不在原B文件清单，申请仅添加本票对应登记的写权；未批准前不修改。A生成/消费所有ios产物，C实现typed-memory，不由B代改。
 
 这不是云/真实账号/真实模型/外部服务/密钥/生产迁移授权。合同只冻结不批准DDL时，本票停在producer实现之前，所有新L0/L1保持UNRUN。
 
@@ -102,24 +102,25 @@ C `MEMORY-manual.2`的context.id/expected_version对应本travel身份/当前CAS
 
 源码复核：现有provider首步的USAGE reserve/claim各自短提交；NEEDS provider前检查会释放。现有draft publication在NEEDS lease内调用check_publication，**实际存在NEEDS→USAGE持锁边**，不能把“RUN→USAGE→NEEDS”当作已成立的全局持锁图。C r1的RUN→NEEDS→B→MEMORY→USAGE建议也需加入MESSAGE scope与重入规则，不能仅据文档宣称无死锁。
 
-本稿明确最终持锁图`RUN → MESSAGE → TRAVEL → MEMORY → NEEDS`；USAGE短事务必须在获取这些最终lease前结束，绝不持USAGE再获取它们：
+本稿按实际代码采用同时持锁顺序`RUN → MESSAGE → TRAVEL → MEMORY → NEEDS → USAGE`，USAGE每次短提交后释放，绝不持USAGE再取前面的锁。M/T以及MEMORY已取得后复核必须重入同一lease/连接，不再形成MEMORY→第二条MESSAGE连接的反向边：
 
 | 路径 | 取得/释放 |
 |---|---|
 | Travel动作 | M写锁→T写锁→动作回执提交；不取RUN/MEMORY/USAGE |
 | send.2接受/升级 | M写锁→T共享/显式NEEDS核对→receipt/ref/selector/outbox提交；升级只普通读RUN检查，不取RUN写锁 |
 | C manual.2 | M共享→T共享→MEMORY scope；B锁覆盖C实际commit |
-| 新provider调用准备 | RUN外层；短M/T preflight释放；audit/reserve/claim/adapter materialize完成并释放USAGE，不先持M/T/MEMORY使初始化回调自锁 |
-| 新provider首步 | RUN仍持有→M/T→C MEMORY→必要NEEDS；最终fresh AUTH/currentness/clock后直接推进真实provider；外层ExitStack让lease保持到RUN事务commit，不持整个流 |
+| provider准备/首步 | prepare_input/原operation先持久提交；RUN→M/T→C MEMORY→必要NEEDS，调用现有Core。audit/reserve/claim/materialize后USAGE已释放，现有call.guard组合B/C当前性，再做原clock最后检查并直接推进provider；外层ExitStack让lease保持到RUN commit，不持整个流 |
 | delta/completed/proposal | 每次新RUN临界区重新取M/T及C MEMORY，proposal再取NEEDS；元数据/来源准备后最终检查；所有lease覆盖真正副作用和原RUN receipt |
 
-为此新增`USAGE-REGISTERED-EXIT@2`：在**唯一MeteredExitCore**内增加final-authority lease hook，位于audit、持久reserve/claim和materialize之后、最终checks/invoke之前。@1接口/原bytes不改；不复制计量算术。hook只能由可信host组装，不能从JSON注入Python函数。新mode缺hook拒绝，不使用无lease兜底。原@1仅在旧mode保留。
+不增加新的计量版本：现有PreparedCall.guard已经调用可信Service.valid，host在effect生命周期把它组合为B origin lease.check和C active memory check，之后由原Core执行最后clock检查。C typed消费者不再用旧provider外套在clock之后追加SQL检查。缺必要active lease时拒绝，不能以cached ALLOWED替代；preflight短检查不是执行许可。guard只能是已审host代码，不能从JSON注入Python函数。
+
+现有prepare_input在最终lease之前；Core内materialize/audit是可信适配器准备/日志，不承担Memory/Travel业务写入。外部合法编辑按lease先后排序：编辑先commit则获取lease时拒绝；publication先持锁则该有限step先完成、编辑随后生效。不能为让测试回调在持锁中再写相同业务行而绕锁；违规重入应有界失败并保留原UNKNOWN。文件撤权或时间到期仍由最终AUTH/require_current/clock检测。
 
 publication时间检查拆成“原ledger/start/clock的短事务准备数据”与“所有lease/准备结束后的纯clock最终检查”；数据不是许可，最终检查保留同一finite/单调/max_seconds语义，不在NEEDS持锁后再回取USAGE。若最终lease拒绝时原claim已持久化，保留原UNKNOWN曝光，不能因provider=0就退款/归零。旧counter/UNKNOWN/limits断言全部保留，加等待/初始化耗时负例；这项内部调序属于本次冻结对象，不提前修改代码。
 
 M/T用`FOR SHARE`而非FOR UPDATE：阻止版本/选择写入，并兼容C typed FK的KEY SHARE；C memory.current_context仍取原MEMORY scope锁。row-lock兼容和一致顺序依据[PostgreSQL17锁文档](https://www.postgresql.org/docs/17/explicit-locking.html#LOCKING-ROWS)。只对已发布正式写入口声明此顺序，不声称防御恶意管理员/任意SQL。真实双顺序barrier测试全部UNRUN。
 
-C当前`MEMORY-RUN-CONSUME@1`明确按conversation选择，保持不改。新mode不得配置它当travel消费者；C应另发布typed版本（建议@2）并使用B原ref/lease。C capture可短持M/T→MEMORY编码后释放，返回数据而非许可；provider初始化可变回调后再次取得最终leases。typed版本将check作为final-authority的一部分传入，不沿用旧provider外套在最终clock之后再做额外I/O。`_event`、真实proposal提交及RUN commit均需覆盖，不只管provider起点。
+C当前`MEMORY-RUN-CONSUME@1`明确按conversation选择，保持不改。新mode不得配置它当travel消费者；C应另发布typed版本（建议@2）并使用B原ref/lease。C capture可短持M/T→MEMORY编码后释放，返回数据而非许可；随后每个实际step重新取得final leases。typed版本将check组合进既有Core guard，不沿用旧provider外套在最终clock之后再做额外I/O。`_event`、真实proposal提交及RUN commit均需覆盖，不只管provider起点。
 
 release/cleanup不再获取外层RUN/USAGE/NEEDS锁；若RUN/proposal已提交后读lease cleanup失败，只保留原事实与unknown/query-only，不报已回滚或重做。expiry最后检查发生在实际副作用前，不承诺提交瞬间的绝对时钟原子性。晚到可信费用回执只结算原ledger/attempt，不要求已失效context重新给执行许可。
 
