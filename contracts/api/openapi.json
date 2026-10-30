@@ -3132,6 +3132,112 @@
         },
         "description": "New original MESSAGE-send.2 protected read with immutable reference. Legacy read schemas and source semantics remain unchanged. Data is not a live effect lease."
       }
+    },
+    "/v2/run-cancellations": {
+      "post": {
+        "operationId": "cancelOriginalTravelRun",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "description": "RUN-CANCEL@2. Canonical owner and original send.2 receipt/ref, then original RUN fence; no live travel selection/version or active chat permit is required to stop. Immutable original reference returned, never rebinding or dispatching. Legacy cancellation version stays unchanged.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunTravelCancellationRequest"
+              },
+              "examples": {
+                "original": {
+                  "value": {
+                    "version": "RUN-cancel.2",
+                    "message_id": "original-message"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Committed cancellation or unchanged existing terminal; request_id is tracing, not business idempotency.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunTravelCancellationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "400 invalid input, 413 body too large, 415 media type, 401/403 initial AUTH denial; 503 unavailable or possibly committed/unknown cancellation. No synthetic terminal or null success.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-negative-examples": [
+          {
+            "value": {},
+            "status": 400
+          },
+          {
+            "value": {
+              "version": "RUN-cancel.2",
+              "message_id": "m1"
+            },
+            "status": 400
+          },
+          {
+            "value": {
+              "version": "RUN-cancel.1",
+              "message_id": ""
+            },
+            "status": 400
+          },
+          {
+            "value": {
+              "version": "RUN-cancel.1",
+              "message_id": true
+            },
+            "status": 400
+          },
+          {
+            "value": {
+              "version": "RUN-cancel.1",
+              "message_id": "m1",
+              "scope": "foreign"
+            },
+            "status": 400
+          },
+          {
+            "raw": "{\"version\":\"RUN-cancel.1\",\"message_id\":\"m1\",\"message_id\":\"m2\"}",
+            "status": 400
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -7904,6 +8010,80 @@
           }
         },
         "description": "Original MESSAGE-send.2 status plus immutable travel reference. Same persisted-only budget stages; no inference, retry authorization or context rebind."
+      },
+      "RunTravelCancellationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "message_id"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "enum": [
+              "RUN-cancel.2"
+            ]
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384,
+            "description": "Original immutable ID; runtime bounds UTF8 to 16384 bytes and rejects NUL/blank. Full body limit65536 bytes supports every accepted send.2 ID."
+          }
+        },
+        "description": "RUN-CANCEL@1. Body at most 4096 bytes; duplicate/unknown/missing keys rejected. Stable cancellation identity is trusted principal + cancel + original message_id; JSON whitespace does not create a new action."
+      },
+      "RunTravelCancellationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "message_id",
+          "run_id",
+          "status",
+          "event_highwater",
+          "version",
+          "reference"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "cancelled",
+              "context_invalid",
+              "unknown"
+            ]
+          },
+          "event_highwater": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "version": {
+            "type": "string",
+            "enum": [
+              "RUN-cancel.2"
+            ]
+          },
+          "reference": {
+            "$ref": "#/components/schemas/MessageTravelReference"
+          }
+        },
+        "description": "Original RUN terminal observed after a durable cancellation transaction. Existing terminals are retained. Prior text/effects remain readable through their original ledgers. Does not claim rollback/refund or physical abortion of an already-started provider request."
       }
     },
     "securitySchemes": {

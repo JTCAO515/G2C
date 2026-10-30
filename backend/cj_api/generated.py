@@ -2145,3 +2145,39 @@ class RunDraftStatusV3Response(BaseModel):
         description='Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.',
     )
     reference: MessageTravelReference
+
+
+class Version13(StrEnum):
+    RUN_cancel_2 = 'RUN-cancel.2'
+
+
+class RunTravelCancellationRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Version13
+    message_id: constr(min_length=1, max_length=16384) = Field(
+        ...,
+        description='Original immutable ID; runtime bounds UTF8 to 16384 bytes and rejects NUL/blank. Full body limit65536 bytes supports every accepted send.2 ID.',
+    )
+
+
+class Status15(StrEnum):
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+    context_invalid = 'context_invalid'
+    unknown = 'unknown'
+
+
+class RunTravelCancellationResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    status: Status15
+    event_highwater: conint(ge=1, le=9223372036854775807)
+    version: Version13
+    reference: MessageTravelReference

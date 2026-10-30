@@ -249,13 +249,14 @@ class Service:
         # None means absent in this ledger; production retention policy still gates retry.
         return old
 
-    def query_travel_message(self,message_id):
+    def query_travel_message(self,message_id, *, require_active=True):
         from .travel_reference import read_reference,OriginalTravelMessage
         with self.repository.transaction() as tx:
             tx.lock_scope()
             stored=tx.find(message_id)
             if stored is None:return None
-            tx.chat(stored.receipt.conversation_id,stored.receipt.generation)
+            if require_active:
+                tx.chat(stored.receipt.conversation_id,stored.receipt.generation)
             if stored.travel_reference_version!=1:
                 raise Unavailable('travel read requires original send.2')
             result=OriginalTravelMessage(stored,read_reference(tx,stored))
