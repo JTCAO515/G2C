@@ -23,6 +23,14 @@ class Command:
     occurred_at: str
     raw: bytes
 
+    @property
+    def context_kind(self):
+        return 'legacy'
+
+    @property
+    def schema_version(self):
+        return 1
+
     @classmethod
     def parse(cls, raw):
         def unique(pairs):
@@ -121,6 +129,10 @@ class Service:
                 status = 'active' if confirmed and c.kind != 'inference' else 'candidate'
                 result = tx.insert(c, status, operation_raw=raw)
         return result
+
+    def save_manual_typed(self, raw, authority, principal):
+        from .typed import save_manual
+        return save_manual(self, raw, authority, principal)
 
     def query(self, operation_id):
         with self.repository.transaction() as tx:

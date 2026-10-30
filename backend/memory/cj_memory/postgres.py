@@ -4,10 +4,11 @@ import hashlib
 from .domain import Command, Receipt, Item, Conflict, Unavailable, CommitUnknown, current_context
 
 class Repository:
-    def __init__(self, connect, scope, *, transaction_binder=None):
+    def __init__(self, connect, scope, *, transaction_binder=None, typed_context=False):
         if type(scope) is not str or not scope.strip(): raise ValueError('trusted scope required')
         self.connect, self.scope = connect, scope
         self.transaction_binder = transaction_binder
+        self.typed_context = typed_context
 
     @contextmanager
     def transaction(self):
@@ -18,7 +19,7 @@ class Repository:
             cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
             if self.transaction_binder is not None:
                 self.transaction_binder(conn, cur)
-            try: yield Transaction(cur, self.scope)
+            try: yield Transaction(cur, self.scope, typed_context=self.typed_context)
             except BaseException:
                 try: conn.rollback()
                 except BaseException: pass
@@ -34,7 +35,35 @@ class Repository:
                     except BaseException: pass
 
 class Transaction:
-    def __init__(self, cur, scope): self.cur, self.scope = cur, scope
+    def __init__(self, cur, scope, *, typed_context=False):
+        self.cur, self.scope, self.typed_context = cur, scope, typed_context
+
+    def _context(self, context):
+        from .typed import ContextRef
+        if context is None:
+            return None, None
+        if type(context) is str:
+            return 'legacy', context
+        if self.typed_context and type(context) is ContextRef:
+            return context.kind, context.id
+        raise Unavailable('explicit typed storage/context required')
+
+    def _item(self, row):
+        if not self.typed_context:
+            return Item(Command.parse(bytes(row[0])),*row[1:])
+        from .typed import parse_stored
+        command = parse_stored(bytes(row[0]))
+        expected = (command.context_kind,command.item_id,command.subject,command.slot,
+                    command.extent,command.context_id or '',command.source_id,command.source_version)
+        if row[4:] != expected:
+            raise Unavailable('stored memory projection mismatch')
+        return Item(command,*row[1:4])
+
+    def _columns(self, prefix=''):
+        names = ['original_input','version','status','recorded_at']
+        if self.typed_context:
+            names += ['context_kind','item_id','subject','slot','extent','context_id','source_id','source_version']
+        return ','.join(prefix+name for name in names)
     def lock_scope(self):
         self.cur.execute('SELECT epoch FROM cj_memory_scope WHERE scope=%s AND active FOR UPDATE', (self.scope,))
         row = self.cur.fetchone()
@@ -56,9 +85,20 @@ class Transaction:
             raise Conflict('manual source already exists without original receipt')
 
     def insert(self, c, status, *, operation_raw=None):
-        self.cur.execute('SELECT 1 FROM cj_memory_item WHERE scope=%s AND (item_id=%s OR (subject=%s AND slot=%s AND extent=%s AND context_id=%s AND status=\'active\' AND %s=\'active\'))', (self.scope,c.item_id,c.subject,c.slot,c.extent,c.context_id or '',status))
+        if c.schema_version == 2 and not self.typed_context:
+            raise Unavailable('typed storage not enabled')
+        context_filter = ' AND context_kind=%s' if self.typed_context else ''
+        args = (self.scope,c.item_id,c.subject,c.slot,c.extent,c.context_id or '',status)
+        if self.typed_context:
+            args += (c.context_kind,)
+        self.cur.execute('SELECT 1 FROM cj_memory_item WHERE scope=%s AND (item_id=%s OR (subject=%s AND slot=%s AND extent=%s AND context_id=%s AND status=\'active\' AND %s=\'active\''+context_filter+'))', args)
         if self.cur.fetchone(): raise Conflict('item or canonical slot exists; review current version')
-        self.cur.execute('INSERT INTO cj_memory_item(scope,item_id,version,status,subject,slot,extent,context_id,source_id,source_version,original_input) VALUES (%s,%s,1,%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,c.item_id,status,c.subject,c.slot,c.extent,c.context_id or '',c.source_id,c.source_version,c.raw))
+        columns='scope,item_id,version,status,subject,slot,extent,context_id,source_id,source_version,original_input'
+        placeholders='%s,%s,1,%s,%s,%s,%s,%s,%s,%s,%s'
+        values=(self.scope,c.item_id,status,c.subject,c.slot,c.extent,c.context_id or '',c.source_id,c.source_version,c.raw)
+        if self.typed_context:
+            columns+=',context_kind'; placeholders+=',%s'; values+=(c.context_kind,)
+        self.cur.execute('INSERT INTO cj_memory_item('+columns+') VALUES ('+placeholders+')',values)
         self.cur.execute('INSERT INTO cj_memory_operation VALUES (%s,%s,%s,%s,1,%s)', (self.scope,c.operation_id,c.raw if operation_raw is None else operation_raw,c.item_id,status))
         self.cur.execute('UPDATE cj_memory_scope SET epoch=epoch+1 WHERE scope=%s', (self.scope,))
         # Read back the actual operation ledger bytes, not the request or derived item.
@@ -66,15 +106,15 @@ class Transaction:
         if stored is None: raise Unavailable("operation receipt missing")
         return stored[1]
     def detail(self, iid):
-        self.cur.execute('SELECT original_input,version,status,recorded_at FROM cj_memory_item WHERE scope=%s AND item_id=%s', (self.scope,iid))
+        self.cur.execute('SELECT '+self._columns()+' FROM cj_memory_item WHERE scope=%s AND item_id=%s', (self.scope,iid))
         row = self.cur.fetchone()
-        return Item(Command.parse(bytes(row[0])),*row[1:]) if row else None
+        return self._item(row) if row else None
     def groups(self):
         self.cur.execute('SELECT subject,status,count(*) FROM cj_memory_item WHERE scope=%s GROUP BY subject,status ORDER BY subject,status', (self.scope,))
         return self.cur.fetchall()
     def list_items(self, after, limit):
-        self.cur.execute('SELECT original_input,version,status,recorded_at FROM cj_memory_item WHERE scope=%s AND (%s::text IS NULL OR item_id COLLATE "C">%s COLLATE "C") ORDER BY item_id COLLATE "C" ASC LIMIT %s', (self.scope,after,after,limit))
-        return [Item(Command.parse(bytes(r[0])),*r[1:]) for r in self.cur.fetchall()]
+        self.cur.execute('SELECT '+self._columns()+' FROM cj_memory_item WHERE scope=%s AND (%s::text IS NULL OR item_id COLLATE "C">%s COLLATE "C") ORDER BY item_id COLLATE "C" ASC LIMIT %s', (self.scope,after,after,limit))
+        return [self._item(row) for row in self.cur.fetchall()]
 
     def require_current(self, context, subject, context_id=None):
         # Caller retains this transaction/lock through RUN publication. Expiry must
@@ -83,8 +123,13 @@ class Transaction:
             raise Conflict("context or source validity changed")
 
     def effective(self, subject, context_id):
-        self.cur.execute('''SELECT i.original_input,i.version,i.status,i.recorded_at
+        kind, identifier = self._context(context_id)
+        context_filter = ' AND i.context_kind=%s' if self.typed_context else ''
+        args = (self.scope,subject,identifier)
+        if self.typed_context:
+            args += (kind,)
+        self.cur.execute('SELECT '+self._columns('i.')+'''
         FROM cj_memory_item i JOIN cj_memory_source s ON (s.scope,s.source_id,s.version)=(i.scope,i.source_id,i.source_version)
         WHERE i.scope=%s AND i.subject=%s AND i.status='active' AND s.authorized AND s.confirmed AND s.semantic_resolved AND s.active
-        AND s.expires_at>clock_timestamp() AND (i.extent='long_term' OR (i.extent='current' AND i.context_id=%s)) ORDER BY i.item_id''', (self.scope,subject,context_id))
-        return [Item(Command.parse(bytes(r[0])),*r[1:]) for r in self.cur.fetchall()]
+        AND s.expires_at>clock_timestamp() AND (i.extent='long_term' OR (i.extent='current' AND i.context_id=%s'''+context_filter+')) ORDER BY i.item_id',args)
+        return [self._item(row) for row in self.cur.fetchall()]
