@@ -17,6 +17,9 @@ import Foundation
         let runtime_role: String
         let pending_deliveries: Int
         let ledger_fingerprint: String
+        let original_fingerprint: String
+        let registered_fingerprint: String?
+        let registered_operations: Int
         let exposure: Int
         let ledger_attempts: Int
         let usage_receipts: Int
@@ -88,7 +91,7 @@ import Foundation
         let image = XCTAttachment(screenshot: app.screenshot())
         image.name = name; image.lifetime = .keepAlways; add(image)
     }
-    private func run(_ mode: String, language: String) async throws {
+    private func run(_ mode: String, language: String, fence: String? = nil) async throws {
         continueAfterFailure = false
         defer { app?.terminate() }
         let fixture = try JSONDecoder().decode(Fixture.self, from: await call("/prepare", ["mode": mode, "language": language]))
@@ -147,6 +150,8 @@ import Foundation
         XCTAssertEqual(reopened.posts, saved.posts)
         XCTAssertEqual(reopened.cancellations, saved.cancellations)
         XCTAssertEqual(reopened.ledger_fingerprint, saved.ledger_fingerprint)
+        XCTAssertEqual(reopened.original_fingerprint, saved.original_fingerprint)
+        XCTAssertEqual(reopened.registered_fingerprint, saved.registered_fingerprint)
         XCTAssertEqual(reopened.exposure, saved.exposure)
         XCTAssertEqual(reopened.usage_receipts, saved.usage_receipts)
         XCTAssertGreaterThanOrEqual(reopened.draft_reads, 2)
@@ -163,6 +168,70 @@ import Foundation
             capture("foreign-account-empty-history-" + language)
             _ = try await call("/observe-foreign-ui", ["case": fixture.conversation])
         }
+        if let fence { try await originalFence(fixture, saved: reopened, kind: fence) }
+    }
+
+    private func originalFence(_ fixture: Fixture, saved: Proof, kind: String) async throws {
+        XCTAssertNotNil(saved.registered_fingerprint)
+        XCTAssertGreaterThan(saved.registered_operations, 0)
+        if kind == "switch" {
+            // The earlier no-injected-token reopen remains checked. This phase
+            // loads the explicit account choices before holding the old read.
+            try launch(fixture, language: "en")
+            tap("assistant.history"); tap("recovery.action." + (try XCTUnwrap(saved.message_id))); tap("assistant.panel.done")
+            try await terminal(fixture, expected: "failed", language: "en")
+        }
+        if kind == "expired" {
+            let short = try JSONDecoder().decode(Fixture.self, from: await call("/renew-short-token", ["case": fixture.conversation]))
+            try launch(short, language: "en")
+            tap("assistant.history"); tap("recovery.action." + (try XCTUnwrap(saved.message_id))); tap("assistant.panel.done")
+            try await terminal(short, expected: "failed", language: "en")
+            XCUIDevice.shared.press(.home)
+            _ = try await call("/wait-real-expiry", ["case": fixture.conversation])
+            app.activate()
+        } else {
+            _ = try await call("/hold-original-read", ["case": fixture.conversation])
+            tap("run.snapshot.read")
+            _ = try await call("/wait-original-held", ["case": fixture.conversation])
+            if kind == "revoked" {
+                _ = try await call("/withdraw-access", ["case": fixture.conversation])
+                XCUIDevice.shared.press(.home); app.activate()
+            }
+        }
+        tap("Memory")
+        if !app.staticTexts["account.development.status"].exists { tap("memory.account") }
+        if kind == "switch" {
+            tap("account.development.signin.B")
+            let signed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", fixture.subjects["B"]!), object: app.staticTexts["account.development.status"])
+            XCTAssertEqual(XCTWaiter.wait(for: [signed], timeout: 15), .completed)
+        } else {
+            let expected = kind == "expired" ? "This session has expired" : "Sign-in was rejected"
+            let accountStatus = app.staticTexts["account.development.status"]
+            let rejected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: accountStatus)
+            XCTAssertEqual(XCTWaiter.wait(for: [rejected], timeout: 15), .completed, accountStatus.label)
+        }
+        if kind != "expired" { _ = try await call("/release-original-read", ["case": fixture.conversation]) }
+        tap("Assistant")
+        XCTAssertFalse(app.staticTexts["run.budget.status"].exists)
+        XCTAssertFalse(app.staticTexts["run.display.text"].exists)
+        XCTAssertFalse(app.textViews["assistant.originalText"].exists)
+        capture("registered-original-" + kind)
+        let after = try await proof(fixture, settled: true)
+        XCTAssertEqual(after.provider_calls, saved.provider_calls); XCTAssertEqual(after.posts, saved.posts)
+        XCTAssertEqual(after.original_fingerprint, saved.original_fingerprint)
+        XCTAssertEqual(after.ledger_fingerprint, saved.ledger_fingerprint)
+        XCTAssertEqual(after.registered_fingerprint, saved.registered_fingerprint)
+        let restored = try JSONDecoder().decode(Fixture.self, from: await call("/restore-identity", ["case": fixture.conversation]))
+        try launch(restored, language: "en")
+        tap("assistant.history"); tap("recovery.action." + (try XCTUnwrap(saved.message_id))); tap("assistant.panel.done")
+        try await terminal(restored, expected: "failed", language: "en")
+        let recovered = try await proof(fixture, settled: true)
+        XCTAssertEqual(recovered.message_id, saved.message_id)
+        XCTAssertEqual(recovered.original_fingerprint, saved.original_fingerprint)
+        XCTAssertEqual(recovered.registered_fingerprint, saved.registered_fingerprint)
+        XCTAssertEqual(recovered.ledger_fingerprint, saved.ledger_fingerprint)
+        XCTAssertEqual(recovered.provider_calls, saved.provider_calls); XCTAssertEqual(recovered.posts, saved.posts)
+        try check("budget_answer", language: "en", result: recovered, expectedStatus: "failed")
     }
     /// One explicit user read after an observed producer refusal. Never retry a write/model.
     private func terminal(_ fixture: Fixture, expected: String, language: String) async throws {
@@ -305,6 +374,9 @@ import Foundation
     func testDraftBudgetChinese() async throws { try await run("draft_budget", language:"zh-Hans") }
     func testUnknownEnglish() async throws { try await run("unknown", language:"en") }
     func testUnknownChinese() async throws { try await run("unknown", language:"zh-Hans") }
+    func testRegisteredSwitchOriginal() async throws { try await run("budget_answer", language:"en", fence:"switch") }
+    func testRegisteredRevokedOriginal() async throws { try await run("budget_answer", language:"en", fence:"revoked") }
+    func testRegisteredExpiredOriginal() async throws { try await run("budget_answer", language:"en", fence:"expired") }
     func testDraftPublishedEnglish() async throws { try await run("draft_published", language:"en") }
     func testDraftPublishedChinese() async throws { try await run("draft_published", language:"zh-Hans") }
     func testDraftValidationEnglish() async throws { try await run("draft_validation", language:"en") }
