@@ -128,3 +128,26 @@ def prepare(original: Trip, edit: ManualEdit):
     diff = packed({'before': before, 'after': after, 'request_id': edit.request_id,
                    'trip_id': original.trip_id, 'expected_version': original.version})
     return ManualCandidate(original, content, edit, diff)
+
+
+@dataclass(frozen=True)
+class ManualSave:
+    raw: bytes
+    action_id: str
+    proposal_id: str
+    candidate_hash: str
+
+    @classmethod
+    def parse(cls, raw):
+        if type(raw) is not bytes or not 0 < len(raw) <= 32768:
+            raise ValueError('bounded immutable save input required')
+        doc = json.loads(raw)
+        if (type(doc) is not dict or set(doc) != {'version', 'action_id', 'proposal_id', 'candidate_hash'}
+                or doc['version'] != 'TRIP-manual-save.1' or packed(doc) != raw):
+            raise ValueError('exact canonical manual save input required')
+        identifier(doc['action_id']); identifier(doc['proposal_id'])
+        digest = doc['candidate_hash']
+        if (type(digest) is not str or len(digest) != 64
+                or any(c not in '0123456789abcdef' for c in digest)):
+            raise ValueError('exact original candidate hash required')
+        return cls(raw, doc['action_id'], doc['proposal_id'], digest)

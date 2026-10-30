@@ -45,12 +45,14 @@ class OperationContext:
         self.__check()
         s = self.__state
         try:
-            if name == 'act':
+            if name in ('act', 'save_manual', 'prepare_manual'):
+                from .manual import ManualSave, ManualEdit
                 if s['action_id'] is not None: raise ValueError('one action per operation')
-                if not isinstance(args[0], Action): raise ValueError('validated action required')
-                s['action_id'] = args[0].action_id
+                expected = Action if name == 'act' else ManualSave if name == 'save_manual' else ManualEdit
+                if not isinstance(args[0], expected): raise ValueError('validated original action required')
+                s['action_id'] = args[0].request_id if name == 'prepare_manual' else args[0].action_id
             result = getattr(self.__repository, name)(*args)
-            if name == 'act': s['commit_possible'] = True
+            if name in ('act', 'save_manual', 'prepare_manual'): s['commit_possible'] = True
             return result
         except BaseException as exc:
             s['blocked'] = True
@@ -60,6 +62,9 @@ class OperationContext:
             raise
 
     def act(self, action): return self.__call('act', action)
+    def prepare_manual(self, edit): return self.__call('prepare_manual', edit)
+    def save_manual(self, save): return self.__call('save_manual', save)
+    def manual_preparation(self, request_id): return self.__call('manual_preparation', request_id)
     def query_action(self, action_id): return self.__call('query_action', action_id)
     def detail(self, trip_id): return self.__call('detail', trip_id)
     def list_trips(self, after='', limit=20): return self.__call('list_trips', after, limit)

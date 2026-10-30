@@ -163,6 +163,18 @@ class Repository:
         cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
         return receipt, p
 
+    def prepare_manual(self, edit):
+        from .manual_storage import prepare_manual
+        return prepare_manual(self, edit)
+
+    def manual_preparation(self, request_id):
+        from .manual_storage import manual_preparation
+        return manual_preparation(self, request_id)
+
+    def save_manual(self, save):
+        from .manual_storage import save_manual
+        return save_manual(self, save)
+
     def retire(self, proposal_id, state, replacement_id=None):
         """Trusted lifecycle; generation cancellation must never call this method."""
         if state not in ('expired','superseded'): raise ValueError('invalid retirement')
