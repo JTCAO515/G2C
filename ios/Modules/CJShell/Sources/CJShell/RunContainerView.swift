@@ -20,10 +20,11 @@ struct RunContainerView: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(language.text("Original run", "原运行")).font(.headline)
+            RunReadableText(text:language.text("Original run", "原运行"),style:.headline).accessibilityAddTraits(.isHeader)
             if let model = host.displayModel {
-                Button(language.text("Use selected accepted message", "使用已选中的已接受消息")) {
-                    _ = host.selectAcceptedMessage(from: messages)
+                Button { _ = host.selectAcceptedMessage(from:messages) } label: {
+                    RunReadableText(text:language.text("Use selected accepted message", "使用已选中的已接受消息"))
+                        .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
                 }.disabled(model.cancellationState == .stopping).accessibilityIdentifier("run.selectOriginal")
                 if host.sourceUnavailable {
                     Text(language.text("No current accepted message receipt is available. Select an original message in recovery first.", "没有可用的当前已接受消息回执，请先在恢复列表中选择原消息。"))

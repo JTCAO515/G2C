@@ -43,7 +43,7 @@ extension RunDisplayState {
     public var body: some View {
         let state = model.state
         VStack(alignment: .leading, spacing: 8) {
-            Text(state.label(language)).accessibilityIdentifier("run.display.status")
+            RunReadableText(text:state.label(language)).frame(maxWidth:.infinity,alignment:.leading).accessibilityIdentifier("run.display.status")
             if case .loaded(let value) = state {
                 if showAnswerText && !value.snapshot.text.isEmpty {
                     Text(verbatim: value.snapshot.text).textSelection(.enabled).accessibilityIdentifier("run.display.text")
