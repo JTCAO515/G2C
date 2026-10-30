@@ -7,7 +7,10 @@ import HTTPTypes
 public typealias MemoryEndpoint = MessageEndpoint
 public typealias MemoryCredentialCallback = @MainActor (MemoryBinding) async throws -> String?
 
+enum MemoryWireVersion { case v1, v2 }
+
 struct MemoryTransport: ClientTransport {
+    var wire: MemoryWireVersion = .v1
     let underlying: any ClientTransport
     let endpoint: MemoryEndpoint
     let bearer: String
@@ -15,12 +18,22 @@ struct MemoryTransport: ClientTransport {
     let managementEnabled: Bool
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        let paths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items", "applyMemoryManagementAction": "/v1/memory-management-actions", "queryMemoryManagementReceipt": "/v1/memory-management-receipts", "applyMemoryEditAction": "/v1/memory-edit-actions", "applyMemoryStopUseAction": "/v1/memory-withdrawal-actions", "getMemoryStopUseReceipt": "/v1/memory-withdrawal-receipts"]
+        let legacyPaths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items", "applyMemoryManagementAction": "/v1/memory-management-actions", "queryMemoryManagementReceipt": "/v1/memory-management-receipts", "applyMemoryEditAction": "/v1/memory-edit-actions", "applyMemoryStopUseAction": "/v1/memory-withdrawal-actions", "getMemoryStopUseReceipt": "/v1/memory-withdrawal-receipts"]
+        let typedPaths = ["saveTypedMemory":"/v2/memories","listTypedMemories":"/v2/memories",
+            "getTypedMemoryReceipt":"/v2/memory-receipts","getTypedMemoryItem":"/v2/memory-items",
+            "applyTypedMemoryManagement":"/v2/memory-management-actions","applyTypedMemoryStopUse":"/v2/memory-withdrawal-actions",
+            "getTypedMemoryManagementReceipt":"/v2/memory-management-receipts"]
+        let paths = wire == .v1 ? legacyPaths : typedPaths
+        let writes = wire == .v1 ? ["saveMemory","applyMemoryManagementAction","applyMemoryEditAction","applyMemoryStopUseAction"]
+            : ["saveTypedMemory","applyTypedMemoryManagement","applyTypedMemoryStopUse"]
+        let save = wire == .v1 ? "saveMemory" : "saveTypedMemory"
+        let lifecycle = wire == .v1 ? ["applyMemoryManagementAction","queryMemoryManagementReceipt","applyMemoryEditAction","applyMemoryStopUseAction","getMemoryStopUseReceipt"]
+            : ["applyTypedMemoryManagement","applyTypedMemoryStopUse","getTypedMemoryManagementReceipt"]
         guard baseURL == endpoint.url, let path = paths[operationID],
               request.path?.split(separator: "?", maxSplits: 1).first.map(String.init) == path,
-              request.method == (["saveMemory", "applyMemoryManagementAction", "applyMemoryEditAction", "applyMemoryStopUseAction"].contains(operationID) ? .post : .get),
-              operationID != "saveMemory" || writeEnabled,
-              !["applyMemoryManagementAction", "queryMemoryManagementReceipt", "applyMemoryEditAction", "applyMemoryStopUseAction", "getMemoryStopUseReceipt"].contains(operationID) || managementEnabled else { throw MemoryFailure.liveWriteUnavailable }
+              request.method == (writes.contains(operationID) ? .post : .get),
+              operationID != save || writeEnabled,
+              !lifecycle.contains(operationID) || managementEnabled else { throw MemoryFailure.liveWriteUnavailable }
         var request = request
         request.headerFields[.authorization] = "Bearer " + bearer
         let data: Data?
