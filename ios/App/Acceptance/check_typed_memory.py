@@ -198,7 +198,7 @@ def main():
                                 legacy_profile=json.dumps(legacy_profile),memory_profile=json.dumps(dict(version='app-memory.2',subjects=['self'],slots=slots,extents=['long_term','current'])))
                             elif parsed.path=='/arm-loss':
                                 kind=parse_qs(parsed.query)['kind'][0]
-                                if kind not in ('save','management'):raise ValueError('explicit loss kind required')
+                                if kind not in ('save','management','legacy'):raise ValueError('explicit loss kind required')
                                 network['lose']=kind;value={}
                             elif parsed.path=='/arm-hold':network['hold']=True;value={}
                             elif parsed.path=='/wait-held':
