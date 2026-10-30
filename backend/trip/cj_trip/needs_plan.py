@@ -20,13 +20,16 @@ def build(raw,capture):
         return out
     if type(raw) is not bytes or not 0<len(raw)<=1_000_000:raise ValueError('bounded plan required')
     model=json.loads(raw,object_pairs_hook=unique)
-    if type(model) is not dict or set(model)!={'version','title','items'} or model['version']!=MODEL_VERSION:
+    if type(model) is not dict or set(model)!={'version','title','items','proposed_subjects'} or model['version']!=MODEL_VERSION:
         raise ValueError('explicit structured model plan required')
     document=dict(content_version='structured.2',title=model['title'],items=model['items'],sources=[])
     validate_document(document)
     before,revisions=capture.records()
     fields=deepcopy(before.fields)
     originals={item['item_id']:item for item in fields.get('fixed_items',[])}
+    subjects=model['proposed_subjects']
+    new_ids={item['id'] for item in document['items']} - set(originals)
+    if type(subjects) is not dict or set(subjects)!=new_ids:raise ValueError('explicit proposed subjects required for each new item')
     proposed=[];selected=set()
     for item in document['items']:
         if item['verification']!='pending' or item['evidence'] or item['source_refs']:
@@ -38,7 +41,7 @@ def build(raw,capture):
             # New model material remains unconfirmed intent/unknown occupancy.
             if item['source_category']!='unknown' or item['fixed']!={'state':'unknown'}:
                 raise ValueError('new model items cannot invent source or fixed intent')
-            value=dict(item_id=item['id'],kind='intent',description=item['text'],applies_to=[],
+            value=dict(item_id=item['id'],kind='intent',description=item['text'],applies_to=subjects[item['id']],
                 locked={'state':'unknown'},booking_status={'state':'unknown'})
             selected.add(item['id'])
         else:

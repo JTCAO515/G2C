@@ -47,7 +47,7 @@ class PlanModel(FakeProvider):
             for value in schedule.values():value['utc_offset']=dict(state='unknown')
             items.append(dict(id=original['item_id'],text=original['description'],verification='pending',evidence=[],
                 schedule=schedule,fixed=original['locked'],source_category='user_provided',source_refs=[]))
-        document=dict(version='TRIP-model-plan.1',title='原源结构化安排 / sourced plan',items=items)
+        document=dict(version='TRIP-model-plan.1',title='原源结构化安排 / sourced plan',items=items,proposed_subjects={})
         if self.change:self.change(document)
         yield json.dumps(document,ensure_ascii=False,separators=(',',':'))
 
@@ -56,7 +56,7 @@ class NeedsPlanChecks(Harness):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.host=RegisteredHost(cls.auth/'plans',Path(CONNINFO),{s:(12,2,30000) for s in ('valid','overlap','locked','changed','publish-first')})
+        cls.host=RegisteredHost(cls.auth/'plans',Path(CONNINFO),{s:(12,2,30000) for s in ('valid','overlap','locked','changed','publish-first','new-item')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         for subject in cls.host.subjects:
             dev_auth.activate_travel(Path(CONNINFO),subject,cls.host.profiles[subject][1],ABI)
@@ -103,6 +103,21 @@ class NeedsPlanChecks(Harness):
             self.assertEqual(row[:2],('visit',1))
             self.assertEqual(json.loads(bytes(row[2]))['reference']['message_id'],receipt['message_id'])
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0],0)
+            basis=conn.execute('SELECT scope,proposal_id,message_scope,run_id,needs_scope,needs_id,needs_version,source_input,source_sha256,proposed_input FROM cj_trip_needs_basis WHERE proposal_id=%s',(outcome.proposal_id,)).fetchone()
+            for privilege in ('UPDATE','DELETE','TRUNCATE'):
+                self.assertFalse(conn.execute('SELECT has_table_privilege(current_user,%s,%s)',('cj_trip_needs_basis',privilege)).fetchone()[0])
+        with db.connect(scope_for(ISSUER,'foreign')) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_needs_basis WHERE scope=%s',(trip_scope_for(scope),)).fetchone()[0],0)
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+            with db.connect(scope_for(ISSUER,'foreign')) as conn:
+                conn.execute('INSERT INTO cj_trip_needs_basis VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',basis)
+        with psycopg.connect(**json.loads(Path(CONNINFO).read_text()),autocommit=True) as observer:
+            with self.assertRaises(psycopg.errors.RaiseException):
+                with observer.transaction():observer.execute((ROOT/'backend/migrations/down/0024_trip_needs_basis.down.sql').read_text())
+            self.assertEqual(observer.execute('SELECT count(*) FROM cj_trip_needs_basis WHERE proposal_id=%s',(outcome.proposal_id,)).fetchone()[0],1)
+        from cj_needs.revision_lease import LeaseUnavailable
+        capture=worker.drafts.source._captures[next(iter(worker.drafts.source._captures))]
+        with self.assertRaises(LeaseUnavailable):worker.drafts.source.check(capture.binding,capture)
 
     def test_conflicting_or_locked_model_result_has_zero_candidate(self):
         for subject,change in [('overlap',lambda d:d['items'][1]['schedule'].update(start=dict(date=known('2026-11-02'),time=known('09:30'),timezone=known('Asia/Shanghai'),utc_offset=dict(state='unknown')))),
@@ -117,6 +132,21 @@ class NeedsPlanChecks(Harness):
                     self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_needs_basis').fetchone()[0],0)
                     self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0],0)
                     self.assertEqual(conn.execute("SELECT count(*) FROM cj_run_event WHERE kind='effect_committed'").fetchone()[0],0)
+    def test_new_activity_is_proposed_not_user_confirmed_or_supplier_verified(self):
+        self.setup_source('new-item')
+        def add(document):
+            item=deepcopy(document['items'][1]);item.update(id='new-intent',text='模型提出 / proposed only',
+                source_category='unknown',fixed=dict(state='unknown'))
+            item['schedule']['start']['time']=known('13:00');item['schedule']['end']['time']=known('14:00')
+            document['items'].append(item);document['proposed_subjects']['new-intent']=['self']
+        worker,db=self.worker('new-item',PlanModel(add));outcome=worker.process()[0]
+        self.assertIsNotNone(outcome.proposal_id)
+        with db.connect(scope_for(ISSUER,'new-item')) as conn:
+            original=conn.execute('SELECT proposed_input FROM cj_trip_needs_basis WHERE proposal_id=%s',(outcome.proposal_id,)).fetchone()[0]
+            item=json.loads(bytes(original))['fixed_items'][-1]
+            self.assertEqual(item['kind'],'intent');self.assertEqual(item['booking_status'],dict(state='unknown'))
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0],0)
+
     def test_real_writer_first_rejects_captured_old_result(self):
         self.setup_source('changed')
         host=self.host
