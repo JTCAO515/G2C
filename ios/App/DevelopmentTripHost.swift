@@ -181,9 +181,10 @@ import Observation
                     let contexts: [String?] = extent == "current" ? profile.context_ids.map(Optional.some) : [nil]
                     for context in contexts {
                         let scope: Components.Schemas.MemoryManualSaveCommand.extentPayload = extent == "current" ? .current : .long_term
-                        let scopeLabel = extent == "current" ? "This trip / 本次" : "Long term / 长期"
+                        let scopeLabel = context.map { "Current conversation / 当前会话: " + $0 } ?? "Long term / 长期"
                         options.append(MemoryManualOption(id: UUID(), label: subject + " · " + slot + " · " + scopeLabel,
-                            disclosure: "Save only what you explicitly enter for this subject and scope. Inference stays unconfirmed. / 仅保存你为该对象及范围明确输入的内容；推断仍待确认。",
+                            disclosure: "Save only what you explicitly enter for this subject and scope. Inference stays unconfirmed. / 仅保存你为该对象及范围明确输入的内容；推断仍待确认。"
+                                + (context.map { " Conversation / 会话: " + $0 } ?? ""),
                             subject: subject, slot: slot, kind: kind, extent: scope, contextID: context))
                     }
                 }
