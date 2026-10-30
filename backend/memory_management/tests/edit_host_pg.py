@@ -193,8 +193,10 @@ class EditManagementChecks(StopUseCases, Harness):
             edit=self.action(raw);self.assertEqual(self.apply(manager,edit).status_code,200)
             alice=scope_for(ISSUER,'alice');bob=scope_for(ISSUER,'bob')
             with self.database.connect(bob) as conn:
-                # Bob has no MEMORY namespace yet; RLS still denies Alice's rows.
-                self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_management_action').fetchone()[0],0)
+                # Bob may have his own legitimate stop-use history. Only Alice's
+                # target must stay invisible; every visible row must remain Bob's.
+                self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_management_action WHERE scope=%s',(alice,)).fetchone()[0],0)
+                self.assertTrue(all(row[0]==bob for row in conn.execute('SELECT scope FROM cj_memory_management_action')))
                 self.assertEqual(conn.execute('UPDATE cj_memory_item SET version=version+1 WHERE scope=%s',(alice,)).rowcount,0)
             for statement in ("DELETE FROM cj_memory_item","TRUNCATE cj_memory_item",
                               "UPDATE cj_memory_source SET authorized=false","UPDATE cj_memory_item SET subject='other'",
