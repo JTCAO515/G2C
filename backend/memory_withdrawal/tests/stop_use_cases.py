@@ -327,3 +327,31 @@ class StopUseCases:
         with TestClient(self.management_app()) as rebuilt:
             self.assertEqual(rebuilt.get('/v1/memory-withdrawal-receipts',params=query,
                 headers=self.headers('alice')).json()['receipt'],result.json()['receipt'])
+
+    def test_stop_use_rejects_incoherent_persisted_source_projection(self):
+        with TestClient(self.memory_app) as api:
+            for kind,field in (('fact','source_version'),('experience','original_input')):
+                with self.subTest(field=field):
+                    raw=self.raw(kind);self.assertEqual(self.save(api,raw).status_code,200)
+                    item=self.service().detail(json.loads(raw)['item_id']);action=self.stop_action(item)
+                    scope=scope_for(ISSUER,'alice')
+                    with self.database.connect(scope) as conn:
+                        if field=='source_version':
+                            conn.execute('UPDATE cj_memory_item SET source_version=2 WHERE item_id=%s',(item.command.item_id,))
+                        else:
+                            value=json.loads(item.command.raw);value['text']='incoherent fixture, not approved bytes'
+                            conn.execute('UPDATE cj_memory_item SET original_input=%s WHERE item_id=%s',
+                                         (json.dumps(value).encode(),item.command.item_id))
+                    try:
+                        with self.assertRaises(Unavailable):self.stop(action)
+                        self.assertIsNone(self.stopped_receipt(action))
+                        with self.database.connect(scope) as conn:
+                            self.assertTrue(conn.execute('SELECT active FROM cj_memory_source WHERE source_id=%s',
+                                                        (item.command.source_id,)).fetchone()[0])
+                    finally:
+                        # Restore only this negative fixture, with the same runtime
+                        # columns; never present it as a successful lifecycle writer.
+                        with self.database.connect(scope) as conn:
+                            conn.execute('UPDATE cj_memory_item SET source_version=1,original_input=%s WHERE item_id=%s',
+                                         (item.command.raw,item.command.item_id))
+                    self.assertEqual(self.service().detail(item.command.item_id),item)
