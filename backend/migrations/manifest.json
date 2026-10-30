@@ -170,6 +170,14 @@
       "sha256": "e88f6036042deffc09aba74188f840b3e0e4683da43f955d176cbd39b5902189",
       "down": "backend/migrations/down/0021_memory_typed_context.down.sql",
       "down_sha256": "9c69b24a663acfa3c23947a024fd4bcbd5d3b7427dc11ad7c55781127d008fbf"
+    },
+    {
+      "version": 22,
+      "name": "trip_manual",
+      "file": "backend/migrations/0022_trip_manual.sql",
+      "sha256": "4a5009634477076b9740f5d87b38f2cae4f0987c4dd59e3fe1822e2e8efe9815",
+      "down": "backend/migrations/down/0022_trip_manual.down.sql",
+      "down_sha256": "54a45d3e026ba15ba05e84b2ca2b528092192f4b23bc61007cba35b1ffcd223f"
     }
   ]
 }

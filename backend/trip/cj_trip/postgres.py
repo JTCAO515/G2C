@@ -5,16 +5,19 @@ new-trip inserts. No network/provider work belongs in the confirmation callback.
 """
 from contextlib import contextmanager
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 from .domain import Action, Proposal, ProposalDetail, Receipt, Trip, Conflict, Denied, CommitUnknown, identifier
 
 
 class Repository:
-    def __init__(self, connect, scope, confirm=None, guard=None):
+    def __init__(self, connect, scope, confirm=None, guard=None, *, structured=False):
         self.connect, self.scope = connect, identifier(scope)
         self.confirm = confirm
         self.guard = guard or (lambda stage: None)
+        self.structured = structured
+        self.manual_origin = None
 
     @contextmanager
     def transaction(self, before_commit=None):
@@ -71,27 +74,43 @@ class Repository:
         try: logger.warning('TRIP connection cleanup failed: %s', operation)
         except BaseException: pass
 
+    def _content(self, content, *, validated=False):
+        document = json.loads(content)
+        if type(document) is dict and document.get('content_version') == 'structured.1':
+            if not self.structured:
+                raise Denied('structured Trip requires explicit versioned consumer')
+            if not validated:
+                from .structured import validate_document
+                from .domain import packed
+                validate_document(document)
+                if packed(document) != content: raise ValueError('canonical stored Trip required')
+        return content
+
     def _proposal(self, cur, pid):
         cur.execute('SELECT proposal_id,trip_id,expected_version,basis_version,expires_at,content,candidate_hash,status FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,pid))
         row = cur.fetchone()
         if row is None: raise Denied('candidate unavailable')
-        p = Proposal(*row[:5], bytes(row[5]))
+        p = Proposal(*row[:5], self._content(bytes(row[5]), validated=True))
         if p.digest(self.scope) != row[6]: raise Conflict('candidate integrity')
         return p, row[6], row[7]
 
     def publish(self, proposal):
         """Trusted CJ014 ingress only. Never mapped from a user/model request directly."""
         if not isinstance(proposal, Proposal): raise ValueError('validated proposal required')
+        self._content(proposal.content, validated=True)
         with self.transaction() as cur:
-            cur.execute('SELECT candidate_hash FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,proposal.proposal_id))
-            old = cur.fetchone()
-            digest = proposal.digest(self.scope)
-            if old:
-                if old[0] != digest: raise Conflict('immutable candidate')
-                return digest
-            cur.execute('INSERT INTO cj_trip_proposal VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                        (self.scope,proposal.proposal_id,proposal.trip_id,proposal.expected_version,proposal.basis_version,proposal.expires_at,proposal.content,digest,'pending'))
+            return self._publish_in_tx(cur, proposal)
+
+    def _publish_in_tx(self, cur, proposal):
+        cur.execute('SELECT candidate_hash FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,proposal.proposal_id))
+        old = cur.fetchone()
+        digest = proposal.digest(self.scope)
+        if old:
+            if old[0] != digest: raise Conflict('immutable candidate')
             return digest
+        cur.execute('INSERT INTO cj_trip_proposal VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                    (self.scope,proposal.proposal_id,proposal.trip_id,proposal.expected_version,proposal.basis_version,proposal.expires_at,proposal.content,digest,'pending'))
+        return digest
 
     def _receipt(self, cur, aid):
         cur.execute('SELECT action_id,kind,proposal_id,candidate_hash,trip_id,committed_version,original_input FROM cj_trip_receipt WHERE scope=%s AND action_id=%s', (self.scope,aid))
@@ -100,43 +119,75 @@ class Repository:
 
     def act(self, action):
         if not isinstance(action, Action): raise ValueError('validated action required')
-        p = None
+        pending = None
         def final_eligibility(cur):
-            if p is not None:
-                # Last potentially slow admission check has finished. The scope lock
-                # still protects the candidate/content/version checked in this txn.
-                cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
-                database_now = cur.fetchone()[0]
-                if p.expires_at <= database_now:
-                    raise Conflict('candidate expired before commit')
-                # Additive expiry check; legacy validators retain their single call.
-                # The issuer hook uses DB time and performs no resource callbacks.
-                final_confirmation = getattr(self.confirm, 'check_before_commit', None)
-                if final_confirmation is not None:
-                    final_confirmation(self.scope, action, p, database_now)
+            self._final_action_eligibility(cur, action, pending)
         with self.transaction(before_commit=final_eligibility) as cur:
-            previous = self._receipt(cur, action.action_id)
-            if previous:
-                if previous[1] != action.raw(): raise Conflict('action ID input conflict')
-                return previous[0]
-            p, digest, status = self._proposal(cur, action.proposal_id)
-            if action.candidate_hash != digest: raise Conflict('candidate changed')
-            cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
-            now = cur.fetchone()[0]
-            if status != 'pending' or p.expires_at <= now: raise Conflict('candidate not eligible')
-            if self.confirm is None or self.confirm(self.scope, action, p) is not True:
-                raise Denied('trusted review and confirmation unavailable')
-            cur.execute('SELECT version FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,p.trip_id))
-            row = cur.fetchone()
-            if (row[0] if row else 0) != p.expected_version: raise Conflict('trip version conflict')
-            version = None
-            if action.kind == 'accept':
-                version = p.expected_version + 1
-                cur.execute('INSERT INTO cj_trip_record VALUES (%s,%s,%s,%s) ON CONFLICT(scope,trip_id) DO UPDATE SET version=EXCLUDED.version,content=EXCLUDED.content', (self.scope,p.trip_id,version,p.content))
-            receipt = Receipt(action.action_id,action.kind,p.proposal_id,digest,p.trip_id,version)
-            cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', ('accepted' if action.kind == 'accept' else 'rejected',self.scope,p.proposal_id))
-            cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
+            receipt, pending = self._act_in_tx(cur, action)
             return receipt
+
+    def _final_action_eligibility(self, cur, action, p):
+        if p is not None:
+            # Last potentially slow admission check has finished. The scope lock
+            # still protects the candidate/content/version checked in this txn.
+            cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
+            database_now = cur.fetchone()[0]
+            if p.expires_at <= database_now:
+                raise Conflict('candidate expired before commit')
+            # Additive expiry check; legacy validators retain their single call.
+            # The issuer hook uses DB time and performs no resource callbacks.
+            final_confirmation = getattr(self.confirm, 'check_before_commit', None)
+            if final_confirmation is not None:
+                final_confirmation(self.scope, action, p, database_now)
+
+    def _act_in_tx(self, cur, action):
+        previous = self._receipt(cur, action.action_id)
+        if previous:
+            if previous[1] != action.raw(): raise Conflict('action ID input conflict')
+            return previous[0], None
+        p, digest, status = self._proposal(cur, action.proposal_id)
+        if action.candidate_hash != digest: raise Conflict('candidate changed')
+        cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
+        now = cur.fetchone()[0]
+        if status != 'pending' or p.expires_at <= now: raise Conflict('candidate not eligible')
+        if self.confirm is None or self.confirm(self.scope, action, p) is not True:
+            raise Denied('trusted review and confirmation unavailable')
+        cur.execute('SELECT version FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,p.trip_id))
+        row = cur.fetchone()
+        if (row[0] if row else 0) != p.expected_version: raise Conflict('trip version conflict')
+        version = None
+        if action.kind == 'accept':
+            version = p.expected_version + 1
+            cur.execute('INSERT INTO cj_trip_record VALUES (%s,%s,%s,%s) ON CONFLICT(scope,trip_id) DO UPDATE SET version=EXCLUDED.version,content=EXCLUDED.content', (self.scope,p.trip_id,version,p.content))
+        receipt = Receipt(action.action_id,action.kind,p.proposal_id,digest,p.trip_id,version)
+        cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', ('accepted' if action.kind == 'accept' else 'rejected',self.scope,p.proposal_id))
+        cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
+        return receipt, p
+
+    def prepare_manual(self, edit):
+        from .manual_storage import prepare_manual
+        return prepare_manual(self, edit)
+
+    def manual_preparation(self, request_id):
+        from .manual_storage import manual_preparation
+        return manual_preparation(self, request_id)
+
+    def save_manual(self, save):
+        from .manual_storage import save_manual
+        return save_manual(self, save)
+
+    def prepare_initialization(self, request):
+        from .manual_storage import prepare_initialization
+        return prepare_initialization(self, request)
+
+    def save_initialization(self, save):
+        from .manual_storage import save_initialization
+        return save_initialization(self, save)
+
+    def initialization(self, request_id):
+        from .manual_storage import manual_preparation
+        from .initialization import BASIS
+        return manual_preparation(self, request_id, basis_version=BASIS)
 
     def retire(self, proposal_id, state, replacement_id=None):
         """Trusted lifecycle; generation cancellation must never call this method."""
@@ -169,7 +220,7 @@ class Repository:
         with self.transaction() as cur:
             cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,identifier(trip_id)))
             row = cur.fetchone()
-            return Trip(row[0],row[1],bytes(row[2])) if row else None
+            return Trip(row[0],row[1],self._content(bytes(row[2]))) if row else None
 
     def list_trips(self, after='', limit=20):
         if type(limit) is not int or not 1 <= limit <= 100: raise ValueError('invalid limit')
@@ -177,4 +228,4 @@ class Repository:
         if after: identifier(after)
         with self.transaction() as cur:
             cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id COLLATE "C">%s COLLATE "C" ORDER BY trip_id COLLATE "C" LIMIT %s', (self.scope,after,limit))
-            return [Trip(r[0],r[1],bytes(r[2])) for r in cur.fetchall()]
+            return [Trip(r[0],r[1],self._content(bytes(r[2]))) for r in cur.fetchall()]

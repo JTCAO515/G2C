@@ -335,9 +335,11 @@ class TypedStorageChecks(Harness):
             config=json.loads(Path(CONNINFO).read_text())
             with psycopg.connect(**config,autocommit=True) as conn:
                 chain=migrate.load();typed=next(m for m in chain if m['name']=='memory_typed_context')
+                applied_before=migrate.applied(conn)
+                self.assertIn(typed['version'],applied_before)
                 with self.assertRaises(psycopg.errors.RaiseException):
                     with conn.transaction():conn.execute((ROOT/typed['down']).read_text())
-                self.assertEqual(migrate.applied(conn)[-1],typed['version'])
+                self.assertEqual(migrate.applied(conn),applied_before)
         with TestClient(self.typed_app()) as api:
             self.assertEqual(api.get('/v2/memory-receipts',params={'operation_id':json.loads(lost)['operation_id']},
                 headers=self.headers('alice')).json()['receipt'],found.json()['receipt'])

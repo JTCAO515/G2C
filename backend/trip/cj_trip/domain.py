@@ -20,26 +20,11 @@ def packed(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
 
 
-def validate_provenance_document(doc):
-    """Structural validation of the independently versioned source document.
-
-    This does not authenticate source records or verify their factual truth.
-    The trusted publisher owns source acquisition; the model cannot supply these
-    objects. Original V1 grammar and original content hashes remain unchanged.
-    """
-    if (type(doc) is not dict
-            or set(doc) != {'content_version', 'title', 'items', 'sources', 'decisions'}
-            or doc['content_version'] != 'provenance.1'
-            or type(doc['title']) is not str or not doc['title'].strip()):
-        raise ValueError('invalid provenance document')
-    if doc['decisions'] not in (
-            {'travel_dates': 'unknown', 'prompt': 'decide_travel_dates'},
-            {'travel_dates': 'undecided', 'prompt': 'decide_travel_dates'}):
-        raise ValueError('explicit pending date decision required')
-    if type(doc['sources']) is not list or len(doc['sources']) > 40:
+def validate_source_records(records):
+    if type(records) is not list or len(records) > 40:
         raise ValueError('invalid sources')
     sources = {}
-    for source in doc['sources']:
+    for source in records:
         if (type(source) is not dict or set(source) != {
                 'id', 'kind', 'reference', 'text', 'snapshot_utf8_base64',
                 'snapshot_sha256', 'evidence_level'}):
@@ -110,6 +95,26 @@ def validate_provenance_document(doc):
         except (KeyError, TypeError, UnicodeError, ValueError) as error:
             raise ValueError('invalid source record binding') from error
         sources[source['id']] = source
+    return sources
+
+
+def validate_provenance_document(doc):
+    """Structural validation of the independently versioned source document.
+
+    This does not authenticate source records or verify their factual truth.
+    The trusted publisher owns source acquisition; the model cannot supply these
+    objects. Original V1 grammar and original content hashes remain unchanged.
+    """
+    if (type(doc) is not dict
+            or set(doc) != {'content_version', 'title', 'items', 'sources', 'decisions'}
+            or doc['content_version'] != 'provenance.1'
+            or type(doc['title']) is not str or not doc['title'].strip()):
+        raise ValueError('invalid provenance document')
+    if doc['decisions'] not in (
+            {'travel_dates': 'unknown', 'prompt': 'decide_travel_dates'},
+            {'travel_dates': 'undecided', 'prompt': 'decide_travel_dates'}):
+        raise ValueError('explicit pending date decision required')
+    sources = validate_source_records(doc['sources'])
     if type(doc['items']) is not list or not 1 <= len(doc['items']) <= 60:
         raise ValueError('invalid item count')
     seen, used = set(), set()
@@ -143,6 +148,24 @@ def validate_provenance_document(doc):
         raise ValueError('unreferenced source')
 
 
+def validate_legacy_document(doc):
+    if set(doc) != {'title', 'items'} or not isinstance(doc['title'], str) or not doc['title'].strip():
+        raise ValueError('title and items required')
+    if not isinstance(doc['items'], list) or not doc['items']:
+        raise ValueError('empty trip rejected')
+    seen = set()
+    for item in doc['items']:
+        if not isinstance(item, dict) or set(item) != {'id', 'text', 'verification', 'evidence'}:
+            raise ValueError('explicit fact state required')
+        identifier(item['id'])
+        if item['id'] in seen: raise ValueError('duplicate item')
+        seen.add(item['id'])
+        if not isinstance(item['text'], str) or not item['text'].strip(): raise ValueError('empty text')
+        if item['verification'] not in ('pending', 'verified'): raise ValueError('unknown fact state')
+        if not isinstance(item['evidence'], list) or not all(isinstance(x, str) and x for x in item['evidence']): raise ValueError('invalid evidence')
+        if item['verification'] == 'verified' and not item['evidence']: raise ValueError('verified needs evidence')
+
+
 @dataclass(frozen=True)
 class Proposal:
     proposal_id: str
@@ -162,25 +185,16 @@ class Proposal:
             raise ValueError('immutable UTF-8 content required')
         # Minimal internal document, not the future PLACE/FACT or wire schema.
         doc = json.loads(self.content)
+        if type(doc) is dict and doc.get('content_version') == 'structured.1':
+            from .structured import validate_document
+            validate_document(doc)
+            if packed(doc) != self.content: raise ValueError('canonical content required')
+            return
         if type(doc) is dict and doc.get('content_version') == 'provenance.1':
             validate_provenance_document(doc)
             if packed(doc) != self.content: raise ValueError('canonical content required')
             return
-        if set(doc) != {'title', 'items'} or not isinstance(doc['title'], str) or not doc['title'].strip():
-            raise ValueError('title and items required')
-        if not isinstance(doc['items'], list) or not doc['items']:
-            raise ValueError('empty trip rejected')
-        seen = set()
-        for item in doc['items']:
-            if not isinstance(item, dict) or set(item) != {'id', 'text', 'verification', 'evidence'}:
-                raise ValueError('explicit fact state required')
-            identifier(item['id'])
-            if item['id'] in seen: raise ValueError('duplicate item')
-            seen.add(item['id'])
-            if not isinstance(item['text'], str) or not item['text'].strip(): raise ValueError('empty text')
-            if item['verification'] not in ('pending', 'verified'): raise ValueError('unknown fact state')
-            if not isinstance(item['evidence'], list) or not all(isinstance(x, str) and x for x in item['evidence']): raise ValueError('invalid evidence')
-            if item['verification'] == 'verified' and not item['evidence']: raise ValueError('verified needs evidence')
+        validate_legacy_document(doc)
         # Reject duplicate JSON keys / alternate encodings: preserve accepted original bytes.
         if packed(doc) != self.content: raise ValueError('canonical content required')
 
