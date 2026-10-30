@@ -1,10 +1,12 @@
 // Adapted from the accepted CJMessageHTTP private duplicate-key validator.
 import Foundation
 
-/// Generic JSON duplicate-key check; wire shapes remain exclusively in generated CJAPI.
+/// Duplicate-key and integer-token boundary check. Generated CJAPI supplies wire
+/// types; typed domains also enforce frozen conditional constraints it cannot express.
 struct StrictMemoryJSON {
     var bytes: [UInt8]
     var index = 0
+    private(set) var unsignedIntegers: [[String]: Int64] = [:]
     mutating func check() throws {
         _ = try JSONSerialization.jsonObject(with: Data(bytes))
         try value(depth: 0)
@@ -24,7 +26,7 @@ struct StrictMemoryJSON {
         }
         throw MemoryFailure.invalidResponse
     }
-    mutating func value(depth: Int) throws {
+    mutating func value(depth: Int, path: [String] = []) throws {
         guard depth < 64 else { throw MemoryFailure.invalidResponse }
         whitespace()
         guard index < bytes.count else { throw MemoryFailure.invalidResponse }
@@ -36,21 +38,28 @@ struct StrictMemoryJSON {
                 whitespace(); let key = try string()
                 guard keys.insert(key).inserted else { throw MemoryFailure.invalidResponse }
                 whitespace(); index += 1 // colon: grammar already validated
-                try value(depth: depth + 1); whitespace()
+                try value(depth: depth + 1, path: path + [key]); whitespace()
                 if bytes[index] == 125 { index += 1; break }
                 index += 1
             }
         case 91:
             index += 1; whitespace()
             if bytes[index] == 93 { index += 1; return }
+            var element = 0
             while true {
-                try value(depth: depth + 1); whitespace()
+                try value(depth: depth + 1, path: path + [String(element)]); element += 1; whitespace()
                 if bytes[index] == 93 { index += 1; break }
                 index += 1
             }
         case 34: _ = try string()
         default:
+            let start = index
             while index < bytes.count && ![9,10,13,32,44,93,125].contains(bytes[index]) { index += 1 }
+            let token = bytes[start..<index]
+            if !token.isEmpty, token.allSatisfy({ (48...57).contains($0) }),
+               let integer = Int64(String(decoding: token, as: UTF8.self)) {
+                unsignedIntegers[path] = integer
+            }
         }
     }
 }
