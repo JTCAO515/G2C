@@ -1,0 +1,478 @@
+{
+  "status": "DRAFT_WAIT_JT",
+  "data_origin": "handwritten_synthetic_design_examples_not_recordings",
+  "new_contract_validator": "UNRUN",
+  "DDL_up_down": "UNRUN",
+  "new_runtime_or_C_A_integration": "UNRUN",
+  "cases": [
+    {
+      "id": "no-conversation-no-trip",
+      "actions": [
+        {
+          "version": "TRAVEL-context-action.1",
+          "action_id": "create-A",
+          "operation": "create",
+          "travel_context": null
+        }
+      ],
+      "expect": "server returns owned context-A/v1; no conversation/Trip/NEEDS business row created"
+    },
+    {
+      "id": "same-conversation-A-B-A",
+      "messages": [
+        {
+          "version": "MESSAGE-send.2",
+          "conversation_id": "chat-1",
+          "message_id": "m-A",
+          "text": "合成当前输入 / synthetic current input",
+          "trip_id": null,
+          "creation_intent": "none",
+          "expected_generation": "generation-1",
+          "expected_sequence": 0,
+          "travel_context": {
+            "id": "11111111111141118111111111111111",
+            "expected_version": 1
+          },
+          "needs_reference": null
+        },
+        {
+          "version": "MESSAGE-send.2",
+          "conversation_id": "chat-1",
+          "message_id": "m-B",
+          "text": "合成当前输入 / synthetic current input",
+          "trip_id": null,
+          "creation_intent": "none",
+          "expected_generation": "generation-1",
+          "expected_sequence": 1,
+          "travel_context": {
+            "id": "22222222222242228222222222222222",
+            "expected_version": 1
+          },
+          "needs_reference": null
+        },
+        {
+          "version": "MESSAGE-send.2",
+          "conversation_id": "chat-1",
+          "message_id": "m-A-again",
+          "text": "合成当前输入 / synthetic current input",
+          "trip_id": null,
+          "creation_intent": "none",
+          "expected_generation": "generation-1",
+          "expected_sequence": 2,
+          "travel_context": {
+            "id": "11111111111141118111111111111111",
+            "expected_version": 1
+          },
+          "needs_reference": null
+        }
+      ],
+      "expect": "immutable refs A/e1, B/e2, A/e3; old A/e1 can never publish again"
+    },
+    {
+      "id": "same-travel-across-conversations",
+      "messages": [
+        {
+          "version": "MESSAGE-send.2",
+          "conversation_id": "chat-1",
+          "message_id": "m-A",
+          "text": "合成当前输入 / synthetic current input",
+          "trip_id": null,
+          "creation_intent": "none",
+          "expected_generation": "generation-1",
+          "expected_sequence": 0,
+          "travel_context": {
+            "id": "11111111111141118111111111111111",
+            "expected_version": 1
+          },
+          "needs_reference": null
+        },
+        {
+          "version": "MESSAGE-send.2",
+          "conversation_id": "chat-2",
+          "message_id": "m-A-chat2",
+          "text": "合成当前输入 / synthetic current input",
+          "trip_id": null,
+          "creation_intent": "none",
+          "expected_generation": "generation-2",
+          "expected_sequence": 0,
+          "travel_context": {
+            "id": "11111111111141118111111111111111",
+            "expected_version": 1
+          },
+          "needs_reference": null
+        }
+      ],
+      "expect": "same travel identity key; independent origin/selection epoch, C travel-current input is same typed id"
+    },
+    {
+      "id": "same-travel-next-message",
+      "messages": [
+        {
+          "version": "MESSAGE-send.2",
+          "conversation_id": "chat-1",
+          "message_id": "m-A",
+          "text": "合成当前输入 / synthetic current input",
+          "trip_id": null,
+          "creation_intent": "none",
+          "expected_generation": "generation-1",
+          "expected_sequence": 0,
+          "travel_context": {
+            "id": "11111111111141118111111111111111",
+            "expected_version": 1
+          },
+          "needs_reference": null
+        },
+        {
+          "version": "MESSAGE-send.2",
+          "conversation_id": "chat-1",
+          "message_id": "m-A-next",
+          "text": "合成当前输入 / synthetic current input",
+          "trip_id": null,
+          "creation_intent": "none",
+          "expected_generation": "generation-1",
+          "expected_sequence": 1,
+          "travel_context": {
+            "id": "11111111111141118111111111111111",
+            "expected_version": 1
+          },
+          "needs_reference": null
+        }
+      ],
+      "expect": "selection epoch stays 1; normal same-context enqueue does not cancel its predecessor"
+    },
+    {
+      "id": "explicit-none",
+      "message": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-none",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": null,
+        "needs_reference": null
+      },
+      "expect": "accepted none ref; C long_term only, no legacy conversation fallback"
+    },
+    {
+      "id": "explicit-current-needs",
+      "message": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-plan",
+        "text": "合成本次明确需求",
+        "trip_id": null,
+        "creation_intent": "consider_trip",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": {
+          "id": "needs-1",
+          "expected_version": 3
+        }
+      },
+      "expect": "owned current NEEDS revision explicitly selected for this message; no prior conversation selection is inherited or asserted to belong to a travel identity"
+    },
+    {
+      "id": "version-advance",
+      "action": {
+        "version": "TRAVEL-context-action.1",
+        "action_id": "advance-A",
+        "operation": "advance",
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        }
+      },
+      "expect": "same identity v2/active; old original v1 lease refuses even if C epoch/data hash unchanged; history receipt remains original"
+    },
+    {
+      "id": "deactivate",
+      "action": {
+        "version": "TRAVEL-context-action.1",
+        "action_id": "stop-A",
+        "operation": "deactivate",
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        }
+      },
+      "expect": "v2/inactive; no reactivate or physical delete, no new publish/new attempt; original fee receipt still reconciles"
+    },
+    {
+      "id": "owner-mismatch",
+      "message": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": null
+      },
+      "actor": "different canonical owner",
+      "expect": "same unavailable as missing context, zero receipt/outbox/provider, no owner enumeration"
+    },
+    {
+      "id": "ACK-unknown",
+      "message": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": null
+      },
+      "faults": [
+        "before commit",
+        "after durable commit before ACK"
+      ],
+      "expect": "query same original message/action; accepted bytes return original ref/receipt despite later selection, no new id/ref/attempt/period"
+    },
+    {
+      "id": "restart",
+      "message": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": null
+      },
+      "states": [
+        "queued with valid original ref",
+        "running or claim unknown"
+      ],
+      "expect": "queued uses original ref and fresh leases; running/claim uncertainty stays original unknown, never recapture as new execution"
+    },
+    {
+      "id": "lease-lifetime",
+      "misuse": [
+        "other run",
+        "other owner",
+        "other generation",
+        "cross-thread",
+        "after with exit",
+        "forged hash/epoch without issued lease"
+      ],
+      "expect": "refuse new provider/effect, not cached ALLOWED"
+    },
+    {
+      "id": "old-consumer",
+      "pinned_consumer": "3caece740433a559630e89900e51062742b5a845",
+      "expect": "before activation legacy behavior unchanged; after opt-in profile old formal entry cannot execute/ack new work; use real fixed old binary, not new parser pretending old"
+    },
+    {
+      "id": "down-nonempty",
+      "data": [
+        "identity",
+        "action",
+        "profile",
+        "message ref",
+        "receipt marker",
+        "external C typed FK"
+      ],
+      "expect": "whole transaction refuses down with data/schema preserved; no CASCADE or flattening"
+    }
+  ],
+  "negative_requests": [
+    {
+      "id": "missing-travel-field",
+      "request": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "needs_reference": null
+      },
+      "expect": "400 INVALID_INPUT, zero acceptance; never default to none"
+    },
+    {
+      "id": "bool-context-version",
+      "request": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": true
+        },
+        "needs_reference": null
+      },
+      "expect": "invalid integer, no acceptance"
+    },
+    {
+      "id": "missing-needs-ref",
+      "request": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        }
+      },
+      "expect": "send.2 exact fields reject; send.1 grammar unchanged"
+    },
+    {
+      "id": "implicit-old-needs",
+      "request": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "consider_trip",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": null
+      },
+      "expect": "reject; never reuse previous conversation selection"
+    },
+    {
+      "id": "caller-owner",
+      "request": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": null,
+        "owner": "forged-owner"
+      },
+      "expect": "reject extra owner field, not authority"
+    },
+    {
+      "id": "caller-selection-epoch",
+      "request": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": null,
+        "selection_epoch": 1
+      },
+      "expect": "reject; epoch is derived from immutable accepted refs"
+    },
+    {
+      "id": "non-null-formal-trip",
+      "request": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": "invented-trip",
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": null
+      },
+      "expect": "reject; travel identity is not formal Trip permission"
+    },
+    {
+      "id": "context-omitted-id",
+      "request": {
+        "version": "MESSAGE-send.2",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "expected_version": 1
+        },
+        "needs_reference": null
+      },
+      "expect": "reject exact reference grammar"
+    },
+    {
+      "id": "unknown-version",
+      "request": {
+        "version": "MESSAGE-send.999",
+        "conversation_id": "chat-1",
+        "message_id": "m-A",
+        "text": "合成当前输入 / synthetic current input",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "generation-1",
+        "expected_sequence": 0,
+        "travel_context": {
+          "id": "11111111111141118111111111111111",
+          "expected_version": 1
+        },
+        "needs_reference": null
+      },
+      "expect": "reject unsupported version, no fallback"
+    },
+    {
+      "id": "duplicate-keys",
+      "raw_utf8_json": "{\"version\":\"MESSAGE-send.2\",\"version\":\"MESSAGE-send.1\"}",
+      "expect": "reject duplicate JSON keys before dispatch"
+    }
+  ],
+  "fixture_precondition": "All IDs below are synthetic placeholders. Approved L1 must use actual server-created contexts/messages and C typed producers; these JSON values are not seeded evidence."
+}
