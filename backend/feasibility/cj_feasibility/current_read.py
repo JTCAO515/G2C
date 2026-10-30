@@ -42,6 +42,13 @@ def project_current(operation: Operation, context: ProtectedReadContext, needs_i
     projection is the caller's ProtectedReadBoundary; it is not repeated per read.
     Never publish these bytes outside a future owner-provided strict read seam.
     """
+    return _project_current(operation, context, needs_id, limits=limits,
+                            evaluate_report=evaluate, wire_version=VERSION)
+
+
+def _project_current(operation, context, needs_id, *, limits, evaluate_report,
+                     wire_version, facade_version=None, input_profile=None):
+    """Fixed C projectors share one bounded history/output/currentness lifetime."""
     try:
         identifier(needs_id)
         # Two separately valid lifetimes are not proof of one user: bind them.
@@ -65,7 +72,7 @@ def project_current(operation: Operation, context: ProtectedReadContext, needs_i
                 raise ReadWithheld('INPUT_BOUND_EXCEEDED')
             revisions.append(revision)
         # Reuse the existing fixed evaluator; do not replay history a second way.
-        report = evaluate(first, tuple(revisions))
+        report = evaluate_report(first, tuple(revisions))
         if report.status == 'INVALID':
             raise ReadWithheld('EVALUATION_INPUT_INVALID')
         if report.status not in ('CONFLICT', 'UNKNOWN'):
@@ -81,13 +88,14 @@ def project_current(operation: Operation, context: ProtectedReadContext, needs_i
                                               original_input_sha256=sha256(e.original_input).hexdigest()
                                               if e.original_input is not None else None)
                                          for e in check.evidence]))
-        body = dict(version=VERSION, evaluator_version=report.version, status=report.status,
+        body = dict(version=wire_version, evaluator_version=report.version if facade_version is None else facade_version, status=report.status,
                     needs_id=first.needs_id, revision=first.version, content_sha256=report.content_sha256,
                     overall='UNKNOWN', checks=checks,
                     sources=[dict(revision=r.version, action_id=r.action_id,
                                   original_input_utf8=r.original_input.decode('utf-8'),
                                   original_input_sha256=sha256(r.original_input).hexdigest())
                              for r in revisions])
+        if input_profile is not None: body['input_profile'] = input_profile
         # Iterative encoding enforces the output bound during projection, rather
         # than allocating an unbounded serialized result before checking length.
         output = bytearray()

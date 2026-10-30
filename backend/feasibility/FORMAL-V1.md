@@ -47,3 +47,21 @@ place_original保留；没有迁移/写权限/旧消费者删除。
 可执行正负例在`backend/feasibility/tests/test_formal_v1.py`：版本/重复键/缺链/顺序/host
 边界拒绝，后续revision保留字段伪造被唯一原引擎拒绝，条件路线/缺证据/来源绑定/过期
 及recorded/live标签均不升级整体真实可行。全部fixture明确synthetic，不代替B305 L1。
+
+## CJ-FEASIBILITY-FORMAL-CURRENT@1
+
+新固定读投影 `cj_feasibility.formal_current.CurrentFormalNeedsRead(reader, limits)`：
+reader必须为B原`ProtectedReader`，limits为`FormalReadLimits(read=<原ReadLimits>,
+max_envelope_bytes=<显式正整数>)`。请求只带token、needs_id，不传Snapshot/owner/Scope或
+私有projector。它在B canonical AUTH/NEEDS read lifetime内取得有界完整原记录/历史，
+通过正式codec调用同一FEAS，再完成有界私有编码和原记录再读比较，原bytes直接返回。
+
+输出version=CJ-FEASIBILITY-FORMAL-CURRENT@1、evaluator_version=FEASIBILITY@1.0、
+input_profile=CJ-FEASIBILITY-FORMAL-INPUTS@1，其余checks/source/UNKNOWN沿原投影。
+旧`project_current`/`CurrentNeedsRead`输出版本、字段、次序和生命周期不变；共用一个
+内部有界history/output实现，不复制约束/版本重放。没有编码/回调在B read返回后运行。
+缺配置/来源、超界、源变化、close失败或最终AUTH不当前均withhold，不造空成功。
+
+此read是私有显示数据，不能当RUN发布许可；writer和最终发布仍须B原revision lease。
+测试复用原私有owner-role PG/规范AUTH组件夹具证明该投影，而非B305的实际签名本地API/
+受限运行角色正例；B当前runtime读写/权限/来源fence组合仍依赖B305。根factory不激活。
