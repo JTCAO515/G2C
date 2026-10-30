@@ -167,6 +167,11 @@ class Proposal:
             raise ValueError('immutable UTF-8 content required')
         # Minimal internal document, not the future PLACE/FACT or wire schema.
         doc = json.loads(self.content)
+        if type(doc) is dict and doc.get('content_version') == 'structured.1':
+            from .structured import validate_document
+            validate_document(doc)
+            if packed(doc) != self.content: raise ValueError('canonical content required')
+            return
         if type(doc) is dict and doc.get('content_version') == 'provenance.1':
             validate_provenance_document(doc)
             if packed(doc) != self.content: raise ValueError('canonical content required')

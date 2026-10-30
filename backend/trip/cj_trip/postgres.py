@@ -5,16 +5,18 @@ new-trip inserts. No network/provider work belongs in the confirmation callback.
 """
 from contextlib import contextmanager
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 from .domain import Action, Proposal, ProposalDetail, Receipt, Trip, Conflict, Denied, CommitUnknown, identifier
 
 
 class Repository:
-    def __init__(self, connect, scope, confirm=None, guard=None):
+    def __init__(self, connect, scope, confirm=None, guard=None, *, structured=False):
         self.connect, self.scope = connect, identifier(scope)
         self.confirm = confirm
         self.guard = guard or (lambda stage: None)
+        self.structured = structured
 
     @contextmanager
     def transaction(self, before_commit=None):
@@ -71,17 +73,30 @@ class Repository:
         try: logger.warning('TRIP connection cleanup failed: %s', operation)
         except BaseException: pass
 
+    def _content(self, content, *, validated=False):
+        document = json.loads(content)
+        if type(document) is dict and document.get('content_version') == 'structured.1':
+            if not self.structured:
+                raise Denied('structured Trip requires explicit versioned consumer')
+            if not validated:
+                from .structured import validate_document
+                from .domain import packed
+                validate_document(document)
+                if packed(document) != content: raise ValueError('canonical stored Trip required')
+        return content
+
     def _proposal(self, cur, pid):
         cur.execute('SELECT proposal_id,trip_id,expected_version,basis_version,expires_at,content,candidate_hash,status FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,pid))
         row = cur.fetchone()
         if row is None: raise Denied('candidate unavailable')
-        p = Proposal(*row[:5], bytes(row[5]))
+        p = Proposal(*row[:5], self._content(bytes(row[5]), validated=True))
         if p.digest(self.scope) != row[6]: raise Conflict('candidate integrity')
         return p, row[6], row[7]
 
     def publish(self, proposal):
         """Trusted CJ014 ingress only. Never mapped from a user/model request directly."""
         if not isinstance(proposal, Proposal): raise ValueError('validated proposal required')
+        self._content(proposal.content, validated=True)
         with self.transaction() as cur:
             cur.execute('SELECT candidate_hash FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,proposal.proposal_id))
             old = cur.fetchone()
@@ -169,7 +184,7 @@ class Repository:
         with self.transaction() as cur:
             cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,identifier(trip_id)))
             row = cur.fetchone()
-            return Trip(row[0],row[1],bytes(row[2])) if row else None
+            return Trip(row[0],row[1],self._content(bytes(row[2]))) if row else None
 
     def list_trips(self, after='', limit=20):
         if type(limit) is not int or not 1 <= limit <= 100: raise ValueError('invalid limit')
@@ -177,4 +192,4 @@ class Repository:
         if after: identifier(after)
         with self.transaction() as cur:
             cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id COLLATE "C">%s COLLATE "C" ORDER BY trip_id COLLATE "C" LIMIT %s', (self.scope,after,limit))
-            return [Trip(r[0],r[1],bytes(r[2])) for r in cur.fetchall()]
+            return [Trip(r[0],r[1],self._content(bytes(r[2]))) for r in cur.fetchall()]
