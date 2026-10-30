@@ -104,6 +104,40 @@ class ManualChecks(Harness):
                     (self.scope,body['action_id'])).fetchone()[0],0)
             self.assertEqual(self.repository.detail(self.trip_id).version,2)
 
+    def test_explicit_time_conflict_has_no_proposal_and_fixed_read_protects_next_edit(self):
+        def event(clock):
+            return dict(date={'state':'known','value':'2026-11-02'},
+                time={'state':'known','value':clock},timezone={'state':'known','value':'Asia/Shanghai'},
+                utc_offset={'state':'unknown'})
+        with TestClient(self.app) as client:
+            edit=json.loads(self.edit);edit['title']=None
+            edit['changes']=[dict(item_id='item-1',field='schedule',value=dict(start=event('09:00:00'),end=event('10:00:00')))]
+            response=self.write(client,'/v1/trip-manual-preparations',packed(edit))
+            self.assertEqual(response.status_code,200,response.text)
+            self.assertEqual(self.write(client,'/v1/trip-manual-saves',self.save(response.json()['preparation'])).status_code,200)
+            current=self.repository.detail(self.trip_id)
+            self.assertEqual(current.version,2)
+            self.assertEqual(json.loads(current.content)['items'][0]['schedule']['start'],event('09:00:00'))
+            edit.update(request_id='bad-time-'+self.tag,expected_version=2,original_hash=sha256(current.content).hexdigest())
+            edit['changes'][0]['value']['start']=event('11:00:00')
+            bad=self.write(client,'/v1/trip-manual-preparations',packed(edit))
+            self.assertEqual(bad.status_code,409,bad.text)
+            absent=client.get('/v1/trip-manual-preparations',params={'request_id':edit['request_id']},headers=self.headers('alice'))
+            self.assertIsNone(absent.json()['preparation'])
+            self.assertEqual(self.repository.detail(self.trip_id),current)
+            edit.update(request_id='lock-'+self.tag,changes=[dict(item_id='item-1',field='fixed',value={'state':'known','value':True})])
+            prepared=self.write(client,'/v1/trip-manual-preparations',packed(edit))
+            self.assertEqual(prepared.status_code,200,prepared.text)
+            save=json.loads(self.save(prepared.json()['preparation']));save['action_id']='lock-save-'+self.tag
+            self.assertEqual(self.write(client,'/v1/trip-manual-saves',packed(save)).status_code,200)
+            current=self.repository.detail(self.trip_id)
+            self.assertEqual(current.version,3)
+            self.assertEqual(json.loads(current.content)['items'][0]['fixed'],{'state':'known','value':True})
+            edit.update(request_id='after-lock-'+self.tag,expected_version=3,original_hash=sha256(current.content).hexdigest(),
+                changes=[dict(item_id='item-1',field='text',value='incidental change')])
+            self.assertEqual(self.write(client,'/v1/trip-manual-preparations',packed(edit)).status_code,409)
+            self.assertEqual(self.repository.detail(self.trip_id),current)
+
     def test_ack_unknown_reconciles_original_and_rollback_retains_trip(self):
         from unittest.mock import patch
         from cj_api.local_app import LocalDatabase

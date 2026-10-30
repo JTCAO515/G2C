@@ -10,7 +10,7 @@ from hashlib import sha256
 import json
 from zoneinfo import ZoneInfo
 
-from .time_checks import known as _known, instant as _instant
+from .time_checks import known as _known, instant as _instant, overlaps as _overlaps
 
 from cj_needs.domain import (Command, InvalidInput, Revision, Snapshot, decode,
                              identifier, validate_fields)
@@ -185,7 +185,7 @@ def evaluate(snapshot: Snapshot, revisions: tuple[Revision, ...]) -> Report:
                 intervals.append((i, item, start, end))
     for n, (i, a, start, end) in enumerate(intervals):
         for j, b, bs, be in intervals[n + 1:]:
-            if start >= be or bs >= end:
+            if not _overlaps(start, end, bs, be):
                 continue
             sa, sb = set(a['applies_to']), set(b['applies_to'])
             shared = bool(sa & sb) or 'party' in sa or 'party' in sb

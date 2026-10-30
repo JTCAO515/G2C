@@ -5,7 +5,7 @@ import json
 
 from cj_trip.domain import packed
 from cj_trip.structured import validate_document
-from .time_checks import instant
+from .time_checks import instant, overlaps
 from .validator import Check,Evidence
 
 VERSION='FEASIBILITY-TRIP@1.0'
@@ -21,6 +21,8 @@ class TripTimeReport:
 
 def evaluate(content:bytes):
     """Result checks explicit declarations only, never authority or real feasibility."""
+    if type(content) is not bytes or not 0 < len(content) <= 1_000_000:
+        raise ValueError('bounded immutable Trip bytes required')
     document=json.loads(content)
     validate_document(document)
     if packed(document)!=content:raise ValueError('canonical original Trip bytes required')
@@ -43,7 +45,7 @@ def evaluate(content:bytes):
             if not reversed:intervals.append((index,start,end))
     for n,(index,start,end) in enumerate(intervals):
         for other,os,oe in intervals[n+1:]:
-            if start<end and os<oe and max(start,os)<min(end,oe):
+            if overlaps(start,end,os,oe):
                 checks.append(Check('OVERLAP_MEANING_UNKNOWN','UNKNOWN',
                     (evidence(f'items.{index}.schedule',document['items'][index]['schedule']),
                      evidence(f'items.{other}.schedule',document['items'][other]['schedule'])),
