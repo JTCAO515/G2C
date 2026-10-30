@@ -70,6 +70,40 @@ private actor TypedMemoryWire: ClientTransport {
         try TypedMemoryCommand(operationID:id,itemID:"item-" + id,subject:"traveller",slot:"preference",text:"保持原文",occurredAt:"去年",kind:.preference,
             travelContext:MemoryTravelSelection(id:String(repeating:"a",count:32),expectedVersion:2))
     }
+    @Test(arguments:[TypedMemoryWire.FirstPost.accepted,.failed,.unknown,.lostACK])
+    func presentationRetirementPreservesKnownCompletionsButNeverUpgradesUnknown(_ mode: TypedMemoryWire.FirstPost) async throws {
+        let f = try Fixture();defer { f.cleanup() }
+        let wire = TypedMemoryWire(mode),client = try client(f,wire),first = try command()
+        switch mode {
+        case .accepted:_ = try await client.save(first,binding:f.binding)
+        case .failed:await #expect(throws:MemoryFailure.rejected(403,"MEMORY_SOURCE_DENIED")) { try await client.save(first,binding:f.binding) }
+        case .unknown,.lostACK:await #expect(throws:MemoryFailure.exchangeUnknown) { try await client.save(first,binding:f.binding) }
+        }
+        client.retirePresentation()
+        #expect(await wire.posts == [first.originalUTF8])
+        if mode == .unknown || mode == .lostACK {
+            await #expect(throws:MemoryFailure.pendingRequiresQuery) { try await client.save(command("fresh"),binding:f.binding) }
+            if mode == .unknown {
+                guard case .notObserved = try await client.query(operationID:first.operationID,binding:f.binding) else { Issue.record("missing receipt changed meaning");return }
+                await #expect(throws:MemoryFailure.pendingRequiresQuery) { try await client.save(command("fresh"),binding:f.binding) }
+                #expect(await wire.posts == [first.originalUTF8]);return
+            }
+            guard case .saved = try await client.query(operationID:first.operationID,binding:f.binding) else { Issue.record("original receipt missing");return }
+        }
+        guard case .saved = try await client.save(command("fresh"),binding:f.binding) else { Issue.record("known original blocked a fresh save");return }
+        #expect(await wire.posts.count == 2)
+        #expect(try client.pending(binding:f.binding).first?.originalUTF8 == first.originalUTF8)
+    }
+    @Test func presentationRetirementDuringCredentialsCannotDispatch() async throws {
+        let f = try Fixture();defer { f.cleanup() }
+        let wire = TypedMemoryWire()
+        var retire: () -> Void = {}
+        let client = try client(f,wire,credentials:{ _ in retire();return "synthetic-only" })
+        retire = { client.retirePresentation() }
+        await #expect(throws:MemoryFailure.staleBinding) { try await client.save(command(),binding:f.binding) }
+        #expect(await wire.posts.isEmpty)
+        #expect(try client.pending(binding:f.binding).count == 1)
+    }
     @Test func lostACKReopenOnlyQueriesOriginalReceiptAndNeverRepeatsPOST() async throws {
         let f = try Fixture();defer { f.cleanup() }
         let wire = TypedMemoryWire(.lostACK),client = try client(f,wire),command = try command()

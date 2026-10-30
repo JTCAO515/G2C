@@ -41,7 +41,12 @@ import OpenAPIRuntime
     private func begin(_ binding: MemoryBinding) throws -> UUID {
         let token = generation;try check(binding,token);return token
     }
-    public func invalidate() { generation = UUID();confirmed.removeAll();currentReads.removeAll();usedManagementReads.removeAll() }
+    /// Retire view work/read authority while retaining only exact, previously
+    /// verified historical completions. UNKNOWN originals remain query-only.
+    public func retirePresentation() {
+        generation = UUID();currentReads.removeAll();usedManagementReads.removeAll()
+    }
+    public func invalidate() { retirePresentation();confirmed.removeAll() }
     private func api(_ binding: MemoryBinding,_ token: UUID,original: TypedMemoryPending? = nil,lifecycleOriginal: TypedMemoryManagementPending? = nil,managementRead: TypedMemoryRead? = nil,management: Bool = false) async throws -> Client {
         try check(binding,token)
         let bearer: String?

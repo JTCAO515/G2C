@@ -101,6 +101,7 @@ public final class ShellState {
     @ObservationIgnored weak var needsContainerHost: NeedsContainerHost?
     @ObservationIgnored weak var tripContainerHost: TripContainerHost?
     @ObservationIgnored weak var memoryContainerHost: MemoryContainerHost?
+    @ObservationIgnored weak var typedMemoryContainerHost: TypedMemoryContainerHost?
     @ObservationIgnored weak var serverHistoryHost: ServerHistoryHost?
     @ObservationIgnored weak var messageHost: AssistantMessageHost?
     public private(set) var generation = ShellGeneration()
@@ -154,6 +155,8 @@ public final class ShellState {
         tripContainerHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
         memoryContainerHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
+        typedMemoryContainerHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
         serverHistoryHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
