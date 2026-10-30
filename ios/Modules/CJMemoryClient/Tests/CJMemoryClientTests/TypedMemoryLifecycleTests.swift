@@ -113,6 +113,29 @@ private actor TypedLifecycleWire: ClientTransport {
         #expect(await wire.posts.count == 2)
         #expect(await wire.posts.first == original.originalUTF8)
     }
+    @Test func unresolvedManagementCannotBeBypassedByFreshManualSave() async throws {
+        let f = try Fixture();defer { cleanup(f) }
+        let wire = TypedLifecycleWire();await wire.configure("lostACK")
+        let client = try f.typedClient(wire)
+        await #expect(throws:MemoryFailure.exchangeUnknown) { try await client.manage(.pause,read:read(client,f),binding:f.binding) }
+        client.invalidate()
+        let reopened = try f.typedClient(wire)
+        let fresh = try TypedMemoryCommand(operationID:"fresh",itemID:"new",subject:"traveller",slot:"preference",text:"new",occurredAt:"unknown",kind:.preference,travelContext:nil)
+        await #expect(throws:MemoryFailure.pendingRequiresQuery) { try await reopened.save(fresh,binding:f.binding) }
+        #expect(try reopened.pending(binding:f.binding).isEmpty)
+        #expect(await wire.posts.count == 1)
+    }
+    @Test func unresolvedManualCannotBeBypassedByFreshManagement() async throws {
+        let f = try Fixture();defer { cleanup(f) }
+        let store = try f.typedStore()
+        let original = try TypedMemoryCommand(operationID:"unknown-save",itemID:"new",subject:"traveller",slot:"preference",text:"original",occurredAt:"unknown",kind:.preference,travelContext:nil)
+        try store.append(TypedMemoryPending(original)) {}
+        let wire = TypedLifecycleWire(),client = try f.typedClient(wire)
+        await #expect(throws:MemoryFailure.pendingRequiresQuery) { try await client.manage(.pause,read:read(client,f),binding:f.binding) }
+        #expect(try client.managementPending(binding:f.binding).isEmpty)
+        #expect(await wire.posts.isEmpty)
+        #expect(try client.pending(binding:f.binding).map(\.originalUTF8) == [original.originalUTF8])
+    }
     @Test func confirmedCompletionSurvivesPresentationRetirementButReadDoesNot() async throws {
         let f = try Fixture();defer { cleanup(f) }
         let wire = TypedLifecycleWire(),client = try f.typedClient(wire),initial = try await read(client,f)

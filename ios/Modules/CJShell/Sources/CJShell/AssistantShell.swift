@@ -70,14 +70,14 @@ struct AssistantShell: View {
                 .accessibilityHidden(true)
         }
         .overlay(alignment: .top) {
-            floatingControls.accessibilityIdentifier("assistant.header").background {
+            floatingControls.accessibilityElement(children:.contain).accessibilityIdentifier("assistant.header").background {
                 GeometryReader { geometry in
                     Color.clear.preference(key: ShellHeaderHeight.self, value: geometry.size.height)
                 }
             }
         }
         .onPreferenceChange(ShellHeaderHeight.self) { headerHeight = $0 }
-        .safeAreaInset(edge: .bottom, spacing: 0) { composer.accessibilityIdentifier("assistant.composer") }
+        .safeAreaInset(edge: .bottom, spacing: 0) { composer.accessibilityElement(children:.contain).accessibilityIdentifier("assistant.composer") }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()

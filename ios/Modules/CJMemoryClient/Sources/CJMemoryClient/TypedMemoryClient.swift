@@ -86,10 +86,7 @@ import OpenAPIRuntime
             guard original.originalUTF8 == command.originalUTF8 else { throw MemoryFailure.invalidInput }
             throw MemoryFailure.pendingRequiresQuery // every existing original is GET-only
         }
-        guard try originals.allSatisfy({ record in
-            if confirmed.contains(Data(record.operationID.utf8)) { return true }
-            return try store.rejection(for:record) != nil
-        }) else { throw MemoryFailure.pendingRequiresQuery }
+        try requireResolvedOriginals()
         try check(binding,token)
         let record = TypedMemoryPending(command)
         guard record.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
@@ -103,6 +100,18 @@ import OpenAPIRuntime
             guard error.outcome == .failed else { throw MemoryFailure.exchangeUnknown }
             try store.recordRejection(record,status:status,code:error.code) { try check(binding,token) }
             try check(binding,token);throw MemoryFailure.rejected(status,error.code)
+        }
+    }
+    /// A different operation type cannot bypass an unresolved original. Only
+    /// a verified receipt or durable explicit POST rejection resolves a journal.
+    private func requireResolvedOriginals() throws {
+        for record in try store.records() where !confirmed.contains(Data(record.operationID.utf8)) {
+            guard try store.rejection(for:record) != nil else { throw MemoryFailure.pendingRequiresQuery }
+        }
+        if let records = try store.managementRecords(create:false) {
+            for pending in try records.pending() where !managementConfirmed.contains(managementKey(pending)) {
+                guard try records.rejection(for:pending,domain:"CJMemoryTypedManagementRejectionsV2") != nil else { throw MemoryFailure.pendingRequiresQuery }
+            }
         }
     }
     public func query(operationID: String,binding: MemoryBinding) async throws -> MemorySaveResult {
@@ -205,10 +214,8 @@ extension TypedMemoryClient {
         let token = try begin(binding);try store.validate(binding);try validateRead(read,binding:binding)
         try validatePriorOriginals();try check(binding,token)
         guard !usedManagementReads.contains(read.stamp) else { throw MemoryFailure.pendingRequiresQuery }
+        try requireResolvedOriginals();try check(binding,token)
         guard let records = try store.managementRecords(create:true) else { throw MemoryFailure.storageUnavailable }
-        for pending in try records.pending() where !managementConfirmed.contains(managementKey(pending)) {
-            guard try records.rejection(for:pending,domain:"CJMemoryTypedManagementRejectionsV2") != nil else { throw MemoryFailure.pendingRequiresQuery }
-        }
         let original = try TypedMemoryManagementPending(operation:operation,read:read,text:text,travel:travelContext)
         try validateRead(read,binding:binding)
         guard original.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
