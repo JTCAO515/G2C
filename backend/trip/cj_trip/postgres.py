@@ -98,15 +98,18 @@ class Repository:
         if not isinstance(proposal, Proposal): raise ValueError('validated proposal required')
         self._content(proposal.content, validated=True)
         with self.transaction() as cur:
-            cur.execute('SELECT candidate_hash FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,proposal.proposal_id))
-            old = cur.fetchone()
-            digest = proposal.digest(self.scope)
-            if old:
-                if old[0] != digest: raise Conflict('immutable candidate')
-                return digest
-            cur.execute('INSERT INTO cj_trip_proposal VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                        (self.scope,proposal.proposal_id,proposal.trip_id,proposal.expected_version,proposal.basis_version,proposal.expires_at,proposal.content,digest,'pending'))
+            return self._publish_in_tx(cur, proposal)
+
+    def _publish_in_tx(self, cur, proposal):
+        cur.execute('SELECT candidate_hash FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,proposal.proposal_id))
+        old = cur.fetchone()
+        digest = proposal.digest(self.scope)
+        if old:
+            if old[0] != digest: raise Conflict('immutable candidate')
             return digest
+        cur.execute('INSERT INTO cj_trip_proposal VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                    (self.scope,proposal.proposal_id,proposal.trip_id,proposal.expected_version,proposal.basis_version,proposal.expires_at,proposal.content,digest,'pending'))
+        return digest
 
     def _receipt(self, cur, aid):
         cur.execute('SELECT action_id,kind,proposal_id,candidate_hash,trip_id,committed_version,original_input FROM cj_trip_receipt WHERE scope=%s AND action_id=%s', (self.scope,aid))
@@ -115,43 +118,50 @@ class Repository:
 
     def act(self, action):
         if not isinstance(action, Action): raise ValueError('validated action required')
-        p = None
+        pending = None
         def final_eligibility(cur):
-            if p is not None:
-                # Last potentially slow admission check has finished. The scope lock
-                # still protects the candidate/content/version checked in this txn.
-                cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
-                database_now = cur.fetchone()[0]
-                if p.expires_at <= database_now:
-                    raise Conflict('candidate expired before commit')
-                # Additive expiry check; legacy validators retain their single call.
-                # The issuer hook uses DB time and performs no resource callbacks.
-                final_confirmation = getattr(self.confirm, 'check_before_commit', None)
-                if final_confirmation is not None:
-                    final_confirmation(self.scope, action, p, database_now)
+            self._final_action_eligibility(cur, action, pending)
         with self.transaction(before_commit=final_eligibility) as cur:
-            previous = self._receipt(cur, action.action_id)
-            if previous:
-                if previous[1] != action.raw(): raise Conflict('action ID input conflict')
-                return previous[0]
-            p, digest, status = self._proposal(cur, action.proposal_id)
-            if action.candidate_hash != digest: raise Conflict('candidate changed')
-            cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
-            now = cur.fetchone()[0]
-            if status != 'pending' or p.expires_at <= now: raise Conflict('candidate not eligible')
-            if self.confirm is None or self.confirm(self.scope, action, p) is not True:
-                raise Denied('trusted review and confirmation unavailable')
-            cur.execute('SELECT version FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,p.trip_id))
-            row = cur.fetchone()
-            if (row[0] if row else 0) != p.expected_version: raise Conflict('trip version conflict')
-            version = None
-            if action.kind == 'accept':
-                version = p.expected_version + 1
-                cur.execute('INSERT INTO cj_trip_record VALUES (%s,%s,%s,%s) ON CONFLICT(scope,trip_id) DO UPDATE SET version=EXCLUDED.version,content=EXCLUDED.content', (self.scope,p.trip_id,version,p.content))
-            receipt = Receipt(action.action_id,action.kind,p.proposal_id,digest,p.trip_id,version)
-            cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', ('accepted' if action.kind == 'accept' else 'rejected',self.scope,p.proposal_id))
-            cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
+            receipt, pending = self._act_in_tx(cur, action)
             return receipt
+
+    def _final_action_eligibility(self, cur, action, p):
+        if p is not None:
+            # Last potentially slow admission check has finished. The scope lock
+            # still protects the candidate/content/version checked in this txn.
+            cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
+            database_now = cur.fetchone()[0]
+            if p.expires_at <= database_now:
+                raise Conflict('candidate expired before commit')
+            # Additive expiry check; legacy validators retain their single call.
+            # The issuer hook uses DB time and performs no resource callbacks.
+            final_confirmation = getattr(self.confirm, 'check_before_commit', None)
+            if final_confirmation is not None:
+                final_confirmation(self.scope, action, p, database_now)
+
+    def _act_in_tx(self, cur, action):
+        previous = self._receipt(cur, action.action_id)
+        if previous:
+            if previous[1] != action.raw(): raise Conflict('action ID input conflict')
+            return previous[0], None
+        p, digest, status = self._proposal(cur, action.proposal_id)
+        if action.candidate_hash != digest: raise Conflict('candidate changed')
+        cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
+        now = cur.fetchone()[0]
+        if status != 'pending' or p.expires_at <= now: raise Conflict('candidate not eligible')
+        if self.confirm is None or self.confirm(self.scope, action, p) is not True:
+            raise Denied('trusted review and confirmation unavailable')
+        cur.execute('SELECT version FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,p.trip_id))
+        row = cur.fetchone()
+        if (row[0] if row else 0) != p.expected_version: raise Conflict('trip version conflict')
+        version = None
+        if action.kind == 'accept':
+            version = p.expected_version + 1
+            cur.execute('INSERT INTO cj_trip_record VALUES (%s,%s,%s,%s) ON CONFLICT(scope,trip_id) DO UPDATE SET version=EXCLUDED.version,content=EXCLUDED.content', (self.scope,p.trip_id,version,p.content))
+        receipt = Receipt(action.action_id,action.kind,p.proposal_id,digest,p.trip_id,version)
+        cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', ('accepted' if action.kind == 'accept' else 'rejected',self.scope,p.proposal_id))
+        cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
+        return receipt, p
 
     def retire(self, proposal_id, state, replacement_id=None):
         """Trusted lifecycle; generation cancellation must never call this method."""
