@@ -25,6 +25,8 @@ class ToolInput:
 
 class LocalTools:
     version='CJ-LOCAL-TOOLS@1'
+    output_version='TOOL-output.1'
+    answer_version='TOOL-answer.1'
 
     def __init__(self):
         self.place=LocalPlaceProducer(Config(ORIGIN,4096,16384,5,60))
@@ -54,7 +56,7 @@ class LocalTools:
             try:turn=parse_turn(raw.encode('utf8'),self.names)
             except (ValueError,UnicodeError):raise ProviderUnknown('model tool turn unavailable') from None
             if not turn.calls:
-                yield json.dumps(dict(version='TOOL-answer.1',data_origin='synthetic',
+                yield json.dumps(dict(version=self.answer_version,data_origin='synthetic',
                     text_zh=turn.answer_zh,text_en=turn.answer_en),ensure_ascii=False,separators=(',',':'))+'\n'
                 return
             for index,call in enumerate(turn.calls):
@@ -64,7 +66,7 @@ class LocalTools:
                 try:
                     result=''.join(worker._registered_stream(binding,key,'tool.'+call.name,argument))
                 except ValueError:raise ProviderUnknown('tool input unavailable') from None
-                frame=json.dumps(dict(version='TOOL-output.1',data_origin='synthetic',name=call.name,
+                frame=json.dumps(dict(version=self.output_version,data_origin='synthetic',name=call.name,
                     operation_key=key,result=json.loads(result)),ensure_ascii=False,separators=(',',':'))
                 yield frame+'\n'
                 messages.append({'role':'tool','content':frame})

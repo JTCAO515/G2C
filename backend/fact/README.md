@@ -1,5 +1,13 @@
 # CJ-034 FACT local source/applicability slice
 
+The opt-in `synthetic-fact-v1` worker profile now adds actual local tool production
+through the existing one Meter. Its new data version is [FACT@1.0](../../contracts/fact/V1.md),
+with [host/JSONL semantics](../../contracts/fact/TOOL-HOST-V1.md). The old candidate
+entry below and real production fetch stay closed. This profile uses synthetic
+data only; real sources/collection, weather, eligibility and fees remain UNRUN.
+With explicit local conninfo/auth and registered @2 run context, pass
+`--tools-profile synthetic-fact-v1` to the existing `scripts/run_worker.py` CLI.
+
 Product code: `cj_fact/model.py`, `policy.py`, `acquisition.py`, `structured.py`.
 Public consumption contract: [contracts/fact](../../contracts/fact/README.md).
 Pure evidence/policy logic uses the stdlib. The optional pinned HTTPS primitive

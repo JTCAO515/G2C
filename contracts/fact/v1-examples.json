@@ -1,0 +1,364 @@
+{
+  "data_origin": "synthetic",
+  "query": {
+    "version": "FACT-query.1",
+    "fact_key": "weather",
+    "region": "synthetic-city",
+    "dates": {
+      "start": "2026-10-30",
+      "end": "2026-10-30"
+    },
+    "conditions": {
+      "calendar_timezone": "Asia/Shanghai"
+    }
+  },
+  "positive": {
+    "version": "FACT-result.1",
+    "data_origin": "synthetic",
+    "request_ref": "synthetic-example",
+    "query": {
+      "version": "FACT-query.1",
+      "fact_key": "weather",
+      "region": "synthetic-city",
+      "dates": {
+        "start": "2026-10-30",
+        "end": "2026-10-30"
+      },
+      "conditions": {
+        "calendar_timezone": "Asia/Shanghai"
+      }
+    },
+    "evaluated_at": {
+      "iso8601": "2026-10-30T10:00:00.000000+00:00",
+      "fold": 0
+    },
+    "outcome": "ok",
+    "status": "supported",
+    "original_value": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+    "summary_zh": "所给证据声明覆盖查询范围；请核对原文和条件。",
+    "summary_en": "The supplied declarations cover this query; check the original text and conditions.",
+    "sources": [
+      {
+        "evidence_id": "synthetic-example-0",
+        "fact_key": "weather",
+        "source_url": "https://synthetic-fact.g2c.invalid/first",
+        "retrieved_at": {
+          "iso8601": "2026-10-30T10:00:00.000000+00:00",
+          "fold": 0
+        },
+        "media_type": "application/json",
+        "original_utf8_base64": "eyJ2YWx1ZSI6ICJTWU5USEVUSUM6IE5PVCBhIHJlYWwgZm9yZWNhc3Qgb3IgZWxpZ2liaWxpdHkgcmVzdWx0OyBDTlkgMTAwOyAyMDI2LTEwLTMwIiwgInJlZ2lvbnMiOiBbInN5bnRoZXRpYy1jaXR5Il0sICJkYXRlcyI6IHsic3RhcnQiOiAiMjAyNi0xMC0zMCIsICJlbmQiOiAiMjAyNi0xMS0wMSJ9LCAiY29uZGl0aW9ucyI6IHsiY2FsZW5kYXJfdGltZXpvbmUiOiAiQXNpYS9TaGFuZ2hhaSJ9LCAicHVibGlzaGVkX2F0IjogIjIwMjYtMTAtMzBUMDk6NTk6MDArMDA6MDAiLCAiZXhwaXJlc19hdCI6ICIyMDI2LTEwLTMwVDExOjAwOjAwKzAwOjAwIiwgIm5vdGljZSI6ICJTWU5USEVUSUMgT05MWS4gTm8gY3VycmVudCB3ZWF0aGVyL3J1bGVzIG9yIHJlYWwgc291cmNlIGFwcHJvdmFsLiJ9",
+        "original_sha256": "72ca201b0aea48728b7eed0e0ec206d8c2ea3a3706afa3da370cd31be4ecf756",
+        "value": {
+          "text": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+          "start": 10,
+          "end": 85
+        },
+        "declarations": {
+          "regions": [
+            "synthetic-city"
+          ],
+          "dates": {
+            "start": "2026-10-30",
+            "end": "2026-11-01"
+          },
+          "conditions": {
+            "calendar_timezone": "Asia/Shanghai"
+          },
+          "published_at": {
+            "iso8601": "2026-10-30T09:59:00.000000+00:00",
+            "fold": 0
+          },
+          "expires_at": {
+            "iso8601": "2026-10-30T11:00:00.000000+00:00",
+            "fold": 0
+          }
+        },
+        "status": "supported",
+        "reasons": []
+      }
+    ]
+  },
+  "invalid": [
+    {
+      "name": "wrong-version",
+      "value": {
+        "version": "FACT-result.99",
+        "data_origin": "synthetic",
+        "request_ref": "synthetic-example",
+        "query": {
+          "version": "FACT-query.1",
+          "fact_key": "weather",
+          "region": "synthetic-city",
+          "dates": {
+            "start": "2026-10-30",
+            "end": "2026-10-30"
+          },
+          "conditions": {
+            "calendar_timezone": "Asia/Shanghai"
+          }
+        },
+        "evaluated_at": {
+          "iso8601": "2026-10-30T10:00:00.000000+00:00",
+          "fold": 0
+        },
+        "outcome": "ok",
+        "status": "supported",
+        "original_value": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+        "summary_zh": "所给证据声明覆盖查询范围；请核对原文和条件。",
+        "summary_en": "The supplied declarations cover this query; check the original text and conditions.",
+        "sources": [
+          {
+            "evidence_id": "synthetic-example-0",
+            "fact_key": "weather",
+            "source_url": "https://synthetic-fact.g2c.invalid/first",
+            "retrieved_at": {
+              "iso8601": "2026-10-30T10:00:00.000000+00:00",
+              "fold": 0
+            },
+            "media_type": "application/json",
+            "original_utf8_base64": "eyJ2YWx1ZSI6ICJTWU5USEVUSUM6IE5PVCBhIHJlYWwgZm9yZWNhc3Qgb3IgZWxpZ2liaWxpdHkgcmVzdWx0OyBDTlkgMTAwOyAyMDI2LTEwLTMwIiwgInJlZ2lvbnMiOiBbInN5bnRoZXRpYy1jaXR5Il0sICJkYXRlcyI6IHsic3RhcnQiOiAiMjAyNi0xMC0zMCIsICJlbmQiOiAiMjAyNi0xMS0wMSJ9LCAiY29uZGl0aW9ucyI6IHsiY2FsZW5kYXJfdGltZXpvbmUiOiAiQXNpYS9TaGFuZ2hhaSJ9LCAicHVibGlzaGVkX2F0IjogIjIwMjYtMTAtMzBUMDk6NTk6MDArMDA6MDAiLCAiZXhwaXJlc19hdCI6ICIyMDI2LTEwLTMwVDExOjAwOjAwKzAwOjAwIiwgIm5vdGljZSI6ICJTWU5USEVUSUMgT05MWS4gTm8gY3VycmVudCB3ZWF0aGVyL3J1bGVzIG9yIHJlYWwgc291cmNlIGFwcHJvdmFsLiJ9",
+            "original_sha256": "72ca201b0aea48728b7eed0e0ec206d8c2ea3a3706afa3da370cd31be4ecf756",
+            "value": {
+              "text": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+              "start": 10,
+              "end": 85
+            },
+            "declarations": {
+              "regions": [
+                "synthetic-city"
+              ],
+              "dates": {
+                "start": "2026-10-30",
+                "end": "2026-11-01"
+              },
+              "conditions": {
+                "calendar_timezone": "Asia/Shanghai"
+              },
+              "published_at": {
+                "iso8601": "2026-10-30T09:59:00.000000+00:00",
+                "fold": 0
+              },
+              "expires_at": {
+                "iso8601": "2026-10-30T11:00:00.000000+00:00",
+                "fold": 0
+              }
+            },
+            "status": "supported",
+            "reasons": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "invented-live",
+      "value": {
+        "version": "FACT-result.1",
+        "data_origin": "live",
+        "request_ref": "synthetic-example",
+        "query": {
+          "version": "FACT-query.1",
+          "fact_key": "weather",
+          "region": "synthetic-city",
+          "dates": {
+            "start": "2026-10-30",
+            "end": "2026-10-30"
+          },
+          "conditions": {
+            "calendar_timezone": "Asia/Shanghai"
+          }
+        },
+        "evaluated_at": {
+          "iso8601": "2026-10-30T10:00:00.000000+00:00",
+          "fold": 0
+        },
+        "outcome": "ok",
+        "status": "supported",
+        "original_value": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+        "summary_zh": "所给证据声明覆盖查询范围；请核对原文和条件。",
+        "summary_en": "The supplied declarations cover this query; check the original text and conditions.",
+        "sources": [
+          {
+            "evidence_id": "synthetic-example-0",
+            "fact_key": "weather",
+            "source_url": "https://synthetic-fact.g2c.invalid/first",
+            "retrieved_at": {
+              "iso8601": "2026-10-30T10:00:00.000000+00:00",
+              "fold": 0
+            },
+            "media_type": "application/json",
+            "original_utf8_base64": "eyJ2YWx1ZSI6ICJTWU5USEVUSUM6IE5PVCBhIHJlYWwgZm9yZWNhc3Qgb3IgZWxpZ2liaWxpdHkgcmVzdWx0OyBDTlkgMTAwOyAyMDI2LTEwLTMwIiwgInJlZ2lvbnMiOiBbInN5bnRoZXRpYy1jaXR5Il0sICJkYXRlcyI6IHsic3RhcnQiOiAiMjAyNi0xMC0zMCIsICJlbmQiOiAiMjAyNi0xMS0wMSJ9LCAiY29uZGl0aW9ucyI6IHsiY2FsZW5kYXJfdGltZXpvbmUiOiAiQXNpYS9TaGFuZ2hhaSJ9LCAicHVibGlzaGVkX2F0IjogIjIwMjYtMTAtMzBUMDk6NTk6MDArMDA6MDAiLCAiZXhwaXJlc19hdCI6ICIyMDI2LTEwLTMwVDExOjAwOjAwKzAwOjAwIiwgIm5vdGljZSI6ICJTWU5USEVUSUMgT05MWS4gTm8gY3VycmVudCB3ZWF0aGVyL3J1bGVzIG9yIHJlYWwgc291cmNlIGFwcHJvdmFsLiJ9",
+            "original_sha256": "72ca201b0aea48728b7eed0e0ec206d8c2ea3a3706afa3da370cd31be4ecf756",
+            "value": {
+              "text": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+              "start": 10,
+              "end": 85
+            },
+            "declarations": {
+              "regions": [
+                "synthetic-city"
+              ],
+              "dates": {
+                "start": "2026-10-30",
+                "end": "2026-11-01"
+              },
+              "conditions": {
+                "calendar_timezone": "Asia/Shanghai"
+              },
+              "published_at": {
+                "iso8601": "2026-10-30T09:59:00.000000+00:00",
+                "fold": 0
+              },
+              "expires_at": {
+                "iso8601": "2026-10-30T11:00:00.000000+00:00",
+                "fold": 0
+              }
+            },
+            "status": "supported",
+            "reasons": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "wrong-verdict",
+      "value": {
+        "version": "FACT-result.1",
+        "data_origin": "synthetic",
+        "request_ref": "synthetic-example",
+        "query": {
+          "version": "FACT-query.1",
+          "fact_key": "weather",
+          "region": "synthetic-city",
+          "dates": {
+            "start": "2026-10-30",
+            "end": "2026-10-30"
+          },
+          "conditions": {
+            "calendar_timezone": "Asia/Shanghai"
+          }
+        },
+        "evaluated_at": {
+          "iso8601": "2026-10-30T10:00:00.000000+00:00",
+          "fold": 0
+        },
+        "outcome": "ok",
+        "status": "expired",
+        "original_value": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+        "summary_zh": "所给证据声明覆盖查询范围；请核对原文和条件。",
+        "summary_en": "The supplied declarations cover this query; check the original text and conditions.",
+        "sources": [
+          {
+            "evidence_id": "synthetic-example-0",
+            "fact_key": "weather",
+            "source_url": "https://synthetic-fact.g2c.invalid/first",
+            "retrieved_at": {
+              "iso8601": "2026-10-30T10:00:00.000000+00:00",
+              "fold": 0
+            },
+            "media_type": "application/json",
+            "original_utf8_base64": "eyJ2YWx1ZSI6ICJTWU5USEVUSUM6IE5PVCBhIHJlYWwgZm9yZWNhc3Qgb3IgZWxpZ2liaWxpdHkgcmVzdWx0OyBDTlkgMTAwOyAyMDI2LTEwLTMwIiwgInJlZ2lvbnMiOiBbInN5bnRoZXRpYy1jaXR5Il0sICJkYXRlcyI6IHsic3RhcnQiOiAiMjAyNi0xMC0zMCIsICJlbmQiOiAiMjAyNi0xMS0wMSJ9LCAiY29uZGl0aW9ucyI6IHsiY2FsZW5kYXJfdGltZXpvbmUiOiAiQXNpYS9TaGFuZ2hhaSJ9LCAicHVibGlzaGVkX2F0IjogIjIwMjYtMTAtMzBUMDk6NTk6MDArMDA6MDAiLCAiZXhwaXJlc19hdCI6ICIyMDI2LTEwLTMwVDExOjAwOjAwKzAwOjAwIiwgIm5vdGljZSI6ICJTWU5USEVUSUMgT05MWS4gTm8gY3VycmVudCB3ZWF0aGVyL3J1bGVzIG9yIHJlYWwgc291cmNlIGFwcHJvdmFsLiJ9",
+            "original_sha256": "72ca201b0aea48728b7eed0e0ec206d8c2ea3a3706afa3da370cd31be4ecf756",
+            "value": {
+              "text": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+              "start": 10,
+              "end": 85
+            },
+            "declarations": {
+              "regions": [
+                "synthetic-city"
+              ],
+              "dates": {
+                "start": "2026-10-30",
+                "end": "2026-11-01"
+              },
+              "conditions": {
+                "calendar_timezone": "Asia/Shanghai"
+              },
+              "published_at": {
+                "iso8601": "2026-10-30T09:59:00.000000+00:00",
+                "fold": 0
+              },
+              "expires_at": {
+                "iso8601": "2026-10-30T11:00:00.000000+00:00",
+                "fold": 0
+              }
+            },
+            "status": "supported",
+            "reasons": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "source-digest",
+      "value": {
+        "version": "FACT-result.1",
+        "data_origin": "synthetic",
+        "request_ref": "synthetic-example",
+        "query": {
+          "version": "FACT-query.1",
+          "fact_key": "weather",
+          "region": "synthetic-city",
+          "dates": {
+            "start": "2026-10-30",
+            "end": "2026-10-30"
+          },
+          "conditions": {
+            "calendar_timezone": "Asia/Shanghai"
+          }
+        },
+        "evaluated_at": {
+          "iso8601": "2026-10-30T10:00:00.000000+00:00",
+          "fold": 0
+        },
+        "outcome": "ok",
+        "status": "supported",
+        "original_value": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+        "summary_zh": "所给证据声明覆盖查询范围；请核对原文和条件。",
+        "summary_en": "The supplied declarations cover this query; check the original text and conditions.",
+        "sources": [
+          {
+            "evidence_id": "synthetic-example-0",
+            "fact_key": "weather",
+            "source_url": "https://synthetic-fact.g2c.invalid/first",
+            "retrieved_at": {
+              "iso8601": "2026-10-30T10:00:00.000000+00:00",
+              "fold": 0
+            },
+            "media_type": "application/json",
+            "original_utf8_base64": "eyJ2YWx1ZSI6ICJTWU5USEVUSUM6IE5PVCBhIHJlYWwgZm9yZWNhc3Qgb3IgZWxpZ2liaWxpdHkgcmVzdWx0OyBDTlkgMTAwOyAyMDI2LTEwLTMwIiwgInJlZ2lvbnMiOiBbInN5bnRoZXRpYy1jaXR5Il0sICJkYXRlcyI6IHsic3RhcnQiOiAiMjAyNi0xMC0zMCIsICJlbmQiOiAiMjAyNi0xMS0wMSJ9LCAiY29uZGl0aW9ucyI6IHsiY2FsZW5kYXJfdGltZXpvbmUiOiAiQXNpYS9TaGFuZ2hhaSJ9LCAicHVibGlzaGVkX2F0IjogIjIwMjYtMTAtMzBUMDk6NTk6MDArMDA6MDAiLCAiZXhwaXJlc19hdCI6ICIyMDI2LTEwLTMwVDExOjAwOjAwKzAwOjAwIiwgIm5vdGljZSI6ICJTWU5USEVUSUMgT05MWS4gTm8gY3VycmVudCB3ZWF0aGVyL3J1bGVzIG9yIHJlYWwgc291cmNlIGFwcHJvdmFsLiJ9",
+            "original_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "value": {
+              "text": "\"SYNTHETIC: NOT a real forecast or eligibility result; CNY 100; 2026-10-30\"",
+              "start": 10,
+              "end": 85
+            },
+            "declarations": {
+              "regions": [
+                "synthetic-city"
+              ],
+              "dates": {
+                "start": "2026-10-30",
+                "end": "2026-11-01"
+              },
+              "conditions": {
+                "calendar_timezone": "Asia/Shanghai"
+              },
+              "published_at": {
+                "iso8601": "2026-10-30T09:59:00.000000+00:00",
+                "fold": 0
+              },
+              "expires_at": {
+                "iso8601": "2026-10-30T11:00:00.000000+00:00",
+                "fold": 0
+              }
+            },
+            "status": "supported",
+            "reasons": []
+          }
+        ]
+      }
+    }
+  ]
+}
