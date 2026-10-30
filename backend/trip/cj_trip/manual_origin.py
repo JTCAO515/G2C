@@ -49,7 +49,7 @@ class ManualOrigin:
                 raise Denied('original action association mismatch')
             if proposal.basis_version.startswith('run-'):
                 if proposal.expected_version!=0:raise Denied('original RUN version unavailable')
-                self._run(cur,proposal)
+                self._run(cur,proposal,MAX_BYTES-consumed)
                 return
             from .manual import ManualEdit,ManualSave,prepare
             from .initialization import Initialization,InitializationSave,initialize,BASIS
@@ -76,13 +76,16 @@ class ManualOrigin:
             intent=cur.fetchone()
             if intent is None or bytes(intent[1])!=original_action or intent[2]!=proposal.proposal_id:
                 raise Denied('original manual intent unavailable')
-            saved=parse_save(bytes(intent[0]))
+            saved_raw=bytes(intent[0])
+            consumed+=len(saved_raw)
+            if consumed>MAX_BYTES:raise Denied('original source bound exceeded')
+            saved=parse_save(saved_raw)
             if (saved.action_id,saved.proposal_id,saved.candidate_hash)!=(action.action_id,proposal.proposal_id,digest):
                 raise Denied('original manual intent mismatch')
             current=previous
         raise Denied('original version chain bound exceeded')
 
-    def _run(self,cur,proposal):
+    def _run(self,cur,proposal,remaining_bytes):
         run_id=proposal.basis_version[4:]
         from cj_agent.draft import proposal_id_for
         if proposal.proposal_id!=proposal_id_for(run_id) or proposal.trip_id!='trip-'+run_id:
@@ -95,6 +98,7 @@ class ManualOrigin:
         row=cur.fetchone()
         if row is None:raise Denied('original RUN message unavailable')
         raw=bytes(row[4])
+        if len(raw)>remaining_bytes:raise Denied('original source bound exceeded')
         if sha256(raw).hexdigest()!=row[5]:raise Denied('original message integrity unavailable')
         from cj_message.domain import Command
         document=json.loads(raw)

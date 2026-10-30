@@ -7,7 +7,7 @@ private extension ShellLanguage {
     var memoryLanguage: MemoryLanguage { self == .english ? .english : .chinese }
 }
 
-private struct MemoryActionButton: View {
+struct MemoryActionButton: View {
     let title: String
     let enabled: Bool
     let action: () -> Void
@@ -90,7 +90,7 @@ struct MemoryContainerDetail: View {
             }
             MemoryActionButton(title: language.text("Load current detail", "读取当前详情"), enabled: action != nil) {
                 Task { await host.loadDetail(context: action) }
-            }
+            }.accessibilityIdentifier("memory.detail.refresh")
         }
             .navigationTitle(language.text("Memory detail", "记忆详情")).navigationBarTitleDisplayMode(.inline)
             .onAppear { presentation = host.beginManagementPresentation() }
@@ -98,6 +98,24 @@ struct MemoryContainerDetail: View {
                 host.leaveManagementPresentation(presentation)
                 presentation = nil
             }
+    }
+}
+
+struct MemoryContainerLifecycleRecovery: View {
+    let host: MemoryContainerHost
+    let language: ShellLanguage
+    @State private var presentation: MemoryManagementPresentationLifetime?
+    var body: some View {
+        List {
+            if host.managementAvailable {
+                MemoryManagementHostRecovery(host: host, language: language).id(host.managementIdentity)
+            } else {
+                Text(language.text("Memory action recovery is unavailable.", "原记忆操作恢复尚不可用。"))
+            }
+        }
+        .navigationTitle(language.text("Previous memory actions", "此前的记忆操作")).navigationBarTitleDisplayMode(.inline)
+        .onAppear { presentation = host.beginManagementPresentation() }
+        .onDisappear { host.leaveManagementPresentation(presentation); presentation = nil }
     }
 }
 
@@ -128,9 +146,6 @@ struct MemoryContainerManual: View {
                     } else {
                         Text(language.text("Memory is not configured.", "记忆尚未配置。"))
                     }
-                }
-                if host.managementAvailable {
-                    MemoryManagementHostRecovery(host: host, language: language).id(host.managementIdentity)
                 }
                 Divider()
                 Text(language.text("Previous save operations", "此前的保存操作")).font(.headline)

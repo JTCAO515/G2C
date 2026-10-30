@@ -286,6 +286,34 @@ class ManualChecks(Harness):
         with psycopg.connect(**config) as admin:
             with self.assertRaises(psycopg.Error):admin.execute((ROOT/'backend/migrations/down/0022_trip_manual.down.sql').read_text())
         self.assertEqual(self.repository.detail(self.trip_id).version,self.base_version)
+    def test_source_byte_budget_counts_intent_and_original_message(self):
+        from unittest.mock import patch
+        # Reference the canonical persisted raw documents, independently of the
+        # traversal implementation/order. original_action duplicates the receipt
+        # Action and is compared, not counted as a second logical document.
+        with self.database.connect(self.owner) as conn:
+            rows=conn.execute('SELECT p.content,r.original_input,b.original_input,b.original_content,b.diff,i.original_input '
+                'FROM cj_trip_receipt r JOIN cj_trip_proposal p ON (p.scope,p.proposal_id)=(r.scope,r.proposal_id) '
+                'LEFT JOIN cj_trip_manual_basis b ON (b.scope,b.proposal_id)=(p.scope,p.proposal_id) '
+                'LEFT JOIN cj_trip_manual_intent i ON (i.scope,i.action_id)=(r.scope,r.action_id) '
+                "WHERE r.scope=%s AND r.trip_id=%s AND r.kind='accept' AND r.committed_version<=%s",
+                (self.scope,self.trip_id,self.base_version)).fetchall()
+            message=conn.execute('SELECT raw_input FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
+                                 (self.owner,self.root_message_id)).fetchone()[0]
+        total=sum(len(value) for row in rows for value in row if value is not None)+len(message)
+        self.assertGreater(total,0)
+        with TestClient(self.app) as client:
+            with patch('cj_trip.manual_origin.MAX_BYTES',total):
+                response=self.write(client,'/v1/trip-manual-preparations',self.edit)
+            self.assertEqual(response.status_code,200,response.text)
+            changed=json.loads(self.edit);changed['request_id']='over-byte-budget-'+self.tag
+            with patch('cj_trip.manual_origin.MAX_BYTES',total-1):
+                refused=self.write(client,'/v1/trip-manual-preparations',packed(changed))
+            self.assertEqual(refused.status_code,503,refused.text)
+            original=client.get('/v1/trip-manual-preparations',params={'request_id':changed['request_id']},headers=self.headers('alice'))
+            self.assertIsNone(original.json()['preparation'])
+        self.assertEqual(self.repository.detail(self.trip_id).version,self.base_version)
+
     def test_z_origin_guard_rejects_hidden_needs_markers_and_corrupt_context(self):
         from unittest.mock import patch
         from cj_api.local_app import LocalDatabase

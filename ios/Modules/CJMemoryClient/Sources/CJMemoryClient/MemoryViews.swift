@@ -109,8 +109,8 @@ public struct MemoryDetailView: View {
         case .loaded(let item):
             if let item {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(item.command.text).textSelection(.enabled)
-                    Text(statusLabel(item.status.rawValue, language))
+                    Text(item.command.text).textSelection(.enabled).accessibilityIdentifier("memory.detail.text")
+                    Text(statusLabel(item.status.rawValue, language)).accessibilityIdentifier("memory.detail.status")
                     LabeledContent(language.text("Subject", "对象"), value: item.command.subject)
                     LabeledContent(language.text("Field", "字段"), value: item.command.slot)
                     LabeledContent(language.text("Kind", "类型"), value: item.command.kind.rawValue)

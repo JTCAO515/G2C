@@ -149,10 +149,16 @@ import Observation
             .appendingPathComponent(binding.account.uuidString, isDirectory: true)
         try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let root = directory.resolvingSymlinksInPath()
+        let lifecycleRoot = root.appendingPathExtension("lifecycle")
+        let managementURL = try DevelopmentMemoryProfile.managementEndpoint(ProcessInfo.processInfo.environment)
         let key: MessageEncryptionKey
         if let existing = try keys.existing(expectedID: nil, for: keys.begin(.lookup)) { key = existing }
         else {
             guard try files.contentsOfDirectory(atPath: root.path).isEmpty else { throw MemoryFailure.keyUnavailable }
+            // A missing key cannot be replaced over an existing lifecycle journal.
+            for adjacent in [lifecycleRoot, lifecycleRoot.appendingPathExtension("CJMemoryManagementRejections")] where files.fileExists(atPath: adjacent.path) {
+                guard try files.contentsOfDirectory(atPath: adjacent.path).isEmpty else { throw MemoryFailure.keyUnavailable }
+            }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
         let store = try MemoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
@@ -167,10 +173,30 @@ import Observation
             resourceTimeout: 20, validate: {
                 guard current() == binding else { throw MemoryFailure.staleBinding }
             })
-        let client = try MemoryClient(localEndpoint: endpoint, credentials: { requested in
+        let credentials: MemoryCredentialCallback = { requested in
             guard current() == requested else { return nil }
             return configuration.token
-        }, currentBinding: current, pendingStore: store, localTransport: transport)
+        }
+        let client: MemoryClient
+        if let managementURL {
+            if !files.fileExists(atPath: lifecycleRoot.path) {
+                try files.createDirectory(at: lifecycleRoot, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+            }
+            let lifecycle = try MemoryManagementPendingStore(directory: lifecycleRoot, maximumBytes: 100_000,
+                maximumRecords: 100, binding: binding, expectedKeyID: key.id, provider: keys)
+            let managementEndpoint = try MemoryEndpoint(url: managementURL, maximumRequestBytes: 32768,
+                maximumResponseBytes: 65536, allowLoopbackHTTP: true)
+            let managementTransport = try NoRedirectTransport.developmentMemoryManagement(endpoint: managementEndpoint,
+                requestTimeout: 10, resourceTimeout: 20, validate: {
+                    guard current() == binding else { throw MemoryFailure.staleBinding }
+                })
+            client = try MemoryClient(localEndpoint: endpoint, credentials: credentials, currentBinding: current,
+                pendingStore: store, localTransport: transport, managementEndpoint: managementEndpoint,
+                managementTransport: managementTransport, managementPendingStore: lifecycle)
+        } else {
+            client = try MemoryClient(localEndpoint: endpoint, credentials: credentials, currentBinding: current,
+                pendingStore: store, localTransport: transport)
+        }
         var options: [MemoryManualOption] = []
         for subject in profile.subjects {
             for slot in profile.slots.keys.sorted() {

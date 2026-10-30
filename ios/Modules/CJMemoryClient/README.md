@@ -1,3 +1,17 @@
+# #271 本地 App 编辑与生命周期消费
+
+显式 DEBUG 模拟器入口可配置独立的 `G2C_DEV_MEMORY_MANAGEMENT_URL`，仅接受带端口的 HTTP 127.0.0.1 根地址。主 API 使用既有手动保存/读取 host；管理 API 使用正式 `create_local_memory_management_app`，由本地 operator 配置同一私有 PG、签名身份及收集策略。缺少管理地址时保持原手动保存行为；无效地址 fail-closed。公开 live 客户端、Release 和真机不获得该能力。
+
+管理动作消费冻结的 pause/resume、MEMORY-MANAGEMENT-EDIT@1 与 MEMORY-STOP-USE@1。选择只来自实际读取的条目/来源/版本；编辑不改范围或提升候选，已停用条目编辑后仍停用。停止使用保留原记录、完整来源历史与操作字节，不表示物理删除或账号清理。
+
+每个原 action 的字节与哈希先进入独立加密日志。明确 POST failed 追加独立加密失败记录，原输入保留，只有重新读取/审阅后才可发新 action。未知、缺少回执及回执 GET 拒绝均不释放原操作、不自动重发。页面退出仍失效读取和调度代际；已确认的精确 ID+字节哈希只保留历史终态。新客户端重开通过“此前的记忆操作”查询原 ID，并显示保留的编辑原文。
+
+当前入口明确使用 `local-memory-run.1` 与 legacy MESSAGE。MEMORY@2/MESSAGE@2 的 Swift 生成物已同步，typed producer 的成组激活与消费由 #228 框4承担；不把 travel 当 conversation，也不在版本拒绝后回退。
+
+实际 App/签名 API/受限 PG/正式 run_once/FakeProvider 的复现入口为 `ios/App/Acceptance/check_memory_lifecycle.py`；必须传显式 `--run-context` 与仓库外证据目录。每轮 PASS/FAIL、实际固定 head、未运行层级在 #271/PR 中记录，历史失败保留。真实账号/模型/云/费用、真机分别留 L2 #32 / L3 #29。
+
+以下为原阶段记录，原固定 pin 和限制保留。
+
 # #228 local App candidate (L1 pending)
 
 The explicit DEBUG iOS Simulator `localEndpoint` initializer uses only loopback,
