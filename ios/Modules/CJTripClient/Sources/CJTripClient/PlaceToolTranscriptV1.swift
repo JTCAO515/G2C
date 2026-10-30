@@ -22,7 +22,8 @@ public struct PlaceToolTranscriptV1: Sendable {
     /// states retain their valid prefix and explicitly mark any incomplete tail.
     public static func decode(_ bytes: Data,runID: String,completed: Bool) throws -> Self {
         guard bytes.count <= 1_048_576,!runID.isEmpty else { throw TripFailure.invalidResponse }
-        var lines = bytes.split(separator:10,omittingEmptySubsequences:false).map(Data.init)
+        let octets = Array(bytes)
+        var lines: [Data] = octets.split(separator:UInt8(10),omittingEmptySubsequences:false).map { Data($0) }
         let pending: Bool
         if bytes.last == 10 { lines.removeLast();pending = false }
         else if completed { pending = false }
@@ -57,8 +58,8 @@ public struct PlaceToolTranscriptV1: Sendable {
             case "TOOL-answer.1":
                 guard Set(root.keys) == ["version","data_origin","text_zh","text_en"] else { throw TripFailure.invalidResponse }
                 let chinese = try root.required("text_zh").text(),english = try root.required("text_en").text()
-                guard !chinese.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,
-                      !english.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,
+                guard !chinese.trimmingCharacters(in:CharacterSet.whitespacesAndNewlines).isEmpty,
+                      !english.trimmingCharacters(in:CharacterSet.whitespacesAndNewlines).isEmpty,
                       chinese.utf8.count <= 65536,english.utf8.count <= 65536 else { throw TripFailure.invalidResponse }
                 answer = .init(chinese:chinese,english:english)
             default:throw TripFailure.invalidResponse

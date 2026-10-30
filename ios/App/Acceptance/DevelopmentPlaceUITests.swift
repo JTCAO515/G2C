@@ -33,13 +33,28 @@ import Foundation
         if settled { XCTAssertEqual(value.pending,0) }
         return value
     }
+    private func reveal(_ element: XCUIElement) {
+        // Read actual visible cards, rather than merely querying offscreen labels.
+        // This does not omit any issue from the complete accessibility audit.
+        for _ in 0..<40 {
+            if element.isHittable { return }
+            let scroll = app.scrollViews.firstMatch
+            let list = app.collectionViews.firstMatch
+            let container = scroll.exists ? scroll : list
+            if container.exists {
+                if element.frame.midY < container.frame.midY { container.swipeDown() }
+                else { container.swipeUp() }
+            } else { app.swipeUp() }
+        }
+        XCTAssertTrue(element.isHittable,"Expected visible element: " + element.identifier)
+    }
     private func tap(_ id: String) {
         let button: XCUIElement
         if ["Assistant","助手","Memory","记忆"].contains(id) { button = app.tabBars.buttons.matching(identifier:id).firstMatch }
         else if id == "assistant.panel.done" { button = app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else { button = app.buttons.matching(identifier:id).firstMatch }
         XCTAssertTrue(button.waitForExistence(timeout:15),id)
-        for _ in 0..<18 { if button.isHittable { break };app.swipeUp() }
+        reveal(button)
         XCTAssertTrue(button.isHittable,id)
         let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:button)
         XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,id);button.tap()
@@ -49,6 +64,7 @@ import Foundation
         XCTAssertTrue(value.waitForExistence(timeout:timeout),id)
         let expected = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",contains),object:value)
         XCTAssertEqual(XCTWaiter.wait(for:[expected],timeout:timeout),.completed,id)
+        if id.hasPrefix("place.") { reveal(value);XCTAssertTrue(value.isHittable,id) }
         return value.label
     }
     private func capture(_ name: String) {
@@ -93,11 +109,13 @@ import Foundation
         send("Find synthetic hotel / 查询合成酒店 e\u{301}");completed(language:language)
         text("place.origin",contains:language == "en" ? "Synthetic" : "合成")
         text("place.output.0.SYNTH_EAST.name",contains:"合成酒店")
+        capture("place-east-name-visible-" + language)
         text("place.output.0.SYNTH_EAST.address",contains:"合成东路一号")
         text("place.output.0.SYNTH_EAST.centre",contains:"116.100000,39.100000")
         text("place.output.0.SYNTH_EAST.entrance",contains:"116.100100,39.100100")
         text("place.output.0.SYNTH_WEST.name",contains:"合成酒店")
         text("place.output.0.SYNTH_WEST.address",contains:language == "en" ? "Empty array" : "空数组")
+        capture("place-west-address-visible-" + language)
         text("place.output.0.SYNTH_EAST.officialName",contains:language == "en" ? "Unknown" : "未知")
         text("place.machine.label",contains:language == "en" ? "not official" : "非官方")
         capture("places-same-name-branches-" + language);try audit("PLACE_BRANCHES_" + language)
