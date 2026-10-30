@@ -33,7 +33,7 @@ struct MemoryTransport: ClientTransport {
               request.path?.split(separator: "?", maxSplits: 1).first.map(String.init) == path,
               request.method == (writes.contains(operationID) ? .post : .get),
               operationID != save || writeEnabled,
-              !lifecycle.contains(operationID) || managementEnabled else { throw MemoryFailure.liveWriteUnavailable }
+              !lifecycle.contains(operationID) || managementEnabled || request.method == .get else { throw MemoryFailure.liveWriteUnavailable }
         var request = request
         request.headerFields[.authorization] = "Bearer " + bearer
         let data: Data?
@@ -102,6 +102,7 @@ public enum MemorySaveResult: Sendable {
     private let store: MemoryPendingStore?
     private let writeEnabled: Bool
     private let managementEnabled: Bool
+    private let managementReadEnabled: Bool
     public let manualWritesAvailable: Bool
     private let managementStore: MemoryManagementPendingStore?
     private var acceptedManagementItems: [Data: MemoryAcceptedItem] = [:]
@@ -113,9 +114,11 @@ public enum MemorySaveResult: Sendable {
     private var confirmed: Set<Data> = []
     public init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore?,
-                liveReadTransport: NoRedirectTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
-        self.endpoint = endpoint; managementEndpoint = endpoint; self.credentials = credentials; current = currentBinding
+                liveReadTransport: NoRedirectTransport, managementPendingStore: MemoryManagementPendingStore? = nil,
+                managementReadEndpoint: MemoryEndpoint? = nil) {
+        self.endpoint = endpoint; managementEndpoint = managementReadEndpoint ?? endpoint; self.credentials = credentials; current = currentBinding
         store = pendingStore; transport = liveReadTransport; managementTransport = liveReadTransport; writeEnabled = false; managementEnabled = false; manualWritesAvailable = false; managementStore = managementPendingStore
+        managementReadEnabled = managementReadEndpoint != nil && managementPendingStore != nil
     }
     /// Internal capability: tests can intercept POST, public consumers cannot enable live writes.
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
@@ -123,6 +126,7 @@ public enum MemorySaveResult: Sendable {
          interceptedTransport: any ClientTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
         self.endpoint = endpoint; managementEndpoint = endpoint; self.credentials = credentials; current = currentBinding
         store = pendingStore; transport = interceptedTransport; managementTransport = interceptedTransport; writeEnabled = true; managementEnabled = true; manualWritesAvailable = false; managementStore = managementPendingStore
+        managementReadEnabled = true
     }
     #if DEBUG && targetEnvironment(simulator)
     /// Only the explicit signed local MEMORY host (#226). Ordinary/Release
@@ -138,6 +142,7 @@ public enum MemorySaveResult: Sendable {
         self.endpoint = endpoint; managementEndpoint = endpoint; self.credentials = credentials; current = currentBinding
         store = pendingStore; transport = localTransport; managementTransport = localTransport; writeEnabled = true
         managementEnabled = false; manualWritesAvailable = true; managementStore = nil
+        managementReadEnabled = false
     }
     /// Separate official local management host; manual/read host remains unchanged.
     public init(localEndpoint endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
@@ -153,6 +158,7 @@ public enum MemorySaveResult: Sendable {
         self.credentials = credentials; current = currentBinding
         store = pendingStore; transport = localTransport; self.managementTransport = managementTransport
         writeEnabled = true; manualWritesAvailable = true; managementEnabled = true; managementStore = managementPendingStore
+        managementReadEnabled = true
     }
     #endif
     private func check(_ binding: MemoryBinding, _ token: UUID) throws {
@@ -205,6 +211,25 @@ public enum MemorySaveResult: Sendable {
         try store.validate(binding)
         let records = try store.pending(); try check(binding, token)
         return records
+    }
+    /// Read the complete old journal without retiring an in-flight original
+    /// query. A false result is only historical reconciliation, never a new
+    /// source approval, write capability or current-item snapshot.
+    public func requiresOriginalReconciliation(binding: MemoryBinding) throws -> Bool {
+        let token = generation;try check(binding,token)
+        guard let store,let managementStore else { throw MemoryFailure.unconfigured }
+        try store.validate(binding);try managementStore.validate(binding)
+        let manual = try store.pending();try check(binding,token)
+        let management = try managementStore.pending();try check(binding,token)
+        for original in manual where !confirmed.contains(Data(original.operationID.utf8)) {
+            let failed = try store.rejection(for:original);try check(binding,token)
+            if failed == nil { return true }
+        }
+        for original in management where !managementConfirmed.contains(managementReceiptKey(original)) {
+            let failed = try managementStore.rejection(for:original);try check(binding,token)
+            if failed == nil { return true }
+        }
+        try check(binding,token);return false
     }
     public func save(_ command: Components.Schemas.MemoryManualSaveCommand, binding: MemoryBinding) async throws -> MemorySaveResult {
         let token = try begin(binding)
@@ -477,7 +502,11 @@ extension MemoryClient {
         return failure.map { ($0.status, $0.code) }
     }
     public func queryManagement(actionID: String, binding: MemoryBinding) async throws -> MemoryManagementResult {
-        let token = try begin(binding); try requireManagement()
+        let token = try begin(binding)
+        // An explicit original journal supports GET reconciliation without
+        // granting lifecycle POSTs to the public read-only client.
+        guard managementReadEnabled,managementStore != nil,managementEndpoint.maximumRequestBytes <= 32768,
+              managementEndpoint.maximumResponseBytes <= 65536 else { throw MemoryFailure.unconfigured }
         guard let managementStore else { throw MemoryFailure.unconfigured }
         try managementStore.validate(binding)
         guard let original = try managementStore.pending().first(where: { same($0.actionID, actionID) }) else { throw MemoryFailure.invalidInput }

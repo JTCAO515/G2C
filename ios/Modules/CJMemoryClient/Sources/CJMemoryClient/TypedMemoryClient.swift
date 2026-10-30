@@ -11,6 +11,7 @@ import OpenAPIRuntime
     private let current: @MainActor () -> MemoryBinding?
     private let transport: any ClientTransport
     private let store: TypedMemoryPendingStore
+    private let validatePriorOriginals: @MainActor () throws -> Void
     private let owner = UUID()
     private var generation = UUID()
     private var confirmed: Set<Data> = []
@@ -21,17 +22,19 @@ import OpenAPIRuntime
     #if DEBUG && targetEnvironment(simulator)
     public convenience init(localEndpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
         currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
-        localTransport: NoRedirectTransport) throws {
+        localTransport: NoRedirectTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void) throws {
         guard localEndpoint.url.scheme == "http",localEndpoint.url.host == "127.0.0.1",
               let port = localEndpoint.url.port,(1...65535).contains(port),localEndpoint.maximumRequestBytes <= 32768,
               localEndpoint.maximumResponseBytes <= 1_000_000 else { throw MemoryFailure.unconfigured }
-        self.init(endpoint:localEndpoint,credentials:credentials,currentBinding:currentBinding,pendingStore:pendingStore,interceptedTransport:localTransport)
+        self.init(endpoint:localEndpoint,credentials:credentials,currentBinding:currentBinding,pendingStore:pendingStore,
+            interceptedTransport:localTransport,validatePriorOriginals:validatePriorOriginals)
     }
     #endif
     init(endpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
         currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
-        interceptedTransport: any ClientTransport) {
+        interceptedTransport: any ClientTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void = {}) {
         self.endpoint = endpoint;self.credentials = credentials;current = currentBinding;store = pendingStore;transport = interceptedTransport
+        self.validatePriorOriginals = validatePriorOriginals
     }
     private func check(_ binding: MemoryBinding,_ token: UUID) throws {
         guard generation == token else { throw MemoryFailure.staleBinding }
@@ -47,7 +50,7 @@ import OpenAPIRuntime
         generation = UUID();currentReads.removeAll();usedManagementReads.removeAll()
     }
     public func invalidate() { retirePresentation();confirmed.removeAll() }
-    private func api(_ binding: MemoryBinding,_ token: UUID,original: TypedMemoryPending? = nil,lifecycleOriginal: TypedMemoryManagementPending? = nil,managementRead: TypedMemoryRead? = nil,management: Bool = false) async throws -> Client {
+    private func api(_ binding: MemoryBinding,_ token: UUID,original: TypedMemoryPending? = nil,lifecycleOriginal: TypedMemoryManagementPending? = nil,managementRead: TypedMemoryRead? = nil,management: Bool = false,newWrite: Bool = false) async throws -> Client {
         try check(binding,token)
         let bearer: String?
         do { bearer = try await credentials(binding) }
@@ -57,6 +60,7 @@ import OpenAPIRuntime
         return Client(serverURL:endpoint.url,configuration:.memory,transport:MemoryTransport(wire:.v2,underlying:transport,
             endpoint:endpoint,bearer:bearer,writeEnabled:true,managementEnabled:management,validate:{ [self] in
                 try check(binding,token)
+                if newWrite { try validatePriorOriginals();try check(binding,token) }
                 if let original { try store.requireOriginal(original);try check(binding,token) }
                 if let lifecycleOriginal {
                     guard let records = try store.managementRecords(create:false) else { throw MemoryFailure.storageUnavailable }
@@ -76,6 +80,7 @@ import OpenAPIRuntime
     }
     public func save(_ command: TypedMemoryCommand,binding: MemoryBinding) async throws -> MemorySaveResult {
         let token = try begin(binding);try store.validate(binding)
+        try validatePriorOriginals();try check(binding,token)
         guard try store.records().allSatisfy({ record in
             if confirmed.contains(Data(record.operationID.utf8)) { return true }
             return try store.rejection(for:record) != nil
@@ -84,7 +89,7 @@ import OpenAPIRuntime
         let record = TypedMemoryPending(command)
         guard record.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
         try store.append(record) { try check(binding,token) };try check(binding,token)
-        let api = try await api(binding,token,original:record)
+        let api = try await api(binding,token,original:record,newWrite:true)
         let output = try await exchange(binding,token) { try await api.saveTypedMemory(body:.binary(HTTPBody(record.originalUTF8))) }
         switch output {
         case .ok(let value):return try settle(value.body.json.receipt,record:record,binding:binding,token:token)
@@ -193,6 +198,7 @@ extension TypedMemoryClient {
     public func manage(_ operation: TypedMemoryOperation,read: TypedMemoryRead,text: String? = nil,
                        travelContext: MemoryTravelSelection? = nil,binding: MemoryBinding) async throws -> TypedMemoryManagementResult {
         let token = try begin(binding);try store.validate(binding);try validateRead(read,binding:binding)
+        try validatePriorOriginals();try check(binding,token)
         guard !usedManagementReads.contains(read.stamp) else { throw MemoryFailure.pendingRequiresQuery }
         guard let records = try store.managementRecords(create:true) else { throw MemoryFailure.storageUnavailable }
         for pending in try records.pending() where !managementConfirmed.contains(managementKey(pending)) {
@@ -203,7 +209,7 @@ extension TypedMemoryClient {
         guard original.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
         usedManagementReads.insert(read.stamp)
         try records.append(original) { try validateRead(read,binding:binding) }
-        let api = try await api(binding,token,lifecycleOriginal:original,managementRead:read,management:true)
+        let api = try await api(binding,token,lifecycleOriginal:original,managementRead:read,management:true,newWrite:true)
         let response: ManagementResponse = try await exchange(binding,token) {
             if operation == .stopUse {
                 switch try await api.applyTypedMemoryStopUse(body:.binary(HTTPBody(original.originalUTF8))) {
