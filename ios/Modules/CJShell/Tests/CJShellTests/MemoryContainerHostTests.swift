@@ -1,12 +1,22 @@
 import Foundation
 import CryptoKit
+import Observation
 import Testing
 import CJAPI
+import CJMessageClient
 import CJMessageHTTP
 import OpenAPIRuntime
 import HTTPTypes
 @testable import CJMemoryClient
 @testable import CJShell
+
+@MainActor private final class TypedHostTravelStorage: SecureMessageStorage {
+    func load(scope: StorageScope) throws -> Snapshot? { nil }
+    func save(_ snapshot: Snapshot,scope: StorageScope) throws {}
+}
+@MainActor private final class TypedHostTravelCredentials: MessageCredentialsProvider {
+    func bearer(for scope: StorageScope,lease: Lease) async throws -> String? { "SYNTHETIC" }
+}
 
 private let memoryTrace = "00000000-0000-4000-8000-000000000001"
 private actor MemoryHostTransport: ClientTransport {
@@ -46,7 +56,110 @@ private actor MemoryHostTransport: ClientTransport {
         #expect(host.bind(value))
     }
 }
+
+@MainActor private final class TypedMemoryHostFixture {
+    let source = MemoryHostFixture()
+    let directory: URL
+    let client: TypedMemoryClient
+    let host: TypedMemoryContainerHost
+    let longTerm: TypedMemoryManualOption
+    let currentTravel: TypedMemoryManualOption
+    let travel: TravelSelectionModel
+    init(shell: ShellState,transport: MemoryHostTransport) throws {
+        directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        let f = source,key = SymmetricKey(size:.bits256)
+        let store = try TypedMemoryPendingStore(directory:directory,maximumBytes:100_000,maximumRecords:20,
+            namespace:.init(environment:f.binding.environment,account:f.binding.account,purpose:.localMemoryPendingV1),keyID:UUID(),key:{key})
+        let endpoint = try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:32768,maximumResponseBytes:1_000_000)
+        client = TypedMemoryClient(endpoint:endpoint,credentials:{ _ in "SYNTHETIC" },currentBinding:{f.observed()},pendingStore:store,interceptedTransport:transport)
+        let recovery = MessageRecovery(storage:TypedHostTravelStorage())
+        let scope = try StorageScope(environment:f.binding.environment.uuidString,account:f.binding.account.uuidString)
+        let lease = try recovery.activate(scope)
+        let message = MessageHTTPClient(recovery:recovery,scope:scope,endpoint:endpoint,credentials:TypedHostTravelCredentials(),interceptedTestTransport:MemoryHostTransport([]))
+        travel = try TravelSelectionModel(ids:[],client:message,lease:lease,isCurrent:{f.current == f.binding})
+        longTerm = TypedMemoryManualOption(label:"long-term",subject:"self",slot:"test",kind:.preference,scope:.longTerm)
+        currentTravel = TypedMemoryManualOption(label:"current travel",subject:"self",slot:"test",kind:.preference,scope:.selectedTravel)
+        host = try TypedMemoryContainerHost(shell:shell,client:client,binding:f.binding,pageSize:2,options:[longTerm,currentTravel],travel:travel,currentBinding:{f.observed()})
+    }
+    func cleanup() { try? FileManager.default.removeItem(at:directory) }
+}
+@MainActor private final class TypedSurfaceBox { var surface: TypedMemorySurface? }
 @Suite @MainActor struct MemoryContainerHostTests {
+    private func typedItem(_ id: String) -> [String:Any] {
+        var value = item(id),command = value["command"] as! [String:Any]
+        command.removeValue(forKey:"context_id");command["context"] = NSNull();value["command"] = command
+        return value
+    }
+    @Test func typedPagesPreserveItemsAndRequireAnActualEmptyPage() async throws {
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","items":[typedItem("a")]]),try json(["version":"MEMORY-result.2","items":[]])])
+        let f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        #expect(await wire.calls.isEmpty)
+        await f.host.loadItems(surface:surface)
+        let values = try rows(f.host.items);#expect(values.first?.item.value.command.item_id == "a" && f.host.hasMore)
+        #expect(values.first?.item.scope == .longTerm)
+        await f.host.loadItems(surface:surface,more:true)
+        #expect(try rows(f.host.items).count == 1 && !f.host.hasMore)
+        #expect(await wire.calls.count == 2)
+    }
+    @Test func typedLateDetailAndOldSurfaceExitCannotReplaceNewDetail() async throws {
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","item":typedItem("a")]),try json(["version":"MEMORY-result.2","item":typedItem("b")])],holdFirst:true)
+        let f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let a = try #require(f.host.enterSurface())
+        let task = Task { await f.host.loadDetail(itemID:"a",surface:a) };await wait(wire)
+        f.host.leaveSurface(a)
+        let b = try #require(f.host.enterSurface())
+        f.host.leaveSurface(a)
+        await f.host.loadDetail(itemID:"b",surface:b)
+        await wire.release();await task.value
+        guard case .loaded(let value) = f.host.detail else { Issue.record("new detail disappeared");return }
+        #expect(value?.item.value.command.item_id == "b")
+        #expect(await wire.calls.count == 2)
+    }
+    @Test func typedIdentityRetirementDropsHeldResult() async throws {
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","item":typedItem("a")])],holdFirst:true)
+        let s = try shell(),f = try TypedMemoryHostFixture(shell:s,transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        let task = Task { await f.host.loadDetail(itemID:"a",surface:surface) };await wait(wire)
+        _ = s.invalidateIdentity();await wire.release();await task.value
+        #expect(!f.host.isConfigured && f.host.options.isEmpty)
+        guard case .unconfigured = f.host.detail else { Issue.record("retired detail visible");return }
+    }
+    @Test func typedPreparedSaveCannotSurviveSurfaceRetirement() async throws {
+        let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        let work = try f.host.prepareSave(optionID:f.longTerm.id,text:"explicit input",occurredAt:"date unknown",surface:surface)
+        f.host.leaveSurface(surface)
+        await f.host.performSave(work)
+        #expect(await wire.calls.isEmpty)
+        #expect(try f.client.pending(binding:f.source.binding).isEmpty)
+    }
+    @Test func typedCurrentScopeNeverFallsBackToLongTermOrImplicitNone() throws {
+        let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        #expect(throws:(any Error).self) { try f.host.prepareSave(optionID:f.currentTravel.id,text:"explicit input",occurredAt:"unknown",surface:surface) }
+        try f.travel.selectNone()
+        #expect(throws:MemoryFailure.invalidInput) { try f.host.prepareSave(optionID:f.currentTravel.id,text:"explicit input",occurredAt:"unknown",surface:surface) }
+        #expect(try f.client.pending(binding:f.source.binding).isEmpty)
+    }
+    @Test func typedObservationReentryRetiresOldReadBeforeDispatch() async throws {
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","item":typedItem("a")]),try json(["version":"MEMORY-result.2","item":typedItem("b")])])
+        let f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let old = try #require(f.host.enterSurface())
+        await f.host.loadDetail(itemID:"a",surface:old)
+        let box = TypedSurfaceBox()
+        withObservationTracking { _ = f.host.detail } onChange: {
+            MainActor.assumeIsolated { box.surface = f.host.enterSurface() }
+        }
+        await f.host.loadDetail(itemID:"a",surface:old)
+        #expect(await wire.calls.count == 1)
+        let current = try #require(box.surface)
+        await f.host.loadDetail(itemID:"b",surface:current)
+        guard case .loaded(let value) = f.host.detail else { Issue.record("new surface failed to read");return }
+        #expect(value?.item.value.command.item_id == "b")
+        #expect(await wire.calls.count == 2)
+    }
     private func shell() throws -> ShellState { ShellState(preferences: try #require(UserDefaults(suiteName: UUID().uuidString))) }
     private func json(_ fields: [String: Any]) throws -> Data {
         try JSONSerialization.data(withJSONObject: fields.merging(["request_id": memoryTrace]) { a, _ in a })
