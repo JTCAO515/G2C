@@ -150,6 +150,9 @@ public struct TripDetailView: View {
             TripLoadLabel(state: state.detailState, language: language)
             if let trip = state.trip {
                 Text(language.text("Current formal version \(trip.version)", "当前正式版本 \(trip.version)")).font(.headline)
+                    .accessibilityIdentifier("trip.detail.version")
+                Text(trip.trip_id).font(.caption.monospaced()).fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("trip.detail.id")
                 TripDocumentView(document: trip.document, language: language)
             }
         }
@@ -176,9 +179,11 @@ private struct TripDocumentView: View {
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    Label(item.verification == .pending ? language.text("Pending verification", "待核实") : language.text("Evidence recorded", "已有核实依据"),
-                          systemImage: item.verification == .pending ? "questionmark.circle" : "doc.text.magnifyingglass")
-                        .font(.caption)
+                    Label {
+                        TripVerificationText(text: item.verification == .pending ? language.text("Pending verification", "待核实") : language.text("Evidence recorded", "已有核实依据"))
+                    } icon: {
+                        Image(systemName: item.verification == .pending ? "questionmark.circle" : "doc.text.magnifyingglass")
+                    }.font(.caption).foregroundStyle(.primary)
                     ForEach(Array(item.evidence.enumerated()), id: \.offset) { _, evidence in Text(evidence).font(.caption).textSelection(.enabled) }
                 }
             }
@@ -189,10 +194,41 @@ private struct TripDocumentView: View {
                     .font(.footnote)
             }
             Text(language.text("Accepting a trip does not verify pending facts.", "接受行程不代表待核实事实已获核实。"))
-                .font(.footnote).foregroundStyle(.secondary)
+                .font(.footnote).foregroundStyle(.primary)
         }
     }
 }
+// Local rendering adapter follows MemoryRowText's audited native measurement.
+// Avoid a new Trip -> Run dependency for the largest dynamic type size.
+#if os(iOS)
+import UIKit
+private struct TripVerificationText: UIViewRepresentable {
+    let text: String
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.lineBreakMode = .byWordWrapping
+        label.textColor = .label
+        label.adjustsFontForContentSizeCategory = true
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
+        return label
+    }
+    func updateUIView(_ label: UILabel, context: Context) {
+        label.text = text
+        label.font = UIFont.preferredFont(forTextStyle: .caption1, compatibleWith: label.traitCollection)
+    }
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+    }
+    static func dismantleUIView(_ uiView: UILabel, coordinator: ()) { uiView.text = nil }
+}
+#else
+private struct TripVerificationText: View {
+    let text: String
+    var body: some View { Text(text).font(.caption).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
+}
+#endif
 private struct TripLoadLabel: View {
     let state: TripLoadState
     let language: TripLanguage
