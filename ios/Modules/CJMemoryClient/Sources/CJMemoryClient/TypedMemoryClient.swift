@@ -11,6 +11,7 @@ import OpenAPIRuntime
     private let current: @MainActor () -> MemoryBinding?
     private let transport: any ClientTransport
     private let store: TypedMemoryPendingStore
+    private let owner = UUID()
     private var generation = UUID()
     private var confirmed: Set<Data> = []
     #if DEBUG && targetEnvironment(simulator)
@@ -106,5 +107,53 @@ import OpenAPIRuntime
               !record.inference || receipt.status == .candidate else { throw MemoryFailure.invalidResponse }
         confirmed.insert(Data(record.operationID.utf8))
         return receipt.status == .candidate ? .candidate(receipt) : .saved(receipt)
+    }
+}
+
+
+extension TypedMemoryClient {
+    public func validateRead(_ read: TypedMemoryRead,binding: MemoryBinding) throws {
+        let token = try begin(binding)
+        guard read.owner == owner,read.generation == token,read.binding == binding else { throw MemoryFailure.staleBinding }
+    }
+    public func list(limit: Int,after: TypedMemoryCursor? = nil,binding: MemoryBinding) async throws -> TypedMemoryPage {
+        let token = try begin(binding)
+        guard (1...100).contains(limit) else { throw MemoryFailure.invalidInput }
+        if let after { guard after.owner == owner,after.generation == token,after.binding == binding else { throw MemoryFailure.staleBinding } }
+        let api = try await api(binding,token)
+        let output = try await exchange(binding,token) { try await api.listTypedMemories(query:.init(limit:limit,after:after?.after)) }
+        switch output {
+        case .ok(let value):
+            let values = try value.body.json.items
+            guard values.count <= limit else { throw MemoryFailure.invalidResponse }
+            var previous = after?.after ?? ""
+            let items = try values.map { value in
+                let item = try TypedMemoryItem(value)
+                guard previous.utf8.lexicographicallyPrecedes(value.command.item_id.utf8) else { throw MemoryFailure.invalidResponse }
+                previous = value.command.item_id
+                return TypedMemoryRead(item:item,owner:owner,generation:token,binding:binding)
+            }
+            // V2 has no next_after field. The frozen after parameter is the last
+            // exact item ID; only an actual empty page establishes completion.
+            let next = values.last.map { TypedMemoryCursor(owner:owner,generation:token,binding:binding,after:$0.command.item_id) }
+            return TypedMemoryPage(items:items,next:next)
+        case .default(let status,let value):throw MemoryFailure.rejected(status,try value.body.json.error.code)
+        }
+    }
+    public func detail(itemID: String,binding: MemoryBinding) async throws -> TypedMemoryRead? {
+        let token = try begin(binding)
+        guard memoryText(itemID) else { throw MemoryFailure.invalidInput }
+        let api = try await api(binding,token)
+        let output = try await exchange(binding,token) { try await api.getTypedMemoryItem(query:.init(item_id:itemID)) }
+        switch output {
+        case .ok(let value):
+            switch try value.body.json.item {
+            case .MemoryItemV2(let value):
+                guard same(value.command.item_id,itemID) else { throw MemoryFailure.invalidResponse }
+                return TypedMemoryRead(item:try TypedMemoryItem(value),owner:owner,generation:token,binding:binding)
+            case .CJExplicitJSONNull:return nil
+            }
+        case .default(let status,let value):throw MemoryFailure.rejected(status,try value.body.json.error.code)
+        }
     }
 }

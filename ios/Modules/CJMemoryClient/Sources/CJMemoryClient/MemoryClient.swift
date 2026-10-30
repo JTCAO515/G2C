@@ -52,6 +52,26 @@ struct MemoryTransport: ClientTransport {
         guard traces.count == 1, let trace = traces.first?.value, UUID(uuidString: trace) != nil,
               let object = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
               let value = object["request_id"] as? String, same(value, trace) else { throw MemoryFailure.invalidResponse }
+        if wire == .v2,response.status.code == 200 {
+            // The generator's opaque conditional context can normalize a JSON
+            // floating token during decoding. Preserve the frozen integer-token
+            // boundary before that conversion; domains validate the other fields.
+            let items: [(Any?,[String])]
+            if operationID == "listTypedMemories" {
+                guard let values = object["items"] as? [Any] else { throw MemoryFailure.invalidResponse }
+                items = values.enumerated().map { ($0.element,["items",String($0.offset)]) }
+            } else if operationID == "getTypedMemoryItem" { items = [(object["item"],["item"])] }
+            else { items = [] }
+            for (value,path) in items {
+                if value is NSNull { continue }
+                guard let item = value as? [String:Any],let command = item["command"] as? [String:Any],
+                      let version = strict.unsignedIntegers[path + ["version"]],version > 0,
+                      let source = strict.unsignedIntegers[path + ["command","source_version"]],source > 0 else { throw MemoryFailure.invalidResponse }
+                if let context = command["context"] as? [String:Any],context["kind"] as? String == "travel" {
+                    guard let version = strict.unsignedIntegers[path + ["command","context","expected_version"]],version > 0 else { throw MemoryFailure.invalidResponse }
+                }
+            }
+        }
         return (response, HTTPBody(bytes))
     }
 }

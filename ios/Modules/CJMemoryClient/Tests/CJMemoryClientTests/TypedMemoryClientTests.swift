@@ -50,14 +50,21 @@ private actor TypedMemoryWire: ClientTransport {
     }
 }
 
-@MainActor struct TypedMemoryClientTests {
-    private func store(_ f: Fixture) throws -> TypedMemoryPendingStore {
-        try TypedMemoryPendingStore(directory:f.root,maximumBytes:100_000,maximumRecords:100,
-            namespace:.init(environment:f.binding.environment,account:f.binding.account,purpose:.localMemoryPendingV1),keyID:f.keyID,key:{ f.secret })
+@MainActor extension Fixture {
+    func typedStore() throws -> TypedMemoryPendingStore {
+        try TypedMemoryPendingStore(directory:root,maximumBytes:100_000,maximumRecords:100,
+            namespace:.init(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1),keyID:keyID,key:{ self.secret })
     }
+    func typedClient(_ wire: any ClientTransport,credentials: MemoryCredentialCallback? = nil) throws -> TypedMemoryClient {
+        try TypedMemoryClient(endpoint:endpoint,credentials:credentials ?? { _ in "synthetic-only" },
+            currentBinding:{ self.current },pendingStore:typedStore(),interceptedTransport:wire)
+    }
+}
+
+@MainActor struct TypedMemoryClientTests {
+    private func store(_ f: Fixture) throws -> TypedMemoryPendingStore { try f.typedStore() }
     private func client(_ f: Fixture,_ wire: TypedMemoryWire,credentials: MemoryCredentialCallback? = nil) throws -> TypedMemoryClient {
-        try TypedMemoryClient(endpoint:f.endpoint,credentials:credentials ?? { _ in "synthetic-only" },
-            currentBinding:{ f.current },pendingStore:store(f),interceptedTransport:wire)
+        try f.typedClient(wire,credentials:credentials)
     }
     private func command(_ id: String = "original") throws -> TypedMemoryCommand {
         try TypedMemoryCommand(operationID:id,itemID:"item-" + id,subject:"traveller",slot:"preference",text:"保持原文",occurredAt:"去年",kind:.preference,
