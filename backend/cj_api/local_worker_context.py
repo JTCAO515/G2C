@@ -22,8 +22,9 @@ def checker_for(auth_dir):
 
 
 class LocalBudgetRouter:
-    def __init__(self, database, *, registrations=MODEL_REGISTRY):
-        self.database,self.registrations=database,registrations
+    def __init__(self, database, *, registrations=None):
+        self.database=database
+        self.registrations=MODEL_REGISTRY if registrations is None else registrations
 
     def stop(self, binding):
         raise BudgetUnknown('original quota period unresolved; cleanup withheld')
