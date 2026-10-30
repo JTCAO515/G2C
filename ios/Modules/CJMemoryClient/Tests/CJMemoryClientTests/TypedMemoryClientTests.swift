@@ -71,7 +71,7 @@ private actor TypedMemoryWire: ClientTransport {
             travelContext:MemoryTravelSelection(id:String(repeating:"a",count:32),expectedVersion:2))
     }
     @Test(arguments:[TypedMemoryWire.FirstPost.accepted,.failed,.unknown,.lostACK])
-    func presentationRetirementPreservesKnownCompletionsButNeverUpgradesUnknown(_ mode: TypedMemoryWire.FirstPost) async throws {
+    fileprivate func presentationRetirementPreservesKnownCompletionsButNeverUpgradesUnknown(_ mode: TypedMemoryWire.FirstPost) async throws {
         let f = try Fixture();defer { f.cleanup() }
         let wire = TypedMemoryWire(mode),client = try client(f,wire),first = try command()
         switch mode {

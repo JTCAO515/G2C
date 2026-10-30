@@ -180,7 +180,7 @@ public enum TypedMemoryManagementState {
         let capture = try travel.capture()
         guard let value = capture.context?.value else { throw MemoryFailure.invalidInput }
         try travel.validate(capture)
-        return (capture,try MemoryTravelSelection(id:value.id,expectedVersion:value.version))
+        return (capture,try MemoryTravelSelection(id:value.id,expectedVersion:Int64(value.version)))
     }
     public func prepareSave(optionID: UUID,text: String,occurredAt: String,surface: TypedMemorySurface?) throws -> TypedMemorySaveWork {
         guard let surface,owns(surface),!working,let option = configuredOptions.first(where:{ $0.id == optionID }) else { throw MemoryFailure.staleBinding }
