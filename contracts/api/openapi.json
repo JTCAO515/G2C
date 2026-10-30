@@ -2879,6 +2879,259 @@
         ],
         "description": "Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates."
       }
+    },
+    "/v2/messages": {
+      "post": {
+        "operationId": "receiveMessageV2",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Original immutable UTF8 JSON bytes satisfying fixed MESSAGE Command.parse; preserve before first send, never reconstruct for retries. Domain IDs remain opaque. Body bound is mandatory explicit host configuration, product value not selected.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Committed receipt, including exact byte repeat only if current authorization and conversation generation still permit access.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageReceiveV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Frozen MESSAGE-send.2: original bytes include mandatory travel_context and needs_reference. Canonical owner, exact expected head and original receipt take priority. New producer needs explicit activated local travel profile. Historical receipt/ref is data, never execution authority."
+      }
+    },
+    "/v2/message-send-status": {
+      "get": {
+        "operationId": "getMessageSendStatusV2",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt only, no runtime state or dispatch permission",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageSendStatusV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read original receipt and active conversation head under the same scope lock",
+        "description": "Original receipt/head/reference in one canonical-owner scope snapshot; missing persisted send.2 metadata is unavailable/unknown, never none. Null does not prove noncommit or allow a new ID."
+      }
+    },
+    "/v2/run-display": {
+      "get": {
+        "operationId": "getTravelRunDisplay",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exact original opaque message ID; host UTF8 byte bound explicit. No caller run ID/scope/owner/permission."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected read-time display snapshot, fully encoded with BASE request_id inside owner lifetime. Not streaming, dispatch, completion-by-EOF or provider proof.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDisplayV2Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE input/unavailable/too-large error, never a synthetic/null/empty successful snapshot; no automatic read retry.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "New original MESSAGE-send.2 protected read with immutable reference. Legacy read schemas and source semantics remain unchanged. Data is not a live effect lease."
+      }
+    },
+    "/v3/run-draft-status": {
+      "get": {
+        "operationId": "getTravelRunDraftStatus",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Exact original opaque message ID; host UTF8 byte bound explicit. No caller run ID/scope/owner/permission."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RUN-draft-status.2 with original persisted budget reason; unchanged v1 route is separately available.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDraftStatusV3Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "BASE input/unavailable/too-large error, never a synthetic/null/empty successful snapshot; no automatic read retry.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "New original MESSAGE-send.2 protected read with immutable reference. Legacy read schemas and source semantics remain unchanged. Data is not a live effect lease."
+      }
     }
   },
   "components": {
@@ -7206,6 +7459,451 @@
           }
         },
         "description": "Required null receipt means not observed in this scoped lifecycle ledger; never proves noncommit or authorizes resend."
+      },
+      "MessageTravelReferenceTravel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "enum": [
+              "MESSAGE-travel-reference.1"
+            ]
+          },
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "message_version": {
+            "type": "string",
+            "enum": [
+              "MESSAGE-send.2"
+            ]
+          },
+          "context_kind": {
+            "type": "string",
+            "enum": [
+              "travel"
+            ]
+          },
+          "context_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "context_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "selection_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          }
+        },
+        "required": [
+          "version",
+          "conversation_id",
+          "generation",
+          "message_id",
+          "run_id",
+          "sequence",
+          "input_sha256",
+          "message_version",
+          "context_kind",
+          "context_id",
+          "context_version",
+          "selection_epoch"
+        ]
+      },
+      "MessageTravelReferenceNone": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "enum": [
+              "MESSAGE-travel-reference.1"
+            ]
+          },
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "message_version": {
+            "type": "string",
+            "enum": [
+              "MESSAGE-send.2"
+            ]
+          },
+          "context_kind": {
+            "type": "string",
+            "enum": [
+              "none"
+            ]
+          },
+          "context_id": {
+            "type": "null"
+          },
+          "context_version": {
+            "type": "null"
+          },
+          "selection_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          }
+        },
+        "required": [
+          "version",
+          "conversation_id",
+          "generation",
+          "message_id",
+          "run_id",
+          "sequence",
+          "input_sha256",
+          "message_version",
+          "context_kind",
+          "context_id",
+          "context_version",
+          "selection_epoch"
+        ]
+      },
+      "MessageTravelReferenceLegacy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "enum": [
+              "MESSAGE-travel-reference.1"
+            ]
+          },
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "message_version": {
+            "type": "string",
+            "enum": [
+              "MESSAGE-send.1",
+              "MESSAGE-draft.1"
+            ]
+          },
+          "context_kind": {
+            "type": "string",
+            "enum": [
+              "legacy"
+            ]
+          },
+          "context_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "context_version": {
+            "type": "null"
+          },
+          "selection_epoch": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "version",
+          "conversation_id",
+          "generation",
+          "message_id",
+          "run_id",
+          "sequence",
+          "input_sha256",
+          "message_version",
+          "context_kind",
+          "context_id",
+          "context_version",
+          "selection_epoch"
+        ]
+      },
+      "MessageTravelReference": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MessageTravelReferenceTravel"
+          },
+          {
+            "$ref": "#/components/schemas/MessageTravelReferenceNone"
+          },
+          {
+            "$ref": "#/components/schemas/MessageTravelReferenceLegacy"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "context_kind",
+          "mapping": {
+            "travel": "#/components/schemas/MessageTravelReferenceTravel",
+            "none": "#/components/schemas/MessageTravelReferenceNone",
+            "legacy": "#/components/schemas/MessageTravelReferenceLegacy"
+          }
+        }
+      },
+      "MessageReceiveV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "version": {
+            "type": "string",
+            "enum": [
+              "MESSAGE-accept.2"
+            ]
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/MessageReceipt"
+          },
+          "reference": {
+            "$ref": "#/components/schemas/MessageTravelReference"
+          }
+        },
+        "required": [
+          "request_id",
+          "version",
+          "receipt",
+          "reference"
+        ]
+      },
+      "MessageSendStatusV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "version": {
+            "type": "string",
+            "enum": [
+              "MESSAGE-send-status.2"
+            ]
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "head": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageHead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageTravelReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "version",
+          "receipt",
+          "head",
+          "reference"
+        ]
+      },
+      "RunDisplayV2Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "snapshot",
+          "version",
+          "reference"
+        ],
+        "properties": {
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/RunDisplaySnapshot"
+          },
+          "version": {
+            "type": "string",
+            "enum": [
+              "RUN-display.2"
+            ]
+          },
+          "reference": {
+            "$ref": "#/components/schemas/MessageTravelReference"
+          }
+        },
+        "description": "Read-only original MESSAGE-send.2 RUN and immutable reference under one canonical owner callback. Historical data only; no execution permission. Legacy messages use their existing read version."
+      },
+      "RunDraftStatusV3Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversation_id",
+          "generation",
+          "message_id",
+          "run_id",
+          "message_sequence",
+          "event_highwater",
+          "request_id",
+          "version",
+          "run_status",
+          "draft_outcome",
+          "budget_exhausted_stage",
+          "reference"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message_sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "event_highwater": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "version": {
+            "type": "string",
+            "enum": [
+              "RUN-draft-status.3"
+            ]
+          },
+          "run_status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled",
+              "context_invalid",
+              "unknown"
+            ]
+          },
+          "draft_outcome": {
+            "type": "string",
+            "enum": [
+              "not_requested",
+              "not_recorded",
+              "published",
+              "validation_failed",
+              "provider_failed",
+              "provider_unknown",
+              "budget_exhausted"
+            ]
+          },
+          "budget_exhausted_stage": {
+            "type": "string",
+            "enum": [
+              "none",
+              "answer",
+              "draft"
+            ],
+            "description": "Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization."
+          },
+          "reference": {
+            "$ref": "#/components/schemas/MessageTravelReference"
+          }
+        },
+        "description": "Original MESSAGE-send.2 status plus immutable travel reference. Same persisted-only budget stages; no inference, retry authorization or context rebind."
       }
     },
     "securitySchemes": {

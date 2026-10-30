@@ -9,7 +9,7 @@ from psycopg import Error as DatabaseError
 
 from cj_run.core import Denied
 from cj_needs.revision_lease import LeaseUnavailable
-from .domain import Command, CommitUnknown, InvalidInput, Unavailable
+from .domain import Command, CommitUnknown, InvalidInput, Unavailable, Stored
 from .travel import ABI, PROFILE, Selection
 
 _LEASE_FACTORY=object()
@@ -42,6 +42,12 @@ class OriginalMessageContextRef:
             context_version=self.context_version, selection_epoch=self.selection_epoch)
 
 
+@dataclass(frozen=True)
+class OriginalTravelMessage:
+    stored: Stored
+    reference: OriginalMessageContextRef
+
+
 def profile(cursor, scope):
     cursor.execute('SELECT version FROM cj_message_context_profile WHERE scope=%s', (scope,))
     row=cursor.fetchone()
@@ -51,7 +57,7 @@ def profile(cursor, scope):
 
 
 def require_producer(tx, command):
-    if (not tx.travel_mode or not tx.registered_usage or not tx.bind_needs or tx.local_run_mode is not True
+    if (not tx.travel_mode or not tx.travel_metadata or not tx.registered_usage or not tx.bind_needs or tx.local_run_mode is not True
             or not profile(tx.cur,tx.scope)):
         raise Unavailable('explicit travel producer configuration required')
     tx.local_execution()
@@ -175,12 +181,15 @@ class MessageContextAuthority:
 
     @contextmanager
     def _transaction(self):
-        with self.repository.transaction() as tx:
-            tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)",(ABI,))
-            tx.cur.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR SHARE',(tx.scope,))
-            if tx.cur.fetchone() is None:
-                raise LeaseUnavailable('message context owner unavailable')
-            yield tx
+        try:
+            with self.repository.transaction() as tx:
+                tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)",(ABI,))
+                tx.cur.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR SHARE',(tx.scope,))
+                if tx.cur.fetchone() is None:
+                    raise LeaseUnavailable('message context owner unavailable')
+                yield tx
+        except (Unavailable,CommitUnknown,DatabaseError):
+            raise LeaseUnavailable('travel context storage unavailable') from None
 
     def _read(self,tx,binding):
         if binding.scope!=tx.scope:
@@ -220,8 +229,6 @@ class MessageContextAuthority:
                     lease.check()
                 finally:
                     lease._active=False
-        except (Unavailable,CommitUnknown,DatabaseError) as exc:
-            raise LeaseUnavailable('current travel context unavailable') from exc
         finally:
             if lease is not None:
                 lease._active=False
@@ -283,8 +290,6 @@ class MessageContextAuthority:
                     lease.check(binding)
                 finally:
                     self._active.reset(token)
-        except (Unavailable,CommitUnknown,DatabaseError) as exc:
-            raise LeaseUnavailable('travel context storage unavailable') from exc
         finally:
             if lease is not None:
                 lease._active=False

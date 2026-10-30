@@ -58,7 +58,7 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
     if boundary is not None:
         from cj_auth.interfaces import AdmissionReason, AdmissionStatus
         from cj_message.auth_boundary import Boundary, AccessBlocked, IdentityChanged
-        from cj_message.domain import CommitUnknown, InputConflict, SequenceConflict, InvalidInput, Stored, Receipt
+        from cj_message.domain import CommitUnknown, InputConflict, SequenceConflict, InvalidInput, Unavailable, Stored, Receipt
         if (not isinstance(boundary, Boundary) or type(max_body_bytes) is not int or max_body_bytes <= 0):
             raise ValueError('Explicit pinned MESSAGE boundary and body limit required')
 
@@ -75,6 +75,8 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
                         'request_id':request.state.request_id, 'receipt':None})
                 if type(value) is not Stored:
                     raise ValueError('Invalid internal result')
+                if value.travel_reference_version is not None:
+                    raise Unavailable('v1 cannot strip a travel reference')
                 value = value.receipt  # never serialize Stored or its private original bytes
             if type(value) is not Receipt:
                 raise ValueError('Invalid internal receipt')

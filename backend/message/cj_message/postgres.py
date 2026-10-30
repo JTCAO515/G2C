@@ -5,7 +5,7 @@ from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable, ChatSumma
 
 
 class Repository:
-    def __init__(self, connect, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False, travel_mode=False):
+    def __init__(self, connect, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False, travel_mode=False, travel_metadata=False):
         # Explicit local host opt-in; legacy callers remain unbound. Required mode
         # never falls back when selection/revision is missing or unreadable.
         # Internal partition key, NOT a principal schema or client-supplied owner.
@@ -20,6 +20,9 @@ class Repository:
         if type(travel_mode) is not bool:
             raise ValueError('explicit travel consumer configuration required')
         self.travel_mode=travel_mode
+        if type(travel_metadata) is not bool:
+            raise ValueError('explicit travel metadata capability required')
+        self.travel_metadata=travel_metadata
         self.connect, self.scope, self.bind_needs = connect, scope, bind_needs
 
     @contextmanager
@@ -50,7 +53,7 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
-                yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode, registered_usage=self.registered_usage,travel_mode=self.travel_mode)
+                yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode, registered_usage=self.registered_usage,travel_mode=self.travel_mode,travel_metadata=self.travel_metadata)
             except BaseException:
                 outcome = 'body_failed'
                 cleanup(conn.rollback, 'rollback')
@@ -70,11 +73,12 @@ class Repository:
 
 
 class Transaction:
-    def __init__(self, cursor, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False, travel_mode=False):
+    def __init__(self, cursor, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False, travel_mode=False, travel_metadata=False):
         self.cur, self.scope, self.bind_needs = cursor, scope, bind_needs
         self.local_run_mode=local_run_mode
         self.registered_usage=registered_usage
         self.travel_mode=travel_mode
+        self.travel_metadata=travel_metadata
 
     def local_execution(self, message_id=None, run_id=None):
         # None is the domain repository seam, never installed by LocalDatabase.
@@ -114,9 +118,10 @@ class Transaction:
         return Chat(*row) if row else None
 
     def find(self, mid):
-        self.cur.execute('SELECT raw_input, message_id, conversation_id, generation, sequence, run_id, input_sha256 FROM cj_message_receipt WHERE scope = %s AND message_id = %s', (self.scope, mid))
+        marker=',travel_reference_version' if self.travel_metadata else ''
+        self.cur.execute('SELECT raw_input, message_id, conversation_id, generation, sequence, run_id, input_sha256'+marker+' FROM cj_message_receipt WHERE scope = %s AND message_id = %s', (self.scope, mid))
         row = self.cur.fetchone()
-        return Stored(bytes(row[0]), Receipt(*row[1:])) if row else None
+        return Stored(bytes(row[0]), Receipt(*row[1:7]),row[7] if self.travel_metadata else None) if row else None
 
     def insert(self, stored, *, command=None):
         protected=self.local_execution()
@@ -160,8 +165,9 @@ class Transaction:
         return [ChatSummary(*row) for row in self.cur.fetchall()]
 
     def history(self, cid, generation, after, through, limit):
-        self.cur.execute('SELECT raw_input,message_id,conversation_id,generation,sequence,run_id,input_sha256 FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s AND generation=%s AND sequence>%s AND sequence<=%s ORDER BY sequence LIMIT %s', (self.scope,cid,generation,after,through,limit))
-        return [Stored(bytes(row[0]), Receipt(*row[1:])) for row in self.cur.fetchall()]
+        marker=',travel_reference_version' if self.travel_metadata else ''
+        self.cur.execute('SELECT raw_input,message_id,conversation_id,generation,sequence,run_id,input_sha256'+marker+' FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s AND generation=%s AND sequence>%s AND sequence<=%s ORDER BY sequence LIMIT %s', (self.scope,cid,generation,after,through,limit))
+        return [Stored(bytes(row[0]), Receipt(*row[1:7]),row[7] if self.travel_metadata else None) for row in self.cur.fetchall()]
 
     def draft(self, cid, generation):
         self.cur.execute('SELECT conversation_id,generation,revision,original_utf8 FROM cj_message_draft WHERE scope=%s AND conversation_id=%s AND generation=%s', (self.scope,cid,generation))

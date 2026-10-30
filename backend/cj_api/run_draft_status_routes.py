@@ -2,7 +2,7 @@
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
-from .generated import RunDraftStatusResponse, RunDraftStatusV2Response
+from .generated import RunDraftStatusResponse, RunDraftStatusV2Response,RunDraftStatusV3Response
 from .history_routes import _query
 from .message_routes import _error,_token
 from .run_display_composition import RunDisplayWireConfiguration
@@ -30,6 +30,7 @@ def register_run_draft_status_route(app,reader=None,configuration=None,modules=N
         request_id=request.state.request_id
         def invoke():
             try:
+                if version==3:return reader.read_draft_status_v3(token,mid,request_id)
                 return (reader.read_draft_status_v2(token,mid,request_id) if version==2
                         else reader.read_draft_status(token,mid,request_id))
             except BaseException as exc:
@@ -49,3 +50,6 @@ def register_run_draft_status_route(app,reader=None,configuration=None,modules=N
 
     @app.get('/v2/run-draft-status',response_model=RunDraftStatusV2Response)
     async def read_v2(request:Request): return await read(request,version=2)
+
+    @app.get('/v3/run-draft-status',response_model=RunDraftStatusV3Response)
+    async def read_v3(request:Request): return await read(request,version=3)

@@ -1984,3 +1984,164 @@ class MemoryStopUseReceiptResponse(BaseModel):
     )
     request_id: RequestId
     receipt: MemoryStopUseReceipt | Receipt
+
+
+class Version6(StrEnum):
+    MESSAGE_travel_reference_1 = 'MESSAGE-travel-reference.1'
+
+
+class MessageVersion(StrEnum):
+    MESSAGE_send_2 = 'MESSAGE-send.2'
+
+
+class ContextKind(StrEnum):
+    travel = 'travel'
+
+
+class MessageTravelReferenceTravel(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Version6
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    sequence: conint(ge=1, le=9223372036854775807)
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+    message_version: MessageVersion
+    context_kind: Literal['travel']
+    context_id: constr(pattern=r'^[0-9a-f]{32}$')
+    context_version: conint(ge=1, le=9223372036854775807)
+    selection_epoch: conint(ge=1, le=9223372036854775807)
+
+
+class ContextKind1(StrEnum):
+    none = 'none'
+
+
+class MessageTravelReferenceNone(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Version6
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    sequence: conint(ge=1, le=9223372036854775807)
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+    message_version: MessageVersion
+    context_kind: Literal['none']
+    context_id: None
+    context_version: None
+    selection_epoch: conint(ge=1, le=9223372036854775807)
+
+
+class MessageVersion2(StrEnum):
+    MESSAGE_send_1 = 'MESSAGE-send.1'
+    MESSAGE_draft_1 = 'MESSAGE-draft.1'
+
+
+class ContextKind2(StrEnum):
+    legacy = 'legacy'
+
+
+class MessageTravelReferenceLegacy(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Version6
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    sequence: conint(ge=1, le=9223372036854775807)
+    input_sha256: constr(pattern=r'^[0-9a-f]{64}$')
+    message_version: MessageVersion2
+    context_kind: Literal['legacy']
+    context_id: constr(min_length=1)
+    context_version: None
+    selection_epoch: None
+
+
+class MessageTravelReference(
+    RootModel[
+        MessageTravelReferenceTravel
+        | MessageTravelReferenceNone
+        | MessageTravelReferenceLegacy
+    ]
+):
+    root: (
+        MessageTravelReferenceTravel
+        | MessageTravelReferenceNone
+        | MessageTravelReferenceLegacy
+    ) = Field(..., discriminator='context_kind')
+
+
+class Version9(StrEnum):
+    MESSAGE_accept_2 = 'MESSAGE-accept.2'
+
+
+class MessageReceiveV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    version: Version9
+    receipt: MessageReceipt
+    reference: MessageTravelReference
+
+
+class Version10(StrEnum):
+    MESSAGE_send_status_2 = 'MESSAGE-send-status.2'
+
+
+class MessageSendStatusV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    version: Version10
+    receipt: MessageReceipt | None
+    head: MessageHead | None
+    reference: MessageTravelReference | None
+
+
+class Version11(StrEnum):
+    RUN_display_2 = 'RUN-display.2'
+
+
+class RunDisplayV2Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    request_id: RequestId
+    snapshot: RunDisplaySnapshot
+    version: Version11
+    reference: MessageTravelReference
+
+
+class Version12(StrEnum):
+    RUN_draft_status_3 = 'RUN-draft-status.3'
+
+
+class RunDraftStatusV3Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    conversation_id: constr(min_length=1)
+    generation: constr(min_length=1)
+    message_id: constr(min_length=1)
+    run_id: constr(min_length=1)
+    message_sequence: conint(ge=1, le=9223372036854775807)
+    event_highwater: conint(ge=0, le=9223372036854775807)
+    request_id: RequestId
+    version: Version12
+    run_status: RunStatus
+    draft_outcome: DraftOutcome1
+    budget_exhausted_stage: BudgetExhaustedStage = Field(
+        ...,
+        description='Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization.',
+    )
+    reference: MessageTravelReference
