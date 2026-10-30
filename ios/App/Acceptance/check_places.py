@@ -107,8 +107,22 @@ def main():
                     with lock:key=active[0];row=specs.get(key)
                     event=dict(case=key,method=scope['method'],path=scope['path'],query=scope.get('query_string',b'').decode('ascii'),started=time.monotonic())
                     with lock:audit.append(event)
+                    stream=bytearray()
                     async def capture(message):
                         if message['type']=='http.response.start':event['status']=message['status'];event['headers_at']=time.monotonic()
+                        if message['type']=='http.response.body' and scope['path']=='/v1/run-events' and event.get('status')==200:
+                            stream.extend(message.get('body',b''))
+                            # Diagnostic only: retain event kinds/offsets/statuses, never
+                            # credentials or answer text, and forward original bytes.
+                            event['stream_bytes']=len(stream)
+                            event['stream_sha256']=hashlib.sha256(stream).hexdigest()
+                            frames=[]
+                            for frame in bytes(stream).split(b'\n\n')[:-1]:
+                                fields=dict(line.split(b': ',1) for line in frame.split(b'\n'))
+                                item=dict(event=fields[b'event'].decode('ascii'),offset=int(fields[b'id']))
+                                if item['event']=='status':item['status']=json.loads(fields[b'data'])['status']
+                                frames.append(item)
+                            event['stream_events']=frames
                         if message['type']=='http.response.body' and not message.get('more_body',False):
                             event['finished_at']=time.monotonic()
                             if event.get('status',200)!=200:
