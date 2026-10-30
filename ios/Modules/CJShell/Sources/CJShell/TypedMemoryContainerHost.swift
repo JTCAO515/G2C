@@ -52,6 +52,8 @@ public enum TypedMemoryManagementState {
     private let travel: TravelSelectionModel
     private let pageSize: Int
     private var active = true
+    @ObservationIgnored private var invalidating = false
+    @ObservationIgnored private var publishing = false
     @ObservationIgnored private var epoch = UUID()
     @ObservationIgnored private var working = false
     @ObservationIgnored private var page: TypedMemoryCursor?
@@ -76,9 +78,9 @@ public enum TypedMemoryManagementState {
     }
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
     private var current: Bool {
-        guard active,shell.generation == generation,!shell.messageBindingBlocked else { return false }
+        guard active,!invalidating,shell.generation == generation,!shell.messageBindingBlocked else { return false }
         let observed = currentBinding()
-        return observed == binding && active && shell.generation == generation && !shell.messageBindingBlocked
+        return observed == binding && active && !invalidating && shell.generation == generation && !shell.messageBindingBlocked
     }
     private var presented: Bool {
         let token = epoch
@@ -114,6 +116,8 @@ public enum TypedMemoryManagementState {
         saveValue = .ready;managementValue = .ready
     }
     public func invalidate() {
+        guard !invalidating else { return }
+        invalidating = true // fence before observable writes can reenter this method
         active = false;epoch = UUID();working = false;visibleEpoch = nil;clearValues();client.invalidate()
     }
     public func suspendForBackground() { invalidate() }
@@ -130,6 +134,13 @@ public enum TypedMemoryManagementState {
     /// observer supersedes this stamp, getters withhold all older values.
     @discardableResult private func present(_ surface: TypedMemorySurface,_ change: () -> Void) -> Bool {
         guard owns(surface) else { return false }
+        // willSet observers run before the old value changes. A nested surface
+        // may retire/clear private values immediately, but must not recursively
+        // notify the same still-running observer. Its next action publishes its
+        // own stamp; the older outer publication remains withheld.
+        if publishing { change();return owns(surface) }
+        publishing = true
+        defer { publishing = false }
         visibleEpoch = nil
         guard owns(surface) else { return false }
         change()
