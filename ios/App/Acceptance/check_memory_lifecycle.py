@@ -22,7 +22,7 @@ from urllib.parse import parse_qs
 
 ROOT=Path(__file__).resolve().parents[3]; HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.memory-lifecycle.acceptance'
-CASES=['testEnglish','testChineseLarge']
+CASES=['testEnglish','testChineseLarge','testUnknownReopen','testConflictReopen','testSwitchLate','testRuntimeRecall','testReleaseClosed']
 sys.path.insert(0,str(ROOT/'scripts'))
 
 
@@ -56,7 +56,8 @@ def main():
     report=dict(status='RUNNING',head=head,cases={},checks={},run_context=json.loads(args.run_context.read_text()),
         source_hashes={str(s.relative_to(ROOT)):hashlib.sha256(s.read_bytes()).hexdigest() for s in sources},
         git_trees={s:subprocess.check_output(['git','rev-parse',head+':'+s],cwd=ROOT,text=True).strip() for s in ('ios','backend','contracts','scripts')},
-        unrun=['remaining lifecycle native cases','real accounts/models/fees/cloud','physical device/VoiceOver','deployment'])
+        unrun=['real accounts/models/fees/cloud','physical device/VoiceOver','deployment'])
+    if args.case:report['unrun'] += [case for case in CASES if case!=args.case]
     def save():(output/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
     save();tokens={};records={};audit=[]
     try:
@@ -77,11 +78,23 @@ def main():
                 database=LocalDatabase(connection,run_context=context)
                 apps=dict(read=app_from_environment(),management=create_local_memory_management_app(conninfo_path=connection,auth_dir=auth,memory_configuration=LocalMemoryConfiguration.from_bytes(policy_path.read_bytes())))
                 servers=[];threads=[];endpoints={}
-                worker_stop=threading.Event();worker_errors=[];worker_cycles=[];model=FakeProvider(chunks_per_reply=2)
+                worker_stop=threading.Event();worker_errors=[];worker_cycles=[];worker_outcomes=[]
+                class RecordedFake(FakeProvider):
+                    def __init__(self):
+                        super().__init__(chunks_per_reply=2);self.inputs=[];self.hold=False;self.entered=threading.Event();self.release=threading.Event()
+                    def stream(self,messages,system=None):
+                        payload=json.loads(messages[0]['content'].split('\n',1)[1])
+                        self.inputs.append(dict(items=payload['items'],prompt=messages[-1]['content']))
+                        if self.hold:
+                            self.hold=False;self.entered.set()
+                            if not self.release.wait(60):raise TimeoutError('actual provider release missing')
+                        for i,chunk in enumerate(super().stream(messages,system)):
+                            yield (('Memory: '+';'.join(item['text'] for item in payload['items'])+'\n') if i==0 and system is None else '')+chunk
+                model=RecordedFake()
                 def worker():
                     try:
                         while not worker_stop.is_set():
-                            outcomes=run_once(database,model,auth,memory_configuration=runtime_configuration);worker_cycles.append(len(outcomes));worker_stop.wait(.1)
+                            outcomes=run_once(database,model,auth,memory_configuration=runtime_configuration);worker_cycles.append(len(outcomes));worker_outcomes.extend(dict(message_id=o.message_id,status=o.status) for o in outcomes);worker_stop.wait(.1)
                     except Exception as error:worker_errors.append(type(error).__name__);worker_stop.set()
                 worker_thread=threading.Thread(target=worker,daemon=True);worker_thread.start()
                 def observer(name,app):
@@ -96,15 +109,29 @@ def main():
                         await app(scope,read,capture)
                         bearer=dict(scope['headers']).get(b'authorization',b'').decode()
                         case=next((c for c,pair in tokens.items() if bearer=='Bearer '+pair['A']),None)
-                        raw=b''.join(incoming);status=captured[0]['status']
+                        raw=b''.join(incoming);status=captured[0]['status'];body=b''.join(m.get('body',b'') for m in captured[1:])
                         entry=dict(host=name,method=scope['method'],path=scope['path'],query=parse_qs(scope.get('query_string',b'').decode()),status=status,case=case)
                         if raw:
                             entry['sha256']=hashlib.sha256(raw).hexdigest()
+                            if name=='management' and case:
+                                projected=json.loads(body)
+                                if 'error' in projected:entry['error']=projected['error']
+                                if 'receipt' in projected:entry['receipt']=projected['receipt']
                             if case and scope['method']=='POST':records[case]['posts'].append(dict(entry,original=json.loads(raw)))
                         audit.append(entry)
                         report['observed_requests']=audit
                         if scope['method']=='POST':save()
+                        delayed=False
+                        if case and name=='management' and scope['method']=='POST' and scope['path']=='/v1/memory-edit-actions' and status==200:
+                            row=records[case];row['last_action']=json.loads(raw)['action_id']
+                            if row['hold_next']:
+                                row['hold_next']=False;delayed=True;row['held_at']=time.monotonic();row['captured'].set()
+                                if not await asyncio.to_thread(row['release'].wait,30):raise TimeoutError('actual management response release missing')
+                            if row['lose_next']:
+                                row['lose_next']=False;row['lost_actual_200']=True;save()
+                                await send(captured[0]);raise RuntimeError('controlled ACK loss after actual commit')
                         for message in captured:await send(message)
+                        if delayed:row['released_at']=time.monotonic();row['released'].set()
                     return observed
                 for name,app in apps.items():
                     with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
@@ -120,10 +147,11 @@ def main():
                 def prepare(case):
                     tokens[case]={x:dev_auth.token(auth,s,120) for x,s in subjects[case].items()}
                     for s in subjects[case].values():operator(s,'init-budget')
-                    row=records[case]=dict(posts=[],initial=[],audit_start=len(audit))
+                    row=records[case]=dict(posts=[],initial=[],fixture_actions=[],conversations=[uuid.uuid4().hex,uuid.uuid4().hex],audit_start=len(audit),lose_next=case=='testUnknownReopen',hold_next=case=='testSwitchLate',captured=threading.Event(),release=threading.Event(),released=threading.Event())
                     report.setdefault('observed_posts',{})[case]=row['posts']
                     headers={'Authorization':'Bearer '+tokens[case]['A']}
                     with TestClient(apps['read']) as api:
+                        for cid in row['conversations']:api.put('/v1/conversations',params={'conversation_id':cid},headers=headers).raise_for_status()
                         for kind in ('fact','experience','preference'):
                             command=dict(operation_id=uuid.uuid4().hex,item_id=uuid.uuid4().hex,subject='self',slot='food.spice' if kind=='preference' else kind,kind=kind,
                                 text='Synthetic '+kind+' / 合成原始'+kind,occurred_at='Synthetic date unknown / 合成时间不详',extent='long_term',context_id=None)
@@ -133,26 +161,45 @@ def main():
                     scope=scope_for(ISSUER,subjects[case]['A'])
                     with database.connect(scope) as conn:
                         row['original_sources']={s:hashlib.sha256(bytes(raw)).hexdigest() for s,raw in conn.execute('SELECT source_id,approved_input FROM cj_memory_source WHERE scope=%s',(scope,))}
-                    return dict(endpoint=endpoints['read'],management_endpoint=endpoints['management'],accounts=tokens[case],subjects=subjects[case],profile=json.dumps(profile),case_id=case,initial=row['initial'])
+                    return dict(endpoint=endpoints['read'],management_endpoint=endpoints['management'],accounts=tokens[case],subjects=subjects[case],profile=json.dumps(profile),case_id=case,initial=row['initial'],conversations=row['conversations'])
                 def snapshot(case,item_id):
                     with TestClient(apps['read']) as api:
                         response=api.get('/v1/memory-items',params={'item_id':item_id},headers={'Authorization':'Bearer '+tokens[case]['A']});response.raise_for_status();return response.json()['item']
+                def concurrent_edit(case,item_id):
+                    current=snapshot(case,item_id)
+                    action=dict(version='MEMORY-MANAGEMENT-EDIT@1',action_id=uuid.uuid4().hex,operation='edit',item_id=item_id,
+                        expected_version=current['version'],expected_source_version=current['command']['source_version'],text='Concurrent signed writer / 并发实际写入')
+                    raw=json.dumps(action,ensure_ascii=False).encode()
+                    with TestClient(apps['management']) as manager:
+                        response=manager.post('/v1/memory-edit-actions',content=raw,headers={'Authorization':'Bearer '+tokens[case]['A'],'Content-Type':'application/octet-stream'});response.raise_for_status()
+                    records[case]['fixture_actions'].append(dict(original=action,sha256=hashlib.sha256(raw).hexdigest(),receipt=response.json()['receipt']))
+                    return snapshot(case,item_id)
                 def verify(case):
-                    row=records[case];scope=scope_for(ISSUER,subjects[case]['A']);posts=row['posts'];expected=7 if case=='testEnglish' else 1
+                    row=records[case];scope=scope_for(ISSUER,subjects[case]['A']);posts=row['posts']
+                    expected={'testEnglish':(7,7),'testChineseLarge':(1,1),'testUnknownReopen':(1,1),'testConflictReopen':(2,2),'testSwitchLate':(1,1),'testRuntimeRecall':(3,3),'testReleaseClosed':(0,0)}[case]
                     assert worker_cycles and not worker_errors
-                    assert len(posts)==expected and all(p['host']=='management' and p['status']==200 for p in posts)
+                    management=[p for p in posts if p['host']=='management']
+                    messages=[p for p in posts if p['host']=='read' and p['path']=='/v1/messages']
+                    assert len(management)==expected[0] and len(messages)==(5 if case=='testRuntimeRecall' else 0) and len(posts)==len(management)+len(messages)
+                    successful=[p for p in management if p['status']==200]
+                    if case=='testConflictReopen':
+                        assert [p['status'] for p in management]==[409,200]
+                        assert management[0]['error']['outcome']=='failed' and management[0]['error']['code']=='MEMORY_MANAGEMENT_CONFLICT'
+                        assert management[0]['original']['action_id']!=management[1]['original']['action_id']
+                    else:assert len(successful)==len(management)
                     assert not any(a['method']=='POST' and a['case'] is None for a in audit[row['audit_start']:])
                     with database.connect(scope) as conn:
                         assert conn.execute('SELECT current_user').fetchone()[0]=='cj_m1_runtime'
                         ledger=conn.execute('SELECT action_id,operation,original_input,item_id,version,status FROM cj_memory_management_action WHERE scope=%s',(scope,)).fetchall()
-                        assert len(ledger)==expected
+                        assert len(ledger)==expected[1]
                         for aid,op,raw,iid,version,status in ledger:
-                            post=next(p for p in posts if p['original']['action_id']==aid)
+                            post=next(p for p in [*successful,*row['fixture_actions']] if p['original']['action_id']==aid)
                             assert hashlib.sha256(bytes(raw)).hexdigest()==post['sha256'] and iid==post['original']['item_id'] and version==post['original']['expected_version']+1
                             assert post['original']['expected_source_version']>0
                         sources=conn.execute('SELECT source_id,approved_input,active FROM cj_memory_source WHERE scope=%s',(scope,)).fetchall()
                         for sid,sha in row['original_sources'].items():assert next(hashlib.sha256(bytes(raw)).hexdigest() for s,raw,_ in sources if s==sid)==sha
                         assert conn.execute('SELECT count(*) FROM cj_memory_operation WHERE scope=%s',(scope,)).fetchone()[0]==3
+                        assert conn.execute('SELECT count(*) FROM cj_trip WHERE scope=%s',(scope,)).fetchone()[0]==0
                         if case=='testEnglish':
                             withdrawn=next(i for i in row['initial'] if i['command']['kind']=='preference')['command']['item_id']
                             history=conn.execute("SELECT withdrawal_history FROM cj_memory_management_action WHERE scope=%s AND item_id=%s AND operation='withdraw'",(scope,withdrawn)).fetchone()[0]
@@ -161,7 +208,19 @@ def main():
                     with TestClient(apps['read']) as api:
                         for item in row['initial']:
                             denied=api.get('/v1/memory-items',params={'item_id':item['command']['item_id']},headers={'Authorization':'Bearer '+tokens[case]['B']});denied.raise_for_status();assert denied.json()['item'] is None
-                    value=dict(runtime_role='cj_m1_runtime',formal_worker_cycles=len(worker_cycles),provider_calls=model.calls,posts=posts,ledger=[dict(action_id=a,operation=op,item_id=i,version=v,status=s) for a,op,_,i,v,s in ledger],original_sources_unchanged=True,cross_owner_empty=True,
+                    if case=='testUnknownReopen':
+                        assert row['lost_actual_200']
+                        assert any(a['host']=='management' and a['path']=='/v1/memory-management-receipts' and a['query'].get('action_id')==[row['last_action']] for a in audit[row['audit_start']:])
+                    if case=='testSwitchLate':
+                        assert row['captured'].is_set() and row['released'].is_set() and row['released_at']-row['held_at']<9
+                    if case=='testRuntimeRecall':
+                        assert len(model.inputs)==model.calls==5
+                        changed=snapshot(case,next(i['command']['item_id'] for i in row['initial'] if i['command']['kind']=='fact'))['command']['text']
+                        for index,entry in enumerate(model.inputs):assert (changed in [item['text'] for item in entry['items']])==(index!=2)
+                        assert sum(o['status']=='context_invalid' for o in worker_outcomes)==1 and sum(o['status']=='completed' for o in worker_outcomes)==4
+                        assert [m['original']['conversation_id'] for m in messages]==[row['conversations'][0]]*3+[row['conversations'][1],row['conversations'][0]]
+                    if case=='testReleaseClosed':assert not audit[row['audit_start']:]
+                    value=dict(runtime_role='cj_m1_runtime',formal_worker_cycles=len(worker_cycles),provider_calls=model.calls,provider_inputs=model.inputs,worker_outcomes=worker_outcomes,posts=posts,ledger=[dict(action_id=a,operation=op,item_id=i,version=v,status=s) for a,op,_,i,v,s in ledger],original_sources_unchanged=True,cross_owner_empty=True,
                         items=[snapshot(case,i['command']['item_id']) for i in row['initial']])
                     report['checks'][case]=value;save();return value
                 class Control(BaseHTTPRequestHandler):
@@ -172,6 +231,20 @@ def main():
                             if path=='/prepare':value=prepare(case)
                             elif path=='/snapshot':value=snapshot(case,query['item_id'][0])
                             elif path=='/verify':value=verify(case)
+                            elif path=='/original':value=dict(action_id=records[case]['posts'][-1]['original']['action_id'],sha256=records[case]['posts'][-1]['sha256'])
+                            elif path=='/concurrent-edit':value=concurrent_edit(case,query['item_id'][0])
+                            elif path=='/wait-held':
+                                if not records[case]['captured'].wait(10):raise TimeoutError('actual management response not captured')
+                                value={}
+                            elif path=='/release':
+                                records[case]['release'].set()
+                                if not records[case]['released'].wait(10):raise TimeoutError('actual management response not released')
+                                value={}
+                            elif path=='/hold-provider':model.entered.clear();model.release.clear();model.hold=True;value={}
+                            elif path=='/wait-provider':
+                                if not model.entered.wait(20):raise TimeoutError('actual formal worker did not reach provider')
+                                value={}
+                            elif path=='/release-provider':model.release.set();value={}
                             else:raise ValueError('unknown control route')
                             raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
                         except Exception as error:
@@ -188,7 +261,7 @@ def main():
                     for case in ([args.case] if args.case else CASES):
                         if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise RuntimeError('candidate changed')
                         result=output/(case+'.xcresult')
-                        command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+args.simulator,'-derivedDataPath',str(build),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentMemoryLifecycleUITests/'+case,'test']
+                        command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Release' if case=='testReleaseClosed' else 'Debug','-destination','platform=iOS Simulator,id='+args.simulator,'-derivedDataPath',str(build),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentMemoryLifecycleUITests/'+case,'test']
                         print('Memory lifecycle: '+case,flush=True);run=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True,timeout=1800)
                         log=run.stdout+run.stderr
                         for pair in tokens.values():
@@ -197,11 +270,16 @@ def main():
                         summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],text=True));report.setdefault('results',{})[case]={k:summary[k] for k in ('passedTests','failedTests','skippedTests')};save();run.check_returncode()
                         assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0;report['cases'][case]='PASS';save()
                     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],text=True).strip())
+                    private_texts={item['command']['text'] for row in records.values() for item in row['initial']}
+                    private_texts.update(post['original']['text'] for row in records.values() for post in row['posts'] if 'text' in post['original'])
                     for file in [*container.rglob('*'),*output.rglob('*')]:
                         if file.is_file():
                             raw=file.read_bytes();assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values());assert b'-----BEGIN PRIVATE KEY-----' not in raw
-                    report['token_key_scan']='PASS';report['status']='PARTIAL_PASS'
+                            if file.is_relative_to(container):assert not any(text.encode() in raw for text in private_texts)
+                    report['token_key_scan']='PASS';report['plaintext_scan']='PASS';report['status']='PARTIAL_PASS' if args.case else 'PASS'
                 finally:
+                    model.release.set()
+                    for row in records.values():row['release'].set()
                     worker_stop.set();worker_thread.join(10)
                     report['worker_errors']=worker_errors
                     for server in servers:server.should_exit=True

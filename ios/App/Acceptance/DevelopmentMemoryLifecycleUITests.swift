@@ -10,7 +10,7 @@ import Foundation
     }
     struct Fixture: Decodable {
         let endpoint: String; let management_endpoint: String; let accounts: [String:String]; let subjects: [String:String]
-        let profile: String; let case_id: String; let initial: [Item]
+        let profile: String; let case_id: String; let initial: [Item]; let conversations: [String]
     }
     func call(_ path: String, _ values: [String:String]) async throws -> Data {
         var url = URLComponents(string:control+path)!;url.queryItems = values.map { URLQueryItem(name:$0.key,value:$0.value) }
@@ -26,9 +26,13 @@ import Foundation
             if target.exists && target.isHittable && target.frame.midY>top && target.frame.midY<bottom { break }
             if target.exists && target.frame.midY<=top { app.swipeDown() } else { app.swipeUp() }
         }
-        XCTAssertTrue(target.waitForExistence(timeout:10),id);XCTAssertTrue(target.isHittable,id)
-        let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
-        XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:15),.completed,id)
+        if !target.exists { XCTAssertTrue(target.waitForExistence(timeout:10),id) }
+        XCTAssertTrue(target.exists,id);XCTAssertTrue(target.isHittable,id)
+        if !target.isEnabled {
+            let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
+            XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:15),.completed,id)
+        }
+        XCTAssertTrue(target.isEnabled,id)
         target.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).tap()
     }
     func back() { app.navigationBars.buttons.firstMatch.tap() }
@@ -38,12 +42,13 @@ import Foundation
         try app.performAccessibilityAudit(for:.all) { issue in issues += 1;print(name,issue.detailedDescription,issue.element?.label ?? "unavailable",issue.element?.frame ?? .zero);return false }
         continueAfterFailure=false;XCTAssertEqual(issues,0)
     }
-    func launch(_ f: Fixture, language: String, large: Bool) throws {
+    func launch(_ f: Fixture, language: String, large: Bool, restore: Bool = false) throws {
         app?.terminate();app=XCUIApplication(bundleIdentifier:"space.go2china.memory-lifecycle.acceptance")
         app.launchArguments=["-cj.ui.language.v1",language]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
-        app.launchEnvironment=["G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]
-        app.launch();tap(language=="en" ? "Memory":"记忆");tap("memory.account");tap("account.development.signout");tap("account.development.signin.A")
+        app.launchEnvironment=["G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]
+        app.launch();tap(language=="en" ? "Memory":"记忆");tap("memory.account")
+        if restore { tap("account.development.restore") } else { tap("account.development.signout");tap("account.development.signin.A") }
         let signed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",f.subjects["A"]!),object:app.staticTexts["account.development.status"])
         XCTAssertEqual(XCTWaiter.wait(for:[signed],timeout:20),.completed);back()
     }
@@ -60,12 +65,12 @@ import Foundation
         row.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).tap();tap("memory.detail.refresh")
         XCTAssertTrue(app.staticTexts["memory.detail.text"].waitForExistence(timeout:15))
     }
-    func status(_ expected: String) {
-        let target=app.staticTexts["memory.manage.status"]
+    func status(_ expected: String, id: String = "memory.manage.status") {
+        let target=app.staticTexts[id]
         let matched=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",expected),object:target)
         XCTAssertEqual(XCTWaiter.wait(for:[matched],timeout:30),.completed,target.exists ? target.label:"status missing")
     }
-    func edit(_ text: String, language: String) {
+    func enterEdit(_ text: String) {
         tap("memory.manage.edit")
         let field=app.textViews["memory.manage.text"]
         XCTAssertTrue(field.waitForExistence(timeout:10))
@@ -77,8 +82,11 @@ import Foundation
         let selectAll=menu.waitForExistence(timeout:2) ? menu : app.buttons.matching(names).firstMatch
         XCTAssertTrue(selectAll.waitForExistence(timeout:5));selectAll.tap()
         field.typeText(text);XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
-        tap("memory.manage.keyboard.done");tap("memory.manage.saveEdit");tap(language=="en" ? "Confirm edited text":"确认编辑内容")
-        status(language=="en" ? "Original action confirmed":"原操作已确认")
+        tap("memory.manage.keyboard.done")
+    }
+    func submitEdit(language: String) { tap("memory.manage.saveEdit");tap(language=="en" ? "Confirm edited text":"确认编辑内容") }
+    func edit(_ text: String, language: String) {
+        enterEdit(text);submitEdit(language:language);status(language=="en" ? "Original action confirmed":"原操作已确认")
     }
     func action(_ id: String, _ confirm: String, language: String) {
         tap(id);tap(confirm);status(language=="en" ? "Original action confirmed":"原操作已确认")
@@ -128,4 +136,104 @@ import Foundation
     }
     func testEnglish() async throws { try await success(language:"en",large:false) }
     func testChineseLarge() async throws { try await success(language:"zh-Hans",large:true) }
+    struct Original: Decodable { let action_id: String; let sha256: String }
+    func fixture(_ caseID: String) async throws -> Fixture {
+        continueAfterFailure=false
+        return try JSONDecoder().decode(Fixture.self,from:await call("/prepare",["case":caseID]))
+    }
+    func recover(_ original: Original, input: String, expected: String) {
+        tap("memory.add");tap("memory.manage.loadOriginals")
+        let text=app.staticTexts["memory.manage.recoveredText"]
+        XCTAssertTrue(text.waitForExistence(timeout:10));XCTAssertEqual(Array(text.label.utf8),Array(input.utf8))
+        tap("memory.manage.recoveryQuery."+original.action_id)
+        status(expected,id:"memory.manage.recoveryStatus."+original.action_id)
+        XCTAssertTrue(app.staticTexts["memory.manage.recoveryID"].exists)
+    }
+    func testUnknownReopen() async throws {
+        let f=try await fixture("testUnknownReopen");defer { app?.terminate() };try launch(f,language:"en",large:false);list("en")
+        let fact=try XCTUnwrap(f.initial.first { $0.command.kind=="fact" });open(fact.command.item_id)
+        let input="Unknown ACK original / 回执未知 e\u{301} retained"
+        enterEdit(input);submitEdit(language:"en");status("Action not confirmed")
+        XCTAssertEqual(app.staticTexts["memory.manage.originalText"].label,input)
+        let original=try JSONDecoder().decode(Original.self,from:await call("/original",["case":f.case_id]))
+        capture("actual-commit-ack-lost");try launch(f,language:"en",large:false,restore:true)
+        recover(original,input:input,expected:"Original action confirmed")
+        capture("original-query-after-reopen");try audit("MEMORY_EDIT_UNKNOWN_RECOVERED")
+        _ = try await call("/verify",["case":f.case_id])
+    }
+    func testConflictReopen() async throws {
+        let f=try await fixture("testConflictReopen");defer { app?.terminate() };try launch(f,language:"zh-Hans",large:true);list("zh-Hans")
+        let fact=try XCTUnwrap(f.initial.first { $0.command.kind=="fact" });open(fact.command.item_id)
+        let originalInput="保留冲突输入 / Retain exact conflict input e\u{301}"
+        enterEdit(originalInput)
+        _ = try await call("/concurrent-edit",["case":f.case_id,"item_id":fact.command.item_id])
+        submitEdit(language:"zh-Hans");status("原操作已明确失败")
+        XCTAssertEqual(Array(app.staticTexts["memory.manage.originalText"].label.utf8),Array(originalInput.utf8))
+        let original=try JSONDecoder().decode(Original.self,from:await call("/original",["case":f.case_id]))
+        capture("actual-cas-conflict-input-retained");try audit("MEMORY_EDIT_CONFLICT")
+        try launch(f,language:"zh-Hans",large:true,restore:true)
+        recover(original,input:originalInput,expected:"原操作已明确失败");capture("durable-original-failure-after-reopen");back();list("zh-Hans");open(fact.command.item_id)
+        edit("重新审阅后的新编辑 / Explicit fresh review",language:"zh-Hans")
+        let current=try await refreshed(f,fact.command.item_id,language:"zh-Hans");XCTAssertEqual(current.version,3)
+        _ = try await call("/verify",["case":f.case_id])
+    }
+    func testSwitchLate() async throws {
+        let f=try await fixture("testSwitchLate");defer { app?.terminate() };try launch(f,language:"en",large:false);list("en")
+        let fact=try XCTUnwrap(f.initial.first { $0.command.kind=="fact" });open(fact.command.item_id)
+        enterEdit("Old account committed / 旧账号已提交");submitEdit(language:"en")
+        _ = try await call("/wait-held",["case":f.case_id]);status("Submitting original action")
+        back();back();tap("memory.account");tap("account.development.signin.B")
+        let signed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",f.subjects["B"]!),object:app.staticTexts["account.development.status"])
+        XCTAssertEqual(XCTWaiter.wait(for:[signed],timeout:15),.completed)
+        _ = try await call("/release",["case":f.case_id]);back();tap("Load groups")
+        XCTAssertTrue(app.staticTexts["No memory groups"].waitForExistence(timeout:15))
+        XCTAssertFalse(app.staticTexts["Old account committed / 旧账号已提交"].exists)
+        capture("late-a-response-not-shown-to-b");_ = try await call("/verify",["case":f.case_id])
+    }
+    func selectConversation(_ id: String) {
+        tap("Assistant");tap("assistant.serverHistory");tap("history.loadConversations");tap("history.conversation."+id);tap("assistant.panel.done")
+    }
+    func send(_ text: String) {
+        let intent=app.switches["assistant.intent"]
+        if intent.exists && intent.value as? String=="1" { intent.tap() }
+        let field=app.textViews["assistant.draft"];XCTAssertTrue(field.waitForExistence(timeout:10));field.tap()
+        if let old=field.value as? String,old != "Start chatting",!old.isEmpty { field.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:old.count)) }
+        field.typeText(text);XCTAssertEqual(field.value as? String,text)
+        if app.buttons["Done"].exists { tap("Done") }
+        tap("assistant.send")
+    }
+    func waitRun(_ expected: String) { status(expected,id:"run.display.status") }
+    func runTextContains(_ expected: String, present: Bool) {
+        let text=app.staticTexts["run.display.text"]
+        if present { XCTAssertTrue(text.waitForExistence(timeout:10));XCTAssertTrue(text.label.contains(expected)) }
+        else { XCTAssertFalse(text.exists && text.label.contains(expected));let stream=app.staticTexts["run.stream.text"];XCTAssertFalse(stream.exists && stream.label.contains(expected)) }
+    }
+    func testRuntimeRecall() async throws {
+        let f=try await fixture("testRuntimeRecall");defer { app?.terminate() };try launch(f,language:"en",large:false);list("en")
+        let fact=try XCTUnwrap(f.initial.first { $0.command.kind=="fact" });open(fact.command.item_id)
+        let current="Current approved memory / 当前已编辑有效值"
+        edit(current,language:"en");_ = try await refreshed(f,fact.command.item_id,language:"en")
+        selectConversation(f.conversations[0]);send("Synthetic current effective memory one");waitRun("Completed");runTextContains(current,present:true)
+        _ = try await call("/hold-provider",["case":f.case_id]);send("Synthetic actual in-flight old memory")
+        _ = try await call("/wait-provider",["case":f.case_id])
+        tap("Memory");tap("memory.detail.refresh");action("memory.manage.pause","Confirm pause",language:"en")
+        _ = try await refreshed(f,fact.command.item_id,language:"en")
+        _ = try await call("/release-provider",["case":f.case_id]);tap("Assistant");waitRun("Context invalid");runTextContains(current,present:false);capture("actual-old-context-invalid")
+        send("Synthetic same chat while paused");waitRun("Completed");runTextContains(current,present:false)
+        tap("Memory");tap("memory.detail.refresh");action("memory.manage.resume","Confirm resume",language:"en");_ = try await refreshed(f,fact.command.item_id,language:"en")
+        selectConversation(f.conversations[1]);send("Synthetic new chat after resume");waitRun("Completed");runTextContains(current,present:true)
+        try launch(f,language:"en",large:false,restore:true);selectConversation(f.conversations[0]);send("Synthetic current state after App reopen");waitRun("Completed");runTextContains(current,present:true)
+        capture("current-effective-values-after-reopen");_ = try await call("/verify",["case":f.case_id])
+    }
+    func testReleaseClosed() async throws {
+        let f=try await fixture("testReleaseClosed");defer { app?.terminate() }
+        app=XCUIApplication(bundleIdentifier:"space.go2china.memory-lifecycle.acceptance")
+        app.launchArguments=["-cj.ui.language.v1","en"]
+        app.launchEnvironment=["G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]
+        app.launch();tap("Memory")
+        XCTAssertFalse(app.buttons["account.development.signin.A"].exists)
+        XCTAssertFalse(app.buttons["memory.manage.edit"].exists);XCTAssertFalse(app.buttons["memory.manage.pause"].exists)
+        capture("release-management-remains-closed");_ = try await call("/verify",["case":f.case_id])
+    }
+
 }

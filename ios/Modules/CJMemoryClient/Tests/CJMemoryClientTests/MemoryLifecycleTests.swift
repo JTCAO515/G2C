@@ -1,5 +1,7 @@
 import Foundation
 import Testing
+import CryptoKit
+import CJMessageKeys
 import CJAPI
 import OpenAPIRuntime
 import HTTPTypes
@@ -18,11 +20,12 @@ actor LifecycleWire: ClientTransport {
     var loseReply = false
     var queryNull = false
     var badHash = false
+    var denyQuery = false
     var calls: [(String, Data)] = []
     var receipts: [String: [String: Any]] = [:]
     init(kind: String = "preference", state: String = "active") { self.kind = kind; self.state = state }
-    func configure(failure: String? = nil, loseReply: Bool = false, queryNull: Bool = false, badHash: Bool = false) {
-        self.failure = failure; self.loseReply = loseReply; self.queryNull = queryNull; self.badHash = badHash
+    func configure(failure: String? = nil, loseReply: Bool = false, queryNull: Bool = false, badHash: Bool = false, denyQuery: Bool = false) {
+        self.failure = failure; self.loseReply = loseReply; self.queryNull = queryNull; self.badHash = badHash; self.denyQuery = denyQuery
     }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let bytes: Data
@@ -56,8 +59,13 @@ actor LifecycleWire: ClientTransport {
                 if loseReply { throw MemoryFailure.exchangeUnknown }
             }
         } else if operationID == "queryMemoryManagementReceipt" || operationID == "getMemoryStopUseReceipt" {
-            let receipt = receipts.first { request.path!.contains($0.key) }?.value
-            object["receipt"] = queryNull ? NSNull() : receipt.map { $0 as Any } ?? NSNull()
+            if denyQuery {
+                status = .forbidden
+                object["error"] = ["code": "ACCESS_DENIED", "category": "access", "message_en": "Denied", "message_zh": "拒绝", "outcome": "failed", "recovery": "do_not_retry"]
+            } else {
+                let receipt = receipts.first { request.path!.contains($0.key) }?.value
+                object["receipt"] = queryNull ? NSNull() : receipt.map { $0 as Any } ?? NSNull()
+            }
         } else { throw MemoryFailure.invalidInput }
         var response = HTTPResponse(status: status)
         response.headerFields[.contentType] = "application/json"; response.headerFields[.cacheControl] = "no-store"
@@ -151,6 +159,58 @@ extension MemoryLifecycleTests {
         await #expect(throws: MemoryFailure.exchangeUnknown) { try await client.editMemory(text: "retain the actual unknown", selection: original, binding: f.base.binding) }
         client.invalidate()
         let fresh = try await f.selection(client, id: wire.id)
+        await #expect(throws: MemoryFailure.pendingRequiresQuery) { try await client.stopUsingMemory(selection: fresh, binding: f.base.binding) }
+        #expect(await wire.calls.filter { $0.0 == "applyMemoryEditAction" }.count == 1)
+    }
+}
+
+extension MemoryLifecycleTests {
+    @Test(arguments: ["unknown", "partial"])
+    func nonFailedPostOutcomeNeverReleasesOriginal(outcome: String) async throws {
+        let f = try ManagementFixture(); defer { f.cleanup() }; let wire = LifecycleWire(); let client = try f.client(wire)
+        let selected = try await f.selection(client, id: wire.id); await wire.configure(failure: outcome)
+        await #expect(throws: MemoryFailure.exchangeUnknown) { try await client.editMemory(text: "retain input", selection: selected, binding: f.base.binding) }
+        let pending = try #require(f.store().pending().first)
+        #expect(try client.managementFailure(actionID: pending.actionID, binding: f.base.binding) == nil)
+        let fresh = try await f.selection(client, id: wire.id)
+        await #expect(throws: MemoryFailure.pendingRequiresQuery) { try await client.stopUsingMemory(selection: fresh, binding: f.base.binding) }
+        #expect(try f.store().pending().count == 1)
+    }
+    @Test func failedReceiptGetDoesNotBecomeFailedPostEvidence() async throws {
+        let f = try ManagementFixture(); defer { f.cleanup() }; let wire = LifecycleWire(); let client = try f.client(wire)
+        let selected = try await f.selection(client, id: wire.id); await wire.configure(loseReply: true)
+        await #expect(throws: MemoryFailure.exchangeUnknown) { try await client.editMemory(text: "retained original", selection: selected, binding: f.base.binding) }
+        let pending = try #require(f.store().pending().first); await wire.configure(denyQuery: true)
+        await #expect(throws: MemoryFailure.rejected(403, "ACCESS_DENIED")) { try await client.queryManagement(actionID: pending.actionID, binding: f.base.binding) }
+        #expect(try client.managementFailure(actionID: pending.actionID, binding: f.base.binding) == nil)
+        let fresh = try await f.selection(client, id: wire.id)
+        await #expect(throws: MemoryFailure.pendingRequiresQuery) { try await client.stopUsingMemory(selection: fresh, binding: f.base.binding) }
+    }
+    @Test func malformedReceiptNeverConfirmsNewEdit() async throws {
+        let f = try ManagementFixture(); defer { f.cleanup() }; let wire = LifecycleWire(); let client = try f.client(wire)
+        let selected = try await f.selection(client, id: wire.id); await wire.configure(badHash: true)
+        await #expect(throws: MemoryFailure.invalidResponse) { try await client.editMemory(text: "exact original", selection: selected, binding: f.base.binding) }
+        client.invalidate();let fresh = try await f.selection(client, id: wire.id)
+        await #expect(throws: MemoryFailure.pendingRequiresQuery) { try await client.stopUsingMemory(selection: fresh, binding: f.base.binding) }
+    }
+    @Test func historicalCompletionBindsExactBytesRatherThanOnlyActionID() async throws {
+        let f = try ManagementFixture(); defer { f.cleanup() }; let wire = LifecycleWire(); let client = try f.client(wire)
+        let selected = try await f.selection(client, id: wire.id)
+        _ = try await client.editMemory(text: "committed original", selection: selected, binding: f.base.binding)
+        let pending = try #require(f.store().pending().first)
+        var action = try JSONDecoder().decode(Components.Schemas.MemoryManagementEditAction.self, from: pending.originalUTF8)
+        action.text = "different bytes with the same ID"
+        let changed = try JSONEncoder().encode(action)
+        var metadata = try JSONSerialization.jsonObject(with: JSONEncoder().encode(pending)) as! [String: Any]
+        metadata["originalUTF8"] = changed.base64EncodedString();metadata["expectedSHA256"] = digest(changed)
+        let plain = try JSONSerialization.data(withJSONObject: metadata)
+        let altered = try JSONDecoder().decode(MemoryManagementPending.self, from: plain);try altered.validate()
+        let namespace = MessageKeyNamespace(environment: f.base.binding.environment, account: f.base.binding.account, purpose: .localMemoryPendingV1)
+        let ad = Data("CJMemoryManagementPending|1|\(namespace.environment.uuidString)|\(namespace.account.uuidString)|\(namespace.purpose.rawValue)|\(f.base.keyID.uuidString)".utf8)
+        let cipher = try #require(AES.GCM.seal(plain, using: f.base.secret, authenticating: ad).combined)
+        let file = f.journalURL.appendingPathComponent(digest(Data(pending.actionID.utf8)) + ".memory")
+        try cipher.write(to: file)
+        client.invalidate();let fresh = try await f.selection(client, id: wire.id)
         await #expect(throws: MemoryFailure.pendingRequiresQuery) { try await client.stopUsingMemory(selection: fresh, binding: f.base.binding) }
         #expect(await wire.calls.filter { $0.0 == "applyMemoryEditAction" }.count == 1)
     }

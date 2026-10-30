@@ -185,7 +185,7 @@ private struct MemoryManagementRecoveryContent: View {
             case .failure: MemoryRowText(text: language.text("Original input could not be decoded. The action is retained.", "无法解析原输入，原操作仍保留。"), style: .body)
             case .success(.none): EmptyView()
             }
-            MemoryRowText(text: message, style: .body)
+            MemoryRowText(text: message, style: .body).accessibilityIdentifier("memory.manage.recoveryStatus." + pending.actionID)
             if !client.managementAvailable { Text(language.text("Action receipt queries are not available yet.", "管理操作回执查询尚未开放。")) }
             MemoryLifecycleButton(title: language.text("Query original action", "查询原操作"), identifier: "memory.manage.recoveryQuery." + pending.actionID,
                                   enabled: !busy && client.managementAvailable) {
