@@ -7,7 +7,8 @@ import HTTPTypes
 /// Explicit DEBUG Simulator capability for the frozen original-message cancellation.
 /// The shared MESSAGE NoRedirectTransport remains unchanged and rejects this write.
 public final class RunCancellationTransport: ClientTransport, Sendable {
-    private let travel: Bool
+    private enum WireMode { case legacy,travel,compatible }
+    private let mode: WireMode
     private let endpoint: MessageEndpoint
     private let validate: @MainActor @Sendable () throws -> Void
     private let session: URLSession?
@@ -15,37 +16,42 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
 
     public static func development(endpoint: MessageEndpoint,
         validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
-        #if DEBUG && targetEnvironment(simulator)
-        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
-              let port = endpoint.url.port, (1...65535).contains(port) else { throw RunDisplayFailure.invalidConfiguration }
-        return RunCancellationTransport(endpoint: endpoint, validate: validate)
-        #else
-        throw RunDisplayFailure.invalidConfiguration
-        #endif
+        try local(endpoint:endpoint,mode:.legacy,validate:validate)
     }
 
     public static func developmentTravel(endpoint: MessageEndpoint,
         validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
+        try local(endpoint:endpoint,mode:.travel,validate:validate)
+    }
+    /// Explicit compatibility for original legacy and travel receipts. The
+    /// canonical original selects its wire before dispatch; failures never retry
+    /// under another wire, source or message ID.
+    public static func developmentCompatible(endpoint: MessageEndpoint,
+        validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
+        try local(endpoint:endpoint,mode:.compatible,validate:validate)
+    }
+    private static func local(endpoint: MessageEndpoint,mode: WireMode,
+        validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
         #if DEBUG && targetEnvironment(simulator)
         guard endpoint.url.scheme == "http",endpoint.url.host == "127.0.0.1",
               let port = endpoint.url.port,(1...65535).contains(port) else { throw RunDisplayFailure.invalidConfiguration }
-        return RunCancellationTransport(endpoint:endpoint,travel:true,validate:validate)
+        return RunCancellationTransport(endpoint:endpoint,mode:mode,validate:validate)
         #else
         throw RunDisplayFailure.invalidConfiguration
         #endif
     }
 
-    private init(endpoint: MessageEndpoint, travel: Bool = false, validate: @escaping @MainActor @Sendable () throws -> Void) {
-        self.endpoint = endpoint; self.travel = travel; self.validate = validate; intercepted = nil
+    private init(endpoint: MessageEndpoint, mode: WireMode, validate: @escaping @MainActor @Sendable () throws -> Void) {
+        self.endpoint = endpoint; self.mode = mode; self.validate = validate; intercepted = nil
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil; configuration.urlCredentialStorage = nil; configuration.urlCache = nil
         configuration.timeoutIntervalForRequest = 10; configuration.timeoutIntervalForResource = 20
         session = URLSession(configuration: configuration, delegate: CancellationRedirectBlocker(), delegateQueue: nil)
     }
     /// Non-network module-test seam, never a product composition entry.
-    init(interceptedTransport: any ClientTransport, endpoint: MessageEndpoint, travel: Bool = false,
+    init(interceptedTransport: any ClientTransport, endpoint: MessageEndpoint, travel: Bool = false,compatible: Bool = false,
          validate: @escaping @MainActor @Sendable () throws -> Void) {
-        self.endpoint = endpoint; self.travel = travel; self.validate = validate
+        self.endpoint = endpoint;mode = compatible ? .compatible : travel ? .travel : .legacy;self.validate = validate
         session = nil; intercepted = interceptedTransport
     }
     deinit { session?.invalidateAndCancel() }
@@ -62,6 +68,14 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
             try await validateOriginal()
         }
         try await validateBinding(); try Task.checkCancellation()
+        let travel: Bool
+        switch operationID {
+        case Operations.cancelOriginalRun.id:
+            guard mode != .travel else { throw RunDisplayFailure.invalidReference };travel = false
+        case Operations.cancelOriginalTravelRun.id:
+            guard mode != .legacy else { throw RunDisplayFailure.invalidReference };travel = true
+        default:throw RunDisplayFailure.invalidReference
+        }
         guard baseURL == endpoint.url, request.method == .post,
               operationID == (travel ? Operations.cancelOriginalTravelRun.id : Operations.cancelOriginalRun.id),
               request.path == (travel ? "/v2/run-cancellations" : "/v1/run-cancellations"),

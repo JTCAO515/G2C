@@ -69,6 +69,56 @@ struct DevelopmentMemoryConfigurationTests {
 
 #if DEBUG
 extension DevelopmentConfigurationTests {
+    @Test func typedModeRequiresBothProfilesAndAnExplicitLoopbackMemoryHost() throws {
+        let travel = "{\"version\":\"app-travel.1\",\"travel_ids\":[]}"
+        let memory = "{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"test\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}"
+        let profile = ["G2C_DEV_TRAVEL_PROFILE":travel,"G2C_DEV_TYPED_MEMORY_PROFILE":memory,"G2C_DEV_TYPED_MEMORY_URL":"http://127.0.0.1:8765"]
+        #if DEBUG
+        #expect(try DevelopmentTypedMode.read([:]) == nil)
+        #expect(try DevelopmentTypedMode.read(profile)?.memoryEndpoint.absoluteString == "http://127.0.0.1:8765")
+        for missing in profile.keys {
+            var incomplete = profile;incomplete.removeValue(forKey:missing)
+            #expect(throws:(any Error).self) { try DevelopmentTypedMode.read(incomplete) }
+        }
+        for endpoint in ["https://example.com","http://localhost:8765","http://127.0.0.1:8765/path","http://user@127.0.0.1:8765"] {
+            var changed = profile;changed["G2C_DEV_TYPED_MEMORY_URL"] = endpoint
+            #expect(throws:(any Error).self) { try DevelopmentTypedMode.read(changed) }
+        }
+        let legacy = String(memory.replacingOccurrences(of:"\"version\":\"app-memory.2\",",with:"").dropLast()) + ",\"context_ids\":[\"legacy-chat\"]}"
+        #expect(throws:(any Error).self) { try DevelopmentTypedMemoryProfile.read(["G2C_DEV_TYPED_MEMORY_PROFILE":String(legacy)]) }
+        #expect(throws:(any Error).self) { try DevelopmentTypedMemoryProfile.read(["G2C_DEV_TYPED_MEMORY_PROFILE":memory.replacingOccurrences(of:"app-memory.2",with:"future")]) }
+        #else
+        #expect(try DevelopmentTypedMode.read(profile) == nil)
+        #endif
+    }
+    @Test func memoryKeyCreationChecksEveryOwnedJournalButNotOtherAccounts() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        defer {try? files.removeItem(at:parent)}
+        let root = parent.appendingPathComponent("account-a"),typed = root.appendingPathExtension("typed-v2")
+        let rejection = typed.appendingPathExtension("CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2")
+        for directory in [root,typed,rejection,parent.appendingPathComponent("account-b")] {
+            try files.createDirectory(at:directory,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        }
+        try Data("unrelated".utf8).write(to:parent.appendingPathComponent("account-b/other"))
+        #expect(try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:root))
+        let original = rejection.appendingPathComponent("original"),bytes = Data("retained encrypted original".utf8)
+        try bytes.write(to:original)
+        #expect(try !DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:root))
+        #expect(try Data(contentsOf:original) == bytes)
+    }
+    @Test func aSymlinkOrUnexpectedFileCannotBeAnEmptyMemoryNamespace() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        defer {try? files.removeItem(at:parent)}
+        let root = parent.appendingPathComponent("account"),target = parent.appendingPathComponent("target")
+        try files.createDirectory(at:target,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        try files.createSymbolicLink(at:root.appendingPathExtension("typed-v2"),withDestinationURL:target)
+        #expect(try !DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:root))
+        let another = parent.appendingPathComponent("another-account")
+        try Data().write(to:another.appendingPathExtension("journal"))
+        #expect(try !DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:another))
+    }
     @Test func managementEndpointIsExplicitAndLoopbackOnly() throws {
         #expect(try DevelopmentMemoryProfile.managementEndpoint([:]) == nil)
         let key = "G2C_DEV_MEMORY_MANAGEMENT_URL"

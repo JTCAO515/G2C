@@ -3,6 +3,71 @@ import Foundation
 import CryptoKit
 #endif
 
+struct DevelopmentMemorySlot: Decodable {
+    let kind: String
+    let collection_allowed: Bool
+    let semantic_resolved: Bool
+}
+/// UI choices only. No legacy conversation allow-list is reinterpreted as
+/// travel consent; the frozen typed server policy and B lease remain authoritative.
+struct DevelopmentTypedMemoryProfile: Decodable {
+    let version: String
+    let subjects: [String]
+    let slots: [String:DevelopmentMemorySlot]
+    let extents: [String]
+    enum ConfigurationFailure: Error { case invalidProfile,incompleteMode }
+    static func read(_ environment: [String:String]) throws -> Self? {
+        #if DEBUG
+        guard let raw = environment["G2C_DEV_TYPED_MEMORY_PROFILE"] else { return nil }
+        guard let data = raw.data(using:.utf8),data.count <= 262144,
+              let fields = try JSONSerialization.jsonObject(with:data) as? [String:Any],
+              Set(fields.keys) == ["version","subjects","slots","extents"] else { throw ConfigurationFailure.invalidProfile }
+        let profile = try JSONDecoder().decode(Self.self,from:data)
+        guard profile.version == "app-memory.2",!profile.subjects.isEmpty,!profile.slots.isEmpty,!profile.extents.isEmpty,
+              profile.subjects.allSatisfy({ !$0.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty }),
+              Set(profile.subjects).count == profile.subjects.count,
+              profile.slots.allSatisfy({ !$0.key.isEmpty && ["fact","experience","preference","inference"].contains($0.value.kind) }),
+              profile.extents.allSatisfy({ ["long_term","current"].contains($0) }),
+              Set(profile.extents).count == profile.extents.count else { throw ConfigurationFailure.invalidProfile }
+        return profile
+        #else
+        return nil
+        #endif
+    }
+}
+struct DevelopmentTypedMode {
+    let travel: DevelopmentTravelProfile
+    let memory: DevelopmentTypedMemoryProfile
+    let memoryEndpoint: URL
+    static func read(_ environment: [String:String]) throws -> Self? {
+        #if DEBUG
+        let keys = ["G2C_DEV_TRAVEL_PROFILE","G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"]
+        guard keys.contains(where:{environment[$0] != nil}) else { return nil }
+        guard let travel = try DevelopmentTravelProfile.read(environment),let memory = try DevelopmentTypedMemoryProfile.read(environment),
+              let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment,key:"G2C_DEV_TYPED_MEMORY_URL") else {
+            throw DevelopmentTypedMemoryProfile.ConfigurationFailure.incompleteMode
+        }
+        return Self(travel:travel,memory:memory,memoryEndpoint:endpoint)
+        #else
+        return nil
+        #endif
+    }
+}
+/// All adjacent journals use the same account/key purpose. A missing key must
+/// not be replaced while any old or typed original still exists in that namespace.
+enum DevelopmentMemoryStorageNamespace {
+    static func isEmpty(legacyRoot: URL,files: FileManager = .default) throws -> Bool {
+        let parent = legacyRoot.deletingLastPathComponent(),name = legacyRoot.lastPathComponent
+        let entries = try files.contentsOfDirectory(at:parent,includingPropertiesForKeys:[.isSymbolicLinkKey,.isDirectoryKey])
+        for entry in entries where entry.lastPathComponent == name || entry.lastPathComponent.hasPrefix(name + ".") {
+            let metadata = try entry.resourceValues(forKeys:[.isSymbolicLinkKey,.isDirectoryKey])
+            guard metadata.isSymbolicLink == false,metadata.isDirectory == true else { return false }
+            if try !files.contentsOfDirectory(atPath:entry.path).isEmpty { return false }
+        }
+        return true
+    }
+}
+
 /// Operator-owned choices only. Actual travel ownership/currentness must be
 /// established by the existing signed GET before an explicit selection is used.
 struct DevelopmentTravelProfile: Decodable {
@@ -95,11 +160,7 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
 /// Same operator-owned profile schema as local-memory-policy.1. These values
 /// describe choices only; the signed API remains the consent/owner authority.
 struct DevelopmentMemoryProfile: Decodable {
-    struct Slot: Decodable {
-        let kind: String
-        let collection_allowed: Bool
-        let semantic_resolved: Bool
-    }
+    typealias Slot = DevelopmentMemorySlot
     let subjects: [String]
     let slots: [String: Slot]
     let extents: [String]
