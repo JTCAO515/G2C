@@ -10,6 +10,8 @@ from hashlib import sha256
 import json
 from zoneinfo import ZoneInfo
 
+from .time_checks import known as _known, instant as _instant
+
 from cj_needs.domain import (Command, InvalidInput, Revision, Snapshot, decode,
                              identifier, validate_fields)
 
@@ -110,31 +112,6 @@ def _evidence(fields, sources, *paths):
                             source.action_id if source else None,
                             source.original_input if source else None))
     return tuple(out)
-
-
-def _known(value):
-    return value['value'] if isinstance(value, dict) and value.get('state') == 'known' else None
-
-
-def _instant(event, path):
-    missing = tuple(f'{path}.{key}' for key in ('date', 'time', 'timezone')
-                    if _known(event[key]) is None)
-    if missing:
-        return None, missing, 'incomplete'
-    wall = datetime.fromisoformat(_known(event['date']) + 'T' + _known(event['time']))
-    zone = ZoneInfo(_known(event['timezone']))
-    instants = set()
-    for fold in (0, 1):
-        aware = wall.replace(tzinfo=zone, fold=fold)
-        try:
-            utc = aware.astimezone(timezone.utc)
-            if utc.astimezone(zone).replace(tzinfo=None) == wall:
-                instants.add(utc)
-        except OverflowError:
-            return None, (f'{path}.representable_instant',), 'out_of_range'
-    if len(instants) != 1:
-        return None, (f'{path}.unambiguous_instant',), 'ambiguous' if instants else 'nonexistent'
-    return instants.pop(), (), 'unique'
 
 
 def _report(snapshot, checks):

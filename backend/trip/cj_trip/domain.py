@@ -20,26 +20,11 @@ def packed(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
 
 
-def validate_provenance_document(doc):
-    """Structural validation of the independently versioned source document.
-
-    This does not authenticate source records or verify their factual truth.
-    The trusted publisher owns source acquisition; the model cannot supply these
-    objects. Original V1 grammar and original content hashes remain unchanged.
-    """
-    if (type(doc) is not dict
-            or set(doc) != {'content_version', 'title', 'items', 'sources', 'decisions'}
-            or doc['content_version'] != 'provenance.1'
-            or type(doc['title']) is not str or not doc['title'].strip()):
-        raise ValueError('invalid provenance document')
-    if doc['decisions'] not in (
-            {'travel_dates': 'unknown', 'prompt': 'decide_travel_dates'},
-            {'travel_dates': 'undecided', 'prompt': 'decide_travel_dates'}):
-        raise ValueError('explicit pending date decision required')
-    if type(doc['sources']) is not list or len(doc['sources']) > 40:
+def validate_source_records(records):
+    if type(records) is not list or len(records) > 40:
         raise ValueError('invalid sources')
     sources = {}
-    for source in doc['sources']:
+    for source in records:
         if (type(source) is not dict or set(source) != {
                 'id', 'kind', 'reference', 'text', 'snapshot_utf8_base64',
                 'snapshot_sha256', 'evidence_level'}):
@@ -110,6 +95,26 @@ def validate_provenance_document(doc):
         except (KeyError, TypeError, UnicodeError, ValueError) as error:
             raise ValueError('invalid source record binding') from error
         sources[source['id']] = source
+    return sources
+
+
+def validate_provenance_document(doc):
+    """Structural validation of the independently versioned source document.
+
+    This does not authenticate source records or verify their factual truth.
+    The trusted publisher owns source acquisition; the model cannot supply these
+    objects. Original V1 grammar and original content hashes remain unchanged.
+    """
+    if (type(doc) is not dict
+            or set(doc) != {'content_version', 'title', 'items', 'sources', 'decisions'}
+            or doc['content_version'] != 'provenance.1'
+            or type(doc['title']) is not str or not doc['title'].strip()):
+        raise ValueError('invalid provenance document')
+    if doc['decisions'] not in (
+            {'travel_dates': 'unknown', 'prompt': 'decide_travel_dates'},
+            {'travel_dates': 'undecided', 'prompt': 'decide_travel_dates'}):
+        raise ValueError('explicit pending date decision required')
+    sources = validate_source_records(doc['sources'])
     if type(doc['items']) is not list or not 1 <= len(doc['items']) <= 60:
         raise ValueError('invalid item count')
     seen, used = set(), set()
