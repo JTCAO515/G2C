@@ -2890,7 +2890,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Original immutable UTF8 JSON bytes satisfying fixed MESSAGE Command.parse; preserve before first send, never reconstruct for retries. Domain IDs remain opaque. Body bound is mandatory explicit host configuration, product value not selected.",
+          "description": "Original immutable UTF8 JSON bytes satisfying frozen MESSAGE-send.2 Command.parse_v2, including explicit travel_context and needs_reference. Preserve before first send; never reconstruct for retries. IDs remain opaque; explicit host body bound applies.",
           "content": {
             "application/octet-stream": {
               "schema": {
@@ -3205,35 +3205,35 @@
           },
           {
             "value": {
-              "version": "RUN-cancel.2",
+              "version": "RUN-cancel.999",
               "message_id": "m1"
             },
             "status": 400
           },
           {
             "value": {
-              "version": "RUN-cancel.1",
+              "version": "RUN-cancel.2",
               "message_id": ""
             },
             "status": 400
           },
           {
             "value": {
-              "version": "RUN-cancel.1",
+              "version": "RUN-cancel.2",
               "message_id": true
             },
             "status": 400
           },
           {
             "value": {
-              "version": "RUN-cancel.1",
+              "version": "RUN-cancel.2",
               "message_id": "m1",
               "scope": "foreign"
             },
             "status": 400
           },
           {
-            "raw": "{\"version\":\"RUN-cancel.1\",\"message_id\":\"m1\",\"message_id\":\"m2\"}",
+            "raw": "{\"version\":\"RUN-cancel.2\",\"message_id\":\"m1\",\"message_id\":\"m2\"}",
             "status": 400
           }
         ]
@@ -8461,7 +8461,7 @@
             "description": "Original immutable ID; runtime bounds UTF8 to 16384 bytes and rejects NUL/blank. Full body limit65536 bytes supports every accepted send.2 ID."
           }
         },
-        "description": "RUN-CANCEL@1. Body at most 4096 bytes; duplicate/unknown/missing keys rejected. Stable cancellation identity is trusted principal + cancel + original message_id; JSON whitespace does not create a new action."
+        "description": "RUN-CANCEL@2. Body at most 65536 bytes; message_id at most 16384 UTF8 bytes. Duplicate/unknown/missing keys rejected. Cancellation binds canonical owner and the original send.2 receipt/reference plus RUN fence; live travel selection or active chat is not required. JSON whitespace does not create a new action."
       },
       "RunTravelCancellationResponse": {
         "type": "object",

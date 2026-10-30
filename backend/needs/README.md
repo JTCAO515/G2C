@@ -1,5 +1,15 @@
 # CJ013 manual current-travel NEEDS candidate
 
+The additive local runtime is documented in
+[CJ-LOCAL-NEEDS@1](../../contracts/needs/LOCAL-RUNTIME-V1.md), with the separately
+frozen [NEEDS@1.0 data codec](../../contracts/needs/V1.md) and
+[unconfirmed preview](../../contracts/needs/PREVIEW-V1.md). The existing candidate
+and default closed composition below remain available to their original consumers.
+`CJ_LOCAL_NEEDS_PROFILE=manual-v1` explicitly enables manual API use; model preview
+uses the existing registered worker with `--tools-profile synthetic-needs-v1`.
+All current model evidence is synthetic L1; real models/services and App acceptance
+remain separately gated.
+
 Implements strict explicit-input validation, local companion applicability,
 user-provided fixed intentions, partial corrections, immutable provenance/version
 history, CAS and exact-byte original action receipts. Reuses existing AUTH checker

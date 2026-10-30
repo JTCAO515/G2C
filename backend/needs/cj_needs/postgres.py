@@ -25,10 +25,7 @@ class Repository:
                 raise Denied('fresh idle non-autocommit PostgreSQL connection required')
             accepted = True
             cur = conn.cursor()
-            cur.execute("SET LOCAL lock_timeout = '5s'")
-            cur.execute("SET LOCAL statement_timeout = '10s'")
-            cur.execute('SELECT scope FROM cj_needs_scope WHERE scope=%s FOR UPDATE', (self.scope,))
-            if cur.fetchone() is None: raise Denied('scope unavailable')
+            self._begin(conn, cur)
             self.guard('transaction')
             yield cur
             self.guard('commit')
@@ -53,6 +50,13 @@ class Repository:
             else:
                 if self.strict_close and primary is None:
                     self.guard('closed')
+
+    def _begin(self, conn, cur):
+        """Legacy transaction setup; local runtime supplies its scoped protocol."""
+        cur.execute("SET LOCAL lock_timeout = '5s'")
+        cur.execute("SET LOCAL statement_timeout = '10s'")
+        cur.execute('SELECT scope FROM cj_needs_scope WHERE scope=%s FOR UPDATE', (self.scope,))
+        if cur.fetchone() is None: raise Denied('scope unavailable')
 
     @staticmethod
     def _warning(stage):
