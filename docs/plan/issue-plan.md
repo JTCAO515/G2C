@@ -66,7 +66,7 @@
 |---|---|---|---|
 | A App | 文档 PR（M1 交接 + 本次规划修订）→ #244 → #228 → #21（App 部分）；#194、#159 等 JT 文案 | 整个 `ios/**`、`docs/ui.md`；包括从原 C 线移入的 `CJMemoryClient`、`CJTripClient` 等全部 iOS 模块；#228 整体归 A | #244 等 #242 关闭，复用 #167 预算呈现，M2 新消费边界单独实测；#242 未关闭时先做 #228 框 1–3（只依赖 #226），框 4 等 C 线 #227 当前上下文冻结；#21 App 等 B 线 #13 PLACE 契约冻结 |
 | B 后端消息与运行 | #242 → #243 → [#273](https://github.com/JTCAO515/G2C/issues/273)（B旅行上下文/MESSAGE引用，父#12；JT 2026-10-30插队）→ #13 → #16 → #14 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | 实际工具/后台生产者按功能票接入，不以 fixture 替代；#13 冻结 PLACE 契约供 A 线 #21 消费 |
-| C 后端记忆与草稿 | #227 Part1 → #17：#269 编辑/启停 → #270 旧结果 fence → #18 → #22（后端部分）；按前置回补 #227 框2/4 | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`backend/memory_management/**`、`backend/memory_jobs/**`、`backend/memory_withdrawal/**`、`backend/manual_edit/**`；只做后端 | #227 框2等B旅行上下文/MESSAGE冻结，框4等#269/#270正式生命周期；App #271归A自行排期。#12剩余前置均阻塞时挂起不占C名额；#227/#228均关后由最后关票方关闭#12 |
+| C 后端记忆与草稿 | #269 编辑/启停 → #270 旧结果 fence → #227 typed框2/框4回补 → #18：#280 核心/#281正式producer → #22：#285后端（App#286归A） | `backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`backend/memory_management/**`、`backend/memory_jobs/**`、`backend/memory_withdrawal/**`、`backend/manual_edit/**`；只做后端 | #227 typed框2消费B冻结原引用/lease，框4由#269/#270正式生命周期承接；App #271归A自行排期。#12剩余前置均阻塞时挂起不占C名额；#227/#228均关后由最后关票方关闭#12 |
 
 - 未列出的目录由 JT 指定归属；本线只改拥有且获准的文件。A 同时只推进一张父票（#244 属 #9，#228 属 #12）；当前票剩余框全部被前置卡住时，先记停点再换另一张。
 - **共享文件按文件加锁**：每个共享文件同一时间只能有一个开着的 PR 修改，不同共享文件可以同时被不同 PR 修改。`contracts/**` 与生成代码算一组；`docs/handoff.json` 与生成的 `HANDOFF.md` 算一组，组内共用锁。
@@ -101,12 +101,12 @@
 |---|---|---|
 | 1 | #9 CJ-008 用量与运行上限 | [#242](https://github.com/JTCAO515/G2C/issues/242) 统一计量出口与超限拒绝 → [#243](https://github.com/JTCAO515/G2C/issues/243) 并发/重复与工具后台限额；[#244](https://github.com/JTCAO515/G2C/issues/244) App超限/未知用量/原结果恢复（A线，依赖#242，复用#167） |
 | 2 | #12 CJ-011 结构化长记忆 | [#226](https://github.com/JTCAO515/G2C/issues/226) 保存/受保护读取；B [#273](https://github.com/JTCAO515/G2C/issues/273) 旅行上下文身份、MESSAGE新引用/lease供 C [#227](https://github.com/JTCAO515/G2C/issues/227) 框2和 A [#228](https://github.com/JTCAO515/G2C/issues/228) 框4消费；#228框1–3可先于#227。合同/DDL/权限细稿等JT冻结批准，B桥接票不代闭#227/#228或父#12 |
-| 3 | #17 CJ-019 记忆编辑与启停 | [#269](https://github.com/JTCAO515/G2C/issues/269) 后端编辑/逐条启停 → [#270](https://github.com/JTCAO515/G2C/issues/270) 旧结果覆盖与版本/撤回fence；[#271](https://github.com/JTCAO515/G2C/issues/271) App编辑/启停交A。#270回补#227框4；新契约/迁移/权限先设计等JT批准 |
+| 3 | #17 CJ-019 记忆编辑与启停 | [#269](https://github.com/JTCAO515/G2C/issues/269) 后端编辑/逐条启停 → [#270](https://github.com/JTCAO515/G2C/issues/270) 旧结果覆盖与版本/撤回fence；[#271](https://github.com/JTCAO515/G2C/issues/271) App编辑/启停交A。#270回补#227框4；新增版本、追加本地迁移/最小列权限按JT2026-10-30常设授权执行，仅既有门禁/冻结版本/外部资源等例外停JT |
 | 4 | #14 CJ-013 需求整理与纠正 | 需求修订与固定事项；App 纠正入口 |
 | 5 | #13 CJ-012、#16 CJ-034 | #13已滚动拆 [#263](https://github.com/JTCAO515/G2C/issues/263) 合同producer → [#264](https://github.com/JTCAO515/G2C/issues/264) 解析/来源 → [#265](https://github.com/JTCAO515/G2C/issues/265) 正式工具出口；[#266](https://github.com/JTCAO515/G2C/issues/266) App引用交A/#21。先完成B #273再回本队列；PLACE/FACT均先草案等JT冻结及L1源决定，真实采集需L2授权，手写样例不称录制。#16开工时再拆 |
-| 6 | #18 CJ-035 可行性 | 约束求解有界执行；与草稿校验对接 |
+| 6 | #18 CJ-035 可行性 | [#280](https://github.com/JTCAO515/G2C/issues/280) FEASIBILITY@1.0核心/有界求解复用；[#281](https://github.com/JTCAO515/G2C/issues/281) B正式PLACE/NEEDS producer与来源/当前性组合。原六框保留，未冻结字段只阻相应子票，不以candidate冒称正式合同 |
 | 7 | #21 CJ-016 行程页 | 每日时间线、地图与地点信息 |
-| 8 | #22 CJ-017、#25 CJ-018 | 手动编辑与固定事项保护；助手只改选定行程并说明影响 |
+| 8 | #22 CJ-017、#25 CJ-018 | #22拆[#285](https://github.com/JTCAO515/G2C/issues/285) C后端正式手动保存/固定状态/共享可行性保护、[#286](https://github.com/JTCAO515/G2C/issues/286) A App编辑/diff/确认与恢复；原五框保留。B typed Trip/time/lock与受保护manual ingress未提供时是子票停点；#25后续助手限定修改单独执行 |
 
 #9 父票六框映射：框1/5由#242承接；框2/6由#243承接；框3的入口注册/拒绝由#242、实际工具循环和后台生产者接入由#243及对应功能票承接；框4及App日志/缓存由#244承接。真实身份、模型/工具费用、真实结算与晚到回执登记L2 #32，设备部分按适用范围留L3 #29；本地合成回调不替代实际生产者。三张票已建立原生sub-issue，#243/#244原生依赖#242。新契约、迁移语义、别线写权和外部资源仍适用既有停点，拆票本身不授予这些权限。
 
