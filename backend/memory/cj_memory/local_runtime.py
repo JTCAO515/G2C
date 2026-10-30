@@ -74,4 +74,10 @@ class RuntimeConfiguration:
 
 
 def load_runtime_configuration(path):
-    return RuntimeConfiguration.from_bytes(read_private_policy(path))
+    raw=read_private_policy(path)
+    from .typed import decode
+    value=decode(raw,maximum=262144)
+    if value.get('version')=='local-memory-run.2':
+        from .typed_runtime import TypedRuntimeConfiguration
+        return TypedRuntimeConfiguration.from_bytes(raw)
+    return RuntimeConfiguration.from_bytes(raw)

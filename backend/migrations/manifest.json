@@ -162,6 +162,14 @@
       "sha256": "2293662cda792bbb803ac5932627495146592fd84d85e68b012d4f76abf98994",
       "down": "backend/migrations/down/0020_memory_stop_use.down.sql",
       "down_sha256": "a5dc91b2c0a4de7b095c1a72fef282c1f0ec4abaf7fc7c960215216fa99290ec"
+    },
+    {
+      "version": 21,
+      "name": "memory_typed_context",
+      "file": "backend/migrations/0021_memory_typed_context.sql",
+      "sha256": "e88f6036042deffc09aba74188f840b3e0e4683da43f955d176cbd39b5902189",
+      "down": "backend/migrations/down/0021_memory_typed_context.down.sql",
+      "down_sha256": "9c69b24a663acfa3c23947a024fd4bcbd5d3b7427dc11ad7c55781127d008fbf"
     }
   ]
 }

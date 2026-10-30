@@ -3,7 +3,7 @@
 A RuntimeRun is issued from a fresh guarded consumption, never caller Context.
 The host acquires RUN before hold(), retaining hold until RUN commit completes.
 """
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 import json
 import threading
@@ -41,12 +41,28 @@ class Selection:
             raise InvalidInput('runtime memory selection must be UTF-8') from None
 
 
+_LEGACY_CONTEXT=object()
+
+
 class RuntimeMemory:
+    typed_context=False
+    payload_version='MEMORY-RUN-CONSUME@1'
+
+    def reference_lease(self,binding):
+        return nullcontext(None)
+
+    def context_for(self,binding,lease):
+        return binding.conversation_id
+
     def __init__(self, service, guard, selection):
         self.service, self.guard, self.selection = service, guard, selection
 
     def capture(self, binding):
         """The trusted host supplies the original accepted RUN, not request flags."""
+        with self.reference_lease(binding) as lease:
+            return self._capture(binding,self.context_for(binding,lease))
+
+    def _capture(self,binding,context):
         selected = self.selection
         snapshot = None
         principal = None
@@ -72,29 +88,39 @@ class RuntimeMemory:
                           extent=i.command.extent, source_id=i.command.source_id,
                           source_version=i.command.source_version, version=i.version)
                      for i in view.items if i.command.slot in selected.slots]
+            if self.typed_context:
+                by_id={i.command.source_id:i.command for i in view.items}
+                for item in items:
+                    command=by_id[item['source_id']]
+                    item['context']=(None if command.extent=='long_term' else
+                        dict(kind=command.context_kind,id=command.context_id))
             try:
-                return json.dumps({'version': 'MEMORY-RUN-CONSUME@1', 'items': items},
+                return json.dumps({'version': self.payload_version, 'items': items},
                                   ensure_ascii=False, separators=(',', ':')).encode('utf-8')
             except UnicodeError:
                 raise InvalidInput('memory context is not UTF-8') from None
 
         try:
-            payload = self.service.with_operation(guard, lambda ctx: ctx.consume_current(
-                selected.subject, binding.conversation_id, consume, max_result_bytes=selected.max_bytes))
+            def operation(ctx):
+                if self.typed_context:
+                    return ctx.consume_current_typed(selected.subject,context,consume,max_result_bytes=selected.max_bytes)
+                return ctx.consume_current(selected.subject,context,consume,max_result_bytes=selected.max_bytes)
+            payload = self.service.with_operation(guard,operation)
         except OperationWithheld as error:
             raise RuntimeUnknown('memory capture withheld') from error
         except (InvalidInput, Conflict, Unavailable) as error:
             raise RuntimeDenied('memory capture unavailable') from error
         except (CommitUnknown, DatabaseError) as error:
             raise RuntimeUnknown('memory capture outcome unavailable') from error
-        return RuntimeRun(self, binding, principal, snapshot, payload)
+        return RuntimeRun(self, binding, principal, snapshot, payload,context=context)
 
 
 class RuntimeRun:
     """Host-owned captured input; each publication requires a new canonical lease."""
-    def __init__(self, owner, binding, principal, snapshot, payload):
+    def __init__(self, owner, binding, principal, snapshot, payload,*,context=_LEGACY_CONTEXT):
         self.owner, self.binding, self.principal = owner, binding, principal
         self.snapshot, self.payload = snapshot, payload
+        self.context=binding.conversation_id if context is _LEGACY_CONTEXT else context
         self._check = None
 
     @contextmanager
@@ -105,26 +131,28 @@ class RuntimeRun:
         thread = threading.get_ident()
         owner = self.owner
         try:
-            with owner.service.repository.transaction() as tx:
-                def check():
-                    if not active or threading.get_ident() != thread:
-                        raise RuntimeDenied('memory lease expired')
-                    if owner.guard('runtime_publication') != self.principal:
-                        raise RuntimeDenied('memory identity changed')
-                    tx.require_current(self.snapshot, owner.selection.subject,
-                                       self.binding.conversation_id)
-                check()
-                self._check = check
-                yield check
-                # No post-publication authorization check: the host must check
-                # immediately BEFORE the actual effect/commit, with this lock held.
+            with owner.reference_lease(binding) as reference:
+                if owner.context_for(binding,reference)!=self.context:
+                    raise RuntimeDenied('original memory context selector changed')
+                with owner.service.repository.transaction() as tx:
+                    def check():
+                        if not active or threading.get_ident() != thread:
+                            raise RuntimeDenied('memory lease expired')
+                        if owner.guard('runtime_publication') != self.principal:
+                            raise RuntimeDenied('memory identity changed')
+                        tx.require_current(self.snapshot,owner.selection.subject,self.context)
+                    check()
+                    self._check=check
+                    yield check
+                    # No post-publication check: caller checks before commit,
+                    # retaining this lock until the original effect commits.
         except (Conflict, Unavailable) as error:
             raise RuntimeDenied('memory context changed') from error
         except (CommitUnknown, DatabaseError) as error:
             raise RuntimeUnknown('memory lease outcome unavailable') from error
         finally:
-            active = False
-            self._check = None
+            active=False
+            self._check=None
 
     def check(self):
         if self._check is None:

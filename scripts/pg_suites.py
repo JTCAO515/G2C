@@ -313,9 +313,22 @@ def group_place_tool():
     return script('backend/cj_api/tests/place_tool_pg.py')
 
 
+def group_memory_typed():
+    # #227: genuine B leases, signed typed API, runtime-role PG and actual worker/CLI.
+    sys.path.insert(0,str(ROOT/'scripts'))
+    import migrate
+    import psycopg
+    with cluster('memory_typed',port=55496,role='cj227_typed',
+                 socket=f'/tmp/cj227-typed-{os.getpid()}') as config:
+        with psycopg.connect(**config,autocommit=True) as conn:
+            migrate.up(conn,migrate.load(),migrate.load()[-1]['version'])
+        path=WORK/'memory_typed/conninfo.json';path.write_text(json.dumps(config))
+        return script('backend/memory/tests/typed_pg.py',env=dict(clean_env(),CJ_E2E_CONNINFO=str(path)))
+
+
 GROUPS = {'e2e': group_e2e, 'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners,
-          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema, 'local_run_host': group_local_run_host, 'registered_usage_schema': group_registered_usage_schema, 'registered_exit': group_registered_exit, 'memory_run': group_memory_run, 'travel_context': group_travel_context, 'travel_message': group_travel_message, 'place_tool': group_place_tool}
+          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema, 'local_run_host': group_local_run_host, 'registered_usage_schema': group_registered_usage_schema, 'registered_exit': group_registered_exit, 'memory_run': group_memory_run, 'travel_context': group_travel_context, 'travel_message': group_travel_message, 'place_tool': group_place_tool,'memory_typed': group_memory_typed}
 
 
 def main(argv):
