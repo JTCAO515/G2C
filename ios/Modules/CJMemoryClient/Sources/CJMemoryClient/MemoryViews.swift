@@ -10,7 +10,7 @@ public enum MemoryLoad<Value> {
     case unconfigured, loading, loaded(Value), failed
 }
 public enum MemorySaveState {
-    case unconfigured, ready, saving, saved, candidate, unknown, notObserved, failed
+    case unconfigured, ready, saving, saved, candidate, unknown, notObserved, rejected, failed
     public func label(_ language: MemoryLanguage) -> String {
         switch self {
         case .unconfigured: language.text("Saving is not configured", "保存尚未配置")
@@ -20,6 +20,7 @@ public enum MemorySaveState {
         case .candidate: language.text("Saved as a candidate, not a confirmed fact", "已保存为待确认候选，尚非确认事实")
         case .unknown: language.text("Result unknown. Query the original operation.", "结果未知，请查询原操作。")
         case .notObserved: language.text("Original receipt not observed. Do not resend.", "尚未查到原回执，不可重新发送。")
+        case .rejected: language.text("Save rejected. You may start a new save; the original is never resent.", "保存已被拒绝；可以发起新保存，原操作不会重发。")
         case .failed: language.text("Save not confirmed. Check the original operation.", "尚未确认保存，请核查原操作。")
         }
     }
@@ -56,7 +57,9 @@ public struct MemoryGroupsView: View {
                         Text(group.subject)
                         Text("\(statusLabel(group.status.rawValue, language)) · \(group.count)").font(.subheadline)
                     }
-                }.buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityIdentifier("memory.group." + String(index))
             }
         }
     }
@@ -82,10 +85,14 @@ public struct MemoryItemsView: View {
             ForEach(items, id: \.memoryRowIdentity) { item in
                 Button { select(item.command.item_id) } label: {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(item.command.text)
-                        Text(statusLabel(item.status.rawValue, language)).font(.caption)
+                        MemoryRowText(text: item.command.text, style: .body)
+                        MemoryRowText(text: statusLabel(item.status.rawValue, language), style: .caption)
                     }
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
                 }.buttonStyle(.plain)
+                    .accessibilityLabel(item.command.text + ", " + statusLabel(item.status.rawValue, language))
+                    .accessibilityIdentifier("memory.item." + item.command.item_id)
             }
         }
     }
@@ -107,9 +114,15 @@ public struct MemoryDetailView: View {
                     LabeledContent(language.text("Subject", "对象"), value: item.command.subject)
                     LabeledContent(language.text("Field", "字段"), value: item.command.slot)
                     LabeledContent(language.text("Kind", "类型"), value: item.command.kind.rawValue)
-                    LabeledContent(language.text("Scope", "范围"), value: item.command.extent.rawValue)
+                    LabeledContent { MemoryRowText(text: item.command.extent == .current ? language.text("Current conversation", "当前会话") : item.command.extent.rawValue, style: .body).accessibilityIdentifier("memory.detail.scope.value") } label: {
+                        MemoryRowText(text: language.text("Scope", "范围"), style: .body)
+                    }
                     if case .case1(let context) = item.command.context_id {
-                        LabeledContent(language.text("Context", "适用上下文"), value: context)
+                        LabeledContent {
+                            MemoryRowText(text: context, style: .body).accessibilityIdentifier("memory.detail.conversation.value")
+                        } label: {
+                            MemoryRowText(text: language.text("Conversation", "会话"), style: .body)
+                        }
                     }
                     LabeledContent(language.text("Source", "来源"), value: item.command.source_id)
                     LabeledContent(language.text("Source version", "来源版本"), value: String(item.command.source_version))
@@ -125,14 +138,20 @@ public struct MemorySaveStatusView: View {
     let state: MemorySaveState
     let language: MemoryLanguage
     let query: (() -> Void)?
-    public init(state: MemorySaveState, language: MemoryLanguage, queryOriginal: (() -> Void)?) {
-        self.state = state; self.language = language; query = queryOriginal
+    let statusIdentifier: String
+    public init(state: MemorySaveState, language: MemoryLanguage, queryOriginal: (() -> Void)?, statusIdentifier: String = "memory.save.status") {
+        self.state = state; self.language = language; query = queryOriginal; self.statusIdentifier = statusIdentifier
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(state.label(language)).accessibilityIdentifier("memory.save.status")
+            MemoryRowText(text: state.label(language), style: .body).accessibilityIdentifier(statusIdentifier)
             if case .saving = state { ProgressView() }
-            if let query { Button(language.text("Query original operation", "查询原操作"), action: query) }
+            if let query {
+                Button(action: query) {
+                    MemoryRowText(text: language.text("Query original operation", "查询原操作"), style: .body)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityIdentifier("memory.save.query")
+            }
         }
     }
 }
@@ -187,6 +206,8 @@ private struct MemoryManualFormContent: View {
     let options: [MemoryManualOption]
     let language: MemoryLanguage
     let submit: (Components.Schemas.MemoryManualSaveCommand) async throws -> MemorySaveResult
+    private enum Input: Hashable { case memory, time }
+    @FocusState private var focusedInput: Input?
     @State private var selection: UUID?
     @State private var text = ""
     @State private var occurredAt = ""
@@ -198,6 +219,7 @@ private struct MemoryManualFormContent: View {
          submit: @escaping (Components.Schemas.MemoryManualSaveCommand) async throws -> MemorySaveResult,
          query: @escaping (String) async throws -> MemorySaveResult) {
         self.binding = binding; self.current = current; self.options = options; self.language = language; self.submit = submit; self.query = query
+        _selection = State(initialValue: options.count == 1 ? options[0].id : nil)
     }
     private func run(_ action: @escaping () async throws -> MemorySaveResult) {
         guard current() == binding else { return }
@@ -211,10 +233,16 @@ private struct MemoryManualFormContent: View {
                 case .saved: state = .saved
                 case .candidate: state = .candidate
                 case .notObserved: state = .notObserved
+                case .rejected: state = .rejected
                 }
             } catch {
                 guard current() == binding, requestGeneration == token else { return }
-                state = .unknown
+                switch error {
+                case MemoryFailure.pendingRequiresQuery:
+                    originalID = nil; state = .failed
+                case MemoryFailure.rejected: state = .rejected
+                default: state = .unknown
+                }
             }
         }
     }
@@ -222,26 +250,53 @@ private struct MemoryManualFormContent: View {
         VStack(alignment: .leading, spacing: 12) {
             if options.isEmpty { Text(MemorySaveState.unconfigured.label(language)) }
             else {
-                Picker(language.text("Save scope", "保存范围"), selection: $selection) {
-                    Text(language.text("Choose a scope", "请选择范围")).tag(Optional<UUID>.none)
-                    ForEach(options) { option in Text(option.label).tag(Optional(option.id)) }
-                }.disabled(started)
-                if let option = options.first(where: { $0.id == selection }) { Text(option.disclosure).font(.subheadline) }
-                TextField(language.text("Memory", "记忆内容"), text: $text, axis: .vertical).disabled(started)
-                TextField(language.text("Approximate time (required; describe if unknown)", "大致时间（必填，不清楚请明确说明）"), text: $occurredAt).disabled(started)
-                Button(language.text("Save memory", "保存记忆")) {
-                    guard !started, let option = options.first(where: { $0.id == selection }) else { return }
-                    do {
-                        let command = try option.command(text: text, occurredAt: occurredAt)
-                        guard current() == binding else { return }
-                        started = true; state = .saving; originalID = command.operation_id
-                        run { try await submit(command) }
-                    } catch { state = .unconfigured }
-                }.disabled(started || selection == nil || !memoryText(text) || !memoryText(occurredAt))
+                if started {
+                    if let option = options.first(where: { $0.id == selection }) {
+                        MemoryRowText(text: option.label, style: .body)
+                        MemoryRowText(text: option.disclosure, style: .caption)
+                    }
+                    MemoryRowText(text: text, style: .body)
+                    MemoryRowText(text: occurredAt, style: .body)
+                } else {
+                    Picker(language.text("Save scope", "保存范围"), selection: $selection) {
+                        Text(language.text("Choose a scope", "请选择范围")).tag(Optional<UUID>.none)
+                        ForEach(options) { option in Text(option.label).tag(Optional(option.id)) }
+                    }.disabled(started).accessibilityIdentifier("memory.manual.scope")
+                    if let option = options.first(where: { $0.id == selection }) { Text(option.disclosure).font(.subheadline) }
+                    TextField(language.text("Memory", "记忆内容"), text: $text, axis: .vertical)
+                        .textFieldStyle(.roundedBorder).frame(minHeight: 44)
+                        .focused($focusedInput, equals: .memory)
+                        .contentShape(Rectangle()).onTapGesture { focusedInput = .memory }
+                        .disabled(started).accessibilityIdentifier("memory.manual.text")
+                    TextField(language.text("Approximate time (required; describe if unknown)", "大致时间（必填，不清楚请明确说明）"), text: $occurredAt)
+                        .textFieldStyle(.roundedBorder).frame(minHeight: 44)
+                        .focused($focusedInput, equals: .time).submitLabel(.done)
+                        .onSubmit { focusedInput = nil }
+                        .contentShape(Rectangle()).onTapGesture { focusedInput = .time }
+                        .disabled(started).accessibilityIdentifier("memory.manual.time")
+                    Button(language.text("Save memory", "保存记忆")) {
+                        guard !started, let option = options.first(where: { $0.id == selection }) else { return }
+                        do {
+                            let command = try option.command(text: text, occurredAt: occurredAt)
+                            guard current() == binding else { return }
+                            focusedInput = nil; started = true; state = .saving; originalID = command.operation_id
+                            run { try await submit(command) }
+                        } catch { state = .unconfigured }
+                    }.disabled(started || selection == nil || !memoryText(text) || !memoryText(occurredAt)).accessibilityIdentifier("memory.manual.save")
+                }
                 MemorySaveStatusView(state: state, language: language, queryOriginal: originalID.map { id in
                     { run { try await query(id) } }
                 })
             }
         }
+        #if os(iOS)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(language.text("Done", "完成")) { focusedInput = nil }
+                    .accessibilityIdentifier("memory.keyboard.done")
+            }
+        }
+        #endif
     }
 }

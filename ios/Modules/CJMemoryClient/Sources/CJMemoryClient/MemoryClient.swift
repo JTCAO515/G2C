@@ -12,13 +12,15 @@ struct MemoryTransport: ClientTransport {
     let endpoint: MemoryEndpoint
     let bearer: String
     let writeEnabled: Bool
+    let managementEnabled: Bool
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let paths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items", "applyMemoryManagementAction": "/v1/memory-management-actions", "queryMemoryManagementReceipt": "/v1/memory-management-receipts"]
         guard baseURL == endpoint.url, let path = paths[operationID],
               request.path?.split(separator: "?", maxSplits: 1).first.map(String.init) == path,
               request.method == (["saveMemory", "applyMemoryManagementAction"].contains(operationID) ? .post : .get),
-              !["saveMemory", "applyMemoryManagementAction", "queryMemoryManagementReceipt"].contains(operationID) || writeEnabled else { throw MemoryFailure.liveWriteUnavailable }
+              operationID != "saveMemory" || writeEnabled,
+              !["applyMemoryManagementAction", "queryMemoryManagementReceipt"].contains(operationID) || managementEnabled else { throw MemoryFailure.liveWriteUnavailable }
         var request = request
         request.headerFields[.authorization] = "Bearer " + bearer
         let data: Data?
@@ -54,6 +56,7 @@ public enum MemorySaveResult: Sendable {
     case saved(Components.Schemas.MemoryReceipt)
     case candidate(Components.Schemas.MemoryReceipt)
     case notObserved // Still pending; explicitly not write permission.
+    case rejected(Int, String) // Durable explicit server failure, never inferred from null.
 }
 
 @MainActor public final class MemoryClient {
@@ -63,6 +66,8 @@ public enum MemorySaveResult: Sendable {
     private let transport: any ClientTransport
     private let store: MemoryPendingStore?
     private let writeEnabled: Bool
+    private let managementEnabled: Bool
+    public let manualWritesAvailable: Bool
     private let managementStore: MemoryManagementPendingStore?
     private var acceptedManagementItems: [Data: MemoryAcceptedItem] = [:]
     private var managementConfirmed: Set<Data> = []
@@ -75,15 +80,31 @@ public enum MemorySaveResult: Sendable {
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore?,
                 liveReadTransport: NoRedirectTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
         self.endpoint = endpoint; self.credentials = credentials; current = currentBinding
-        store = pendingStore; transport = liveReadTransport; writeEnabled = false; managementStore = managementPendingStore
+        store = pendingStore; transport = liveReadTransport; writeEnabled = false; managementEnabled = false; manualWritesAvailable = false; managementStore = managementPendingStore
     }
     /// Internal capability: tests can intercept POST, public consumers cannot enable live writes.
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
          currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore?,
          interceptedTransport: any ClientTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
         self.endpoint = endpoint; self.credentials = credentials; current = currentBinding
-        store = pendingStore; transport = interceptedTransport; writeEnabled = true; managementStore = managementPendingStore
+        store = pendingStore; transport = interceptedTransport; writeEnabled = true; managementEnabled = true; manualWritesAvailable = false; managementStore = managementPendingStore
     }
+    #if DEBUG && targetEnvironment(simulator)
+    /// Only the explicit signed local MEMORY host (#226). Ordinary/Release
+    /// clients remain read-only; this does not enable lifecycle management.
+    public init(localEndpoint endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
+                currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore,
+                localTransport: NoRedirectTransport) throws {
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port, (1...65535).contains(port),
+              endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 1_000_000 else {
+            throw MemoryFailure.unconfigured
+        }
+        self.endpoint = endpoint; self.credentials = credentials; current = currentBinding
+        store = pendingStore; transport = localTransport; writeEnabled = true
+        managementEnabled = false; manualWritesAvailable = true; managementStore = nil
+    }
+    #endif
     private func check(_ binding: MemoryBinding, _ token: UUID) throws {
         guard generation == token else { throw MemoryFailure.staleBinding }
         let observed = current()
@@ -104,7 +125,7 @@ public enum MemorySaveResult: Sendable {
         try check(binding, token)
         guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MemoryFailure.unconfigured }
         return Client(serverURL: endpoint.url, configuration: .memory,
-                      transport: MemoryTransport(underlying: transport, endpoint: endpoint, bearer: bearer, writeEnabled: writeEnabled,
+                      transport: MemoryTransport(underlying: transport, endpoint: endpoint, bearer: bearer, writeEnabled: writeEnabled, managementEnabled: managementEnabled,
                         validate: { [self] in
                             try check(binding, token)
                             if let original {
@@ -138,7 +159,10 @@ public enum MemorySaveResult: Sendable {
         guard writeEnabled else { throw MemoryFailure.liveWriteUnavailable }
         guard let store else { throw MemoryFailure.unconfigured }
         try store.validate(binding)
-        guard try store.pending().allSatisfy({ confirmed.contains(Data($0.operationID.utf8)) }) else { throw MemoryFailure.pendingRequiresQuery }
+        guard try store.pending().allSatisfy({ original in
+            if confirmed.contains(Data(original.operationID.utf8)) { return true }
+            return try store.rejection(for: original) != nil
+        }) else { throw MemoryFailure.pendingRequiresQuery }
         try check(binding, token)
         let record = try MemoryPending(command)
         guard record.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
@@ -148,7 +172,12 @@ public enum MemorySaveResult: Sendable {
         let response = try await exchange(binding, token) { try await client.saveMemory(body: .binary(HTTPBody(record.originalUTF8))) }
         switch response {
         case .ok(let value): return try settle(value.body.json.receipt, record: record, binding: binding, token: token)
-        case .default(let status, let value): throw MemoryFailure.rejected(status, try value.body.json.error.code)
+        case .default(let status, let value):
+            let error = try value.body.json.error
+            guard error.outcome == .failed else { throw MemoryFailure.exchangeUnknown }
+            try store.recordRejection(record, status: status, code: error.code) { try check(binding, token) }
+            try check(binding, token)
+            throw MemoryFailure.rejected(status, error.code)
         }
     }
     public func query(operationID: String, binding: MemoryBinding) async throws -> MemorySaveResult {
@@ -156,16 +185,24 @@ public enum MemorySaveResult: Sendable {
         guard let store else { throw MemoryFailure.unconfigured }
         try store.validate(binding)
         guard let record = try store.pending().first(where: { same($0.operationID, operationID) }) else { throw MemoryFailure.invalidInput }
+        let rejection = try store.rejection(for: record)
         try check(binding, token)
         let client = try await api(binding, token)
         let response = try await exchange(binding, token) { try await client.queryMemoryReceipt(query: .init(operation_id: record.operationID)) }
         switch response {
         case .ok(let value):
             switch try value.body.json.receipt {
-            case .MemoryReceipt(let receipt): return try settle(receipt, record: record, binding: binding, token: token)
-            case .case2(let null): guard null.value == nil else { throw MemoryFailure.invalidResponse }; return .notObserved
+            case .MemoryReceipt(let receipt):
+                guard rejection == nil else { throw MemoryFailure.invalidResponse }
+                return try settle(receipt, record: record, binding: binding, token: token)
+            case .case2(let null):
+                guard null.value == nil else { throw MemoryFailure.invalidResponse }
+                if let rejection { return .rejected(rejection.status, rejection.code) }
+                return .notObserved
             }
-        case .default(let status, let value): throw MemoryFailure.rejected(status, try value.body.json.error.code)
+        case .default:
+            // A denied GET says nothing about the original POST's outcome.
+            throw MemoryFailure.exchangeUnknown
         }
     }
     private func settle(_ receipt: Components.Schemas.MemoryReceipt, record: MemoryPending, binding: MemoryBinding, token: UUID) throws -> MemorySaveResult {
@@ -255,7 +292,7 @@ public enum MemorySaveResult: Sendable {
 
 extension MemoryClient {
     /// Public live composition is unavailable while the root lifecycle factory is closed.
-    public var managementAvailable: Bool { writeEnabled && managementStore != nil && endpoint.maximumRequestBytes <= 32768 && endpoint.maximumResponseBytes <= 65536 }
+    public var managementAvailable: Bool { managementEnabled && managementStore != nil && endpoint.maximumRequestBytes <= 32768 && endpoint.maximumResponseBytes <= 65536 }
     func managementPresentationIsCurrent(_ binding: MemoryBinding) -> Bool {
         do { try check(binding, generation); return true } catch { return false }
     }

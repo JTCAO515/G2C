@@ -92,6 +92,7 @@ public struct MemoryManagementPresentationLifetime {
         }
     }
     public var isConfigured: Bool { current }
+    public var managementAvailable: Bool { current && binding?.client.managementAvailable == true }
     public var isSynthetic: Bool { current && binding?.synthetic == true }
     public var groups: MemoryLoad<[Components.Schemas.MemoryGroup]> { current ? groupsValue : .unconfigured }
     public var items: MemoryLoad<[Components.Schemas.MemoryItem]> { current ? itemsValue : .unconfigured }
@@ -103,7 +104,16 @@ public struct MemoryManagementPresentationLifetime {
     public var formIdentity: UUID? { current ? binding?.id : nil }
     public var queriedOperationID: String? { current ? queriedID : nil }
     public var manualOptions: [MemoryManualOption] { current ? binding?.options ?? [] : [] }
-    public var canSubmitManual: Bool { false } // canonical public client has no production POST capability
+    var collectionOptions: [MemoryManualOption] {
+        var seen = Set<String>()
+        var choices: [MemoryManualOption] = []
+        for option in manualOptions {
+            if seen.insert(option.kind.rawValue).inserted { choices.append(option) }
+            if choices.count == 3 { break }
+        }
+        return choices
+    }
+    public var canSubmitManual: Bool { current && binding?.client.manualWritesAvailable == true }
     public var hasMore: Bool { current && !busy && pages.last?.next != nil }
     public init(shell: ShellState) {
         self.shell = shell
@@ -231,12 +241,65 @@ public struct MemoryManagementPresentationLifetime {
         do {
             let result = try await context.binding.client.query(operationID:operationID,binding:context.binding.memory)
             guard owns(context.binding,token) else { return }
-            switch result { case .saved: saveValue = .saved; case .candidate: saveValue = .candidate; case .notObserved: saveValue = .notObserved }
+            saveValue = state(for: result)
             busy = false
         } catch { if owns(context.binding,token) { saveValue = .unknown; busy = false } }
     }
+    public func queryManual(_ operationID: String, context: MemoryContainerAction?) async throws -> MemorySaveResult {
+        guard let context, accepts(context) else { throw MemoryFailure.staleBinding }
+        let token = UUID(); epoch = token; busy = true; queriedID = operationID
+        do {
+            let result = try await context.binding.client.query(operationID: operationID, binding: context.binding.memory)
+            guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
+            saveValue = state(for: result); busy = false
+            return result
+        } catch {
+            if owns(context.binding, token) { saveValue = .unknown; busy = false }
+            throw error
+        }
+    }
+    private func state(for result: MemorySaveResult) -> MemorySaveState {
+        switch result {
+        case .saved: .saved
+        case .candidate: .candidate
+        case .notObserved: .notObserved
+        case .rejected: .rejected
+        }
+    }
     public func submitManual(_ command: Components.Schemas.MemoryManualSaveCommand, context: MemoryContainerAction?) async throws -> MemorySaveResult {
-        // No public producer write capability exists. Do not substitute GET permission or an app Boolean.
-        throw MemoryFailure.liveWriteUnavailable
+        guard let context, accepts(context), context.binding.client.manualWritesAvailable else {
+            throw MemoryFailure.liveWriteUnavailable
+        }
+        let token = UUID(); epoch = token; busy = true; saveValue = .saving
+        queriedID = nil
+        do {
+            // A user-requested new save may follow leaving/reopening the form.
+            // Reconcile old originals read-only; never resend them or infer
+            // settlement from local history, a missing receipt or an old UI card.
+            let originals = try context.binding.client.pending(binding: context.binding.memory)
+            guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
+            pendingValue = .loaded(originals)
+            for original in originals {
+                let prior = try await context.binding.client.query(operationID: original.operationID, binding: context.binding.memory)
+                guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
+                if case .notObserved = prior { throw MemoryFailure.pendingRequiresQuery }
+            }
+            queriedID = command.operation_id
+            let result = try await context.binding.client.save(command, binding: context.binding.memory)
+            guard owns(context.binding, token) else { throw MemoryFailure.staleBinding }
+            saveValue = state(for: result)
+            busy = false
+            return result
+        } catch {
+            if owns(context.binding, token) {
+                switch error {
+                case MemoryFailure.rejected: saveValue = .rejected
+                case MemoryFailure.pendingRequiresQuery: saveValue = .failed
+                default: saveValue = .unknown
+                }
+                busy = false
+            }
+            throw error
+        }
     }
 }

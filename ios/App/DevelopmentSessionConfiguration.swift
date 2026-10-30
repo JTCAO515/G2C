@@ -60,3 +60,36 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     static func read(_ environment: [String: String]) -> Self? { nil }
     #endif
 }
+
+#if DEBUG
+/// Same operator-owned profile schema as local-memory-policy.1. These values
+/// describe choices only; the signed API remains the consent/owner authority.
+struct DevelopmentMemoryProfile: Decodable {
+    struct Slot: Decodable {
+        let kind: String
+        let collection_allowed: Bool
+        let semantic_resolved: Bool
+    }
+    let subjects: [String]
+    let slots: [String: Slot]
+    let extents: [String]
+    let context_ids: [String]
+
+    static func read(_ environment: [String: String]) throws -> Self? {
+        guard let raw = environment["G2C_DEV_MEMORY_PROFILE"] else { return nil }
+        guard let data = raw.data(using: .utf8), data.count <= 262144 else {
+            throw ConfigurationFailure.invalidMemoryProfile
+        }
+        let value = try JSONDecoder().decode(Self.self, from: data)
+        guard !value.subjects.isEmpty, !value.slots.isEmpty, !value.extents.isEmpty,
+              value.subjects.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
+              value.slots.allSatisfy({ !$0.key.isEmpty && ["fact", "experience", "preference"].contains($0.value.kind) }),
+              value.extents.allSatisfy({ ["long_term", "current"].contains($0) }),
+              !value.extents.contains("current") || !value.context_ids.isEmpty else {
+            throw ConfigurationFailure.invalidMemoryProfile
+        }
+        return value
+    }
+    enum ConfigurationFailure: Error { case invalidMemoryProfile }
+}
+#endif

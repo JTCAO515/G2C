@@ -1,3 +1,14 @@
+# #228 local App candidate (L1 pending)
+
+The explicit DEBUG iOS Simulator `localEndpoint` initializer uses only loopback,
+`NoRedirectTransport`, the existing signed #226 API and the existing encrypted
+manual journal. It enables manual save only; lifecycle management and ordinary
+public/Release clients retain their previous gates. The host must use the same
+account lifetime and explicitly selected server policy choices. No production
+factory, automatic recall, lifecycle writes or real-account permission is added.
+The historical read-only candidate and its earlier limitations below remain as
+provenance; new local acceptance is recorded in #228, never inferred from them.
+
 # Independent lifecycle candidate
 
 Current follow-up adds gated pause/resume/original-action recovery on SDK20aa. See
@@ -140,3 +151,9 @@ Real HTTPS reads, actual private-platform storage lifecycle, CJShell integration
 visual/VoiceOver runtime validation, real manual save, next-answer context,
 new-session/device travel use, and independent Review/Testing are **UNRUN** here.
 Issue #12 remains open and is not closeable from this package evidence.
+
+Definitive manual-save failures are retained separately in an encrypted
+`CJMemoryRejections` adjacent journal using the same account/key namespace and
+a distinct authenticated domain. Existing manual ciphertext/files are unchanged.
+Receipt null alone remains unknown; only the matched direct server failure allows
+a distinct new action. Reopening never resends the failed original.

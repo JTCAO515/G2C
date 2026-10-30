@@ -5,6 +5,7 @@ import CJTripClient
 import CJMessageHTTP
 import CJMessageClient
 import CJRunClient
+import CJMemoryClient
 import CJMessageKeyBridge
 import CJMessageKeys
 import CJSession
@@ -58,6 +59,7 @@ import Observation
     let id = UUID()
     let trips: TripContainerHost
     let messages: DevelopmentMessageHost
+    let memory: DevelopmentMemoryHost?
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
@@ -102,6 +104,10 @@ import Observation
         }
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
                                                session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
+        if let profile = try DevelopmentMemoryProfile.read(ProcessInfo.processInfo.environment) {
+            memory = try DevelopmentMemoryHost(configuration: configuration, profile: profile, shell: shell,
+                session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
+        } else { memory = nil }
         shell.selectedTab = .trips
         // Disk restoration only selects an original action for GET reconciliation;
         // it never prepares or submits another action, even while the API is offline.
@@ -115,10 +121,82 @@ import Observation
     func invalidate() {
         lifetime.active = false
         messages.invalidate()
+        memory?.invalidate()
         trips.invalidate()
         keys.invalidate()
         if lifetime.ownsSession { _ = lifetime.session.clearWithSettlement() }
     }
+}
+
+/// The server receives the existing manual command, with no caller source/owner flags.
+@MainActor final class DevelopmentMemoryHost {
+    let host: MemoryContainerHost
+    private let keys: ScopedMessageKeyProvider
+
+    init(configuration: DevelopmentSessionConfiguration, profile: DevelopmentMemoryProfile, shell: ShellState,
+         session: SessionLifecycle, operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
+        let binding = MemoryBinding(environment: configuration.environmentID, account: configuration.accountID,
+                                    generation: UUID(), selection: UUID())
+        let generation = shell.generation
+        let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localMemoryPendingV1)
+        guard let applicationID = Bundle.main.bundleIdentifier else { throw MemoryFailure.unconfigured }
+        keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
+                                            protection: .whenUnlockedThisDeviceOnly)
+        let files = FileManager.default
+        let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let directory = support.appendingPathComponent("G2CDevelopmentMemory", isDirectory: true)
+            .appendingPathComponent(binding.environment.uuidString, isDirectory: true)
+            .appendingPathComponent(binding.account.uuidString, isDirectory: true)
+        try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let root = directory.resolvingSymlinksInPath()
+        let key: MessageEncryptionKey
+        if let existing = try keys.existing(expectedID: nil, for: keys.begin(.lookup)) { key = existing }
+        else {
+            guard try files.contentsOfDirectory(atPath: root.path).isEmpty else { throw MemoryFailure.keyUnavailable }
+            key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
+        }
+        let store = try MemoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
+                                           binding: binding, expectedKeyID: key.id, provider: keys)
+        let endpoint = try MemoryEndpoint(url: configuration.endpoint, maximumRequestBytes: 32768,
+                                         maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
+        // The lifetime is shared with account/Trip/MESSAGE; callbacks cannot revive an old identity.
+        let current: @MainActor () -> MemoryBinding? = {
+            isCurrent() && session.isCurrent(operation) && shell.generation == generation ? binding : nil
+        }
+        let transport = try NoRedirectTransport.developmentMemory(endpoint: endpoint, requestTimeout: 10,
+            resourceTimeout: 20, validate: {
+                guard current() == binding else { throw MemoryFailure.staleBinding }
+            })
+        let client = try MemoryClient(localEndpoint: endpoint, credentials: { requested in
+            guard current() == requested else { return nil }
+            return configuration.token
+        }, currentBinding: current, pendingStore: store, localTransport: transport)
+        var options: [MemoryManualOption] = []
+        for subject in profile.subjects {
+            for slot in profile.slots.keys.sorted() {
+                let policy = profile.slots[slot]!
+                guard policy.collection_allowed,
+                      let kind = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue: policy.kind) else { continue }
+                for extent in profile.extents {
+                    let contexts: [String?] = extent == "current" ? profile.context_ids.map(Optional.some) : [nil]
+                    for context in contexts {
+                        let scope: Components.Schemas.MemoryManualSaveCommand.extentPayload = extent == "current" ? .current : .long_term
+                        let scopeLabel = context.map { "Current conversation / 当前会话: " + $0 } ?? "Long term / 长期"
+                        options.append(MemoryManualOption(id: UUID(), label: subject + " · " + slot + " · " + scopeLabel,
+                            disclosure: "Save only what you explicitly enter for this subject and scope. Inference stays unconfirmed. / 仅保存你为该对象及范围明确输入的内容；推断仍待确认。"
+                                + (context.map { " Conversation / 会话: " + $0 } ?? ""),
+                            subject: subject, slot: slot, kind: kind, extent: scope, contextID: context))
+                    }
+                }
+            }
+        }
+        host = MemoryContainerHost(shell: shell)
+        guard host.bind(MemoryContainerBinding(client: client, memory: binding, shellGeneration: generation,
+            pageSize: 20, manualOptions: options, synthetic: false, currentBinding: current)) else {
+            throw MemoryFailure.staleBinding
+        }
+    }
+    func invalidate() { host.invalidate(); keys.invalidate() }
 }
 
 @MainActor private final class DevelopmentMessageLifetime {
