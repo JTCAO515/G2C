@@ -102,6 +102,8 @@ def main():
                             entry['sha256']=hashlib.sha256(raw).hexdigest()
                             if case and scope['method']=='POST':records[case]['posts'].append(dict(entry,original=json.loads(raw)))
                         audit.append(entry)
+                        report['observed_requests']=audit
+                        if scope['method']=='POST':save()
                         for message in captured:await send(message)
                     return observed
                 for name,app in apps.items():
@@ -119,6 +121,7 @@ def main():
                     tokens[case]={x:dev_auth.token(auth,s,120) for x,s in subjects[case].items()}
                     for s in subjects[case].values():operator(s,'init-budget')
                     row=records[case]=dict(posts=[],initial=[],audit_start=len(audit))
+                    report.setdefault('observed_posts',{})[case]=row['posts']
                     headers={'Authorization':'Bearer '+tokens[case]['A']}
                     with TestClient(apps['read']) as api:
                         for kind in ('fact','experience','preference'):

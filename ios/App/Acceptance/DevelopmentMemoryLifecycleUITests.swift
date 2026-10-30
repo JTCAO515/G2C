@@ -68,8 +68,11 @@ import Foundation
         XCTAssertTrue(field.waitForExistence(timeout:10))
         for _ in 0..<30 { if field.isHittable { break };app.swipeUp() }
         XCTAssertTrue(field.isHittable);field.tap();XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:5))
-        let old=field.value as? String ?? ""
-        field.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:old.count))
+        field.press(forDuration:1)
+        let names=NSPredicate(format:"label IN %@",["Select All","全选"])
+        let menu=app.menuItems.matching(names).firstMatch
+        let selectAll=menu.waitForExistence(timeout:2) ? menu : app.buttons.matching(names).firstMatch
+        XCTAssertTrue(selectAll.waitForExistence(timeout:5));selectAll.tap()
         field.typeText(text);XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
         tap("memory.manage.keyboard.done");tap("memory.manage.saveEdit");tap(language=="en" ? "Confirm edited text":"确认编辑内容")
         status(language=="en" ? "Original action confirmed":"原操作已确认")
