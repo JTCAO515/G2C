@@ -1,5 +1,5 @@
 """Opt-in structured.1 grammar only; no time inference, feasibility or write authority."""
-from datetime import date,time,timedelta
+from datetime import date,time
 import re
 from zoneinfo import ZoneInfo,ZoneInfoNotFoundError
 

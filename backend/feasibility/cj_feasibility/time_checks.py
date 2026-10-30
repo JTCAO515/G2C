@@ -41,3 +41,8 @@ def instant(event, path, *, utc_offset=None):
     return result, (), 'unique'
 
 
+
+
+def overlaps(start, end, other_start, other_end):
+    """Positive half-open intervals; touching boundaries and zero length do not overlap."""
+    return start < end and other_start < other_end and start < other_end and other_start < end
