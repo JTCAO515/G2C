@@ -20,7 +20,7 @@ if os.environ.get('CJ_ENV') != 'local':
 from cj_agent.draft import DraftPublisher
 from cj_agent.provider import FakeProvider, ProviderFailed
 from cj_agent.worker import RunWorker, original_context_valid
-from cj_api.local_app import LocalDatabase, ISSUER, scope_for
+from cj_api.local_app import LocalDatabase, ISSUER, scope_for, travel_configuration
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_run_context import load_run_context
 from cj_api.local_worker_context import LocalBudgetRouter, checker_for, needs_lease_for
@@ -30,7 +30,7 @@ from cj_memory.local_runtime import load_runtime_configuration
 from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 import dev_auth
 from cj_message.domain import Service as MessageService
-from cj_run.core import Service as RunService
+from cj_run.core import Service as RunService, Denied
 
 
 def provider(real):
@@ -70,6 +70,10 @@ class InvitedProvider:
 
 
 def require_memory_configuration(database, scope, configuration):
+    if database.travel_profile(scope):
+        with database.connect(scope) as conn:
+            if conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s',(scope,)).fetchone():
+                raise RuntimeDenied('typed travel memory consumer is not installed')
     if configuration is None:
         with database.connect(scope) as conn:
             if conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s', (scope,)).fetchone():
@@ -93,7 +97,22 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         return decision.principal
     memory = (memory_configuration.bind(database, scope, subject, memory_admit)
               if memory_configuration is not None else None)
+    message_context=None
+    if database.travel_profile(scope):
+        from cj_message.travel_reference import MessageContextAuthority
+        credential=token()
+        def travel_admit():
+            decision=checker.check(credential)
+            if decision.status is AdmissionStatus.UNKNOWN:
+                raise LeaseUnavailable('travel admission unknown')
+            if (decision.status is not AdmissionStatus.ALLOWED
+                    or scope_for(decision.principal.issuer,decision.principal.subject)!=scope):
+                raise Denied('travel admission denied')
+            return decision.principal
+        message_context=MessageContextAuthority(database.message_repository(scope),travel_admit)
     def valid(binding, messages=messages, subject=subject, token=token):
+        if message_context is not None:
+            return message_context.valid(binding)
         database.require_execution(binding.scope,binding)
         credential=token()
         first=checker.check(credential)
@@ -108,6 +127,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     drafts = DraftPublisher(database.trip_repository(scope))
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,
+        message_context=message_context,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
         needs_lease=needs_lease_for(database,checker,token),
         budget_exit=LocalBudgetRouter(database))
@@ -134,6 +154,7 @@ def main():
     parser.add_argument('--auth-dir', type=Path, default=os.environ.get('CJ_LOCAL_AUTH_DIR'))
     parser.add_argument('--run-context', type=Path, default=os.environ.get('CJ_LOCAL_RUN_CONTEXT'))
     parser.add_argument('--memory-run-policy', type=Path, default=os.environ.get('CJ_LOCAL_MEMORY_RUN_POLICY'))
+    parser.add_argument('--travel-context',choices=['message-travel.1'],default=os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT'))
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
     parser.add_argument('--interval', type=float, default=0.5)
@@ -149,7 +170,7 @@ def main():
     audit.addHandler(logging.StreamHandler(sys.stderr))
     audit.propagate=False
     memory = load_runtime_configuration(args.memory_run_policy) if args.memory_run_policy is not None else None
-    database=LocalDatabase(args.conninfo_json,run_context=context)
+    database=LocalDatabase(args.conninfo_json,run_context=context,travel_context=travel_configuration(args.travel_context))
     # Protection metadata is checked before even loading real-provider credentials.
     # run_once repeats the check before accepting every original pending run.
     for scope in scopes(database,args.auth_dir):

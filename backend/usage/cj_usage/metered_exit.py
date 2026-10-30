@@ -104,6 +104,14 @@ class MeteredExitCore:
 
     def check_publication(self, binding):
         """Recheck total run time after settlement/source work, under RUN fence."""
+        self.prepare_publication(binding)()
+
+    def prepare_publication(self,binding):
+        """Read original start/clock before effect leases; returned check does no SQL.
+
+        This is data preparation, never a permit. The final check must run after
+        every lease/source preparation, immediately before actual publication.
+        """
         from cj_run.step_usage import ledger_scope_for
         account=ledger_scope_for(binding.scope,self.config)
         meter=self._original_meter(binding,account)
@@ -111,10 +119,14 @@ class MeteredExitCore:
             with meter.repo.transaction() as ledger:
                 started=ledger.runs[binding.run_id].started
                 previous=ledger.last_clock
-            if self._now(previous)-started>=self.config.max_seconds:
-                raise BudgetExceeded('draft')
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
             raise BudgetUnknown('original publication budget outcome unavailable') from None
+        def check():
+            nonlocal previous
+            previous=self._now(previous)
+            if previous-started>=self.config.max_seconds:
+                raise BudgetExceeded('draft')
+        return check
 
     def stop(self, binding):
         """After RUN terminal is durable, cancel original unclaimed reserves only.

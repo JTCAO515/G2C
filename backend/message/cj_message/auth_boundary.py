@@ -196,6 +196,12 @@ class Boundary:
     def receive(self, token, raw):
         return self._service(token).receive(raw)
 
+    def receive_v2(self, token, raw):
+        return self._service(token).receive_v2(raw)
+
+    def send_status_v2(self, token, conversation_id, message_id=None):
+        return self._service(token).send_status_v2(conversation_id,message_id)
+
     def travel_action(self, token, raw):
         from .travel import Service as TravelService
         return TravelService(self._bind(token, travel=True)[0].repository).apply(raw)

@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 from cj_auth.interfaces import AdmissionReason, AdmissionStatus
 from cj_message.auth_boundary import AccessBlocked, IdentityChanged
 from cj_message.domain import CommitUnknown, InputConflict, InvalidInput, SequenceConflict
-from .message_routes import _error, _token
+from .message_routes import _error, _token, _read_body, BodyError
 
 
 def register_travel_routes(app, boundary, max_body_bytes):
@@ -60,22 +60,14 @@ def register_travel_routes(app, boundary, max_body_bytes):
             return unavailable(request, True)
         if _token(request) is None:
             return _error(request, 401, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
-        media = request.headers.getlist('content-type')
-        if (len(media) != 1 or media[0].split(';', 1)[0].strip().lower() != 'application/octet-stream'
-                or request.headers.get('content-encoding', 'identity').lower() != 'identity'):
-            return _error(request, 415, 'UNSUPPORTED_MEDIA_TYPE', 'input', 'failed', 'do_not_retry')
-        chunks, total = [], 0
         try:
-            async for chunk in request.stream():
-                total += len(chunk)
-                if total > max_body_bytes:
-                    return _error(request, 413, 'BODY_TOO_LARGE', 'input', 'failed', 'do_not_retry')
-                chunks.append(chunk)
-        except Exception:
-            return unavailable(request, True)
-        return await invoke(request, boundary.travel_action, b''.join(chunks), write=True, receipt=True)
+            raw=await _read_body(request,max_body_bytes)
+        except BodyError as exc:
+            if exc.status==503:return unavailable(request,True)
+            return _error(request,exc.status,exc.code,'input','failed','do_not_retry')
+        return await invoke(request, boundary.travel_action, raw, write=True, receipt=True)
 
-    @app.get('/v1/travel-context-actions/{action_id}')
+    @app.get('/v1/travel-context-actions/{action_id:path}')
     async def original(request: Request, action_id: str):
         if boundary is None:
             return unavailable(request, False)
