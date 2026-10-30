@@ -17,7 +17,7 @@ import Foundation
             var bottom = app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.maxY - 20
             let header = app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer = app.otherElements.matching(identifier:"assistant.composer").firstMatch
-            if !fixed && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
+            if !fixed && !app.navigationBars.firstMatch.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
                 top = max(top,header.frame.maxY + 8);bottom = min(bottom,composer.frame.minY)
             }
             let frame = element.exists ? element.frame : .zero
@@ -26,8 +26,9 @@ import Foundation
             // Lazy Lists can omit a row on either side of the viewport. Search
             // both directions when its concrete snapshot is absent.
             let down = frame == .zero ? (attempt / 6) % 2 == 1 : frame.midY <= top
-            let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:(down ? top + 20 : bottom - 20)))
-            let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:(down ? bottom - 20 : top + 20)))
+            let middle = (top + bottom) / 2,halfStep = min(125,(bottom - top) * 0.3)
+            let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:middle + (down ? -halfStep : halfStep)))
+            let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:middle + (down ? halfStep : -halfStep)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         let image = XCTAttachment(screenshot:app.screenshot());image.name = "not-visible-" + id;image.lifetime = .keepAlways;add(image)
@@ -192,7 +193,7 @@ import Foundation
         tap("memory2.detail.read");text("memory2.detail.status",contains:"Active")
         tap("Assistant");try await ask("Recall after explicitly resuming",count:2,expected:current)
         tap("Memory");tap("memory2.detail.read");management("stopUse",expected:"Original receipt verified")
-        tap("memory2.detail.read");text("memory2.detail.status",contains:"Withdrawn")
+        tap("memory2.detail.read");text("memory2.detail.status",contains:"Stopped using")
         text("memory2.detail.text",contains:current)
         tap("Assistant");try await ask("Recall after stopping use; keep the original history",count:3,expected:long)
     }
@@ -227,7 +228,10 @@ import Foundation
         XCTAssertFalse(app.buttons.matching(identifier:"memory.manual.save").firstMatch.exists)
         back();tap("Assistant")
         XCTAssertFalse(app.buttons.matching(identifier:"assistant.travelContext").firstMatch.exists)
-        XCTAssertFalse(app.buttons.matching(identifier:"assistant.send").firstMatch.isEnabled)
+        input("assistant.draft","Release typed flags must not authorize sending");dismissKeyboard()
+        XCTAssertFalse(app.buttons.matching(identifier:"assistant.send").firstMatch.exists)
+        let unavailable = app.buttons.matching(identifier:"Send — service not connected").firstMatch
+        XCTAssertTrue(unavailable.exists);XCTAssertFalse(unavailable.isEnabled)
     }
     func testLegacyUnknownCannotBypassTypedMode() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600
