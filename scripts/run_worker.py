@@ -80,9 +80,11 @@ def require_memory_configuration(database, scope, configuration):
                 raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None):
     database.require_execution(scope)
     require_memory_configuration(database, scope, memory_configuration)
+    if tools_configuration is not None and (database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2'):
+        raise CompositionUnavailable('tools require the registered M2 exit')
     messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
     subject = scope.removeprefix('local:' + ISSUER + ':')
     def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
@@ -128,12 +130,14 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,
         message_context=message_context,
+        tools=tools_configuration,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
         needs_lease=needs_lease_for(database,checker,token),
-        budget_exit=LocalBudgetRouter(database))
+        budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
+                     LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None):
     pending_scopes=scopes(database,auth_dir)
     if not pending_scopes: return []
     if database.run_context is None:
@@ -144,7 +148,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None):
     results = []
     for scope in pending_scopes:
         results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                     memory_configuration=memory_configuration).process()
+                                     memory_configuration=memory_configuration,tools_configuration=tools_configuration).process()
     return results
 
 
@@ -155,6 +159,7 @@ def main():
     parser.add_argument('--run-context', type=Path, default=os.environ.get('CJ_LOCAL_RUN_CONTEXT'))
     parser.add_argument('--memory-run-policy', type=Path, default=os.environ.get('CJ_LOCAL_MEMORY_RUN_POLICY'))
     parser.add_argument('--travel-context',choices=['message-travel.1'],default=os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT'))
+    parser.add_argument('--tools-profile',choices=['synthetic-v1'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
     parser.add_argument('--interval', type=float, default=0.5)
@@ -176,9 +181,14 @@ def main():
     for scope in scopes(database,args.auth_dir):
         database.require_execution(scope)
         require_memory_configuration(database, scope, memory)
-    model=provider(args.real)
+    tools=None
+    if args.tools_profile is not None:
+        if args.tools_profile!='synthetic-v1':raise CompositionUnavailable('unknown tools profile')
+        from cj_api.local_tools import LocalTools,SyntheticToolModel
+        tools=LocalTools();model=SyntheticToolModel()
+    else:model=provider(args.real)
     while True:
-        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory):
+        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory,tools_configuration=tools):
             print(f'{outcome.status} run={outcome.run_id}'
                   + (f' proposal={outcome.proposal_id}' if outcome.proposal_id else ''), flush=True)
         if args.once:

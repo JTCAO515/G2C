@@ -24,13 +24,24 @@ class LocalPlaceProducer:
         self.transport_calls=0
 
     def invoke(self,raw_query:bytes,request_ref:str):
-        query=decode_query(raw_query)
-        self.invocations+=1
+        return self.prepare_call(decode_query(raw_query),request_ref)()
+
+    def prepare_call(self,query,request_ref):
+        """Trusted immutable query; preparation precedes Meter's final guard."""
         started=self.clock()
         try:
             request=prepare(self.config,query,request_ref,started)
         except PreparationError as error:
-            return encode_result(Result(Outcome.UNSUPPORTED,query,str(error)),evidence_kind='synthetic')
+            result=Result(Outcome.UNSUPPORTED,query,str(error))
+            def unsupported():
+                self.invocations+=1
+                return encode_result(result,evidence_kind='synthetic')
+            return unsupported
+        return lambda:self._invoke_prepared(request)
+
+    def _invoke_prepared(self,request):
+        self.invocations+=1
+        query=request.query
         status,payload=self._response(query)
         self.transport_calls+=1
         raw=payload if type(payload) is bytes else json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf8')
