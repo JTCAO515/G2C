@@ -88,6 +88,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     private let messages: MessageCapability?
     private let memory: EndpointCapability?
     private let memoryManagement: EndpointCapability?
+    private let typedMemory: EndpointCapability?
 
     public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
@@ -157,7 +158,22 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         #endif
     }
 
-    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil) throws {
+    /// Explicit compatible typed Memory host. Exact frozen V2 collection and
+    /// lifecycle writes only; legacy and MESSAGE capabilities remain closed.
+    public static func developmentTypedMemory(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http",endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port,(1...65535).contains(port),
+              endpoint.maximumRequestBytes <= 32768,endpoint.maximumResponseBytes <= 1_000_000 else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
+            preview:nil,typedMemory:EndpointCapability(endpoint:endpoint,validate:validate))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+
+    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil) throws {
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
             throw MessageHTTPFailure.invalidConfiguration
         }
@@ -165,7 +181,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         let session = URLSession(configuration: config, delegate: RedirectBlocker(), delegateQueue: nil)
-        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement
+        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory
     }
 
     /// Internal non-network seam for module tests; never used by live callers.
@@ -177,12 +193,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             guard previewEndpoint == nil && validatePreview == nil else {throw MessageHTTPFailure.invalidConfiguration}
             preview=nil
         }
+        typedMemory=nil
         session=nil;transport=interceptedTransport;messages=nil;memory=nil;memoryManagement=nil
     }
 
     /// Module-test-only composition: the supplied transport must be non-network.
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
+        typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; memory = nil; memoryManagement = nil
         messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: .legacy)
     }
@@ -190,6 +208,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network typed MESSAGE transport seam for module boundary tests.
     init(interceptedTransport: any ClientTransport,travelMessageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) {
+        typedMemory=nil
         session=nil;transport=interceptedTransport;preview=nil;memory=nil;memoryManagement=nil
         messages=MessageCapability(endpoint:travelMessageEndpoint,validate:validateMessage,wire:.travel)
     }
@@ -197,6 +216,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network Memory boundary seam for deterministic transport tests.
     init(interceptedTransport: any ClientTransport, memoryEndpoint: MessageEndpoint,
          validateMemory: @escaping @MainActor @Sendable () throws -> Void) {
+        typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; messages = nil; memoryManagement = nil
         memory = EndpointCapability(endpoint: memoryEndpoint, validate: validateMemory)
     }
@@ -204,8 +224,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network lifecycle capability seam for boundary tests.
     init(interceptedTransport: any ClientTransport, memoryManagementEndpoint: MessageEndpoint,
          validateManagement: @escaping @MainActor @Sendable () throws -> Void) {
+        typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; messages = nil; memory = nil
         memoryManagement = EndpointCapability(endpoint: memoryManagementEndpoint, validate: validateManagement)
+    }
+
+    /// Non-network typed Memory boundary seam; never activated by normal init.
+    init(interceptedTransport: any ClientTransport,typedMemoryEndpoint: MessageEndpoint,
+         validateTypedMemory: @escaping @MainActor @Sendable () throws -> Void) {
+        session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
+        typedMemory=EndpointCapability(endpoint:typedMemoryEndpoint,validate:validateTypedMemory)
     }
 
     @MainActor func validateMessageSending(to endpoint: MessageEndpoint) throws {
@@ -246,6 +274,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
            !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
             return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
                                             capability: memoryManagement, messageWire: nil)
+        }
+        let typedMemoryPaths = [Operations.saveTypedMemory.id:"/v2/memories",
+            Operations.applyTypedMemoryManagement.id:"/v2/memory-management-actions",
+            Operations.applyTypedMemoryStopUse.id:"/v2/memory-withdrawal-actions"]
+        if let typedMemory,request.method == .post,let path = typedMemoryPaths[operationID],
+           request.path == path,request.scheme == nil,request.authority == nil,baseURL == typedMemory.endpoint.url,
+           !request.headerFields.contains(where:{ $0.name.canonicalName == "host" }),let body {
+            return try await sendLocalWrite(request,body:body,baseURL:baseURL,operationID:operationID,
+                                            capability:typedMemory,messageWire:nil)
         }
         // No other write-shaped request is enabled. Exact official operation/path are
         // fixed here; calling an arbitrary request "readonly" cannot grant capability.
