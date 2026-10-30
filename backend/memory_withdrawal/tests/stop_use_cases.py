@@ -224,19 +224,19 @@ class StopUseCases:
             self.assertTrue(any(x[0]=='delta' for x in events))
             self.assertEqual(events[-1][2],{'status':'context_invalid'})
 
-    def prepare_draft_context(self, api, conversation):
+    def prepare_draft_context(self, api, conversation, identity='alice'):
         # Consume the existing approved B local operator, never fabricate a
         # Context/lease or change C memory/source flags with initialization SQL.
         from e2e_local import CONNINFO
         import local_run_context as operator
         self.assertEqual(api.put('/v1/conversations',params={'conversation_id':conversation},
-                                 headers=self.headers('alice')).status_code,200)
+                                 headers=self.headers(identity)).status_code,200)
         needs_id='needs-'+uuid.uuid4().hex
         raw=json.dumps(dict(action_id='needs-action-'+uuid.uuid4().hex,needs_id=needs_id,
             expected_version=0,source={'kind':'manual','text':'explicit local fixture user input'},
             changes={'party_size':{'state':'known','value':1}})).encode()
-        operator.put_needs(CONNINFO,self.auth,'alice',raw)
-        operator.bind_needs(CONNINFO,'alice',conversation,needs_id)
+        operator.put_needs(CONNINFO,self.auth,identity,raw)
+        operator.bind_needs(CONNINFO,identity,conversation,needs_id)
 
     def test_draft_lifecycle_first_refuses_actual_proposal(self):
         from cj_agent.provider import FakeProvider
@@ -355,3 +355,55 @@ class StopUseCases:
                             conn.execute('UPDATE cj_memory_item SET source_version=1,original_input=%s WHERE item_id=%s',
                                          (item.command.raw,item.command.item_id))
                     self.assertEqual(self.service().detail(item.command.item_id),item)
+
+    def test_draft_publication_first_holds_stop_writer_until_both_commits(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from cj_agent.provider import FakeProvider
+        from cj_memory.runtime import RuntimeRun
+        import cj_agent.draft as draft
+        hold,materialize=RuntimeRun.hold,draft.document_from_model
+        state={};scope=scope_for(ISSUER,'bob')
+        with TestClient(self.memory_app) as api:
+            raw=self.raw(text='Bob draft source / 草稿来源')
+            self.assertEqual(self.save(api,raw,'bob').status_code,200)
+            action=self.stop_action(self.service('bob').detail(json.loads(raw)['item_id']))
+            self.prepare_draft_context(api,self.chat_b,identity='bob')
+            mid,response=self.send(api,'bob','Publish draft then stop',conversation=self.chat_b,intent='consider_trip')
+            self.assertEqual(response.status_code,200,response.text)
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                def materialized(text):
+                    value=materialize(text);state['future']=pool.submit(self.stop,action,'bob')
+                    deadline=time.monotonic()+4
+                    while time.monotonic()<deadline:
+                        with self.database.connect(scope) as conn:
+                            blocked=conn.execute("SELECT count(*) FROM pg_stat_activity WHERE usename=current_user AND wait_event_type='Lock' AND query LIKE 'SELECT epoch FROM cj_memory_scope%' AND cardinality(pg_blocking_pids(pid))>0").fetchone()[0]
+                        if blocked:break
+                        time.sleep(.01)
+                    self.assertGreater(blocked,0);self.assertFalse(state['future'].done())
+                    return value
+                @contextmanager
+                def held(run,binding):
+                    with hold(run,binding) as check:
+                        yield check
+                        future=state.get('future')
+                        drain=future is not None and not state.get('drained',False)
+                        if drain:
+                            # Trip proposal and original RUN effect are committed
+                            # while MEMORY still blocks the actual source writer.
+                            with self.database.connect(scope) as conn:
+                                self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0],1)
+                            self.assertIsNotNone(state['worker'].runs.snapshot(binding).draft_outcome)
+                            self.assertFalse(future.done())
+                    if drain:
+                        state['drained']=True
+                        self.assertEqual(future.result(timeout=5)['status'],'withdrawn')
+                from cj_agent.worker import RunWorker
+                step=RunWorker._step
+                def marked(worker,*args,**kwargs):
+                    state['worker']=worker;return step(worker,*args,**kwargs)
+                model=FakeProvider()
+                with patch.object(draft,'document_from_model',materialized),patch.object(RuntimeRun,'hold',held),patch.object(RunWorker,'_step',marked):
+                    outcomes=self.execute(model)
+            self.assertTrue(state['drained']);self.assertEqual(model.calls,2)
+            self.assertEqual([x.status for x in outcomes if x.message_id==mid],['context_invalid'])
+            self.assertEqual(self.service('bob').detail(json.loads(raw)['item_id']).status,'withdrawn')
