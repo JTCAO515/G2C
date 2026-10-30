@@ -23,6 +23,9 @@ struct MemoryShell: View {
                     }
                     MemoryContainerGroups(host: memoryHost, state: state)
                     route(language.text("Add memory", "新增记忆"), to: .manualMemory, identifier: "memory.add")
+                    if memoryHost.managementAvailable {
+                        route(language.text("Previous memory actions", "此前的记忆操作"), to: .memoryActions, identifier: "memory.manage.openOriginals")
+                    }
                 } header: { ShellSectionHeading(title: language.text("Your memories", "你的记忆")) }
                 Section {
                     VStack(alignment: .leading, spacing: 0) {
@@ -86,6 +89,8 @@ struct MemoryShell: View {
             MemoryContainerDetail(host: memoryHost, language: language)
         case .manualMemory:
             MemoryContainerManual(host: memoryHost, language: language)
+        case .memoryActions:
+            MemoryContainerLifecycleRecovery(host: memoryHost, language: language)
         case .feedback(let entry):
             FeedbackContainerView(host: feedbackHost, entry: entry, language: language)
         case .account:

@@ -21,6 +21,8 @@ import Foundation
         let target = app.buttons.matching(identifier:id).firstMatch
         let tab = app.tabBars.buttons.matching(identifier:id).firstMatch
         if tab.exists { XCTAssertTrue(tab.isHittable); tab.tap(); return }
+        let nav = app.navigationBars.buttons.matching(identifier:id).firstMatch
+        if nav.exists { XCTAssertTrue(nav.isHittable);XCTAssertTrue(nav.isEnabled);nav.tap();return }
         let top=app.navigationBars.firstMatch.frame.maxY,bottom=app.tabBars.firstMatch.frame.minY
         for _ in 0..<60 {
             if target.exists && target.isHittable && target.frame.midY>top && target.frame.midY<bottom { break }
@@ -142,7 +144,7 @@ import Foundation
         return try JSONDecoder().decode(Fixture.self,from:await call("/prepare",["case":caseID]))
     }
     func recover(_ original: Original, input: String, expected: String) {
-        tap("memory.add");tap("memory.manage.loadOriginals")
+        tap("memory.manage.openOriginals");tap("memory.manage.loadOriginals")
         let text=app.staticTexts["memory.manage.recoveredText"]
         XCTAssertTrue(text.waitForExistence(timeout:10));XCTAssertEqual(Array(text.label.utf8),Array(input.utf8))
         tap("memory.manage.recoveryQuery."+original.action_id)
@@ -153,7 +155,7 @@ import Foundation
         let f=try await fixture("testUnknownReopen");defer { app?.terminate() };try launch(f,language:"en",large:false);list("en")
         let fact=try XCTUnwrap(f.initial.first { $0.command.kind=="fact" });open(fact.command.item_id)
         let input="Unknown ACK original / 回执未知 e\u{301} retained"
-        enterEdit(input);submitEdit(language:"en");status("Action not confirmed")
+        enterEdit(input);submitEdit(language:"en");status("Result unknown")
         XCTAssertEqual(app.staticTexts["memory.manage.originalText"].label,input)
         let original=try JSONDecoder().decode(Original.self,from:await call("/original",["case":f.case_id]))
         capture("actual-commit-ack-lost");try launch(f,language:"en",large:false,restore:true)

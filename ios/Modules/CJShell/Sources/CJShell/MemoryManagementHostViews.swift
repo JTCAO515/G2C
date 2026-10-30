@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJMemoryClient
+import CJRunClient
 
 /// Compose the accepted client's UI without creating selections or granting permissions.
 struct MemoryManagementHostControls: View {
@@ -21,12 +22,11 @@ struct MemoryManagementHostRecovery: View {
     var body: some View {
         let action = host.captureAction()
         VStack(alignment: .leading, spacing: 10) {
-            Text(language.text("Previous memory actions", "此前的记忆操作")).font(.headline)
-            Text(language.text("Recover by querying the stored original action only. A receipt does not establish current eligibility or permit resending.", "恢复时仅查询已保存的原操作。历史回执不代表当前资格，也不允许重新发送。"))
-                .font(.caption)
-            Button(language.text("Read original memory actions", "读取原记忆操作")) {
+            RunReadableText(text: language.text("Previous memory actions", "此前的记忆操作"))
+            RunReadableText(text: language.text("Recover by querying the stored original action only. A receipt does not establish current eligibility or permit resending.", "恢复时仅查询已保存的原操作。历史回执不代表当前资格，也不允许重新发送。"), style: .caption)
+            MemoryActionButton(title: language.text("Read original memory actions", "读取原记忆操作"), enabled: action != nil) {
                 host.loadManagementPending(context: action)
-            }.disabled(action == nil).accessibilityIdentifier("memory.manage.loadOriginals")
+            }.accessibilityIdentifier("memory.manage.loadOriginals")
             switch host.managementPending {
             case .unconfigured:
                 Text(language.text("Original memory actions have not been loaded.", "尚未读取原记忆操作。"))

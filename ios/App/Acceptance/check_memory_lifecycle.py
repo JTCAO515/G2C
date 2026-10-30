@@ -199,7 +199,7 @@ def main():
                         sources=conn.execute('SELECT source_id,approved_input,active FROM cj_memory_source WHERE scope=%s',(scope,)).fetchall()
                         for sid,sha in row['original_sources'].items():assert next(hashlib.sha256(bytes(raw)).hexdigest() for s,raw,_ in sources if s==sid)==sha
                         assert conn.execute('SELECT count(*) FROM cj_memory_operation WHERE scope=%s',(scope,)).fetchone()[0]==3
-                        assert conn.execute('SELECT count(*) FROM cj_trip WHERE scope=%s',(scope,)).fetchone()[0]==0
+                        assert conn.execute('SELECT count(*) FROM cj_trip_record WHERE scope=%s',(scope,)).fetchone()[0]==0
                         if case=='testEnglish':
                             withdrawn=next(i for i in row['initial'] if i['command']['kind']=='preference')['command']['item_id']
                             history=conn.execute("SELECT withdrawal_history FROM cj_memory_management_action WHERE scope=%s AND item_id=%s AND operation='withdraw'",(scope,withdrawn)).fetchone()[0]
