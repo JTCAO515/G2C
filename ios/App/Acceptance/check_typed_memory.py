@@ -9,6 +9,7 @@ from datetime import datetime,timedelta,timezone
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs,urlparse
+from urllib.request import Request,urlopen
 
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.typed-memory.acceptance'
@@ -17,13 +18,14 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulator',required=True);parser.add_argument('--run-context',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--build-dir',type=Path,required=True)
-    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall','testUnknownReopenAndLifecycleRecall','testSwitchAccountAfterActualCommit','testReleaseTypedFlagsRemainClosed','testLegacyUnknownCannotBypassTypedMode'],default='testEnglishSaveReadAndOwnedTravel')
+    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall','testUnknownReopenAndLifecycleRecall','testSwitchAccountAfterActualCommit','testReleaseTypedFlagsRemainClosed','testLegacyUnknownCannotBypassTypedMode','testRealConflictKeepsOriginalAndAllowsFreshSave'],default='testEnglishSaveReadAndOwnedTravel')
     args=parser.parse_args();output=args.output.resolve();build=args.build_dir.resolve()
     chinese=args.case=='testChineseLargeSaveReadAndRecall'
     unknown=args.case=='testUnknownReopenAndLifecycleRecall'
     switching=args.case=='testSwitchAccountAfterActualCommit'
     release=args.case=='testReleaseTypedFlagsRemainClosed'
     legacy=args.case=='testLegacyUnknownCannotBypassTypedMode'
+    conflict=args.case=='testRealConflictKeepsOriginalAndAllowsFreshSave'
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):raise ValueError('external evidence required')
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
     os.umask(0o077);output.mkdir(parents=True,mode=0o700)
@@ -99,7 +101,7 @@ def main():
                     selections={subject:dict(subject='self',slots=['preference'],max_bytes=2000) for subject in subjects.values()})).encode())
                 memory=create_local_typed_app(conninfo_path=conn,auth_dir=auth,configuration=typed)
                 database=LocalDatabase(conn,run_context=context,travel_context=True)
-                audit=[];errors=[];iterations=[0];outcomes=[];stop=threading.Event()
+                audit=[];errors=[];iterations=[0];outcomes=[];stop=threading.Event();fixture_actions=[]
                 network=dict(lose=None,hold=False);held=threading.Event();released=threading.Event();response_sent=threading.Event()
                 class ObservedMemoryProvider(FakeProvider):
                     def __init__(self):super().__init__();self.memory_inputs=[]
@@ -138,9 +140,13 @@ def main():
                         await application(scope,received,sent)
                         if raw:
                             event['input_sha256']=hashlib.sha256(raw).hexdigest()
-                            if event['status']==200:
+                            if event['status'] is not None:
                                 field='operation_id' if scope['path'] in ('/v2/memories','/v1/memories') else 'action_id'
                                 event[field]=json.loads(raw)[field]
+                                event['fixture']=any(event[field]==row['action_id'] for row in fixture_actions)
+                            if event['status']!=200:
+                                body=b''.join(message.get('body',b'') for message in captured)
+                                error=json.loads(body)['error'];event['producer_error']=dict(code=error['code'],outcome=error['outcome'])
                         kind='legacy' if scope['path']=='/v1/memories' else 'save' if scope['path']=='/v2/memories' else 'management'
                         committed=scope['method']=='POST' and scope['path'].startswith(('/v2/memor','/v1/memor')) and event['status']==200
                         if committed and network['lose']==kind:
@@ -178,7 +184,7 @@ def main():
                         sources=connection.execute('SELECT source_id,version,active,approved_input FROM cj_memory_source ORDER BY source_id').fetchall()
                     result=dict(items=values,role=list(role),message_count=messages,model_calls=model.calls,formal_worker_iterations=iterations[0],
                         worker_errors=list(errors),requests=list(audit),outcomes=list(outcomes),memory_inputs=list(model.memory_inputs),registered_operations=registered,
-                        source_rows=[dict(source_id=sid,version=version,active=active,approved_sha256=hashlib.sha256(bytes(raw)).hexdigest()) for sid,version,active,raw in sources])
+                        fixture_actions=fixture_actions,source_rows=[dict(source_id=sid,version=version,active=active,approved_sha256=hashlib.sha256(bytes(raw)).hexdigest()) for sid,version,active,raw in sources])
                     report['proof']=result
                     report.setdefault('consumption_proofs',{})[str(messages)]=result
                     save();return result
@@ -202,9 +208,22 @@ def main():
                                 released.set()
                                 if not response_sent.wait(10):raise TimeoutError('real response not released')
                                 value={}
+                            elif parsed.path=='/concurrent-pause':
+                                item,=items()
+                                action=dict(version='MEMORY-management.2',action_id=uuid.uuid4().hex,operation='pause',
+                                    item_id=item['command']['item_id'],expected_version=item['version'],expected_source_version=item['command']['source_version'])
+                                raw=json.dumps(action,separators=(',',':')).encode()
+                                row=dict(action_id=action['action_id'],input_sha256=hashlib.sha256(raw).hexdigest());fixture_actions.append(row)
+                                request=Request(endpoints[1]+'/v2/memory-management-actions',data=raw,
+                                    headers={**headers['A'],'Content-Type':'application/octet-stream'},method='POST')
+                                with urlopen(request,timeout=10) as response:
+                                    if response.status!=200:raise RuntimeError('real concurrent action rejected')
+                                    value=json.load(response)
+                                row['receipt']=value['receipt']
+                                if row['receipt']['input_sha256']!=row['input_sha256'] or row['receipt']['version']!=2:raise RuntimeError('real concurrent receipt mismatch')
                             elif parsed.path=='/items':value={('long_term' if x['command']['context'] is None else 'travel'):x['command']['item_id'] for x in items()}
                             elif parsed.path=='/originals':value=dict(legacy=[x['operation_id'] for x in audit if x['method']=='POST' and x['path']=='/v1/memories' and x['status']==200],saves=[x['operation_id'] for x in audit if x['host']=='memory' and x['method']=='POST' and x['path']=='/v2/memories' and x['status']==200],
-                                management=[x['action_id'] for x in audit if x['host']=='memory' and x['method']=='POST' and x['path']=='/v2/memory-management-actions' and x['status']==200])
+                                management=[x['action_id'] for x in audit if x['host']=='memory' and x['method']=='POST' and x['path']=='/v2/memory-management-actions' and not x.get('fixture',False)])
                             elif parsed.path=='/wait-completed':
                                 count=int(parse_qs(parsed.query)['count'][0]);deadline=time.monotonic()+30
                                 while sum(o['status']=='completed' for o in outcomes)<count:
@@ -246,7 +265,7 @@ def main():
                     (output/'native-summary.json').write_text(json.dumps(summary,indent=2))
                     assert (summary['passedTests'],summary['failedTests'],summary['skippedTests'])==(1,0,0)
                     assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and not errors and iterations[0]>0
-                    posts=[event for event in audit if event['host']=='memory' and event['method']=='POST']
+                    posts=[event for event in audit if event['host']=='memory' and event['method']=='POST' and not event.get('fixture',False)]
                     if unknown:
                         expected=['Unknown original long term / 未知原文 e\u0301','Recovered travel current / 恢复本次原文','Unknown original long term / 未知原文 e\u0301']
                         assert len(value['items'])==2 and value['message_count']==model.calls==3
@@ -263,6 +282,15 @@ def main():
                         assert current['status']=='withdrawn' and current['version']==4 and current['command']['text']==expected[1]
                         # The stopped original and approved input remain stored.
                         assert current['command']['source_id'] in {row['source_id'] for row in value['source_rows']}
+                    elif conflict:
+                        expected=['Conflict source / 并发原条目','Fresh after actual conflict / 明确冲突后新保存','Conflicting original edit / 冲突原文 e\u0301']
+                        assert len(value['items'])==2 and value['message_count']==model.calls==0
+                        assert len(posts)==3 and [event['status'] for event in posts]==[200,409,200]
+                        assert posts[1]['producer_error']==dict(code='MEMORY_CONFLICT',outcome='failed')
+                        assert len(fixture_actions)==1 and fixture_actions[0]['receipt']['status']=='disabled'
+                        by_text={item['command']['text']:item for item in value['items']}
+                        assert set(by_text)==set(expected[:2]) and by_text[expected[0]]['status']=='disabled' and by_text[expected[0]]['version']==2
+                        assert by_text[expected[1]]['status']=='active' and by_text[expected[1]]['version']==1
                     elif legacy:
                         expected=['Legacy unresolved original / 旧版未知原文 e\u0301','Fresh typed save after legacy reconciliation / 核实后新保存']
                         assert len(value['items'])==2 and value['message_count']==model.calls==0
@@ -306,7 +334,7 @@ def main():
                         assert by_text['中文长期偏好 / 长期 e\u0301' if chinese else 'Typed long-term tea / 新长期 e\u0301']['command']['context'] is None
                         assert by_text['中文本次偏好 / 安静房间 e\u0301' if chinese else 'Travel A updated value / A当前新值']['command']['context']==dict(kind='travel',id=travels[0],expected_version=1)
                         if not chinese:assert by_text['Travel B separate value / B独立值']['command']['context']==dict(kind='travel',id=travels[1],expected_version=1)
-                        posts=[event for event in audit if event['host']=='memory' and event['method']=='POST']
+                        posts=[event for event in audit if event['host']=='memory' and event['method']=='POST' and not event.get('fixture',False)]
                         assert len(posts)==(2 if chinese else 4) and all(event['status']==200 for event in posts)
                         assert sum(event['path']=='/v2/memories' for event in posts)==(2 if chinese else 3) and sum(event['path']=='/v2/memory-management-actions' for event in posts)==(0 if chinese else 1)
                     assert not any(event['method']=='POST' and event['path'].startswith('/v1/trip') for event in audit)
@@ -317,7 +345,9 @@ def main():
                             if path.startswith('/v1/'):
                                 with TestClient(app) as old:receipt=old.get(path,params=query,headers=headers['A'])
                             else:receipt=client.get(path,params=query,headers=headers['A'])
-                            receipt.raise_for_status();assert receipt.json()['receipt']['input_sha256']==event['input_sha256']
+                            receipt.raise_for_status()
+                            if event['status']==200:assert receipt.json()['receipt']['input_sha256']==event['input_sha256']
+                            else:assert conflict and receipt.json()['receipt'] is None and event['producer_error']['outcome']=='failed'
                             if path.startswith('/v1/'):
                                 with TestClient(app) as old:foreign=old.get(path,params=query,headers=headers['B'])
                             else:foreign=client.get(path,params=query,headers=headers['B'])

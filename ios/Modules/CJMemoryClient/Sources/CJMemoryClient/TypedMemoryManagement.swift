@@ -41,6 +41,13 @@ public struct TypedMemoryManagementPending: Codable, Sendable, MemoryJournalReco
             }
         }
     }
+    /// Read-only text from this original action, never from the current item.
+    public var editText: String? {
+        get throws {
+            if case .management(.MemoryEditActionV2(let value)) = try action { return value.text }
+            return nil
+        }
+    }
     init(operation: TypedMemoryOperation,read: TypedMemoryRead,text: String?,travel: MemoryTravelSelection?) throws {
         let item = read.item.value,command = item.command,id = UUID().uuidString.lowercased()
         let bytes: Data

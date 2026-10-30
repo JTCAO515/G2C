@@ -256,6 +256,35 @@ import Foundation
         tap("memory2.legacy.query." + (try XCTUnwrap(old.first)));text("memory2.save.status",contains:"Saved.")
         back();save("Fresh typed save after legacy reconciliation / 核实后新保存",scope:"Long term / 长期")
     }
+    func testRealConflictKeepsOriginalAndAllowsFreshSave() async throws {
+        continueAfterFailure = false;executionTimeAllowance = 600
+        let f = try await prepare();defer {app?.terminate()}
+        try launch(f,restore:false)
+        save("Conflict source / 并发原条目",scope:"Long term / 长期")
+        tap("memory2.items.open");tap("memory2.items.read")
+        let ids = try JSONDecoder().decode([String:String].self,from:await call("/items"))
+        tap("memory2.item." + (try XCTUnwrap(ids["long_term"])));tap("memory2.detail.read")
+        let originalText = "Conflicting original edit / 冲突原文 e\u{301}"
+        input("memory2.edit.text",originalText);dismissKeyboard()
+        tap("memory2.manage.review.edit");text("memory2.manage.review.after",contains:originalText)
+        _ = try await call("/concurrent-pause")
+        tap("memory2.manage.confirm");text("memory2.manage.status",contains:"original action was rejected")
+        try launch(f,restore:true)
+        tap("memory.manage.openOriginals");tap("memory2.originals.read")
+        let originals = try JSONDecoder().decode([String:[String]].self,from:await call("/originals"))
+        for id in try XCTUnwrap(originals["saves"]) {tap("memory2.original.query." + id);text("memory2.save.status",contains:"Saved.")}
+        let actions = try XCTUnwrap(originals["management"]);XCTAssertEqual(actions.count,1)
+        let id = try XCTUnwrap(actions.first)
+        text("memory2.original.action.text." + id,contains:originalText)
+        let retained = app.staticTexts.matching(identifier:"memory2.original.action.text." + id).firstMatch
+        XCTAssertEqual(Array(retained.label.utf8),Array(originalText.utf8))
+        XCTAssertFalse(app.textFields.matching(identifier:"memory2.original.action.text." + id).firstMatch.exists)
+        tap("memory2.action.query." + id);text("memory2.manage.status",contains:"original action was rejected")
+        var issues = 0;continueAfterFailure = true
+        try app.performAccessibilityAudit(for:.all) {issue in issues += 1;print("TYPED_CONFLICT_ORIGINAL",issue.detailedDescription,issue.element?.label ?? "unavailable");return false}
+        continueAfterFailure = false;XCTAssertEqual(issues,0)
+        back();save("Fresh after actual conflict / 明确冲突后新保存",scope:"Long term / 长期")
+    }
     func testChineseLargeSaveReadAndRecall() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600;chinese = true
         let fixture = try await prepare();defer {app?.terminate()}

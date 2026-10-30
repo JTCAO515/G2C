@@ -125,6 +125,19 @@ private actor TypedLifecycleWire: ClientTransport {
         #expect(try reopened.pending(binding:f.binding).isEmpty)
         #expect(await wire.posts.count == 1)
     }
+    @Test func lostEditACKKeepsExactReadonlyOriginalTextAfterReopen() async throws {
+        let f = try Fixture();defer { cleanup(f) }
+        let wire = TypedLifecycleWire();await wire.configure("lostACK")
+        let client = try f.typedClient(wire),input = "Original edit / 修改原文 e\u{301}"
+        await #expect(throws:MemoryFailure.exchangeUnknown) {
+            try await client.manage(.edit,read:read(client,f),text:input,travelContext:MemoryTravelSelection(id:String(repeating:"a",count:32),expectedVersion:7),binding:f.binding)
+        }
+        client.invalidate();let reopened = try f.typedClient(wire)
+        let original = try #require(reopened.managementPending(binding:f.binding).first)
+        #expect(try original.editText.map { Array($0.utf8) } == Array(input.utf8))
+        _ = try await reopened.queryManagement(actionID:original.actionID,binding:f.binding)
+        #expect(await wire.posts == [original.originalUTF8])
+    }
     @Test func unresolvedManualCannotBeBypassedByFreshManagement() async throws {
         let f = try Fixture();defer { cleanup(f) }
         let store = try f.typedStore()

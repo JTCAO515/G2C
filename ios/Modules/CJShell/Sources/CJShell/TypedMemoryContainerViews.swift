@@ -348,7 +348,14 @@ struct TypedMemoryOriginals: View {
                     if records.isEmpty { noOriginals }
                     ForEach(records.indices,id:\.self) { index in
                         let original = records[index]
-                        queryButton(original.actionID,prefix:"memory2.action.query.") { let captured = surface;Task { await host.queryManagement(actionID:original.actionID,surface:captured) } }
+                        VStack(alignment:.leading,spacing:6) {
+                            switch Result(catching:{ try original.editText }) {
+                            case .success(let text):
+                                if let text { TypedMemoryText(text:text,id:"memory2.original.action.text." + original.actionID) }
+                            case .failure:journalError
+                            }
+                            queryButton(original.actionID,prefix:"memory2.action.query.") { let captured = surface;Task { await host.queryManagement(actionID:original.actionID,surface:captured) } }
+                        }
                     }
                 } else if case .failed = host.managementOriginals { journalError }
             } header: { ShellSectionHeading(title:language.text("Current lifecycle originals", "本版管理原动作")) }
