@@ -23,7 +23,11 @@ from cj_memory.postgres import Repository
 from cj_memory.domain import CommitUnknown, Unavailable
 
 
-class EditManagementChecks(Harness):
+sys.path.insert(0, str(ROOT/'backend/memory_withdrawal/tests'))
+from stop_use_cases import StopUseCases
+
+
+class EditManagementChecks(StopUseCases, Harness):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -193,7 +197,7 @@ class EditManagementChecks(Harness):
                 self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_management_action').fetchone()[0],0)
                 self.assertEqual(conn.execute('UPDATE cj_memory_item SET version=version+1 WHERE scope=%s',(alice,)).rowcount,0)
             for statement in ("DELETE FROM cj_memory_item","TRUNCATE cj_memory_item",
-                              "UPDATE cj_memory_source SET active=false","UPDATE cj_memory_item SET subject='other'",
+                              "UPDATE cj_memory_source SET authorized=false","UPDATE cj_memory_item SET subject='other'",
                               "UPDATE cj_memory_management_action SET original_input='x'"):
                 with self.assertRaises(errors.InsufficientPrivilege):
                     with self.database.connect(alice) as conn: conn.execute(statement)
@@ -213,6 +217,9 @@ class EditManagementChecks(Harness):
             config=json.loads(Path(CONNINFO).read_text())
             with psycopg.connect(**config,autocommit=True) as conn:
                 import migrate
-                with self.assertRaises(errors.RaiseException):migrate.down(conn,migrate.load(),18)
-                self.assertEqual(migrate.applied(conn)[-1],19)
+                chain=migrate.load()
+                edit_migration=next(m for m in chain if m['name']=='memory_edit')
+                with self.assertRaises(errors.RaiseException):
+                    with conn.transaction():conn.execute((ROOT/edit_migration['down']).read_text())
+                self.assertEqual(migrate.applied(conn)[-1],chain[-1]['version'])
             self.assertEqual(self.query(manager,edit).json()['receipt']['version'],2)

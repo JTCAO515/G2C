@@ -14,6 +14,9 @@ def apply_in_transaction(transaction, action, policy=None):
         if stored[0] != action.raw:
             raise Conflict('action bytes differ')
         return stored[1]
+    from cj_memory_withdrawal.stop_use import StopUse, withdraw
+    if isinstance(action, StopUse):
+        return withdraw(tx, action)
     return tx.edit(action, policy) if isinstance(action, Edit) else tx.change_status(action)
 
 

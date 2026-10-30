@@ -154,6 +154,14 @@
       "sha256": "8599f43b5881d3fa98d737252821b6714105b5ff25bb2b217f7ad4afe89a2fdb",
       "down": "backend/migrations/down/0019_memory_edit.down.sql",
       "down_sha256": "b96891f74e5520c5ada2a665d487a83d7e0cef687f0ab0ac1acf5718987394d2"
+    },
+    {
+      "version": 20,
+      "name": "memory_stop_use",
+      "file": "backend/migrations/0020_memory_stop_use.sql",
+      "sha256": "2293662cda792bbb803ac5932627495146592fd84d85e68b012d4f76abf98994",
+      "down": "backend/migrations/down/0020_memory_stop_use.down.sql",
+      "down_sha256": "a5dc91b2c0a4de7b095c1a72fef282c1f0ec4abaf7fc7c960215216fa99290ec"
     }
   ]
 }
