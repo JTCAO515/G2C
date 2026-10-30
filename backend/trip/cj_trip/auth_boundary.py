@@ -5,31 +5,36 @@ from .postgres import Repository
 
 
 class Boundary:
-    def __init__(self, checker=None, resolve=None, confirm=None):
+    def __init__(self, checker=None, resolve=None, confirm=None, *, structured=False):
         self.checker, self.resolve, self.confirm = checker, resolve, confirm
+        self.structured = structured
 
     def _bind(self, token):
         if self.checker is None or self.resolve is None: raise Denied('AUTH unconfigured')
         checker, resolve, confirm = self.checker, self.resolve, self.confirm
+        structured = self.structured
         first = checker.check(token)
         if first.status is not AdmissionStatus.ALLOWED or not isinstance(first.principal, TrustedPrincipal): raise Denied('AUTH denied or unknown')
         # Only trusted host maps verified principal + environment to connect/scope.
         connect, scope = resolve(first.principal)
         def guard(stage):
             if (self.checker is not checker or self.resolve is not resolve
-                    or self.confirm is not confirm or repository.scope != scope
+                    or self.confirm is not confirm or self.structured is not structured
+                    or repository.structured is not structured or repository.scope != scope
                     or repository.connect is not connect or repository.confirm is not confirm):
                 raise Denied('TRIP binding changed')
             current = checker.check(token)
             if (self.checker is not checker or self.resolve is not resolve
-                    or self.confirm is not confirm or repository.scope != scope
+                    or self.confirm is not confirm or self.structured is not structured
+                    or repository.structured is not structured or repository.scope != scope
                     or repository.connect is not connect or repository.confirm is not confirm):
                 raise Denied('TRIP binding changed')
             if current.status is not AdmissionStatus.ALLOWED or current.principal != first.principal:
                 error = Denied('AUTH changed')
                 error.commit_possible = stage == 'return'
                 raise error
-        repository = Repository(connect, scope, confirm, guard)
+        repository = (Repository(connect, scope, confirm, guard, structured=True) if structured
+                      else Repository(connect, scope, confirm, guard))
         return repository, first.principal, guard
 
     def _repository(self, token):
