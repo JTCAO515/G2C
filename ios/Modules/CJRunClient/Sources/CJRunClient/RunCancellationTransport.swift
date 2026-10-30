@@ -7,6 +7,7 @@ import HTTPTypes
 /// Explicit DEBUG Simulator capability for the frozen original-message cancellation.
 /// The shared MESSAGE NoRedirectTransport remains unchanged and rejects this write.
 public final class RunCancellationTransport: ClientTransport, Sendable {
+    private let travel: Bool
     private let endpoint: MessageEndpoint
     private let validate: @MainActor @Sendable () throws -> Void
     private let session: URLSession?
@@ -23,17 +24,28 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         #endif
     }
 
-    private init(endpoint: MessageEndpoint, validate: @escaping @MainActor @Sendable () throws -> Void) {
-        self.endpoint = endpoint; self.validate = validate; intercepted = nil
+    public static func developmentTravel(endpoint: MessageEndpoint,
+        validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http",endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port,(1...65535).contains(port) else { throw RunDisplayFailure.invalidConfiguration }
+        return RunCancellationTransport(endpoint:endpoint,travel:true,validate:validate)
+        #else
+        throw RunDisplayFailure.invalidConfiguration
+        #endif
+    }
+
+    private init(endpoint: MessageEndpoint, travel: Bool = false, validate: @escaping @MainActor @Sendable () throws -> Void) {
+        self.endpoint = endpoint; self.travel = travel; self.validate = validate; intercepted = nil
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil; configuration.urlCredentialStorage = nil; configuration.urlCache = nil
         configuration.timeoutIntervalForRequest = 10; configuration.timeoutIntervalForResource = 20
         session = URLSession(configuration: configuration, delegate: CancellationRedirectBlocker(), delegateQueue: nil)
     }
     /// Non-network module-test seam, never a product composition entry.
-    init(interceptedTransport: any ClientTransport, endpoint: MessageEndpoint,
+    init(interceptedTransport: any ClientTransport, endpoint: MessageEndpoint, travel: Bool = false,
          validate: @escaping @MainActor @Sendable () throws -> Void) {
-        self.endpoint = endpoint; self.validate = validate
+        self.endpoint = endpoint; self.travel = travel; self.validate = validate
         session = nil; intercepted = interceptedTransport
     }
     deinit { session?.invalidateAndCancel() }
@@ -51,7 +63,8 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         }
         try await validateBinding(); try Task.checkCancellation()
         guard baseURL == endpoint.url, request.method == .post,
-              operationID == Operations.cancelOriginalRun.id, request.path == "/v1/run-cancellations",
+              operationID == (travel ? Operations.cancelOriginalTravelRun.id : Operations.cancelOriginalRun.id),
+              request.path == (travel ? "/v2/run-cancellations" : "/v1/run-cancellations"),
               request.scheme == nil, request.authority == nil,
               !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body else {
             throw RunDisplayFailure.invalidReference
@@ -60,12 +73,14 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         guard media.count == 1, ["application/json", "application/json; charset=utf-8"].contains(media[0].value.lowercased()) else {
             throw RunDisplayFailure.invalidReference
         }
-        let data = try await Data(collecting: body, upTo: min(endpoint.maximumRequestBytes, 4096))
+        let data = try await Data(collecting: body, upTo: min(endpoint.maximumRequestBytes,travel ? 65536 : 4096))
         var parser = StrictRunJSON(bytes: Array(data)); try parser.check()
-        let input = try JSONDecoder().decode(Components.Schemas.RunCancellationRequest.self, from: data)
-        guard !input.message_id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              !input.message_id.utf8.contains(0), input.message_id.utf8.count <= 256,
-              let url = URL(string: "/v1/run-cancellations", relativeTo: endpoint.url) else { throw RunDisplayFailure.invalidReference }
+        let messageID: String
+        if travel { messageID = try JSONDecoder().decode(Components.Schemas.RunTravelCancellationRequest.self,from:data).message_id }
+        else { messageID = try JSONDecoder().decode(Components.Schemas.RunCancellationRequest.self,from:data).message_id }
+        guard !messageID.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,!messageID.utf8.contains(0),
+              messageID.utf8.count <= (travel ? 16384 : 256),let path = request.path,
+              let url = URL(string:path,relativeTo:endpoint.url) else { throw RunDisplayFailure.invalidReference }
         var outgoing = URLRequest(url: url.absoluteURL)
         outgoing.httpMethod = "POST"; outgoing.httpBody = data
         for field in request.headerFields { outgoing.addValue(field.value, forHTTPHeaderField: field.name.canonicalName) }

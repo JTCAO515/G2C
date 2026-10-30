@@ -87,9 +87,11 @@ extension RunDisplayState {
                 let work = model.prepareRead()
                 Task { await model.perform(work) }
             }
+            if model.supportsStreaming {
             actionButton("Follow / resume this answer", "接收／继续此回答", disabled: disabled(state) || model.cancellationState == .stopping, id: "run.stream.read") {
                 let work = model.prepareStream()
                 Task { await model.perform(work) }
+            }
             }
         }
         .buttonStyle(RunReadableButtonStyle())
