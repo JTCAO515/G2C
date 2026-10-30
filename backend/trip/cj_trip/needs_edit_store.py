@@ -66,6 +66,7 @@ class NeedsEdits:
                 original=self._trip(cur,repository,edit.trip_id)
                 root=self._origin(cur,repository,original)
                 if root['needs_id']!=request.needs_id:raise Denied('Trip source cannot be retargeted')
+                self._selected(cur,repository,original,root)
                 candidate,needs_candidate,report=checked(original,request,source,root['proposed'])
                 cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())');expires=int(cur.fetchone()[0])+300
                 p=Proposal('needs-manual.'+sha256(request.raw).hexdigest(),original.trip_id,original.version,'needs-manual.1',expires,candidate.content)
@@ -102,6 +103,7 @@ class NeedsEdits:
                 if digest!=request.candidate_hash:raise Conflict('original candidate changed')
                 current=self._trip(cur,repository,p.trip_id)
                 root=self._origin(cur,repository,current)
+                self._selected(cur,repository,current,root)
                 candidate,needs_candidate,report=checked(current,edit,source,root['proposed'])
                 if p.content!=candidate.content or p.expected_version!=current.version:raise Conflict('original manual candidate changed')
                 cur.execute('SELECT source_input FROM cj_trip_needs_basis WHERE scope=%s AND proposal_id=%s',(repository.scope,p.proposal_id))
@@ -109,9 +111,16 @@ class NeedsEdits:
                 action=repository.confirm.issue(repository.scope,ProposalDetail(p,digest,status),action_id=request.action_id,kind='accept',candidate_hash=digest).action
                 receipt,pending=repository._act_in_tx(cur,action)
                 cur.execute('INSERT INTO cj_trip_needs_action VALUES(%s,%s,%s,%s,%s)',(repository.scope,request.action_id,p.proposal_id,request.raw,action.raw()))
-                cur.execute('UPDATE cj_trip_needs_current SET trip_version=%s WHERE scope=%s AND trip_id=%s',
-                            (receipt.committed_version,repository.scope,receipt.trip_id))
+                cur.execute('UPDATE cj_trip_needs_current SET trip_version=%s WHERE scope=%s AND trip_id=%s AND trip_version=%s RETURNING trip_id',
+                            (receipt.committed_version,repository.scope,receipt.trip_id,current.version))
+                if cur.fetchall()!=[(receipt.trip_id,)]:raise Conflict('current selected Trip changed')
                 return receipt
+    @staticmethod
+    def _selected(cur,repository,trip,origin):
+        cur.execute('SELECT trip_id,trip_version FROM cj_trip_needs_current WHERE scope=%s AND needs_scope=%s AND needs_id=%s',
+                    (repository.scope,origin['needs_scope'],origin['needs_id']))
+        if cur.fetchone()!=(trip.trip_id,trip.version):raise Conflict('edit the current explicitly selected Trip or select a new plan')
+
     @staticmethod
     def _trip(cur,repository,trip_id):
         cur.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s',(repository.scope,trip_id));row=cur.fetchone()
