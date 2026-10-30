@@ -18,6 +18,8 @@ class Repository:
         self.guard = guard or (lambda stage: None)
         self.structured = structured
         self.manual_origin = None
+        self.needs_actions = None
+        self.needs_edits = None
 
     @contextmanager
     def transaction(self, before_commit=None):
@@ -166,6 +168,20 @@ class Repository:
         cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', ('accepted' if action.kind == 'accept' else 'rejected',self.scope,p.proposal_id))
         cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
         return receipt, p
+
+    def prepare_needs(self,request):
+        if self.needs_edits is None:raise Denied('source-bound editor unconfigured')
+        return self.needs_edits.prepare(self,request)
+    def save_needs(self,request):
+        if self.needs_edits is None:raise Denied('source-bound editor unconfigured')
+        return self.needs_edits.save(self,request)
+    def needs_preparation(self,request_id):
+        if self.needs_edits is None:raise Denied('source-bound editor unconfigured')
+        return self.needs_edits.query(self,request_id)
+
+    def act_needs(self, request):
+        if self.needs_actions is None:raise Denied('explicit needs action host required')
+        return self.needs_actions.apply(self,request)
 
     def prepare_manual(self, edit):
         from .manual_storage import prepare_manual
