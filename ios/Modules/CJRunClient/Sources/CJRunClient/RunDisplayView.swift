@@ -37,20 +37,21 @@ extension RunDisplayState {
 @MainActor public struct RunDisplayView: View {
     private let model: RunDisplayModel
     private let language: RunDisplayLanguage
+    private let showAnswerText: Bool
     @Environment(\.scenePhase) private var scenePhase
-    public init(model: RunDisplayModel, language: RunDisplayLanguage) { self.model = model; self.language = language }
+    public init(model: RunDisplayModel, language: RunDisplayLanguage,showAnswerText: Bool = true) { self.model = model; self.language = language;self.showAnswerText = showAnswerText }
     public var body: some View {
         let state = model.state
         VStack(alignment: .leading, spacing: 8) {
             Text(state.label(language)).accessibilityIdentifier("run.display.status")
             if case .loaded(let value) = state {
-                if !value.snapshot.text.isEmpty {
+                if showAnswerText && !value.snapshot.text.isEmpty {
                     Text(verbatim: value.snapshot.text).textSelection(.enabled).accessibilityIdentifier("run.display.text")
                 }
                 Text(language.text("Snapshot at read time", "读取时的快照")).font(.caption)
             }
             if let progress = model.streamProgress {
-                Text(verbatim: progress.text).textSelection(.enabled).accessibilityIdentifier("run.stream.text")
+                if showAnswerText { Text(verbatim: progress.text).textSelection(.enabled).accessibilityIdentifier("run.stream.text") }
                 Text(language.text("Received text · final state not yet verified", "已接收正文 · 最终状态尚未核实"))
                     .font(.caption)
             }
