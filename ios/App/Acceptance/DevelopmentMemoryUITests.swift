@@ -6,7 +6,7 @@ import Foundation
     let control = "__FIXTURE_URL__"
     var app: XCUIApplication!
     struct ReadProof: Decodable {
-        struct Item: Decodable { let slot: String; let source_id: String; let item_id: String }
+        struct Item: Decodable { let slot: String; let source_id: String; let item_id: String; let extent: String; let context_id: String? }
         let items: [Item]
     }
     struct Fixture: Decodable {
@@ -97,9 +97,9 @@ import Foundation
         if let caseID { values["case"] = caseID }
         return try JSONDecoder().decode(Fixture.self, from: await call("/prepare", values))
     }
-    func save(_ slot: String, text value: String, language: String) {
+    func save(_ slot: String, text value: String, language: String, conversation: String? = nil) {
         tap("memory.add"); tap("memory.manual.scope")
-        tap("self · " + slot + " · Long term / 长期")
+        tap("self · " + slot + " · " + (conversation.map { "Current conversation / 当前会话: " + $0 } ?? "Long term / 长期"))
         text("memory.manual.text", value)
         text("memory.manual.time", "Synthetic date unknown / 合成时间不详")
         tap("memory.manual.save")
@@ -179,6 +179,54 @@ import Foundation
     }
     func testEnglish() async throws { try await success(language: "en") }
     func testChineseLargeText() async throws { try await success(language: "zh-Hans", large: true) }
+    func currentConversations(language: String, large: Bool) async throws {
+        let f = try await prepare("current", caseID: large ? "testCurrentChineseLargeText" : "testCurrentEnglish")
+        struct Profile: Decodable { let context_ids: [String] }
+        let contexts = try JSONDecoder().decode(Profile.self, from: Data(f.profile.utf8)).context_ids
+        XCTAssertEqual(contexts.count, 2); XCTAssertNotEqual(contexts[0], contexts[1])
+        defer { app?.terminate() }
+        try launch(f, language: language, large: large)
+        for (index, context) in contexts.enumerated() {
+            save("fact", text: "Synthetic conversation memory " + String(index), language: language, conversation: context)
+            waitStatus(language == "en" ? "Saved." : "已保存")
+            XCTAssertTrue(app.staticTexts["self · fact · Current conversation / 当前会话: " + context].exists)
+            capture("current-save-" + String(index) + "-" + language); back()
+        }
+        let proof = try JSONDecoder().decode(ReadProof.self, from: await call("/verify", ["case": f.case_id, "stage": "current-saves"]))
+        func readDetails(_ selectedLanguage: String) throws {
+            tap(selectedLanguage == "en" ? "Load groups" : "读取分组")
+            tap("memory.group.0"); tap(selectedLanguage == "en" ? "Load from start" : "从头读取")
+            for (index, context) in contexts.enumerated() {
+                let source = try XCTUnwrap(proof.items.first { $0.context_id == context })
+                XCTAssertEqual(source.extent, "current")
+                tap("memory.item." + source.item_id)
+                tap(selectedLanguage == "en" ? "Load current detail" : "读取当前详情")
+                XCTAssertTrue(app.staticTexts["Synthetic conversation memory " + String(index)].waitForExistence(timeout: 10))
+                XCTAssertEqual(app.staticTexts["memory.detail.scope.value"].label, selectedLanguage == "en" ? "Current conversation" : "当前会话")
+                XCTAssertEqual(app.staticTexts["memory.detail.conversation.value"].label, context)
+                XCTAssertTrue(app.staticTexts[(selectedLanguage == "en" ? "Source, " : "来源, ") + source.source_id].exists)
+                XCTAssertTrue(app.staticTexts[selectedLanguage == "en" ? "Version, 1" : "版本, 1"].exists)
+                capture("current-detail-" + String(index) + "-" + selectedLanguage)
+                try audit("MEMORY_CURRENT_" + selectedLanguage); back()
+            }
+            back()
+        }
+        try readDetails(language)
+        tap("memory.language"); tap(language == "en" ? "简体中文" : "English"); back()
+        let switched = language == "en" ? "zh-Hans" : "en"
+        try readDetails(switched)
+        app.terminate(); try launch(f, language: switched, restore: true, large: large)
+        tap("memory.add"); tap(switched == "en" ? "Read original operations" : "读取原操作")
+        for index in 0..<2 {
+            let originals = app.buttons.matching(identifier: switched == "en" ? "Query this original operation" : "查询此原操作")
+            XCTAssertEqual(originals.count, 2); originals.element(boundBy: index).tap()
+            waitStatus(switched == "en" ? "Saved." : "已保存", identifier: "memory.original.status")
+        }
+        back(); try readDetails(switched)
+        try await query(f, "current-reopen")
+    }
+    func testCurrentEnglish() async throws { try await currentConversations(language: "en", large: false) }
+    func testCurrentChineseLargeText() async throws { try await currentConversations(language: "zh-Hans", large: true) }
     func testUnknownReopen() async throws {
         let f = try await prepare("unknown"); defer { app?.terminate() }
         try launch(f, language: "en")

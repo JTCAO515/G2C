@@ -25,7 +25,7 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 BUNDLE = 'space.go2china.memory.acceptance'
-CASES = ['testEnglish', 'testChineseLargeText', 'testUnknownReopen', 'testRejected', 'testSkipAndChat', 'testCandidate', 'testServerUnknown', 'testSwitchLateRead', 'testRevokedLateRead', 'testReleaseClosed']
+CASES = ['testEnglish', 'testChineseLargeText', 'testUnknownReopen', 'testRejected', 'testSkipAndChat', 'testCandidate', 'testServerUnknown', 'testSwitchLateRead', 'testRevokedLateRead', 'testReleaseClosed', 'testCurrentEnglish', 'testCurrentChineseLargeText']
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 
@@ -54,6 +54,7 @@ def main():
     from cj_api.local_app import app_from_environment, LocalDatabase, ISSUER, scope_for
     from cj_api.local_run_context import load_run_context
     from cj_agent.provider import FakeProvider
+    from cj_memory.local_runtime import load_runtime_configuration
     from run_worker import run_once
     context = load_run_context(args.run_context)
     report = dict(status='RUNNING', head=head, cases={}, checks={}, unrun=['#227 effective context', 'cloud/real model/fees', 'device/VoiceOver', 'deployment'],
@@ -86,11 +87,24 @@ def main():
                     'ambiguous':dict(kind='fact',collection_allowed=True,semantic_resolved=False),
                     'blocked':dict(kind='fact',collection_allowed=False,semantic_resolved=True)},
                     extents=['long_term'],context_ids=[])
+                current_contexts = {case: ['memory-'+uuid.uuid4().hex[:12] for _ in range(2)]
+                                    for case in ('testCurrentEnglish', 'testCurrentChineseLargeText')}
+                profiles = {s:json.loads(json.dumps(profile)) for row in subjects.values() for s in row.values()
+                            if s != subjects['testRejected']['A']}
+                for case, contexts in current_contexts.items():
+                    profiles[subjects[case]['A']].update(extents=['current'], context_ids=contexts)
                 policy = dict(version='local-memory-policy.1',expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),
-                              profiles={s:profile for row in subjects.values() for s in row.values() if s != subjects['testRejected']['A']})
+                              profiles=profiles)
                 policy_path=root/'memory-policy.json'; policy_path.write_text(json.dumps(policy)); policy_path.chmod(0o600)
+                runtime_path=root/'memory-run-policy.json'
+                runtime_path.write_text(json.dumps(dict(version='local-memory-run.1', collection=policy,
+                    selections={s:dict(subject='self', slots=['fact','experience','food.spice'], max_bytes=32768) for s in profiles})))
+                runtime_path.chmod(0o600)
+                runtime_configuration=load_runtime_configuration(runtime_path)
+                report['runtime_memory_configuration']='explicit local-memory-run.1; approved canonical slots only'
                 for target in (env, os.environ): target.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),
-                    CJ_LOCAL_RUN_CONTEXT=str(args.run_context.resolve()),CJ_LOCAL_MEMORY_POLICY=str(policy_path))
+                    CJ_LOCAL_RUN_CONTEXT=str(args.run_context.resolve()),CJ_LOCAL_MEMORY_POLICY=str(policy_path),
+                    CJ_LOCAL_MEMORY_RUN_POLICY=str(runtime_path))
                 database = LocalDatabase(connection, run_context=context)
                 app = app_from_environment()
                 records, errors, requests = {}, [], []
@@ -106,7 +120,7 @@ def main():
                 model=FakeProvider(chunks_per_reply=2)
                 def worker():
                     try:
-                        while not stop.is_set(): run_once(database, model, auth); stop.wait(.05)
+                        while not stop.is_set(): run_once(database, model, auth, memory_configuration=runtime_configuration); stop.wait(.05)
                     except Exception as error: errors.append(type(error).__name__); stop.set()
                 worker_thread=threading.Thread(target=worker,daemon=True); worker_thread.start()
                 async def observed(scope, receive, send):
@@ -156,7 +170,7 @@ def main():
                         role=conn.execute('SELECT current_user').fetchone()[0]
                         operations=conn.execute('SELECT operation_id,item_id,original_input,version,status FROM cj_memory_operation WHERE scope=%s ORDER BY operation_id',(scope,)).fetchall()
                     assert role=='cj_m1_runtime'
-                    expected={'three-saves':3,'reopen':3,'unknown-reopen':1,'rejected':0,'skip':0,'release':0,'candidate':1,'server-unknown':0,'switch':1,'revoke':1}[stage]
+                    expected={'three-saves':3,'reopen':3,'unknown-reopen':1,'rejected':0,'skip':0,'release':0,'candidate':1,'server-unknown':0,'switch':1,'revoke':1,'current-saves':2,'current-reopen':2}[stage]
                     assert len(operations)==expected
                     posts=row['posts']
                     assert len(posts)==(1 if stage in ('rejected','server-unknown') else expected)
@@ -171,7 +185,8 @@ def main():
                         assert all(item[k]==v for k,v in command.items())
                         assert item['source_id']=='manual-v1:'+hashlib.sha256(raw).hexdigest() and item['source_version']==1
                         assert item_version==version and item_status==status
-                        items.append(dict(slot=item['slot'],source_id=item['source_id'],item_id=iid))
+                        items.append(dict(slot=item['slot'],source_id=item['source_id'],item_id=iid,
+                                          extent=item['extent'],context_id=item['context_id']))
                     current=[dict(operation_id=o,item_id=i,sha256=hashlib.sha256(bytes(raw)).hexdigest(),version=v,status=s) for o,i,raw,v,s in operations]
                     if 'baseline' in row: assert row['baseline']==current
                     else: row['baseline']=current
@@ -183,6 +198,14 @@ def main():
                                 assert response.status_code!=200 or all(v is None for k,v in response.json().items() if k in ('item','receipt'))
                                 assert not any(json.loads(bytes(raw))['text'] in response.text for _,_,raw,*_ in operations)
                                 foreign.append(dict(path=path,status=response.status_code))
+                    if stage in ('current-saves','current-reopen'):
+                        assert {json.loads(bytes(o[2]))['context_id'] for o in operations} == set(current_contexts[case])
+                        assert all(json.loads(bytes(o[2]))['extent']=='current' for o in operations)
+                        native=[a['query']['item_id'][0] for a in audit if a['path']=='/v1/memory-items' and a['status']==200]
+                        if stage=='current-reopen':
+                            assert set(i for _,i,*_ in operations) <= set(native)
+                            queried=[a['query']['operation_id'][0] for a in audit if a['path']=='/v1/memory-receipts'][-2:]
+                            assert len(queried)==2 and set(queried)=={o for o,*_ in operations}
                     if stage=='reopen':
                         native=[a['query']['operation_id'][0] for a in audit if a['path']=='/v1/memory-receipts'][-3:]
                         assert len(native)==3 and set(native)=={o for o,*_ in operations}
@@ -207,7 +230,7 @@ def main():
                             query=parse_qs(urlsplit(self.path).query)
                             if urlsplit(self.path).path=='/prepare':
                                 mode=query['mode'][0]
-                                case={'success': query.get('case',['testEnglish'])[0],
+                                case={'success': query.get('case',['testEnglish'])[0], 'current':query.get('case',['testCurrentEnglish'])[0],
                                       'unknown':'testUnknownReopen','rejected':'testRejected','skip':'testSkipAndChat','candidate':'testCandidate','server_unknown':'testServerUnknown','switch':'testSwitchLateRead','revoke':'testRevokedLateRead','release':'testReleaseClosed'}[mode]
                                 with lock: tokens[case]={a:dev_auth.token(auth,s,120) for a,s in subjects[case].items()}
                                 for subject in subjects[case].values():
@@ -216,9 +239,10 @@ def main():
                                     result=subprocess.run(command,env=env,capture_output=True,text=True); result.check_returncode()
                                 conversation='memory-'+uuid.uuid4().hex
                                 with TestClient(app) as client:
-                                    client.put('/v1/conversations',params={'conversation_id':conversation},headers={'Authorization':'Bearer '+tokens[case]['A']}).raise_for_status()
+                                    for owned in [conversation, *current_contexts.get(case,[])]:
+                                        client.put('/v1/conversations',params={'conversation_id':owned},headers={'Authorization':'Bearer '+tokens[case]['A']}).raise_for_status()
                                 records[case]=dict(posts=[],request_start=len(requests),provider_start=model.calls,held=threading.Event(),release=threading.Event(),released=threading.Event())
-                                display=json.loads(json.dumps(profile))
+                                display=json.loads(json.dumps(profiles.get(subjects[case]['A'],profile)))
                                 if mode=='rejected': display['slots']['blocked']['collection_allowed']=True
                                 value=dict(endpoint=endpoint,accounts=tokens[case],subjects=subjects[case],case_id=case,conversation=conversation,profile=json.dumps(display))
                             elif urlsplit(self.path).path=='/hold-read':
