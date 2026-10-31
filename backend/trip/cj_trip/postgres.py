@@ -76,11 +76,14 @@ class Repository:
 
     def _content(self, content, *, validated=False):
         document = json.loads(content)
-        if type(document) is dict and document.get('content_version') == 'structured.1':
+        if type(document) is dict and document.get('content_version') in ('structured.1','structured.2'):
             if not self.structured:
                 raise Denied('structured Trip requires explicit versioned consumer')
             if not validated:
-                from .structured import validate_document
+                if document['content_version']=='structured.2':
+                    from .structured_v2 import validate_document
+                else:
+                    from .structured import validate_document
                 from .domain import packed
                 validate_document(document)
                 if packed(document) != content: raise ValueError('canonical stored Trip required')
