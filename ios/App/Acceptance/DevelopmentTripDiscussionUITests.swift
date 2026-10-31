@@ -15,6 +15,7 @@ import Foundation
         let status:String?
         let text:String
         let upgrade_refused:Bool
+        let post_statuses:[Int]
     }
     private func call(_ path:String,caseID:String) async throws -> Data {
         var url=URLComponents(string:control+path)!
@@ -128,14 +129,17 @@ import Foundation
     func testMemoryUpgradeRefused() async throws {
         let f=try await prepare("testMemoryUpgradeRefused");defer { app?.terminate() }
         try launch(f,language:"en");conversation(f)
-        text("assistant.trip.refusal",contains:"HTTP 503")
-        tap("assistant.trip.none");text("assistant.trip.refusal",contains:"existing memory was not changed")
+        tap("assistant.trip.none")
         enter("SYNTHETIC retained draft",language:"en")
+        tap("assistant.send")
+        text("assistant.trip.refusal",contains:"HTTP 503")
+        text("assistant.trip.refusal",contains:"existing memory was not changed")
         let send=app.buttons.matching(identifier:"assistant.send").firstMatch
         XCTAssertTrue(send.exists);XCTAssertFalse(send.isEnabled)
         let proof=try JSONDecoder().decode(Proof.self,from:await call("/proof",caseID:f.case_id))
         XCTAssertTrue(proof.upgrade_refused);XCTAssertEqual(proof.memory_items,1)
-        XCTAssertEqual(proof.messages,0);XCTAssertEqual(proof.posts,0);XCTAssertEqual(proof.model_calls,0);XCTAssertEqual(proof.forbidden_writes,0)
+        XCTAssertEqual(proof.messages,0);XCTAssertEqual(proof.posts,1);XCTAssertEqual(proof.post_statuses,[503])
+        XCTAssertEqual(proof.model_calls,0);XCTAssertEqual(proof.registered_operations,0);XCTAssertEqual(proof.forbidden_writes,0)
         capture("memory-upgrade-refused");try audit("memory-upgrade-refused")
     }
 }

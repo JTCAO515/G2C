@@ -156,7 +156,7 @@ def main():
                     if rows:assert [x['input_sha256'] for x in posts]==hashes
                     value=dict(runtime_role=role,pending=pending,status=status,text=text,reference=reference,messages=len(rows),posts=len(posts),model_calls=models[case].calls,
                         memory_items=len(memory),trip_profile=profile[0] if profile else None,upgrade_refused=case=='testMemoryUpgradeRefused',
-                        forbidden_writes=len(forbidden),registered_operations=len(operations),input_hashes=hashes,worker_errors=worker_errors)
+                        forbidden_writes=len(forbidden),registered_operations=len(operations),input_hashes=hashes,post_statuses=[event['status'] for event in posts],worker_errors=worker_errors)
                     report.setdefault('proofs',{})[case]=value;save();return value
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
@@ -169,6 +169,16 @@ def main():
                             elif path.path in ('/proof','/wait-completed'):
                                 deadline=time.monotonic()+30
                                 while True:
+                                    if path.path=='/wait-completed':
+                                        # A real receipt can precede RUN creation. Wait
+                                        # for unchanged run_once to return its actual
+                                        # terminal outcome before the strict 200 proof.
+                                        with lock:finished=list(outcomes[case])
+                                        if worker_errors:raise RuntimeError('formal worker failed')
+                                        if not finished:
+                                            if time.monotonic()>deadline:raise TimeoutError('formal worker outcome')
+                                            time.sleep(.05);continue
+                                        if any(value['status']!='completed' for value in finished):raise RuntimeError('formal RUN did not complete')
                                     value=proof(case)
                                     if path.path=='/proof' or value['status']=='completed' and value['pending']==0:break
                                     if value['worker_errors'] or time.monotonic()>deadline:raise TimeoutError('original RUN completion')
@@ -201,7 +211,9 @@ def main():
                         summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],env=env))
                         (output/(case+'-summary.json')).write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==0 and summary['skippedTests']==0
                         verified=proof(case);assert verified['forbidden_writes']==0 and not worker_errors
-                        if case=='testMemoryUpgradeRefused':assert verified['messages']==verified['posts']==verified['model_calls']==0 and verified['memory_items']==1
+                        if case=='testMemoryUpgradeRefused':
+                            assert verified['messages']==verified['model_calls']==verified['registered_operations']==0 and verified['memory_items']==1
+                            assert verified['posts']==1 and verified['post_statuses']==[503]
                         else:assert verified['messages']==verified['posts']==verified['model_calls']==verified['registered_operations']==1
                         report['cases'][case]='PASS';save()
                     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
