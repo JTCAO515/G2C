@@ -3,24 +3,17 @@ from dataclasses import dataclass
 import hashlib
 import json
 
-from .domain import Command, InvalidInput
+from .domain import Command, InvalidInput, unique_fields
 
 MANUAL_VERSION = 'MEMORY-manual.2'
 STORED_VERSION = 'MEMORY-command.2'
 
 
 def decode(raw, *, maximum=32768):
-    def unique(pairs):
-        result = {}
-        for key, value in pairs:
-            if key in result:
-                raise InvalidInput('duplicate field')
-            result[key] = value
-        return result
     if type(raw) is not bytes or not 0 < len(raw) <= maximum:
         raise InvalidInput('bounded original UTF8 bytes required')
     try:
-        value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
+        value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_fields)
     except (ValueError, UnicodeError):
         raise InvalidInput('invalid JSON') from None
     if type(value) is not dict:
