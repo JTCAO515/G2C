@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime,timezone
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--manual-trip-profile',action='store_true')
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
 parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest'],required=True)
@@ -36,7 +37,7 @@ import uvicorn
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
-r={'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver']}
+r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver']}
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)
@@ -320,7 +321,7 @@ try:
     def do_GET(self):
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
-      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE=='testScopedCandidateLateAccount' else {})),formal_trips=[spec])
+      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE=='testScopedCandidateLateAccount' else {})),formal_trips=[spec],manual_profile=ARGS.manual_trip_profile)
       elif path.path=='/wait-discovery':
        assert CASE=='testScopedCandidateLateAccount' and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':

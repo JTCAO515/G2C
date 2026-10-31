@@ -9,6 +9,7 @@ import Foundation
         let case_id,endpoint,conversation,namespace:String
         let accounts,subjects:[String:String]
         let formal_trips:[FormalTrip]
+        let manual_profile:Bool?
     }
     private struct FormalTrip:Decodable {
         let id,title,content_sha256:String
@@ -105,6 +106,7 @@ import Foundation
             "G2C_DEV_TRAVEL_PROFILE":String(data:try JSONSerialization.data(withJSONObject:["version":"app-travel.1","travel_ids":[f.namespace]]),encoding:.utf8)!,
             "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"food\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true},\"pace\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}",
             "G2C_DEV_TYPED_MEMORY_URL":f.endpoint]
+        if f.manual_profile == true { app.launchEnvironment["G2C_DEV_TRIP_MANUAL_PROFILE"]="manual-v1" }
         if let timezone { app.launchEnvironment["TZ"]=timezone }
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
@@ -131,7 +133,9 @@ import Foundation
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
-        tap(language=="en" ? "Trips" : "行程");tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
+        tap(language=="en" ? "Trips" : "行程")
+        if f.manual_profile == true { tap("trip.manual.browse") }
+        tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
         text("timeline.record.title",contains:trip.title)
         capture(name+"-formal-source");try audit(name+"-formal-source")
         let chosen=trip.item_ids[item ? 1 : 2]

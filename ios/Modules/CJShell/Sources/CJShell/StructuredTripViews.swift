@@ -103,7 +103,8 @@ struct StructuredTripHome: View {
                         }
                     } else { RunReadableText(text:language.text("Trip context is unavailable. Read again in the current account.","行程上下文不可用，请在当前账号下重新读取。")) }
                     if let issue { RunReadableText(text:issue).accessibilityIdentifier("trip.manual.issue") }
-                    NavigationLink(language.text("Older representations · existing read-only path","旧表示 · 现有只读入口")) { TripShell(state:state,host:legacy) }
+                    NavigationLink(language.text("Timelines, browsing and original actions","时间线、浏览与原动作")) { TripShell(state:state,host:legacy) }
+                        .accessibilityIdentifier("trip.manual.browse")
                 }.frame(maxWidth:.infinity,alignment:.leading).padding()
             }.accessibilityIdentifier("trip.manual.content").scrollDismissesKeyboard(.interactively)
                 .navigationTitle(language.text("Edit trip","编辑行程")).navigationBarTitleDisplayMode(.inline)
