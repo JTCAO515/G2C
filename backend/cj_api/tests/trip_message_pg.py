@@ -54,7 +54,6 @@ def exercise(auth,conninfo):
     import migrate
     migration=migrate.load()[-1]
     up=harness.ROOT/migration['file'];down=harness.ROOT/migration['down']
-    # Development runner may install this append migration after the manifest tip.
     if migration['name']=='message_trip_context':
         with psycopg.connect(**config) as admin:
             admin.execute(down.read_text());admin.execute(up.read_text())
@@ -63,11 +62,14 @@ def exercise(auth,conninfo):
     database=LocalDatabase(conninfo,run_context=context,travel_context=True,trip_context=True)
     scope=scope_for(ISSUER,'alice');foreign=scope_for(ISSUER,'bob');source=packed(document())
     database.provision(scope);database.provision(foreign)
+    minute=document();minute['content_version']='structured.2'
+    for endpoint in ('start','end'):
+        minute['items'][0]['schedule'][endpoint]['time']['value']=minute['items'][0]['schedule'][endpoint]['time']['value'][:5]
     with psycopg.connect(**config) as admin:
         admin.execute('INSERT INTO cj_trip_record(scope,trip_id,version,content) VALUES(%s,%s,1,%s)',
                       (trip_scope_for(scope),'trip-a',source))
         admin.execute('INSERT INTO cj_trip_record(scope,trip_id,version,content) VALUES(%s,%s,1,%s)',
-                      (trip_scope_for(scope),'trip-b',source))
+                      (trip_scope_for(scope),'trip-b',packed(minute)))
     headers={s:{'Authorization':'Bearer '+dev_auth.token(auth,s,30)} for s in subjects}
     env=dict(CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_CONNINFO=str(conninfo),CJ_LOCAL_RUN_CONTEXT=str(path),
         CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1',CJ_LOCAL_TRIP_CONTEXT='message-trip.1')
@@ -95,6 +97,11 @@ def exercise(auth,conninfo):
         send('item',selection(item_id='foreign-item'),code=503)
         send('day',selection(day=dict(date='2026-11-01',timezone='Asia/Shanghai')),code=503)
         send('owner',dict(**selection(),owner='alice'),code=400)
+        minute_accept,_=send('minute',selection(id='trip-b'))
+        model=FakeProvider();assert run_worker.run_once(database,model,auth)[0].status=='completed' and model.calls==1
+        assert minute_accept['reference']['content_version']=='structured.2'
+        minute_display=expect(client.get('/v3/run-display',params=dict(message_id='minute'),headers=headers['alice']))
+        assert '10:00' in json.dumps(minute_display) and '10:00:00' not in json.dumps(minute_display)
         accepted,raw=send('positive',selection())
         assert accepted['version']=='MESSAGE-accept.3'
         assert accepted['reference']['content_sha256']==hashlib.sha256(source).hexdigest()

@@ -4,7 +4,8 @@ from datetime import date, timedelta
 import json
 from cj_agent.draft import trip_scope_for
 from cj_trip.domain import identifier, packed
-from cj_trip.structured import validate_document, _zone
+from cj_trip.structured import validate_document as validate_v1, _zone
+from cj_trip.structured_v2 import validate_document as validate_v2
 from .domain import InvalidInput, Unavailable
 from .travel_reference import ContextConflict
 
@@ -60,17 +61,20 @@ def on_day(item, day):
     sz, ez = known(start, 'timezone'), known(end, 'timezone')
     if sd is not None and ed is not None and sz == ez == zone and sd <= ed:
         # Midnight end is exclusive; an unknown end time cannot prove exclusion.
-        last = (date.fromisoformat(ed) - timedelta(days=1)).isoformat() if known(end, 'time') == '00:00:00' and sd < ed else ed
+        last = (date.fromisoformat(ed) - timedelta(days=1)).isoformat() if known(end, 'time') in ('00:00','00:00:00') and sd < ed else ed
         return sd <= target <= last
     return ((sd == target and sz == zone)
-            or (ed == target and ez == zone and known(end, 'time') != '00:00:00'))
+            or (ed == target and ez == zone and known(end, 'time') not in ('00:00','00:00:00')))
 
 
 def decode_source(raw, selection):
     """Persisted C-owned structured.1 boundary; bytes are canonical and immutable."""
     try:
         document = json.loads(raw.decode('utf-8'))
-        validate_document(document)
+        version=document['content_version']
+        if version=='structured.1':validate_v1(document)
+        elif version=='structured.2':validate_v2(document)
+        else:raise ValueError('supported structured Trip version required')
         if packed(document) != raw or len(raw) > 1048576:
             raise ValueError('canonical bounded structured.1 required')
         items = document['items']

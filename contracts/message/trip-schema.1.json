@@ -587,6 +587,7 @@
         "content_version": {
           "enum": [
             "structured.1",
+            "structured.2",
             null
           ]
         },
@@ -644,7 +645,10 @@
                 "$ref": "#/$defs/TripSelection"
               },
               "content_version": {
-                "const": "structured.1"
+                "enum": [
+                  "structured.1",
+                  "structured.2"
+                ]
               },
               "content_sha256": {
                 "type": "string",

@@ -33,7 +33,8 @@ asks for an explicit Trip/day/item, never the most recent Trip or parsed IDs in 
 
 The source is the authenticated owner's current formal `cj_trip_record`, reached
 through server-derived Trip scope, not through model text. This version accepts
-only canonical `structured.1` (STRUCTURED-V1.md). It pins the original complete
+canonical `structured.1` (STRUCTURED-V1.md) or `structured.2` (NEEDS-PLAN-V1.md).
+Minute/second precision is retained exactly; no seconds are added. It pins the original complete
 content bytes and SHA256 in the receipt transaction. An item must belong to that
 Trip; a selected day must have a declared member in the specified IANA zone. If both
 are supplied that item must belong to that day. Unknown/missing/uncertain fields
@@ -53,7 +54,7 @@ on a rejection. Reconcile the original message; never substitute a new ID/versio
 Accept envelope `MESSAGE-accept.3`; status `GET /v3/message-send-status` envelope
 `MESSAGE-send-status.3`. `MESSAGE-trip-reference.1` includes original message/run,
 generation/sequence/hash, immutable selection epoch, context kind (`trip/travel/none`),
-Trip selection, `content_version=structured.1` and content hash (both null unbound).
+Trip selection, original `content_version=structured.1/structured.2` and content hash (both null unbound).
 Public references contain no owner scope or source bytes and grant no authority.
 Same-ID/same-bytes replay resolves the original receipt **before** current head/source
 checks. Different bytes conflict. Trip changes never refresh that reference.

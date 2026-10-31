@@ -13,6 +13,7 @@ from .trip_context import ABI, PROFILE, current_source, decode_source
 @dataclass(frozen=True)
 class OriginalTripReference(OriginalMessageContextRef):
     trip_selection: object
+    content_version: str | None
     content_sha256: str | None
     source: bytes | None
 
@@ -20,7 +21,7 @@ class OriginalTripReference(OriginalMessageContextRef):
         value = super().public_value()
         value.update(version='MESSAGE-trip-reference.1',
                      trip_context=None if self.trip_selection is None else self.trip_selection.public_value(),
-                     content_version=None if self.source is None else 'structured.1',
+                     content_version=self.content_version,
                      content_sha256=self.content_sha256)
         return value
 
@@ -82,19 +83,20 @@ def read_reference(tx, stored):
         raise Unavailable('immutable formal Trip selection mismatch')
     source = None if row[8] is None else bytes(row[8])
     trip = command.trip_context
+    content_version=None
     if trip is None:
         if source is not None or row[9] is not None:
             raise Unavailable('unbound message cannot carry formal Trip source')
     else:
         if source is None or hashlib.sha256(source).hexdigest() != row[9]:
             raise Unavailable('formal Trip source digest mismatch')
-        decode_source(source, trip)
+        content_version=decode_source(source, trip)['content_version']
     travel = command.travel_context
     kind, cid, version = ('none',None,None) if travel is None else ('travel',travel.id,travel.expected_version)
     if trip is not None:
         kind,cid,version = 'trip',trip.id,trip.expected_version
     return OriginalTripReference(tx.scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence,
-        r.input_sha256,'MESSAGE-send.3',kind,cid,version,row[7],trip,row[9],source)
+        r.input_sha256,'MESSAGE-send.3',kind,cid,version,row[7],trip,content_version,row[9],source)
 
 
 def check_effect(tx, reference, chat,*,source_check=None):

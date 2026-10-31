@@ -16,5 +16,5 @@ def test_new_version_schema_and_original_reference():
     for bad in (json.loads(raw(select(owner='client'))),json.loads(raw(select(),creation_intent='consider_trip'))):
         with pytest.raises(jsonschema.ValidationError):jsonschema.validate(bad,SCHEMA)
     reference=OriginalTripReference('internal','chat','g','m','r',1,'a'*64,'MESSAGE-send.3','trip','trip-a',1,1,
-        TripSelection.parse(select()),'b'*64,b'synthetic source')
+        TripSelection.parse(select()),'structured.1','b'*64,b'synthetic source')
     jsonschema.validate(reference.public_value(),{'$ref':'#/$defs/MessageTripReference',**{k:v for k,v in SCHEMA.items() if k!='$id' and k!='oneOf'}})
