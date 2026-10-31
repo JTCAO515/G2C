@@ -17,5 +17,5 @@ let package = Package(name: "CJNeedsClient", platforms: [.iOS(.v17), .macOS(.v14
             .product(name: "CJMessageKeys", package: "CJAuth"),
             .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
             .product(name: "HTTPTypes", package: "swift-http-types")]),
-        .testTarget(name: "CJNeedsClientTests", dependencies: ["CJNeedsClient"])
+        .testTarget(name: "CJNeedsClientTests", dependencies: ["CJNeedsClient"], resources: [.copy("Fixtures")])
     ])
