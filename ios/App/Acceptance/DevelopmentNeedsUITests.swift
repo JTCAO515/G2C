@@ -66,7 +66,7 @@ import Foundation
             let down = frame == .zero ? attempt >= 30 : (full ? frame.minY < top : frame.midY <= top)
             let middle = (top + bottom) / 2, step = min(150,(bottom-top)*0.35)
             let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
-            let surface = panel.exists ? panel : app
+            let surface: XCUIElement = panel.exists ? panel : app!
             let bounds = surface.frame
             if id == "needs.editor.statement" && attempt % 10 == 0 {
                 print("NEEDS_STATEMENT_VIEWPORT",attempt,element.elementType.rawValue,element.exists,frame,element.isHittable,top,bottom,bounds)
