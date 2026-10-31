@@ -127,7 +127,7 @@ import Foundation
         let done=app.toolbars.buttons.matching(identifier:language=="en" ? "Done" : "完成").firstMatch
         if done.exists { done.tap() }
     }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false) async throws {
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -179,6 +179,18 @@ import Foundation
         if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
         else { text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程") }
         capture(name+"-published-not-adopted");try audit(name+"-original-run")
+        if discoveryUnavailable {
+            _ = try await call("/invalidate-candidate",caseID:name)
+            for _ in 0..<2 {
+                tap("scoped.discover");text("scoped.activity",contains:"Protected candidate unavailable")
+                XCTAssertFalse(textElement("scoped.discovery.state").exists)
+                XCTAssertFalse(textElement("scoped.after."+chosen).exists)
+                XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
+                XCTAssertFalse(app.buttons.matching(identifier:"scoped.reject").firstMatch.exists)
+            }
+            _ = try await call("/discovery-refusal-proof",caseID:name)
+            capture(name+"-failed-read-no-action-no-model");try audit(name+"-discovery-refusal")
+        }
         if lateAccount {
             tap("scoped.discover");_ = try await call("/wait-discovery",caseID:name)
             tap("Memory")
@@ -228,6 +240,7 @@ import Foundation
         }
 
     }
+    func testScopedCandidateDiscoveryUnavailable() async throws { try await scenario("testScopedCandidateDiscoveryUnavailable",language:"en",item:true,discoveryUnavailable:true) }
     func testScopedCandidateLateAccount() async throws { try await scenario("testScopedCandidateLateAccount",language:"en",item:true,lateAccount:true) }
     func testScopedCandidateStaleAcceptance() async throws { try await scenario("testScopedCandidateStaleAcceptance",language:"en",item:true,decision:"accept",invalidation:"stale") }
     func testScopedCandidateConflict() async throws { try await scenario("testScopedCandidateConflict",language:"en",item:true,decision:"reject",invalidation:"conflict") }

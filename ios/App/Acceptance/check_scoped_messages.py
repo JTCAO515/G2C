@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable'],required=True)
 ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -150,7 +150,7 @@ try:
     path=scope.get('path','')
     if scope.get('type')!='http':return await edit_api(scope,receive,send)
     entry=dict(method=scope['method'],path=path);audit.append(entry);chunks=[];reply=[]
-    if path=='/v1/trip-scoped-action-receipts':entry['original_query']=parse_qs(scope.get('query_string',b'').decode('ascii'))
+    if path in ('/v1/trip-scoped-action-receipts','/v1/trip-scoped-discovery'):entry['original_query']=parse_qs(scope.get('query_string',b'').decode('ascii'))
     async def received():
      message=await receive()
      if message['type']=='http.request':chunks.append(message.get('body',b''))
@@ -184,6 +184,7 @@ try:
      late_state['release_elapsed_seconds']=time.monotonic()-started
      for message in actual_reply:await send(message)
      late_state['original_response_delivered']=True
+    if path=='/v1/trip-scoped-discovery':entry['completed']=True
     if path=='/v4/messages' and entry.get('status')==200:actual_message_receipts.append(json.loads(b''.join(reply))['receipt'])
     if scope['method']=='POST':
      raw=b''.join(chunks);entry['input_sha256']=hashlib.sha256(raw).hexdigest()
@@ -225,6 +226,25 @@ try:
      status=display['snapshot']['status'],draft_outcome=draft['draft_outcome'],trip_id=reference['trip_context']['id'],content_sha256=reference['trip_context']['content_sha256'],namespace=reference['namespace']['id'],needs_version=reference['needs_reference']['expected_version'],item_ids=reference['trip_context']['item_ids'],day=None if reference['trip_context']['day'] is None else reference['trip_context']['day']['date'],
      memory_long='SYNTHETIC LONG' in inputs,memory_current='SYNTHETIC CURRENT' in inputs,memory_other='SYNTHETIC OTHER' in inputs)
     r['proof']=value;r['observed_requests']=list(audit);r['worker_outcomes']=list(finished);r['proposal_ids_are_backend_oracles_only']=True;save();return value
+   def discovery_refusal_proof():
+    assert CASE=='testScopedCandidateDiscoveryUnavailable' and len(actual_message_receipts)==1
+    deadline=time.monotonic()+5
+    while True:
+     reads=[x for x in audit if x['path']=='/v1/trip-scoped-discovery']
+     if len(reads)==2 and all(x.get('completed') for x in reads):break
+     if time.monotonic()>deadline:raise TimeoutError('two original discovery refusals')
+     time.sleep(.05)
+    original=actual_message_receipts[0]
+    assert all(x['status']==503 and x['original_query']==dict(message_id=[original['message_id']],run_id=[original['run_id']]) for x in reads)
+    with edit_db.connect(scope_for(ISSUER,subject)) as conn:
+     assert conn.execute('SELECT count(*) FROM cj_trip_scoped_action').fetchone()[0]==0
+     trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
+     messages=conn.execute('SELECT count(*) FROM cj_message_receipt WHERE conversation_id=%s',(cid,)).fetchone()[0]
+     operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(cid,)).fetchone()[0]
+    assert messages==operations==fake.calls==len(trips)==1 and trips[0][0]==tid and trips[0][1]==2 and bytes(trips[0][2])==packed(formal['content'])
+    assert not any(x['path']=='/v1/trip-scoped-actions' for x in audit)
+    r['discovery_refusal_proof']=dict(reads=2,statuses=[x['status'] for x in reads],same_original_association=True,messages=1,model_calls=1,registered_operations=1,actions=0,formal_version=2)
+    save();return r['discovery_refusal_proof']
    def late_proof():
     assert late_captured.is_set() and late_release.is_set() and late_state.get('original_response_delivered')
     # The real protected A/200 response was released after B became current.
@@ -235,7 +255,7 @@ try:
     with edit_db.connect(scope_for(ISSUER,subject)) as conn:assert conn.execute('SELECT count(*) FROM cj_trip_scoped_action').fetchone()[0]==0
     r['late_proof']=dict(late_state,account_switched_before_release=True,formal_version=2,actions=0,model_calls=1);save();return r['late_proof']
    def invalidate_candidate():
-    assert CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance') and len(actual_message_receipts)==1
+    assert CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable') and len(actual_message_receipts)==1
     original=actual_message_receipts[0]
     if CASE in ('testScopedCandidateConflict','testScopedCandidateStaleAcceptance'):
      with TestClient(scoped_app) as client:
@@ -292,6 +312,7 @@ try:
        assert CASE=='testScopedCandidateLateAccount' and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
        assert CASE=='testScopedCandidateLateAccount' and late_captured.is_set();late_release.set();value=dict(status='release requested')
+      elif path.path=='/discovery-refusal-proof':value=discovery_refusal_proof()
       elif path.path=='/late-proof':value=late_proof()
       elif path.path=='/invalidate-candidate':value=invalidate_candidate()
       elif path.path=='/decision-proof':value=decision_proof()
@@ -325,7 +346,8 @@ try:
     log=(run.stdout+run.stderr).replace(headers['Authorization'][7:],'<redacted-local-token>');(OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     if CASE=='testScopedCandidateLateAccount':late_proof()
-    verified=r['proof'] if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance') else proof()
+    if CASE=='testScopedCandidateDiscoveryUnavailable':discovery_refusal_proof()
+    verified=r['proof'] if CASE=='testScopedCandidateDiscoveryUnavailable' or CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance') else proof()
     if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance'):assert decision_proof()['receipt_queries']>=1
     assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
     if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
