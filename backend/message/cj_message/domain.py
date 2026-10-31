@@ -46,6 +46,7 @@ class Command:
     travel_context: Selection | None = None
     needs_reference: tuple[str, int] | None = None
     trip_context: TripSelection | None = None
+    modification_intent: str = 'none'
 
     @classmethod
     def parse(cls, raw):
@@ -65,8 +66,14 @@ class Command:
         return cls._parse(raw, stored=False, travel=True, formal=True)
 
     @classmethod
+    def parse_v4(cls,raw):
+        from .edit_input import parse
+        return parse(raw)
+
+    @classmethod
     def parse_original(cls, raw):
         version = json.loads(raw)["version"]
+        if version == "MESSAGE-send.4": return cls.parse_v4(raw)
         if version == "MESSAGE-send.3": return cls.parse_v3(raw)
         if version == "MESSAGE-send.2": return cls.parse_v2(raw)
         return cls.parse_stored(raw)
@@ -160,6 +167,7 @@ class Stored:
     receipt: Receipt
     travel_reference_version: int | None = None
     trip_reference_version: int | None = None
+    edit_reference_version: int | None = None
 
 
 @dataclass(frozen=True)
@@ -214,6 +222,10 @@ class Service:
 
     def receive_v2(self, raw):
         return self._receive(raw, travel=True)
+
+    def receive_v4(self,raw):
+        from .edit_reference import receive
+        return receive(self,raw)
 
     def receive_v3(self, raw):
         return self._receive(raw,travel=True,formal=True)
@@ -284,6 +296,17 @@ class Service:
         # None means absent in this ledger; production retention policy still gates retry.
         return old
 
+    def query_edit_message(self,message_id,*,require_active=True):
+        from .edit_reference import read
+        from .travel_reference import OriginalTravelMessage
+        with self.repository.transaction() as tx:
+            tx.lock_scope();stored=tx.find(message_id)
+            if stored is None:return None
+            if require_active:tx.chat(stored.receipt.conversation_id,stored.receipt.generation)
+            if stored.edit_reference_version!=1:raise Unavailable('edit read requires original send.4')
+            result=OriginalTravelMessage(stored,read(tx,stored))
+        return result
+
     def query_trip_message(self,message_id, *, require_active=True):
         return self.query_travel_message(message_id,require_active=require_active,formal=True)
 
@@ -303,13 +326,16 @@ class Service:
     def send_status(self, conversation_id, message_id=None):
         return self._send_status(conversation_id,message_id,travel=False)
 
+    def send_status_v4(self,conversation_id,message_id=None):
+        return self._send_status(conversation_id,message_id,travel=True,formal=True,edit=True)
+
     def send_status_v3(self, conversation_id, message_id=None):
         return self._send_status(conversation_id,message_id,travel=True,formal=True)
 
     def send_status_v2(self, conversation_id, message_id=None):
         return self._send_status(conversation_id,message_id,travel=True)
 
-    def _send_status(self, conversation_id, message_id, *, travel, formal=False):
+    def _send_status(self, conversation_id, message_id, *, travel, formal=False, edit=False):
         if (type(conversation_id) is not str or not conversation_id.strip()
                 or len(conversation_id.encode('utf-8')) > 256 or '\x00' in conversation_id
                 or (message_id is not None and (type(message_id) is not str or not message_id.strip()))):
@@ -326,6 +352,8 @@ class Service:
             if travel and stored is not None:
                 from .travel_reference import read_reference
                 reference=read_reference(tx,stored)
+                if not edit and reference.message_version=='MESSAGE-send.4':
+                    raise Unavailable('send.4 requires its read version')
                 if not formal and reference.message_version=='MESSAGE-send.3':
                     raise Unavailable('send.3 requires explicit versioned read')
         return TravelSendStatus(stored,head,reference) if travel else SendStatus(stored, head)

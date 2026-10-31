@@ -85,13 +85,20 @@ def require_memory_configuration(database, scope, configuration):
 
 def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None):
     database.require_execution(scope)
-    require_memory_configuration(database, scope, memory_configuration)
+    editing=database.edit_profile(scope)
+    edit_config=None
+    if editing:
+        from cj_message.edit_reference import configured
+        edit_config=configured(database.edit_configuration)
+        if memory_configuration is not None or tools_configuration is not None:
+            raise CompositionUnavailable('edit profile requires its negotiated memory/publisher only')
+    else:require_memory_configuration(database, scope, memory_configuration)
     if tools_configuration is not None and (database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2'):
         raise CompositionUnavailable('tools require the registered M2 exit')
     messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
     subject = scope.removeprefix('local:' + ISSUER + ':')
     def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
-    memory_credential = token() if memory_configuration is not None else None
+    memory_credential = token() if memory_configuration is not None or editing else None
     def memory_admit(credential=memory_credential, scope=scope):
         decision = checker.check(credential)
         if decision.status is AdmissionStatus.UNKNOWN:
@@ -112,8 +119,14 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                     or scope_for(decision.principal.issuer,decision.principal.subject)!=scope):
                 raise Denied('travel admission denied')
             return decision.principal
-        message_context=MessageContextAuthority(database.message_repository(scope),travel_admit)
-    if type(memory_configuration) is TypedRuntimeConfiguration:
+        if editing:
+            from cj_message.edit_reference import EditAuthority
+            message_context=EditAuthority(database.message_repository(scope),travel_admit,database.run_repository(scope))
+        else:message_context=MessageContextAuthority(database.message_repository(scope),travel_admit)
+    if editing:
+        memory=edit_config.memory.bind(database,scope,subject,memory_admit,message_context=message_context)
+        if memory is None:raise RuntimeDenied('C memory adapter did not bind')
+    elif type(memory_configuration) is TypedRuntimeConfiguration:
         memory=memory_configuration.bind(database,scope,subject,memory_admit,message_context=message_context)
     else:
         memory=(memory_configuration.bind(database,scope,subject,memory_admit)
@@ -134,7 +147,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     runs = RunService(database.run_repository(scope),valid=valid)
     drafts = DraftPublisher(database.trip_repository(scope))
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
-        memory=memory,
+        memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,
         message_context=message_context,
         tools=tools_configuration,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),

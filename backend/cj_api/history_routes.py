@@ -124,7 +124,7 @@ def register_history_routes(app, boundary=None, configuration=None, environment=
             'generation':value.generation,'revision':value.revision,
             'original_utf8_base64':_raw64(value.original_utf8)},strict=True)
 
-    async def read(request,kind,*,formal=False):
+    async def read(request,kind,*,formal=False,edit=False):
         required = ('limit',) if kind=='conversations' else ('conversation_id','limit') if kind=='message_history' else ('conversation_id','generation')
         prepared = prepare(request,required,('cursor',) if kind!='draft' else (),paged=kind!='draft')
         if isinstance(prepared,JSONResponse):return prepared
@@ -165,14 +165,15 @@ def register_history_routes(app, boundary=None, configuration=None, environment=
                     item=dict(receipt=receipt.model_dump(mode='json'),original_utf8_base64=_raw64(row.original_utf8),text=row.text)
                     if formal:
                         version=json.loads(row.original_utf8)['version']
-                        original=(context.query_trip_message(row.receipt.message_id) if version=='MESSAGE-send.3' else
+                        if version=='MESSAGE-send.4' and not edit:raise ValueError('send.4 requires history.3')
+                        original=(context.query_edit_message(row.receipt.message_id) if version=='MESSAGE-send.4' else context.query_trip_message(row.receipt.message_id) if version=='MESSAGE-send.3' else
                                   context.query_travel_message(row.receipt.message_id) if version=='MESSAGE-send.2' else None)
                         item['reference']=None if original is None else original.reference.public_value()
                         projected.append(item)
                     else:
                         projected.append(MessageHistoryItem.model_validate(item,strict=True))
             if formal:
-                body=JSONResponse(dict(request_id=request.state.request_id,version='MESSAGE-history.2',messages=projected,next_cursor=next_token))
+                body=JSONResponse(dict(request_id=request.state.request_id,version='MESSAGE-history.3' if edit else 'MESSAGE-history.2',messages=projected,next_cursor=next_token))
                 if len(body.body)>configuration.max_private_response_bytes:raise PrivateOutputTooLarge()
                 return body
             model = ConversationPageResponse if kind=='conversations' else MessageHistoryResponse
@@ -224,3 +225,6 @@ def register_history_routes(app, boundary=None, configuration=None, environment=
 
     @app.get('/v2/message-history')
     async def trip_history(request:Request):return await read(request,'message_history',formal=True)
+
+    @app.get('/v3/message-history')
+    async def edit_history(request:Request):return await read(request,'message_history',formal=True,edit=True)
