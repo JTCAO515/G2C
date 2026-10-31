@@ -33,7 +33,7 @@ def register_message_travel_routes(app,boundary,max_body_bytes,message_failure):
             if exc.status==503:return unavailable(request,True)
             return _error(request,exc.status,exc.code,'input','failed','do_not_retry')
         try:
-            value=await run_in_threadpool(boundary.receive_v3 if version==3 else boundary.receive_v2,token,raw)
+            value=await run_in_threadpool(boundary.receive_v4 if version==4 else boundary.receive_v3 if version==3 else boundary.receive_v2,token,raw)
             return JSONResponse(dict(request_id=request.state.request_id,version=f'MESSAGE-accept.{version}',
                 receipt=asdict(value.receipt),reference=value.reference.public_value()))
         except Exception as exc:
@@ -48,7 +48,7 @@ def register_message_travel_routes(app,boundary,max_body_bytes,message_failure):
         except (ValueError,UnicodeError):
             return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         try:
-            value=await run_in_threadpool(boundary.send_status_v3 if version==3 else boundary.send_status_v2,token,query['conversation_id'],query.get('message_id'))
+            value=await run_in_threadpool(boundary.send_status_v4 if version==4 else boundary.send_status_v3 if version==3 else boundary.send_status_v2,token,query['conversation_id'],query.get('message_id'))
             head=None if value.head is None else dict(conversation_id=query['conversation_id'],
                 generation=value.head.generation,last_sequence=value.head.last_sequence)
             return JSONResponse(dict(request_id=request.state.request_id,version=f'MESSAGE-send-status.{version}',
@@ -68,3 +68,9 @@ def register_message_travel_routes(app,boundary,max_body_bytes,message_failure):
 
     @app.get('/v3/message-send-status')
     async def status_v3(request:Request):return await status_version(request,3)
+
+    @app.post('/v4/messages')
+    async def send_v4(request:Request):return await send_version(request,4)
+
+    @app.get('/v4/message-send-status')
+    async def status_v4(request:Request):return await status_version(request,4)

@@ -101,6 +101,12 @@ class DisplaySnapshotReader:
     def read_draft_status_v3(self, token, message_id, request_id):
         return self._read_draft_status(token,message_id,request_id,version=3)
 
+    def read_edit_display(self,token,message_id,request_id):
+        return self._context_display(token,message_id,request_id,formal=True,edit=True)
+
+    def read_draft_status_v5(self,token,message_id,request_id):
+        return self._read_draft_status(token,message_id,request_id,version=5)
+
     def read_trip_display(self,token,message_id,request_id):
         return self._context_display(token,message_id,request_id,formal=True)
 
@@ -110,19 +116,19 @@ class DisplaySnapshotReader:
     def read_travel_display(self,token,message_id,request_id):
         return self._context_display(token,message_id,request_id,formal=False)
 
-    def _context_display(self,token,message_id,request_id,*,formal):
+    def _context_display(self,token,message_id,request_id,*,formal,edit=False):
         def encode(state,original,reference):
-            value=dict(request_id=request_id,version='RUN-display.3' if formal else 'RUN-display.2',
+            value=dict(request_id=request_id,version='RUN-display.4' if edit else 'RUN-display.3' if formal else 'RUN-display.2',
                 snapshot=json.loads(_encode_snapshot(state,self.configuration)),reference=reference.public_value())
             return json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
-        return self._read_materialized(token,message_id,encode,travel=True,formal=formal)
+        return self._read_materialized(token,message_id,encode,travel=True,formal=formal,edit=edit)
 
     def _read_draft_status(self, token, message_id, request_id, *, version):
         def encode(state, original, reference=None):
             if version == 1 and (state.draft_outcome == 'budget_exhausted' or state.budget_exhausted_stage != 'none'):
                 raise SnapshotUnavailable('budget result requires version 2')
             command = json.loads(original.raw)
-            requested = command['creation_intent'] == 'consider_trip'
+            requested = command['creation_intent'] == 'consider_trip' or version==5 and command.get('modification_intent')=='propose_scoped_edit'
             published = any(effect.startswith('trip_proposal:') for effect in state.effects)
             if not requested and (published or state.draft_outcome is not None):
                 raise SnapshotUnavailable('draft evidence contradicts original message')
@@ -137,9 +143,9 @@ class DisplaySnapshotReader:
             if version >= 2: payload['budget_exhausted_stage']=state.budget_exhausted_stage
             if version >= 3: payload['reference']=reference.public_value()
             return json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
-        return self._read_materialized(token, message_id, encode,travel=version>=3,formal=version==4)
+        return self._read_materialized(token, message_id, encode,travel=version>=3,formal=version>=4,edit=version==5)
 
-    def _read_materialized(self, token, message_id, encode, *, travel=False, formal=False):
+    def _read_materialized(self, token, message_id, encode, *, travel=False, formal=False, edit=False):
         if type(message_id) is not str or not message_id.strip():
             raise ValueError('original message ID required')
         configuration = self.configuration  # Freeze bounds for this read.
@@ -148,7 +154,7 @@ class DisplaySnapshotReader:
             if type(ctx) is not HistoryReadContext:
                 raise SnapshotUnavailable('MESSAGE context unavailable')
             principal, scope = ctx.principal, ctx.scope
-            query=ctx.query_trip_message if formal else ctx.query_travel_message if travel else ctx.query_message
+            query=ctx.query_edit_message if edit else ctx.query_trip_message if formal else ctx.query_travel_message if travel else ctx.query_message
             record=query(message_id)
             if record is None:
                 raise SnapshotUnavailable('original message unavailable')

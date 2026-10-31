@@ -91,6 +91,12 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def query_edit_message(self,message_id,*,require_active=True):
+        self._check()
+        if type(message_id) is not str or not message_id.strip():raise InvalidInput('message ID required')
+        value=self._service.query_edit_message(message_id,require_active=require_active)
+        self._check();return value
+
     def query_trip_message(self,message_id, *, require_active=True):
         self._check()
         if type(message_id) is not str or not message_id.strip():
@@ -215,6 +221,11 @@ class Boundary:
 
     def receive(self, token, raw):
         return self._service(token).receive(raw)
+
+    def receive_v4(self,token,raw):return self._service(token).receive_v4(raw)
+
+    def send_status_v4(self,token,conversation_id,message_id=None):
+        return self._service(token).send_status_v4(conversation_id,message_id)
 
     def receive_v3(self, token, raw):
         return self._service(token).receive_v3(raw)

@@ -49,7 +49,7 @@ def _require_unbound(cursor):
     cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true), "
                    "current_setting('cj.needs_scope',true), current_setting('cj.usage_scope',true), "
                    "current_setting('cj.message_context_abi',true), "
-                   "current_setting('cj.needs_runtime_abi',true), current_setting('cj.message_trip_abi',true)")
+                   "current_setting('cj.needs_runtime_abi',true), current_setting('cj.message_trip_abi',true), current_setting('cj.message_edit_abi',true)")
     if any(value not in (None, '') for value in cursor.fetchone()):
         raise CompositionUnavailable('database scope already present')
 
@@ -78,6 +78,8 @@ class _ScopedConnection:
             cursor.execute("SELECT set_config('cj.message_context_abi',%s,true)",(TRAVEL_ABI,))
             from cj_message.trip_context import ABI
             cursor.execute("SELECT set_config('cj.message_trip_abi',%s,true)",(ABI,))
+            from cj_message.edit_protocol import EDIT_ABI
+            cursor.execute("SELECT set_config('cj.message_edit_abi',%s,true)",(EDIT_ABI,))
             if self._needs_scope is not None:
                 if self._usage_scope is None:
                     cursor.execute("SELECT set_config('cj.needs_scope',%s,true)",(self._needs_scope,))
@@ -114,8 +116,14 @@ def local_conninfo(conninfo_path):
 
 
 class LocalDatabase:
-    def __init__(self, conninfo_path, *, run_context=None, travel_context=False, needs_context=False, trip_context=False):
+    def __init__(self, conninfo_path, *, run_context=None, travel_context=False, needs_context=False, trip_context=False,edit_configuration=None):
         config = local_conninfo(conninfo_path)
+        self.edit_configuration=edit_configuration
+        if edit_configuration is not None:
+            from cj_message.edit_reference import configured
+            configured(edit_configuration)
+        if edit_configuration is not None and (not travel_context or run_context is None or run_context.version!='CJ-LOCAL-RUN@2'):
+            raise CompositionUnavailable('edit consumer requires explicit registered M2/travel host')
         self.run_context = run_context
         if type(travel_context) is not bool:
             raise CompositionUnavailable('explicit travel capability required')
@@ -192,7 +200,12 @@ class LocalDatabase:
         return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None,
                                  local_run_mode=self.run_context is not None,
                                  registered_usage=self.run_context is not None and self.run_context.version=='CJ-LOCAL-RUN@2',
-                                 travel_mode=self.travel_context,travel_metadata=True,trip_mode=self.trip_context,trip_metadata=True)
+                                 travel_mode=self.travel_context,travel_metadata=True,trip_mode=self.trip_context or self.edit_configuration is not None,trip_metadata=True,edit_mode=self.edit_configuration is not None,edit_metadata=True)
+
+    def edit_profile(self,scope):
+        from cj_message.edit_reference import profile
+        with self.connect(scope) as conn:
+            with conn.cursor() as cur:return profile(cur,scope)
 
     def trip_profile(self,scope):
         from cj_message.trip_reference import profile
@@ -216,7 +229,10 @@ class LocalDatabase:
                     or self.run_context.version!='CJ-LOCAL-RUN@2'):
                 raise CompositionUnavailable('travel execution requires explicit compatible M2 configuration')
             from cj_message.trip_reference import profile as trip_profile
-            if trip_profile(tx.cur,scope) and not self.trip_context:
+            from cj_message.edit_reference import profile as edit_profile
+            if edit_profile(tx.cur,scope) and self.edit_configuration is None:
+                raise CompositionUnavailable('explicit edit configuration required')
+            if trip_profile(tx.cur,scope) and not self.trip_context and self.edit_configuration is None:
                 raise CompositionUnavailable('formal Trip execution requires explicit compatible configuration')
 
     def trip_repository(self, scope):
@@ -255,14 +271,14 @@ def trip_configuration(value):
 
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
-                     memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False):
+                     memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
     if needs_profile not in (None,'manual-v1'):
         raise CompositionUnavailable('unknown local NEEDS profile')
     database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context,
-                             needs_context=needs_profile is not None,trip_context=trip_context)
+                             needs_context=needs_profile is not None,trip_context=trip_context,edit_configuration=edit_configuration)
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
 

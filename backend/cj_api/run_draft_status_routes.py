@@ -30,6 +30,7 @@ def register_run_draft_status_route(app,reader=None,configuration=None,modules=N
         request_id=request.state.request_id
         def invoke():
             try:
+                if version==5:return reader.read_draft_status_v5(token,mid,request_id)
                 if version==4:return reader.read_draft_status_v4(token,mid,request_id)
                 if version==3:return reader.read_draft_status_v3(token,mid,request_id)
                 return (reader.read_draft_status_v2(token,mid,request_id) if version==2
@@ -57,3 +58,6 @@ def register_run_draft_status_route(app,reader=None,configuration=None,modules=N
 
     @app.get('/v4/run-draft-status')
     async def read_v4(request:Request):return await read(request,version=4)
+
+    @app.get('/v5/run-draft-status')
+    async def read_v5(request:Request):return await read(request,version=5)

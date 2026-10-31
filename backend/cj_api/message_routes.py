@@ -75,7 +75,7 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
                         'request_id':request.state.request_id, 'receipt':None})
                 if type(value) is not Stored:
                     raise ValueError('Invalid internal result')
-                if value.travel_reference_version is not None or value.trip_reference_version is not None:
+                if value.travel_reference_version is not None or value.trip_reference_version is not None or value.edit_reference_version is not None:
                     raise Unavailable('v1 cannot strip a travel reference')
                 value = value.receipt  # never serialize Stored or its private original bytes
             if type(value) is not Receipt:
