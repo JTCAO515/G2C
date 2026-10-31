@@ -46,7 +46,7 @@ struct AssistantShell: View {
                     .accessibilityIdentifier("assistant.serverHistory")
                 Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }.accessibilityIdentifier("assistant.needs")
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
-                if messageHost.supportsTripDiscussions {
+                if messageHost.supportsTripMessages {
                     if let conversation=messageHost.selectedConversation {
                         RunReadableText(text:state.language.text("Conversation identifier","会话标识"),style:.caption)
                         RunSelectableText(text:conversation)
@@ -54,7 +54,9 @@ struct AssistantShell: View {
                             .accessibilityValue(conversation)
                             .accessibilityIdentifier("assistant.conversation")
                     }
-                    TripDiscussionChoiceView(host:messageHost,language:state.language,openTrips:{ state.selectedTab = .trips })
+                    if messageHost.supportsScopedEdits {
+                        ScopedMessageChoiceView(host:messageHost,language:state.language,openTrips:{state.selectedTab = .trips},openNeeds:{panel = .needs})
+                    } else { TripDiscussionChoiceView(host:messageHost,language:state.language,openTrips:{ state.selectedTab = .trips }) }
                 }
                 if messageHost.travelSelection != nil {
                     Button { panel = .travel } label: {
@@ -110,7 +112,7 @@ struct AssistantShell: View {
                 Group {
                     if selectedPanel == .travel {
                         if let travel = messageHost.travelSelection {
-                            TravelSelectionView(model:travel,language:state.language)
+                            TravelSelectionView(model:travel,language:state.language,requiresTravel:messageHost.supportsScopedEdits).disabled(messageHost.supportsScopedEdits && messageHost.isBusy)
                         } else {
                             RunReadableText(text:state.language.text("Travel context unavailable", "旅行上下文不可用"))
                         }
@@ -168,11 +170,11 @@ struct AssistantShell: View {
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
             if messageHost.supportsSending {
-                if !messageHost.supportsTripDiscussions,let conversation = messageHost.selectedConversation {
+                if !messageHost.supportsTripMessages,let conversation = messageHost.selectedConversation {
                     RunReadableText(text: state.language.text("Conversation: ", "会话：") + conversation, style: .caption)
                         .accessibilityIdentifier("assistant.conversation")
                 }
-                if !messageHost.supportsTripDiscussions { Toggle(isOn: Binding(
+                if !messageHost.supportsTripMessages { Toggle(isOn: Binding(
                     get: { messageHost.creationIntent == .considerTrip },
                     set: { messageHost.creationIntent = $0 ? .considerTrip : .none })) {
                     RunReadableText(text: state.language.text("Trip planning", "规划行程"))

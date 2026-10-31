@@ -21,6 +21,7 @@ import CJAPI
     let travelSelection: TravelSelectionModel?
     let currentNeeds: (@MainActor () -> MessageNeedsSelection?)?
     let tripDiscussions: Bool
+    let scopedEdits: Bool
 
     public init(recovery: MessageRecovery, scope: StorageScope, lease: Lease,
                 generation: ShellGeneration, conversationID: String? = nil, messageID: String? = nil,
@@ -28,13 +29,14 @@ import CJAPI
                 invalidateResources: @escaping @MainActor () -> Void,
                 queryOriginal: (@MainActor (String, Lease) async throws -> Void)? = nil,
                 sendClient: MessageHTTPClient? = nil,travelSelection: TravelSelectionModel? = nil,
-                currentNeeds: (@MainActor () -> MessageNeedsSelection?)? = nil,tripDiscussions: Bool = false) {
+                currentNeeds: (@MainActor () -> MessageNeedsSelection?)? = nil,tripDiscussions: Bool = false,scopedEdits:Bool = false) {
         self.recovery = recovery; self.scope = scope; self.lease = lease
         self.generation = generation; self.conversationID = conversationID; self.messageID = messageID
         self.synthetic = synthetic; self.isCurrent = isCurrent; self.queryOriginal = queryOriginal
         self.invalidateResources = invalidateResources
         self.sendClient = sendClient;self.travelSelection = travelSelection;self.currentNeeds = currentNeeds
         self.tripDiscussions=tripDiscussions
+        self.scopedEdits=scopedEdits
     }
 }
 
@@ -44,12 +46,13 @@ import CJAPI
     let receipt: Components.Schemas.MessageReceipt
     let travelReference: Components.Schemas.MessageTravelReference?
     let tripReference: MessageTripReference?
+    let editReference: MessageEditReference?
     let originalTextUTF8: Data?
     let isCurrent: @MainActor () -> Bool
     let isStillOwned: @MainActor () -> Bool
-    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil,tripReference:MessageTripReference? = nil, originalTextUTF8: Data?, isCurrent: @escaping @MainActor () -> Bool,
+    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil,tripReference:MessageTripReference? = nil,editReference:MessageEditReference? = nil, originalTextUTF8: Data?, isCurrent: @escaping @MainActor () -> Bool,
                      isStillOwned: @escaping @MainActor () -> Bool) {
-        self.receipt = receipt;self.travelReference = travelReference;self.tripReference=tripReference;self.originalTextUTF8 = originalTextUTF8; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
+        self.receipt = receipt;self.travelReference = travelReference;self.tripReference=tripReference;self.editReference=editReference;self.originalTextUTF8 = originalTextUTF8; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
     }
     public nonisolated var description: String { "<redacted accepted message receipt>" }
     public nonisolated var debugDescription: String { description }
@@ -85,6 +88,30 @@ public enum TripDiscussionChoiceDisplay {
 public struct MessageDiscussionRefusal {
     public let status:Int
     public let code:String
+    public let definiteFailure:Bool
+}
+public struct ScopedMessagePresentation {
+    public let title:String?
+    public let trip:MessageEditTripSelection?
+    public let needs:MessageNeedsSelection?
+    public let intent:MessageModificationIntent
+    fileprivate let owner:UUID
+    fileprivate let generation:ShellGeneration
+    fileprivate let revision:UUID
+}
+@MainActor public struct ScopedMessageChoiceCommand {
+    fileprivate enum Kind { case intent(MessageModificationIntent), needs(MessageNeedsSelection) }
+    fileprivate let kind:Kind
+    fileprivate let owner:UUID
+    fileprivate let generation:ShellGeneration
+    fileprivate let revision:UUID
+    public var needsSelection:MessageNeedsSelection? { if case .needs(let value)=kind { return value };return nil }
+}
+private struct ScopedMessageChoices {
+    var revision=UUID()
+    var entry:TripDiscussionEntry?
+    var needs:MessageNeedsSelection?
+    var intent:MessageModificationIntent = .none
 }
 public enum DiscussionConversationState {
     case idle,working(String),unknown(String),available(String),rejected(String,Int)
@@ -127,6 +154,7 @@ public enum DiscussionConversationState {
     private var discussionRevision=UUID()
     private var storedDiscussionRefusal:MessageDiscussionRefusal?
     private let conversationIntentOwner=UUID()
+    @ObservationIgnored private var scopedChoices=ScopedMessageChoices()
     private var conversationTask=UUID()
     private var storedConversationState:DiscussionConversationState = .idle
     public var creationIntent: MessageCreationIntent = .none
@@ -135,6 +163,8 @@ public enum DiscussionConversationState {
     public var travelSelection: TravelSelectionModel? { bindingIsCurrent ? binding?.travelSelection : nil }
     public var supportsSending: Bool { bindingIsCurrent && binding?.sendClient != nil }
     public var supportsTripDiscussions:Bool { bindingIsCurrent && binding?.tripDiscussions == true }
+    public var supportsScopedEdits:Bool { bindingIsCurrent && binding?.scopedEdits == true }
+    public var supportsTripMessages:Bool { supportsTripDiscussions || supportsScopedEdits }
     public var discussionRefusal:MessageDiscussionRefusal? { bindingIsCurrent ? storedDiscussionRefusal : nil }
     public var conversationState:DiscussionConversationState { bindingIsCurrent ? storedConversationState : .idle }
     public var hasUnassignedDraft:Bool { bindingIsCurrent && selectedConversationID==nil && !shell.draft.isEmpty }
@@ -142,38 +172,126 @@ public enum DiscussionConversationState {
         guard bindingIsCurrent,let binding else { return [] }
         do { return try binding.recovery.conversationOpenings(lease:binding.lease) } catch { return [] }
     }
+    public var scopedPresentation:ScopedMessagePresentation? {
+        access(keyPath:\.scopedPresentation)
+        let captured=scopedChoices
+        guard supportsScopedEdits,let binding else { return nil }
+        do {
+            try captured.entry?.validate(scopeEnvironment:binding.scope.environment,scopeAccount:binding.scope.account,generation:binding.generation)
+            let trip=try captured.entry.map(editSelection)
+            guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),scopedChoices.revision==captured.revision else { return nil }
+            return .init(title:captured.entry?.title,trip:trip,needs:captured.needs,intent:captured.intent,
+                owner:conversationIntentOwner,generation:binding.generation,revision:captured.revision)
+        } catch { return nil }
+    }
+    private func editSelection(_ entry:TripDiscussionEntry) throws -> MessageEditTripSelection {
+        let value=entry.selection
+        return try .init(id:value.id,expectedVersion:value.expectedVersion,contentSHA256:entry.content.sha256,
+            day:value.itemID == nil ? value.day : nil,itemIDs:value.itemID.map { [$0] } ?? [])
+    }
+    private func ownsScopedPresentation(_ value:ScopedMessagePresentation) -> Bool {
+        value.owner==conversationIntentOwner && value.generation==shell.generation && value.revision==scopedChoices.revision
+    }
+    public func captureScopedIntent(_ intent:MessageModificationIntent,for presentation:ScopedMessagePresentation) -> ScopedMessageChoiceCommand? {
+        guard supportsScopedEdits,!isBusy,ownsScopedPresentation(presentation) else { return nil }
+        return .init(kind:.intent(intent),owner:conversationIntentOwner,generation:shell.generation,revision:scopedChoices.revision)
+    }
+    public func captureScopedNeedsChoice(for presentation:ScopedMessagePresentation) -> ScopedMessageChoiceCommand? {
+        let token=scopedChoices.revision
+        guard supportsScopedEdits,!isBusy,let binding,scopedChoices.entry != nil,ownsScopedPresentation(presentation),
+              let needs=binding.currentNeeds?(),isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),scopedChoices.revision==token,ownsScopedPresentation(presentation) else { return nil }
+        return .init(kind:.needs(needs),owner:conversationIntentOwner,generation:binding.generation,revision:token)
+    }
+    @discardableResult public func performScopedChoice(_ command:ScopedMessageChoiceCommand) -> Bool {
+        guard supportsScopedEdits,!isBusy,let binding,command.owner==conversationIntentOwner,
+              command.generation==shell.generation,command.revision==scopedChoices.revision else { return false }
+        var next=scopedChoices
+        switch command.kind {
+        case .intent(let intent):next.intent=intent
+        case .needs(let needs):guard binding.currentNeeds?()==needs else { return false };next.needs=needs
+        }
+        next.revision=UUID()
+        let changed=withMutation(keyPath:\.scopedPresentation) {
+            guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),!isBusy,
+                  shell.generation==command.generation,scopedChoices.revision==command.revision else { return false }
+            scopedChoices=next;return true
+        }
+        guard changed,isSameBinding(binding),scopedChoices.revision==next.revision else { return false }
+        retireRunSelection();return true
+    }
+    private func selectScopedTrip(_ entry:TripDiscussionEntry) -> Bool {
+        let token=scopedChoices.revision
+        guard supportsScopedEdits,!isBusy,let binding else { return false }
+        do { try entry.validate(scopeEnvironment:binding.scope.environment,scopeAccount:binding.scope.account,generation:binding.generation) }
+        catch { return false }
+        var next=ScopedMessageChoices();next.entry=entry
+        let changed=withMutation(keyPath:\.scopedPresentation) {
+            guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),!isBusy,scopedChoices.revision==token else { return false }
+            scopedChoices=next;return true
+        }
+        guard changed,isSameBinding(binding),scopedChoices.revision==next.revision else { return false }
+        // A different formal Trip never silently inherits temporary memory or
+        // the previous Trip's explicit NEEDS choice.
+        binding.travelSelection?.invalidate()
+        guard isSameBinding(binding),scopedChoices.revision==next.revision else { return false }
+        retireRunSelection();return true
+    }
+    private func capturedScopedMessage() throws -> (entry:TripDiscussionEntry,trip:MessageEditTripSelection,namespace:MessageEditNamespace,needs:MessageNeedsSelection?,intent:MessageModificationIntent) {
+        let captured=scopedChoices
+        guard supportsScopedEdits,let binding,let entry=captured.entry,let travel=binding.travelSelection else { throw RecoveryError.queryOnly }
+        let needs:MessageNeedsSelection?
+        if captured.intent == .proposeScopedEdit {
+            guard let selected=captured.needs,binding.currentNeeds?()==selected else { throw RecoveryError.queryOnly };needs=selected
+        } else { needs=nil }
+        try entry.validate(scopeEnvironment:binding.scope.environment,scopeAccount:binding.scope.account,generation:binding.generation)
+        let original=try travel.capture()
+        guard let namespace=original.context else { throw RecoveryError.queryOnly }
+        let trip=try editSelection(entry)
+        guard captured.intent != .proposeScopedEdit || ((trip.day != nil) != !trip.itemIDs.isEmpty) else { throw RecoveryError.queryOnly }
+        try travel.validate(original)
+        guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),scopedChoices.revision==captured.revision else { throw RecoveryError.inactive }
+        return try (entry,trip,MessageEditNamespace(id:namespace.value.id,expectedVersion:Int64(namespace.value.version)),needs,captured.intent)
+    }
+    private var currentChoiceRevision:UUID { binding?.scopedEdits == true ? scopedChoices.revision : discussionRevision }
+    public func captureNewConversationIntent(for presentation:ScopedMessagePresentation) -> DiscussionConversationIntent? {
+        guard ownsScopedPresentation(presentation) else { return nil }
+        let result=captureNewConversationIntent()
+        guard ownsScopedPresentation(presentation),result?.choice==presentation.revision,result?.generation==presentation.generation else { return nil }
+        return result
+    }
     public func captureNewConversationIntent() -> DiscussionConversationIntent? {
-        guard supportsTripDiscussions,!isBusy,creationIntent == .none,
+        guard supportsTripMessages,!isBusy,creationIntent == .none,
               selectedConversationID != nil || shell.draft.isEmpty,let binding else { return nil }
         do {
-            _=try capturedDiscussion()
+            if binding.scopedEdits { guard scopedPresentation?.trip != nil else { return nil } }
+            else { _=try capturedDiscussion() }
             guard try !binding.recovery.conversationOpenings(lease:binding.lease).contains(where:{ $0.phase == .queryRequired }),
                   isSameBinding(binding),bindingIsCurrent,isSameBinding(binding) else { return nil }
             return conversationIntent(.create)
         } catch { return nil }
     }
     public func captureConversationQuery(id:String) -> DiscussionConversationIntent? {
-        guard supportsTripDiscussions,!isBusy,conversationOpenings.contains(where:{ Data($0.conversationID.utf8)==Data(id.utf8) }) else { return nil }
+        guard supportsTripMessages,!isBusy,conversationOpenings.contains(where:{ Data($0.conversationID.utf8)==Data(id.utf8) }) else { return nil }
         return conversationIntent(.query(id))
     }
     public func captureConversationSelection(id:String) -> DiscussionConversationIntent? {
-        guard supportsTripDiscussions,!isBusy else { return nil }
+        guard supportsTripMessages,!isBusy else { return nil }
         let known:Bool
         if case .available(let current)=storedConversationState,Data(current.utf8)==Data(id.utf8) { known=true }
         else { known=conversationOpenings.contains(where:{ $0.phase == .available && Data($0.conversationID.utf8)==Data(id.utf8) }) }
         return known ? conversationIntent(.select(id)) : nil
     }
     private func conversationIntent(_ kind:DiscussionConversationIntent.Kind) -> DiscussionConversationIntent {
-        .init(kind:kind,owner:conversationIntentOwner,generation:shell.generation,choice:discussionRevision,selection:runSelectionRevision,draft:shell.draftRevision)
+        .init(kind:kind,owner:conversationIntentOwner,generation:shell.generation,choice:currentChoiceRevision,selection:runSelectionRevision,draft:shell.draftRevision)
     }
     private func currentConversationIntent(_ value:DiscussionConversationIntent) -> Bool {
-        value.owner==conversationIntentOwner && value.generation==shell.generation && value.choice==discussionRevision &&
+        value.owner==conversationIntentOwner && value.generation==shell.generation && value.choice==currentChoiceRevision &&
         value.selection==runSelectionRevision && value.draft==shell.draftRevision
     }
     /// The rendered choice is pinned before a Task. New chats begin with an
     /// empty draft; text from an earlier conversation stays under its old ID.
     public func performConversationIntent(_ intent:DiscussionConversationIntent) {
-        guard currentConversationIntent(intent),supportsTripDiscussions,!isBusy,currentConversationIntent(intent),let binding,let client=binding.sendClient else { return }
+        guard currentConversationIntent(intent),supportsTripMessages,!isBusy,currentConversationIntent(intent),let binding,let client=binding.sendClient else { return }
         if case .select(let id)=intent.kind { _=selectConversationForSending(id);return }
         do {
             let work:DiscussionConversationWork,creating:Bool
@@ -182,8 +300,8 @@ public enum DiscussionConversationState {
                 guard captureNewConversationIntent() != nil,currentConversationIntent(intent) else { return }
                 if let previous=selectedConversationID { try binding.recovery.saveDraft(Data(shell.draft.utf8),conversationID:previous,lease:binding.lease) }
                 guard currentConversationIntent(intent),isSameBinding(binding),bindingIsCurrent,isSameBinding(binding) else { return }
-                work=try client.prepareNewDiscussionConversation(lease:binding.lease);creating=true
-            case .query(let id):work=try client.prepareDiscussionConversationQuery(id:id,lease:binding.lease);creating=false
+                work=try binding.scopedEdits ? client.prepareNewTripEditConversation(lease:binding.lease) : client.prepareNewDiscussionConversation(lease:binding.lease);creating=true
+            case .query(let id):work=try binding.scopedEdits ? client.prepareTripEditConversationQuery(id:id,lease:binding.lease) : client.prepareDiscussionConversationQuery(id:id,lease:binding.lease);creating=false
             case .select:return
             }
             guard currentConversationIntent(intent),isSameBinding(binding),bindingIsCurrent,isSameBinding(binding) else { return }
@@ -237,6 +355,7 @@ public enum DiscussionConversationState {
         return entry?.selection
     }
     @discardableResult public func selectTripDiscussion(_ entry:TripDiscussionEntry) -> Bool {
+        if binding?.scopedEdits == true { return selectScopedTrip(entry) }
         let revision=discussionRevision
         guard supportsTripDiscussions,!isBusy,let binding else { return false }
         do {
@@ -276,6 +395,13 @@ public enum DiscussionConversationState {
     public var canStartMessage: Bool {
         guard bindingIsCurrent, !isBusy, let binding, let client = binding.sendClient,
               let conversation = selectedConversationID else { return false }
+        if binding.scopedEdits {
+            do {
+                _=try capturedScopedMessage()
+                guard creationIntent == .none else { return false }
+                return try client.canStartTripEdit(conversationID:conversation,lease:binding.lease)
+            } catch { return false }
+        }
         if binding.tripDiscussions {
             do { _=try capturedDiscussion();guard creationIntent == .none else { return false }
                 return try client.canStartTripDiscussion(conversationID:conversation,lease:binding.lease)
@@ -293,10 +419,12 @@ public enum DiscussionConversationState {
               let record, record.phase == .notObserved,
               let cid = try? originalConversation(record), selectedConversationID.map({ Data($0.utf8) == Data(cid.utf8) }) == true else { return false }
         switch try? client.originalSendVersion(messageID:record.messageID,lease:binding.lease) {
+        case .scopedEdit:
+            return binding.scopedEdits && (try? client.tripEditDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
         case .tripDiscussion:
             return binding.tripDiscussions && (try? client.tripDiscussionDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
         case .travel:
-            return binding.travelSelection != nil && (try? client.travelSendDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
+            return !binding.scopedEdits && binding.travelSelection != nil && (try? client.travelSendDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
         case .legacy:
             return !binding.tripDiscussions && binding.travelSelection == nil && (try? client.sendDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
         case .historicalDraft,nil:return false
@@ -314,6 +442,7 @@ public enum DiscussionConversationState {
     @discardableResult public func bind(_ value: AssistantMessageBinding) -> Bool {
         guard !shell.messageBindingBlocked, value.generation == shell.generation, usedGeneration != value.generation,
               !value.tripDiscussions || (value.travelSelection == nil && value.currentNeeds == nil),
+              !value.scopedEdits || (!value.tripDiscussions && value.travelSelection != nil && value.currentNeeds != nil),
               value.isCurrent(), value.conversationID?.isEmpty != true else { return false }
         // isCurrent is injected and may synchronously reenter with a newer account.
         guard !shell.messageBindingBlocked, value.generation == shell.generation,
@@ -407,16 +536,20 @@ public enum DiscussionConversationState {
         let receipt: Components.Schemas.MessageReceipt
         let reference: Components.Schemas.MessageTravelReference?
         let tripReference:MessageTripReference?
+        let editReference:MessageEditReference?
         do {
-            if let client=originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .tripDiscussion {
+            if let client=originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .scopedEdit {
+                let accepted=try client.acceptedTripEdit(messageID:id,lease:originalBinding.lease)
+                receipt=accepted.receipt;reference=nil;tripReference=nil;editReference=accepted.reference
+            } else if let client=originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .tripDiscussion {
                 let accepted=try client.acceptedTripDiscussion(messageID:id,lease:originalBinding.lease)
-                receipt=accepted.receipt;reference=nil;tripReference=accepted.reference
+                receipt=accepted.receipt;reference=nil;tripReference=accepted.reference;editReference=nil
             } else if let client = originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .travel {
                 let accepted = try client.acceptedTravelMessage(messageID:id,lease:originalBinding.lease)
                 try client.validateRead(accepted,lease:originalBinding.lease)
-                receipt = accepted.value.receipt;reference = accepted.value.reference;tripReference=nil
+                receipt = accepted.value.receipt;reference = accepted.value.reference;tripReference=nil;editReference=nil
             } else {
-                receipt = try JSONDecoder().decode(Components.Schemas.MessageReceipt.self,from:bytes);reference = nil;tripReference=nil
+                receipt = try JSONDecoder().decode(Components.Schemas.MessageReceipt.self,from:bytes);reference = nil;tripReference=nil;editReference=nil
             }
             guard Data(receipt.message_id.utf8) == Data(record.messageID.utf8),receipt.input_sha256 == record.inputSHA256,
                   ownsRunReceipt(record,binding:originalBinding,revision:revision) else { return nil }
@@ -425,7 +558,7 @@ public enum DiscussionConversationState {
         // extraction consumers require these original decoded text bytes; they
         // never take source text from a mutable composer or later message.
         let originalText = (try? JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any])?["text"] as? String
-        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference,tripReference:tripReference,
+        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference,tripReference:tripReference,editReference:editReference,
             originalTextUTF8:originalText.map { Data($0.utf8) }, isCurrent: { [weak self] in
             self?.ownsRunReceipt(record, binding: originalBinding, revision: revision) == true
         }, isStillOwned: { [weak self] in
@@ -480,6 +613,7 @@ public enum DiscussionConversationState {
             do {
                 if let client = binding.sendClient {
                     switch try client.originalSendVersion(messageID:messageID,lease:binding.lease) {
+                    case .scopedEdit:_ = try await client.reconcileTripEdit(messageID:messageID,lease:binding.lease)
                     case .tripDiscussion:_ = try await client.reconcileTripDiscussion(messageID:messageID,lease:binding.lease)
                     case .legacy:_ = try await client.reconcileSend(messageID:messageID,lease:binding.lease)
                     case .travel:_ = try await client.reconcileTravelSend(messageID:messageID,lease:binding.lease)
@@ -538,17 +672,18 @@ public enum DiscussionConversationState {
             task = Task { [weak self] in
                 do {
                     if needsHead {
-                        if binding.tripDiscussions { _ = try await client.readTripDiscussionHead(conversationID:conversationID,lease:binding.lease) }
+                        if binding.scopedEdits { _ = try await client.readTripEditHead(conversationID:conversationID,lease:binding.lease) }
+                        else if binding.tripDiscussions { _ = try await client.readTripDiscussionHead(conversationID:conversationID,lease:binding.lease) }
                         else if binding.travelSelection != nil { _ = try await client.readTravelSendHead(conversationID:conversationID,lease:binding.lease) }
                         else { _ = try await client.readSendHead(conversationID:conversationID,lease:binding.lease) }
                     }
                     guard let self, self.isSameBinding(binding), self.runSelectionRevision == revision else { return }
                     guard self.bindingIsCurrent else { self.blockStorage(for: binding); return }
-                    if binding.tripDiscussions && needsHead { self.storedDiscussionRefusal=nil }
+                    if (binding.tripDiscussions || binding.scopedEdits) && needsHead { self.storedDiscussionRefusal=nil }
                     self.activity = .ready; self.task = nil
                     self.saveDraft()
                 } catch {
-                    if binding.tripDiscussions,case MessageReadFailure.rejected(let status,let error)=error {
+                    if binding.tripDiscussions || binding.scopedEdits,case MessageReadFailure.rejected(let status,let error)=error {
                         self?.recordDiscussionRefusal(status:status,code:error.error.code,binding:binding,revision:revision)
                     }
                     self?.sendFailed(binding, revision: revision)
@@ -567,7 +702,12 @@ public enum DiscussionConversationState {
         do {
             let original: ActionRecord
             let travelWire = binding.travelSelection != nil
-            if binding.tripDiscussions {
+            if binding.scopedEdits {
+                let selected=try capturedScopedMessage()
+                guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),creationIntent == .none else { return }
+                original=try client.stageTripEdit(messageID:UUID().uuidString,conversationID:conversation,text:text,
+                    intent:selected.intent,trip:selected.trip,namespace:selected.namespace,needs:selected.needs,content:selected.entry.content,lease:binding.lease)
+            } else if binding.tripDiscussions {
                 let choice=try capturedDiscussion()
                 guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),creationIntent == .none else { return }
                 original=try client.stageTripDiscussion(messageID:UUID().uuidString,conversationID:conversation,text:text,trip:choice,content:discussionEntry?.content,lease:binding.lease)
@@ -586,7 +726,13 @@ public enum DiscussionConversationState {
             projection = try binding.recovery.localProjection(scope: binding.scope, lease: binding.lease)
             task = Task { [weak self] in
                 do {
-                    if binding.tripDiscussions {
+                    if binding.scopedEdits {
+                        let outcome=try await client.submitPreparedTripEdit(messageID:original.messageID,lease:binding.lease)
+                        if case .rejected(let status,let error)=outcome {
+                            self?.recordDiscussionRefusal(status:status,code:error.error.code,binding:binding,revision:revision,
+                                definiteFailure:error.error.outcome == .failed && error.error.recovery == .do_not_retry && error.error.code != "INPUT_CONFLICT")
+                        }
+                    } else if binding.tripDiscussions {
                         let outcome=try await client.submitPreparedTripDiscussion(messageID:original.messageID,lease:binding.lease)
                         if case .rejected(let status,let error)=outcome { self?.recordDiscussionRefusal(status:status,code:error.error.code,binding:binding,revision:revision) }
                     } else if travelWire { _ = try await client.submitPreparedTravelSend(messageID:original.messageID,lease:binding.lease) }
@@ -607,7 +753,8 @@ public enum DiscussionConversationState {
         guard canResubmit,let binding,let client = binding.sendClient,let record else { return nil }
         do {
             let wire = try client.originalSendVersion(messageID:record.messageID,lease:binding.lease)
-            let confirmation = try wire == .tripDiscussion ? client.requiresTripDiscussionResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
+            let confirmation = try wire == .scopedEdit ? client.requiresTripEditResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
+                : wire == .tripDiscussion ? client.requiresTripDiscussionResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
                 : wire == .travel ? client.requiresTravelResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
                 : client.requiresResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
             return MessageResubmissionContext(requiresConfirmation:confirmation,binding:binding,messageID:record.messageID,revision:runSelectionRevision,wire:wire)
@@ -624,6 +771,7 @@ public enum DiscussionConversationState {
         task = Task { [weak self] in
             do {
                 switch context.wire {
+                case .scopedEdit:_ = try await client.submitPreparedTripEdit(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
                 case .tripDiscussion:_ = try await client.submitPreparedTripDiscussion(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
                 case .legacy:_ = try await client.submitPrepared(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
                 case .travel:_ = try await client.submitPreparedTravelSend(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
@@ -640,7 +788,7 @@ public enum DiscussionConversationState {
         guard bindingIsCurrent else { blockStorage(for: original); return }
         guard isSameBinding(original), runSelectionRevision == revision else { return }
         record = try original.recovery.action(messageID: messageID, lease: original.lease)
-        if original.tripDiscussions,record?.phase == .accepted { storedDiscussionRefusal=nil }
+        if original.tripDiscussions || original.scopedEdits,record?.phase == .accepted { storedDiscussionRefusal=nil }
         if record?.phase == .accepted, let clearEditorRevision, shell.draftRevision == clearEditorRevision,
            let conversation = selectedConversationID {
             try original.recovery.saveDraft(Data(), conversationID: conversation, lease: original.lease)
@@ -662,9 +810,9 @@ public enum DiscussionConversationState {
         activity = .unknown; task = nil
         saveDraft()
     }
-    private func recordDiscussionRefusal(status:Int,code:String,binding:AssistantMessageBinding,revision:UUID) {
+    private func recordDiscussionRefusal(status:Int,code:String,binding:AssistantMessageBinding,revision:UUID,definiteFailure:Bool=false) {
         guard isSameBinding(binding),runSelectionRevision==revision,bindingIsCurrent,isSameBinding(binding),runSelectionRevision==revision else { return }
-        storedDiscussionRefusal=MessageDiscussionRefusal(status:status,code:code)
+        storedDiscussionRefusal=MessageDiscussionRefusal(status:status,code:code,definiteFailure:definiteFailure)
     }
 
     private func originalConversation(_ record: ActionRecord) throws -> String {
@@ -681,6 +829,7 @@ public enum DiscussionConversationState {
         binding = nil; record = nil; projection = nil; storedDraftBytes = nil
         selectedConversationID = nil; selectedMessageID = nil
         discussionEntry=nil;discussionChoiceMade=false;discussionRevision=UUID();storedDiscussionRefusal=nil
+        scopedChoices=ScopedMessageChoices()
         conversationTask=UUID();storedConversationState = .idle
         creationIntent = .none
         retireRunSelection()
