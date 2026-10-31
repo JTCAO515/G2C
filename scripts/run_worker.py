@@ -77,6 +77,8 @@ def require_memory_configuration(database, scope, configuration):
         raise RuntimeDenied('travel execution requires explicit typed memory configuration')
     with database.connect(scope) as conn:
         exists=conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s',(scope,)).fetchone() is not None
+    if database.trip_profile(scope) and (exists or configuration is not None):
+        raise RuntimeDenied('formal Trip MEMORY adapter is not installed')
     if exists and configuration is None:
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
@@ -163,6 +165,7 @@ def main():
     parser.add_argument('--run-context', type=Path, default=os.environ.get('CJ_LOCAL_RUN_CONTEXT'))
     parser.add_argument('--memory-run-policy', type=Path, default=os.environ.get('CJ_LOCAL_MEMORY_RUN_POLICY'))
     parser.add_argument('--travel-context',choices=['message-travel.1'],default=os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT'))
+    parser.add_argument('--trip-context',choices=['message-trip.1'],default=os.environ.get('CJ_LOCAL_TRIP_CONTEXT'))
     parser.add_argument('--tools-profile',choices=['synthetic-v1','synthetic-fact-v1','synthetic-needs-v1'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
@@ -179,7 +182,7 @@ def main():
     audit.addHandler(logging.StreamHandler(sys.stderr))
     audit.propagate=False
     memory = load_runtime_configuration(args.memory_run_policy) if args.memory_run_policy is not None else None
-    database=LocalDatabase(args.conninfo_json,run_context=context,travel_context=travel_configuration(args.travel_context))
+    database=LocalDatabase(args.conninfo_json,run_context=context,travel_context=travel_configuration(args.travel_context),trip_context=args.trip_context is not None)
     # Protection metadata is checked before even loading real-provider credentials.
     # run_once repeats the check before accepting every original pending run.
     for scope in scopes(database,args.auth_dir):

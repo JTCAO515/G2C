@@ -1,0 +1,17 @@
+{
+  "version": "MESSAGE-trip-examples.1",
+  "positive": [
+    {"name":"explicit formal Trip day and item","selection":{"id":"trip-a","expected_version":1,"day":{"date":"2026-10-31","timezone":"Asia/Shanghai"},"item_id":"item-a"}},
+    {"name":"whole explicit Trip","selection":{"id":"trip-a","expected_version":1,"day":null,"item_id":null}},
+    {"name":"explicit item with unknown schedule","selection":{"id":"trip-a","expected_version":1,"day":null,"item_id":"item-a"}},
+    {"name":"ambiguous unbound asks for selection","selection":null}
+  ],
+  "negative": [
+    {"name":"foreign or missing Trip","status":503,"error":"MESSAGE_CONTEXT_UNAVAILABLE"},
+    {"name":"owned stale version","status":409,"error":"MESSAGE_CONTEXT_CONFLICT"},
+    {"name":"item belongs to another Trip or day","status":503,"error":"MESSAGE_CONTEXT_UNAVAILABLE"},
+    {"name":"unknown day is not inferred","status":503,"error":"MESSAGE_CONTEXT_UNAVAILABLE"},
+    {"name":"caller owner or implicit date/timezone","status":400,"error":"INVALID_INPUT"},
+    {"name":"formal Trip plus creation or travel authority","status":400,"error":"INVALID_INPUT"}
+  ]
+}

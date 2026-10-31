@@ -101,12 +101,21 @@ class DisplaySnapshotReader:
     def read_draft_status_v3(self, token, message_id, request_id):
         return self._read_draft_status(token,message_id,request_id,version=3)
 
+    def read_trip_display(self,token,message_id,request_id):
+        return self._context_display(token,message_id,request_id,formal=True)
+
+    def read_draft_status_v4(self,token,message_id,request_id):
+        return self._read_draft_status(token,message_id,request_id,version=4)
+
     def read_travel_display(self,token,message_id,request_id):
+        return self._context_display(token,message_id,request_id,formal=False)
+
+    def _context_display(self,token,message_id,request_id,*,formal):
         def encode(state,original,reference):
-            value=dict(request_id=request_id,version='RUN-display.2',
+            value=dict(request_id=request_id,version='RUN-display.3' if formal else 'RUN-display.2',
                 snapshot=json.loads(_encode_snapshot(state,self.configuration)),reference=reference.public_value())
             return json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
-        return self._read_materialized(token,message_id,encode,travel=True)
+        return self._read_materialized(token,message_id,encode,travel=True,formal=formal)
 
     def _read_draft_status(self, token, message_id, request_id, *, version):
         def encode(state, original, reference=None):
@@ -126,11 +135,11 @@ class DisplaySnapshotReader:
                 message_id=b.message_id, run_id=b.run_id, message_sequence=b.message_sequence,
                 run_status=state.status, event_highwater=state.sequence, draft_outcome=outcome)
             if version >= 2: payload['budget_exhausted_stage']=state.budget_exhausted_stage
-            if version == 3: payload['reference']=reference.public_value()
+            if version >= 3: payload['reference']=reference.public_value()
             return json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
-        return self._read_materialized(token, message_id, encode,travel=version==3)
+        return self._read_materialized(token, message_id, encode,travel=version>=3,formal=version==4)
 
-    def _read_materialized(self, token, message_id, encode, *, travel=False):
+    def _read_materialized(self, token, message_id, encode, *, travel=False, formal=False):
         if type(message_id) is not str or not message_id.strip():
             raise ValueError('original message ID required')
         configuration = self.configuration  # Freeze bounds for this read.
@@ -139,7 +148,7 @@ class DisplaySnapshotReader:
             if type(ctx) is not HistoryReadContext:
                 raise SnapshotUnavailable('MESSAGE context unavailable')
             principal, scope = ctx.principal, ctx.scope
-            query=ctx.query_travel_message if travel else ctx.query_message
+            query=ctx.query_trip_message if formal else ctx.query_travel_message if travel else ctx.query_message
             record=query(message_id)
             if record is None:
                 raise SnapshotUnavailable('original message unavailable')
