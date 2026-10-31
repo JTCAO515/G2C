@@ -273,14 +273,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network boundary test seam; no live caller uses this initializer.
     init(interceptedTransport: any ClientTransport, tripDiscussionEndpoint: MessageEndpoint,
          validateDiscussion: @escaping @MainActor @Sendable () throws -> Void) {
-        needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
+        tripEditing=nil; needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
         preview=nil; memory=nil; memoryManagement=nil
         messages=MessageCapability(endpoint:tripDiscussionEndpoint, validate:validateDiscussion, wire:.discussion)
     }
 
     init(interceptedTransport: any ClientTransport, tripEditEndpoint: MessageEndpoint,
          validateEdit: @escaping @MainActor @Sendable () throws -> Void) {
-        needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
+        tripEditing=nil; needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
         preview=nil; memory=nil; memoryManagement=nil
         messages=MessageCapability(endpoint:tripEditEndpoint, validate:validateEdit, wire:.edit)
     }
