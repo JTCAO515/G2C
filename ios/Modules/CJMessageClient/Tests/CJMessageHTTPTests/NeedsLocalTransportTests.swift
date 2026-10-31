@@ -56,7 +56,7 @@ private actor NeedsExitSpy: ClientTransport {
             }
         }
         var authority = request(); authority.authority = "other.invalid"
-        var host = request(); host.headerFields[.host] = "other.invalid"
+        var host = request(); host.headerFields[HTTPField.Name("Host")!] = "other.invalid"
         var media = request(); media.headerFields[.contentType] = "application/json"
         for bad in [authority, host, media] {
             await #expect(throws: (any Error).self) {
