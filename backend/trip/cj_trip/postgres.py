@@ -21,6 +21,7 @@ class Repository:
         self.needs_actions = None
         self.needs_edits = None
         self.scoped_actions = None
+        self.source_initializations = None
 
     @contextmanager
     def transaction(self, before_commit=None):
@@ -229,6 +230,22 @@ class Repository:
         from .manual_storage import manual_preparation
         from .initialization import BASIS
         return manual_preparation(self, request_id, basis_version=BASIS)
+
+    def prepare_source_initialization(self,request):
+        if self.source_initializations is None:raise Denied('explicit original source initialization host required')
+        return self.source_initializations.prepare(self,request)
+
+    def save_source_initialization(self,request):
+        if self.source_initializations is None:raise Denied('explicit original source initialization host required')
+        return self.source_initializations.save(self,request)
+
+    def source_initialization(self,request_id):
+        if self.source_initializations is None:raise Denied('explicit original source initialization host required')
+        return self.source_initializations.query(self,identifier(request_id))
+
+    def source_initialization_receipt(self,action_id):
+        if self.source_initializations is None:raise Denied('explicit original source initialization host required')
+        return self.source_initializations.receipt(self,identifier(action_id))
 
     def retire(self, proposal_id, state, replacement_id=None):
         """Trusted lifecycle; generation cancellation must never call this method."""
