@@ -285,13 +285,15 @@ public struct NeedsDetailsView: View {
                     }
                 } else { Text(NeedsObservationState.absent.label(language)) }
             }
-        }.textSelection(.enabled)
+        }.foregroundStyle(.primary).textSelection(.enabled)
     }
     private func row(_ title: String, _ value: String, _ id: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title).font(.caption).fixedSize(horizontal: false, vertical: true)
-            Text(value).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(id)
-        }.frame(maxWidth: .infinity, alignment: .leading)
+            Text(value).fixedSize(horizontal: false, vertical: true)
+        }.foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .accessibilityElement(children: .combine).accessibilityIdentifier(id)
     }
     private func summary(_ input: NeedsObservationInput, choice: String = "") -> String {
         switch input.state {
