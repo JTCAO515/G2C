@@ -139,6 +139,11 @@ def evaluate(snapshot: Snapshot, revisions: tuple[Revision, ...]) -> Report:
         fields, sources = _read(snapshot, revisions)
     except (InvalidInput, RecursionError) as exc:
         return _invalid(snapshot, str(exc))
+    return _evaluate_fields(snapshot, fields, sources)
+
+
+def _evaluate_fields(snapshot, fields, sources):
+    """One checker implementation for captured records and uncommitted plans."""
     checks = []
 
     def add(code, status, paths, missing, zh, en):

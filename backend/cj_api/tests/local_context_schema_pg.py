@@ -129,7 +129,17 @@ def exercise(auth, conninfo):
                 writer.execute("SET LOCAL lock_timeout='1s'")
                 writer.execute("UPDATE cj_needs_record SET version=4 WHERE scope='na'")
         assert admin.execute("SELECT version FROM cj_needs_record WHERE scope='na'").fetchone()[0]==4
-        try: admin.execute('TRUNCATE cj_needs_scope,cj_needs_record,cj_needs_revision,cj_message_needs_selection,cj_message_needs_binding')
+        # Expand only the target set: the original protocol guard must run.
+        from psycopg import sql
+        roots=['cj_needs_scope','cj_needs_record','cj_needs_revision',
+               'cj_message_needs_selection','cj_message_needs_binding']
+        targets=admin.execute("WITH RECURSIVE targets(oid) AS ("
+            "SELECT unnest(%s::regclass[])::oid UNION "
+            "SELECT fk.conrelid FROM pg_constraint fk JOIN targets t ON fk.confrelid=t.oid WHERE fk.contype='f') "
+            "SELECT n.nspname,c.relname FROM targets t JOIN pg_class c ON c.oid=t.oid "
+            "JOIN pg_namespace n ON n.oid=c.relnamespace ORDER BY c.oid",(roots,)).fetchall()
+        truncate=sql.SQL('TRUNCATE {}').format(sql.SQL(',').join(sql.Identifier(schema,table) for schema,table in targets))
+        try: admin.execute(truncate)
         except psycopg.errors.RaiseException: pass
         else: raise AssertionError('TRUNCATE bypassed revision protocol')
         assert admin.execute('SELECT count(*) FROM cj_needs_record').fetchone()[0]==2
