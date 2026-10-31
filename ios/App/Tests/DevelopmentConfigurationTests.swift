@@ -118,6 +118,37 @@ extension DevelopmentConfigurationTests {
         #expect(try !DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:root))
         #expect(try Data(contentsOf:original) == bytes)
     }
+    @Test func legacyWriterRemainsAvailableBeforeTypedNamespaceActivation() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false)
+        defer {try? files.removeItem(at:parent)}
+        let root = parent.appendingPathComponent("account-a")
+        for name in ["account-a","account-a.lifecycle","account-a.CJMemoryRejectionsV1","account-b.typed-v2"] {
+            try files.createDirectory(at:parent.appendingPathComponent(name),withIntermediateDirectories:false)
+        }
+        #expect(try DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root))
+    }
+    @Test func evenEmptyTypedNamespaceCannotReactivateAnOlderWriter() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false)
+        defer {try? files.removeItem(at:parent)}
+        let root = parent.appendingPathComponent("account-a"),typed = root.appendingPathExtension("typed-v2")
+        try files.createDirectory(at:typed,withIntermediateDirectories:false)
+        #expect(try !DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root))
+        #expect(try files.contentsOfDirectory(atPath:typed.path).isEmpty)
+    }
+    @Test func typedLifecycleRejectionsAndUnexpectedEntriesKeepLegacyReadOnly() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false)
+        defer {try? files.removeItem(at:parent)}
+        for suffix in ["typed-v2.CJMemoryTypedManagementV2","typed-v2.CJMemoryTypedRejectionsV2","typed-v2"] {
+            let root = parent.appendingPathComponent(UUID().uuidString),entry = root.appendingPathExtension(suffix)
+            let bytes = Data("retained original namespace".utf8)
+            try bytes.write(to:entry)
+            #expect(try !DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root))
+            #expect(try Data(contentsOf:entry) == bytes)
+        }
+    }
     @Test func aSymlinkOrUnexpectedFileCannotBeAnEmptyMemoryNamespace() throws {
         let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try files.createDirectory(at:parent,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])

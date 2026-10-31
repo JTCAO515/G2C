@@ -175,26 +175,39 @@ import Observation
         let current: @MainActor () -> MemoryBinding? = {
             isCurrent() && session.isCurrent(operation) && shell.generation == generation ? binding : nil
         }
+        let legacyWritesAllowed: Bool
+        do { legacyWritesAllowed = try DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root) }
+        catch { legacyWritesAllowed = false } // Unreadable storage cannot authorize a writer.
         let transport = try NoRedirectTransport.developmentMemory(endpoint: endpoint, requestTimeout: 10,
             resourceTimeout: 20, validate: {
                 guard current() == binding else { throw MemoryFailure.staleBinding }
+                guard try DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root) else { throw MemoryFailure.pendingRequiresQuery }
             })
         let credentials: MemoryCredentialCallback = { requested in
             guard current() == requested else { return nil }
             return configuration.token
         }
-        let client: MemoryClient
-        if let managementURL {
+        let managementEndpoint = try managementURL.map {
+            try MemoryEndpoint(url:$0,maximumRequestBytes:32768,maximumResponseBytes:65536,allowLoopbackHTTP:true)
+        }
+        let lifecycle: MemoryManagementPendingStore?
+        if managementURL != nil {
             if !files.fileExists(atPath: lifecycleRoot.path) {
                 try files.createDirectory(at: lifecycleRoot, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
             }
-            let lifecycle = try MemoryManagementPendingStore(directory: lifecycleRoot, maximumBytes: 100_000,
+            lifecycle = try MemoryManagementPendingStore(directory: lifecycleRoot, maximumBytes: 100_000,
                 maximumRecords: 100, binding: binding, expectedKeyID: key.id, provider: keys)
-            let managementEndpoint = try MemoryEndpoint(url: managementURL, maximumRequestBytes: 32768,
-                maximumResponseBytes: 65536, allowLoopbackHTTP: true)
+        } else { lifecycle = nil }
+        let client: MemoryClient
+        if !legacyWritesAllowed {
+            client = MemoryClient(endpoint:endpoint,credentials:credentials,currentBinding:current,pendingStore:store,
+                liveReadTransport:try NoRedirectTransport(requestTimeout:10,resourceTimeout:20),
+                managementPendingStore:lifecycle,managementReadEndpoint:managementEndpoint)
+        } else if let managementEndpoint,let lifecycle {
             let managementTransport = try NoRedirectTransport.developmentMemoryManagement(endpoint: managementEndpoint,
                 requestTimeout: 10, resourceTimeout: 20, validate: {
                     guard current() == binding else { throw MemoryFailure.staleBinding }
+                    guard try DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root) else { throw MemoryFailure.pendingRequiresQuery }
                 })
             client = try MemoryClient(localEndpoint: endpoint, credentials: credentials, currentBinding: current,
                 pendingStore: store, localTransport: transport, managementEndpoint: managementEndpoint,

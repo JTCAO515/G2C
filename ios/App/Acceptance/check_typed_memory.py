@@ -18,7 +18,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulator',required=True);parser.add_argument('--run-context',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--build-dir',type=Path,required=True)
-    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall','testUnknownReopenAndLifecycleRecall','testSwitchAccountAfterActualCommit','testReleaseTypedFlagsRemainClosed','testLegacyUnknownCannotBypassTypedMode','testRealConflictKeepsOriginalAndAllowsFreshSave'],default='testEnglishSaveReadAndOwnedTravel')
+    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall','testUnknownReopenAndLifecycleRecall','testSwitchAccountAfterActualCommit','testReleaseTypedFlagsRemainClosed','testLegacyUnknownCannotBypassTypedMode','testRealConflictKeepsOriginalAndAllowsFreshSave','testTypedUnknownCannotReactivateLegacyWriter'],default='testEnglishSaveReadAndOwnedTravel')
     args=parser.parse_args();output=args.output.resolve();build=args.build_dir.resolve()
     chinese=args.case=='testChineseLargeSaveReadAndRecall'
     unknown=args.case=='testUnknownReopenAndLifecycleRecall'
@@ -26,6 +26,7 @@ def main():
     release=args.case=='testReleaseTypedFlagsRemainClosed'
     legacy=args.case=='testLegacyUnknownCannotBypassTypedMode'
     conflict=args.case=='testRealConflictKeepsOriginalAndAllowsFreshSave'
+    reverse=args.case=='testTypedUnknownCannotReactivateLegacyWriter'
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):raise ValueError('external evidence required')
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
     os.umask(0o077);output.mkdir(parents=True,mode=0o700)
@@ -78,6 +79,7 @@ def main():
                         cwd=ROOT,check=True,capture_output=True)
                     dev_auth.activate_travel(conn,subject,context,ABI)
                 slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)}
+                if reverse:slots['legacy.read']=dict(kind='preference',collection_allowed=True,semantic_resolved=True)
                 legacy_profile=dict(subjects=['self'],slots=slots,extents=['long_term'],context_ids=[])
                 legacy_policy=dict(version='local-memory-policy.1',expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={subject:legacy_profile for subject in subjects.values()})
                 app=create_local_app(memory_configuration=LocalMemoryConfiguration.from_bytes(json.dumps(legacy_policy).encode()),conninfo_path=conn,auth_dir=auth,run_context=context,travel_context=True,
@@ -91,7 +93,6 @@ def main():
                         response.raise_for_status();travels.append(response.json()['receipt']['travel_context']['id'])
                     for conversation in ('typed-chat-1','typed-chat-2','typed-chat-3'):
                         client.put('/v1/conversations',params={'conversation_id':conversation},headers=headers['A']).raise_for_status()
-                slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)}
                 profile=dict(subjects=['self'],slots=slots,extents=['long_term','current'],context_ids=[])
                 collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
                     expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={subject:profile for subject in subjects.values()}),
@@ -282,6 +283,14 @@ def main():
                         assert current['status']=='withdrawn' and current['version']==4 and current['command']['text']==expected[1]
                         # The stopped original and approved input remain stored.
                         assert current['command']['source_id'] in {row['source_id'] for row in value['source_rows']}
+                    elif reverse:
+                        expected=['Original legacy read remains available / 保留旧只读回执','Typed unknown cannot downgrade / 新版未知不能回退写入','Fresh compatible typed action / 兼容入口新保存']
+                        assert len(value['items'])==3 and value['message_count']==model.calls==0
+                        assert {item['command']['text'] for item in value['items']}==set(expected)
+                        posts=[event for event in audit if event['method']=='POST' and event['path'] in ('/v1/memories','/v2/memories')]
+                        assert [event['path'] for event in posts]==['/v1/memories','/v2/memories','/v2/memories']
+                        assert all(event['status']==200 for event in posts) and posts[1].get('actual_200_ack_lost')
+                        assert sum(event['method']=='GET' and event['path']=='/v1/memory-receipts' and event['status']==200 for event in audit)>=2
                     elif conflict:
                         expected=['Conflict source / 并发原条目','Fresh after actual conflict / 明确冲突后新保存','Conflicting original edit / 冲突原文 e\u0301']
                         assert len(value['items'])==2 and value['message_count']==model.calls==0

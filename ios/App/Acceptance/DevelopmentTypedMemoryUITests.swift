@@ -296,6 +296,39 @@ import Foundation
         continueAfterFailure = false;XCTAssertEqual(issues,0)
         back();save("Fresh after actual conflict / 明确冲突后新保存",scope:"Long term / 长期")
     }
+    func testTypedUnknownCannotReactivateLegacyWriter() async throws {
+        continueAfterFailure = false;executionTimeAllowance = 900
+        let f = try await prepare();defer {app?.terminate()}
+        try launch(f,restore:false,legacy:true)
+        tap("memory.add");tap("memory.manual.scope");tap("self · legacy.read · Long term / 长期")
+        input("memory.manual.text","Original legacy read remains available / 保留旧只读回执")
+        input("memory.manual.time","time unknown");dismissKeyboard()
+        tap("memory.manual.save");text("memory.save.status",contains:"Saved.")
+        try launch(f,restore:true)
+        tap("memory.manage.openOriginals");tap("memory2.originals.read")
+        let old = try JSONDecoder().decode([String:[String]].self,from:await call("/originals"))
+        let legacy = try XCTUnwrap(old["legacy"]);XCTAssertEqual(legacy.count,1)
+        tap("memory2.legacy.query." + (try XCTUnwrap(legacy.first)));text("memory2.save.status",contains:"Saved.");back()
+        tap("Assistant");chooseTravel(f.travel_ids[0]);tap("Memory")
+        _ = try await call("/arm-loss?kind=save")
+        save("Typed unknown cannot downgrade / 新版未知不能回退写入",scope:"Selected travel / 所选旅行",expected:"Result unknown")
+        try launch(f,restore:true,legacy:true)
+        tap("memory.add")
+        let saveButton = app.buttons.matching(identifier:"memory.manual.save").firstMatch
+        XCTAssertTrue(saveButton.waitForExistence(timeout:10));XCTAssertFalse(saveButton.isEnabled)
+        tap("Read original operations");tap("Query this original operation")
+        text("memory.original.status",contains:"Saved.")
+        try launch(f,restore:true)
+        tap("memory.manage.openOriginals");tap("memory2.originals.read")
+        tap("memory2.legacy.query." + (try XCTUnwrap(legacy.first)));text("memory2.save.status",contains:"Saved.")
+        let data = try await call("/originals"),originals = try JSONDecoder().decode([String:[String]].self,from:data)
+        let typed = try XCTUnwrap(originals["saves"]);XCTAssertEqual(typed.count,1)
+        tap("memory2.original.query." + (try XCTUnwrap(typed.first)));text("memory2.save.status",contains:"Saved.")
+        back();save("Fresh compatible typed action / 兼容入口新保存",scope:"Long term / 长期")
+        try launch(f,restore:true,legacy:true);tap("memory.add")
+        let knownSaveButton = app.buttons.matching(identifier:"memory.manual.save").firstMatch
+        XCTAssertTrue(knownSaveButton.waitForExistence(timeout:10));XCTAssertFalse(knownSaveButton.isEnabled)
+    }
     func testChineseLargeSaveReadAndRecall() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600;chinese = true
         let fixture = try await prepare();defer {app?.terminate()}

@@ -56,6 +56,15 @@ struct DevelopmentTypedMode {
 /// All adjacent journals use the same account/key purpose. A missing key must
 /// not be replaced while any old or typed original still exists in that namespace.
 enum DevelopmentMemoryStorageNamespace {
+    /// Once the newer journal namespace exists, an older consumer cannot prove
+    /// its outcomes or reinterpret it. Keep V1 GET recovery, but never revive
+    /// its writer by removing the typed configuration. Reenter the compatible
+    /// typed consumer instead; no journal is deleted to unlock an old writer.
+    static func legacyWritesAllowed(legacyRoot: URL,files: FileManager = .default) throws -> Bool {
+        let prefix = legacyRoot.lastPathComponent + ".typed-v2"
+        return try !files.contentsOfDirectory(at:legacyRoot.deletingLastPathComponent(),includingPropertiesForKeys:nil)
+            .contains { $0.lastPathComponent == prefix || $0.lastPathComponent.hasPrefix(prefix + ".") }
+    }
     static func isEmpty(legacyRoot: URL,files: FileManager = .default) throws -> Bool {
         let parent = legacyRoot.deletingLastPathComponent(),name = legacyRoot.lastPathComponent
         let entries = try files.contentsOfDirectory(at:parent,includingPropertiesForKeys:[.isSymbolicLinkKey,.isDirectoryKey])
