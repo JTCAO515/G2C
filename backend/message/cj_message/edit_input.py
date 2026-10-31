@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 from cj_trip.domain import identifier
-from .domain import InvalidInput,Unavailable
+from .domain import InvalidInput,Unavailable,unique_fields
 from .trip_context import TripSelection,decode_source,on_day,trip_scope_for
 from .travel_reference import ContextConflict
 
@@ -39,15 +39,9 @@ def parse(raw):
     from .domain import Command
     from .travel import Selection
     from cj_needs.domain import identifier as needs_id
-    def unique(pairs):
-        result={}
-        for key,value in pairs:
-            if key in result:raise InvalidInput('duplicate field')
-            result[key]=value
-        return result
     try:
         if type(raw) is not bytes:raise ValueError('original bytes required')
-        value=json.loads(raw.decode('utf8'),object_pairs_hook=unique)
+        value=json.loads(raw.decode('utf8'),object_pairs_hook=unique_fields)
         fields={'version','conversation_id','message_id','text','trip_id','creation_intent','expected_generation','expected_sequence','trip_context','travel_context','needs_reference','modification_intent'}
         if type(value) is not dict or set(value)!=fields or value['version']!='MESSAGE-send.4':raise ValueError('send.4 exact fields required')
         for key in ('conversation_id','message_id','text','expected_generation'):
