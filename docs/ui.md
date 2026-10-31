@@ -123,7 +123,7 @@ NEEDS-PREVIEW@1 必须属于当前已接受原消息与原 RUN；核对的是实
 
 原消息字节和原回执中的选区 epoch、正式内容版本／hash 一起保留。新 RUN 读取、草稿状态和取消回包必须与该完整原引用一致，不把回包里的新版本换入原动作。当前进程从实际 Trip 读取交接的内容版本／hash 也须与接收回执一致；它们不进入 send.3 命令，不作为客户端许可。丢 ACK 后先核对原消息；恢复确认不能绕过原动作查询，也不自动重发。send.3 的已有 MEMORY scope 升级拒绝仍保留，不关闭记忆或伪装绑定成功。
 
-本地 DEBUG 模拟器仅以 `G2C_DEV_MESSAGE_PROFILE=trip-discussion-v1` 显式接入该讨论入口；普通旧模式与 Release 不取得新发送能力，typed-memory 旧旅行组合不能被此配置静默替换。历史使用 `MESSAGE-history.2` 保留各代原字节／引用，显示文本不创建本地原动作。`ios/App/Acceptance/check_trip_discussions.py` 只验独立的不绑定澄清与真实 MEMORY 升级拒绝，不注入正式 Trip；正式 Trip／日期／条目绑定、来源链及时间线原生验证仍为 UNRUN。
+本地 DEBUG 模拟器仅以 `G2C_DEV_MESSAGE_PROFILE=trip-discussion-v1` 显式接入该讨论入口；普通旧模式与 Release 不取得新发送能力，typed-memory 旧旅行组合不能被此配置静默替换。历史使用 `MESSAGE-history.2` 保留各代原字节／引用，显示文本不创建本地原动作。`ios/App/Acceptance/check_trip_discussions.py` 验证不绑定澄清、真实 MEMORY 升级拒绝及正式 Trip／日期／条目讨论。正式来源经实际带 NEEDS 引用的 MESSAGE-send.2、原 worker/FakeProvider、原确认采用，再由 C 的 TRIP-source-initialize.1 显式初始化既有行程，不注入 Trip。合成日程明确标为 synthetic；旧生产者的条目与 NEEDS 对应关系仍是 UNKNOWN，不据此取得手工编辑或规划来源权限。地图实际 SDK／点位、真实服务和真机仍按 L2/L3 单独验证。
 
 拒绝／不可用提示保留原消息核对入口，不把 `outcome=unknown` 解释为确定未接受或未建立绑定。App 不以关闭已有记忆来绕过讨论模式的兼容限制。
 
