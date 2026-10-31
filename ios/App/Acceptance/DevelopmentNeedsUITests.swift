@@ -54,6 +54,8 @@ import Foundation
                 let conversation = app.staticTexts.matching(identifier:"assistant.conversation").firstMatch
                 if conversation.exists { bottom = min(bottom,conversation.frame.minY) }
             }
+            let keyboard = app.keyboards.firstMatch
+            if keyboard.exists { bottom = min(bottom,keyboard.frame.minY - 4) }
             let frame = element.exists ? element.frame : .zero
             if element.exists && element.isHittable && frame.midY > top && frame.midY < bottom { return }
             let down = frame == .zero ? attempt >= 20 : frame.midY <= top
@@ -66,10 +68,10 @@ import Foundation
     }
     private func tap(_ id: String) {
         let element: XCUIElement
-        let fixed = ["Assistant","助手","Memory","记忆","assistant.history","assistant.panel.done","Done","完成"].contains(id)
+        let fixed = ["Assistant","助手","Memory","记忆","assistant.history","assistant.panel.done","needs.keyboard.done","Done","完成"].contains(id)
         if ["Assistant","助手","Memory","记忆"].contains(id) { element = app.tabBars.buttons.matching(identifier:id).firstMatch }
         else if id == "assistant.panel.done" { element = app.navigationBars.buttons.matching(identifier:id).firstMatch }
-        else if ["Done","完成"].contains(id) { element = app.toolbars.buttons.matching(identifier:id).firstMatch }
+        else if ["needs.keyboard.done","Done","完成"].contains(id) { element = app.toolbars.buttons.matching(identifier:id).firstMatch }
         else {
             let button = app.buttons.matching(identifier:id).firstMatch
             if button.waitForExistence(timeout:2) { element = button }
@@ -104,8 +106,14 @@ import Foundation
         return view.exists ? view : app.textFields.matching(identifier:id).firstMatch
     }
     private func dismissKeyboard(_ language: String) {
-        let label = language == "en" ? "Done" : "完成"
-        if app.toolbars.buttons.matching(identifier:label).firstMatch.exists { tap(label) }
+        guard app.keyboards.firstMatch.exists else { return }
+        if app.scrollViews.matching(identifier:"needs.content").firstMatch.exists {
+            tap("needs.keyboard.done")
+        } else {
+            tap(language == "en" ? "Done" : "完成")
+        }
+        let hidden = XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == false"),object:app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for:[hidden],timeout:10),.completed,"Keyboard must no longer cover page controls")
     }
     private func replace(_ id: String, value: String, language: String) {
         let target = field(id); XCTAssertTrue(target.waitForExistence(timeout:15)); reveal(target,id:id); target.tap()

@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import UIKit
 import CJNeedsClient
 import CJRunClient
 
@@ -110,6 +111,13 @@ struct NeedsContainerView: View {
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }.accessibilityIdentifier("needs.content")
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar { ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                AssistantPanelDoneButton(title: language.text("Done", "完成"), identifier: "needs.keyboard.done") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            } }
             .onDisappear { if let containerID { host.leaveContainer(id: containerID) } }
             .navigationTitle(language.text("Journey needs", "本次旅行需求"))
     }
