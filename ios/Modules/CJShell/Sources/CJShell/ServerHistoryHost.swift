@@ -22,17 +22,20 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     let limits: MessageReadLimits
     let synthetic: Bool
     let tripDiscussions: Bool
+    let scopedEdits: Bool
+    var versionedTripHistory:Bool { tripDiscussions || scopedEdits }
     let draftWriteCapability: ServerDraftWriteCapability?
     let isCurrent: @MainActor () -> Bool
     let selectForSending: (@MainActor (String) -> Bool)?
     public init(client: MessageHTTPClient, recovery: MessageRecovery, scope: StorageScope, lease: Lease,
                 generation: ShellGeneration, limit: Int, limits: MessageReadLimits, synthetic: Bool,
-                draftWriteCapability: ServerDraftWriteCapability? = nil, tripDiscussions: Bool = false, isCurrent: @escaping @MainActor () -> Bool,
+                draftWriteCapability: ServerDraftWriteCapability? = nil, tripDiscussions: Bool = false, scopedEdits:Bool = false, isCurrent: @escaping @MainActor () -> Bool,
                 selectForSending: (@MainActor (String) -> Bool)? = nil) {
         self.client = client; self.recovery = recovery; self.scope = scope; self.lease = lease
         self.generation = generation; self.limit = limit; self.limits = limits
         self.synthetic = synthetic; self.isCurrent = isCurrent
         self.tripDiscussions = tripDiscussions
+        self.scopedEdits = scopedEdits
         self.draftWriteCapability = draftWriteCapability
         self.selectForSending = selectForSending
     }
@@ -108,7 +111,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     }
     public var messages: [Components.Schemas.MessageHistoryItem] {
         guard current, let binding, messagePages.allSatisfy({ (try? binding.client.validateRead($0, lease: binding.lease)) != nil }) else { return [] }
-        if binding.tripDiscussions {
+        if binding.versionedTripHistory {
             // Text-only rendering projection. Original references and bytes stay
             // in their typed pages; this never enters canonical action recovery.
             return tripMessages.map { .init(receipt:$0.receipt,original_utf8_base64:$0.originalUTF8.base64EncodedString(),text:$0.text) }
@@ -116,7 +119,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         return messagePages.flatMap(\.value)
     }
     public var tripMessages: [MessageTripHistoryItem] {
-        guard current,let binding,binding.tripDiscussions,
+        guard current,let binding,binding.versionedTripHistory,
               tripMessagePages.allSatisfy({ (try? binding.client.validateRead($0,lease:binding.lease)) != nil }) else { return [] }
         return tripMessagePages.flatMap(\.value)
     }
@@ -126,7 +129,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         return draftResult.value
     }
     public var hasMoreConversations: Bool { current && listState == .ready && listPages.last?.next != nil }
-    public var hasMoreMessages: Bool { current && messagesState == .ready && (binding?.tripDiscussions == true ? tripMessagePages.last?.next : messagePages.last?.next) != nil }
+    public var hasMoreMessages: Bool { current && messagesState == .ready && (binding?.versionedTripHistory == true ? tripMessagePages.last?.next : messagePages.last?.next) != nil }
     public init(shell: ShellState) {
         self.shell = shell
         shell.serverHistoryHost?.invalidate()
@@ -134,7 +137,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     }
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
     @discardableResult public func bind(_ candidate: ServerHistoryBinding) -> Bool {
-        guard binding == nil, !shell.messageBindingBlocked, candidate.generation == shell.generation,
+        guard binding == nil, !(candidate.tripDiscussions && candidate.scopedEdits), !shell.messageBindingBlocked, candidate.generation == shell.generation,
               candidate.isCurrent(), candidate.generation == shell.generation,
               (1...candidate.limits.maximumPageItems).contains(candidate.limit),
               (try? candidate.recovery.validateScope(candidate.scope, lease: candidate.lease)) != nil else { return false }
@@ -164,7 +167,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         guard current, let binding else { return nil }
         return ServerReadContext(binding: binding, selectionEpoch: selectionEpoch,
             listRequest: listRequest, historyRequest: historyRequest, draftRequest: draftRequest,
-            selected: selection, listCursor: listPages.last?.next, historyCursor: binding.tripDiscussions ? tripMessagePages.last?.next : messagePages.last?.next)
+            selected: selection, listCursor: listPages.last?.next, historyCursor: binding.versionedTripHistory ? tripMessagePages.last?.next : messagePages.last?.next)
     }
     private func accepts(_ context: ServerReadContext) -> Bool {
         current(context.binding) && selectionEpoch == context.selectionEpoch
@@ -223,8 +226,8 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         if !more { messagePages = []; tripMessagePages = [] }
         let request = UUID(); historyRequest = request; messagesState = .loading
         do {
-            if original.tripDiscussions {
-                let result=try await original.client.tripDiscussionHistory(conversationID:selected.conversation_id,limit:original.limit,after:cursor,limits:original.limits,lease:original.lease)
+            if original.versionedTripHistory {
+                let result=try await original.scopedEdits ? original.client.tripEditHistory(conversationID:selected.conversation_id,limit:original.limit,after:cursor,limits:original.limits,lease:original.lease) : original.client.tripDiscussionHistory(conversationID:selected.conversation_id,limit:original.limit,after:cursor,limits:original.limits,lease:original.lease)
                 try original.client.validateRead(result,lease:original.lease)
                 guard current(original),selectionEpoch == context.selectionEpoch,historyRequest == request else { return }
                 guard result.value.allSatisfy({ Data($0.receipt.generation.utf8)==Data(selected.generation.utf8) }) else { throw MessageReadFailure.resyncRequired }

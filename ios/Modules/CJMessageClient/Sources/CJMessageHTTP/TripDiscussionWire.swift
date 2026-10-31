@@ -14,6 +14,9 @@ public struct MessageTripContent:Sendable {
     func validate(_ reference:MessageTripReference) throws {
         guard reference.contentVersion==version,reference.contentSHA256==sha256 else { throw MessageHTTPFailure.invalidResponse }
     }
+    func validate(_ reference: MessageEditReference) throws {
+        guard reference.contentVersion == version, reference.trip.contentSHA256 == sha256 else { throw MessageHTTPFailure.invalidResponse }
+    }
 }
 
 /// Explicit selection data for frozen SEND-V3. This is neither an ownership

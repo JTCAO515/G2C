@@ -6,6 +6,7 @@ public enum MessageHistoryAssociation: Sendable {
     case legacy
     case travel(Components.Schemas.MessageTravelReference)
     case trip(MessageTripReference)
+    case edit(MessageEditReference)
 }
 /// Immutable accepted history data. Reading it does not stage a local action,
 /// update a Trip choice or grant permission to replay an old message.
@@ -18,10 +19,10 @@ public struct MessageTripHistoryItem: Sendable {
 struct TripDiscussionHistory {
     let rows: [MessageTripHistoryItem]
     let next: String?
-    init(raw: Data, maximumBytes: Int, decodedLimit: Int, limit: Int, requestID: String) throws {
+    init(raw: Data, maximumBytes: Int, decodedLimit: Int, limit: Int, requestID: String, edit: Bool = false) throws {
         let json=try DiscussionJSON(raw,maximumBytes:maximumBytes)
         let f=try DiscussionJSON.fields(json.object,"request_id version messages next_cursor")
-        guard f["version"] as? String == "MESSAGE-history.2",f["request_id"] as? String == requestID,UUID(uuidString:requestID) != nil,
+        guard f["version"] as? String == (edit ? "MESSAGE-history.3" : "MESSAGE-history.2"),f["request_id"] as? String == requestID,UUID(uuidString:requestID) != nil,
               let messages=f["messages"] as? [[String:Any]],messages.count<=limit else { throw MessageHTTPFailure.invalidResponse }
         next=try DiscussionJSON.nullableText(f["next_cursor"])
         var rows:[MessageTripHistoryItem]=[],remaining=decodedLimit
@@ -39,6 +40,11 @@ struct TripDiscussionHistory {
                   DiscussionJSON.same(content,text),SHA256.hash(data:original).map({String(format:"%02x",$0)}).joined()==receipt.input_sha256 else { throw MessageHTTPFailure.invalidResponse }
             let association:MessageHistoryAssociation
             switch source.object["version"] as? String {
+            case "MESSAGE-send.4":
+                guard edit else { throw MessageHTTPFailure.invalidResponse }
+                let command=try OriginalTripEdit(raw:original,maximumBytes:decodedLimit,expectedMessageID:receipt.message_id)
+                let reference=try MessageEditReference.read(fields["reference"],json:json,path:["messages",String(index),"reference"])
+                try reference.validate(receipt:receipt,original:command);association = .edit(reference)
             case "MESSAGE-send.3":
                 let command=try OriginalTripDiscussion(raw:original,maximumBytes:decodedLimit,expectedMessageID:receipt.message_id)
                 let reference=try MessageTripReference.read(fields["reference"],json:json,path:["messages",String(index),"reference"])

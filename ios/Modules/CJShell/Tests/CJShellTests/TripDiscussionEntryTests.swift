@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import Observation
 import HTTPTypes
 import OpenAPIRuntime
 @testable import CJTripClient
@@ -225,6 +226,91 @@ private actor DiscussionTripRead: ClientTransport {
         #expect(host.conversationOpenings.isEmpty && host.selectedConversation==nil && host.captureNewConversationIntent()==nil)
         #expect(await wire.created.count==1)
     }
+    private func scopedMessages() async throws -> ScopedShellFixture {
+        let shell=ShellState(preferences:try #require(UserDefaults(suiteName:UUID().uuidString)))
+        let (timeline,_,lifetime,_,_)=try setup("explicit",shell:shell)
+        await timeline.perform(try timeline.select("trip-a"))
+        let entry=try timeline.discussion(context:timeline.display()?.discussion,day:MessageTripSelection.Day(date:"2026-11-01",timezone:"Asia/Shanghai"),itemID:"item-1")
+        let ids=try #require(timeline.display()?.record?.document.items.map(\.id))
+        let wire=ScopedShellWire(contentVersion:entry.content.version,allIDs:ids),needs=try ScopedShellNeeds()
+        let recovery=MessageRecovery(storage:DiscussionMessageStore()),scope=try StorageScope(environment:lifetime.binding.environment.uuidString,account:lifetime.binding.account.uuidString),lease=try recovery.activate(scope)
+        let endpoint=try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:65536,maximumResponseBytes:65536)
+        let client=MessageHTTPClient(recovery:recovery,scope:scope,endpoint:endpoint,credentials:DiscussionMessageCredentials(),interceptedTestTransport:wire)
+        let travel=try TravelSelectionModel(ids:[ScopedShellWire.namespace],client:client,lease:lease,isCurrent:{lifetime.current})
+        let host=AssistantMessageHost(shell:shell)
+        #expect(host.bind(.init(recovery:recovery,scope:scope,lease:lease,generation:shell.generation,synthetic:true,isCurrent:{lifetime.current},invalidateResources:{},sendClient:client,travelSelection:travel,currentNeeds:{needs.value},scopedEdits:true)))
+        #expect(host.selectTripDiscussion(entry))
+        #expect(host.selectConversationForSending("chat"));await wait { !host.isBusy }
+        return ScopedShellFixture(host:host,shell:shell,timeline:timeline,travel:travel,needs:needs,wire:wire,entry:entry)
+    }
+    private func chooseScopedCandidate(_ f:ScopedShellFixture) throws {
+        let first=try #require(f.host.scopedPresentation)
+        #expect(f.host.performScopedChoice(try #require(f.host.captureScopedIntent(.proposeScopedEdit,for:first))))
+        let next=try #require(f.host.scopedPresentation)
+        #expect(f.host.performScopedChoice(try #require(f.host.captureScopedNeedsChoice(for:next))))
+    }
+    @Test func scopedRequestRequiresIndependentNamespaceAndExplicitSavedNeeds() async throws {
+        let f=try await scopedMessages();f.shell.draft="SYNTHETIC 本次轻松一点"
+        #expect(!f.host.canSend)
+        try chooseScopedCandidate(f);#expect(!f.host.canSend)
+        await f.travel.selectTravel(ScopedShellWire.namespace);#expect(f.host.canSend)
+        f.shell.selectLanguage(.chinese)
+        #expect(f.host.scopedPresentation?.trip?.id=="trip-a" && f.host.scopedPresentation?.trip?.itemIDs==["item-1"])
+        f.host.sendNew();await wait { !f.host.isBusy }
+        let accepted=try #require(f.host.captureAcceptedRunReceipt()),reference=try #require(accepted.editReference)
+        #expect(reference.trip.id=="trip-a" && reference.trip.expectedVersion==7 && reference.trip.day==nil && reference.trip.itemIDs==["item-1"])
+        #expect(reference.namespace.id==ScopedShellWire.namespace && reference.needs?.expectedVersion==1 && reference.intent == .proposeScopedEdit)
+        #expect(accepted.tripReference==nil && accepted.travelReference==nil && accepted.isCurrent())
+        #expect(await f.wire.posts.count==1)
+    }
+    @Test func replacementChoiceClearsEarlierTemporaryContextAndNeedsAndRenderedCommands() async throws {
+        let f=try await scopedMessages();try chooseScopedCandidate(f);await f.travel.selectTravel(ScopedShellWire.namespace)
+        let displayed=try #require(f.host.scopedPresentation)
+        let old=try #require(f.host.captureScopedNeedsChoice(for:displayed)),chat=try #require(f.host.captureNewConversationIntent(for:displayed))
+        let whole=try f.timeline.discussion(context:f.timeline.display()?.discussion,day:nil,itemID:nil)
+        #expect(f.host.selectTripDiscussion(whole))
+        #expect(f.host.scopedPresentation?.needs==nil && f.host.scopedPresentation?.intent == MessageModificationIntent.none)
+        guard case .unselected=f.travel.state else { Issue.record("temporary context carried into replacement choice");return }
+        #expect(!f.host.performScopedChoice(old) && f.host.captureScopedIntent(.proposeScopedEdit,for:displayed)==nil)
+        f.host.performConversationIntent(chat)
+        #expect(await f.wire.openings==0)
+    }
+    @Test func wholeTripCannotBecomeScopedEditAndNoneCannotBecomeLongTermFallback() async throws {
+        let f=try await scopedMessages()
+        let whole=try f.timeline.discussion(context:f.timeline.display()?.discussion,day:nil,itemID:nil)
+        #expect(f.host.selectTripDiscussion(whole));try chooseScopedCandidate(f)
+        await f.travel.selectTravel(ScopedShellWire.namespace);f.shell.draft="SYNTHETIC explicit request"
+        #expect(!f.host.canSend)
+        let displayed=try #require(f.host.scopedPresentation)
+        #expect(f.host.performScopedChoice(try #require(f.host.captureScopedIntent(.none,for:displayed))))
+        #expect(f.host.canSend)
+        try f.travel.selectNone();#expect(!f.host.canSend)
+        #expect(await f.wire.posts.isEmpty)
+    }
+    @Test func changedNeedsCannotRetargetAnEarlierRenderedChoice() async throws {
+        let f=try await scopedMessages(),display=try #require(f.host.scopedPresentation)
+        let old=try #require(f.host.captureScopedNeedsChoice(for:display))
+        f.needs.value=try MessageNeedsSelection(id:"visit",expectedVersion:2)
+        #expect(!f.host.performScopedChoice(old) && f.host.scopedPresentation?.needs==nil)
+        let current=try #require(f.host.captureScopedNeedsChoice(for:display))
+        #expect(f.host.performScopedChoice(current) && f.host.scopedPresentation?.needs?.expectedVersion==2)
+    }
+    @Test func scopeMutationObserverCannotCommitIntoReplacementIdentity() async throws {
+        let f=try await scopedMessages(),display=try #require(f.host.scopedPresentation)
+        let command=try #require(f.host.captureScopedIntent(.proposeScopedEdit,for:display))
+        let switched=ScopedObserverSwitch()
+        withObservationTracking { _=f.host.scopedPresentation } onChange: {
+            MainActor.assumeIsolated {
+                guard switched.count==0 else { return }
+                switched.count += 1
+                _=f.shell.invalidateIdentity()
+            }
+        }
+        #expect(!f.host.performScopedChoice(command))
+        #expect(switched.count==1)
+        #expect(f.host.scopedPresentation==nil && !f.host.canSend)
+        #expect(await f.wire.posts.isEmpty)
+    }
 }
 
 @MainActor private final class DiscussionMessageStore:SecureMessageStorage {
@@ -287,3 +373,50 @@ private actor DiscussionMessageWire:ClientTransport {
         return (HTTPResponse(status:.init(code:status),headerFields:headers),HTTPBody(try JSONSerialization.data(withJSONObject:value)))
     }
 }
+
+@MainActor private struct ScopedShellFixture {
+    let host:AssistantMessageHost
+    let shell:ShellState
+    let timeline:TripTimelineHost
+    let travel:TravelSelectionModel
+    let needs:ScopedShellNeeds
+    let wire:ScopedShellWire
+    let entry:TripDiscussionEntry
+}
+@MainActor private final class ScopedShellNeeds {
+    var value:MessageNeedsSelection?
+    init() throws { value=try MessageNeedsSelection(id:"visit",expectedVersion:1) }
+}
+private actor ScopedShellWire:ClientTransport {
+    static let namespace=String(repeating:"b",count:32)
+    let contentVersion:String
+    let allIDs:[String]
+    var posts:[Data]=[]
+    var openings=0
+    init(contentVersion:String,allIDs:[String]) { self.contentVersion=contentVersion;self.allIDs=allIDs }
+    func send(_ request:HTTPRequest,body:HTTPBody?,baseURL:URL,operationID:String) async throws -> (HTTPResponse,HTTPBody?) {
+        var value:[String:Any]
+        if operationID=="getTravelContext" {
+            value=["request_id":discussionTripTrace,"version":"TRAVEL-context.1","travel_context":["id":Self.namespace,"version":1,"active":true,"created_at":"2026-10-30T11:12:13.123456Z"]]
+        } else if operationID=="readTripEditStatusV4" {
+            value=["request_id":discussionTripTrace,"version":"MESSAGE-send-status.4","receipt":NSNull(),"reference":NSNull(),"head":["conversation_id":"chat","generation":"g","last_sequence":posts.count]]
+        } else if operationID=="receiveTripEditV4" {
+            let raw=try await Data(collecting:#require(body),upTo:65536);posts.append(raw)
+            let source=try #require(JSONSerialization.jsonObject(with:raw) as? [String:Any]),trip=source["trip_context"] as! [String:Any],ns=source["travel_context"] as! [String:Any]
+            let hash=SHA256.hash(data:raw).map { String(format:"%02x",$0) }.joined()
+            let receipt:[String:Any]=["message_id":source["message_id"]!,"conversation_id":"chat","generation":"g","sequence":posts.count,"run_id":"run","input_sha256":hash]
+            var reference=receipt
+            let chosen=trip["item_ids"] as! [String]
+            reference.merge(["version":"MESSAGE-edit-reference.1","message_version":"MESSAGE-send.4","modification_intent":source["modification_intent"]!,
+                "trip_context":trip,"resolved_item_ids":chosen.isEmpty ? allIDs : chosen,"content_version":contentVersion,
+                "namespace":["kind":"travel","id":ns["id"]!,"version":ns["expected_version"]!],"needs_reference":source["needs_reference"]!,"selection_epoch":1],uniquingKeysWith:{_,b in b})
+            value=["request_id":discussionTripTrace,"version":"MESSAGE-accept.4","receipt":receipt,"reference":reference]
+        } else {
+            openings += 1;Issue.record(Comment(rawValue:"unexpected scoped operation "+operationID));throw MessageHTTPFailure.invalidResponse
+        }
+        var headers=HTTPFields();headers[.contentType]="application/json";headers[.cacheControl]="no-store";headers[.init("x-request-id")!]=discussionTripTrace
+        return (HTTPResponse(status:.ok,headerFields:headers),HTTPBody(try JSONSerialization.data(withJSONObject:value,options:[.sortedKeys])))
+    }
+}
+
+@MainActor private final class ScopedObserverSwitch { var count=0 }

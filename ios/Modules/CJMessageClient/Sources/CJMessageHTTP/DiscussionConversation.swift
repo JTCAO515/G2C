@@ -10,6 +10,7 @@ public struct DiscussionConversationWork:Sendable,CustomReflectable {
     fileprivate let lease:Lease
     fileprivate let operation:ConversationOpeningOperation
     fileprivate let creation:Bool
+    fileprivate let edit:Bool
     public var customMirror:Mirror { Mirror(self,children:[:]) }
 }
 public enum DiscussionConversationOutcome:Sendable {
@@ -24,17 +25,34 @@ private struct ConversationOpeningExit:ClientTransport {
 }
 extension MessageHTTPClient {
     public func prepareNewDiscussionConversation(lease:Lease) throws -> DiscussionConversationWork {
-        if let liveMessageTransport { try liveMessageTransport.validateTripDiscussionSending(to:endpoint) }
-        else if !submissionEnabledForTest { throw MessageHTTPFailure.productionActivationUnavailable }
+        try prepareNewConversation(lease:lease,edit:false)
+    }
+    public func prepareNewTripEditConversation(lease:Lease) throws -> DiscussionConversationWork {
+        try prepareNewConversation(lease:lease,edit:true)
+    }
+    private func requireConversationCapability(edit:Bool) throws {
+        if let liveMessageTransport {
+            if edit { try liveMessageTransport.validateTripEditSending(to:endpoint) }
+            else { try liveMessageTransport.validateTripDiscussionSending(to:endpoint) }
+        } else if !submissionEnabledForTest { throw MessageHTTPFailure.productionActivationUnavailable }
+    }
+    private func prepareNewConversation(lease:Lease,edit:Bool) throws -> DiscussionConversationWork {
+        try requireConversationCapability(edit:edit)
         try recovery.validateScope(scope,lease:lease)
         let id="discussion."+UUID().uuidString
         let operation=try recovery.stageConversationOpening(conversationID:id,lease:lease)
-        return .init(conversationID:id,owner:conversationOpeningOwner,lease:lease,operation:operation,creation:true)
+        return .init(conversationID:id,owner:conversationOpeningOwner,lease:lease,operation:operation,creation:true,edit:edit)
     }
     public func prepareDiscussionConversationQuery(id:String,lease:Lease) throws -> DiscussionConversationWork {
+        try prepareConversationQuery(id:id,lease:lease,edit:false)
+    }
+    public func prepareTripEditConversationQuery(id:String,lease:Lease) throws -> DiscussionConversationWork {
+        try prepareConversationQuery(id:id,lease:lease,edit:true)
+    }
+    private func prepareConversationQuery(id:String,lease:Lease,edit:Bool) throws -> DiscussionConversationWork {
         try recovery.validateScope(scope,lease:lease)
         let operation=try recovery.beginConversationOpeningQuery(conversationID:id,lease:lease)
-        return .init(conversationID:id,owner:conversationOpeningOwner,lease:lease,operation:operation,creation:false)
+        return .init(conversationID:id,owner:conversationOpeningOwner,lease:lease,operation:operation,creation:false,edit:edit)
     }
     private func validateOpening(_ work:DiscussionConversationWork) throws {
         guard work.owner==conversationOpeningOwner else { throw RecoveryError.queryOnly }
@@ -43,19 +61,21 @@ extension MessageHTTPClient {
     public func performDiscussionConversation(_ work:DiscussionConversationWork) async throws -> DiscussionConversationOutcome {
         try validateOpening(work)
         if !work.creation {
-            tripDiscussionPermitState.heads.removeValue(forKey:Data(work.conversationID.utf8))
-            var parts=URLComponents();parts.path="/v3/message-send-status";parts.queryItems=[.init(name:"conversation_id",value:work.conversationID)]
+            if work.edit { tripEditPermitState.heads.removeValue(forKey:Data(work.conversationID.utf8)) }
+            else { tripDiscussionPermitState.heads.removeValue(forKey:Data(work.conversationID.utf8)) }
+            var parts=URLComponents();parts.path=work.edit ? "/v4/message-send-status" : "/v3/message-send-status";parts.queryItems=[.init(name:"conversation_id",value:work.conversationID)]
             guard let path=parts.string else { throw MessageHTTPFailure.invalidConfiguration }
-            let (status,raw,trace)=try await discussionExchange(path:path,operation:"readTripDiscussionStatusV3",raw:nil,lease:work.lease)
+            let (status,raw,trace)=try await versionedMessageExchange(path:path,operation:work.edit ? "readTripEditStatusV4" : "readTripDiscussionStatusV3",raw:nil,lease:work.lease)
             try validateOpening(work)
             guard status==200 else { return .rejected(status:status,error:try JSONDecoder().decode(Components.Schemas.ErrorResponse.self,from:raw)) }
-            let value=try TripDiscussionStatus(raw:raw,maximumBytes:endpoint.maximumResponseBytes,requestID:trace,conversationID:work.conversationID,original:nil)
-            guard value.head != nil else { return .unknown }
+            let available:Bool
+            if work.edit { available=try TripEditStatus(raw:raw,maximumBytes:endpoint.maximumResponseBytes,requestID:trace,conversationID:work.conversationID,original:nil).head != nil }
+            else { available=try TripDiscussionStatus(raw:raw,maximumBytes:endpoint.maximumResponseBytes,requestID:trace,conversationID:work.conversationID,original:nil).head != nil }
+            guard available else { return .unknown }
             try recovery.observeConversationOpening(work.operation,phase:.available,httpStatus:200,responseUTF8:raw)
             return .available(work.conversationID)
         }
-        if let liveMessageTransport { try liveMessageTransport.validateTripDiscussionSending(to:endpoint) }
-        else if !submissionEnabledForTest { throw MessageHTTPFailure.productionActivationUnavailable }
+        try requireConversationCapability(edit:work.edit)
         try validateOpening(work);try recovery.consumeConversationCreation(work.operation)
         do {
             let checked=try await checkedTransport(work.lease);try validateOpening(work)
