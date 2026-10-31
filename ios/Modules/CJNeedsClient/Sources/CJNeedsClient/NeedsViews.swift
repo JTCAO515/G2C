@@ -116,6 +116,25 @@ public struct NeedsEditorView: View {
                 }
                 Button(language.text("添加临时条件", "Add temporary condition")) { draft.conditions.append(.init()) }
             }
+        }.disclosureGroupStyle(NeedsDisclosureStyle(language: language))
+    }
+}
+
+/// Full-width, high-contrast disclosure affordance for the requirements form.
+/// The actual label and expanded content remain visible at the user's font size.
+public struct NeedsDisclosureStyle: DisclosureGroupStyle {
+    private let language: NeedsLanguage
+    public init(language: NeedsLanguage) { self.language = language }
+    public func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button { configuration.isExpanded.toggle() } label: {
+                HStack(alignment: .center, spacing: 12) {
+                    configuration.label.frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: configuration.isExpanded ? "chevron.down" : "chevron.right").foregroundStyle(.primary)
+                }.foregroundStyle(.primary).frame(minHeight: 44).contentShape(Rectangle())
+            }.buttonStyle(.plain)
+                .accessibilityValue(configuration.isExpanded ? language.text("已展开", "Expanded") : language.text("已折叠", "Collapsed"))
+            if configuration.isExpanded { configuration.content.padding(.leading, 12) }
         }
     }
 }

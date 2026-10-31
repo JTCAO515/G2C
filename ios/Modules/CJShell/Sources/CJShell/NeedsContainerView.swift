@@ -110,7 +110,8 @@ struct NeedsContainerView: View {
                     RunReadableText(text: language.text("Journey needs are unavailable. A trusted account and explicit record selection are required.", "旅行需求不可用，需要可信账号和明确的记录选择。"))
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
-        }.clipped().accessibilityIdentifier("needs.content")
+        }.disclosureGroupStyle(NeedsDisclosureStyle(language: needsLanguage))
+            .clipped().accessibilityIdentifier("needs.content")
             .scrollDismissesKeyboard(.interactively)
             .toolbar { ToolbarItem(placement: .topBarLeading) {
                 Button {
@@ -121,7 +122,7 @@ struct NeedsContainerView: View {
                 }.accessibilityLabel(language.text("Hide keyboard", "收起键盘")).accessibilityIdentifier("needs.keyboard.done")
             } }
             .onDisappear { if let containerID { host.leaveContainer(id: containerID) } }
-            .navigationTitle(language.text("Journey needs", "本次旅行需求"))
+            .navigationTitle(language.text("Needs", "需求")).navigationBarTitleDisplayMode(.inline)
     }
     @ViewBuilder private func preview(_ runs: RunContainerHost, action: NeedsContainerAction?) -> some View {
         switch host.preview(from: runs) {

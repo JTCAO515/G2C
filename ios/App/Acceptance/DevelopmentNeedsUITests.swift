@@ -42,8 +42,9 @@ import Foundation
     private func capture(_ name: String) {
         let image = XCTAttachment(screenshot:app.screenshot()); image.name = name; image.lifetime = .keepAlways; add(image)
     }
-    private func reveal(_ element: XCUIElement, id: String, full: Bool = false) {
-        for attempt in 0..<40 {
+    @discardableResult private func reveal(_ lookup: () -> XCUIElement, id: String, full: Bool = false) -> XCUIElement {
+        for attempt in 0..<60 {
+            let element = lookup()
             let navigation = app.navigationBars.firstMatch
             var top = navigation.exists ? navigation.frame.maxY + 4 : app.frame.minY + 60
             var bottom = navigation.exists ? app.frame.maxY - 24 : app.tabBars.firstMatch.frame.minY
@@ -61,14 +62,38 @@ import Foundation
                 if accessory.exists { bottom = min(bottom,accessory.frame.minY - 4) }
             }
             let frame = element.exists ? element.frame : .zero
-            if element.exists && element.isHittable && (full ? frame.minY >= top && frame.maxY <= bottom : frame.midY > top && frame.midY < bottom) { return }
-            let down = frame == .zero ? attempt >= 20 : (full ? frame.minY < top : frame.midY <= top)
+            if element.exists && element.isHittable && (full ? frame.minY >= top && frame.maxY <= bottom : frame.midY > top && frame.midY < bottom) { return element }
+            let down = frame == .zero ? attempt >= 30 : (full ? frame.minY < top : frame.midY <= top)
             let middle = (top + bottom) / 2, step = min(150,(bottom-top)*0.35)
             let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? -step : step)))
             let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id); XCTFail("Expected visible control: "+id)
+        return lookup()
+    }
+    private func reveal(_ element: XCUIElement, id: String, full: Bool = false) {
+        _ = reveal({ element },id:id,full:full)
+    }
+    private func controlElement(_ id: String) -> XCUIElement {
+        let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
+        let buttons = panel.exists ? panel.buttons : app.buttons
+        let button = buttons.matching(identifier:id).firstMatch
+        if button.exists { return button }
+        let others = panel.exists ? panel.otherElements : app.otherElements
+        let other = others.matching(identifier:id).firstMatch
+        if other.exists { return other }
+        let texts = panel.exists ? panel.staticTexts : app.staticTexts
+        let text = texts.matching(identifier:id).firstMatch
+        return text.exists ? text : app.disclosureTriangles.matching(identifier:id).firstMatch
+    }
+    private func textElement(_ id: String) -> XCUIElement {
+        let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
+        let row = panel.exists ? panel.staticTexts.matching(identifier:id).firstMatch : app.staticTexts.matching(identifier:id).firstMatch
+        if row.exists { return row }
+        let other = panel.exists ? panel.otherElements.matching(identifier:id).firstMatch : app.otherElements.matching(identifier:id).firstMatch
+        if other.exists { return other }
+        return panel.exists ? panel.textViews.matching(identifier:id).firstMatch : app.textViews.matching(identifier:id).firstMatch
     }
     private func tap(_ id: String) {
         let element: XCUIElement
@@ -76,30 +101,15 @@ import Foundation
         if ["Assistant","助手","Memory","记忆"].contains(id) { element = app.tabBars.buttons.matching(identifier:id).firstMatch }
         else if ["assistant.panel.done","needs.keyboard.done"].contains(id) { element = app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else if ["Done","完成"].contains(id) { element = app.toolbars.buttons.matching(identifier:id).firstMatch }
-        else {
-            let button = app.buttons.matching(identifier:id).firstMatch
-            if button.waitForExistence(timeout:2) { element = button }
-            else {
-                let other = app.otherElements.matching(identifier:id).firstMatch
-                if other.exists { element = other }
-                else {
-                    let label = app.staticTexts.matching(identifier:id).firstMatch
-                    element = label.exists ? label : app.disclosureTriangles.matching(identifier:id).firstMatch
-                }
-            }
-        }
+        else { element = fixed ? controlElement(id) : reveal({controlElement(id)},id:id) }
         XCTAssertTrue(element.waitForExistence(timeout:15),id)
-        if !fixed { reveal(element,id:id) }
         let ready = XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == true AND hittable == true AND enabled == true"),object:element)
         XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:20),.completed,id)
         element.tap()
     }
     @discardableResult private func text(_ id: String, contains: String, timeout: TimeInterval = 30) -> String {
-        let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
-        let row = panel.exists ? panel.staticTexts.matching(identifier:id).firstMatch : app.staticTexts.matching(identifier:id).firstMatch
-        let other = panel.exists ? panel.otherElements.matching(identifier:id).firstMatch : app.otherElements.matching(identifier:id).firstMatch
-        let native = panel.exists ? panel.textViews.matching(identifier:id).firstMatch : app.textViews.matching(identifier:id).firstMatch
-        let value = row.exists ? row : other.exists ? other : native
+        // Re-evaluate the concrete control type as lazy rows enter the page.
+        let value = reveal({textElement(id)},id:id)
         let exists = value.waitForExistence(timeout:timeout)
         if !exists { capture("missing-"+id) }
         XCTAssertTrue(exists,id)
@@ -109,8 +119,10 @@ import Foundation
         return value.label
     }
     private func field(_ id: String) -> XCUIElement {
-        let view = app.textViews.matching(identifier:id).firstMatch
-        return view.exists ? view : app.textFields.matching(identifier:id).firstMatch
+        let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
+        let view = panel.exists ? panel.textViews.matching(identifier:id).firstMatch : app.textViews.matching(identifier:id).firstMatch
+        if view.exists { return view }
+        return panel.exists ? panel.textFields.matching(identifier:id).firstMatch : app.textFields.matching(identifier:id).firstMatch
     }
     private func dismissKeyboard(_ language: String) {
         guard app.keyboards.firstMatch.exists else { return }
@@ -123,8 +135,9 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for:[hidden],timeout:10),.completed,"Keyboard must no longer cover page controls")
     }
     private func replace(_ id: String, value: String, language: String) {
-        let target = field(id); XCTAssertTrue(target.waitForExistence(timeout:15)); reveal(target,id:id,full:true); target.tap()
-        reveal(target,id:id,full:true) // Focus changes the viewport: keyboard AND its accessory bar.
+        var target = reveal({field(id)},id:id,full:true); XCTAssertTrue(target.exists); target.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:15),"Input must have a real keyboard before replacement")
+        target = reveal({field(id)},id:id,full:true) // Focus changes the viewport: keyboard AND its accessory bar.
         let end = target.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5))
         end.tap()
         let previous = target.value as? String ?? ""
@@ -140,7 +153,10 @@ import Foundation
         XCTAssertEqual(Array((target.value as? String ?? "").utf8),Array(value.utf8)); dismissKeyboard(language)
     }
     private func appendStatement(_ value: String, language: String) {
-        let target = field("needs.editor.statement"); reveal(target,id:"needs.editor.statement"); target.tap()
+        var target = reveal({field("needs.editor.statement")},id:"needs.editor.statement",full:true)
+        target.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:15),"Statement must be focused before typing")
+        target = field("needs.editor.statement")
         // The real tap establishes focus. A second coordinate tap could land
         // outside a multiline editor after the keyboard changes its viewport.
         target.typeText(value); dismissKeyboard(language)
