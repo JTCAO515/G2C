@@ -45,14 +45,14 @@ import Foundation
                 if conversation.exists {bottom = min(bottom,conversation.frame.minY)}
             }
             let frame = element.exists ? element.frame : .zero
-            if id == "fact.output.0.source.0.url" && attempt % 6 == 0 {
+            if ["fact.output.0.source.0.url","fact.sources.open"].contains(id) && attempt % 6 == 0 {
                 print("FACT_URL_VIEWPORT",attempt,frame,top,bottom,element.exists,element.isHittable)
             }
             if element.exists && element.isHittable && (fixed || frame.midY > top && frame.midY < bottom) {return}
             if fixed {_ = element.waitForExistence(timeout:1);continue}
             // Lazy Lists can omit a row on either side of the viewport. Search
             // both directions when its concrete snapshot is absent.
-            let down = frame == .zero ? (attempt / 6) % 2 == 1 : frame.midY <= top
+            let down = frame == .zero ? attempt >= 20 : frame.midY <= top
             let middle = (top + bottom) / 2,halfStep = min(125,(bottom - top) * 0.3)
             let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:middle + (down ? -halfStep : halfStep)))
             let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:middle + (down ? halfStep : -halfStep)))
