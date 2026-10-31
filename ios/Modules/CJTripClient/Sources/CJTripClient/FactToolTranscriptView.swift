@@ -46,7 +46,7 @@ public struct FactToolTranscriptView: View {
     }
     private func source(_ value: FactSourceV1,prefix p: String) -> some View {
         VStack(alignment:.leading,spacing:8) {
-            field(language.text("Synthetic source", "合成来源"),value.sourceURL,p + ".url")
+            row(language.text("Synthetic source: ", "合成来源：") + value.sourceURL,p + ".url")
             row(value.originalValue,p + ".original")
             row(status(value.status) + (value.reasons.isEmpty ? "" : " · " + value.reasons.joined(separator:", ")),p + ".status")
             field(language.text("Retrieved at", "检索时点"),stamp(value.retrievedAt),p + ".retrieved")

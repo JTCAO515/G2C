@@ -72,7 +72,7 @@ import Foundation
         else if ["Done","完成"].contains(id) { button = app.toolbars.buttons.matching(identifier:id).firstMatch }
         else { button = app.buttons.matching(identifier:id).firstMatch }
         XCTAssertTrue(button.waitForExistence(timeout:15),id)
-        if ["assistant.panel.done","fact.sources.done"].contains(id) || ["Assistant","助手","Memory","记忆","Done","完成"].contains(id) {
+        if ["assistant.history","assistant.panel.done","fact.sources.done"].contains(id) || ["Assistant","助手","Memory","记忆","Done","完成"].contains(id) {
             let fixedControl = XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == true AND hittable == true"),object:button)
             XCTAssertEqual(XCTWaiter.wait(for:[fixedControl],timeout:20),.completed,id)
         } else { reveal(button,id:id) }
