@@ -124,26 +124,82 @@ public struct NeedsDraft: Sendable {
     public private(set) var companionsChanged = false
     public private(set) var fixedItemsChanged = false
     public private(set) var conditionsChanged = false
+    private static let amounts: Set<NeedsField> = [.total, .perPerson, .paid]
+    // An amount retains its source currency until the user re-enters it.
+    // Missing source currency is not silently replaced by a later selection.
+    private var amountCurrencies: [NeedsField: NeedsObservationInput] = [:]
+    private var manuallyEnteredWithoutCurrency: Set<NeedsField> = []
+    // Omitted changes preserve the server basis, not the editor's absent value.
+    private let basisObservations: [NeedsField: NeedsObservationInput]
+    public var currencyReviewRequired: Set<NeedsField> {
+        let currency = changedFields.contains(.currency) ? observations[.currency]! : basisObservations[.currency]!
+        guard currency.state == .known else { return [] }
+        return Set(Self.amounts.filter { field in
+            let changed = changedFields.contains(field)
+            let amount = changed ? observations[field]! : basisObservations[field]!
+            guard amount.state == .known else { return false }
+            let original = changed ? amountCurrencies[field]! : basisObservations[.currency]!
+            return original.state != .known || !same(original.value, currency.value)
+        })
+    }
     public init(needsID: String, expectedVersion: Int, fields: NeedsSchema.NeedsFields = .init()) {
         self.needsID = needsID; self.expectedVersion = expectedVersion
         observations = [.partySize: .init(fields.party_size), .destinationTimezone: .init(fields.destination_timezone),
                         .overseasTimezone: .init(fields.overseas_timezone), .currency: .init(fields.budget_currency),
                         .total: .init(fields.budget_total), .perPerson: .init(fields.budget_per_person), .paid: .init(fields.budget_paid),
                         .basis: .init(fields.budget_basis), .includes: .init(fields.budget_includes), .pace: .init(fields.pace)]
+        basisObservations = observations
         if let e = fields.overseas_departure { events[.overseasDeparture] = .init(e) }
         if let e = fields.arrival { events[.arrival] = .init(e) }
         if let e = fields.departure { events[.departure] = .init(e) }
         companions = (fields.companions?.additionalProperties ?? [:]).map { .init(id: $0.key, label: $0.value) }.sorted { $0.id < $1.id }
         fixedItems = (fields.fixed_items ?? []).map(NeedsFixedInput.init)
         conditions = (fields.temporary_conditions ?? []).map(NeedsConditionInput.init)
+        for field in Self.amounts where observations[field]!.state == .known {
+            amountCurrencies[field] = observations[.currency]!
+        }
     }
     public mutating func set(_ field: NeedsField, _ value: NeedsObservationInput) {
         observations[field] = value
         if value.state == .absent { changedFields.remove(field) } else { changedFields.insert(field) }
+        if Self.amounts.contains(field) {
+            if value.state == .known {
+                amountCurrencies[field] = observations[.currency]!
+                if observations[.currency]!.state != .known { manuallyEnteredWithoutCurrency.insert(field) }
+                else { manuallyEnteredWithoutCurrency.remove(field) }
+            } else {
+                amountCurrencies.removeValue(forKey: field); manuallyEnteredWithoutCurrency.remove(field)
+            }
+        } else if field == .currency, value.state == .known {
+            // Both entries are explicit edits in this editor. This never binds
+            // an untouched historical or copied extraction amount.
+            for amount in manuallyEnteredWithoutCurrency { amountCurrencies[amount] = value }
+            manuallyEnteredWithoutCurrency = []
+        }
+    }
+    /// Explicit user copy only; no command/ID/persistence is produced. Absent
+    /// extraction fields retain prior input and the original expected version.
+    public mutating func applyUnconfirmedPreview(_ preview: NeedsPreviewV1) {
+        let incoming = NeedsDraft(needsID: needsID, expectedVersion: expectedVersion, fields: preview.fields)
+        for (field, value) in incoming.observations where value.state != .absent {
+            observations[field] = value; changedFields.insert(field)
+            if Self.amounts.contains(field) {
+                if value.state == .known { amountCurrencies[field] = incoming.observations[.currency]! }
+                else { amountCurrencies.removeValue(forKey: field) }
+                manuallyEnteredWithoutCurrency.remove(field)
+            }
+        }
+        for (field, value) in incoming.events { events[field] = value; changedEvents.insert(field) }
+        if preview.fields.companions != nil { companions = incoming.companions }
+        if preview.fields.fixed_items != nil { fixedItems = incoming.fixedItems }
+        if preview.fields.temporary_conditions != nil { conditions = incoming.conditions }
+        sourceText = preview.sourceText
+        // deferredMemoryRequests remain separate. No inferred lifetime change.
     }
     public mutating func set(_ field: NeedsEventField, _ value: NeedsEventInput) { events[field] = value; changedEvents.insert(field) }
     public mutating func leaveEventUnchanged(_ field: NeedsEventField) { changedEvents.remove(field) }
     public func freeze(actionID: String) throws -> NeedsPending {
+        guard currencyReviewRequired.isEmpty else { throw NeedsFailure.invalidInput }
         var changes = NeedsSchema.NeedsChanges()
         for field in changedFields {
             guard let input = observations[field] else { throw NeedsFailure.invalidInput }

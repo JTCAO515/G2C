@@ -39,9 +39,10 @@ import CryptoKit
     private let shell: ShellState
     private var binding: NeedsContainerBinding?
     private var value: NeedsPresentation?
-    private var epoch = UUID()
+    @ObservationIgnored private var epoch = UUID()
     @ObservationIgnored private var draftEditRevision = UUID()
-    private var executing = false
+    @ObservationIgnored private var executing = false
+    @ObservationIgnored private var operationTask: Task<Void, Never>?
     @ObservationIgnored private var evaluation: FeasibilityHostPresentation?
     private var evaluationEpoch = UUID()
     public private(set) var busy = false
@@ -49,7 +50,13 @@ import CryptoKit
     public var viewIdentity: UUID? { current ? binding?.id : nil }
     public var isConfigured: Bool { current }
     public var isSynthetic: Bool { current && binding?.synthetic == true }
-    public var canSave: Bool { false }
+    public var canSave: Bool { current && !busy && value?.canSave == true }
+    public enum ManualIssue: Sendable { case reconcileOriginals, storageUnavailable }
+    public private(set) var manualIssue: ManualIssue?
+    public var originalActions: [NeedsPending] {
+        guard current, let value, value.pendingState == .loaded else { return [] }
+        return value.canSave ? value.pendingActions : pendingActions
+    }
     public var pendingActions: [NeedsPending] {
         guard current, let binding, let value, value.pendingState == .loaded else { return [] }
         return value.pendingActions.filter { $0.needsID == binding.selectedNeedsID }
@@ -90,9 +97,10 @@ import CryptoKit
         current && binding?.id == action.binding.id && value === action.presentation && epoch == token
     }
     public func invalidate() {
+        operationTask?.cancel(); operationTask = nil
         invalidateFeasibility()
         let original = value
-        binding = nil; value = nil; epoch = UUID(); draftEditRevision = UUID(); busy = false; executing = false
+        binding = nil; value = nil; epoch = UUID(); draftEditRevision = UUID(); busy = false; executing = false; manualIssue = nil
         original?.replace(binding: nil) // canonical invalidation; no callback or later host mutation
     }
     public func suspendForBackground() { invalidate() }
@@ -100,10 +108,11 @@ import CryptoKit
         guard binding?.id == id else { return }
         invalidateFeasibility()
     }
-    private func reserve(_ work: NeedsPresentationWork?, context: NeedsContainerAction) -> NeedsContainerWork? {
-        guard let work else { return nil }
+    private func reserve(_ work: NeedsPresentationWork?, context: NeedsContainerAction, editRevision: UUID? = nil) -> NeedsContainerWork? {
+        guard let work, accepts(context), editRevision == nil || editRevision == draftEditRevision else { return nil }
         invalidateFeasibility()
-        let token = UUID(); epoch = token; busy = true; executing = false
+        let token = UUID(); epoch = token; executing = false; busy = true
+        guard owns(context, token), busy else { return nil }
         return NeedsContainerWork(context: context, work: work, token: token)
     }
     public func prepareDetail(context: NeedsContainerAction?) -> NeedsContainerWork? {
@@ -117,22 +126,98 @@ import CryptoKit
     public func prepareQuery(_ actionID: String, context: NeedsContainerAction?) -> NeedsContainerWork? {
         guard let context, accepts(context), context.presentation.pendingState == .loaded,
               context.presentation.pendingActions.contains(where: {
-                  $0.actionID == actionID && $0.needsID == context.binding.selectedNeedsID
+                  $0.actionID == actionID && (context.presentation.canSave || $0.needsID == context.binding.selectedNeedsID)
               }) else { return nil }
-        return reserve(context.presentation.prepareQuery(actionID: actionID), context: context)
+        return reserve(context.presentation.prepareQuery(actionID: actionID, preservingEditor: context.presentation.canSave), context: context)
     }
     public func perform(_ prepared: NeedsContainerWork?) async {
         guard let prepared, owns(prepared.context, prepared.token), busy, !executing else { return }
         executing = true
-        await prepared.context.presentation.perform(prepared.work)
+        let model = prepared.context.presentation, work = prepared.work
+        let task = Task { await model.perform(work) }
+        operationTask = task
+        await withTaskCancellationHandler(operation: { await task.value }, onCancel: { task.cancel() })
         guard owns(prepared.context, prepared.token) else { return }
-        busy = false; executing = false
+        operationTask = nil; executing = false
+        busy = false // Last observed host write; old cleanup cannot retire newer work.
     }
     public func loadPending(context: NeedsContainerAction?) {
         guard let context, accepts(context) else { return }
         let token = UUID(); epoch = token; busy = true
         context.presentation.loadPending()
         guard owns(context, token) else { return }; busy = false
+    }
+    @discardableResult public func beginNew(context: NeedsContainerAction?) -> Bool {
+        guard let context, accepts(context), context.presentation.canSave, context.presentation.snapshot == nil else { return false }
+        invalidateFeasibility(); draftEditRevision = UUID()
+        context.presentation.beginNew(id: context.binding.selectedNeedsID)
+        return true
+    }
+    @discardableResult public func beginCorrection(context: NeedsContainerAction?) -> Bool {
+        guard let context, accepts(context), context.presentation.canSave,
+              let snapshot = context.presentation.snapshot, snapshot.needs_id == context.binding.selectedNeedsID else { return false }
+        invalidateFeasibility(); draftEditRevision = UUID()
+        return context.presentation.beginCorrectionFromSnapshot()
+    }
+    @discardableResult public func applyPreview(from runs: RunContainerHost, expectedSource: UUID,
+                                                context: NeedsContainerAction?) -> Bool {
+        let revision = draftEditRevision
+        guard let context, accepts(context), runs.belongs(to: shell),
+              runs.originalPresentationID == expectedSource,
+              case .loaded(let preview) = preview(from: runs),
+              var draft = context.presentation.draft else { return false }
+        draft.applyUnconfirmedPreview(preview) // Pure local copy; original expected_version stays fixed.
+        guard runs.originalPresentationID == expectedSource, accepts(context), runs.stillOwnsOriginal(expectedSource), draftEditRevision == revision,
+              context.presentation.draft?.editorID == draft.editorID else { return false }
+        draftEditRevision = UUID()
+        context.presentation.draft = draft
+        return true
+    }
+    public func preview(from runs: RunContainerHost) -> NeedsPreviewRunProjection {
+        guard current, let original = binding, runs.belongs(to: shell),
+              runs.currentOriginalUses(session: original.session, operation: original.operation, generation: original.shellGeneration),
+              let source = runs.originalPresentationID else { return .unavailable }
+        let result = runs.needsPreviewProjection
+        guard current, binding?.id == original.id,
+              runs.currentOriginalUses(session: original.session, operation: original.operation, generation: original.shellGeneration),
+              binding?.id == original.id, runs.stillOwnsOriginal(source) else { return .unavailable }
+        return result
+    }
+    public func prepareSave(context: NeedsContainerAction?) -> NeedsContainerWork? {
+        let revision = draftEditRevision
+        guard let context, accepts(context), context.presentation.canSave, context.presentation.draft != nil else { return nil }
+        do {
+            let blocked = try context.binding.client.requiresOriginalReconciliation(binding: context.binding.needs)
+            guard accepts(context), revision == draftEditRevision else { return nil }
+            if blocked { manualIssue = .reconcileOriginals; return nil }
+            manualIssue = nil
+            guard accepts(context), revision == draftEditRevision else { return nil }
+            // The one new ID is created only after the complete original journal
+            // permits a distinct user action. No ID is minted to bypass unknown.
+            let work = context.presentation.prepareSave(actionID: UUID().uuidString)
+            return reserve(work, context: context, editRevision: revision)
+        } catch {
+            guard accepts(context), revision == draftEditRevision else { return nil }
+            manualIssue = .storageUnavailable
+            return nil
+        }
+    }
+    public func prepareReplay(_ actionID: String, context: NeedsContainerAction?) -> NeedsContainerWork? {
+        guard let context, accepts(context), context.presentation.canSave,
+              context.presentation.pendingActions.contains(where: { $0.actionID == actionID }) else { return nil }
+        return reserve(context.presentation.prepareReplay(actionID: actionID, preservingEditor: true), context: context)
+    }
+    public struct Cancellation {
+        fileprivate let binding: UUID
+        fileprivate let token: UUID
+    }
+    public func captureCancellation() -> Cancellation? {
+        guard current, busy, operationTask != nil, let binding else { return nil }
+        return Cancellation(binding: binding.id, token: epoch)
+    }
+    public func cancel(_ work: Cancellation?) {
+        guard let work, current, work.binding == binding?.id, work.token == epoch, busy else { return }
+        operationTask?.cancel() // Stop waiting; a possible POST remains original-only unknown.
     }
     @discardableResult public func updateDraft(_ draft: NeedsDraft, context: NeedsContainerAction?) -> Bool {
         // accepts invokes the trusted binding callback, which may accept a newer edit

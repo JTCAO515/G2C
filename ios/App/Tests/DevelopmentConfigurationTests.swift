@@ -26,6 +26,33 @@ struct DevelopmentConfigurationTests {
         #expect(DevelopmentSessionConfiguration.read(["G2C_DEV_FACT_TOOLS":"synthetic-fact-v1","G2C_DEV_API_BASE_URL":"http://127.0.0.1:8765","G2C_DEV_TOKEN":try token()]) == nil)
         #endif
     }
+    @Test func needsSelectionAndPreviewAreExplicitAndExclusive() throws {
+        let profile = ["G2C_DEV_NEEDS_PROFILE": "manual-v1", "G2C_DEV_NEEDS_ID": "needs:fixture", "G2C_DEV_NEEDS_PREVIEW": "synthetic-needs-v1"]
+        #if DEBUG
+        #expect(try DevelopmentNeedsProfile.read([:]) == nil)
+        #expect(try DevelopmentNeedsProfile.read(profile)?.needsID == "needs:fixture")
+        #expect(try DevelopmentSessionConfiguration.toolAnswerProfile(profile) == .needs)
+        for id in ["", "../other", "has space", "trailing\n", String(repeating: "a", count: 97)] {
+            var invalid = profile; invalid["G2C_DEV_NEEDS_ID"] = id
+            #expect(throws: DevelopmentNeedsProfile.Failure.invalidProfile) { try DevelopmentNeedsProfile.read(invalid) }
+        }
+        for key in ["G2C_DEV_NEEDS_PROFILE", "G2C_DEV_NEEDS_ID"] {
+            var missing = profile; missing.removeValue(forKey: key)
+            #expect(throws: (any Error).self) { try DevelopmentNeedsProfile.read(missing) }
+        }
+        for (key, value) in [("G2C_DEV_FACT_TOOLS", "synthetic-fact-v1"), ("G2C_DEV_PLACE_TOOLS", "synthetic-v1")] {
+            var mixed = profile; mixed[key] = value
+            #expect(throws: DevelopmentSessionConfiguration.DevelopmentToolsFailure.invalidProfile) { try DevelopmentSessionConfiguration.toolAnswerProfile(mixed) }
+        }
+        #expect(throws: (any Error).self) { try DevelopmentSessionConfiguration.toolAnswerProfile(["G2C_DEV_NEEDS_PREVIEW": "synthetic-needs-v1"]) }
+        #else
+        #expect(try DevelopmentNeedsProfile.read(profile) == nil)
+        var complete = profile
+        complete["G2C_DEV_API_BASE_URL"] = "http://127.0.0.1:8765"
+        complete["G2C_DEV_TOKEN"] = try token()
+        #expect(DevelopmentSessionConfiguration.read(complete) == nil)
+        #endif
+    }
     @Test func missingEnvironmentNeverAssembles() throws {
         #expect(DevelopmentSessionConfiguration.read([:]) == nil)
         #expect(DevelopmentSessionConfiguration.read(["G2C_DEV_API_BASE_URL": "http://127.0.0.1:8765"]) == nil)

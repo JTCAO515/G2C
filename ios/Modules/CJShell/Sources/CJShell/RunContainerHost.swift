@@ -3,10 +3,12 @@ import Observation
 import CJRunClient
 import CJSession
 import CJTripClient
+import CJNeedsClient
 
-public enum RunAnswerFormat: Sendable { case plainText,placeToolV1,factToolV1 }
+public enum RunAnswerFormat: Sendable { case plainText,placeToolV1,factToolV1,needsPreviewV1 }
 public enum PlaceRunProjection: Sendable { case waiting,unavailable,loaded(PlaceToolTranscriptV1) }
 public enum FactRunProjection: Sendable { case waiting,unavailable,loaded(FactToolTranscriptV1) }
+public enum NeedsPreviewRunProjection: Sendable { case waiting,unavailable,loaded(NeedsPreviewV1) }
 
 @MainActor public struct RunContainerConfiguration {
     fileprivate let id = UUID()
@@ -44,46 +46,87 @@ public enum FactRunProjection: Sendable { case waiting,unavailable,loaded(FactTo
         let token = selection
         return sourceIsCurrent(original,configurationID:configuration.id,token:token) ? token : nil
     }
-    public var placeProjection: PlaceRunProjection {
-        guard let configuration,configuration.answerFormat == .placeToolV1,let original = origin else { return .unavailable }
+    /// Cross-component copy requires the actual same session operation, not
+    /// merely a shared window, matching caller IDs or a source hash.
+    func currentOriginalUses(session: SessionLifecycle, operation: SessionOperation, generation: ShellGeneration) -> Bool {
+        guard let configured = configuration, configured.session === session, configured.operation == operation,
+              configured.generation == generation, originalPresentationID != nil else { return false }
+        return configuration?.id == configured.id && configured.session.isCurrent(operation)
+    }
+    /// Final local ownership fence after the last peer callback. Canonical
+    /// recovery/lease reads only; this does not replace the earlier admission.
+    func stillOwnsOriginal(_ expected: UUID) -> Bool {
+        guard foreground, selection == expected, let configured = configuration, let original = origin,
+              shell.generation == configured.generation, !shell.messageBindingBlocked,
+              configured.session.isCurrent(configured.operation) else { return false }
+        return original.isStillOwned() && selection == expected && configuration?.id == configured.id && origin === original
+    }
+    private struct ToolRead {
+        let original: AcceptedMessageRunReceipt
+        let configurationID: UUID
+        let token: UUID
+        let text: String
+        let completed: Bool
+    }
+    private enum ToolInput { case waiting, unavailable, ready(ToolRead) }
+    /// One shared source acquisition path; each decoder still performs the
+    /// callback-bearing final original-source fence after parsing its own ABI.
+    private func toolInput(for format: RunAnswerFormat) -> ToolInput {
+        guard let configuration, configuration.answerFormat == format, let original = origin else { return .unavailable }
         let token = selection
-        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return .unavailable }
-        let state = configuration.model.state,progress = configuration.model.streamProgress
-        let text: String,completed: Bool
-        if let progress { text = progress.text;completed = false }
+        guard sourceIsCurrent(original, configurationID: configuration.id, token: token) else { return .unavailable }
+        let state = configuration.model.state, progress = configuration.model.streamProgress
+        let text: String, completed: Bool
+        if let progress { text = progress.text; completed = false }
         else {
             switch state {
-            case .loaded(let value):text = value.snapshot.text;completed = value.snapshot.status == .completed
-            case .ready,.loading:return .waiting
-            case .unselected,.unavailable:return .unavailable
+            case .loaded(let value): text = value.snapshot.text; completed = value.snapshot.status == .completed
+            case .ready, .loading: return .waiting
+            case .unselected, .unavailable: return .unavailable
             }
         }
-        let projection: PlaceRunProjection
-        do { projection = .loaded(try PlaceToolTranscriptV1.decode(Data(text.utf8),runID:original.receipt.run_id,completed:completed)) }
-        catch { projection = .unavailable }
-        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return .unavailable }
-        return projection
+        return .ready(ToolRead(original: original, configurationID: configuration.id, token: token, text: text, completed: completed))
+    }
+    public var placeProjection: PlaceRunProjection {
+        switch toolInput(for: .placeToolV1) {
+        case .waiting: return .waiting
+        case .unavailable: return .unavailable
+        case .ready(let read):
+            let result: PlaceRunProjection
+            do { result = .loaded(try PlaceToolTranscriptV1.decode(Data(read.text.utf8), runID: read.original.receipt.run_id, completed: read.completed)) }
+            catch { result = .unavailable }
+            guard sourceIsCurrent(read.original, configurationID: read.configurationID, token: read.token) else { return .unavailable }
+            return result
+        }
     }
     public var followsAcceptedMessages: Bool { displayModel != nil && configuration?.followAcceptedMessages == true }
     public var factProjection: FactRunProjection {
-        guard let configuration,configuration.answerFormat == .factToolV1,let original = origin else { return .unavailable }
-        let token = selection
-        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return .unavailable }
-        let state = configuration.model.state,progress = configuration.model.streamProgress
-        let text: String,completed: Bool
-        if let progress { text = progress.text;completed = false }
-        else {
-            switch state {
-            case .loaded(let value):text = value.snapshot.text;completed = value.snapshot.status == .completed
-            case .ready,.loading:return .waiting
-            case .unselected,.unavailable:return .unavailable
-            }
+        switch toolInput(for: .factToolV1) {
+        case .waiting: return .waiting
+        case .unavailable: return .unavailable
+        case .ready(let read):
+            let result: FactRunProjection
+            do { result = .loaded(try FactToolTranscriptV1.decode(Data(read.text.utf8), runID: read.original.receipt.run_id, completed: read.completed)) }
+            catch { result = .unavailable }
+            guard sourceIsCurrent(read.original, configurationID: read.configurationID, token: read.token) else { return .unavailable }
+            return result
         }
-        let projection: FactRunProjection
-        do { projection = .loaded(try FactToolTranscriptV1.decode(Data(text.utf8),runID:original.receipt.run_id,completed:completed)) }
-        catch { projection = .unavailable }
-        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return .unavailable }
-        return projection
+    }
+    public var needsPreviewProjection: NeedsPreviewRunProjection {
+        switch toolInput(for: .needsPreviewV1) {
+        case .waiting: return .waiting
+        case .unavailable: return .unavailable
+        case .ready(let read):
+            guard read.completed else { return .waiting }
+            guard let text = read.original.originalTextUTF8 else { return .unavailable }
+            let result: NeedsPreviewRunProjection
+            do {
+                result = .loaded(try NeedsPreviewV1.decode(Data(read.text.utf8), messageID: read.original.receipt.message_id,
+                    runID: read.original.receipt.run_id, sourceTextUTF8: text))
+            } catch { result = .unavailable }
+            guard sourceIsCurrent(read.original, configurationID: read.configurationID, token: read.token) else { return .unavailable }
+            return result
+        }
     }
     public var isShowingOriginal: Bool { origin != nil || sourceUnavailable }
     public var isSynthetic: Bool { displayModel != nil && configuration?.synthetic == true }

@@ -8,6 +8,7 @@ struct RunContainerView: View {
     let host: RunContainerHost
     let messages: AssistantMessageHost
     let language: ShellLanguage
+    let openNeeds: () -> Void
     @Environment(\.scenePhase) private var scenePhase
     private struct FactPanel: Identifiable { let id: UUID }
     @State private var factPanel: FactPanel?
@@ -62,6 +63,17 @@ struct RunContainerView: View {
                     case .unavailable:RunReadableText(text:language.text("Fact information unavailable. Read the original result; do not repeat the request.", "事实资料不可用。请读取原结果，不要重新发送请求。")).accessibilityIdentifier("fact.unavailable")
                     case .loaded(let transcript):
                         FactToolTranscriptView(transcript:transcript,language:language == .english ? .english : .simplifiedChinese)
+                    }
+                }
+                if host.answerFormat == .needsPreviewV1 {
+                    switch host.needsPreviewProjection {
+                    case .waiting: RunReadableText(text: language.text("No completed unconfirmed requirements preview yet.", "尚无完成的未确认需求预览。"))
+                    case .unavailable: RunReadableText(text: language.text("Requirements preview unavailable. Read the original run.", "需求预览不可用，请读取原运行。"))
+                    case .loaded:
+                        Button(action: openNeeds) {
+                            RunReadableText(text: language.text("Review unconfirmed requirements", "审阅未确认的需求"))
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                        }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("needs.preview.open")
                     }
                 }
                 if host.isSynthetic { Text(language.text("Synthetic test data", "合成测试数据")).font(.caption) }
