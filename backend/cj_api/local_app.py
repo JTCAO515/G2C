@@ -192,7 +192,7 @@ class LocalDatabase:
         return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None,
                                  local_run_mode=self.run_context is not None,
                                  registered_usage=self.run_context is not None and self.run_context.version=='CJ-LOCAL-RUN@2',
-                                 travel_mode=self.travel_context,travel_metadata=True,trip_mode=self.trip_context)
+                                 travel_mode=self.travel_context,travel_metadata=True,trip_mode=self.trip_context,trip_metadata=True)
 
     def trip_profile(self,scope):
         from cj_message.trip_reference import profile

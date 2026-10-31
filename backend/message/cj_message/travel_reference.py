@@ -90,13 +90,13 @@ def insert_reference(tx, stored, command):
 
 def read_reference(tx, stored):
     """DB deserialization boundary: validate the original bytes and copied columns once."""
-    if json.loads(stored.raw)['version']=='MESSAGE-send.3':
-        if not tx.trip_mode: raise Unavailable('explicit formal Trip consumer required')
-        from .trip_reference import read_reference as read_trip
-        return read_trip(tx,stored)
     receipt=stored.receipt
     try:
         wire_version=json.loads(stored.raw)['version']
+        if wire_version=='MESSAGE-send.3':
+            if not tx.trip_mode:raise Unavailable('explicit formal Trip consumer required')
+            from .trip_reference import read_reference as read_trip
+            return read_trip(tx,stored)
         command=Command.parse_v2(stored.raw) if wire_version=='MESSAGE-send.2' else Command.parse_stored(stored.raw)
     except (InvalidInput,ValueError,KeyError,TypeError) as exc:
         raise Unavailable('original context message unavailable') from exc

@@ -1,10 +1,11 @@
 """Explicit formal Trip selection. No latest-Trip lookup or Trip write authority."""
 from dataclasses import dataclass
 from datetime import date, timedelta
+from zoneinfo import ZoneInfo
 import json
 from cj_agent.draft import trip_scope_for
 from cj_trip.domain import identifier, packed
-from cj_trip.structured import validate_document as validate_v1, _zone
+from cj_trip.structured import validate_document as validate_v1
 from cj_trip.structured_v2 import validate_document as validate_v2
 from .domain import InvalidInput, Unavailable
 from .travel_reference import ContextConflict
@@ -35,7 +36,10 @@ class TripSelection:
                     raise ValueError('explicit local date and timezone required')
                 if type(day['date']) is not str or date.fromisoformat(day['date']).isoformat() != day['date']:
                     raise ValueError('ISO date required')
-                _zone(day['timezone'])
+                zone=day['timezone']
+                if type(zone) is not str or not zone.strip() or len(zone)>128 or zone in ('localtime','Factory'):
+                    raise ValueError('explicit IANA timezone required')
+                ZoneInfo(zone)
                 day = (day['date'], day['timezone'])
             item = value['item_id']
             if item is not None:

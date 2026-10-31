@@ -3,6 +3,9 @@
 Trip content is a synthetic stored structured.1 fixture, not a real travel service.
 """
 import base64
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack
+from threading import Event
 import hashlib
 import json
 import os
@@ -12,6 +15,7 @@ import time
 from pathlib import Path
 from unittest.mock import patch
 import psycopg
+import jsonschema
 from fastapi.testclient import TestClient
 from cj_api.local_app import LocalDatabase,app_from_environment,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
@@ -52,11 +56,10 @@ def exercise(auth,conninfo):
         dev_auth.activate_travel(conninfo,subject,context,'MESSAGE-TRAVEL-CONSUMER@1')
     # Empty up/down round trip, and the old schema remains intact.
     import migrate
-    migration=migrate.load()[-1]
+    migration=next(item for item in migrate.load() if item['name']=='message_trip_context')
     up=harness.ROOT/migration['file'];down=harness.ROOT/migration['down']
-    if migration['name']=='message_trip_context':
-        with psycopg.connect(**config) as admin:
-            admin.execute(down.read_text());admin.execute(up.read_text())
+    with psycopg.connect(**config) as admin:
+        admin.execute(down.read_text());admin.execute(up.read_text())
     for subject in ('alice','bob'):
         assert message_trip_profile.activate(conninfo,subject,context,ABI)=='activated'
     database=LocalDatabase(conninfo,run_context=context,travel_context=True,trip_context=True)
@@ -73,7 +76,12 @@ def exercise(auth,conninfo):
     headers={s:{'Authorization':'Bearer '+dev_auth.token(auth,s,30)} for s in subjects}
     env=dict(CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_CONNINFO=str(conninfo),CJ_LOCAL_RUN_CONTEXT=str(path),
         CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1',CJ_LOCAL_TRIP_CONTEXT='message-trip.1')
-    def expect(response,code=200):return harness.expect(response,code)
+    schema=json.loads((harness.ROOT/'contracts/message/trip-schema.1.json').read_text())
+    def expect(response,code=200):
+        value=harness.expect(response,code)
+        if code==200 and value.get('version') in ('MESSAGE-accept.3','MESSAGE-send-status.3','MESSAGE-history.2','RUN-display.3','RUN-draft-status.4','RUN-cancel.3'):
+            jsonschema.validate(value,schema)
+        return value
     def selection(**changes):
         value=dict(id='trip-a',expected_version=1,day=dict(date='2026-10-31',timezone='Asia/Shanghai'),item_id='item-a')
         value.update(changes);return value
@@ -92,6 +100,30 @@ def exercise(auth,conninfo):
             return expect(client.get('/v3/message-send-status',params=dict(conversation_id=mid if cid is None else cid,message_id=mid),headers=headers[subject]))
         def cancel(mid,subject='alice',code=200):
             return expect(client.post('/v3/run-cancellations',json=dict(version='RUN-cancel.3',message_id=mid),headers=headers[subject]),code)
+        # Upgrade refuses unresolved originals; completed send.2 bytes/ref survive.
+        old_headers={**headers['upgrade'],'Content-Type':'application/octet-stream'}
+        head=expect(client.put('/v1/conversations',params=dict(conversation_id='old-v2'),headers=headers['upgrade']))
+        old_raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id='old-v2',message_id='old-v2',text='old discussion',
+            trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0,
+            travel_context=None,needs_reference=None)).encode()+b'\n'
+        old=expect(client.post('/v2/messages',content=old_raw,headers=old_headers))
+        try:message_trip_profile.activate(conninfo,'upgrade',context,ABI)
+        except psycopg.errors.RaiseException:pass
+        else:raise AssertionError('pending original was bypassed for upgrade')
+        model=FakeProvider();assert run_worker.run_once(database,model,auth)[0].status=='completed' and model.calls==1
+        assert message_trip_profile.activate(conninfo,'upgrade',context,ABI)=='activated'
+        assert expect(client.post('/v2/messages',content=old_raw,headers=old_headers))['reference']==old['reference']
+        old_history=expect(client.get('/v2/message-history',params=dict(conversation_id='old-v2',limit=10),headers=headers['upgrade']))
+        assert base64.b64decode(old_history['messages'][0]['original_utf8_base64'])==old_raw
+        assert old_history['messages'][0]['reference']==old['reference']
+        # No silently disabled or fabricated MEMORY adapter during activation.
+        with psycopg.connect(**config) as admin:admin.execute('INSERT INTO cj_memory_scope(scope) VALUES(%s)',(scope_for(ISSUER,'memory'),))
+        try:message_trip_profile.activate(conninfo,'memory',context,ABI)
+        except psycopg.errors.RaiseException:pass
+        else:raise AssertionError('unadapted MEMORY silently upgraded')
+        with psycopg.connect(**config) as admin:
+            assert admin.execute('SELECT count(*) FROM cj_memory_scope WHERE scope=%s',(scope_for(ISSUER,'memory'),)).fetchone()[0]==1
+            assert admin.execute('SELECT count(*) FROM cj_message_trip_profile WHERE scope=%s',(scope_for(ISSUER,'memory'),)).fetchone()[0]==0
         send('foreign',selection(),subject='bob',code=503)
         send('stale',selection(expected_version=2),code=409)
         send('item',selection(item_id='foreign-item'),code=503)
@@ -109,11 +141,18 @@ def exercise(auth,conninfo):
         assert len(outcomes)==1 and outcomes[0].status=='completed' and model.calls==1
         display=expect(client.get('/v3/run-display',params=dict(message_id='positive'),headers=headers['alice']))
         assert display['reference']==accepted['reference']
+        draft_status=expect(client.get('/v4/run-draft-status',params=dict(message_id='positive'),headers=headers['alice']))
+        assert draft_status['draft_outcome']=='not_requested' and draft_status['reference']==accepted['reference']
         assert 'trip-a' in json.dumps(display) and 'item-a' in json.dumps(display)
         history=expect(client.get('/v2/message-history',params=dict(conversation_id='positive',limit=10),headers=headers['alice']))
         assert base64.b64decode(history['messages'][0]['original_utf8_base64'])==raw
         assert history['messages'][0]['reference']==accepted['reference']
         assert status('positive')['reference']==accepted['reference']
+        expect(client.get('/v1/message-receipts',params=dict(message_id='positive'),headers=headers['alice']),503)
+        # An explicitly disabled new profile is not a legacy read downgrade.
+        from cj_api.local_app import create_local_app
+        with TestClient(create_local_app(conninfo_path=conninfo,auth_dir=auth,run_context=context,travel_context=True)) as old_client:
+            expect(old_client.get('/v1/message-receipts',params=dict(message_id='positive'),headers=headers['alice']),503)
         # Version changes cannot refresh original replay/status/history/cancel bytes.
         with psycopg.connect(**config) as admin:
             admin.execute('SELECT scope FROM cj_trip_scope WHERE scope=%s FOR UPDATE',(trip_scope_for(scope),))
@@ -161,8 +200,58 @@ def exercise(auth,conninfo):
         model=FakeProvider();assert run_worker.run_once(database,model,auth)==[] and model.calls==0
         assert cancel('unknown')['status']=='unknown'
         assert status('unknown')['reference']==unknown['reference']
+        # Consecutive choices continue, while A→B→A cannot revive old output.
+        first,_=send('aba-first',selection(expected_version=4),cid='aba')
+        second,_=send('aba-second',selection(id='trip-b'),cid='aba')
+        third,_=send('aba-third',selection(expected_version=4),cid='aba')
+        assert [x['reference']['selection_epoch'] for x in (first,second,third)]==[1,2,3]
+        model=FakeProvider();results=run_worker.run_once(database,model,auth)
+        assert [x.status for x in results]==['context_invalid','context_invalid','completed'] and model.calls==1
+        # Actual shared Trip scope lease survives the RUN commit until outer release.
+        fenced,_=send('fenced',selection(expected_version=4))
+        host=run_worker._worker_for_scope(database,FakeProvider(),auth,scope,run_worker.checker_for(auth))
+        host.runs.accept(binding(fenced))
+        attempted=Event();finished=Event()
+        def writer():
+            with psycopg.connect(**config) as admin:
+                attempted.set()
+                admin.execute('SELECT scope FROM cj_trip_scope WHERE scope=%s FOR UPDATE',(trip_scope_for(scope),))
+                admin.execute('UPDATE cj_trip_record SET version=5 WHERE scope=%s AND trip_id=%s',(trip_scope_for(scope),'trip-a'))
+            finished.set()
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            with ExitStack() as leases:
+                with host.runs.repository.transaction() as tx:
+                    tx.get(binding(fenced))
+                    lease=leases.enter_context(host.message_context.hold_for_effect(binding(fenced)))
+                    future=pool.submit(writer)
+                    assert attempted.wait(5) and not finished.wait(.1)
+                    lease.check(binding(fenced))
+                assert not finished.is_set()  # RUN transaction committed; source lease still live.
+            future.result(timeout=5)
+        model=FakeProvider();assert run_worker.run_once(database,model,auth)[0].status=='context_invalid' and model.calls==0
+        # Fresh invitation revocation and an in-flight explicit Stop suppress output.
+        revoked,_=send('revoked',selection(expected_version=5))
+        original_invitation=(auth/'invited.json').read_bytes()
+        class Revokes(FakeProvider):
+            def stream(self,messages,system=None):
+                self.calls+=1
+                (auth/'invited.json').write_text(json.dumps(['bob','upgrade','memory']))
+                yield 'PRIVATE_REVOKED_OUTPUT'
+        try:
+            model=Revokes();assert run_worker.run_once(database,model,auth)[0].status=='context_invalid' and model.calls==1
+        finally:(auth/'invited.json').write_bytes(original_invitation)
+        assert not database.run_repository(scope).recover(binding(revoked)).state.text
+        stopped,_=send('running-stop',selection(expected_version=5))
+        class Stops(FakeProvider):
+            def stream(self,messages,system=None):
+                self.calls+=1
+                yield 'short'
+                assert cancel('running-stop')['reference']==stopped['reference']
+                yield 'PRIVATE_LATE_STOP_OUTPUT'
+        model=Stops();assert run_worker.run_once(database,model,auth)[0].status=='cancelled' and model.calls==1
+        assert not database.run_repository(scope).recover(binding(stopped)).state.text
         # Actual CLI consumes the configured version; no external provider is permitted.
-        send('cli',selection(expected_version=4))
+        send('cli',selection(expected_version=5))
         result=subprocess.run([sys.executable,'-B',str(harness.ROOT/'scripts/run_worker.py'),'--conninfo-json',str(conninfo),
             '--auth-dir',str(auth),'--run-context',str(path),'--travel-context','message-travel.1',
             '--trip-context','message-trip.1','--once'],env={**os.environ,**env},capture_output=True,text=True,timeout=30)
@@ -175,6 +264,10 @@ def exercise(auth,conninfo):
             assert runtime.execute('SELECT count(*) FROM cj_message_receipt').fetchone()[0]==0
             runtime.execute("SELECT set_config('cj.message_trip_abi',%s,true)",(ABI,))
             assert runtime.execute('SELECT count(*) FROM cj_message_trip_reference WHERE scope=%s',(foreign,)).fetchone()[0]==0
+            try:
+                with runtime.transaction():runtime.execute("INSERT INTO cj_message_trip_reference(scope,message_id,run_id,conversation_id,generation,sequence,input_sha256,reference_version,selection,selection_epoch) VALUES(%s,'foreign-write','r','c','g',1,%s,1,'{}',1)",(foreign,'a'*64))
+            except (psycopg.errors.InsufficientPrivilege,psycopg.errors.RaiseException):pass
+            else:raise AssertionError('cross-owner reference write accepted')
             for sql in ('DELETE FROM cj_message_trip_reference','UPDATE cj_message_trip_reference SET selection_epoch=1'):
                 try:
                     with runtime.transaction():runtime.execute(sql)
@@ -182,11 +275,10 @@ def exercise(auth,conninfo):
                 else:raise AssertionError('immutable references granted runtime mutation')
         with psycopg.connect(**config) as admin:
             assert admin.execute('SELECT count(*) FROM cj_message_receipt WHERE message_id IN (%s,%s,%s,%s)',('foreign','stale','item','day')).fetchone()[0]==0
-            if migration['name']=='message_trip_context':
-                try:
-                    with admin.transaction():admin.execute(down.read_text())
-                except psycopg.errors.RaiseException:pass
-                else:raise AssertionError('nonempty down accepted')
+            try:
+                with admin.transaction():admin.execute(down.read_text())
+            except psycopg.errors.RaiseException:pass
+            else:raise AssertionError('nonempty down accepted')
     print('PASS MESSAGE3: signed API/runtime role/run_once/FakeProvider, explicit Trip/version/day/item, foreign/stale/invalid rejection, ambiguity clarification, original replay/status/history/cancel/UNKNOWN and late source fence')
 
 
