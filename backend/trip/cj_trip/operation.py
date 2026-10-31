@@ -45,18 +45,19 @@ class OperationContext:
         self.__check()
         s = self.__state
         try:
-            if name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization','act_needs','prepare_needs','save_needs'):
+            if name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization','act_needs','prepare_needs','save_needs','act_scoped'):
                 from .manual import ManualSave, ManualEdit
                 from .needs_action import NeedsAction
+                from .scoped_actions import ScopedAction
                 from .manual_needs import NeedsEdit,NeedsSave
                 from .initialization import Initialization, InitializationSave
                 if s['action_id'] is not None: raise ValueError('one action per operation')
                 expected = {'act':Action,'save_manual':ManualSave,'prepare_manual':ManualEdit,
-                            'prepare_initialization':Initialization,'save_initialization':InitializationSave,'act_needs':NeedsAction,'prepare_needs':NeedsEdit,'save_needs':NeedsSave}[name]
+                            'prepare_initialization':Initialization,'save_initialization':InitializationSave,'act_needs':NeedsAction,'act_scoped':ScopedAction,'prepare_needs':NeedsEdit,'save_needs':NeedsSave}[name]
                 if not isinstance(args[0], expected): raise ValueError('validated original action required')
                 s['action_id'] = args[0].request_id if name in ('prepare_manual','prepare_initialization','prepare_needs') else args[0].action_id
             result = getattr(self.__repository, name)(*args)
-            if name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization','act_needs','prepare_needs','save_needs'): s['commit_possible'] = True
+            if name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization','act_needs','prepare_needs','save_needs','act_scoped'): s['commit_possible'] = True
             return result
         except BaseException as exc:
             s['blocked'] = True
@@ -71,6 +72,9 @@ class OperationContext:
     def prepare_needs(self,request):return self.__call('prepare_needs',request)
     def save_needs(self,request):return self.__call('save_needs',request)
     def needs_preparation(self,request_id):return self.__call('needs_preparation',request_id)
+    def act_scoped(self,request):return self.__call('act_scoped',request)
+    def scoped_receipt(self,action_id):return self.__call('scoped_receipt',action_id)
+    def scoped_detail(self,proposal_id):return self.__call('scoped_detail',proposal_id)
     def act_needs(self,request):return self.__call('act_needs',request)
     def act(self, action): return self.__call('act', action)
     def prepare_manual(self, edit): return self.__call('prepare_manual', edit)
