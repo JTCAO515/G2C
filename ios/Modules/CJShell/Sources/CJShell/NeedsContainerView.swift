@@ -110,7 +110,7 @@ struct NeedsContainerView: View {
                     RunReadableText(text: language.text("Journey needs are unavailable. A trusted account and explicit record selection are required.", "旅行需求不可用，需要可信账号和明确的记录选择。"))
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
-        }.accessibilityIdentifier("needs.content")
+        }.clipped().accessibilityIdentifier("needs.content")
             .scrollDismissesKeyboard(.interactively)
             .toolbar { ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
