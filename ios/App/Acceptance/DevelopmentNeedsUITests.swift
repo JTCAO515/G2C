@@ -172,8 +172,17 @@ import Foundation
     }
     private func editKnown(_ field: String, value: String, language: String) {
         tap("needs.editor."+field+".section")
-        tap("needs.editor."+field+".state"); tap(language == "en" ? "User provided" : "用户提供")
+        selectState(field, label:language == "en" ? "User provided" : "用户提供")
         replace("needs.editor."+field+".value",value:value,language:language)
+    }
+    private func selectState(_ field: String, label: String) {
+        tap("needs.editor."+field+".state")
+        // Picker menus are presented outside the underlying page ScrollView.
+        // Query the concrete menu controls, never scroll the covered page.
+        let menuItem = app.menuItems.matching(identifier:label).firstMatch
+        let option = menuItem.waitForExistence(timeout:1) ? menuItem : app.buttons.matching(identifier:label).firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout:10),label)
+        XCTAssertTrue(option.isHittable,label); option.tap()
     }
     private func audit(_ name: String) throws {
         var count = 0; continueAfterFailure = true; defer { continueAfterFailure = false }
@@ -248,7 +257,7 @@ import Foundation
             // "Not recorded" omits a correction; the server would retain the
             // old USD amount. It must not bypass the currency review guard.
             for amount in ["total", "paid"] {
-                tap("needs.editor."+amount+".section"); tap("needs.editor."+amount+".state"); tap("Not recorded")
+                tap("needs.editor."+amount+".section"); selectState(amount,label:"Not recorded")
                 tap("needs.editor."+amount+".section")
             }
             text("needs.currencyReview",contains:"does not convert")

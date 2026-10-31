@@ -259,10 +259,10 @@ public struct NeedsDetailsView: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let version { Text(language.text("读取的版本 ", "Version at read: ") + String(version)).font(.headline).accessibilityIdentifier(prefix + ".version") }
-            Text(unconfirmed
+            NeedsSelectableFieldText(text: unconfirmed
                 ? language.text("来源：合成提取候选，尚未确认或保存。预订和时间未由外部服务核实。", "Source: synthetic extraction candidates, unconfirmed and unsaved. Bookings and times are not externally verified.")
                 : language.text("来源：用户提供；预订和时间未由外部服务核实。", "Source: user provided; bookings and times are not externally verified."))
-                .font(.footnote).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(prefix + ".source")
+                .accessibilityIdentifier(prefix + ".source")
             ForEach(NeedsField.allCases, id: \.self) { field in
                 row(field.label(language), summary(display.observations[field]!, choice: field == .basis ? "basis" : ""), prefix + "." + field.rawValue)
             }
