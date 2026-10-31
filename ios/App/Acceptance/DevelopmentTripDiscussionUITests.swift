@@ -56,6 +56,8 @@ import Foundation
         capture("not-visible-"+id);XCTFail("Expected visible control: "+id);return lookup()
     }
     private func tap(_ id:String) {
+        let tab=app.tabBars.buttons.matching(identifier:id).firstMatch
+        if tab.exists { XCTAssertTrue(tab.isHittable);tab.tap();return }
         let target=visible({app.buttons.matching(identifier:id).firstMatch},id:id)
         target.tap()
     }
