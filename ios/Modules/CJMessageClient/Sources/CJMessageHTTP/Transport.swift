@@ -770,19 +770,25 @@ extension MessageHTTPClient {
         }
     }
     public func tripDiscussionHistory(conversationID:String,limit:Int,after:MessageReadCursor?=nil,limits:MessageReadLimits,lease:Lease) async throws -> MessageReadResult<[MessageTripHistoryItem]> {
+        try await versionedTripHistory(conversationID:conversationID,limit:limit,after:after,limits:limits,lease:lease,edit:false)
+    }
+    public func tripEditHistory(conversationID:String,limit:Int,after:MessageReadCursor?=nil,limits:MessageReadLimits,lease:Lease) async throws -> MessageReadResult<[MessageTripHistoryItem]> {
+        try await versionedTripHistory(conversationID:conversationID,limit:limit,after:after,limits:limits,lease:lease,edit:true)
+    }
+    private func versionedTripHistory(conversationID:String,limit:Int,after:MessageReadCursor?,limits:MessageReadLimits,lease:Lease,edit:Bool) async throws -> MessageReadResult<[MessageTripHistoryItem]> {
         guard !conversationID.isEmpty else { throw MessageHTTPFailure.invalidConfiguration }
         try checkSendLease(lease)
         let key=Data(conversationID.utf8),historyEpoch=sendPermitState.historyEpochs[Data(conversationID.utf8)]
-        let purpose=Data("trip-discussion-history:".utf8)+key
+        let purpose=Data((edit ? "trip-edit-history:" : "trip-discussion-history:").utf8)+key
         try readCursor(after,purpose:purpose,limit:limit,limits:limits,lease:lease)
-        var query=URLComponents();query.path="/v2/message-history"
+        var query=URLComponents();query.path=edit ? "/v3/message-history" : "/v2/message-history"
         query.queryItems=[.init(name:"conversation_id",value:conversationID),.init(name:"limit",value:String(limit))]
         if let after { query.queryItems!.append(.init(name:"cursor",value:after.opaque)) }
         query.percentEncodedQuery=query.percentEncodedQuery?.replacingOccurrences(of:"+",with:"%2B")
         guard let path=query.string else { throw MessageHTTPFailure.invalidConfiguration }
-        let (status,bytes,trace)=try await versionedMessageExchange(path:path,operation:"readTripDiscussionHistoryV2",raw:nil,lease:lease)
+        let (status,bytes,trace)=try await versionedMessageExchange(path:path,operation:edit ? "readTripEditHistoryV3" : "readTripDiscussionHistoryV2",raw:nil,lease:lease)
         guard status==200 else { try readError(status,JSONDecoder().decode(Components.Schemas.ErrorResponse.self,from:bytes)) }
-        let page=try TripDiscussionHistory(raw:bytes,maximumBytes:endpoint.maximumResponseBytes,decodedLimit:limits.maximumDecodedBytes,limit:limit,requestID:trace)
+        let page=try TripDiscussionHistory(raw:bytes,maximumBytes:endpoint.maximumResponseBytes,decodedLimit:limits.maximumDecodedBytes,limit:limit,requestID:trace,edit:edit)
         guard !page.rows.isEmpty || (after==nil && page.next==nil) else { throw MessageHTTPFailure.invalidResponse }
         var last=after?.last ?? 0,generation=after?.generation,ids=after?.seenIDs ?? []
         for row in page.rows {
