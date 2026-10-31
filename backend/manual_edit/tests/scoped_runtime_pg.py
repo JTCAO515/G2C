@@ -245,4 +245,29 @@ class ScopedRuntimeChecks(unittest.TestCase):
         self.assertEqual(f.database.run_repository(f.scope).recover(binding).state.effects,())
         with f.database.connect(f.scope) as conn:self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_scoped_basis').fetchone()[0],0)
 
+    def test_day_selection_respects_original_timezone_member_ids(self):
+        from copy import deepcopy
+        from hashlib import sha256
+        from cj_trip.postgres import Repository
+        from cj_trip.domain import Proposal
+        from cj_agent.draft import trip_scope_for
+        import time
+        f=self.fixture('day-zone',legacy=True);document=json.loads(f.trip.content)
+        other=deepcopy(document['items'][0]);other['id']='other-zone'
+        for event in other['schedule'].values():event['timezone']=dict(state='known',value='America/New_York')
+        document['items'].append(other)
+        repo=Repository(lambda:f.database.connect(f.scope),trip_scope_for(f.scope),f.signer,structured=True)
+        proposal=Proposal('explicit-add-zone',f.trip.trip_id,f.trip.version,'fixture-explicit.1',int(time.time())+300,packed(document))
+        repo.publish(proposal);detail=repo.proposal_detail(proposal.proposal_id)
+        repo.act(f.signer.issue(repo.scope,detail,action_id='accept-zone-source',kind='accept',candidate_hash=detail.candidate_hash).action)
+        f.trip=repo.detail(f.trip.trip_id)
+        item=document['items'][0];day=item['schedule']['start']
+        selection=dict(id=f.trip.trip_id,expected_version=f.trip.version,content_sha256=sha256(f.trip.content).hexdigest(),
+            day=dict(date=day['date']['value'],timezone=day['timezone']['value']),item_ids=[])
+        f.send('edit',trip=selection);result=f.run(Model())[0];self.assertIsNotNone(result.proposal_id)
+        with TestClient(self.scoped(f)) as client:
+            p=self.detail(client,f,result.proposal_id)
+            self.assertEqual(p['scope']['reference']['resolved_item_ids'],[item['id']])
+            self.assertEqual(p['content']['items'][-1],other)
+
 if __name__=='__main__':unittest.main(verbosity=2)
