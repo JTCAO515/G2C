@@ -202,12 +202,14 @@ import Foundation
         enter("SYNTHETIC cancel this original discussion",language:"en");tap("assistant.send")
         _=try await call("/wait-provider",caseID:f.case_id)
         tap("run.snapshot.read");text("run.display.status",contains:"Running")
+        let received="Please explicitly select a formal Trip, local date or item."
+        text("run.display.text",contains:received)
         tap("run.stop");text("run.display.status",contains:"Cancelled")
         _=try await call("/release-provider",caseID:f.case_id)
         let proof=try JSONDecoder().decode(Proof.self,from:await call("/wait-settled",caseID:f.case_id))
         XCTAssertEqual(proof.status,"cancelled");XCTAssertEqual(proof.cancellations,1)
         XCTAssertEqual(proof.posts,1);XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.model_calls,1)
-        XCTAssertEqual(proof.registered_operations,1);XCTAssertEqual(proof.forbidden_writes,0);XCTAssertTrue(proof.text.isEmpty)
+        XCTAssertEqual(proof.registered_operations,1);XCTAssertEqual(proof.forbidden_writes,0);XCTAssertEqual(proof.text,received)
         capture("original-discussion-cancelled");try audit("original-discussion-cancelled")
     }
     func testMemoryUpgradeRefused() async throws {

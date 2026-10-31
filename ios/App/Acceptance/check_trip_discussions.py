@@ -96,10 +96,13 @@ def main():
                     def __init__(self):super().__init__();self.entered=threading.Event();self.release=threading.Event()
                     def stream(self,messages,system=None):
                         for index,chunk in enumerate(super().stream(messages,system)):
+                            yield chunk
                             if index==0:
+                                # First advance is intentionally under the RUN
+                                # start fence. Pause only on the next advance,
+                                # after the first real delta was committed.
                                 self.entered.set()
                                 if not self.release.wait(90):raise TimeoutError('actual FakeProvider release')
-                            yield chunk
                 models={case:HeldFake() if case=='testDiscussionCancel' else FakeProvider() for case in CASES};outcomes={case:[] for case in CASES};active=[None];audit=[];worker_errors=[];stop=threading.Event()
                 conversations={case:case for case in CASES};lost_responses=set()
                 async def observed(scope,receive,send):
