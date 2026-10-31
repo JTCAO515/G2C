@@ -3,6 +3,7 @@ import Observation
 import CJMessageClient
 import CJMessageHTTP
 import CJAPI
+import CJManualPreviewClient
 
 /// Trusted composition input, never constructed from view text or a session token.
 /// queryOriginal must use the same recovery/scope/lease and a verified query adapter.
@@ -136,6 +137,11 @@ public enum DiscussionConversationState {
 }
 
 @MainActor @Observable public final class AssistantMessageHost {
+    public private(set) var scopedCandidates: ScopedCandidateHost?
+    public func configureScopedCandidates(_ client: ScopedTripClient) {
+        guard supportsScopedEdits, scopedCandidates == nil else { return }
+        scopedCandidates = ScopedCandidateHost(messages: self, client: client)
+    }
     public private(set) var activity: MessageHostActivity = .unavailable
     private var storedDraftBytes: Data?
     public var draftStored: Bool { bindingIsCurrent && storedDraftBytes == Data(shell.draft.utf8) }
@@ -822,7 +828,7 @@ public enum DiscussionConversationState {
     }
 
     /// Called synchronously by ShellState BEFORE its identity generation/clear changes.
-    public func invalidate() { retire(as: .invalidated) }
+    public func invalidate() { scopedCandidates?.invalidate(); scopedCandidates = nil; retire(as: .invalidated) }
 
     private func retire(as nextActivity: MessageHostActivity) {
         let previous = binding

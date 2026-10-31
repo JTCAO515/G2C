@@ -127,7 +127,7 @@ import Foundation
         let done=app.toolbars.buttons.matching(identifier:language=="en" ? "Done" : "完成").firstMatch
         if done.exists { done.tap() }
     }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false) async throws {
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -176,10 +176,89 @@ import Foundation
         if !undetermined { XCTAssertTrue(proof.memory_long);XCTAssertTrue(proof.memory_current) }
         XCTAssertFalse(proof.memory_other)
         tap("run.snapshot.read");text("run.display.status",contains:activeLanguage=="en" ? "Completed" : "已完成")
+        XCTAssertFalse(textElement("run.display.text").exists, "Scoped model wire output is not a user-facing answer")
+        XCTAssertFalse(textElement("run.stream.text").exists, "Scoped model wire progress is not a user-facing answer")
         if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
         else { text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程") }
         capture(name+"-published-not-adopted");try audit(name+"-original-run")
+        if discoveryUnavailable {
+            _ = try await call("/invalidate-candidate",caseID:name)
+            for _ in 0..<2 {
+                tap("scoped.discover");text("scoped.activity",contains:"Protected candidate unavailable")
+                XCTAssertFalse(textElement("scoped.discovery.state").exists)
+                XCTAssertFalse(textElement("scoped.after."+chosen).exists)
+                XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
+                XCTAssertFalse(app.buttons.matching(identifier:"scoped.reject").firstMatch.exists)
+            }
+            _ = try await call("/discovery-refusal-proof",caseID:name)
+            capture(name+"-failed-read-no-action-no-model");try audit(name+"-discovery-refusal")
+        }
+        if lateAccount {
+            tap("scoped.discover");_ = try await call("/wait-discovery",caseID:name)
+            tap("Memory")
+            if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
+            tap("account.development.signin.B")
+            text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+            _ = try await call("/release-discovery",caseID:name)
+            tap("Assistant")
+            text("scoped.activity",contains:"Choose an accepted original message")
+            XCTAssertFalse(textElement("scoped.discovery.state").exists)
+            XCTAssertFalse(textElement("scoped.after."+chosen).exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"scoped.reject").firstMatch.exists)
+            _ = try await call("/late-proof",caseID:name)
+            capture(name+"-late-original-withheld-from-B");try audit(name+"-late-account")
+        }
+        if let decision {
+            tap("scoped.discover");text("scoped.discovery.state",contains:activeLanguage=="en" ? "Original candidate" : "原候选")
+            text("scoped.feasibility",contains:"UNKNOWN")
+            if fixedReorder {
+                let fixed=visible({app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","固定状态：是")).firstMatch},id:"fixed.original")
+                XCTAssertTrue(fixed.exists && fixed.isHittable)
+            }
+            text("scoped.before."+chosen,contains:fixedReorder ? "Great Wall" : "Jingshan Park")
+            text("scoped.after."+chosen,contains:"本次轻松一点")
+            if fixedReorder {
+                text("scoped.order."+chosen,contains:"3 → 4")
+                text("scoped.order."+trip.item_ids[3],contains:"4 → 3")
+            }
+            capture(name+"-original-diff-unknown");try audit(name+"-diff")
+            if invalidation != nil { _ = try await call("/invalidate-candidate",caseID:name) }
+            tap("scoped."+decision)
+            if ackLoss || invalidation != nil {
+                text("scoped.activity",contains:invalidation=="conflict" ? "conflict" : "UNKNOWN")
+                XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.isEnabled)
+                XCTAssertFalse(app.buttons.matching(identifier:"scoped.reject").firstMatch.isEnabled)
+                XCTAssertFalse(textElement("scoped.receipt").exists)
+            } else { text("scoped.receipt",contains:activeLanguage=="en" ? "confirmed" : "已确认") }
+            if decision=="accept" && !ackLoss && invalidation==nil {
+                text("scoped.receipt.version",contains:"3");text("scoped.formal.version",contains:trip.id+" · 3")
+                text("scoped.formal.item."+chosen,contains:"本次轻松一点")
+            }
+            _ = try await call("/decision-proof",caseID:name)
+            capture(name+"-original-decision");try audit(name+"-decision")
+            // Relaunch supplies no token. Explicit restore, original journal and GET only.
+            try launch(f,language:activeLanguage,restore:true)
+            tap("scoped.originals")
+            let original=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","scoped.query.")).firstMatch},id:"scoped.originals")
+            XCTAssertTrue(original.exists && original.isHittable && original.isEnabled);original.tap()
+            if let invalidation { text("scoped.activity",contains:invalidation=="conflict" ? "conflict" : "UNKNOWN") }
+            else { text("scoped.receipt",contains:activeLanguage=="en" ? "confirmed" : "已确认") }
+            if ackLoss { text("scoped.formal.version",contains:trip.id+" · 3") }
+            _ = try await call("/decision-proof",caseID:name)
+            capture(name+"-restart-original-receipt");try audit(name+"-restart")
+        }
+
     }
+    func testScopedFixedReorderChineseLargest() async throws { try await scenario("testScopedFixedReorderChineseLargest",language:"zh-Hans",large:true,decision:"accept",fixedReorder:true) }
+    func testScopedCandidateDiscoveryUnavailable() async throws { try await scenario("testScopedCandidateDiscoveryUnavailable",language:"en",item:true,discoveryUnavailable:true) }
+    func testScopedCandidateLateAccount() async throws { try await scenario("testScopedCandidateLateAccount",language:"en",item:true,lateAccount:true) }
+    func testScopedCandidateStaleAcceptance() async throws { try await scenario("testScopedCandidateStaleAcceptance",language:"en",item:true,decision:"accept",invalidation:"stale") }
+    func testScopedCandidateConflict() async throws { try await scenario("testScopedCandidateConflict",language:"en",item:true,decision:"reject",invalidation:"conflict") }
+    func testScopedCandidateWithdrawal() async throws { try await scenario("testScopedCandidateWithdrawal",language:"en",item:true,decision:"accept",invalidation:"withdrawal") }
+    func testScopedCandidateACKLoss() async throws { try await scenario("testScopedCandidateACKLoss",language:"en",item:true,decision:"accept",ackLoss:true) }
+    func testScopedCandidateAccept() async throws { try await scenario("testScopedCandidateAccept",language:"en",item:true,switchLanguage:true,decision:"accept") }
+    func testScopedCandidateReject() async throws { try await scenario("testScopedCandidateReject",language:"en",item:true,decision:"reject") }
     func testScopedItemAndLanguageSwitch() async throws { try await scenario("testScopedItemAndLanguageSwitch",language:"en",item:true,switchLanguage:true) }
     func testScopedDayChineseLargest() async throws { try await scenario("testScopedDayChineseLargest",language:"zh-Hans",large:true) }
     func testScopedUndeterminedDayWithoutModel() async throws { try await scenario("testScopedUndeterminedDayWithoutModel",language:"en",undetermined:true) }

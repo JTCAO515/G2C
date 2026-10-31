@@ -65,6 +65,9 @@ struct AssistantShell: View {
                     }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("assistant.travelContext")
                 }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language, openNeeds: { panel = .needs })
+                if messageHost.supportsScopedEdits, let scoped = messageHost.scopedCandidates {
+                    ScopedCandidateView(host: scoped, messages: messageHost, language: state.language)
+                }
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if let text = messageHost.visibleOriginalText {
                     RunSelectableText(text: text).frame(maxWidth: .infinity, alignment: .trailing)

@@ -48,7 +48,7 @@ struct RunContainerView: View {
                         }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("fact.sources.open")
                 }
                 // Public view prepares opaque original read work synchronously before Task.
-                RunDisplayView(model:model,language:language == .english ? .english : .chinese,showAnswerText:host.answerFormat == .plainText)
+                RunDisplayView(model:model,language:language == .english ? .english : .chinese,showAnswerText:host.answerFormat == .plainText && !host.hidesScopedEditReply)
                 if host.answerFormat == .placeToolV1 {
                     switch host.placeProjection {
                     case .waiting:RunReadableText(text:language.text("Waiting for place information…", "正在等待地点资料…"))
