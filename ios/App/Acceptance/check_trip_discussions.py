@@ -110,8 +110,12 @@ def main():
                         return value
                     async def captured(value):
                         if value['type']=='http.response.start':event['status']=value['status']
-                        if case=='testNewChatUnknownReopen' and event['method']=='PUT' and event['path']=='/v1/conversations' and value['type']=='http.response.body' and not value.get('more_body',False) and event.get('status')==200 and case not in lost_openings:
+                        if case=='testNewChatUnknownReopen' and event['method']=='PUT' and event['path']=='/v1/conversations' and value['type']=='http.response.body' and event.get('status')==200 and case not in lost_openings:
+                            # Middleware can split JSON into a data chunk plus an
+                            # empty terminal chunk. Withhold the FIRST body chunk:
+                            # dropping only the terminator loses no JSON bytes.
                             lost_openings.add(case);event['ack_lost_after_200']=True
+                            event['withheld_body_bytes']=len(value.get('body',b''))
                             raise ConnectionResetError('local transport ACK loss after actual successful chat commit')
                         await send(value)
                     await app(scope,inspected,captured)
