@@ -37,6 +37,12 @@ class EditRuntimeConfiguration(TypedRuntimeConfiguration):
         return cls(original.collection,original.selections)
 
     def bind(self,database,scope,identity,admit,*,message_context):
+        return self._bind(database,scope,identity,admit,message_context,provision=True)
+
+    def bind_readonly(self,database,scope,identity,admit,*,message_context):
+        return self._bind(database,scope,identity,admit,message_context,provision=False)
+
+    def _bind(self,database,scope,identity,admit,message_context,*,provision):
         if type(message_context) is not EditAuthority or message_context.repository.scope!=scope:
             raise RuntimeDenied('canonical original edit authority required')
         def current_principal():
@@ -44,7 +50,7 @@ class EditRuntimeConfiguration(TypedRuntimeConfiguration):
             if scope_for(principal.issuer,principal.subject)!=scope:
                 raise RuntimeDenied('edit memory principal/owner mismatch')
             return principal
-        return _bind_runtime(self,EditRuntimeMemory,database,scope,identity,current_principal,message_context)
+        return _bind_runtime(self,EditRuntimeMemory,database,scope,identity,current_principal,message_context,provision=provision)
 
 
 def load_edit_runtime_configuration(path):

@@ -296,4 +296,6 @@ class ScopedRuntimeChecks(unittest.TestCase):
         with f.database.connect(f.scope) as conn:
             self.assertEqual(conn.execute('SELECT version FROM cj_trip_record WHERE trip_id=%s',(f.trip.trip_id,)).fetchone()[0],f.trip.version)
 
+from scoped_discovery_pg import ScopedDiscoveryChecks
+
 if __name__=='__main__':unittest.main(verbosity=2)

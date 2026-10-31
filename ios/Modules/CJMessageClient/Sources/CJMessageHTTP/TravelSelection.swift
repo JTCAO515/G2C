@@ -4,7 +4,8 @@ import CJAPI
 import CJMessageClient
 
 public enum MessageSendWireVersion: String, Sendable {
-    case legacy = "MESSAGE-send.1",travel = "MESSAGE-send.2"
+    case legacy = "MESSAGE-send.1",travel = "MESSAGE-send.2",tripDiscussion = "MESSAGE-send.3"
+    case scopedEdit = "MESSAGE-send.4"
     /// Historical accepted records remain readable, never newly submitted.
     case historicalDraft = "MESSAGE-draft.1"
 }

@@ -34,3 +34,6 @@ class ScopedMemoryConfiguration:
     abi:str=field(default=MEMORY_ABI,init=False)
     def bind(self,database,scope,identity,admit,*,message_context):
         return TrackedMemory(self.original.bind(database,scope,identity,admit,message_context=message_context),self.registry)
+
+    def bind_readonly(self,database,scope,identity,admit,*,message_context):
+        return TrackedMemory(self.original.bind_readonly(database,scope,identity,admit,message_context=message_context),self.registry)

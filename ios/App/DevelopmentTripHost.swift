@@ -2,6 +2,7 @@
 import Foundation
 import CJShell
 import CJTripClient
+import CJManualPreviewClient
 import CJMessageHTTP
 import CJMessageClient
 import CJRunClient
@@ -72,7 +73,10 @@ import Observation
         let typedMode = try DevelopmentTypedMode.read(environment)
         let needsProfile = try DevelopmentNeedsProfile.read(environment)
         let tripEditingProfile = try DevelopmentTripEditingProfile.read(environment)
-        _ = try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
+        let messageProfile=try DevelopmentMessageProfile.read(environment)
+        let tripDiscussions=messageProfile == .discussion,scopedEdits=messageProfile == .edit
+        let answerProfile=try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
+        try messageProfile?.validate(typed:typedMode,needs:needsProfile,answer:answerProfile)
         let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: tripEditingProfile == nil ? 4096 : 1_000_000,
             maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let lifetime = try DevelopmentLifetime(configuration: configuration, shell: shell, lease: lease)
@@ -95,6 +99,10 @@ import Observation
         if let existing { key = existing }
         else {
             try TripPendingStore.requireEmptyNamespace(directory: root)
+            let scopedDirectories = [root.appendingPathExtension("ScopedOriginals"), root.appendingPathExtension("ScopedReceipts")]
+            for path in scopedDirectories where files.fileExists(atPath: path.path) {
+                guard try files.contentsOfDirectory(atPath: path.path).isEmpty else { throw TripFailure.keyUnavailable }
+            }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
         let store = try TripPendingStore(directory: root, maximumBytes: 1_000_000, maximumRecords: 100,
@@ -119,12 +127,36 @@ import Observation
             proposalID: configuration.proposalID, synthetic: false, currentBinding: { lifetime.current })) else {
             throw TripFailure.staleBinding
         }
+        let makeNeeds = { try needsProfile.map { profile in
+            try DevelopmentNeedsHost(configuration:configuration,profile:profile,shell:shell,
+                session:lifetime.session,operation:lifetime.operation,isCurrent:{lifetime.current != nil})
+        } }
+        let preparedNeeds=try scopedEdits ? makeNeeds() : nil
+        let currentNeeds:(@MainActor ()->MessageNeedsSelection?)?
+        if let preparedNeeds {
+            currentNeeds = { [weak preparedNeeds] in
+                do { return try preparedNeeds?.host.currentMessageSelection() }
+                catch { return nil } // unavailable saved source; never substitute a draft/default
+            }
+        } else { currentNeeds=nil }
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
-            session: lifetime.session, operation: lifetime.operation,travelProfile:typedMode?.travel,isCurrent: { lifetime.current != nil })
-        if let needsProfile {
-            needs = try DevelopmentNeedsHost(configuration: configuration, profile: needsProfile, shell: shell,
-                session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
-        } else { needs = nil }
+            session: lifetime.session, operation: lifetime.operation,travelProfile:typedMode?.travel,tripDiscussions:tripDiscussions,
+            scopedEdits:scopedEdits,currentNeeds:currentNeeds,isCurrent: { lifetime.current != nil })
+        if scopedEdits {
+            let originals = root.appendingPathExtension("ScopedOriginals")
+            let receipts = root.appendingPathExtension("ScopedReceipts")
+            for path in [originals, receipts] {
+                try files.createDirectory(at: path, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            }
+            let scopedEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 32768,
+                maximumResponseBytes: 4_000_000, allowLoopbackHTTP: true)
+            let scoped = try ScopedTripClient(endpoint: scopedEndpoint, binding: lifetime.trip, credentials: { binding in
+                guard lifetime.current == binding else { return nil }; return configuration.token
+            }, validate: { guard lifetime.current != nil else { throw TripFailure.staleBinding } },
+                directory: originals, receiptDirectory: receipts, expectedKeyID: key.id, provider: keys)
+            messages.messages.configureScopedCandidates(scoped)
+        }
+        needs=try scopedEdits ? preparedNeeds : makeNeeds()
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
             typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
@@ -435,7 +467,9 @@ import Observation
     private let keyAdapter: ExistingMessageKeyAdapter
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState,
-         session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil, isCurrent: @escaping @MainActor () -> Bool) throws {
+         session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil,tripDiscussions:Bool = false,
+         scopedEdits:Bool=false,currentNeeds:(@MainActor ()->MessageNeedsSelection?)?=nil,isCurrent: @escaping @MainActor () -> Bool) throws {
+        guard !tripDiscussions || travelProfile == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         let answerFormat: RunAnswerFormat
         switch try DevelopmentSessionConfiguration.toolAnswerProfile(ProcessInfo.processInfo.environment) {
         case .plain:answerFormat = .plainText
@@ -468,7 +502,11 @@ import Observation
         let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16384,
                                            maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let transport: NoRedirectTransport
-        if travelProfile != nil {
+        if scopedEdits {
+            transport=try NoRedirectTransport.developmentTripEdits(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
+        } else if tripDiscussions {
+            transport=try NoRedirectTransport.developmentTripDiscussions(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
+        } else if travelProfile != nil {
             transport = try NoRedirectTransport.developmentTravelMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
         } else {
             transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
@@ -481,21 +519,24 @@ import Observation
         guard messages.bind(AssistantMessageBinding(recovery: recovery, scope: scope, lease: lease,
             generation: shell.generation, synthetic: false,
             isCurrent: { lifetime.current },
-            invalidateResources: { lifetime.active = false;selectedTravel?.invalidate();keyAdapter.invalidate() },sendClient:client,travelSelection:selectedTravel)) else {
+            invalidateResources: { lifetime.active = false;selectedTravel?.invalidate();keyAdapter.invalidate() },sendClient:client,travelSelection:selectedTravel,
+            currentNeeds:currentNeeds,tripDiscussions:tripDiscussions,scopedEdits:scopedEdits)) else {
             throw RecoveryError.inactive
         }
         let limits = try MessageReadLimits(maximumPageItems: 20, maximumCursorBytes: 4096,
                                            maximumDecodedBytes: 1_000_000, maximumPages: 50)
         guard history.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease,
-            generation: shell.generation, limit: 20, limits: limits, synthetic: false,
+            generation: shell.generation, limit: 20, limits: limits, synthetic: false,tripDiscussions:tripDiscussions,scopedEdits:scopedEdits,
             isCurrent: { lifetime.current },
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
         }
         let runReads = try NoRedirectTransport(requestTimeout: 15, resourceTimeout: 150)
-        let runStops = try travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})
+        let runStops = try scopedEdits ? RunCancellationTransport.developmentEditCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
+            : tripDiscussions ? RunCancellationTransport.developmentTripCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
+            : travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})
             : RunCancellationTransport.developmentCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
-        let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes: 256, maximumTextBytes: 200000,
+        let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes:(tripDiscussions || scopedEdits) ? 16384 : 256, maximumTextBytes: 200000,
             credentials: { captured in
                 try lifetime.validate()
                 guard captured == operation, session.isCurrent(captured) else { throw RecoveryError.inactive }

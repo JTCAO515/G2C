@@ -48,7 +48,7 @@ extension RunDisplayState {
                 if showAnswerText && !value.snapshot.text.isEmpty {
                     Text(verbatim: value.snapshot.text).textSelection(.enabled).accessibilityIdentifier("run.display.text")
                 }
-                Text(language.text("Snapshot at read time", "读取时的快照")).font(.caption)
+                RunReadableText(text:language.text("Snapshot at read time", "读取时的快照"),style:.caption)
             }
             if let progress = model.streamProgress {
                 if showAnswerText { Text(verbatim: progress.text).textSelection(.enabled).accessibilityIdentifier("run.stream.text") }
@@ -57,15 +57,14 @@ extension RunDisplayState {
             }
             if model.readsDraftStatus {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(language.text("Draft result", "草稿结果")).font(.headline)
+                    RunReadableText(text:language.text("Draft result", "草稿结果"),style:.headline)
                     RunReadableText(text: model.draftStatus.label(language))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if let budget = model.draftStatus.budgetLabel(language) {
                         RunReadableText(text: budget).accessibilityIdentifier("run.budget.status")
                     }
                     if let status = model.draftStatus.runStatus {
-                        Text(language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(status))
-                            .font(.caption).fixedSize(horizontal: false, vertical: true)
+                        RunReadableText(text:language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(status),style:.caption)
 
                     }
                 }
