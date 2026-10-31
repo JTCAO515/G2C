@@ -11,6 +11,7 @@ import HTTPTypes
 private let needsTrace = "00000000-0000-4000-8000-000000000001"
 private actor NeedsHostTransport: ClientTransport {
     var replies: [Data]
+    var bodies: [Data] = []
     var calls: [(String, HTTPRequest.Method, String)] = []
     let holdFirst: Bool
     var held = false
@@ -18,6 +19,7 @@ private actor NeedsHostTransport: ClientTransport {
     init(_ replies: [Data], holdFirst: Bool = false) { self.replies = replies; self.holdFirst = holdFirst }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         calls.append((operationID, request.method, request.path ?? ""))
+        if let body { bodies.append(try await Data(collecting: body, upTo: 131072)) }
         guard !replies.isEmpty else { throw NeedsFailure.exchangeUnknown }
         let bytes = replies.removeFirst()
         if holdFirst && calls.count == 1 { held = true; await withCheckedContinuation { continuation = $0 } }
@@ -26,6 +28,7 @@ private actor NeedsHostTransport: ClientTransport {
         response.headerFields[.contentType] = "application/json"
         return (response, HTTPBody(bytes))
     }
+    func add(_ value: Data) { replies.append(value) }
     func release() { continuation?.resume(); continuation = nil }
 }
 @MainActor private struct NeedsHostSessionStore: SessionPersistence {
@@ -42,10 +45,10 @@ private actor NeedsHostTransport: ClientTransport {
     var credentials = 0
     init() throws { operation = try session.beginTrustedSDKSave(); current = binding }
     func observed() -> NeedsBinding? { let old = current; let run = callback; callback = nil; run?(); return old }
-    func bind(_ host: NeedsContainerHost, shell: ShellState, transport: NeedsHostTransport, id: String = "needs-A", store: NeedsPendingStore? = nil) throws {
+    func bind(_ host: NeedsContainerHost, shell: ShellState, transport: NeedsHostTransport, id: String = "needs-A", store: NeedsPendingStore? = nil, manual: Bool = false) throws {
         let client = NeedsClient(endpoint: try NeedsEndpoint(url: #require(URL(string: "https://synthetic.invalid")), maximumRequestBytes: 131_072, maximumResponseBytes: 1_048_576),
             credentials: { [self] _ in credentials += 1; return "SYNTHETIC" }, currentBinding: { [self] in observed() },
-            pendingStore: store, interceptedTransport: transport)
+            pendingStore: store, interceptedTransport: transport, manualWritesAvailable: manual)
         let value = NeedsContainerBinding(client: client, needs: binding, selectedNeedsID: id, shellGeneration: shell.generation,
             session: session, sessionOperation: operation, synthetic: true, currentBinding: { [self] in observed() })
         #expect(host.bind(value))
@@ -317,5 +320,61 @@ private actor NeedsHostTransport: ClientTransport {
         try f.bind(h, shell: s, transport: t, store: store); h.loadPending(context: h.captureAction())
         #expect(h.presentation?.pendingState == .failed && h.prepareQuery(a.actionID, context: h.captureAction()) == nil)
         #expect(f.credentials == 0)
+    }
+}
+
+extension NeedsContainerHostTests {
+    @Test func localWriterFreezesOneOriginalBeforeAsyncDispatch() async throws {
+        let s = try shell(), host = NeedsContainerHost(shell:s), f = try NeedsHostFixture()
+        let root = try directory(); defer { try? FileManager.default.removeItem(at:root) }
+        let store = try store(f,directory:root,key:{SymmetricKey(data:Data(repeating:7,count:32))})
+        let wire = NeedsHostTransport([]); try f.bind(host,shell:s,transport:wire,store:store,manual:true)
+        #expect(host.beginNew(context:host.captureAction()))
+        var draft = try #require(host.presentation?.draft)
+        draft.sourceText = "SYNTHETIC explicit manual input"; draft.set(.partySize,.init(state:.known,value:"3"))
+        #expect(host.updateDraft(draft,context:host.captureAction()))
+        let work = try #require(host.prepareSave(context:host.captureAction()))
+        let id = try #require(host.presentation?.selectedActionID), original = try draft.freeze(actionID:id)
+        #expect(try store.pending().isEmpty && host.busy)
+        #expect(!host.beginNew(context:host.captureAction()))
+        await wire.add(try response("receipt",receipt(original)))
+        await wire.add(try response("revision",revision(original)))
+        await host.perform(work)
+        #expect(host.presentation?.state == .confirmed && !host.busy)
+        #expect(await wire.bodies == [original.originalUTF8])
+        #expect(try store.pending().map(\.originalUTF8) == [original.originalUTF8])
+    }
+    @Test func unknownPrefixBlocksBeforeMintingAnotherActionID() throws {
+        let s = try shell(), host = NeedsContainerHost(shell:s), f = try NeedsHostFixture()
+        let root = try directory(); defer { try? FileManager.default.removeItem(at:root) }
+        let store = try store(f,directory:root,key:{SymmetricKey(data:Data(repeating:8,count:32))})
+        let unknown = try original(); try store.append(unknown)
+        let wire = NeedsHostTransport([]); try f.bind(host,shell:s,transport:wire,store:store,manual:true)
+        #expect(host.beginNew(context:host.captureAction()))
+        var draft = try #require(host.presentation?.draft)
+        draft.sourceText = "A new local edit"; draft.set(.partySize,.init(state:.known,value:"4"))
+        #expect(host.updateDraft(draft,context:host.captureAction()))
+        #expect(host.prepareSave(context:host.captureAction()) == nil)
+        #expect(host.presentation?.selectedActionID == nil && host.manualIssue == .reconcileOriginals)
+        #expect(try store.pending().map(\.originalUTF8) == [unknown.originalUTF8])
+    }
+    @Test func cancellingPossibleSaveKeepsOriginalQueryOnly() async throws {
+        let s = try shell(), host = NeedsContainerHost(shell:s), f = try NeedsHostFixture()
+        let root = try directory(); defer { try? FileManager.default.removeItem(at:root) }
+        let store = try store(f,directory:root,key:{SymmetricKey(data:Data(repeating:9,count:32))})
+        let wire = NeedsHostTransport([],holdFirst:true); try f.bind(host,shell:s,transport:wire,store:store,manual:true)
+        #expect(host.beginNew(context:host.captureAction()))
+        var draft = try #require(host.presentation?.draft)
+        draft.sourceText = "SYNTHETIC cancellable save"; draft.set(.partySize,.init(state:.known,value:"3"))
+        #expect(host.updateDraft(draft,context:host.captureAction()))
+        let work = try #require(host.prepareSave(context:host.captureAction()))
+        let id = try #require(host.presentation?.selectedActionID), original = try draft.freeze(actionID:id)
+        await wire.add(try response("receipt",receipt(original)))
+        let task = Task { await host.perform(work) }; await wait(wire)
+        host.cancel(host.captureCancellation()); await wire.release(); await task.value
+        #expect(host.presentation?.state == .unknown && !host.busy)
+        #expect(try store.pending().map(\.originalUTF8) == [original.originalUTF8])
+        #expect(host.prepareSave(context:host.captureAction()) == nil)
+        #expect(host.presentation?.selectedActionID == id && host.manualIssue == .reconcileOriginals)
     }
 }

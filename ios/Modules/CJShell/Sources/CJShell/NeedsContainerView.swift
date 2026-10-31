@@ -59,28 +59,28 @@ struct NeedsContainerView: View {
                             guard let work = host.prepareSave(context: action) else { return }
                             Task { await host.perform(work) }
                         }
-                        DisclosureGroup(language.text("Edit journey details", "编辑本次旅行条件")) {
+                        DisclosureGroup {
                             NeedsEditorView(draft: Binding(get: { model.draft ?? draft }, set: { _ = host.updateDraft($0, context: action) }), language: needsLanguage)
                                 .disabled(host.busy)
-                        }.accessibilityIdentifier("needs.editor.open").id(draft.editorID)
+                        } label: { Text(language.text("Edit journey details", "编辑本次旅行条件")).accessibilityIdentifier("needs.editor.open") }.id(draft.editorID)
                         if !model.canSave {
                             RunReadableText(text: language.text("Saving is unavailable. Edits remain local and clear with account/background changes.", "保存尚不可用。编辑仅保留在本地内存中；账号变化或进入后台时会清空。"), style: .caption)
                         }
                     }
                     if let snapshot = model.snapshot {
-                        DisclosureGroup(language.text("Last read user-provided record", "上次读到的用户提供记录")) {
+                        DisclosureGroup {
                             NeedsDetailsView(fields: snapshot.fields, version: snapshot.version, language: needsLanguage, identifierPrefix: "needs.detail")
-                        }.accessibilityIdentifier("needs.detail.open")
+                        } label: { Text(language.text("Last read user-provided record", "上次读到的用户提供记录")).accessibilityIdentifier("needs.detail.open") }
                     }
                     if let revision = model.revision {
-                        DisclosureGroup(language.text("Original action's historical revision", "原动作的历史修订")) {
+                        DisclosureGroup {
                             NeedsDetailsView(fields: revision.fields, version: revision.version, language: needsLanguage, identifierPrefix: "needs.history")
                             if let bytes = Data(base64Encoded: revision.original_input_utf8_base64),
                                let command = try? JSONDecoder().decode(NeedsSchema.NeedsCommand.self, from: bytes) {
                                 RunSelectableText(text: command.source.text).accessibilityIdentifier("needs.history.statement")
                             }
                             RunReadableText(text: language.text("This original statement belongs to that revision, not every retained field. It does not establish the latest version.", "此原始说明属于该次修订，不代表所有保留字段的来源，也不代表最新版本。"), style: .caption)
-                        }.accessibilityIdentifier("needs.history.open")
+                        } label: { Text(language.text("Original action's historical revision", "原动作的历史修订")).accessibilityIdentifier("needs.history.open") }
                     }
                     if let receipt = model.receipt {
                         RunReadableText(text: language.text("Verified original action: ", "已核对原动作：") + receipt.action_id, style: .caption)
@@ -132,9 +132,9 @@ struct NeedsContainerView: View {
                     guard let source else { return }
                     _ = host.applyPreview(from: runs, expectedSource: source, context: action)
                 }
-                DisclosureGroup(language.text("Read unconfirmed extracted values", "读取未确认提取值")) {
+                DisclosureGroup {
                     NeedsDetailsView(unconfirmedFields: value.fields, language: needsLanguage)
-                }.accessibilityIdentifier("needs.preview.fields.open")
+                } label: { Text(language.text("Read unconfirmed extracted values", "读取未确认提取值")).accessibilityIdentifier("needs.preview.fields.open") }
                 DisclosureGroup(language.text("Original accepted message", "已接受的原消息")) {
                     RunSelectableText(text: value.sourceText).accessibilityIdentifier("needs.preview.original")
                 }

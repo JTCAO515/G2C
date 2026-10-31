@@ -74,12 +74,12 @@ public struct NeedsEditorView: View {
             TextField(language.text("说明你的明确输入或修改", "Describe your explicit input or correction"), text: $draft.sourceText, axis: .vertical)
                 .textFieldStyle(.roundedBorder).accessibilityIdentifier("needs.editor.statement")
             ForEach(NeedsField.allCases, id: \.self) { field in
-                DisclosureGroup(field.label(language)) {
+                DisclosureGroup {
                     ObservationEditor(input: Binding(get: { draft.observations[field] ?? .init() }, set: { draft.set(field, $0) }),
                                       language: language, id: "needs.editor." + field.rawValue, isList: field == .includes, choices: field == .basis ? [("total", language.text("总计", "Total")), ("per_person", language.text("每人", "Per person"))] : [])
                     Text(draft.changedFields.contains(field) ? language.text("将包含此修改", "This change is included") : language.text("不修改此字段", "Leave this field unchanged"))
                         .font(.caption)
-                }.accessibilityIdentifier("needs.editor." + field.rawValue + ".section")
+                } label: { Text(field.label(language)).accessibilityIdentifier("needs.editor." + field.rawValue + ".section") }
             }
             ForEach(NeedsEventField.allCases, id: \.self) { field in
                 DisclosureGroup(field.label(language)) {

@@ -146,3 +146,17 @@ import CJMessageHTTP
         await #expect(throws: (any Error).self) { try await query.perform(query.prepareQuery(actionID: a.actionID, binding: h.binding)) }
     }
 }
+
+extension LocalManualTests {
+    @Test func otherRecordsOriginalQueryAndReplayPreserveCurrentEditor() async throws {
+        let h = try Harness(); defer { clean(h) }; let a = try original(), store = try h.store(); try store.append(a)
+        let model = NeedsPresentation(client:try client(h,successfulTransport(a),store:store)); model.replace(binding:h.binding)
+        model.beginNew(id:"current-B"); model.draft?.sourceText = "Keep current B edit"; let editor = model.draft?.editorID
+        model.loadPending()
+        let query = try #require(model.prepareQuery(actionID:a.actionID,preservingEditor:true)); await model.perform(query)
+        #expect(model.selectedNeedsID == "current-B" && model.draft?.editorID == editor && model.draft?.sourceText == "Keep current B edit")
+        #expect(model.receipt?.action_id == a.actionID)
+        let replay = try #require(model.prepareReplay(actionID:a.actionID,preservingEditor:true)); await model.perform(replay)
+        #expect(model.selectedNeedsID == "current-B" && model.draft?.editorID == editor && model.draft?.expectedVersion == 0)
+    }
+}

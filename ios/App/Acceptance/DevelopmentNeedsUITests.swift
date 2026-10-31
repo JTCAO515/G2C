@@ -75,7 +75,11 @@ import Foundation
             if button.waitForExistence(timeout:2) { element = button }
             else {
                 let other = app.otherElements.matching(identifier:id).firstMatch
-                element = other.exists ? other : app.disclosureTriangles.matching(identifier:id).firstMatch
+                if other.exists { element = other }
+                else {
+                    let label = app.staticTexts.matching(identifier:id).firstMatch
+                    element = label.exists ? label : app.disclosureTriangles.matching(identifier:id).firstMatch
+                }
             }
         }
         XCTAssertTrue(element.waitForExistence(timeout:15),id)
@@ -87,7 +91,9 @@ import Foundation
     @discardableResult private func text(_ id: String, contains: String, timeout: TimeInterval = 30) -> String {
         let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
         let value = panel.exists ? panel.staticTexts.matching(identifier:id).firstMatch : app.staticTexts.matching(identifier:id).firstMatch
-        XCTAssertTrue(value.waitForExistence(timeout:timeout),id)
+        let exists = value.waitForExistence(timeout:timeout)
+        if !exists { capture("missing-"+id) }
+        XCTAssertTrue(exists,id)
         let expected = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",contains),object:value)
         XCTAssertEqual(XCTWaiter.wait(for:[expected],timeout:timeout),.completed,id+" actual="+value.label)
         if id.hasPrefix("needs.") { reveal(value,id:id); XCTAssertTrue(value.isHittable,id) }
