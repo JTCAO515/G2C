@@ -197,10 +197,13 @@ private actor DiscussionTripRead: ClientTransport {
         let nextShell=ShellState(preferences:try #require(UserDefaults(suiteName:UUID().uuidString)))
         let (restored,_)=try messages(nextShell,lifetime:lifetime,wire:wire,storage:storage)
         nextShell.draft="SYNTHETIC unassigned editor"
+        #expect(restored.selectUnboundDiscussion())
         restored.performConversationIntent(try #require(restored.captureConversationQuery(id:cid)));await wait { !restored.isBusy }
         #expect(nextShell.draft=="SYNTHETIC unassigned editor" && restored.selectedConversation==nil)
         #expect(restored.conversationOpenings.first?.phase == .available)
         #expect(await wire.created==[cid])
+        restored.performConversationIntent(try #require(restored.captureConversationSelection(id:cid)));await wait { !restored.isBusy }
+        #expect(restored.selectedConversation==cid && restored.canStartMessage && restored.canSend)
     }
     @Test func renderedNewChatIntentCannotBindAChangedChoiceOrEditedDraft() async throws {
         let shell=ShellState(preferences:try #require(UserDefaults(suiteName:UUID().uuidString)))

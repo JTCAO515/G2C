@@ -67,7 +67,9 @@ import Foundation
         else { target=visible({app.buttons.matching(identifier:id).firstMatch},id:id) }
         XCTAssertTrue(target.waitForExistence(timeout:15),id)
         let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == true AND hittable == true AND enabled == true"),object:target)
-        XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:20),.completed,id)
+        let outcome=XCTWaiter.wait(for:[ready],timeout:20)
+        if outcome != .completed { capture("not-ready-"+id) }
+        XCTAssertEqual(outcome,.completed,id+" enabled="+String(target.isEnabled)+" hittable="+String(target.isHittable))
         target.tap()
     }
     private func text(_ id:String,contains expected:String) {

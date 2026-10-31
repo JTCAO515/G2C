@@ -99,6 +99,8 @@ def main():
                     authorization=dict(scope['headers']).get(b'authorization',b'').decode()
                     case=next((case for case,row in tokens.items() if any(authorization=='Bearer '+value for value in row.values())),None)
                     event=dict(case=case,method=scope['method'],path=scope['path']);audit.append(event);body=bytearray()
+                    if scope['path']=='/v3/message-send-status':
+                        event['query']={key:value for key,value in parse_qs(scope['query_string'].decode('ascii')).items() if key in ('conversation_id','message_id')}
                     if case and scope['method']=='PUT' and scope['path']=='/v1/conversations':
                         query=parse_qs(scope['query_string'].decode('ascii'));assert set(query)=={'conversation_id'} and len(query['conversation_id'])==1
                         cid=query['conversation_id'][0];assert cid.startswith('discussion.') and str(uuid.UUID(cid.removeprefix('discussion.'))).upper()==cid.removeprefix('discussion.')
