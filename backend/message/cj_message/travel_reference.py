@@ -93,6 +93,10 @@ def read_reference(tx, stored):
     receipt=stored.receipt
     try:
         wire_version=json.loads(stored.raw)['version']
+        if wire_version=='MESSAGE-send.4':
+            if not tx.edit_mode:raise Unavailable('explicit edit consumer required')
+            from .edit_reference import read
+            return read(tx,stored)
         if wire_version=='MESSAGE-send.3':
             if not tx.trip_mode:raise Unavailable('explicit formal Trip consumer required')
             from .trip_reference import read_reference as read_trip

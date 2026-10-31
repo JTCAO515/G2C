@@ -35,11 +35,13 @@ class _MemoryProvider(FakeProvider):
     def __init__(self, original, memory):
         self.original, self.memory = original, memory
 
+    def _check(self):self.memory.check()
+
     def stream(self, messages, system=None):
         stream = self.original.stream(messages, system=system)
         primary = None
         try:
-            self.memory.check()
+            self._check()
             yield from stream
         except BaseException as error:
             primary = error
@@ -51,6 +53,11 @@ class _MemoryProvider(FakeProvider):
                 if primary is None:
                     raise RuntimeUnknown('memory provider cleanup unavailable') from None
                 primary.add_note('memory provider cleanup unavailable')
+
+
+class _EditMemoryProvider(_MemoryProvider):
+    def _check(self):
+        with self.memory.hold(self.memory.binding) as check:check()
 
 
 def original_context_valid(binding, messages, admitted):
@@ -94,7 +101,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -108,6 +115,7 @@ class RunWorker:
         self.memory_run = None
         self.message_context=message_context
         self._publication_check=None
+        self.edit_publisher=edit_publisher
         self.tools=tools
 
     def process(self, limit=20):
@@ -185,8 +193,11 @@ class RunWorker:
                         raise Denied('context invalid or unknown')
                     if tx.get(binding) != state:
                         raise Conflict('state changed during step guard')
-                    check_memory = (leases.enter_context(self.memory_run.hold(binding))
-                                    if self.memory_run is not None else None)
+                    check_memory=None
+                    if self.memory_run is not None:
+                        if self.edit_publisher is not None and effect is None:
+                            with self.memory_run.hold(binding) as short_check:short_check()
+                        else:check_memory=leases.enter_context(self.memory_run.hold(binding))
                     if draft and state.draft_outcome is not None:
                         raise Conflict('draft result already recorded before invocation')
                     check_needs=None
@@ -342,8 +353,11 @@ class RunWorker:
                               needs_lease=self.needs_lease, budget_exit=self.budget_exit,
                               memory=self.memory,
                               message_context=self.message_context,
-                              tools=self.tools,
+                              tools=self.tools,edit_publisher=self.edit_publisher,
                               runs=Service(OwnedRepository(), runs.valid))
+            if self.edit_publisher is not None:
+                with self.message_context.worker_repository(owned.runs.repository):
+                    return owned._owned(receipt,binding)
             return owned._owned(receipt, binding)
 
     def _owned(self, receipt, binding):
@@ -396,10 +410,15 @@ class RunWorker:
         text = command['text']
         if self.memory is not None:
             self.memory_run = self.memory.capture(binding)
-            self.provider = _MemoryProvider(self.provider, self.memory_run)
+            wrapper=_EditMemoryProvider if self.edit_publisher is not None else _MemoryProvider
+            self.provider = wrapper(self.provider, self.memory_run)
         if self.needs_lease is not None and command['creation_intent'] == 'consider_trip':
             with self.needs_lease(binding) as check_needs:
                 check_needs()
+        if self.edit_publisher is not None and command.get('modification_intent')=='propose_scoped_edit':
+            from .scoped_edit import execute
+            inputs=self.message_context.answer_messages(binding,self.memory_run.messages(text))
+            return execute(self,receipt,binding,state,inputs)
         proposal_id = None
         buffer = ''
         try:

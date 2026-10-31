@@ -582,6 +582,11 @@ if __name__=='__main__':
         harness.exercise=exercise
         harness.main()
     finally:
-        from trip_message_pg import exercise as trip_exercise
-        harness.exercise=trip_exercise
-        harness.main()
+        try:
+            from trip_message_pg import exercise as trip_exercise
+            harness.exercise=trip_exercise
+            harness.main()
+        finally:
+            from edit_message_pg import exercise as edit_exercise
+            harness.exercise=edit_exercise
+            harness.main()
