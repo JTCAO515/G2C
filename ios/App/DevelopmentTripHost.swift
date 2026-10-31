@@ -92,7 +92,7 @@ import Observation
         let key: MessageEncryptionKey
         if let existing { key = existing }
         else {
-            guard try files.contentsOfDirectory(atPath: root.path).isEmpty else { throw TripFailure.keyUnavailable }
+            try TripPendingStore.requireEmptyNamespace(directory: root)
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
         let store = try TripPendingStore(directory: root, maximumBytes: 1_000_000, maximumRecords: 100,
