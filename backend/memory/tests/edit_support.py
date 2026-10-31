@@ -25,7 +25,7 @@ import dev_auth,message_edit_profile,run_worker
 class Fixture:
     setup_source=original.NeedsActionChecks.setup_source;worker=original.NeedsActionChecks.worker
     plan=original.NeedsActionChecks.plan;action=original.NeedsActionChecks.action;post=original.NeedsActionChecks.post
-    def __init__(self,case,subject,publisher):
+    def __init__(self,case,subject,publisher,*,legacy=False):
         self.case=case
         self.assertEqual=case.assertEqual;self.assertIsNotNone=case.assertIsNotNone
         self.host=RegisteredHost(case.auth/subject,Path(CONNINFO),{s:(30,2,30000) for s in (subject,'other-'+subject)})
@@ -34,13 +34,15 @@ class Fixture:
         for identity in self.host.subjects:dev_auth.activate_travel(Path(CONNINFO),identity,self.host.profiles[identity][1],ABI)
         self.subject=subject;self.scope=scope_for(ISSUER,subject);self.auth=self.host.auth
         self.headers=self.host.headers[subject];self.context=self.host.profiles[subject][1]
-        app,outcome,db=self.plan(subject)
-        with TestClient(app) as client:
-            response=self.post(client,subject,self.action(subject,outcome,'accept'))
-            case.assertEqual(response.status_code,200,response.text)
-            self.trip_id=response.json()['receipt']['trip_id']
-            value=client.get('/v4/trip-structured',params=dict(trip_id=self.trip_id),headers=self.headers).json()['trip']
-            self.trip=Trip(self.trip_id,value['version'],packed(value['content']))
+        if legacy:self.trip=self.legacy_source()
+        else:
+            app,outcome,db=self.plan(subject)
+            with TestClient(app) as client:
+                response=self.post(client,subject,self.action(subject,outcome,'accept'))
+                case.assertEqual(response.status_code,200,response.text)
+                self.trip_id=response.json()['receipt']['trip_id']
+                value=client.get('/v4/trip-structured',params=dict(trip_id=self.trip_id),headers=self.headers).json()['trip']
+                self.trip=Trip(self.trip_id,value['version'],packed(value['content']))
         with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
             def create(label):
                 response=client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id=label,
@@ -75,6 +77,26 @@ class Fixture:
         self.app=create_local_app(conninfo_path=CONNINFO,auth_dir=self.auth,run_context=self.context,travel_context=True,
             edit_configuration=self.configuration,history_configuration=load_history_configuration(self.auth))
 
+    def legacy_source(self):
+        from cj_trip.postgres import Repository as TripRepository
+        from cj_trip.domain import Proposal
+        from cj_agent.draft import trip_scope_for
+        from trip_message_pg import document
+        import time
+        db=LocalDatabase(CONNINFO,run_context=self.context,travel_context=True)
+        db.provision(self.scope)
+        repository=TripRepository(lambda:db.connect(self.scope),trip_scope_for(self.scope),self.signer,structured=True)
+        content=document();content['items'][0]['fixed']=dict(state='known',value=False)
+        # This fixture source uses the actual sole Proposal/Signer/act writer,
+        # never a raw Trip INSERT. Scoped generation itself uses the real worker.
+        p=Proposal('fixture-structured-one','formal-one',0,'fixture-explicit.1',int(time.time())+600,packed(content))
+        repository.publish(p);detail=repository.proposal_detail(p.proposal_id)
+        action=self.signer.issue(repository.scope,detail,action_id='accept-fixture-source',kind='accept',candidate_hash=detail.candidate_hash).action
+        repository.act(action);self.trip_id=p.trip_id
+        self.setup_source(self.subject)
+        self.worker(self.subject,original.source_fixture.PlanModel())[0].process()
+        return repository.detail(self.trip_id)
+
     def send(self,key,*,intent='propose_scoped_edit',namespace=None,trip=None,code=200):
         import hashlib
         with TestClient(self.app) as client:
@@ -82,7 +104,7 @@ class Fixture:
             self.case.assertEqual(response.status_code,200,response.text);head=response.json()
             raw=packed(dict(version='MESSAGE-send.4',conversation_id=key,message_id=key,text='Make selected item lighter / 本次轻松一点',trip_id=None,
                 creation_intent='none',expected_generation=head['generation'],expected_sequence=0,modification_intent=intent,
-                trip_context=trip or dict(id=self.trip.trip_id,expected_version=self.trip.version,content_sha256=hashlib.sha256(self.trip.content).hexdigest(),day=None,item_ids=['b']),
+                trip_context=trip or dict(id=self.trip.trip_id,expected_version=self.trip.version,content_sha256=hashlib.sha256(self.trip.content).hexdigest(),day=None,item_ids=[json.loads(self.trip.content)['items'][-1]['id']]),
                 travel_context=namespace or dict(id=self.namespace['id'],expected_version=1),needs_reference=None if intent=='none' else dict(id='visit',expected_version=1)))
             response=client.post('/v4/messages',content=raw,headers={**self.headers,'Content-Type':'application/octet-stream'})
             self.case.assertEqual(response.status_code,code,response.text)

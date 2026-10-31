@@ -20,6 +20,7 @@ class Repository:
         self.manual_origin = None
         self.needs_actions = None
         self.needs_edits = None
+        self.scoped_actions = None
 
     @contextmanager
     def transaction(self, before_commit=None):
@@ -168,6 +169,27 @@ class Repository:
         cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', ('accepted' if action.kind == 'accept' else 'rejected',self.scope,p.proposal_id))
         cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
         return receipt, p
+
+    def act_scoped(self,request):
+        if self.scoped_actions is None:raise Denied('actual scoped action host required')
+        return self.scoped_actions.apply(self,request)
+
+    def scoped_receipt(self,action_id):
+        with self.transaction() as cur:
+            cur.execute('SELECT original_action FROM cj_trip_scoped_action WHERE scope=%s AND action_id=%s',(self.scope,identifier(action_id)))
+            row=cur.fetchone()
+            if row is None:return None
+            receipt=self._receipt(cur,action_id)
+            if receipt is None or receipt[1]!=bytes(row[0]):raise Denied('original scoped receipt inconsistent')
+            return receipt[0]
+
+    def scoped_detail(self,proposal_id):
+        with self.transaction() as cur:
+            detail=ProposalDetail(*self._proposal(cur,identifier(proposal_id)))
+            cur.execute('SELECT scope_input,diff,report FROM cj_trip_scoped_basis WHERE scope=%s AND proposal_id=%s',(self.scope,proposal_id))
+            row=cur.fetchone()
+            if row is None:raise Denied('original scoped basis unavailable')
+            return detail,tuple(bytes(value) for value in row)
 
     def prepare_needs(self,request):
         if self.needs_edits is None:raise Denied('source-bound editor unconfigured')
