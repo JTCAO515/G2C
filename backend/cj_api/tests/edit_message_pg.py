@@ -189,6 +189,21 @@ def exercise(auth,conninfo):
             harness.expect(legacy.get('/v1/message-history',params=dict(conversation_id='typed-history',limit=1),headers=history_headers),503)
             harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1),headers=headers['bob']),503)
             harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1),headers={'Authorization':'Bearer invalid'}),401)
+            second=json.loads(legacy_raw);second.update(message_id='typed-history-second',text='second original',expected_sequence=1)
+            second_raw=packed(second)+b'\n'
+            harness.expect(legacy.post('/v2/messages',content=second_raw,headers={**history_headers,'Content-Type':'application/octet-stream'}))
+            first_page=harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1),headers=history_headers))
+            assert first_page['next_cursor'] and base64.b64decode(first_page['messages'][0]['original_utf8_base64'])==legacy_raw
+            next_page=harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1,cursor=first_page['next_cursor']),headers=history_headers))
+            assert next_page['next_cursor'] is None and base64.b64decode(next_page['messages'][0]['original_utf8_base64'])==second_raw
+            historical_model=FakeProvider();assert run_worker.run_once(olddb,historical_model,auth)[0].status=='completed' and historical_model.calls==1
+            harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1,cursor=first_page['next_cursor']),headers=headers['bob']),409)
+            # Real persisted corruption must withhold history, not omit the reference.
+            with psycopg.connect(**cfg) as admin:
+                admin.execute('UPDATE cj_message_travel_reference SET input_sha256=%s WHERE scope=%s AND message_id=%s',('0'*64,scope_for(ISSUER,'history'),'typed-history'))
+            harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1),headers=history_headers),503)
+            with psycopg.connect(**cfg) as admin:
+                admin.execute('UPDATE cj_message_travel_reference SET input_sha256=%s WHERE scope=%s AND message_id=%s',(hashlib.sha256(legacy_raw).hexdigest(),scope_for(ISSUER,'history'),'typed-history'))
         print('PASS327 supported history.2 exact original send.2 bytes/hash/text/reference via signed API/runtime PG/formal worker; v1 refusal and owner/auth preserved')
         # Boundary refusals do not issue receipts or create a second exit.
         send('foreign',subject='bob',code=503)
