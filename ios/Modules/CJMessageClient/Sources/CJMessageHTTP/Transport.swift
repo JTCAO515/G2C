@@ -44,6 +44,7 @@ struct CheckedTransport: ClientTransport {
               (operationID == "receiveTripDiscussionV3" && request.method == .post && request.path == "/v3/messages") ||
               (operationID == "readTripDiscussionStatusV3" && request.method == .get && request.path?.hasPrefix("/v3/message-send-status?") == true) ||
               (operationID == "readTripDiscussionHistoryV2" && request.method == .get && request.path?.hasPrefix("/v2/message-history?") == true) ||
+              (operationID == Operations.openConversation.id && request.method == .put && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == "readMessageHistory" && request.method == .get && request.path?.hasPrefix("/v1/message-history?") == true) ||
@@ -304,6 +305,27 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         guard let messages, messages.wire == .discussion, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
         try messages.validate()
     }
+    /// The ordinary send() entry stays closed to PUT. Only the client's sealed,
+    /// once-staged work may enter this original-operation exit.
+    func sendConversationOpening(_ request:HTTPRequest,body:HTTPBody?,baseURL:URL,operationID:String,
+        validateOriginal:@escaping @MainActor @Sendable () throws -> Void) async throws -> (HTTPResponse,HTTPBody?) {
+        guard let messages,messages.wire == .discussion,baseURL==messages.endpoint.url,
+              operationID==Operations.openConversation.id,request.method == .put,body==nil,
+              request.scheme==nil,request.authority==nil,
+              !request.headerFields.contains(where:{ $0.name.canonicalName=="host" }),
+              let path=request.path,path.hasPrefix("/v1/conversations?"),let parts=URLComponents(string:path),parts.path=="/v1/conversations",
+              parts.scheme==nil,parts.host==nil,parts.fragment==nil,
+              let query=parts.queryItems,query.count==1,query[0].name=="conversation_id",
+              let id=query[0].value,id.hasPrefix("discussion."),
+              UUID(uuidString:String(id.dropFirst("discussion.".count)))?.uuidString==String(id.dropFirst("discussion.".count)) else { throw MessageHTTPFailure.productionActivationUnavailable }
+        try await messages.validate();try await validateOriginal();try Task.checkCancellation()
+        let (response,body)=try await transport.send(request,body:nil,baseURL:baseURL,operationID:operationID)
+        try await messages.validate();try await validateOriginal();try Task.checkCancellation()
+        guard !(300..<400).contains(response.status.code),let body else { throw MessageHTTPFailure.invalidResponse }
+        let raw=try await Data(collecting:body,upTo:messages.endpoint.maximumResponseBytes)
+        try await messages.validate();try await validateOriginal();try Task.checkCancellation()
+        return (response,HTTPBody(raw))
+    }
 
     deinit { session?.invalidateAndCancel() }
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
@@ -423,6 +445,7 @@ public enum MessageHTTPOutcome: Sendable {
     var travelSendPermitState = SendPermitState()
     var tripDiscussionPermitState = SendPermitState()
     var tripDiscussionSources:[Data:MessageTripContent]=[:]
+    let conversationOpeningOwner=UUID()
     private let readOwner = UUID()
     /// Test seam only: caller must supply a non-network interceptor, never a live transport.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,

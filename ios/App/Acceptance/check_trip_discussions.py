@@ -12,7 +12,7 @@ from urllib.parse import parse_qs,urlparse
 
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.discussions.acceptance'
-CASES=['testUnboundEnglish','testUnboundChineseLarge','testMemoryUpgradeRefused']
+CASES=['testUnboundEnglish','testUnboundChineseLarge','testMemoryUpgradeRefused','testNewChatEnglish','testNewChatChineseLarge','testNewChatUnknownReopen']
 sys.path.insert(0,str(ROOT/'scripts'))
 
 
@@ -71,6 +71,7 @@ def main():
                 original_app=app_from_environment()
                 with TestClient(original_app) as client:
                     for case,row in subjects.items():
+                        if case.startswith('testNewChat'):continue # the actual App must create these chats
                         for key in row:
                             response=client.put('/v1/conversations',params={'conversation_id':case},headers={'Authorization':'Bearer '+tokens[case][key]});assert response.status_code==200
                     memory_command=dict(operation_id='synthetic-memory',item_id='synthetic-retained-memory',subject='self',slot='fact',kind='fact',
@@ -92,11 +93,16 @@ def main():
                 for target in (os.environ,env):target.update(CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1',CJ_LOCAL_TRIP_CONTEXT='message-trip.1')
                 app=app_from_environment();database=LocalDatabase(connection,run_context=context,travel_context=True,trip_context=True)
                 models={case:FakeProvider() for case in CASES};outcomes={case:[] for case in CASES};active=[None];audit=[];worker_errors=[];stop=threading.Event()
+                conversations={case:case for case in CASES};lost_openings=set()
                 async def observed(scope,receive,send):
                     if scope['type']!='http':return await app(scope,receive,send)
                     authorization=dict(scope['headers']).get(b'authorization',b'').decode()
                     case=next((case for case,row in tokens.items() if any(authorization=='Bearer '+value for value in row.values())),None)
                     event=dict(case=case,method=scope['method'],path=scope['path']);audit.append(event);body=bytearray()
+                    if case and scope['method']=='PUT' and scope['path']=='/v1/conversations':
+                        query=parse_qs(scope['query_string'].decode('ascii'));assert set(query)=={'conversation_id'} and len(query['conversation_id'])==1
+                        cid=query['conversation_id'][0];assert cid.startswith('discussion.') and str(uuid.UUID(cid.removeprefix('discussion.'))).upper()==cid.removeprefix('discussion.')
+                        event['conversation_id']=cid;conversations[case]=cid
                     async def inspected():
                         value=await receive()
                         if value['type']=='http.request':body.extend(value.get('body',b''))
@@ -104,6 +110,9 @@ def main():
                         return value
                     async def captured(value):
                         if value['type']=='http.response.start':event['status']=value['status']
+                        if case=='testNewChatUnknownReopen' and event['method']=='PUT' and event['path']=='/v1/conversations' and value['type']=='http.response.body' and not value.get('more_body',False) and event.get('status')==200 and case not in lost_openings:
+                            lost_openings.add(case);event['ack_lost_after_200']=True
+                            raise ConnectionResetError('local transport ACK loss after actual successful chat commit')
                         await send(value)
                     await app(scope,inspected,captured)
                 server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='critical'))
@@ -124,13 +133,15 @@ def main():
                 worker_thread=threading.Thread(target=worker,daemon=True);worker_thread.start()
                 def proof(case):
                     scope=scope_for(ISSUER,subjects[case]['A'])
+                    cid=conversations[case]
                     with database.connect(scope) as conn:
                         role=conn.execute('SELECT current_user').fetchone()[0]
-                        rows=conn.execute('SELECT message_id,raw_input,run_id FROM cj_message_receipt WHERE conversation_id=%s ORDER BY sequence',(case,)).fetchall()
+                        rows=conn.execute('SELECT message_id,raw_input,run_id FROM cj_message_receipt WHERE conversation_id=%s ORDER BY sequence',(cid,)).fetchall()
+                        chats=conn.execute('SELECT conversation_id,generation,last_sequence FROM cj_message_chat WHERE active').fetchall()
                         pending=conn.execute('SELECT count(*) FROM cj_message_delivery WHERE NOT acknowledged').fetchone()[0]
                         memory=conn.execute('SELECT item_id,version FROM cj_memory_item').fetchall()
                         profile=conn.execute('SELECT version FROM cj_message_trip_profile WHERE scope=%s',(scope,)).fetchone()
-                        operations=conn.execute('SELECT o.operation_key,o.registration_id FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(case,)).fetchall()
+                        operations=conn.execute('SELECT o.operation_key,o.registration_id FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(cid,)).fetchall()
                     report.setdefault('observations',{})[case]=dict(runtime_role=role,pending=pending,messages=len(rows),memory_items=len(memory),trip_profile=profile[0] if profile else None,model_calls=models[case].calls,registered_operations=len(operations))
                     report['observed_requests']=list(audit);report['worker_outcomes']=dict(outcomes);save()
                     status=None;text='';reference=None
@@ -151,12 +162,17 @@ def main():
                             assert item.json()['item']['command']['text']==memory_command['text']
                     else:assert not memory and profile==('message-trip.1',)
                     events=[x for x in audit if x['case']==case];posts=[x for x in events if x['method']=='POST' and x['path']=='/v3/messages']
-                    forbidden=[x for x in events if x['method'] not in ('GET','HEAD') and not (x['method']=='POST' and x['path']=='/v3/messages')]
+                    openings=[x for x in events if x['method']=='PUT' and x['path']=='/v1/conversations']
+                    forbidden=[x for x in events if x['method'] not in ('GET','HEAD') and not (x['method']=='POST' and x['path']=='/v3/messages') and not (case.startswith('testNewChat') and x['method']=='PUT' and x['path']=='/v1/conversations')]
+                    if case.startswith('testNewChat'):
+                        assert len(chats)<=1 and all(chat[0]==cid for chat in chats)
+                        assert len(openings)<=1 and all(event.get('status')==200 for event in openings)
                     hashes=[hashlib.sha256(bytes(row[1])).hexdigest() for row in rows]
                     if rows:assert [x['input_sha256'] for x in posts]==hashes
                     value=dict(runtime_role=role,pending=pending,status=status,text=text,reference=reference,messages=len(rows),posts=len(posts),model_calls=models[case].calls,
                         memory_items=len(memory),trip_profile=profile[0] if profile else None,upgrade_refused=case=='testMemoryUpgradeRefused',
-                        forbidden_writes=len(forbidden),registered_operations=len(operations),input_hashes=hashes,post_statuses=[event['status'] for event in posts],worker_errors=worker_errors)
+                        forbidden_writes=len(forbidden),registered_operations=len(operations),input_hashes=hashes,post_statuses=[event['status'] for event in posts],worker_errors=worker_errors,
+                        conversation_id=cid,chat_count=len(chats),opening_requests=len(openings),opening_ack_losses=sum(bool(event.get('ack_lost_after_200')) for event in openings))
                     report.setdefault('proofs',{})[case]=value;save();return value
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
@@ -215,6 +231,9 @@ def main():
                             assert verified['messages']==verified['model_calls']==verified['registered_operations']==0 and verified['memory_items']==1
                             assert verified['posts']==1 and verified['post_statuses']==[503]
                         else:assert verified['messages']==verified['posts']==verified['model_calls']==verified['registered_operations']==1
+                        if case.startswith('testNewChat'):
+                            assert verified['chat_count']==verified['opening_requests']==1
+                            assert verified['opening_ack_losses']==(1 if case=='testNewChatUnknownReopen' else 0)
                         report['cases'][case]='PASS';save()
                     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
                     private_tokens=[token.encode() for row in tokens.values() for token in row.values()]

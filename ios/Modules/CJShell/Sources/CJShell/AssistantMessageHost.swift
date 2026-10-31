@@ -86,6 +86,18 @@ public struct MessageDiscussionRefusal {
     public let status:Int
     public let code:String
 }
+public enum DiscussionConversationState {
+    case idle,working(String),unknown(String),available(String),rejected(String,Int)
+}
+@MainActor public struct DiscussionConversationIntent {
+    fileprivate enum Kind { case create,query(String),select(String) }
+    fileprivate let kind:Kind
+    fileprivate let owner:UUID
+    fileprivate let generation:ShellGeneration
+    fileprivate let choice:UUID
+    fileprivate let selection:UUID
+    fileprivate let draft:UUID
+}
 
 @MainActor public struct MessageResubmissionContext: Identifiable {
     public let id = UUID()
@@ -114,6 +126,9 @@ public struct MessageDiscussionRefusal {
     private var discussionChoiceMade=false
     private var discussionRevision=UUID()
     private var storedDiscussionRefusal:MessageDiscussionRefusal?
+    private let conversationIntentOwner=UUID()
+    private var conversationTask=UUID()
+    private var storedConversationState:DiscussionConversationState = .idle
     public var creationIntent: MessageCreationIntent = .none
     public var isBusy: Bool { activity == .preparing || activity == .sending || activity == .querying }
     public var selectedConversation: String? { bindingIsCurrent ? selectedConversationID : nil }
@@ -121,6 +136,89 @@ public struct MessageDiscussionRefusal {
     public var supportsSending: Bool { bindingIsCurrent && binding?.sendClient != nil }
     public var supportsTripDiscussions:Bool { bindingIsCurrent && binding?.tripDiscussions == true }
     public var discussionRefusal:MessageDiscussionRefusal? { bindingIsCurrent ? storedDiscussionRefusal : nil }
+    public var conversationState:DiscussionConversationState { bindingIsCurrent ? storedConversationState : .idle }
+    public var hasUnassignedDraft:Bool { bindingIsCurrent && selectedConversationID==nil && !shell.draft.isEmpty }
+    public var conversationOpenings:[ConversationOpeningRecord] {
+        guard bindingIsCurrent,let binding else { return [] }
+        do { return try binding.recovery.conversationOpenings(lease:binding.lease) } catch { return [] }
+    }
+    public func captureNewConversationIntent() -> DiscussionConversationIntent? {
+        guard supportsTripDiscussions,!isBusy,creationIntent == .none,
+              selectedConversationID != nil || shell.draft.isEmpty,let binding else { return nil }
+        do {
+            _=try capturedDiscussion()
+            guard try !binding.recovery.conversationOpenings(lease:binding.lease).contains(where:{ $0.phase == .queryRequired }),
+                  isSameBinding(binding),bindingIsCurrent,isSameBinding(binding) else { return nil }
+            return conversationIntent(.create)
+        } catch { return nil }
+    }
+    public func captureConversationQuery(id:String) -> DiscussionConversationIntent? {
+        guard supportsTripDiscussions,!isBusy,conversationOpenings.contains(where:{ Data($0.conversationID.utf8)==Data(id.utf8) }) else { return nil }
+        return conversationIntent(.query(id))
+    }
+    public func captureConversationSelection(id:String) -> DiscussionConversationIntent? {
+        guard supportsTripDiscussions,!isBusy else { return nil }
+        let known:Bool
+        if case .available(let current)=storedConversationState,Data(current.utf8)==Data(id.utf8) { known=true }
+        else { known=conversationOpenings.contains(where:{ $0.phase == .available && Data($0.conversationID.utf8)==Data(id.utf8) }) }
+        return known ? conversationIntent(.select(id)) : nil
+    }
+    private func conversationIntent(_ kind:DiscussionConversationIntent.Kind) -> DiscussionConversationIntent {
+        .init(kind:kind,owner:conversationIntentOwner,generation:shell.generation,choice:discussionRevision,selection:runSelectionRevision,draft:shell.draftRevision)
+    }
+    private func currentConversationIntent(_ value:DiscussionConversationIntent) -> Bool {
+        value.owner==conversationIntentOwner && value.generation==shell.generation && value.choice==discussionRevision &&
+        value.selection==runSelectionRevision && value.draft==shell.draftRevision
+    }
+    /// The rendered choice is pinned before a Task. New chats begin with an
+    /// empty draft; text from an earlier conversation stays under its old ID.
+    public func performConversationIntent(_ intent:DiscussionConversationIntent) {
+        guard currentConversationIntent(intent),supportsTripDiscussions,!isBusy,currentConversationIntent(intent),let binding,let client=binding.sendClient else { return }
+        if case .select(let id)=intent.kind { _=selectConversationForSending(id);return }
+        do {
+            let work:DiscussionConversationWork,creating:Bool
+            switch intent.kind {
+            case .create:
+                guard captureNewConversationIntent() != nil,currentConversationIntent(intent) else { return }
+                if let previous=selectedConversationID { try binding.recovery.saveDraft(Data(shell.draft.utf8),conversationID:previous,lease:binding.lease) }
+                guard currentConversationIntent(intent),isSameBinding(binding),bindingIsCurrent,isSameBinding(binding) else { return }
+                work=try client.prepareNewDiscussionConversation(lease:binding.lease);creating=true
+            case .query(let id):work=try client.prepareDiscussionConversationQuery(id:id,lease:binding.lease);creating=false
+            case .select:return
+            }
+            guard currentConversationIntent(intent),isSameBinding(binding),bindingIsCurrent,isSameBinding(binding) else { return }
+            if creating {
+                retireRunSelection();selectedConversationID=work.conversationID;selectedMessageID=nil;record=nil
+                shell.draft="";storedDraftBytes=Data()
+            }
+            projection=try binding.recovery.localProjection(scope:binding.scope,lease:binding.lease)
+            let token=UUID();conversationTask=token;storedConversationState = .working(work.conversationID)
+            activity=creating ? .preparing : .querying
+            task=Task { [weak self] in
+                do {
+                    let outcome=try await client.performDiscussionConversation(work)
+                    guard let self,self.conversationTask==token,self.isSameBinding(binding),self.bindingIsCurrent,self.isSameBinding(binding),self.conversationTask==token else { return }
+                    switch outcome {
+                    case .available(let id):
+                        self.storedConversationState = .available(id)
+                    case .unknown:self.storedConversationState = .unknown(work.conversationID)
+                    case .rejected(let status,_):self.storedConversationState = .rejected(work.conversationID,status)
+                    }
+                    guard self.conversationTask==token,self.isSameBinding(binding) else { return }
+                    self.task=nil;self.activity = .ready
+                    guard self.conversationTask==token,self.isSameBinding(binding),self.bindingIsCurrent,self.isSameBinding(binding),self.conversationTask==token else { return }
+                    if creating,case .available(let id)=outcome { _=self.selectConversationForSending(id) }
+                } catch {
+                    guard let self,self.conversationTask==token,self.isSameBinding(binding) else { return }
+                    guard self.bindingIsCurrent else { self.blockStorage(for:binding);return }
+                    guard self.isSameBinding(binding),self.conversationTask==token else { return }
+                    self.storedConversationState = .unknown(work.conversationID)
+                    guard self.isSameBinding(binding),self.conversationTask==token else { return }
+                    self.task=nil;self.activity = .ready
+                }
+            }
+        } catch { blockStorage(for:binding) }
+    }
     public var tripDiscussionChoice:TripDiscussionChoiceDisplay {
         guard supportsTripDiscussions else { return .unavailable }
         guard discussionChoiceMade else { return .unselected }
@@ -280,6 +378,7 @@ public struct MessageDiscussionRefusal {
     }
 
     private func retireRunSelection() {
+        conversationTask=UUID()
         runSelectionRevision = UUID(); runSelectionAllowed = false
         shell.runContainerHost?.retireSelection()
         shell.originalUsageContainerHost?.retireSelection()
@@ -582,6 +681,7 @@ public struct MessageDiscussionRefusal {
         binding = nil; record = nil; projection = nil; storedDraftBytes = nil
         selectedConversationID = nil; selectedMessageID = nil
         discussionEntry=nil;discussionChoiceMade=false;discussionRevision=UUID();storedDiscussionRefusal=nil
+        conversationTask=UUID();storedConversationState = .idle
         creationIntent = .none
         retireRunSelection()
         task?.cancel(); task = nil

@@ -16,6 +16,8 @@ import Foundation
         let text:String
         let upgrade_refused:Bool
         let post_statuses:[Int]
+        let conversation_id:String
+        let chat_count,opening_requests,opening_ack_losses:Int
     }
     private func call(_ path:String,caseID:String) async throws -> Data {
         var url=URLComponents(string:control+path)!
@@ -60,6 +62,7 @@ import Foundation
         let target:XCUIElement
         if ["Assistant","助手","Memory","记忆","Trips","行程"].contains(id) { target=app.tabBars.buttons.matching(identifier:id).firstMatch }
         else if id=="assistant.panel.done" { target=app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        else if id=="assistant.history" { target=app.buttons.matching(identifier:id).firstMatch }
         else if ["Done","完成"].contains(id) { target=app.toolbars.buttons.matching(identifier:id).firstMatch }
         else { target=visible({app.buttons.matching(identifier:id).firstMatch},id:id) }
         XCTAssertTrue(target.waitForExistence(timeout:15),id)
@@ -81,14 +84,16 @@ import Foundation
         try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print(name,issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
         XCTAssertEqual(issues,0)
     }
-    private func launch(_ f:Fixture,language:String,large:Bool=false) throws {
+    private func launch(_ f:Fixture,language:String,large:Bool=false,restore:Bool=false) throws {
         app?.terminate();app=XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments=["-cj.ui.language.v1",language]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
-            "G2C_DEV_ACCOUNTS":String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-discussion-v1"]
+            "G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-discussion-v1"]
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
-        tap(language=="en" ? "Memory" : "记忆");tap("memory.account");tap("account.development.signout");tap("account.development.signin.A")
+        tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
+        if restore { tap("account.development.restore") }
+        else { tap("account.development.signout");tap("account.development.signin.A") }
         text("account.development.status",contains:try XCTUnwrap(f.subjects["A"]))
         tap(language=="en" ? "Assistant" : "助手")
     }
@@ -100,16 +105,24 @@ import Foundation
             let multiline=app.textViews.matching(identifier:"assistant.draft").firstMatch
             return multiline.exists ? multiline : app.textFields.matching(identifier:"assistant.draft").firstMatch
         },id:"assistant.draft")
+        let enabled=XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true AND hittable == true"),object:field)
+        XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,"Current editor must be enabled")
         field.tap();field.typeText(value);XCTAssertEqual(field.value as? String,value)
         let done=app.toolbars.buttons.matching(identifier:language=="en" ? "Done" : "完成").firstMatch
         if done.exists { done.tap() }
     }
-    private func unbound(_ name:String,language:String,large:Bool=false) async throws {
+    private func unbound(_ name:String,language:String,large:Bool=false,newChat:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
-        try launch(f,language:language,large:large);conversation(f)
+        try launch(f,language:language,large:large)
+        if !newChat { conversation(f) }
         text("assistant.trip.choice",contains:language=="en" ? "Choose a Trip" : "请选择行程或明确不绑定")
         text("assistant.trip.noAutomatic",contains:language=="en" ? "No latest Trip" : "不会自动选择最近行程")
         tap("assistant.trip.none")
+        if newChat {
+            let before=try JSONDecoder().decode(Proof.self,from:await call("/proof",caseID:name))
+            XCTAssertEqual(before.chat_count,0);XCTAssertEqual(before.opening_requests,0)
+            tap("assistant.chat.new");text("assistant.chat.status",contains:language=="en" ? "Original chat is available" : "原聊天已可读取")
+        }
         text("assistant.trip.choice",contains:language=="en" ? "Explicitly no formal Trip" : "已明确不绑定正式行程")
         XCTAssertFalse(app.switches.matching(identifier:"assistant.intent").firstMatch.exists)
         enter(language=="en" ? "SYNTHETIC which Trip is this?" : "SYNTHETIC 这是哪一份行程？",language:language)
@@ -118,6 +131,11 @@ import Foundation
         XCTAssertEqual(proof.runtime_role,"cj_m1_runtime");XCTAssertEqual(proof.pending,0)
         XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.posts,1);XCTAssertEqual(proof.model_calls,1);XCTAssertEqual(proof.registered_operations,1)
         XCTAssertEqual(proof.memory_items,0);XCTAssertEqual(proof.forbidden_writes,0)
+        if newChat {
+            XCTAssertEqual(proof.chat_count,1);XCTAssertEqual(proof.opening_requests,1);XCTAssertEqual(proof.opening_ack_losses,0)
+            XCTAssertTrue(proof.conversation_id.hasPrefix("discussion."))
+            XCTAssertTrue(app.staticTexts.matching(identifier:"assistant.conversation").firstMatch.label.contains(proof.conversation_id))
+        }
         let expected=language=="en" ? "Please explicitly select a formal Trip, local date or item." : "请明确选择正式行程、当地日期或条目。"
         XCTAssertEqual(proof.text,expected)
         tap("run.snapshot.read");text("run.display.status",contains:language=="en" ? "Completed" : "已完成")
@@ -126,6 +144,26 @@ import Foundation
     }
     func testUnboundEnglish() async throws { try await unbound("testUnboundEnglish",language:"en") }
     func testUnboundChineseLarge() async throws { try await unbound("testUnboundChineseLarge",language:"zh-Hans",large:true) }
+    func testNewChatEnglish() async throws { try await unbound("testNewChatEnglish",language:"en",newChat:true) }
+    func testNewChatChineseLarge() async throws { try await unbound("testNewChatChineseLarge",language:"zh-Hans",large:true,newChat:true) }
+    func testNewChatUnknownReopen() async throws {
+        let f=try await prepare("testNewChatUnknownReopen");defer { app?.terminate() }
+        try launch(f,language:"en");tap("assistant.trip.none");tap("assistant.chat.new")
+        text("assistant.chat.status",contains:"Original chat result unknown")
+        let before=try JSONDecoder().decode(Proof.self,from:await call("/proof",caseID:f.case_id))
+        XCTAssertEqual(before.chat_count,1);XCTAssertEqual(before.opening_requests,1);XCTAssertEqual(before.opening_ack_losses,1)
+        XCTAssertEqual(before.messages,0);XCTAssertEqual(before.model_calls,0)
+        try launch(f,language:"en",restore:true);tap("assistant.trip.none")
+        XCTAssertFalse(app.buttons.matching(identifier:"assistant.chat.new").firstMatch.isEnabled)
+        tap("assistant.history");tap("conversation.query."+before.conversation_id)
+        tap("conversation.select."+before.conversation_id);tap("assistant.panel.done")
+        enter("SYNTHETIC which Trip is this?",language:"en");tap("assistant.send")
+        let after=try JSONDecoder().decode(Proof.self,from:await call("/wait-completed",caseID:f.case_id))
+        XCTAssertEqual(after.conversation_id,before.conversation_id);XCTAssertEqual(after.chat_count,1);XCTAssertEqual(after.opening_requests,1)
+        XCTAssertEqual(after.messages,1);XCTAssertEqual(after.model_calls,1);XCTAssertEqual(after.registered_operations,1);XCTAssertEqual(after.forbidden_writes,0)
+        tap("run.snapshot.read");text("run.display.text",contains:"Please explicitly select a formal Trip")
+        capture("original-new-chat-reconciled");try audit("original-new-chat-reconciled")
+    }
     func testMemoryUpgradeRefused() async throws {
         let f=try await prepare("testMemoryUpgradeRefused");defer { app?.terminate() }
         try launch(f,language:"en");conversation(f)

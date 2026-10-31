@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJMessageClient
+import CJRunClient
 
 private extension LocalActionReference { var byteIdentity: Data { Data(messageID.utf8) } }
 private extension LocalDraftReference { var byteIdentity: Data { Data(conversationID.utf8) } }
@@ -39,6 +40,22 @@ struct LocalRecoveryList: View {
                             .accessibilityIdentifier("recovery.action." + reference.messageID)
                     }
                 }
+                if host.supportsTripDiscussions {
+                    Section(language.text("Original new-chat requests","原新聊天请求")) {
+                        ForEach(host.conversationOpenings.sorted { Data($0.conversationID.utf8).lexicographicallyPrecedes(Data($1.conversationID.utf8)) },id:\.conversationID) { record in
+                            let query=host.captureConversationQuery(id:record.conversationID)
+                            let selection=host.captureConversationSelection(id:record.conversationID)
+                            VStack(alignment:.leading,spacing:8) {
+                                RunSelectableText(text:record.conversationID)
+                                RunReadableText(text:openingPhase(record.phase),style:.caption)
+                                Button(language.text("Check original chat","核对原聊天")) { if let query { host.performConversationIntent(query) } }
+                                    .disabled(query==nil).accessibilityIdentifier("conversation.query."+record.conversationID)
+                                Button(language.text("Select this chat","选择此聊天")) { if let selection { host.performConversationIntent(selection) } }
+                                    .disabled(selection==nil).accessibilityIdentifier("conversation.select."+record.conversationID)
+                            }
+                        }
+                    }
+                }
             } else {
                 Text(language.text("Local recovery is unavailable or not configured.", "本地恢复不可用或尚未配置。"))
             }
@@ -64,6 +81,13 @@ struct LocalRecoveryList: View {
         case .notAccepted: language.text("Original request will no longer be accepted", "原请求不会再被接受")
         case .integrityError: language.text("Integrity mismatch — sending stopped", "完整性不一致，已停止发送")
         case .resyncRequired: language.text("Resynchronization required — sending stopped", "需要重新同步，已停止发送")
+        }
+    }
+    private func openingPhase(_ value:ConversationOpeningPhase) -> String {
+        switch value {
+        case .queryRequired:language.text("Original result unknown — query only","原结果未知——仅可查询")
+        case .available:language.text("Historical chat availability recorded; sending still needs a fresh read","已记录历史可读结果；发送仍需新读取")
+        case .failed:language.text("Original request failed; retained for reconciliation","原请求失败，保留以供核对")
         }
     }
 }

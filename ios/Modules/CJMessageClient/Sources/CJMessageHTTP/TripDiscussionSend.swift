@@ -68,6 +68,7 @@ extension MessageHTTPClient {
         try checkDiscussionLease(lease)
         let conversation = Data(conversationID.utf8)
         guard let head = tripDiscussionPermitState.heads[conversation], head.last_sequence < Int64.max else { return nil }
+        guard try !recovery.conversationOpenings(lease:lease).contains(where:{ Data($0.conversationID.utf8)==conversation && $0.phase == .queryRequired }) else { return nil }
         let projection = try recovery.localProjection(scope: scope, lease: lease)
         for reference in projection.actions where reference.phase != .accepted {
             guard let record = try recovery.action(messageID: reference.messageID, lease: lease) else { throw RecoveryError.staleOperation }

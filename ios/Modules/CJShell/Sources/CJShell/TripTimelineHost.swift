@@ -32,6 +32,12 @@ import CJMessageHTTP
     fileprivate let payload: Payload
 }
 public enum TripTimelineLoadState: Sendable { case idle,loading,loaded,missing,unavailable }
+public struct TripTimelineDiscussionContext:Sendable,CustomReflectable {
+    fileprivate let owner:UUID
+    fileprivate let nonce:UUID
+    fileprivate let source:AcceptedStructuredTripSnapshot
+    public var customMirror:Mirror { Mirror(self,children:[:]) }
+}
 public struct TripTimelineDisplay: Sendable {
     public let trips: [StructuredTripSummary]
     public let hasNext: Bool
@@ -39,6 +45,7 @@ public struct TripTimelineDisplay: Sendable {
     public let timeline: TripTimeline?
     public let state: TripTimelineLoadState
     public let busy: Bool
+    public let discussion:TripTimelineDiscussionContext?
 }
 /// Minted by the original Trip container. Uses that same client and original
 /// root/session; no caller DTO, copied binding or new session activates it.
@@ -66,7 +73,8 @@ public struct TripTimelineDisplay: Sendable {
         _=revision;let token=nonce
         do {
             try check(token)
-            let value=TripTimelineDisplay(trips:rows,hasNext:next != nil,record:record,timeline:timeline,state:state,busy:busy)
+            let context=source.map { TripTimelineDiscussionContext(owner:owner,nonce:token,source:$0) }
+            let value=TripTimelineDisplay(trips:rows,hasNext:next != nil,record:record,timeline:timeline,state:state,busy:busy,discussion:context)
             try check(token);return value
         } catch { return nil }
     }
@@ -87,9 +95,10 @@ public struct TripTimelineDisplay: Sendable {
     }
     /// Only explicit rendered choices may cross into the assistant. Day entries
     /// are known start-day groups; an unknown date/zone never acquires a day ID.
-    public func discussion(day: MessageTripSelection.Day?, itemID: String?) throws -> TripDiscussionEntry {
-        let token=nonce;try check(token)
-        guard !busy, let source else { throw TripFailure.invalidInput }
+    public func discussion(context:TripTimelineDiscussionContext?,day: MessageTripSelection.Day?, itemID: String?) throws -> TripDiscussionEntry {
+        guard let context else { throw TripFailure.invalidInput }
+        let token=context.nonce;try check(token)
+        guard context.owner==owner,!busy,let source,source === context.source else { throw TripFailure.staleBinding }
         let value=try client.withCurrentStructuredSnapshot(source) { _,record,_,_ in record };try check(token)
         let candidates=value.document.items.filter { itemID == nil || $0.id == itemID }
         guard !candidates.isEmpty || (itemID == nil && day == nil) else { throw TripFailure.invalidInput }

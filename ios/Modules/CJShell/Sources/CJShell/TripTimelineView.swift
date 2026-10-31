@@ -26,13 +26,13 @@ struct TripTimelineView: View {
                             RunSelectableText(text:record.tripID+" · "+language.text("Read version ","读取版本 ")+String(record.version)).accessibilityIdentifier("timeline.record.version")
                             RunSelectableText(text:record.document.title).accessibilityIdentifier("timeline.record.title")
                             if onDiscuss != nil {
-                                button("timeline.discuss.trip",language.text("Discuss this whole Trip","讨论整个行程"),disabled:display.busy) { discuss(day:nil,itemID:nil) }
+                                button("timeline.discuss.trip",language.text("Discuss this whole Trip","讨论整个行程"),disabled:display.busy) { discuss(context:display.discussion,day:nil,itemID:nil) }
                             }
                             ForEach(timeline.groups) { group in
                                 RunReadableText(text:groupLabel(group),style:.headline).accessibilityIdentifier("timeline.day."+group.id)
                                 if onDiscuss != nil,let date=group.date,let zone=group.timezone {
                                     button("timeline.discuss.day."+group.id,language.text("Discuss this declared day","讨论此声明日期"),disabled:display.busy) {
-                                        do { discuss(day:try MessageTripSelection.Day(date:date,timezone:zone),itemID:nil) }
+                                        do { discuss(context:display.discussion,day:try MessageTripSelection.Day(date:date,timezone:zone),itemID:nil) }
                                         catch { discussionFailed() }
                                     }
                                 }
@@ -48,7 +48,7 @@ struct TripTimelineView: View {
                                                 do {
                                                     let day:MessageTripSelection.Day?
                                                     if let date=group.date,let zone=group.timezone { day=try .init(date:date,timezone:zone) } else { day=nil }
-                                                    discuss(day:day,itemID:entry.id)
+                                                    discuss(context:display.discussion,day:day,itemID:entry.id)
                                                 } catch { discussionFailed() }
                                             }
                                         }
@@ -73,9 +73,9 @@ struct TripTimelineView: View {
         do { let work=try make();issue=nil;Task { await host.perform(work) } }
         catch { issue=language.text("Read unavailable; select the current original account again.","读取不可用，请重新选择当前原账号。") }
     }
-    private func discuss(day:MessageTripSelection.Day?,itemID:String?) {
+    private func discuss(context:TripTimelineDiscussionContext?,day:MessageTripSelection.Day?,itemID:String?) {
         do {
-            let entry=try host.discussion(day:day,itemID:itemID)
+            let entry=try host.discussion(context:context,day:day,itemID:itemID)
             guard onDiscuss?(entry)==true else { discussionFailed();return }
         } catch { discussionFailed() }
     }

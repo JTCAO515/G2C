@@ -57,6 +57,21 @@ public struct LocalActionReference: Sendable {
 public struct LocalDraftReference: Sendable {
     public let conversationID: String
 }
+public enum ConversationOpeningPhase:String,Codable,Sendable { case queryRequired,available,failed }
+public struct ConversationOpeningRecord:Codable,Sendable,Equatable {
+    public let conversationID:String
+    public fileprivate(set) var phase:ConversationOpeningPhase
+    public fileprivate(set) var httpStatus:Int?
+    public fileprivate(set) var responseUTF8:Data?
+}
+/// Process-local work only. Loading a journal cannot recreate a PUT permit.
+public struct ConversationOpeningOperation:Sendable,CustomReflectable {
+    fileprivate let lease:Lease
+    fileprivate let key:String
+    fileprivate let nonce:UUID
+    fileprivate let creation:Bool
+    public var customMirror:Mirror { Mirror(self,children:[:]) }
+}
 
 /// Unordered in-memory projection; not Codable and not valid after a lease change.
 /// Caller must revalidate after every await before display or further local use.
@@ -92,10 +107,12 @@ public struct Snapshot: Codable, Sendable, Equatable {
     var drafts: [String: Data] = [:]
     var draftEdits: [String: UUID] = [:]
     var draftSaves: [String: DraftSaveRecord] = [:]
+    var conversationOpens:[String:ConversationOpeningRecord]=[:]
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.version == rhs.version && byteKeyedEqual(lhs.actions, rhs.actions)
             && byteKeyedEqual(lhs.drafts, rhs.drafts) && byteKeyedEqual(lhs.draftEdits, rhs.draftEdits)
             && byteKeyedEqual(lhs.draftSaves, rhs.draftSaves)
+            && byteKeyedEqual(lhs.conversationOpens,rhs.conversationOpens)
     }
     // Storage keys are normally base64 ASCII. Compare exact bytes even for a malformed
     // injected snapshot; never let Swift canonical equivalence hide a changed binding.
@@ -103,7 +120,7 @@ public struct Snapshot: Codable, Sendable, Equatable {
         Dictionary(uniqueKeysWithValues: lhs.map { (Data($0.key.utf8), $0.value) })
             == Dictionary(uniqueKeysWithValues: rhs.map { (Data($0.key.utf8), $0.value) })
     }
-    enum CodingKeys: String, CodingKey { case version, actions, drafts, draftEdits, draftSaves }
+    enum CodingKeys: String, CodingKey { case version, actions, drafts, draftEdits, draftSaves,conversationOpens }
     init() { }
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -113,6 +130,15 @@ public struct Snapshot: Codable, Sendable, Equatable {
         // Older local snapshots predate any PUT capability; no pending PUT can be lost.
         draftEdits = try c.decodeIfPresent([String:UUID].self, forKey: .draftEdits) ?? [:]
         draftSaves = try c.decodeIfPresent([String:DraftSaveRecord].self, forKey: .draftSaves) ?? [:]
+        conversationOpens=try c.decodeIfPresent([String:ConversationOpeningRecord].self,forKey:.conversationOpens) ?? [:]
+    }
+    public func encode(to encoder:any Encoder) throws {
+        var c=encoder.container(keyedBy:CodingKeys.self)
+        try c.encode(version,forKey:.version);try c.encode(actions,forKey:.actions);try c.encode(drafts,forKey:.drafts)
+        try c.encode(draftEdits,forKey:.draftEdits);try c.encode(draftSaves,forKey:.draftSaves)
+        if version==1 {
+            guard conversationOpens.isEmpty else { throw EncodingError.invalidValue(self,.init(codingPath:encoder.codingPath,debugDescription:"Opening metadata requires local snapshot version2")) }
+        } else { try c.encode(conversationOpens,forKey:.conversationOpens) }
     }
 }
 
@@ -155,6 +181,8 @@ public struct Submission: Sendable {
     }
     private var operations: [String: Operation] = [:]
     private var draftOperations: [String: UUID] = [:]
+    private var conversationOperations:[String:UUID]=[:]
+    private var freshConversationOpens:[String:UUID]=[:]
     // Never Codable or stored in Snapshot. Consumed before any storage callback.
     private struct FreshAuthorization {
         let lease: Lease
@@ -175,7 +203,15 @@ public struct Submission: Sendable {
         // A synchronous dependency may activate another account or invalidate us.
         // Check before touching restored data, observed IDs, scope or the new lease.
         guard activationGeneration == requestedGeneration else { throw RecoveryError.inactive }
-        guard restored.version == 1 else { throw RecoveryError.invalidSnapshot }
+        guard (restored.version == 1 && restored.conversationOpens.isEmpty) ||
+                (restored.version == 2 && !restored.conversationOpens.isEmpty) else { throw RecoveryError.invalidSnapshot }
+        for (key,record) in restored.conversationOpens {
+            guard key==Self.key(record.conversationID),Self.newConversationID(record.conversationID),
+                  (record.phase == .queryRequired)==(record.responseUTF8 == nil),
+                  (record.phase == .queryRequired)==(record.httpStatus == nil),
+                  record.responseUTF8.map({ String(data:$0,encoding:.utf8) != nil }) ?? true,
+                  record.httpStatus.map({ record.phase == .available ? $0==200 : (400...599).contains($0) }) ?? true else { throw RecoveryError.invalidSnapshot }
+        }
         for (key, record) in restored.actions {
             guard key == Self.key(record.messageID), !record.messageID.isEmpty,
                   String(data: record.originalUTF8, encoding: .utf8) != nil,
@@ -206,6 +242,7 @@ public struct Submission: Sendable {
     public func invalidate() {
         activationGeneration = UUID()
         lease = nil; scope = nil; snapshot = Snapshot(); memoryRevision = UUID(); writeView = nil; operations = [:]; draftOperations = [:]; fresh = [:]; rearming = []
+        conversationOperations=[:];freshConversationOpens=[:]
     }
 
     public func validateScope(_ expected: StorageScope, lease: Lease) throws {
@@ -244,6 +281,58 @@ public struct Submission: Sendable {
 
     public func draft(conversationID: String, lease: Lease) throws -> Data? {
         try check(lease); return snapshot.drafts[Self.key(conversationID)]
+    }
+    private static func newConversationID(_ value:String) -> Bool {
+        guard value.hasPrefix("discussion.") else { return false }
+        let suffix=String(value.dropFirst("discussion.".count))
+        return UUID(uuidString:suffix)?.uuidString==suffix
+    }
+    public func conversationOpenings(lease:Lease) throws -> [ConversationOpeningRecord] {
+        try check(lease);return Array(snapshot.conversationOpens.values)
+    }
+    /// Only a fresh ID can be staged. Version2 makes old binaries reject this
+    /// journal rather than discard an unresolved opening and mint another one.
+    public func stageConversationOpening(conversationID:String,lease:Lease) throws -> ConversationOpeningOperation {
+        try check(lease)
+        guard Self.newConversationID(conversationID),
+              !mutationSnapshot.conversationOpens.values.contains(where:{ $0.phase == .queryRequired }),
+              mutationSnapshot.conversationOpens[Self.key(conversationID)]==nil else { throw RecoveryError.queryOnly }
+        var next=mutationSnapshot;next.version=2
+        let key=Self.key(conversationID),nonce=UUID()
+        next.conversationOpens[key] = .init(conversationID:conversationID,phase:.queryRequired)
+        guard next.drafts[key]==nil,next.draftSaves[key]==nil else { throw RecoveryError.queryOnly }
+        next.drafts[key]=Data();next.draftEdits[key]=UUID()
+        try persist(next)
+        conversationOperations[key]=nonce;freshConversationOpens[key]=nonce
+        return .init(lease:lease,key:key,nonce:nonce,creation:true)
+    }
+    public func validateConversationOpening(_ operation:ConversationOpeningOperation) throws {
+        try check(operation.lease)
+        guard conversationOperations[operation.key]==operation.nonce else { throw RecoveryError.staleOperation }
+    }
+    public func consumeConversationCreation(_ operation:ConversationOpeningOperation) throws {
+        try validateConversationOpening(operation)
+        guard operation.creation,freshConversationOpens[operation.key]==operation.nonce else { throw RecoveryError.queryOnly }
+        freshConversationOpens.removeValue(forKey:operation.key)
+    }
+    public func beginConversationOpeningQuery(conversationID:String,lease:Lease) throws -> ConversationOpeningOperation {
+        try check(lease)
+        let key=Self.key(conversationID),nonce=UUID()
+        guard snapshot.conversationOpens[key] != nil else { throw RecoveryError.queryOnly }
+        conversationOperations[key]=nonce;freshConversationOpens.removeValue(forKey:key)
+        return .init(lease:lease,key:key,nonce:nonce,creation:false)
+    }
+    /// Transport-validated result only. No bytes from an unavailable/empty read
+    /// can settle the original; UNKNOWN never grants a new PUT.
+    public func observeConversationOpening(_ operation:ConversationOpeningOperation,phase:ConversationOpeningPhase,httpStatus:Int,responseUTF8:Data) throws {
+        try validateConversationOpening(operation)
+        guard freshConversationOpens[operation.key]==nil,phase != .queryRequired,
+              var record=snapshot.conversationOpens[operation.key] else { throw RecoveryError.queryOnly }
+        guard record.phase == .queryRequired else { return } // preserve the original settled proof
+        record.phase=phase;record.httpStatus=httpStatus;record.responseUTF8=responseUTF8
+        var next=mutationSnapshot;next.conversationOpens[operation.key]=record
+        try persist(next);try validateConversationOpening(operation)
+        conversationOperations.removeValue(forKey:operation.key)
     }
 
     /// Caller supplies the once-encoded original body/ID. This does not validate the
