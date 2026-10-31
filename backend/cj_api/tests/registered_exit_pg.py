@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+import re
 import sys
 import time
 from types import SimpleNamespace
@@ -12,7 +13,7 @@ from cj_api.local_app import app_from_environment, LocalDatabase, ISSUER, scope_
 from cj_api.local_run_context import load_run_context
 from cj_api.composition import CompositionUnavailable
 from cj_agent.provider import FakeProvider, ProviderFailed
-from cj_usage.codec import decode
+from cj_usage.codec import decode,CorruptLedger
 from cj_usage.core import Meter
 from cj_usage.postgres import PostgresRepository, CommitUnknown as UsageCommitUnknown
 from cj_run.postgres import CommitUnknown as RunCommitUnknown
@@ -337,7 +338,27 @@ def exercise(auth,conninfo):
     completed=subprocess.run([sys.executable,'-B',str(ROOT/'scripts/run_worker.py'),'--conninfo-json',str(conninfo),
         '--auth-dir',str(auth),'--run-context',str(path),'--once'],env=env,capture_output=True,text=True,timeout=30)
     assert completed.returncode==0,(completed.stdout,completed.stderr)
-    assert 'local_provider_calls=1' in completed.stdout
+    def unicode_cli_evidence():
+        # Failure-only diagnostics: no stdout/stderr, token, scope, message bytes,
+        # private sentinel, operation IDs or provider input/output are published.
+        counts=[int(value) for value in re.findall(r'^local_provider_calls=([0-9]{1,9})$',completed.stdout,re.M)[:4]]
+        cases={}
+        try:
+            with psycopg.connect(**config) as conn:
+                for case in ('high','low','valid'):
+                    subject='unicode-'+case
+                    row=conn.execute('SELECT r.status,d.acknowledged FROM cj_run_record r '
+                        'JOIN cj_message_delivery d ON (d.scope,d.run_id)=(r.scope,r.run_id) '
+                        'WHERE r.scope=%s',(scope_for(ISSUER,subject),)).fetchone()
+                    ledger,operations=saved(subject)
+                    cases[case]=dict(run_status=None if row is None else row[0],
+                        acknowledged=None if row is None else row[1],operations=len(operations),
+                        attempt_states=sorted(attempt.state for attempt in ledger.attempts.values()),
+                        exposure=Meter.exposure(ledger))
+        except (psycopg.Error,CorruptLedger):
+            return dict(expected_calls=1,actual_calls=counts,database_evidence='unavailable')
+        return dict(expected_calls=1,actual_calls=counts,cases=cases)
+    assert 'local_provider_calls=1' in completed.stdout,unicode_cli_evidence()
     assert 'UnicodeEncodeError' not in completed.stderr and 'PRIVATE_UNICODE_SENTINEL' not in completed.stdout+completed.stderr
     with TestClient(app) as client:
         for subject in ('unicode-high','unicode-low'):
