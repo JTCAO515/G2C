@@ -42,22 +42,10 @@ func validateDocument(_ document: Components.Schemas.SourceTripContent, original
     let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
     guard try encoder.encode(decoded) == encoder.encode(document), case .SourceDocumentV1(let sourceDocument) = document,
           !sourceDocument.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-          (1...60).contains(sourceDocument.items.count), sourceDocument.sources.count <= 40 else {
+          (1...60).contains(sourceDocument.items.count) else {
         throw TripFailure.invalidResponse
     }
-    var sources: [String: Components.Schemas.SourceRecordV1] = [:]
-    for source in sourceDocument.sources {
-        guard tripID(source.id), sources[source.id] == nil, !source.reference.isEmpty,
-              !source.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              (source.kind == .message) == (source.evidence_level == .user_statement),
-              let snapshot = Data(base64Encoded: source.snapshot_utf8_base64),
-              snapshot.base64EncodedString() == source.snapshot_utf8_base64,
-              source.snapshot_sha256 == SHA256.hash(data: snapshot).map({ String(format: "%02x", $0) }).joined(),
-              let record = try JSONSerialization.jsonObject(with: snapshot) as? [String: Any],
-              let snapshotText = record["display_text"] as? String, same(snapshotText, source.text) else { throw TripFailure.invalidResponse }
-        var strictSnapshot = StrictTripJSON(bytes: Array(snapshot)); try strictSnapshot.check()
-        sources[source.id] = source
-    }
+    let sources = try validatedTripSources(sourceDocument.sources)
     var ids = Set<Data>(), used = Set<String>()
     for item in sourceDocument.items {
         guard tripID(item.id), ids.insert(Data(item.id.utf8)).inserted,
@@ -80,6 +68,26 @@ func validateDocument(_ document: Components.Schemas.SourceTripContent, original
         }
     }
     guard used == Set(sources.keys) else { throw TripFailure.invalidResponse }
+}
+
+/// Shared source-record boundary for provenance.1 and structured.1/.2.
+/// Source bytes and their display association are data, never edit authority.
+func validatedTripSources(_ records: [Components.Schemas.SourceRecordV1]) throws -> [String: Components.Schemas.SourceRecordV1] {
+    guard records.count <= 40 else { throw TripFailure.invalidResponse }
+    var sources: [String: Components.Schemas.SourceRecordV1] = [:]
+    for source in records {
+        guard tripID(source.id), sources[source.id] == nil, !source.reference.isEmpty,
+              !source.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              (source.kind == .message) == (source.evidence_level == .user_statement),
+              let snapshot = Data(base64Encoded: source.snapshot_utf8_base64),
+              snapshot.base64EncodedString() == source.snapshot_utf8_base64,
+              source.snapshot_sha256 == SHA256.hash(data: snapshot).map({ String(format: "%02x", $0) }).joined(),
+              let record = try JSONSerialization.jsonObject(with: snapshot) as? [String: Any],
+              let snapshotText = record["display_text"] as? String, same(snapshotText, source.text) else { throw TripFailure.invalidResponse }
+        var strictSnapshot = StrictTripJSON(bytes: Array(snapshot)); try strictSnapshot.check()
+        sources[source.id] = source
+    }
+    return sources
 }
 func validateRecord(_ trip: Components.Schemas.SourceTripRecord) throws {
     guard tripID(trip.trip_id), trip.version > 0 else { throw TripFailure.invalidResponse }
