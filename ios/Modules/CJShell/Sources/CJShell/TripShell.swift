@@ -10,6 +10,10 @@ private extension ShellLanguage {
 struct TripShell: View {
     @Bindable var state: ShellState
     let host: TripContainerHost
+    let onClose: (() -> Void)?
+    init(state: ShellState, host: TripContainerHost, onClose: (() -> Void)? = nil) {
+        self.state = state; self.host = host; self.onClose = onClose
+    }
     private enum Sheet: Identifiable {
         case manual(ManualPreviewEntry), timeline(UUID,TripTimelineHost)
         var id: UUID { switch self { case .manual(let value): value.id;case .timeline(let id,_): id } }
@@ -100,6 +104,13 @@ struct TripShell: View {
                 } header: { ShellSectionHeading(title: language.text("Map", "地图")) }
             }
             .navigationTitle(ShellTab.trips.title(language))
+            .toolbar {
+                if let onClose {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(language.text("Done", "完成"), action: onClose).accessibilityIdentifier("trip.browse.done")
+                    }
+                }
+            }
             .sheet(item: $sheet) { value in
                 switch value {
                 case .manual(let entry): ManualPreviewContainerView(host: host, entry: entry, language: language)
