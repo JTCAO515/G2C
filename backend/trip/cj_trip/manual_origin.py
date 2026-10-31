@@ -27,26 +27,9 @@ class ManualOrigin:
             raise Denied('original source configuration unavailable')
         current=trip;consumed=0
         for _ in range(MAX_VERSIONS):
-            cur.execute('SELECT r.action_id,r.proposal_id,r.candidate_hash,r.original_input,p.trip_id,p.expected_version,p.basis_version,p.expires_at,p.content,p.candidate_hash,p.status '
-                'FROM cj_trip_receipt r JOIN cj_trip_proposal p ON (p.scope,p.proposal_id)=(r.scope,r.proposal_id) '
-                "WHERE r.scope=%s AND r.trip_id=%s AND r.committed_version=%s AND r.kind='accept'",
-                (self.trip_scope,current.trip_id,current.version))
-            rows=cur.fetchall()
-            if len(rows)!=1:raise Denied('original Trip chain unavailable')
-            row=rows[0];content=bytes(row[8]);original_action=bytes(row[3])
-            consumed+=len(content)+len(original_action)
-            if consumed>MAX_BYTES:raise Denied('original source bound exceeded')
-            proposal=Proposal(row[1],row[4],row[5],row[6],row[7],content)
-            digest=proposal.digest(self.trip_scope)
-            if (row[10]!='accepted' or row[2]!=digest or row[9]!=digest
-                    or proposal.trip_id!=current.trip_id or proposal.expected_version+1!=current.version
-                    or content!=current.content):
-                raise Denied('original Trip chain mismatch')
-            try:action=Action(*json.loads(original_action))
-            except (TypeError,ValueError):raise Denied('original action invalid') from None
-            if (action.raw()!=original_action or action.action_id!=row[0] or action.kind!='accept'
-                    or action.proposal_id!=proposal.proposal_id or action.candidate_hash!=digest):
-                raise Denied('original action association mismatch')
+            proposal,action,size=accepted_origin(cur,self.trip_scope,current,MAX_BYTES-consumed)
+            consumed+=size
+            content=proposal.content;original_action=action.raw();digest=action.candidate_hash
             if proposal.basis_version.startswith('run-'):
                 if proposal.expected_version!=0:raise Denied('original RUN version unavailable')
                 self._run(cur,proposal,MAX_BYTES-consumed)
@@ -86,33 +69,9 @@ class ManualOrigin:
         raise Denied('original version chain bound exceeded')
 
     def _run(self,cur,proposal,remaining_bytes):
-        run_id=proposal.basis_version[4:]
-        from cj_agent.draft import proposal_id_for
-        if proposal.proposal_id!=proposal_id_for(run_id) or proposal.trip_id!='trip-'+run_id:
-            raise Denied('original RUN proposal association unavailable')
-        cur.execute('SELECT r.message_id,r.conversation_id,r.generation,r.message_sequence,m.raw_input,m.input_sha256 '
-            'FROM cj_run_record r JOIN cj_message_receipt m ON '
-            '(m.scope,m.run_id,m.message_id,m.conversation_id,m.generation,m.sequence)='
-            '(r.scope,r.run_id,r.message_id,r.conversation_id,r.generation,r.message_sequence) '
-            'WHERE r.scope=%s AND r.run_id=%s',(self.message_scope,run_id))
-        row=cur.fetchone()
-        if row is None:raise Denied('original RUN message unavailable')
-        raw=bytes(row[4])
-        if len(raw)>remaining_bytes:raise Denied('original source bound exceeded')
-        if sha256(raw).hexdigest()!=row[5]:raise Denied('original message integrity unavailable')
-        from cj_message.domain import Command
-        document=json.loads(raw)
-        command=Command.parse_v2(raw) if document.get('version')=='MESSAGE-send.2' else Command.parse_stored(raw)
-        if (command.message_id!=row[0] or command.conversation_id!=row[1]
-                or document['creation_intent']!='consider_trip'
-                or command.expected_generation is not None and
-                   (command.expected_generation!=row[2] or command.expected_sequence!=row[3]-1)):
-            raise Denied('original planning message mismatch')
+        binding,command=run_origin(cur,self.message_scope,proposal,remaining_bytes)
         if command.needs_reference is not None:
             raise Denied('NEEDS-bound manual publication not configured')
-        cur.execute("SELECT value FROM cj_run_event WHERE scope=%s AND run_id=%s AND kind='effect_committed'",
-                    (self.message_scope,run_id))
-        if cur.fetchall()!=[('trip_proposal:'+proposal.proposal_id,)]:raise Denied('original publication effect unavailable')
         # Current protected/registered profiles require their genuine NEEDS
         # producer/lease. Absence of a hidden or incomplete binding is no fallback.
         for table in ('cj_message_needs_binding','cj_local_run_protection'):
@@ -121,3 +80,57 @@ class ManualOrigin:
                             (self.message_scope,))
             else:cur.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s',(self.message_scope,))
             if cur.fetchone() is not None:raise Denied('protected NEEDS source unavailable for manual-unbound')
+
+
+def accepted_origin(cur,trip_scope,trip,remaining_bytes):
+    cur.execute('SELECT r.action_id,r.proposal_id,r.candidate_hash,r.original_input,p.trip_id,p.expected_version,p.basis_version,p.expires_at,p.content,p.candidate_hash,p.status '
+        'FROM cj_trip_receipt r JOIN cj_trip_proposal p ON (p.scope,p.proposal_id)=(r.scope,r.proposal_id) '
+        "WHERE r.scope=%s AND r.trip_id=%s AND r.committed_version=%s AND r.kind='accept'",
+        (trip_scope,trip.trip_id,trip.version))
+    rows=cur.fetchall()
+    if len(rows)!=1:raise Denied('original Trip chain unavailable')
+    row=rows[0];content=bytes(row[8]);original_action=bytes(row[3])
+    size=len(content)+len(original_action)
+    if size>remaining_bytes:raise Denied('original source bound exceeded')
+    proposal=Proposal(row[1],row[4],row[5],row[6],row[7],content)
+    digest=proposal.digest(trip_scope)
+    if (row[10]!='accepted' or row[2]!=digest or row[9]!=digest
+            or proposal.trip_id!=trip.trip_id or proposal.expected_version+1!=trip.version
+            or content!=trip.content):
+        raise Denied('original Trip chain mismatch')
+    try:action=Action(*json.loads(original_action))
+    except (TypeError,ValueError):raise Denied('original action invalid') from None
+    if (action.raw()!=original_action or action.action_id!=row[0] or action.kind!='accept'
+            or action.proposal_id!=proposal.proposal_id or action.candidate_hash!=digest):
+        raise Denied('original action association mismatch')
+    return proposal,action,size
+
+
+def run_origin(cur,message_scope,proposal,remaining_bytes):
+    run_id=proposal.basis_version[4:]
+    from cj_agent.draft import proposal_id_for
+    if proposal.proposal_id!=proposal_id_for(run_id) or proposal.trip_id!='trip-'+run_id:
+        raise Denied('original RUN proposal association unavailable')
+    cur.execute('SELECT r.message_id,r.conversation_id,r.generation,r.message_sequence,m.raw_input,m.input_sha256 '
+        'FROM cj_run_record r JOIN cj_message_receipt m ON '
+        '(m.scope,m.run_id,m.message_id,m.conversation_id,m.generation,m.sequence)='
+        '(r.scope,r.run_id,r.message_id,r.conversation_id,r.generation,r.message_sequence) '
+        'WHERE r.scope=%s AND r.run_id=%s',(message_scope,run_id))
+    row=cur.fetchone()
+    if row is None:raise Denied('original RUN message unavailable')
+    raw=bytes(row[4])
+    if len(raw)>remaining_bytes:raise Denied('original source bound exceeded')
+    if sha256(raw).hexdigest()!=row[5]:raise Denied('original message integrity unavailable')
+    from cj_message.domain import Command
+    document=json.loads(raw)
+    command=Command.parse_v2(raw) if document.get('version')=='MESSAGE-send.2' else Command.parse_stored(raw)
+    if (command.message_id!=row[0] or command.conversation_id!=row[1]
+            or document['creation_intent']!='consider_trip'
+            or command.expected_generation is not None and
+               (command.expected_generation!=row[2] or command.expected_sequence!=row[3]-1)):
+        raise Denied('original planning message mismatch')
+    cur.execute("SELECT value FROM cj_run_event WHERE scope=%s AND run_id=%s AND kind='effect_committed'",
+                (message_scope,run_id))
+    if cur.fetchall()!=[('trip_proposal:'+proposal.proposal_id,)]:raise Denied('original publication effect unavailable')
+    from cj_run.core import Binding
+    return Binding(message_scope,row[1],row[2],row[0],run_id,row[3]),command
