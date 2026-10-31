@@ -65,7 +65,7 @@ struct TripTimelineView: View {
                     if let issue { RunReadableText(text:issue).accessibilityIdentifier("timeline.issue") }
                 }.frame(maxWidth:.infinity,alignment:.leading).padding()
             }.accessibilityIdentifier("timeline.content").navigationTitle(language.text("Timeline","时间线")).navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement:.topBarTrailing) { Button(language.text("Done","完成")) { host.invalidate();dismiss() }.accessibilityIdentifier("timeline.done") } }
+                .toolbar { ToolbarItem(placement:.topBarTrailing) { AssistantPanelDoneButton(title:language.text("Done","完成"),identifier:"timeline.done") { host.invalidate();dismiss() } } }
                 .onDisappear { host.invalidate() }
         }
     }
