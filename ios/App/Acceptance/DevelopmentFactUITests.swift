@@ -43,6 +43,9 @@ import Foundation
                 top = max(top,header.frame.maxY + 8);bottom = min(bottom,composer.frame.minY)
             }
             let frame = element.exists ? element.frame : .zero
+            if id == "fact.output.0.source.0.url" && attempt % 6 == 0 {
+                print("FACT_URL_VIEWPORT",attempt,frame,top,bottom,element.exists,element.isHittable)
+            }
             if element.exists && element.isHittable && (fixed || frame.midY > top && frame.midY < bottom) {return}
             if fixed {_ = element.waitForExistence(timeout:1);continue}
             // Lazy Lists can omit a row on either side of the viewport. Search

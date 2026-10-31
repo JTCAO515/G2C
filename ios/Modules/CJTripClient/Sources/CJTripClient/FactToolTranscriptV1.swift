@@ -18,7 +18,8 @@ public struct FactToolTranscriptV1: Sendable {
     public let hasPendingFrame: Bool
     public static func decode(_ bytes: Data,runID: String,completed: Bool) throws -> Self {
         guard bytes.count <= 1_048_576,!runID.isEmpty else { throw TripFailure.invalidResponse }
-        var lines = bytes.split(separator:UInt8(10),omittingEmptySubsequences:false).map(Data.init)
+        let octets = Array(bytes)
+        var lines: [Data] = octets.split(separator:UInt8(10),omittingEmptySubsequences:false).map { Data($0) }
         let pending: Bool
         if bytes.last == 10 { lines.removeLast();pending = false }
         else if completed { pending = false }
@@ -48,7 +49,7 @@ public struct FactToolTranscriptV1: Sendable {
             case "FACT-answer.1":
                 guard Set(root.keys) == ["version","data_origin","text_zh","text_en"] else { throw TripFailure.invalidResponse }
                 let zh = try root.required("text_zh").text(),en = try root.required("text_en").text()
-                guard !zh.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,!en.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,
+                guard !zh.trimmingCharacters(in:CharacterSet.whitespacesAndNewlines).isEmpty,!en.trimmingCharacters(in:CharacterSet.whitespacesAndNewlines).isEmpty,
                       zh.utf8.count <= 65536,en.utf8.count <= 65536 else { throw TripFailure.invalidResponse }
                 answer = .init(chinese:zh,english:en)
             default:throw TripFailure.invalidResponse
