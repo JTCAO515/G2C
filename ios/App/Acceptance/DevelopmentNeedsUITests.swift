@@ -42,7 +42,7 @@ import Foundation
     private func capture(_ name: String) {
         let image = XCTAttachment(screenshot:app.screenshot()); image.name = name; image.lifetime = .keepAlways; add(image)
     }
-    private func reveal(_ element: XCUIElement, id: String) {
+    private func reveal(_ element: XCUIElement, id: String, full: Bool = false) {
         for attempt in 0..<40 {
             let navigation = app.navigationBars.firstMatch
             var top = navigation.exists ? navigation.frame.maxY + 4 : app.frame.minY + 60
@@ -55,9 +55,13 @@ import Foundation
                 if conversation.exists { bottom = min(bottom,conversation.frame.minY) }
             }
             let keyboard = app.keyboards.firstMatch
-            if keyboard.exists { bottom = min(bottom,keyboard.frame.minY - 4) }
+            if keyboard.exists {
+                bottom = min(bottom,keyboard.frame.minY - 4)
+                let accessory = app.toolbars.containing(.button,identifier:"needs.keyboard.done").firstMatch
+                if accessory.exists { bottom = min(bottom,accessory.frame.minY - 4) }
+            }
             let frame = element.exists ? element.frame : .zero
-            if element.exists && element.isHittable && frame.midY > top && frame.midY < bottom { return }
+            if element.exists && element.isHittable && (full ? frame.minY >= top && frame.maxY <= bottom : frame.midY > top && frame.midY < bottom) { return }
             let down = frame == .zero ? attempt >= 20 : frame.midY <= top
             let middle = (top + bottom) / 2, step = min(150,(bottom-top)*0.35)
             let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? -step : step)))
@@ -119,7 +123,8 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for:[hidden],timeout:10),.completed,"Keyboard must no longer cover page controls")
     }
     private func replace(_ id: String, value: String, language: String) {
-        let target = field(id); XCTAssertTrue(target.waitForExistence(timeout:15)); reveal(target,id:id); target.tap()
+        let target = field(id); XCTAssertTrue(target.waitForExistence(timeout:15)); reveal(target,id:id,full:true); target.tap()
+        reveal(target,id:id,full:true) // Focus changes the viewport: keyboard AND its accessory bar.
         let end = target.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5))
         end.tap()
         let previous = target.value as? String ?? ""
