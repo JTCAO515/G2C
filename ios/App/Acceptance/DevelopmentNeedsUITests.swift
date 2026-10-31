@@ -109,12 +109,15 @@ import Foundation
     }
     private func replace(_ id: String, value: String, language: String) {
         let target = field(id); XCTAssertTrue(target.waitForExistence(timeout:15)); reveal(target,id:id); target.tap()
+        target.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
         let previous = target.value as? String ?? ""
         target.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:previous.count)+value)
         XCTAssertEqual(Array((target.value as? String ?? "").utf8),Array(value.utf8)); dismissKeyboard(language)
     }
     private func appendStatement(_ value: String, language: String) {
-        let target = field("needs.editor.statement"); reveal(target,id:"needs.editor.statement"); target.tap(); target.typeText(value); dismissKeyboard(language)
+        let target = field("needs.editor.statement"); reveal(target,id:"needs.editor.statement"); target.tap()
+        target.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.95)).tap()
+        target.typeText(value); dismissKeyboard(language)
     }
     private func editKnown(_ field: String, value: String, language: String) {
         tap("needs.editor."+field+".section")
