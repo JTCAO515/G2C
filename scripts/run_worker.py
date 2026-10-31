@@ -20,7 +20,7 @@ if os.environ.get('CJ_ENV') != 'local':
 from cj_agent.draft import DraftPublisher
 from cj_agent.provider import FakeProvider, ProviderFailed
 from cj_agent.worker import RunWorker, original_context_valid
-from cj_api.local_app import LocalDatabase, ISSUER, scope_for, travel_configuration
+from cj_api.local_app import LocalDatabase, ISSUER, scope_for, travel_configuration, trip_configuration
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_run_context import load_run_context
 from cj_api.local_worker_context import LocalBudgetRouter, checker_for, needs_lease_for
@@ -182,7 +182,7 @@ def main():
     audit.addHandler(logging.StreamHandler(sys.stderr))
     audit.propagate=False
     memory = load_runtime_configuration(args.memory_run_policy) if args.memory_run_policy is not None else None
-    database=LocalDatabase(args.conninfo_json,run_context=context,travel_context=travel_configuration(args.travel_context),trip_context=args.trip_context is not None)
+    database=LocalDatabase(args.conninfo_json,run_context=context,travel_context=travel_configuration(args.travel_context),trip_context=trip_configuration(args.trip_context))
     # Protection metadata is checked before even loading real-provider credentials.
     # run_once repeats the check before accepting every original pending run.
     for scope in scopes(database,args.auth_dir):
