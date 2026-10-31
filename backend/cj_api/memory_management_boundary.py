@@ -32,7 +32,7 @@ def _existing_source_only(*args):return True
 def _candidate_boundary_from_checker(*,environment,checker,resolve_binding):
     """Internal review harness assembly only; not an enabled application factory."""
     modules=_internal_modules('memory_management')
-    if environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker) or not callable(resolve_binding):
+    if environment!='local' or not isinstance(checker,modules['cj_auth.admission'].AdmissionChecker) or resolve_binding is None:
         raise CompositionUnavailable('Canonical checker and existing trusted MEMORY binding required')
     return MemoryManagementBoundary(checker,resolve_binding,_existing_source_only,modules)
 

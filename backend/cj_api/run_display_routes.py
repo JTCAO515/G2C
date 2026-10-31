@@ -1,15 +1,12 @@
 """One read-only original-message snapshot; private JSON never encoded after guard."""
 from fastapi import Request
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse,Response
 from starlette.concurrency import run_in_threadpool
 from .generated import RunDisplayResponse,RunDisplayV2Response
-from .history_routes import _query
-from .message_routes import _error,_token
+from .history_routes import _message_id_query
+from .message_routes import _error,_sanitized_read,_token
 from .run_display_composition import RunDisplayWireConfiguration
 from .run_display_projection import encode_response
-
-class DisplayReadInterrupted(Exception):
-    pass
 
 def register_run_display_route(app,reader=None,configuration=None,modules=None):
     if reader is None:
@@ -22,26 +19,16 @@ def register_run_display_route(app,reader=None,configuration=None,modules=None):
         if reader is None:return unavailable(request)
         token=_token(request)
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
-        try:
-            query=_query(request,('message_id',));mid=query['message_id']
-            if not mid.strip() or '\x00' in mid:raise ValueError('Invalid original message ID')
-            if len(mid.encode('utf-8'))>configuration.max_message_id_bytes:
-                return _error(request,413,'MESSAGE_ID_TOO_LARGE','input','failed','do_not_retry')
-        except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
+        mid=_message_id_query(request,configuration.max_message_id_bytes)
+        if isinstance(mid,JSONResponse):return mid
         request_id=request.state.request_id
         def invoke():
-            try:
-                if version==4:return reader.read_edit_display(token,mid,request_id)
-                if version==3:return reader.read_trip_display(token,mid,request_id)
-                if version==2:return reader.read_travel_display(token,mid,request_id)
-                return reader.read_projected(token,mid,lambda nine:encode_response(nine,request_id))
-            except BaseException as exc:
-                if isinstance(exc,Exception):raise
-                # Only interruptions originating inside the synchronous reader are
-                # sanitized. Cancellation of the outer HTTP await still propagates.
-                raise DisplayReadInterrupted() from None
+            if version==4:return reader.read_edit_display(token,mid,request_id)
+            if version==3:return reader.read_trip_display(token,mid,request_id)
+            if version==2:return reader.read_travel_display(token,mid,request_id)
+            return reader.read_projected(token,mid,lambda nine:encode_response(nine,request_id))
         try:
-            body=await run_in_threadpool(invoke)
+            body=await run_in_threadpool(_sanitized_read,invoke)
             return Response(content=body,media_type='application/json')
         except modules['cj_run.display_snapshot'].SnapshotTooLarge:
             return _error(request,413,'RUN_DISPLAY_TOO_LARGE','input','failed','retry_safe_read')

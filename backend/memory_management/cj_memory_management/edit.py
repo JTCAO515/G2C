@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 
-from cj_memory.domain import Command, InvalidInput, Unavailable
+from cj_memory.domain import Command, InvalidInput, strict_object, Unavailable
 from .domain import Action
 
 
@@ -19,19 +19,7 @@ class Edit:
 
     @classmethod
     def parse(cls, raw):
-        def unique(pairs):
-            result = {}
-            for key, value in pairs:
-                if key in result:
-                    raise InvalidInput('duplicate field')
-                result[key] = value
-            return result
-        if type(raw) is not bytes or len(raw) > 32768:
-            raise InvalidInput('bytes required')
-        try:
-            obj = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
-        except (ValueError, UnicodeError):
-            raise InvalidInput('invalid JSON') from None
+        obj = strict_object(raw)
         fields = set(cls.__dataclass_fields__) - {'raw'} | {'version'}
         if type(obj) is not dict or set(obj) != fields:
             raise InvalidInput('unsupported edit fields')

@@ -16,6 +16,15 @@ class InvalidInput(ValueError):
     pass
 
 
+def unique_fields(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise InvalidInput('duplicate field')
+        result[key] = value
+    return result
+
+
 class InputConflict(Exception):
     pass
 
@@ -80,17 +89,10 @@ class Command:
 
     @classmethod
     def _parse(cls, raw, *, stored, travel=False, formal=False):
-        def pairs(items):
-            result = {}
-            for k, v in items:
-                if k in result:
-                    raise InvalidInput('duplicate field')
-                result[k] = v
-            return result
         if type(raw) is not bytes:
             raise InvalidInput('immutable UTF-8 bytes required')
         try:
-            obj = json.loads(raw.decode('utf-8'), object_pairs_hook=pairs)
+            obj = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_fields)
         except (ValueError, UnicodeError) as exc:
             raise InvalidInput('invalid input') from exc
         fields = {'version', 'conversation_id', 'message_id', 'text', 'trip_id', 'creation_intent'}
