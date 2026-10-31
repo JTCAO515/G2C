@@ -99,7 +99,7 @@ private struct FactSourcePanel: View {
         }.padding().accessibilityIdentifier("fact.sources.content")
             .navigationTitle(language.text("Sources", "来源")).navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement:.confirmationAction) {
-                Button(language.text("Done", "完成")) {dismiss()}.frame(minWidth:44,minHeight:44).accessibilityIdentifier("fact.sources.done")
+                AssistantPanelDoneButton(title:language.text("Done", "完成"),identifier:"fact.sources.done") {dismiss()}
             } }
     }
 }
