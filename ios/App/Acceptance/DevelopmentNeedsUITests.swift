@@ -65,8 +65,14 @@ import Foundation
             if element.exists && element.isHittable && (full ? frame.minY >= top && frame.maxY <= bottom : frame.midY > top && frame.midY < bottom) { return element }
             let down = frame == .zero ? attempt >= 30 : (full ? frame.minY < top : frame.midY <= top)
             let middle = (top + bottom) / 2, step = min(150,(bottom-top)*0.35)
-            let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? -step : step)))
-            let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? step : -step)))
+            let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
+            let surface = panel.exists ? panel : app
+            let bounds = surface.frame
+            if id == "needs.editor.statement" && attempt % 10 == 0 {
+                print("NEEDS_STATEMENT_VIEWPORT",attempt,element.elementType.rawValue,element.exists,frame,element.isHittable,top,bottom,bounds)
+            }
+            let start = surface.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:bounds.width-6,dy:middle+(down ? -step : step)-bounds.minY))
+            let end = surface.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:bounds.width-6,dy:middle+(down ? step : -step)-bounds.minY))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id); XCTFail("Expected visible control: "+id)

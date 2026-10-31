@@ -80,17 +80,17 @@ public struct NeedsEditorView: View {
                                       language: language, id: "needs.editor." + field.rawValue, isList: field == .includes, choices: field == .basis ? [("total", language.text("总计", "Total")), ("per_person", language.text("每人", "Per person"))] : [])
                     Text(draft.changedFields.contains(field) ? language.text("将包含此修改", "This change is included") : language.text("不修改此字段", "Leave this field unchanged"))
                         .font(.caption)
-                } label: { Text(field.label(language)).accessibilityIdentifier("needs.editor." + field.rawValue + ".section") }
+                } label: { NeedsFormLabel(text: field.label(language)).accessibilityIdentifier("needs.editor." + field.rawValue + ".section") }
             }
             ForEach(NeedsEventField.allCases, id: \.self) { field in
-                DisclosureGroup(field.label(language)) {
+                DisclosureGroup {
                     EventEditor(input: Binding(get: { draft.events[field] ?? .init() }, set: { draft.set(field, $0) }), language: language)
                     if draft.changedEvents.contains(field) {
                         Button(language.text("不提交此时间事项修改", "Leave this event unchanged")) { draft.leaveEventUnchanged(field) }
                     }
-                }
+                } label: { NeedsFormLabel(text: field.label(language)) }
             }
-            DisclosureGroup(language.text("同伴", "Companions")) {
+            DisclosureGroup {
                 ForEach($draft.companions) { $companion in
                     HStack {
                         TextField(language.text("同伴称呼", "Companion label"), text: $companion.label)
@@ -99,23 +99,23 @@ public struct NeedsEditorView: View {
                 }
                 Button(language.text("添加同伴", "Add companion")) { draft.companions.append(.init()) }
                 Text(language.text("移除被固定事项或临时条件引用的同伴时，也需明确修改相应适用对象。", "When removing a referenced companion, explicitly correct the affected items or conditions too.")).font(.footnote)
-            }
-            DisclosureGroup(language.text("已订／固定事项（用户陈述）", "Booked / fixed items (user claims)")) {
+            } label: { NeedsFormLabel(text: language.text("同伴", "Companions")) }
+            DisclosureGroup {
                 ForEach($draft.fixedItems) { $item in
                     FixedEditor(item: $item, companions: draft.companions, language: language)
                     Button(language.text("移除此事项", "Remove this item")) { draft.fixedItems.removeAll { $0.id == item.id } }
                     Divider()
                 }
                 Button(language.text("添加固定事项", "Add fixed item")) { draft.fixedItems.append(.init()) }
-            }
-            DisclosureGroup(language.text("本次临时条件", "Temporary journey conditions")) {
+            } label: { NeedsFormLabel(text: language.text("已订／固定事项（用户陈述）", "Booked / fixed items (user claims)")) }
+            DisclosureGroup {
                 ForEach($draft.conditions) { $condition in
                     TextField(language.text("本次条件说明", "Describe this journey condition"), text: $condition.description, axis: .vertical)
                     SubjectsEditor(subjects: $condition.appliesTo, companions: draft.companions, language: language)
                     Button(language.text("移除此条件", "Remove this condition")) { draft.conditions.removeAll { $0.id == condition.id } }
                 }
                 Button(language.text("添加临时条件", "Add temporary condition")) { draft.conditions.append(.init()) }
-            }
+            } label: { NeedsFormLabel(text: language.text("本次临时条件", "Temporary journey conditions")) }
         }.disclosureGroupStyle(NeedsDisclosureStyle(language: language))
     }
 }
@@ -379,27 +379,58 @@ private struct NeedsSelectableFieldText: UIViewRepresentable {
         return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
     }
     static func dismantleUIView(_ view: UITextView, coordinator: ()) { view.text = nil; view.accessibilityLabel = nil }
-    private var category: UIContentSizeCategory {
-        switch size {
-        case .xSmall: .extraSmall
-        case .small: .small
-        case .medium: .medium
-        case .large: .large
-        case .xLarge: .extraLarge
-        case .xxLarge: .extraExtraLarge
-        case .xxxLarge: .extraExtraExtraLarge
-        case .accessibility1: .accessibilityMedium
-        case .accessibility2: .accessibilityLarge
-        case .accessibility3: .accessibilityExtraLarge
-        case .accessibility4: .accessibilityExtraExtraLarge
-        case .accessibility5: .accessibilityExtraExtraExtraLarge
-        @unknown default: .large
-        }
-    }
+    private var category: UIContentSizeCategory { needsUIContentSize(size) }
+
 }
 #else
 private struct NeedsSelectableFieldText: View {
     let text: String
     var body: some View { Text(text).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
+}
+#endif
+
+#if os(iOS)
+public struct NeedsFormLabel: UIViewRepresentable {
+    private let text: String
+    @Environment(\.dynamicTypeSize) private var size
+    public init(text: String) { self.text = text }
+    public func makeUIView(context: Context) -> UILabel {
+        let view = UILabel(); view.numberOfLines = 0; view.lineBreakMode = .byWordWrapping
+        view.textColor = .label; view.adjustsFontForContentSizeCategory = true
+        view.setContentCompressionResistancePriority(.required, for: .vertical)
+        return view
+    }
+    public func updateUIView(_ view: UILabel, context: Context) {
+        view.text = text
+        view.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: needsUIContentSize(size)))
+    }
+    public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+    }
+    public static func dismantleUIView(_ view: UILabel, coordinator: ()) { view.text = nil }
+}
+private func needsUIContentSize(_ size: DynamicTypeSize) -> UIContentSizeCategory {
+    switch size {
+    case .xSmall: .extraSmall
+    case .small: .small
+    case .medium: .medium
+    case .large: .large
+    case .xLarge: .extraLarge
+    case .xxLarge: .extraExtraLarge
+    case .xxxLarge: .extraExtraExtraLarge
+    case .accessibility1: .accessibilityMedium
+    case .accessibility2: .accessibilityLarge
+    case .accessibility3: .accessibilityExtraLarge
+    case .accessibility4: .accessibilityExtraExtraLarge
+    case .accessibility5: .accessibilityExtraExtraExtraLarge
+    @unknown default: .large
+    }
+}
+#else
+public struct NeedsFormLabel: View {
+    private let text: String
+    public init(text: String) { self.text = text }
+    public var body: some View { Text(text).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
 }
 #endif
