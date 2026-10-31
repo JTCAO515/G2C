@@ -127,7 +127,7 @@ import Foundation
         let done=app.toolbars.buttons.matching(identifier:language=="en" ? "Done" : "完成").firstMatch
         if done.exists { done.tap() }
     }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false) async throws {
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -162,16 +162,25 @@ import Foundation
         enter(activeLanguage=="en" ? "SYNTHETIC Make selected item lighter" : "SYNTHETIC 本次轻松一点",language:activeLanguage);tap("assistant.send")
         let proof=try JSONDecoder().decode(Proof.self,from:await call("/wait-completed",caseID:name))
         XCTAssertEqual(proof.runtime_role,"cj_m1_runtime");XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.posts,1)
-        XCTAssertEqual(proof.model_calls,1);XCTAssertEqual(proof.registered_operations,1);XCTAssertEqual(proof.pending_proposals,1)
+        if undetermined {
+            XCTAssertEqual(proof.model_calls,0);XCTAssertEqual(proof.registered_operations,0);XCTAssertEqual(proof.pending_proposals,0)
+            XCTAssertEqual(proof.draft_outcome,"validation_failed")
+        } else {
+            XCTAssertEqual(proof.model_calls,1);XCTAssertEqual(proof.registered_operations,1);XCTAssertEqual(proof.pending_proposals,1)
+            XCTAssertEqual(proof.draft_outcome,"published")
+        }
         XCTAssertEqual(proof.formal_count,1);XCTAssertEqual(proof.formal_version,2);XCTAssertEqual(proof.forbidden_writes,0)
-        XCTAssertEqual(proof.status,"completed");XCTAssertEqual(proof.draft_outcome,"published")
+        XCTAssertEqual(proof.status,"completed")
         XCTAssertEqual(proof.trip_id,trip.id);XCTAssertEqual(proof.content_sha256,trip.content_sha256);XCTAssertEqual(proof.namespace,f.namespace);XCTAssertEqual(proof.needs_version,1)
         XCTAssertEqual(proof.item_ids,item ? [chosen] : []);XCTAssertEqual(proof.day,item ? nil : "2026-11-04")
-        XCTAssertTrue(proof.memory_long);XCTAssertTrue(proof.memory_current);XCTAssertFalse(proof.memory_other)
+        if !undetermined { XCTAssertTrue(proof.memory_long);XCTAssertTrue(proof.memory_current) }
+        XCTAssertFalse(proof.memory_other)
         tap("run.snapshot.read");text("run.display.status",contains:activeLanguage=="en" ? "Completed" : "已完成")
-        text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程")
+        if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
+        else { text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程") }
         capture(name+"-published-not-adopted");try audit(name+"-original-run")
     }
     func testScopedItemAndLanguageSwitch() async throws { try await scenario("testScopedItemAndLanguageSwitch",language:"en",item:true,switchLanguage:true) }
     func testScopedDayChineseLargest() async throws { try await scenario("testScopedDayChineseLargest",language:"zh-Hans",large:true) }
+    func testScopedUndeterminedDayWithoutModel() async throws { try await scenario("testScopedUndeterminedDayWithoutModel",language:"en",undetermined:true) }
 }

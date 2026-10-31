@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel'],required=True)
 ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -84,6 +84,11 @@ try:
     action=base64.b64decode(confirmation['action_utf8_base64']);adopted=expect(client.post('/v1/trip-actions',content=action,headers=binary),'actual-legacy-adopt')['receipt'];tid=adopted['trip_id']
    original=database.trip_repository(scope_for(ISSUER,subject)).detail(tid);doc=json.loads(original.content);r['original_version']=original.version
    schedules=[(event('2026-11-02','23:30:00'),event('2026-11-03','00:30:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00'))]
+   if CASE=='testScopedDayChineseLargest':
+    # Independent explicit synthetic declarations for the READY date positive.
+    # Unknown/cross-day scope is retained in its own real zero-model negative.
+    schedules=[(event('2026-11-02','09:00:00'),event('2026-11-02','10:00:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00')),(event('2026-11-05','09:00:00'),event('2026-11-05','10:00:00'))]
+   r['fixture_profile']='synthetic-fully-known-day-v1' if CASE=='testScopedDayChineseLargest' else 'synthetic-undetermined-crossday-v1'
    unknown={key:dict(state='unknown') for key in ('date','time','timezone','utc_offset')}
    items=[]
    for index,item in enumerate(doc['items']):
@@ -157,7 +162,9 @@ try:
      try:
       results=run_once(edit_db,fake,auth)
       if results:
-       with lock:finished.extend(dict(status=x.status,proposal_id=x.proposal_id) for x in results)
+       with lock:
+        finished.extend(dict(status=x.status,proposal_id=x.proposal_id) for x in results)
+        r['native_worker_outcomes']=list(finished);r['native_provider_calls']=fake.calls;save()
      except Exception as error:
       worker_errors.append(type(error).__name__);stop.set()
    worker_thread=threading.Thread(target=worker,daemon=True);worker_thread.start()
@@ -194,7 +201,10 @@ try:
        while not finished:
         if worker_errors or time.monotonic()>deadline:raise TimeoutError('formal worker completion')
         time.sleep(.05)
-       assert len(finished)==1 and finished[0]['status']=='completed' and finished[0]['proposal_id'];value=proof()
+       assert len(finished)==1 and finished[0]['status']=='completed'
+       if CASE=='testScopedUndeterminedDayWithoutModel':assert finished[0]['proposal_id'] is None and fake.calls==0
+       else:assert finished[0]['proposal_id'] and fake.calls==1
+       value=proof()
       else:raise ValueError('unknown control')
       raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
      except Exception as error:
@@ -215,7 +225,9 @@ try:
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
     log=(run.stdout+run.stderr).replace(headers['Authorization'][7:],'<redacted-local-token>');(OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    verified=proof();assert verified['messages']==verified['posts']==verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['forbidden_writes']==0 and not worker_errors
+    verified=proof();assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
+    if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
+    else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
     for file in container.rglob('*'):
      if file.is_file() and not file.is_symlink():
