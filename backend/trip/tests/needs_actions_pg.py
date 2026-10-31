@@ -25,7 +25,7 @@ class NeedsActionChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset','malformed-model','edit-during-model')})
+        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset','malformed-model','edit-during-model','scoped-preview')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer=ConfirmationSigner(b'synthetic-source-action-key-1234567890')
         for subject in cls.host.subjects:
@@ -530,6 +530,41 @@ class NeedsActionChecks(unittest.TestCase):
         self.assertEqual(seen[0]['content']['items'][-1]['fixed'],dict(state='known',value=True))
         self.assertEqual(seen[0]['proposed_fields']['fixed_items'][-1]['applies_to'],['self'])
 
+
+
+    def test_scoped_preview_reuses_actual_source_checker_without_write(self):
+        from cj_trip.current_needs_source import CurrentNeedsSource
+        from cj_trip.domain import Trip
+        from cj_api.local_app import scope_for,ISSUER
+        from cj_api.local_needs import protected_reader
+        from cj_api.local_worker_context import checker_for
+        from cj_manual_edit.scoped import Request,resolve,preview
+        from hashlib import sha256
+        subject='scoped-preview';app,outcome,db=self.plan(subject)
+        with TestClient(app) as client:
+            accepted=self.post(client,subject,self.action(subject,outcome,'accept'));self.assertEqual(accepted.status_code,200,accepted.text)
+            trip_id=accepted.json()['receipt']['trip_id']
+            value=client.get('/v4/trip-structured',params={'trip_id':trip_id},headers=self.host.headers[subject]).json()['trip']
+        trip=Trip(trip_id,value['version'],packed(value['content']))
+        request=Request.parse(packed(dict(version='TRIP-scoped-request.1',request_id='scope-edit',trip_id=trip_id,
+            expected_version=trip.version,original_hash=sha256(trip.content).hexdigest(),language='en',text='Make selected item lighter',
+            selection=dict(kind='items',item_ids=['b']))))
+        raw=packed(dict(version='TRIP-manual-edit.2',request_id='scope-edit',trip_id=trip_id,expected_version=trip.version,
+            original_hash=request.original_hash,title=None,changes=[dict(item_id='b',field='text',value='proposed easier choice')],order=None))
+        checker=checker_for(self.host.auth);token=self.host.headers[subject]['Authorization'][7:]
+        source=CurrentNeedsSource(db,checker,token,protected_reader(db,checker));captured=source.capture('visit',1)
+        with db.connect(scope_for(ISSUER,subject)) as conn:
+            original_fields=json.loads(bytes(conn.execute('SELECT proposed_input FROM cj_trip_needs_basis WHERE proposal_id=%s',(outcome.proposal_id,)).fetchone()[0]))
+        with source.hold(captured):
+            result=preview(resolve(trip,request),raw,source=captured,previous_fields=original_fields)
+        self.assertFalse(result.can_publish);self.assertIsNone(result.time_report)
+        self.assertTrue(any(c.code=='PROTECTED_SCOPE_UNCHANGED' and c.status=='PASS' for c in result.constraint_report.checks))
+        self.assertTrue(all(c.zh and c.en for c in result.constraint_report.checks))
+        self.assertEqual(json.loads(result.candidate.content)['items'][1]['source_category'],'unknown')
+        with db.connect(scope_for(ISSUER,subject)) as conn:
+            self.assertEqual(conn.execute('SELECT version FROM cj_trip_record WHERE trip_id=%s',(trip_id,)).fetchone()[0],1)
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_receipt').fetchone()[0],1)
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0],1)
 
 
 if __name__=='__main__':unittest.main(verbosity=2)
