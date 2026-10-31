@@ -48,7 +48,7 @@ extension RunDisplayState {
                 if showAnswerText && !value.snapshot.text.isEmpty {
                     Text(verbatim: value.snapshot.text).textSelection(.enabled).accessibilityIdentifier("run.display.text")
                 }
-                Text(language.text("Snapshot at read time", "读取时的快照")).font(.caption)
+                RunReadableText(text:language.text("Snapshot at read time", "读取时的快照"),style:.caption)
             }
             if let progress = model.streamProgress {
                 if showAnswerText { Text(verbatim: progress.text).textSelection(.enabled).accessibilityIdentifier("run.stream.text") }

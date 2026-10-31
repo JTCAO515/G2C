@@ -48,7 +48,10 @@ struct AssistantShell: View {
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
                 if messageHost.supportsTripDiscussions {
                     if let conversation=messageHost.selectedConversation {
-                        RunReadableText(text:state.language.text("Conversation: ","会话：")+conversation,style:.caption)
+                        RunReadableText(text:state.language.text("Conversation identifier","会话标识"),style:.caption)
+                        RunSelectableText(text:conversation)
+                            .accessibilityLabel(state.language.text("Conversation identifier","会话标识"))
+                            .accessibilityValue(conversation)
                             .accessibilityIdentifier("assistant.conversation")
                     }
                     TripDiscussionChoiceView(host:messageHost,language:state.language,openTrips:{ state.selectedTab = .trips })

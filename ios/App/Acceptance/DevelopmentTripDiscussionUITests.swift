@@ -134,7 +134,10 @@ import Foundation
         if newChat {
             XCTAssertEqual(proof.chat_count,1);XCTAssertEqual(proof.opening_requests,1);XCTAssertEqual(proof.opening_ack_losses,0)
             XCTAssertTrue(proof.conversation_id.hasPrefix("discussion."))
-            XCTAssertTrue(app.staticTexts.matching(identifier:"assistant.conversation").firstMatch.label.contains(proof.conversation_id))
+            let conversation=app.textViews.matching(identifier:"assistant.conversation").firstMatch
+            XCTAssertTrue(conversation.exists)
+            XCTAssertEqual(conversation.label,language=="en" ? "Conversation identifier" : "会话标识")
+            XCTAssertEqual(conversation.value as? String,proof.conversation_id)
         }
         let expected=language=="en" ? "Please explicitly select a formal Trip, local date or item." : "请明确选择正式行程、当地日期或条目。"
         XCTAssertEqual(proof.text,expected)
