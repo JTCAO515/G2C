@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal'],required=True)
 ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -139,11 +139,12 @@ try:
    structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
    scoped_app=create_local_scoped_app(database=edit_db,configuration=configuration)
    typed_app=create_local_typed_app(conninfo_path=connection,auth_dir=auth,configuration=typed)
-   fake=ScopedFake();finished=[];worker_errors=[];stop=threading.Event();audit=[];lock=threading.RLock()
+   fake=ScopedFake();finished=[];actual_message_receipts=[];worker_errors=[];stop=threading.Event();audit=[];lock=threading.RLock()
    async def observed(scope,receive,send):
     path=scope.get('path','')
     if scope.get('type')!='http':return await edit_api(scope,receive,send)
-    entry=dict(method=scope['method'],path=path);audit.append(entry);chunks=[]
+    entry=dict(method=scope['method'],path=path);audit.append(entry);chunks=[];reply=[]
+    if path=='/v1/trip-scoped-action-receipts':entry['original_query']=parse_qs(scope.get('query_string',b'').decode('ascii'))
     async def received():
      message=await receive()
      if message['type']=='http.request':chunks.append(message.get('body',b''))
@@ -152,6 +153,7 @@ try:
     actual_reply=[]
     async def sent(message):
      if message['type']=='http.response.start':entry['status']=message['status']
+     if path=='/v4/messages' and message['type']=='http.response.body':reply.append(message.get('body',b''))
      if drop_ack:actual_reply.append(message)
      else:await send(message)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else scoped_app if path.startswith('/v1/trip-scoped-') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
@@ -166,7 +168,10 @@ try:
      trace=str(uuid.uuid4());failure=packed(dict(request_id=trace,error=dict(code='TRIP_OUTCOME_UNKNOWN',category='dependency',message_en='Synthetic committed response loss',message_zh='合成已提交回包丢失',outcome='unknown',recovery='reconcile_original')))
      await send(dict(type='http.response.start',status=503,headers=[(b'content-type',b'application/json'),(b'cache-control',b'no-store'),(b'x-request-id',trace.encode())]))
      await send(dict(type='http.response.body',body=failure))
-    if scope['method']=='POST':entry['input_sha256']=hashlib.sha256(b''.join(chunks)).hexdigest()
+    if path=='/v4/messages' and entry.get('status')==200:actual_message_receipts.append(json.loads(b''.join(reply))['receipt'])
+    if scope['method']=='POST':
+     raw=b''.join(chunks);entry['input_sha256']=hashlib.sha256(raw).hexdigest()
+     if path=='/v1/trip-scoped-actions':entry['original_action_id']=json.loads(raw)['action_id']
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
    import socket
    sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1])
@@ -204,25 +209,53 @@ try:
      status=display['snapshot']['status'],draft_outcome=draft['draft_outcome'],trip_id=reference['trip_context']['id'],content_sha256=reference['trip_context']['content_sha256'],namespace=reference['namespace']['id'],needs_version=reference['needs_reference']['expected_version'],item_ids=reference['trip_context']['item_ids'],day=None if reference['trip_context']['day'] is None else reference['trip_context']['day']['date'],
      memory_long='SYNTHETIC LONG' in inputs,memory_current='SYNTHETIC CURRENT' in inputs,memory_other='SYNTHETIC OTHER' in inputs)
     r['proof']=value;r['observed_requests']=list(audit);r['worker_outcomes']=list(finished);r['proposal_ids_are_backend_oracles_only']=True;save();return value
+   def invalidate_candidate():
+    assert CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal') and len(actual_message_receipts)==1
+    original=actual_message_receipts[0]
+    if CASE=='testScopedCandidateConflict':
+     with TestClient(scoped_app) as client:
+      candidate=expect(client.get('/v1/trip-scoped-discovery',params=dict(message_id=original['message_id'],run_id=original['run_id']),headers=headers),'concurrent-original-discovery')['discovery']['proposal']
+      assert candidate is not None
+      command=dict(version='TRIP-scoped-action.1',action_id='synthetic-concurrent-accept',kind='accept',proposal_id=candidate['proposal_id'],candidate_hash=candidate['candidate_hash'])
+      receipt=expect(client.post('/v1/trip-scoped-actions',content=packed(command),headers=binary),'concurrent-explicit-accept')['receipt']
+      assert receipt['committed_version']==3
+    else:
+     with TestClient(typed_app) as client:
+      current=expect(client.get('/v2/memory-items',params=dict(item_id='synthetic-memory-long'),headers=headers),'original-memory-detail')['item']
+      command=dict(version='MEMORY-STOP-USE@2',action_id='synthetic-withdraw-before-accept',operation='withdraw',item_id='synthetic-memory-long',expected_version=current['version'],source_id=current['command']['source_id'],expected_source_version=current['command']['source_version'])
+      receipt=expect(client.post('/v2/memory-withdrawal-actions',content=packed(command),headers=binary),'actual-memory-withdrawal')['receipt']
+      assert receipt['status']=='withdrawn'
+    r['candidate_invalidation']=dict(case=CASE,receipt=receipt);save();return dict(status='actual source changed')
    def decision_proof():
     owner=scope_for(ISSUER,subject)
     with edit_db.connect(owner) as conn:
      trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
      actions=conn.execute('SELECT action_id,original_input FROM cj_trip_scoped_action').fetchall()
      operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(cid,)).fetchone()[0]
-    assert len(trips)==len(actions)==operations==fake.calls==1
-    action=json.loads(bytes(actions[0][1]));kind='accept' if CASE in ('testScopedCandidateAccept','testScopedCandidateACKLoss') else 'reject'
-    assert action['kind']==kind and trips[0][0]==tid and trips[0][1]==(3 if kind=='accept' else 2)
+    assert len(trips)==operations==fake.calls==1
+    negative=CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal')
+    kind='reject' if CASE=='testScopedCandidateReject' else 'accept'
+    version=2 if kind=='reject' or CASE=='testScopedCandidateWithdrawal' else 3
+    assert trips[0][0]==tid and trips[0][1]==version
     doc=json.loads(bytes(trips[0][2]));before=formal['content']
     assert doc['title']==before['title'] and doc['sources']==before['sources']
     for old,new in zip(before['items'],doc['items']):
-     if old['id']!='item-2' or kind=='reject':assert old==new
-    if kind=='accept':assert doc['items'][1]['text']=='SYNTHETIC lighter choice / 本次轻松一点'
+     if old['id']!='item-2' or version==2:assert old==new
+    if version==3:assert doc['items'][1]['text']=='SYNTHETIC lighter choice / 本次轻松一点'
     requests=[x for x in audit if x['path']=='/v1/trip-scoped-discovery']
     writes=[x for x in audit if x['path']=='/v1/trip-scoped-actions' and x['method']=='POST']
-    assert requests and len(writes)==1 and writes[0]['input_sha256']==hashlib.sha256(bytes(actions[0][1])).hexdigest()
+    queries=[x for x in audit if x['path']=='/v1/trip-scoped-action-receipts']
+    assert requests and len(writes)==1
+    app_id=writes[0]['original_action_id']
+    assert all(q['original_query']==dict(action_id=[app_id]) for q in queries)
+    if negative:
+     assert not any(action[0]==app_id for action in actions)
+     assert writes[0]['status']==(409 if CASE=='testScopedCandidateConflict' else 503)
+     assert len(actions)==(1 if CASE=='testScopedCandidateConflict' else 0)
+    else:
+     assert len(actions)==1 and actions[0][0]==app_id and writes[0]['input_sha256']==hashlib.sha256(bytes(actions[0][1])).hexdigest()
     if CASE=='testScopedCandidateACKLoss':assert writes[0].get('committed_response_suppressed') and writes[0]['status']==200 and writes[0]['delivered_status']==503
-    value=dict(formal_version=trips[0][1],formal_count=len(trips),actions=len(actions),model_calls=fake.calls,registered_operations=operations,kind=kind,original_action_id=actions[0][0],original_action_sha256=writes[0]['input_sha256'])
+    value=dict(formal_version=trips[0][1],formal_count=len(trips),actions=len(actions),app_committed_actions=0 if negative else 1,model_calls=fake.calls,registered_operations=operations,kind=kind,original_action_id=app_id,original_action_sha256=writes[0]['input_sha256'],receipt_queries=len(queries))
     r['decision_proof']=value;save();return value
    class Control(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
@@ -230,6 +263,7 @@ try:
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
       if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=dict(A=headers['Authorization'][7:]),subjects=dict(A=subject),formal_trips=[spec])
+      elif path.path=='/invalidate-candidate':value=invalidate_candidate()
       elif path.path=='/decision-proof':value=decision_proof()
       elif path.path=='/wait-completed':
        deadline=time.monotonic()+90
@@ -260,8 +294,8 @@ try:
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
     log=(run.stdout+run.stderr).replace(headers['Authorization'][7:],'<redacted-local-token>');(OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    verified=r['proof'] if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss') else proof()
-    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss'):decision_proof()
+    verified=r['proof'] if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal') else proof()
+    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal'):assert decision_proof()['receipt_queries']>=1
     assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
     if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
     else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
