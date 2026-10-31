@@ -42,7 +42,7 @@ public enum ScopedDecisionResult: Sendable {
     private let binding: TripBinding
     private let credentials: TripCredentialCallback
     private let validate: @MainActor () throws -> Void
-    private let transport: any ClientTransport
+    private let transportFactory: @MainActor (@escaping @MainActor @Sendable () throws -> Void) throws -> any ClientTransport
     private let originals: ScopedJournal<ScopedOriginal>
     private let settlements: ScopedJournal<ScopedSettlement>
     private let owner = UUID()
@@ -55,14 +55,21 @@ public enum ScopedDecisionResult: Sendable {
         let settlements = try ScopedJournal<ScopedSettlement>(directory: receiptDirectory, maximumBytes: 7_000_000, maximumRecords: 100,
             binding: binding, expectedKeyID: expectedKeyID, domain: "CJScopedSettlement.1", provider: provider)
         try self.init(endpoint: endpoint, binding: binding, credentials: credentials, validate: validate,
-            transport: ScopedTransport(endpoint: endpoint), originals: originals, settlements: settlements)
+            transportFactory: { try ScopedTransport(endpoint: endpoint, validate: $0) }, originals: originals, settlements: settlements)
     }
-    init(endpoint: MessageEndpoint, binding: TripBinding, credentials: @escaping TripCredentialCallback,
+    convenience init(endpoint: MessageEndpoint, binding: TripBinding, credentials: @escaping TripCredentialCallback,
         validate: @escaping @MainActor () throws -> Void, transport: any ClientTransport,
+        originals: ScopedJournal<ScopedOriginal>, settlements: ScopedJournal<ScopedSettlement>) throws {
+        try self.init(endpoint: endpoint, binding: binding, credentials: credentials, validate: validate,
+            transportFactory: { _ in transport }, originals: originals, settlements: settlements)
+    }
+    private init(endpoint: MessageEndpoint, binding: TripBinding, credentials: @escaping TripCredentialCallback,
+        validate: @escaping @MainActor () throws -> Void,
+        transportFactory: @escaping @MainActor (@escaping @MainActor @Sendable () throws -> Void) throws -> any ClientTransport,
         originals: ScopedJournal<ScopedOriginal>, settlements: ScopedJournal<ScopedSettlement>) throws {
         guard endpoint.maximumResponseBytes <= 4_000_000, endpoint.maximumRequestBytes <= 32768 else { throw PreviewFailure.invalidInput }
         self.endpoint = endpoint; self.binding = binding; self.credentials = credentials; self.validate = validate
-        self.transport = transport; self.originals = originals; self.settlements = settlements
+        self.transportFactory = transportFactory; self.originals = originals; self.settlements = settlements
         try check()
     }
     private func check() throws { try validate(); try Task.checkCancellation() }
@@ -165,7 +172,7 @@ public enum ScopedDecisionResult: Sendable {
         try check(); return value
     }
     private func exchange(path: String, query: [URLQueryItem] = [], operation: String, body: Data? = nil,
-                          validate original: @escaping @MainActor () throws -> Void = {}) async throws -> (Data, String) {
+                          validate original: @escaping @MainActor @Sendable () throws -> Void = {}) async throws -> (Data, String) {
         var components = URLComponents(); components.path = path
         if !query.isEmpty {
             components.queryItems = query
@@ -180,6 +187,10 @@ public enum ScopedDecisionResult: Sendable {
         var request = HTTPRequest(method: body == nil ? .get : .post, scheme: nil, authority: nil, path: target)
         request.headerFields[.authorization] = "Bearer " + bearer
         if body != nil { request.headerFields[.contentType] = "application/octet-stream" }
+        try original(); try check()
+        let transport = try transportFactory { [self] in
+            try check(); try original(); try check()
+        }
         try original(); try check()
         let (response, responseBody) = try await transport.send(request, body: body.map(HTTPBody.init), baseURL: endpoint.url, operationID: operation)
         try check(); try original(); try check()

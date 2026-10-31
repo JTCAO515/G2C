@@ -10,11 +10,12 @@ final class ScopedTransport: ClientTransport, Sendable {
     private let session: URLSession
     private let transport: URLSessionTransport
     private let endpoint: URL
-    init(endpoint: MessageEndpoint) throws {
+    private let validate: @MainActor @Sendable () throws -> Void
+    init(endpoint: MessageEndpoint, validate: @escaping @MainActor @Sendable () throws -> Void) throws {
         #if DEBUG && targetEnvironment(simulator)
         guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
               let port = endpoint.url.port, (1...65535).contains(port) else { throw PreviewFailure.unavailable }
-        self.endpoint = endpoint.url
+        self.endpoint = endpoint.url; self.validate = validate
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil; configuration.urlCache = nil; configuration.urlCredentialStorage = nil
         configuration.timeoutIntervalForRequest = 15; configuration.timeoutIntervalForResource = 30
@@ -32,7 +33,10 @@ final class ScopedTransport: ClientTransport, Sendable {
               (request.method == .get && body == nil && request.path?.hasPrefix("/v1/trip-scoped-action-receipts?") == true && operationID == "readScopedTripReceiptV1") ||
               (request.method == .get && body == nil && request.path?.hasPrefix("/v5/trip-structured?") == true && operationID == "readScopedFormalTripV1") ||
               (request.method == .post && body != nil && request.path == "/v1/trip-scoped-actions" && operationID == "actOnScopedTripV1") else { throw PreviewFailure.invalidInput }
-        return try await transport.send(request, body: body, baseURL: baseURL, operationID: operationID)
+        let bytes: Data?
+        if let body { bytes = try await Data(collecting: body, upTo: 32768) } else { bytes = nil }
+        try await validate()
+        return try await transport.send(request, body: bytes.map(HTTPBody.init), baseURL: baseURL, operationID: operationID)
     }
 }
 private final class ScopedRedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
