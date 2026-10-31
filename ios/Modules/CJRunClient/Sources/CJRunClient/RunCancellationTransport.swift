@@ -7,7 +7,7 @@ import HTTPTypes
 /// Explicit DEBUG Simulator capability for the frozen original-message cancellation.
 /// The shared MESSAGE NoRedirectTransport remains unchanged and rejects this write.
 public final class RunCancellationTransport: ClientTransport, Sendable {
-    private enum WireMode { case legacy,travel,compatible,tripCompatible }
+    private enum WireMode { case legacy,travel,compatible,tripCompatible,editCompatible }
     private let mode: WireMode
     private let endpoint: MessageEndpoint
     private let validate: @MainActor @Sendable () throws -> Void
@@ -36,6 +36,10 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
         try local(endpoint:endpoint,mode:.tripCompatible,validate:validate)
     }
+    public static func developmentEditCompatible(endpoint: MessageEndpoint,
+        validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
+        try local(endpoint:endpoint,mode:.editCompatible,validate:validate)
+    }
     private static func local(endpoint: MessageEndpoint,mode: WireMode,
         validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
         #if DEBUG && targetEnvironment(simulator)
@@ -55,9 +59,9 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         session = URLSession(configuration: configuration, delegate: CancellationRedirectBlocker(), delegateQueue: nil)
     }
     /// Non-network module-test seam, never a product composition entry.
-    init(interceptedTransport: any ClientTransport, endpoint: MessageEndpoint, travel: Bool = false,compatible: Bool = false,tripCompatible: Bool = false,
+    init(interceptedTransport: any ClientTransport, endpoint: MessageEndpoint, travel: Bool = false,compatible: Bool = false,tripCompatible: Bool = false,editCompatible: Bool = false,
          validate: @escaping @MainActor @Sendable () throws -> Void) {
-        self.endpoint = endpoint;mode = tripCompatible ? .tripCompatible : compatible ? .compatible : travel ? .travel : .legacy;self.validate = validate
+        self.endpoint = endpoint;mode = editCompatible ? .editCompatible : tripCompatible ? .tripCompatible : compatible ? .compatible : travel ? .travel : .legacy;self.validate = validate
         session = nil; intercepted = interceptedTransport
     }
     deinit { session?.invalidateAndCancel() }
@@ -81,7 +85,9 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         case Operations.cancelOriginalTravelRun.id:
             guard mode != .legacy else { throw RunDisplayFailure.invalidReference };wire = 2
         case "cancelOriginalTripRunV3":
-            guard mode == .tripCompatible else { throw RunDisplayFailure.invalidReference };wire = 3
+            guard mode == .tripCompatible || mode == .editCompatible else { throw RunDisplayFailure.invalidReference };wire = 3
+        case "cancelOriginalTripEditRunV4":
+            guard mode == .editCompatible else { throw RunDisplayFailure.invalidReference };wire = 4
         default:throw RunDisplayFailure.invalidReference
         }
         guard baseURL == endpoint.url, request.method == .post,
@@ -97,9 +103,9 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         let data = try await Data(collecting: body, upTo: min(endpoint.maximumRequestBytes,wire == 1 ? 4096 : 65536))
         var parser = StrictRunJSON(bytes: Array(data)); try parser.check()
         let messageID: String
-        if wire == 3 {
+        if wire >= 3 {
             guard let value=try JSONSerialization.jsonObject(with:data) as? [String:Any],Set(value.keys)==["version","message_id"],
-                  value["version"] as? String == "RUN-cancel.3",let id=value["message_id"] as? String else { throw RunDisplayFailure.invalidReference }
+                  value["version"] as? String == "RUN-cancel.\(wire)",let id=value["message_id"] as? String else { throw RunDisplayFailure.invalidReference }
             messageID=id
         }
         else if wire == 2 { messageID = try JSONDecoder().decode(Components.Schemas.RunTravelCancellationRequest.self,from:data).message_id }

@@ -6,6 +6,7 @@ import HTTPTypes
 struct RunReadTransport: ClientTransport {
     var travel = false
     var discussion = false
+    var edit = false
     let underlying: any ClientTransport
     let endpoint: MessageEndpoint
     let bearer: String
@@ -13,8 +14,8 @@ struct RunReadTransport: ClientTransport {
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         try await validate()
-        guard baseURL == endpoint.url, operationID == (discussion ? "getTripRunDisplayV3" : travel ? "getTravelRunDisplay" : "getRunDisplaySnapshot"), request.method == .get, body == nil,
-              let path = request.path, let components = URLComponents(string: path), components.path == (discussion ? "/v3/run-display" : travel ? "/v2/run-display" : "/v1/run-display"),
+        guard baseURL == endpoint.url, operationID == (edit ? "getTripEditRunDisplayV4" : discussion ? "getTripRunDisplayV3" : travel ? "getTravelRunDisplay" : "getRunDisplaySnapshot"), request.method == .get, body == nil,
+              let path = request.path, let components = URLComponents(string: path), components.path == (edit ? "/v4/run-display" : discussion ? "/v3/run-display" : travel ? "/v2/run-display" : "/v1/run-display"),
               let query = components.queryItems, query.count == 1, query[0].name == "message_id",
               let id = query[0].value, exact(id, originalMessageID) else { throw RunDisplayFailure.invalidReference }
         var request = request
