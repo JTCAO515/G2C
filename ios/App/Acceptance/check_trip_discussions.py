@@ -136,11 +136,11 @@ def main():
                                 for position,item in enumerate(document['items']):
                                     start,end=times[position] if position<len(times) else (unknown,unknown)
                                     items.append(dict(id=item['id'],schedule=dict(start=start,end=end),fixed=known(False)))
-                                original=dict(version='TRIP-initialize.1',request_id=cid,trip_id=tid,expected_version=trip.version,original_hash=hashlib.sha256(trip.content).hexdigest(),items=items)
+                                original=dict(version='TRIP-initialize.1',request_id=cid+'-initialize',trip_id=tid,expected_version=trip.version,original_hash=hashlib.sha256(trip.content).hexdigest(),items=items)
                                 with TestClient(initialization) as source:
                                     prepared=source.post('/v1/trip-source-initializations',content=packed(dict(version='TRIP-source-initialize.1',needs_reference=dict(id='visit',expected_version=1),initialization=original)),headers=binary);assert prepared.status_code==200,prepared.text
                                     preparation=prepared.json()['preparation'];assert preparation['item_source_association']['status']=='UNKNOWN'
-                                    committed=source.post('/v1/trip-source-initialization-saves',content=packed(dict(version='TRIP-source-initialize-save.1',action_id=cid,proposal_id=preparation['proposal_id'],candidate_hash=preparation['candidate_hash'])),headers=binary);assert committed.status_code==200,committed.text
+                                    committed=source.post('/v1/trip-source-initialization-saves',content=packed(dict(version='TRIP-source-initialize-save.1',action_id=cid+'-structured-save',proposal_id=preparation['proposal_id'],candidate_hash=preparation['candidate_hash'])),headers=binary);assert committed.status_code==200,committed.text
                                     assert committed.json()['receipt']['trip_id']==tid and committed.json()['receipt']['committed_version']==2
                                 content=preparation['content'];specs.append(dict(id=tid,version=2,title=content['title'],content_sha256=hashlib.sha256(packed(content)).hexdigest(),item_ids=[item['id'] for item in content['items']],source_provider_calls=model.calls))
                         formal[case]=specs
