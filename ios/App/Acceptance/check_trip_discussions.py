@@ -4,7 +4,7 @@ Actual signed API/private PG/unchanged run_once/FakeProvider. These cases prove
 unbound clarification and genuine MEMORY upgrade refusal only. Bound Trip/day/
 item, timeline, maps, real providers and devices remain explicitly UNRUN.
 """
-import argparse,hashlib,importlib.util,json,os,plistlib,subprocess,sys,tempfile,threading,time,uuid
+import argparse,hashlib,importlib.util,json,os,plistlib,subprocess,sys,tempfile,threading,time,traceback,uuid
 from datetime import datetime,timezone
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
@@ -131,12 +131,17 @@ def main():
                         memory=conn.execute('SELECT item_id,version FROM cj_memory_item').fetchall()
                         profile=conn.execute('SELECT version FROM cj_message_trip_profile WHERE scope=%s',(scope,)).fetchone()
                         operations=conn.execute('SELECT o.operation_key,o.registration_id FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(case,)).fetchall()
+                    report.setdefault('observations',{})[case]=dict(runtime_role=role,pending=pending,messages=len(rows),memory_items=len(memory),trip_profile=profile[0] if profile else None,model_calls=models[case].calls,registered_operations=len(operations))
+                    report['observed_requests']=list(audit);report['worker_outcomes']=dict(outcomes);save()
                     status=None;text='';reference=None
                     if rows:
                         raw=bytes(rows[-1][1]);value=json.loads(raw)
                         assert value['version']=='MESSAGE-send.3' and value['creation_intent']=='none' and value['trip_context'] is None and value['needs_reference'] is None
                         with TestClient(app) as client:
-                            response=client.get('/v3/run-display',params={'message_id':rows[-1][0]},headers={'Authorization':'Bearer '+tokens[case]['A']});assert response.status_code==200
+                            response=client.get('/v3/run-display',params={'message_id':rows[-1][0]},headers={'Authorization':'Bearer '+tokens[case]['A']})
+                            report['observations'][case]['run_display_status']=response.status_code
+                            if response.status_code!=200:report['observations'][case]['run_display_error']=response.json().get('error')
+                            save();assert response.status_code==200
                             snapshot=response.json();status=snapshot['snapshot']['status'];text=snapshot['snapshot']['text'];reference=snapshot['reference']
                             assert reference['context_kind']=='none' and reference['trip_context'] is None and reference['content_sha256'] is None
                     if case=='testMemoryUpgradeRefused':
@@ -171,7 +176,7 @@ def main():
                             else:raise ValueError('unknown control')
                             raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
                         except Exception as error:
-                            report.setdefault('control_errors',[]).append(type(error).__name__);save();self.send_response(500);self.end_headers();self.wfile.write(type(error).__name__.encode())
+                            report.setdefault('control_errors',[]).append(dict(type=type(error).__name__,frames=[dict(file=Path(f.filename).name,line=f.lineno,function=f.name) for f in traceback.extract_tb(error.__traceback__)]));save();self.send_response(500);self.end_headers();self.wfile.write(type(error).__name__.encode())
                 control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
                 try:
                     spec=importlib.util.spec_from_file_location('discussion_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
