@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance'],required=True)
 ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -54,7 +54,8 @@ try:
    with psycopg.connect(**config,autocommit=True) as conn:
     chain=migrate.load();migrate.up(conn,chain,chain[-1]['version'])
    connection=root/'connection.json';connection.write_text(json.dumps(config));connection.chmod(0o600)
-   auth=root/'auth';subject='cj21-source-'+uuid.uuid4().hex;dev_auth.init(auth,[subject])
+   auth=root/'auth';subject='cj21-source-'+uuid.uuid4().hex;other_subject='cj337-other-'+uuid.uuid4().hex
+   dev_auth.init(auth,[subject,other_subject] if CASE=='testScopedCandidateLateAccount' else [subject])
    path=ARGS.run_context.resolve();context=load_run_context(path);assert context.version=='CJ-LOCAL-RUN@2';r['run_context']=json.loads(path.read_text());save()
    os.environ.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_RUN_CONTEXT=str(path))
    subprocess.run([sys.executable,'-B',str(ROOT/'scripts/local_run_context.py'),'--conninfo-json',str(connection),'--auth-dir',str(auth),'--run-context',str(path),'--subject',subject,'init-budget'],cwd=ROOT,check=True,capture_output=True)
@@ -140,6 +141,7 @@ try:
    scoped_app=create_local_scoped_app(database=edit_db,configuration=configuration)
    typed_app=create_local_typed_app(conninfo_path=connection,auth_dir=auth,configuration=typed)
    fake=ScopedFake();finished=[];actual_message_receipts=[];worker_errors=[];stop=threading.Event();audit=[];lock=threading.RLock()
+   late_captured=threading.Event();late_release=threading.Event();late_state={}
    async def observed(scope,receive,send):
     path=scope.get('path','')
     if scope.get('type')!='http':return await edit_api(scope,receive,send)
@@ -150,11 +152,12 @@ try:
      if message['type']=='http.request':chunks.append(message.get('body',b''))
      return message
     drop_ack=CASE=='testScopedCandidateACKLoss' and path=='/v1/trip-scoped-actions' and scope['method']=='POST'
+    hold_discovery=CASE=='testScopedCandidateLateAccount' and path=='/v1/trip-scoped-discovery'
     actual_reply=[]
     async def sent(message):
      if message['type']=='http.response.start':entry['status']=message['status']
      if path=='/v4/messages' and message['type']=='http.response.body':reply.append(message.get('body',b''))
-     if drop_ack:actual_reply.append(message)
+     if drop_ack or hold_discovery:actual_reply.append(message)
      else:await send(message)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else scoped_app if path.startswith('/v1/trip-scoped-') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
     await target(scope,received,sent)
@@ -168,6 +171,15 @@ try:
      trace=str(uuid.uuid4());failure=packed(dict(request_id=trace,error=dict(code='TRIP_OUTCOME_UNKNOWN',category='dependency',message_en='Synthetic committed response loss',message_zh='合成已提交回包丢失',outcome='unknown',recovery='reconcile_original')))
      await send(dict(type='http.response.start',status=503,headers=[(b'content-type',b'application/json'),(b'cache-control',b'no-store'),(b'x-request-id',trace.encode())]))
      await send(dict(type='http.response.body',body=failure))
+    if hold_discovery:
+     assert entry['status']==200
+     started=time.monotonic();late_state['captured_original_status']=200;late_captured.set()
+     import asyncio
+     released=await asyncio.to_thread(late_release.wait,25)
+     assert released,'late original delivery was never released'
+     late_state['release_elapsed_seconds']=time.monotonic()-started
+     for message in actual_reply:await send(message)
+     late_state['original_response_delivered']=True
     if path=='/v4/messages' and entry.get('status')==200:actual_message_receipts.append(json.loads(b''.join(reply))['receipt'])
     if scope['method']=='POST':
      raw=b''.join(chunks);entry['input_sha256']=hashlib.sha256(raw).hexdigest()
@@ -209,10 +221,19 @@ try:
      status=display['snapshot']['status'],draft_outcome=draft['draft_outcome'],trip_id=reference['trip_context']['id'],content_sha256=reference['trip_context']['content_sha256'],namespace=reference['namespace']['id'],needs_version=reference['needs_reference']['expected_version'],item_ids=reference['trip_context']['item_ids'],day=None if reference['trip_context']['day'] is None else reference['trip_context']['day']['date'],
      memory_long='SYNTHETIC LONG' in inputs,memory_current='SYNTHETIC CURRENT' in inputs,memory_other='SYNTHETIC OTHER' in inputs)
     r['proof']=value;r['observed_requests']=list(audit);r['worker_outcomes']=list(finished);r['proposal_ids_are_backend_oracles_only']=True;save();return value
+   def late_proof():
+    assert late_captured.is_set() and late_release.is_set() and late_state.get('original_response_delivered')
+    # The real protected A/200 response was released after B became current.
+    # The public client has a 15-second request timeout, so keep this delivery
+    # within that bound rather than calling a disconnected response 'late'.
+    assert late_state['release_elapsed_seconds']<14
+    base=proof();assert base['formal_version']==2 and base['model_calls']==base['registered_operations']==1 and base['forbidden_writes']==0
+    with edit_db.connect(scope_for(ISSUER,subject)) as conn:assert conn.execute('SELECT count(*) FROM cj_trip_scoped_action').fetchone()[0]==0
+    r['late_proof']=dict(late_state,account_switched_before_release=True,formal_version=2,actions=0,model_calls=1);save();return r['late_proof']
    def invalidate_candidate():
-    assert CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal') and len(actual_message_receipts)==1
+    assert CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance') and len(actual_message_receipts)==1
     original=actual_message_receipts[0]
-    if CASE=='testScopedCandidateConflict':
+    if CASE in ('testScopedCandidateConflict','testScopedCandidateStaleAcceptance'):
      with TestClient(scoped_app) as client:
       candidate=expect(client.get('/v1/trip-scoped-discovery',params=dict(message_id=original['message_id'],run_id=original['run_id']),headers=headers),'concurrent-original-discovery')['discovery']['proposal']
       assert candidate is not None
@@ -233,9 +254,9 @@ try:
      actions=conn.execute('SELECT action_id,original_input FROM cj_trip_scoped_action').fetchall()
      operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(cid,)).fetchone()[0]
     assert len(trips)==operations==fake.calls==1
-    negative=CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal')
-    kind='reject' if CASE=='testScopedCandidateReject' else 'accept'
-    version=2 if kind=='reject' or CASE=='testScopedCandidateWithdrawal' else 3
+    negative=CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance')
+    kind='reject' if CASE in ('testScopedCandidateReject','testScopedCandidateConflict') else 'accept'
+    version=3 if CASE in ('testScopedCandidateConflict','testScopedCandidateStaleAcceptance') else (2 if kind=='reject' or CASE=='testScopedCandidateWithdrawal' else 3)
     assert trips[0][0]==tid and trips[0][1]==version
     doc=json.loads(bytes(trips[0][2]));before=formal['content']
     assert doc['title']==before['title'] and doc['sources']==before['sources']
@@ -251,7 +272,7 @@ try:
     if negative:
      assert not any(action[0]==app_id for action in actions)
      assert writes[0]['status']==(409 if CASE=='testScopedCandidateConflict' else 503)
-     assert len(actions)==(1 if CASE=='testScopedCandidateConflict' else 0)
+     assert len(actions)==(0 if CASE=='testScopedCandidateWithdrawal' else 1)
     else:
      assert len(actions)==1 and actions[0][0]==app_id and writes[0]['input_sha256']==hashlib.sha256(bytes(actions[0][1])).hexdigest()
     if CASE=='testScopedCandidateACKLoss':assert writes[0].get('committed_response_suppressed') and writes[0]['status']==200 and writes[0]['delivered_status']==503
@@ -262,7 +283,12 @@ try:
     def do_GET(self):
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
-      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=dict(A=headers['Authorization'][7:]),subjects=dict(A=subject),formal_trips=[spec])
+      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=dict(A=headers['Authorization'][7:],**({'B':dev_auth.token(auth,other_subject,120)} if CASE=='testScopedCandidateLateAccount' else {})),subjects=dict(A=subject,**({'B':other_subject} if CASE=='testScopedCandidateLateAccount' else {})),formal_trips=[spec])
+      elif path.path=='/wait-discovery':
+       assert CASE=='testScopedCandidateLateAccount' and late_captured.wait(20);value=dict(status='original protected 200 held')
+      elif path.path=='/release-discovery':
+       assert CASE=='testScopedCandidateLateAccount' and late_captured.is_set();late_release.set();value=dict(status='release requested')
+      elif path.path=='/late-proof':value=late_proof()
       elif path.path=='/invalidate-candidate':value=invalidate_candidate()
       elif path.path=='/decision-proof':value=decision_proof()
       elif path.path=='/wait-completed':
@@ -294,8 +320,9 @@ try:
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
     log=(run.stdout+run.stderr).replace(headers['Authorization'][7:],'<redacted-local-token>');(OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    verified=r['proof'] if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal') else proof()
-    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal'):assert decision_proof()['receipt_queries']>=1
+    if CASE=='testScopedCandidateLateAccount':late_proof()
+    verified=r['proof'] if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance') else proof()
+    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance'):assert decision_proof()['receipt_queries']>=1
     assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
     if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
     else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
@@ -309,7 +336,7 @@ try:
    finally:
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
     if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)
-    stop.set();worker_thread.join(10);server.should_exit=True;api_thread.join(10);sock.close();control.shutdown();control.server_close()
+    late_release.set();stop.set();worker_thread.join(10);server.should_exit=True;api_thread.join(10);sock.close();control.shutdown();control.server_close()
   r['private_pg_stopped']=True
 except BaseException as error:
  r['status']='FAIL';r['error']=type(error).__name__;raise

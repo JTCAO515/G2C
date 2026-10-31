@@ -127,7 +127,7 @@ import Foundation
         let done=app.toolbars.buttons.matching(identifier:language=="en" ? "Done" : "完成").firstMatch
         if done.exists { done.tap() }
     }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil) async throws {
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -179,6 +179,22 @@ import Foundation
         if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
         else { text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程") }
         capture(name+"-published-not-adopted");try audit(name+"-original-run")
+        if lateAccount {
+            tap("scoped.discover");_ = try await call("/wait-discovery",caseID:name)
+            tap("Memory")
+            if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
+            tap("account.development.signin.B")
+            text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+            _ = try await call("/release-discovery",caseID:name)
+            tap("Assistant")
+            text("scoped.activity",contains:"Choose an accepted original message")
+            XCTAssertFalse(textElement("scoped.discovery.state").exists)
+            XCTAssertFalse(textElement("scoped.after."+chosen).exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"scoped.reject").firstMatch.exists)
+            _ = try await call("/late-proof",caseID:name)
+            capture(name+"-late-original-withheld-from-B");try audit(name+"-late-account")
+        }
         if let decision {
             tap("scoped.discover");text("scoped.discovery.state",contains:activeLanguage=="en" ? "Original candidate" : "原候选")
             text("scoped.feasibility",contains:"UNKNOWN")
@@ -212,7 +228,9 @@ import Foundation
         }
 
     }
-    func testScopedCandidateConflict() async throws { try await scenario("testScopedCandidateConflict",language:"en",item:true,decision:"accept",invalidation:"conflict") }
+    func testScopedCandidateLateAccount() async throws { try await scenario("testScopedCandidateLateAccount",language:"en",item:true,lateAccount:true) }
+    func testScopedCandidateStaleAcceptance() async throws { try await scenario("testScopedCandidateStaleAcceptance",language:"en",item:true,decision:"accept",invalidation:"stale") }
+    func testScopedCandidateConflict() async throws { try await scenario("testScopedCandidateConflict",language:"en",item:true,decision:"reject",invalidation:"conflict") }
     func testScopedCandidateWithdrawal() async throws { try await scenario("testScopedCandidateWithdrawal",language:"en",item:true,decision:"accept",invalidation:"withdrawal") }
     func testScopedCandidateACKLoss() async throws { try await scenario("testScopedCandidateACKLoss",language:"en",item:true,decision:"accept",ackLoss:true) }
     func testScopedCandidateAccept() async throws { try await scenario("testScopedCandidateAccept",language:"en",item:true,switchLanguage:true,decision:"accept") }
