@@ -48,10 +48,14 @@ struct LocalRecoveryList: View {
                             VStack(alignment:.leading,spacing:8) {
                                 RunSelectableText(text:record.conversationID)
                                 RunReadableText(text:openingPhase(record.phase),style:.caption)
-                                Button(language.text("Check original chat","核对原聊天")) { if let query { host.performConversationIntent(query) } }
-                                    .disabled(query==nil).accessibilityIdentifier("conversation.query."+record.conversationID)
-                                Button(language.text("Select this chat","选择此聊天")) { if let selection { host.performConversationIntent(selection) } }
-                                    .disabled(selection==nil).accessibilityIdentifier("conversation.select."+record.conversationID)
+                                Button { if let query { host.performConversationIntent(query) } } label: {
+                                    RunReadableText(text:language.text("Check original chat","核对原聊天"))
+                                        .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                                }.buttonStyle(ShellReadableButtonStyle()).disabled(query==nil).accessibilityIdentifier("conversation.query."+record.conversationID)
+                                Button { if let selection { host.performConversationIntent(selection) } } label: {
+                                    RunReadableText(text:language.text("Select this chat","选择此聊天"))
+                                        .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                                }.buttonStyle(ShellReadableButtonStyle()).disabled(selection==nil).accessibilityIdentifier("conversation.select."+record.conversationID)
                             }
                         }
                     }

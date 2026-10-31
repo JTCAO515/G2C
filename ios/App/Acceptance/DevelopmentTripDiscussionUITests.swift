@@ -164,6 +164,8 @@ import Foundation
         XCTAssertFalse(app.buttons.matching(identifier:"assistant.chat.new").firstMatch.isEnabled)
         tap("assistant.history");tap("conversation.query."+before.conversation_id)
         tap("conversation.select."+before.conversation_id);tap("assistant.panel.done")
+        let selected=app.textViews.matching(identifier:"assistant.conversation").firstMatch
+        XCTAssertTrue(selected.waitForExistence(timeout:15));XCTAssertEqual(selected.value as? String,before.conversation_id)
         enter("SYNTHETIC which Trip is this?",language:"en");tap("assistant.send")
         let after=try JSONDecoder().decode(Proof.self,from:await call("/wait-completed",caseID:f.case_id))
         XCTAssertEqual(after.conversation_id,before.conversation_id);XCTAssertEqual(after.chat_count,1);XCTAssertEqual(after.opening_requests,1)
