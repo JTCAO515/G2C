@@ -9,13 +9,15 @@ struct NeedsContainerView: View {
     let runs: RunContainerHost?
     let language: ShellLanguage
     @State private var revisionText = ""
+    @State private var expandedEditor: UUID?
+    @State private var detailsExpanded = false
     private var needsLanguage: NeedsLanguage { language == .english ? .en : .zh }
     var body: some View {
         let action = host.captureAction()
         let containerID = host.viewIdentity
         let cancellation = host.captureCancellation()
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 20) {
                 RunReadableText(text: language.text("Review or correct only what you know. Dates and budget may stay undecided.", "只查看或纠正已经明确的条件；日期和预算可以保持未定。"))
                 RunReadableText(text: language.text("Manual changes do not update long-term memory or the formal trip. Booking and lock declarations are unverified user claims.", "手工改动不会更新长期记忆或正式行程。预订和固定意图均是未经外部核实的用户陈述。"), style: .caption)
                 if let model = host.presentation {
@@ -60,7 +62,10 @@ struct NeedsContainerView: View {
                             guard let work = host.prepareSave(context: action) else { return }
                             Task { await host.perform(work) }
                         }
-                        DisclosureGroup {
+                        DisclosureGroup(isExpanded: Binding(get: { expandedEditor == draft.editorID }, set: {
+                            expandedEditor = $0 ? draft.editorID : nil
+                            if $0 { detailsExpanded = false }
+                        })) {
                             NeedsEditorView(draft: Binding(get: { model.draft ?? draft }, set: { _ = host.updateDraft($0, context: action) }), language: needsLanguage)
                                 .disabled(host.busy)
                         } label: { NeedsFormLabel(text: language.text("Edit journey details", "编辑本次旅行条件")).accessibilityIdentifier("needs.editor.open") }.id(draft.editorID)
@@ -69,7 +74,10 @@ struct NeedsContainerView: View {
                         }
                     }
                     if let snapshot = model.snapshot {
-                        DisclosureGroup {
+                        DisclosureGroup(isExpanded: Binding(get: { detailsExpanded }, set: {
+                            detailsExpanded = $0
+                            if $0 { expandedEditor = nil }
+                        })) {
                             NeedsDetailsView(fields: snapshot.fields, version: snapshot.version, language: needsLanguage, identifierPrefix: "needs.detail")
                         } label: { NeedsFormLabel(text: language.text("Last read user-provided record", "上次读到的用户提供记录")).accessibilityIdentifier("needs.detail.open") }
                     }

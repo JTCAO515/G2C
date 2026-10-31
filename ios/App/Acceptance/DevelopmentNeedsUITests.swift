@@ -172,6 +172,7 @@ import Foundation
     }
     private func editKnown(_ field: String, value: String, language: String) {
         tap("needs.editor."+field+".section")
+        tap("needs.editor."+field+".state"); tap(language == "en" ? "User provided" : "用户提供")
         replace("needs.editor."+field+".value",value:value,language:language)
     }
     private func audit(_ name: String) throws {
@@ -217,6 +218,7 @@ import Foundation
     }
     private func readDetails(_ version: Int) {
         tap("needs.read"); tap("needs.detail.open"); text("needs.detail.version",contains:String(version))
+        XCTAssertFalse(field("needs.editor.statement").exists,"Reading the saved record folds the separate unsaved editor without discarding it")
     }
     private func normal(_ name: String, language: String, large: Bool) async throws {
         let f = try await prepare(name); defer { app?.terminate() }
