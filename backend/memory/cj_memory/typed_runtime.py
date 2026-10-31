@@ -52,7 +52,7 @@ class TypedRuntimeConfiguration:
         return _bind_runtime(self,TypedRuntimeMemory,database,scope,identity,admit,message_context)
 
 
-def _bind_runtime(configuration,runtime_type,database,scope,identity,admit,message_context):
+def _bind_runtime(configuration,runtime_type,database,scope,identity,admit,message_context,*,provision=True):
     selection=configuration.selections.get(identity)
     if selection is None:raise RuntimeDenied('typed runtime identity not configured')
     profile=configuration.collection.collection.profiles[identity]
@@ -63,7 +63,10 @@ def _bind_runtime(configuration,runtime_type,database,scope,identity,admit,messa
         return principal,scope
     guard('typed_runtime_bind')
     with database.connect(scope) as conn:
-        conn.execute('INSERT INTO cj_memory_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
+        if provision:
+            conn.execute('INSERT INTO cj_memory_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
+        elif conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s',(scope,)).fetchone() is None:
+            raise RuntimeDenied('original memory scope unavailable')
     repository=Repository(lambda:database.connect(scope),scope,
         transaction_binder=lambda conn,cur:conn.bind_scope(cur),typed_context=True)
     return runtime_type(Service(repository),guard,selection,message_context)
