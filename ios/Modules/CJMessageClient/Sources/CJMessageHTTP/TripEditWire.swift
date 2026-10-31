@@ -205,3 +205,13 @@ struct TripEditStatus {
         }
     }
 }
+
+/// Canonical BASE error shape only; generated enums retain outcome/recovery.
+/// Only a verified POST failed/do_not_retry can become a durable rejection.
+func editError(_ bytes: Data, maximumBytes: Int, requestID: String) throws -> Components.Schemas.ErrorResponse {
+    let json = try DiscussionJSON(bytes, maximumBytes: maximumBytes)
+    let f = try DiscussionJSON.fields(json.object, "request_id error")
+    guard f["request_id"] as? String == requestID, UUID(uuidString: requestID) != nil else { throw MessageHTTPFailure.invalidResponse }
+    _ = try DiscussionJSON.fields(f["error"], "code category message_en message_zh outcome recovery")
+    return try JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: bytes)
+}

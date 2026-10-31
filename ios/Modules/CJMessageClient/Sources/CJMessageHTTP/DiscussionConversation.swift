@@ -46,7 +46,7 @@ extension MessageHTTPClient {
             tripDiscussionPermitState.heads.removeValue(forKey:Data(work.conversationID.utf8))
             var parts=URLComponents();parts.path="/v3/message-send-status";parts.queryItems=[.init(name:"conversation_id",value:work.conversationID)]
             guard let path=parts.string else { throw MessageHTTPFailure.invalidConfiguration }
-            let (status,raw,trace)=try await discussionExchange(path:path,operation:"readTripDiscussionStatusV3",raw:nil,lease:work.lease)
+            let (status,raw,trace)=try await versionedMessageExchange(path:path,operation:"readTripDiscussionStatusV3",raw:nil,lease:work.lease)
             try validateOpening(work)
             guard status==200 else { return .rejected(status:status,error:try JSONDecoder().decode(Components.Schemas.ErrorResponse.self,from:raw)) }
             let value=try TripDiscussionStatus(raw:raw,maximumBytes:endpoint.maximumResponseBytes,requestID:trace,conversationID:work.conversationID,original:nil)

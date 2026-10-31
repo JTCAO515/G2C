@@ -44,6 +44,9 @@ struct CheckedTransport: ClientTransport {
               (operationID == "receiveTripDiscussionV3" && request.method == .post && request.path == "/v3/messages") ||
               (operationID == "readTripDiscussionStatusV3" && request.method == .get && request.path?.hasPrefix("/v3/message-send-status?") == true) ||
               (operationID == "readTripDiscussionHistoryV2" && request.method == .get && request.path?.hasPrefix("/v2/message-history?") == true) ||
+              (operationID == "receiveTripEditV4" && request.method == .post && request.path == "/v4/messages") ||
+              (operationID == "readTripEditStatusV4" && request.method == .get && request.path?.hasPrefix("/v4/message-send-status?") == true) ||
+              (operationID == "readTripEditHistoryV3" && request.method == .get && request.path?.hasPrefix("/v3/message-history?") == true) ||
               (operationID == Operations.openConversation.id && request.method == .put && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
@@ -76,12 +79,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let validate: @MainActor @Sendable () throws -> Void
     }
     private enum MessageWire {
-        case legacy, travel, discussion
+        case legacy, travel, discussion, edit
         var path: String {
-            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages" }
+            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages"; case .edit: "/v4/messages" }
         }
         var operation: String {
-            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3" }
+            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3"; case .edit: "receiveTripEditV4" }
         }
     }
     private struct MessageCapability: Sendable {
@@ -115,39 +118,37 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Simulator host whose validator captures the current account/session lease.
     public static func developmentMessages(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && targetEnvironment(simulator)
-        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
-              let port = endpoint.url.port, (1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
-        return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
-            preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .legacy))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
+        try developmentMessageTransport(endpoint:endpoint,requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,wire:.legacy,validate:validate)
     }
 
     /// Explicit local send.2 capability. No legacy endpoint or travel actions
     /// are enabled by this capability; selection is data in immutable originals.
     public static func developmentTravelMessages(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && targetEnvironment(simulator)
-        guard endpoint.url.scheme == "http",endpoint.url.host == "127.0.0.1",
-              let port = endpoint.url.port,(1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
-        return try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
-            preview:nil,messages:MessageCapability(endpoint:endpoint,validate:validate,wire:.travel))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
+        try developmentMessageTransport(endpoint:endpoint,requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,wire:.travel,validate:validate)
     }
 
     /// Frozen send.3 is discussion only, isolated from send.1/send.2 capabilities.
     /// Profile activation is an operator task; no App request upgrades a scope.
     public static func developmentTripDiscussions(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        try developmentMessageTransport(endpoint:endpoint,requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,wire:.discussion,validate:validate)
+    }
+
+    /// Explicit send.4 capability. Source/namespace/profile activation remains
+    /// the operator and canonical backend's responsibility.
+    public static func developmentTripEdits(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        try developmentMessageTransport(endpoint:endpoint,requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,wire:.edit,validate:validate)
+    }
+
+    private static func developmentMessageTransport(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, wire: MessageWire, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
         #if DEBUG && targetEnvironment(simulator)
         guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
               let port = endpoint.url.port, (1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
-            preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .discussion))
+            preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: wire))
         #else
         throw MessageHTTPFailure.productionActivationUnavailable
         #endif
@@ -261,6 +262,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         messages=MessageCapability(endpoint:tripDiscussionEndpoint, validate:validateDiscussion, wire:.discussion)
     }
 
+    init(interceptedTransport: any ClientTransport, tripEditEndpoint: MessageEndpoint,
+         validateEdit: @escaping @MainActor @Sendable () throws -> Void) {
+        needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
+        preview=nil; memory=nil; memoryManagement=nil
+        messages=MessageCapability(endpoint:tripEditEndpoint, validate:validateEdit, wire:.edit)
+    }
+
     /// Non-network Memory boundary seam for deterministic transport tests.
     init(interceptedTransport: any ClientTransport, memoryEndpoint: MessageEndpoint,
          validateMemory: @escaping @MainActor @Sendable () throws -> Void) {
@@ -305,11 +313,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         guard let messages, messages.wire == .discussion, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
         try messages.validate()
     }
+    @MainActor func validateTripEditSending(to endpoint: MessageEndpoint) throws {
+        guard let messages, messages.wire == .edit, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
+        try messages.validate()
+    }
     /// The ordinary send() entry stays closed to PUT. Only the client's sealed,
     /// once-staged work may enter this original-operation exit.
     func sendConversationOpening(_ request:HTTPRequest,body:HTTPBody?,baseURL:URL,operationID:String,
         validateOriginal:@escaping @MainActor @Sendable () throws -> Void) async throws -> (HTTPResponse,HTTPBody?) {
-        guard let messages,messages.wire == .discussion,baseURL==messages.endpoint.url,
+        guard let messages,(messages.wire == .discussion || messages.wire == .edit),baseURL==messages.endpoint.url,
               operationID==Operations.openConversation.id,request.method == .put,body==nil,
               request.scheme==nil,request.authority==nil,
               !request.headerFields.contains(where:{ $0.name.canonicalName=="host" }),
@@ -408,6 +420,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         case .legacy: _ = try OriginalMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .travel: _ = try OriginalTravelMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .discussion: _ = try OriginalTripDiscussion(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case .edit: _ = try OriginalTripEdit(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case nil: break
         }
         try await capability.validate()
@@ -445,6 +458,8 @@ public enum MessageHTTPOutcome: Sendable {
     var travelSendPermitState = SendPermitState()
     var tripDiscussionPermitState = SendPermitState()
     var tripDiscussionSources:[Data:MessageTripContent]=[:]
+    var tripEditPermitState = SendPermitState()
+    var tripEditSources: [Data: MessageTripContent] = [:]
     let conversationOpeningOwner=UUID()
     private let readOwner = UUID()
     /// Test seam only: caller must supply a non-network interceptor, never a live transport.
@@ -765,7 +780,7 @@ extension MessageHTTPClient {
         if let after { query.queryItems!.append(.init(name:"cursor",value:after.opaque)) }
         query.percentEncodedQuery=query.percentEncodedQuery?.replacingOccurrences(of:"+",with:"%2B")
         guard let path=query.string else { throw MessageHTTPFailure.invalidConfiguration }
-        let (status,bytes,trace)=try await discussionExchange(path:path,operation:"readTripDiscussionHistoryV2",raw:nil,lease:lease)
+        let (status,bytes,trace)=try await versionedMessageExchange(path:path,operation:"readTripDiscussionHistoryV2",raw:nil,lease:lease)
         guard status==200 else { try readError(status,JSONDecoder().decode(Components.Schemas.ErrorResponse.self,from:bytes)) }
         let page=try TripDiscussionHistory(raw:bytes,maximumBytes:endpoint.maximumResponseBytes,decodedLimit:limits.maximumDecodedBytes,limit:limit,requestID:trace)
         guard !page.rows.isEmpty || (after==nil && page.next==nil) else { throw MessageHTTPFailure.invalidResponse }
