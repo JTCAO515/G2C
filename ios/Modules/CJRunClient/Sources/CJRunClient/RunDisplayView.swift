@@ -64,8 +64,7 @@ extension RunDisplayState {
                         RunReadableText(text: budget).accessibilityIdentifier("run.budget.status")
                     }
                     if let status = model.draftStatus.runStatus {
-                        Text(language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(status))
-                            .font(.caption).fixedSize(horizontal: false, vertical: true)
+                        RunReadableText(text:language.text("Run state at draft read: ", "读取草稿时的运行状态：") + draftRunLabel(status),style:.caption)
 
                     }
                 }
