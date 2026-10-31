@@ -29,7 +29,7 @@ class SourceInitializationChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        cls.host=RegisteredHost(cls.auth/'source-initializations',Path(CONNINFO),{s:(30,3,30000) for s in ('source-init','source-stale','source-concurrent','source-rollback','source-ack','source-expiry')})
+        cls.host=RegisteredHost(cls.auth/'source-initializations',Path(CONNINFO),{s:(30,3,30000) for s in ('source-init','source-stale','source-concurrent','source-concurrent-late','source-rollback','source-ack','source-expiry')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer=ConfirmationSigner(b'synthetic-source-initialization-key-12345')
         for subject in cls.host.subjects:dev_auth.activate_travel(Path(CONNINFO),subject,cls.host.profiles[subject][1],ABI)
@@ -117,6 +117,35 @@ class SourceInitializationChecks(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as pool:responses=[f.result(timeout=30) for f in [pool.submit(send),pool.submit(send)]]
         self.assertEqual([r.status_code for r in responses],[200,200],[r.text for r in responses])
         self.assertEqual(responses[0].json()['receipt'],responses[1].json()['receipt']);self.assertEqual(repo.detail(trip.trip_id).version,2)
+
+    def test_original_receipt_reconciles_after_first_lookup_before_source_hold(self):
+        from contextlib import contextmanager
+        from threading import Event,Lock
+        from cj_trip.source_initialization import SourceInitializations
+        subject='source-concurrent-late';db,repo,trip,raw,model=self.legacy(subject)
+        with TestClient(self.source_app(subject)) as client:p=self.prepare(client,subject,raw)
+        action=self.save(p);entered=Event();release=Event();mutex=Lock();claimed=False
+        original_hold=SourceInitializations._hold
+        @contextmanager
+        def gate(service,*args,**kwargs):
+            nonlocal claimed
+            with mutex:pause=not claimed;claimed=True
+            if pause:
+                entered.set()
+                if not release.wait(15):raise AssertionError('missing deterministic original commit')
+            with original_hold(service,*args,**kwargs) as state:yield state
+        def post():
+            with TestClient(self.source_app(subject)) as client:return self.post(client,subject,'/v1/trip-source-initialization-saves',action)
+        with patch.object(SourceInitializations,'_hold',gate),ThreadPoolExecutor(max_workers=1) as pool:
+            late=pool.submit(post)
+            try:
+                self.assertTrue(entered.wait(15))
+                first=post();self.assertEqual(first.status_code,200,first.text)
+            finally:release.set()
+            replay=late.result(timeout=20)
+        self.assertEqual(replay.status_code,200,replay.text)
+        self.assertEqual(first.json()['receipt'],replay.json()['receipt'])
+        self.assertEqual(repo.detail(trip.trip_id).version,2)
 
     def test_actual_rollback_and_physical_ack_unknown_recover_original_receipt(self):
         for mode in ('rollback','ack'):

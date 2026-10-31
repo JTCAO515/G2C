@@ -60,9 +60,11 @@ class SourceInitializations:
         cur.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s',(repository.scope,edit.trip_id))
         row=cur.fetchone()
         if row is None:raise Denied('original accepted Trip unavailable')
-        trip=Trip(edit.trip_id,row[0],bytes(row[1]));document=json.loads(trip.content)
+        trip=Trip(edit.trip_id,row[0],bytes(row[1]))
+        if trip.version!=1:raise Conflict('explicit original legacy root required')
+        document=json.loads(trip.content)
         validate_legacy_document(document)
-        if packed(document)!=trip.content or trip.version!=1:raise Conflict('explicit original legacy root required')
+        if packed(document)!=trip.content:raise Conflict('explicit original legacy root required')
         # The immutable accepted root and original RUN effect, not a basis label
         # or a client-supplied reference, establish the original source binding.
         proposal,action,size=accepted_origin(cur,repository.scope,trip,MAX_BYTES)
