@@ -240,17 +240,13 @@ struct ManualTripPrefix: Sendable {
               traces.count==1,let trace=traces.first?.value,UUID(uuidString:trace) != nil,
               cache.count==1,cache[0].value.lowercased().split(separator:",").contains(where: { $0.trimmingCharacters(in:.whitespaces)=="no-store" }) else { throw TripFailure.invalidResponse }
         if response.status.code != 200 {
-            var parser=StrictTripJSON(bytes:Array(data));let root=try parser.document().fields("request_id error")
-            guard try same(root.required("request_id").text(),trace) else { throw TripFailure.invalidResponse }
-            _=try errorCode(data)
+            let error=try manualTripErrorResponse(data)
+            guard same(error.request_id,trace) else { throw TripFailure.invalidResponse }
         }
         return (response.status.code,data,trace)
     }
     private func errorCode(_ bytes: Data) throws -> String {
-        var parser=StrictTripJSON(bytes:Array(bytes));let f=try parser.document().fields("request_id error"),e=try f.required("error").fields("code category outcome recovery")
-        let code=try e.required("code").text()
-        guard ["INVALID_INPUT","ACCESS_DENIED","TRIP_CONFLICT","BODY_TOO_LARGE","UNSUPPORTED_MEDIA_TYPE","TRIP_UNAVAILABLE","TRIP_ACCESS_UNAVAILABLE","TRIP_OUTCOME_UNKNOWN"].contains(code) else { throw TripFailure.invalidResponse }
-        return code
+        try manualTripErrorResponse(bytes).error.code
     }
 }
 

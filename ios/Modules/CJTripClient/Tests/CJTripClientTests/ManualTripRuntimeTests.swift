@@ -21,12 +21,13 @@ private actor ManualFixtureServer: ClientTransport {
     var saveBodies: [Data] = []
     var dropSave = false
     var rejectPrepare = false
+    var unknownPrepare = false
     var gate: Gate?
     init(original: StructuredTripRecord, after: Data, template: Data) {
         self.original=original;self.after=after;self.template=template;needs=original.document.version == .needsBound;version=original.version
     }
-    func configure(dropSave: Bool = false, rejectPrepare: Bool = false, gate: Gate? = nil) {
-        self.dropSave=dropSave;self.rejectPrepare=rejectPrepare;self.gate=gate
+    func configure(dropSave: Bool = false, rejectPrepare: Bool = false,unknownPrepare:Bool=false,gate: Gate? = nil) {
+        self.dropSave=dropSave;self.rejectPrepare=rejectPrepare;self.unknownPrepare=unknownPrepare;self.gate=gate
     }
     private func encode(_ object: [String: Any]) throws -> Data {
         let bytes=try JSONSerialization.data(withJSONObject:object);var parser=StrictTripJSON(bytes:Array(bytes));return try tripCanonicalJSON(parser.document())
@@ -51,9 +52,9 @@ private actor ManualFixtureServer: ClientTransport {
                 if op == .prepare || op == .needsPrepare {
                     prepareBodies.append(bytes)
                     if let gate { await gate.park() }
-                    if rejectPrepare {
-                        rejectPrepare=false;status=409
-                        data=try encode(["request_id":trace,"error":["code":"TRIP_CONFLICT","category":"conflict","outcome":"failed","recovery":"do_not_retry"]])
+                    if rejectPrepare || unknownPrepare {
+                        let unknown=unknownPrepare;rejectPrepare=false;unknownPrepare=false;status=unknown ? 503 : 409
+                        data=try encode(["request_id":trace,"error":["code":unknown ? "TRIP_ACCESS_UNAVAILABLE" : "TRIP_CONFLICT","category":unknown ? "dependency" : "conflict","message_en":"Request unavailable","message_zh":"请求不可用","outcome":unknown ? "unknown" : "failed","recovery":unknown ? "reconcile_original" : "do_not_retry"]])
                     } else {
                         let edit=command["edit"] as? [String: Any] ?? command, id=edit["request_id"] as! String
                         var response=try JSONSerialization.jsonObject(with:template) as! [String: Any], prepared=response["preparation"] as! [String: Any]
@@ -151,6 +152,18 @@ private struct ManualValidatedFixture: ClientTransport {
         _=try await editor.perform(editor.prepareReview())
         let bodies=await server.prepareBodies
         #expect(bodies.count==2 && bodies[0] != bodies[1])
+    }
+    @Test func completeBaseUnknownPlusNullReadStillCannotMintAnotherIDOrResend() async throws {
+        let (h,client,server,_,editor)=try await setup();defer { h.clean() }
+        await server.configure(unknownPrepare:true)
+        await #expect(throws:TripFailure.exchangeUnknown) { try await editor.perform(editor.prepareReview()) }
+        let pending=try client.pendingManualActions(binding:h.binding),original=try #require(pending.first)
+        let query=try client.prepareManualQuery(storageID:original.storageID,binding:h.binding)
+        guard case .notObserved=try await client.performManualQuery(query) else { Issue.record("unknown incorrectly settled");return }
+        #expect(throws:TripFailure.pendingRequiresQuery) { try editor.prepareReview() }
+        let retained=try client.pendingManualActions(binding:h.binding)
+        #expect(retained.count==1 && retained.first?.originalUTF8==original.originalUTF8)
+        #expect(await server.prepareBodies.count==1)
     }
     @Test func changingLocalIntentWithholdsLatePreparationAndKeepsTheNewDraft() async throws {
         let (h,client,server,_,editor)=try await setup();defer { h.clean() }

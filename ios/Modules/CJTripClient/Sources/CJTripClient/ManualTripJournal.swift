@@ -1,6 +1,18 @@
 import Foundation
 import CJAPI
 
+/// Frozen BASE error envelope at the HTTP/persisted-proof boundary. Keep the
+/// original bytes in the journal; language fields are required, never stripped.
+func manualTripErrorResponse(_ bytes:Data) throws -> Components.Schemas.ErrorResponse {
+    var parser=StrictTripJSON(bytes:Array(bytes))
+    let root=try parser.document().fields("request_id error")
+    _=try root.required("error").fields("code category message_en message_zh outcome recovery")
+    let value=try JSONDecoder().decode(Components.Schemas.ErrorResponse.self,from:bytes)
+    guard UUID(uuidString:value.request_id) != nil,
+          ["INVALID_INPUT","ACCESS_DENIED","TRIP_CONFLICT","BODY_TOO_LARGE","UNSUPPORTED_MEDIA_TYPE","TRIP_UNAVAILABLE","TRIP_ACCESS_UNAVAILABLE","TRIP_OUTCOME_UNKNOWN"].contains(value.error.code) else { throw TripFailure.invalidResponse }
+    return value
+}
+
 /// Local-only journal schema. The original remote wire is always retained as
 /// immutable bytes; decoding this record grants query only, never POST access.
 struct ManualTripOriginal: TripJournalRecord, Sendable {
@@ -167,11 +179,9 @@ struct ManualTripRejection: TripJournalRecord, Sendable {
     var storageID: String { original.storageID }
     func validate() throws {
         try original.validate()
-        var parser = StrictTripJSON(bytes: Array(responseUTF8)); let root = try parser.document().fields("request_id error")
-        let e = try root.required("error").fields("code category outcome recovery")
+        let response=try manualTripErrorResponse(responseUTF8)
         let codes = [400: "INVALID_INPUT", 401: "ACCESS_DENIED", 409: "TRIP_CONFLICT", 413: "BODY_TOO_LARGE", 415: "UNSUPPORTED_MEDIA_TYPE"]
-        guard UUID(uuidString: try root.required("request_id").text()) != nil, try e.required("outcome").text() == "failed",
-              try e.required("recovery").text() == "do_not_retry", try codes[status] == e.required("code").text() else { throw TripFailure.storageUnavailable }
-        _ = try e.required("category").text()
+        guard response.error.outcome == .failed,response.error.recovery == .do_not_retry,
+              codes[status]==response.error.code else { throw TripFailure.storageUnavailable }
     }
 }
