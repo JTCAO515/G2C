@@ -63,6 +63,7 @@ import Observation
     let memory: DevelopmentMemoryHost?
     let typedMemory: DevelopmentTypedMemoryHost?
     let needs: DevelopmentNeedsHost?
+    let structuredTrips: StructuredTripHost?
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
@@ -70,8 +71,9 @@ import Observation
         let environment = ProcessInfo.processInfo.environment
         let typedMode = try DevelopmentTypedMode.read(environment)
         let needsProfile = try DevelopmentNeedsProfile.read(environment)
+        let tripEditingProfile = try DevelopmentTripEditingProfile.read(environment)
         _ = try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
-        let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 4096,
+        let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: tripEditingProfile == nil ? 4096 : 1_000_000,
             maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let lifetime = try DevelopmentLifetime(configuration: configuration, shell: shell, lease: lease)
         self.lifetime = lifetime
@@ -98,11 +100,19 @@ import Observation
         let store = try TripPendingStore(directory: root, maximumBytes: 1_000_000, maximumRecords: 100,
             binding: lifetime.trip, expectedKeyID: key.id, provider: keys)
         let transport = try NoRedirectTransport(requestTimeout: 10, resourceTimeout: 20)
-        let client = TripClient(endpoint: endpoint, credentials: { binding in
+        let credentials: TripCredentialCallback = { binding in
             guard lifetime.current == binding else { return nil }
             return configuration.token
-        }, currentBinding: { lifetime.current }, session: lifetime.session, sessionOperation: lifetime.operation,
-            pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
+        }
+        let client: TripClient
+        if tripEditingProfile != nil {
+            client = try TripClient(developmentManual: endpoint, credentials: credentials, currentBinding: { lifetime.current },
+                session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store,
+                requestTimeout: 10, resourceTimeout: 20, maximumJournalBytes: 4_000_000, maximumJournalRecords: 100)
+        } else {
+            client = TripClient(endpoint: endpoint, credentials: credentials, currentBinding: { lifetime.current },
+                session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
+        }
         trips = TripContainerHost(shell: shell)
         guard trips.bind(TripContainerBinding(client: client, trip: lifetime.trip, shellGeneration: shell.generation,
             session: lifetime.session, sessionOperation: lifetime.operation, pageSize: 20,
@@ -125,6 +135,18 @@ import Observation
                 session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
             typedMemory = nil
         } else { memory = nil;typedMemory = nil }
+        if tripEditingProfile != nil {
+            let needsHost = needs?.host
+            structuredTrips = StructuredTripHost(shell: shell, client: client, binding: lifetime.trip,
+                session: lifetime.session, sessionOperation: lifetime.operation, currentBinding: { lifetime.current },
+                needsSelection: {
+                    guard let snapshot = needsHost?.presentation?.snapshot else { return nil }
+                    return try TripNeedsReference(id: snapshot.needs_id, expectedVersion: snapshot.version)
+                }, readNeeds: {
+                    guard let needsHost, let context = needsHost.captureAction(), let work = needsHost.prepareDetail(context: context) else { return }
+                    await needsHost.perform(work)
+                })
+        } else { structuredTrips = nil }
         shell.selectedTab = .trips
         // Disk restoration only selects an original action for GET reconciliation;
         // it never prepares or submits another action, even while the API is offline.
@@ -141,6 +163,7 @@ import Observation
         memory?.invalidate()
         typedMemory?.invalidate()
         needs?.invalidate()
+        structuredTrips?.invalidate()
         trips.invalidate()
         keys.invalidate()
         if lifetime.ownsSession { _ = lifetime.session.clearWithSettlement() }
@@ -522,6 +545,7 @@ import Observation
     }()
 
     init(environment: [String: String], shell: ShellState) throws {
+        _ = try DevelopmentTripEditingProfile.read(environment)
         guard environment["G2C_DEV_ACCOUNT_MODE"] == "1",
               let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment),
               let raw = (environment["G2C_DEV_ACCOUNTS"] ?? "{}").data(using: .utf8), raw.count <= 131072,

@@ -15,11 +15,12 @@ public struct ShellView: View {
     @State private var generalFeedbackHost: FeedbackContainerHost
     @State private var needsContainerHost: NeedsContainerHost
     @State private var tripContainerHost: TripContainerHost
+    @State private var structuredTripHost: StructuredTripHost?
     @State private var memoryContainerHost: MemoryContainerHost
     @State private var typedMemoryContainerHost: TypedMemoryContainerHost?
     @Environment(\.scenePhase) private var scenePhase
 
-    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, typedMemoryContainerHost: TypedMemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil) {
+    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, typedMemoryContainerHost: TypedMemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, structuredTripHost: StructuredTripHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil) {
         if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
         if let developmentAccountHost { precondition(developmentAccountHost.belongs(to: state)) }
         if let messageHost { precondition(messageHost.belongs(to: state), "Message host must own the same ShellState") }
@@ -27,6 +28,7 @@ public struct ShellView: View {
         if let memoryContainerHost { precondition(memoryContainerHost.belongs(to: state)) }
         if let typedMemoryContainerHost { precondition(typedMemoryContainerHost.belongs(to: state)) }
         if let tripContainerHost { precondition(tripContainerHost.belongs(to: state)) }
+        if let structuredTripHost { precondition(structuredTripHost.belongs(to: state)) }
         if let needsContainerHost { precondition(needsContainerHost.belongs(to: state)) }
         if let answerFeedbackHost { precondition(answerFeedbackHost.belongs(to: state, surface: .answer)) }
         if let generalFeedbackHost { precondition(generalFeedbackHost.belongs(to: state, surface: .general)) }
@@ -45,6 +47,7 @@ public struct ShellView: View {
         self._generalFeedbackHost = State(initialValue: generalFeedbackHost ?? state.generalFeedbackHost ?? FeedbackContainerHost(shell: state, surface: .general))
         self._needsContainerHost = State(initialValue: needsContainerHost ?? state.needsContainerHost ?? NeedsContainerHost(shell: state))
         self._tripContainerHost = State(initialValue: tripContainerHost ?? state.tripContainerHost ?? TripContainerHost(shell: state))
+        self._structuredTripHost = State(initialValue: structuredTripHost)
         self._memoryContainerHost = State(initialValue: memoryContainerHost ?? state.memoryContainerHost ?? MemoryContainerHost(shell: state))
         // Typed consumption is explicit; a stale weak host is never activation.
         self._typedMemoryContainerHost = State(initialValue: typedMemoryContainerHost)
@@ -55,7 +58,10 @@ public struct ShellView: View {
             NavigationStack { AssistantShell(state: state, messageHost: messageHost, serverHistoryHost: serverHistoryHost, needsHost: needsContainerHost, feedbackHost: answerFeedbackHost, runHost: runContainerHost, usageHost: originalUsageContainerHost, bodyText: state.assistantBody) }
                 .tabItem { Label(ShellTab.assistant.title(state.language), systemImage: "bubble.left.and.bubble.right") }
                 .tag(ShellTab.assistant)
-            TripShell(state: state, host: tripContainerHost)
+            Group {
+                if let structuredTripHost { StructuredTripHome(host: structuredTripHost, legacy: tripContainerHost, state: state) }
+                else { TripShell(state: state, host: tripContainerHost) }
+            }
             .tabItem { Label(ShellTab.trips.title(state.language), systemImage: "map") }
             .tag(ShellTab.trips)
             NavigationStack {
@@ -86,6 +92,9 @@ public struct ShellView: View {
                 tripContainerHost.suspendForBackground()
                 memoryContainerHost.suspendForBackground()
                 typedMemoryContainerHost?.suspendForBackground()
+                structuredTripHost?.setForeground(false)
+            } else {
+                structuredTripHost?.setForeground(true)
             }
         }
     }

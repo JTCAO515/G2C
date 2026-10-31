@@ -9,6 +9,19 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func manualTripProfileIsExplicitAndReleaseDoesNotActivateIt() throws {
+        #if DEBUG
+        #expect(try DevelopmentTripEditingProfile.read([:]) == nil)
+        #expect(try DevelopmentTripEditingProfile.read(["G2C_DEV_TRIP_MANUAL_PROFILE":"manual-v1"]) != nil)
+        for invalid in ["", "true", "live", "manual-v2"] {
+            #expect(throws:DevelopmentTripEditingProfile.Failure.invalidProfile) {
+                try DevelopmentTripEditingProfile.read(["G2C_DEV_TRIP_MANUAL_PROFILE":invalid])
+            }
+        }
+        #else
+        #expect(try DevelopmentTripEditingProfile.read(["G2C_DEV_TRIP_MANUAL_PROFILE":"manual-v1"]) == nil)
+        #endif
+    }
     @Test func factAndPlaceProfilesAreExplicitExclusiveAndNeverEnableRelease() throws {
         #if DEBUG
         #expect(try DevelopmentSessionConfiguration.toolAnswerProfile([:]) == .plain)
