@@ -11,9 +11,11 @@ import HTTPTypes
 private actor ScopedWire: ClientTransport {
     var requests: [(String, Data?)] = []
     var original: Data?
+    var discoveryOverride: Data?
     var loseACK = false
     var emptyReceipt = false
     var callback: (@MainActor @Sendable () -> Void)?
+    func useDiscovery(_ bytes: Data) { discoveryOverride = bytes }
     func configure(loseACK: Bool = false, emptyReceipt: Bool = false, callback: (@MainActor @Sendable () -> Void)? = nil) {
         self.loseACK = loseACK; self.emptyReceipt = emptyReceipt; self.callback = callback
     }
@@ -22,7 +24,7 @@ private actor ScopedWire: ClientTransport {
         if let body { bytes = try await Data(collecting: body, upTo: 32768) } else { bytes = nil }
         requests.append((request.path!, bytes))
         let output: Data
-        if operationID == "discoverScopedTripV1" { output = try scopedFixture() }
+        if operationID == "discoverScopedTripV1" { output = try discoveryOverride ?? scopedFixture() }
         else {
             if let bytes { original = bytes }
             if loseACK, bytes != nil { throw PreviewFailure.unknown }
@@ -66,6 +68,29 @@ private actor ScopedWire: ClientTransport {
     }
 }
 @MainActor struct ScopedRuntimeTests {
+    @Test func originalUnicodeAndQueryPunctuationSurviveTheCQueryBoundary() async throws {
+        let h = try ScopedHarness(), client = try h.client()
+        let message = "原消息-e\u{301} +/?&%", run = "原运行-+ &%/?"
+        var root = try #require(JSONSerialization.jsonObject(with: scopedFixture()) as? [String: Any])
+        var d = root["discovery"] as! [String: Any], ref = d["reference"] as! [String: Any]
+        ref["message_id"] = message; ref["run_id"] = run; d["reference"] = ref
+        var proposal = d["proposal"] as! [String: Any], scope = proposal["scope"] as! [String: Any]
+        scope["reference"] = ref; proposal["scope"] = scope; d["proposal"] = proposal; root["discovery"] = d
+        let bytes = try canonical(root), original = try scopedReference(bytes)
+        await h.wire.useDiscovery(bytes)
+        let read = try await client.discover(original: original, validateOriginal: {})
+        #expect(Data(read.value.reference.messageID.utf8) == Data(message.utf8))
+        let path = try #require(await h.wire.requests.first?.0)
+        let query = try #require(URLComponents(string: "http://127.0.0.1" + path)?.percentEncodedQuery)
+        let decoded = try query.split(separator: "&").reduce(into: [String: String]()) { result, part in
+            let pair = part.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+            let key = try #require(String(pair[0]).removingPercentEncoding)
+            // The owning C parse_qsl decodes form-query plus as a space.
+            result[key] = try #require(String(pair[1]).replacingOccurrences(of: "+", with: " ").removingPercentEncoding)
+        }
+        #expect(Data(try #require(decoded["message_id"]).utf8) == Data(message.utf8))
+        #expect(Data(try #require(decoded["run_id"]).utf8) == Data(run.utf8))
+    }
     @Test func originalBytesAreDurableBeforeOnePostAndReopeningQueriesOnly() async throws {
         let h = try ScopedHarness(), client = try h.client(), read = try await h.read(client)
         let work = try client.stage(.accept, read: read)

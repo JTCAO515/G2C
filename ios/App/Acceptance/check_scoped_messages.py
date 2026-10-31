@@ -58,7 +58,8 @@ try:
    dev_auth.init(auth,[subject,other_subject] if CASE=='testScopedCandidateLateAccount' else [subject])
    path=ARGS.run_context.resolve();context=load_run_context(path);assert context.version=='CJ-LOCAL-RUN@2';r['run_context']=json.loads(path.read_text());save()
    os.environ.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_RUN_CONTEXT=str(path))
-   subprocess.run([sys.executable,'-B',str(ROOT/'scripts/local_run_context.py'),'--conninfo-json',str(connection),'--auth-dir',str(auth),'--run-context',str(path),'--subject',subject,'init-budget'],cwd=ROOT,check=True,capture_output=True)
+   for budget_subject in ([subject,other_subject] if CASE=='testScopedCandidateLateAccount' else [subject]):
+    subprocess.run([sys.executable,'-B',str(ROOT/'scripts/local_run_context.py'),'--conninfo-json',str(connection),'--auth-dir',str(auth),'--run-context',str(path),'--subject',budget_subject,'init-budget'],cwd=ROOT,check=True,capture_output=True)
    dev_auth.activate_travel(connection,subject,context,'MESSAGE-TRAVEL-CONSUMER@1')
    signer=ConfirmationSigner(b'synthetic-source-init-app-only-signing-123456789')
    api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,needs_profile='manual-v1',confirmation_signer=signer)
@@ -128,6 +129,9 @@ try:
    edit_db,configuration=local_configuration(conninfo_path=connection,auth_dir=auth,run_context=context,memory=memory,credentials=credentials.__getitem__,confirmation=signer,limits=limits,language='en')
    message_edit_profile.activate(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
    edit_api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,edit_configuration=configuration,needs_profile='manual-v1',history_configuration=load_history_configuration(auth))
+   if CASE=='testScopedCandidateLateAccount':
+    other_headers={'Authorization':'Bearer '+dev_auth.token(auth,other_subject,120)}
+    with TestClient(edit_api) as client:expect(client.get('/v1/message-receipts',params=dict(message_id='synthetic-session-probe'),headers=other_headers),'actual-B-session-readiness')
    class ScopedFake(FakeProvider):
     def __init__(self):super().__init__();self.inputs=[]
     def stream(self,messages,system=None):
