@@ -14,6 +14,7 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
     private let credentials: NeedsCredentialCallback
     private let currentBinding: @MainActor () -> NeedsBinding?
     private let transport: any ClientTransport
+    private let localTimeouts: (TimeInterval, TimeInterval)?
     private let session: SessionLifecycle?
     private let sessionOperation: SessionOperation?
     private let testWrites: Bool
@@ -30,7 +31,7 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
                 liveReadTransport: NoRedirectTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
-        transport = liveReadTransport; testWrites = false; acceptsUserActions = false
+        transport = liveReadTransport; testWrites = false; acceptsUserActions = false; localTimeouts = nil
     }
     /// Internal synthetic transport seam. Never exported as production write permission.
     init(endpoint: NeedsEndpoint, credentials: @escaping NeedsCredentialCallback,
@@ -38,7 +39,7 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
          interceptedTransport: any ClientTransport, manualWritesAvailable: Bool = false) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         session = nil; sessionOperation = nil; store = pendingStore
-        transport = interceptedTransport; testWrites = true; acceptsUserActions = manualWritesAvailable
+        transport = interceptedTransport; testWrites = true; acceptsUserActions = manualWritesAvailable; localTimeouts = nil
     }
     #if DEBUG && targetEnvironment(simulator)
     /// Explicit CJ-LOCAL-NEEDS@1 manual-v1 capability. Ordinary and Release
@@ -46,7 +47,7 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
     public init(localEndpoint endpoint: NeedsEndpoint, credentials: @escaping NeedsCredentialCallback,
                 currentBinding: @escaping @MainActor () -> NeedsBinding?, session: SessionLifecycle,
                 sessionOperation: SessionOperation, pendingStore: NeedsPendingStore,
-                localTransport: NoRedirectTransport) throws {
+                requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
               let port = endpoint.url.port, (1...65535).contains(port),
               endpoint.maximumRequestBytes <= 131072, endpoint.maximumResponseBytes <= 1048576 else {
@@ -54,7 +55,8 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
         }
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
-        transport = localTransport; testWrites = true; acceptsUserActions = true
+        transport = try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout)
+        localTimeouts = (requestTimeout, resourceTimeout); testWrites = true; acceptsUserActions = true
     }
     #endif
     public func invalidate() { generation = UUID(); started = nil; confirmed.removeAll() }
@@ -129,8 +131,7 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
         catch { try check(work); throw NeedsFailure.unconfigured }
         try check(work)
         guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw NeedsFailure.unconfigured }
-        return Client(serverURL: endpoint.url, configuration: .memory,
-                      transport: NeedsTransport(underlying: transport, endpoint: endpoint, bearer: bearer, testWrites: testWrites) { [self] in
+        let validate: @MainActor @Sendable () throws -> Void = { [self] in
             try check(work)
             if let original {
                 guard let store else { throw NeedsFailure.unconfigured }
@@ -152,8 +153,19 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
                 for proof in originals { try store.validateDurability(proof) }
                 for proof in rejections { try proof.validateDurability() }
             }
-        })
+        }
+        let outgoing: any ClientTransport
+        if let localTimeouts {
+            // A fresh sealed transport captures THIS work, not a mutable latest
+            // selection. Its final live-exit fence includes original durability.
+            outgoing = try NoRedirectTransport.developmentNeeds(endpoint: endpoint,
+                requestTimeout: localTimeouts.0, resourceTimeout: localTimeouts.1, validate: validate)
+        } else { outgoing = transport }
+        return Client(serverURL: endpoint.url, configuration: .memory,
+                      transport: NeedsTransport(underlying: outgoing, endpoint: endpoint, bearer: bearer,
+                                                testWrites: testWrites, validate: validate))
     }
+
     private func exchange<T>(_ work: NeedsWork, _ action: () async throws -> T) async throws -> T {
         do { let result = try await action(); try check(work); return result }
         catch { try check(work); throw NeedsFailure.exchangeUnknown } // Never leak ClientError's bearer/body.
