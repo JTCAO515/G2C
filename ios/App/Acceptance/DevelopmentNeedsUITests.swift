@@ -93,7 +93,9 @@ import Foundation
     @discardableResult private func text(_ id: String, contains: String, timeout: TimeInterval = 30) -> String {
         let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
         let row = panel.exists ? panel.staticTexts.matching(identifier:id).firstMatch : app.staticTexts.matching(identifier:id).firstMatch
-        let value = row.exists ? row : (panel.exists ? panel.otherElements.matching(identifier:id).firstMatch : app.otherElements.matching(identifier:id).firstMatch)
+        let other = panel.exists ? panel.otherElements.matching(identifier:id).firstMatch : app.otherElements.matching(identifier:id).firstMatch
+        let native = panel.exists ? panel.textViews.matching(identifier:id).firstMatch : app.textViews.matching(identifier:id).firstMatch
+        let value = row.exists ? row : other.exists ? other : native
         let exists = value.waitForExistence(timeout:timeout)
         if !exists { capture("missing-"+id) }
         XCTAssertTrue(exists,id)

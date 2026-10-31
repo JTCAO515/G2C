@@ -288,12 +288,8 @@ public struct NeedsDetailsView: View {
         }.foregroundStyle(.primary).textSelection(.enabled)
     }
     private func row(_ title: String, _ value: String, _ id: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title).font(.caption).fixedSize(horizontal: false, vertical: true)
-            Text(value).fixedSize(horizontal: false, vertical: true)
-        }.foregroundStyle(.primary)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .accessibilityElement(children: .combine).accessibilityIdentifier(id)
+        NeedsSelectableFieldText(text: title + "\n" + value)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).accessibilityIdentifier(id)
     }
     private func summary(_ input: NeedsObservationInput, choice: String = "") -> String {
         switch input.state {
@@ -333,3 +329,57 @@ public struct NeedsDetailsView: View {
         }
     }
 }
+
+// Domain-local adaptation of the existing audited RunSelectableText measurement.
+// Keep selection and the full visible label/value, without stale offscreen
+// SwiftUI Text accessibility frames during dynamic-type/contrast auditing.
+#if os(iOS)
+import UIKit
+private struct NeedsSelectableFieldText: UIViewRepresentable {
+    let text: String
+    @Environment(\.dynamicTypeSize) private var size
+    func makeUIView(context: Context) -> UITextView {
+        let view = UITextView()
+        view.isEditable = false; view.isSelectable = true; view.isScrollEnabled = false
+        view.dataDetectorTypes = []; view.backgroundColor = .clear; view.textColor = .label
+        view.textContainerInset = .zero; view.textContainer.lineFragmentPadding = 0
+        view.adjustsFontForContentSizeCategory = true
+        view.setContentCompressionResistancePriority(.required, for: .vertical)
+        return view
+    }
+    func updateUIView(_ view: UITextView, context: Context) {
+        if view.text?.utf8.elementsEqual(text.utf8) != true { view.text = text }
+        view.font = UIFont.preferredFont(forTextStyle: .body,
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: category))
+        // The spoken text is exactly the visible text; no alternate audit value.
+        view.accessibilityLabel = text; view.accessibilityValue = nil
+    }
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+    }
+    static func dismantleUIView(_ view: UITextView, coordinator: ()) { view.text = nil; view.accessibilityLabel = nil }
+    private var category: UIContentSizeCategory {
+        switch size {
+        case .xSmall: .extraSmall
+        case .small: .small
+        case .medium: .medium
+        case .large: .large
+        case .xLarge: .extraLarge
+        case .xxLarge: .extraExtraLarge
+        case .xxxLarge: .extraExtraExtraLarge
+        case .accessibility1: .accessibilityMedium
+        case .accessibility2: .accessibilityLarge
+        case .accessibility3: .accessibilityExtraLarge
+        case .accessibility4: .accessibilityExtraExtraLarge
+        case .accessibility5: .accessibilityExtraExtraExtraLarge
+        @unknown default: .large
+        }
+    }
+}
+#else
+private struct NeedsSelectableFieldText: View {
+    let text: String
+    var body: some View { Text(text).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
+}
+#endif
