@@ -58,8 +58,8 @@ import Foundation
             if element.exists && element.isHittable && frame.midY > top && frame.midY < bottom { return }
             let down = frame == .zero ? attempt >= 20 : frame.midY <= top
             let middle = (top + bottom) / 2, step = min(150,(bottom-top)*0.35)
-            let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.88,dy:middle+(down ? -step : step)))
-            let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.88,dy:middle+(down ? step : -step)))
+            let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? -step : step)))
+            let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id); XCTFail("Expected visible control: "+id)
