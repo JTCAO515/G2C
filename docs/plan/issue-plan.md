@@ -65,8 +65,8 @@
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
 | A App | 文档 PR（M1 交接 + 本次规划修订）→ #244 → #228 → #21（App 部分）；#194、#159 等 JT 文案 | 整个 `ios/**`、`docs/ui.md`；包括从原 C 线移入的 `CJMemoryClient`、`CJTripClient` 等全部 iOS 模块；#228 整体归 A | #244 等 #242 关闭，复用 #167 预算呈现，M2 新消费边界单独实测；#242 未关闭时先做 #228 框 1–3（只依赖 #226），框 4 等 C 线 #227 当前上下文冻结；#21 App 等 B 线 #13 PLACE 契约冻结 |
-| B 后端消息与运行 | #242 → #243 → [#273](https://github.com/JTCAO515/G2C/issues/273) → #13 → [#303](https://github.com/JTCAO515/G2C/issues/303)（#14契约先行）→ [#306](https://github.com/JTCAO515/G2C/issues/306)（#16合成）→ [#305](https://github.com/JTCAO515/G2C/issues/305)（#14后端） | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | 实际工具/后台生产者按功能票接入，不以通用回调代替；#265 PLACE供A266/#21，#306 FACT供A321，#305 NEEDS供C281与A320；后台整理仍由#23接入 |
-| C 后端记忆与草稿 | 已关闭#269/#270/#227/#280；#281正式适配Part1已合PR314 → B305实际生产者 → #204来源发布 → #285 needs-bound/后续规划（PR311 unbound已交）；App#286归A | `backend/trip/**`（JT 2026-10-30转归C）、`backend/draft/**`、`backend/feasibility/**`、`backend/agent/cj_agent/draft.py`、`backend/memory/**`、`backend/memory_management/**`、`backend/memory_jobs/**`、`backend/memory_withdrawal/**`、`backend/manual_edit/**`；只做后端 | C独立后端已交付含Trip ownership/设计与PR316字节修复；PLACE/NEEDS数据已冻结，真实签名NEEDS/runtime writer与最终发布依赖B305，排在B306后（快照时A313占生成组锁）。281/204/285保持OPEN，不再等Trip owner或重复JT批准；12仅在227+228均关后由最后关票方关闭。 |
+| B 后端消息与运行 | 本轮 [#330](https://github.com/JTCAO515/G2C/issues/330) → #315 调查 → #243/#9 归位已交付（PR342）；#315仍OPEN待真实复发，后续B实现等新指派 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | MESSAGE-send.3/trip-reference.1供A #21与#25后续消费；仅讨论profile不授写权，创建限未升级scope，MEMORY适配另交付。#243工具PLACE/FACT已PASS并关闭；后台经JT批准转M3 #23保持UNRUN，#9已关闭 |
+| C 后端记忆、草稿与局部修改 | 已关闭269/270/227/280/204/285/334/335/281/18；22后端PASS、App286归A；JT2026-10-31新增25：核心335已交 → B343追加意图/profile → C336实际局部修改 + C344记忆适配；App337归A | backend/trip/**、backend/draft/**、backend/feasibility/**、backend/agent/cj_agent/draft.py、backend/memory/**、backend/memory_management/**、backend/memory_jobs/**、backend/memory_withdrawal/**、backend/manual_edit/**；只做后端 | B330讨论型send.3不授修改，profile1拒绝MEMORY；336/344等B343冻结新接口后接，不能猜字段/TripID作travelID/数据作lease或删弱旧gate；C344设计先交，App21/286/337全A。326单点授权已完成，不扩大B目录写权。 |
 
 - 未列出的目录由 JT 指定归属；本线只改拥有且获准的文件。A 同时只推进一张父票（#244 属 #9，#228 属 #12）；当前票剩余框全部被前置卡住时，先记停点再换另一张。
 - **共享文件按文件加锁**：每个共享文件同一时间只能有一个开着的 PR 修改，不同共享文件可以同时被不同 PR 修改。`contracts/**` 与生成代码算一组；`docs/handoff.json` 与生成的 `HANDOFF.md` 算一组，组内共用锁。
@@ -108,7 +108,7 @@
 | 7 | #21 CJ-016 行程页 | 每日时间线、地图与地点信息 |
 | 8 | #22 CJ-017、#25 CJ-018 | #22拆[#285](https://github.com/JTCAO515/G2C/issues/285) C后端正式手动保存/固定状态/共享可行性保护、[#286](https://github.com/JTCAO515/G2C/issues/286) A App编辑/diff/确认与恢复；原五框保留。Trip typed/time/lock与受保护manual ingress由C负责；NEEDS未冻结仅阻相应来源/发布组合。#204由C在draft/feasibility/trip接共享校验；#25后续助手限定修改单独执行 |
 
-#9 父票六框映射：框1/5由#242承接；框2/6由#243承接；框3的入口注册/拒绝由#242、实际工具循环和后台生产者接入由#243及对应功能票承接；框4及App日志/缓存由#244承接。真实身份、模型/工具费用、真实结算与晚到回执登记L2 #32，设备部分按适用范围留L3 #29；本地合成回调不替代实际生产者。三张票已建立原生sub-issue，#243/#244原生依赖#242。新契约、迁移语义、别线写权和外部资源仍适用既有停点，拆票本身不授予这些权限。
+#9 父票六框映射：框1/5由#242承接；框2/6由#243承接；框3的入口注册/拒绝由#242、实际工具循环由#243承接；后台部分经JT 2026-10-31批准转M3 #23，仍UNRUN；框4及App日志/缓存由#244承接。真实身份、模型/工具费用、真实结算与晚到回执登记L2 #32，设备部分按适用范围留L3 #29；本地合成回调不替代实际生产者。三张票已建立原生sub-issue，#243/#244原生依赖#242。新契约、迁移语义、别线写权和外部资源仍适用既有停点，拆票本身不授予这些权限。 2026-10-31核实#242/#243/#244均关闭，M2父#9六框已按L1/转记回填关闭；不表示后台、真实费用或全M2/发布通过。
 
 ### C线 #227 分段与 #17 拆分（JT 2026-10-30）
 
@@ -126,6 +126,12 @@
 
 ### B线旅行上下文插队（JT 2026-10-30）
 
-- #243框3的实际工具/后台生产者依赖保持在#13/#16/#23对应功能票，不制造回调验收；按子票级停点挂起后先取#273。这里只记录依赖/队列结构，进度以Issue为准。
+- [历史2026-10-30，见下方2026-10-31更新] #243框3的实际工具/后台生产者依赖保持在#13/#16/#23对应功能票，不制造回调验收；按子票级停点挂起后先取#273。这里只记录依赖/队列结构，进度以Issue为准。
 - #273归B且挂父#12，先与C的3b1c0df typed设计对齐身份、MESSAGE新引用、lease/键和锁序。方向及新增版本/追加本地迁移/最小列权限按JT2026-10-30常设授权；具体设计和证据记对应Issue，敏感资源例外仍停JT。
 - #273不修改MESSAGE-send.1、MEMORY旧语义、已应用迁移或C/ios文件；交付后在#227/#228通知真实冻结版本/键及head。随后回#13→#303（NEEDS契约先行）→#306（#16合成）→#305（#14后端）；App与后台生产者按各自owner子票验收，不代闭父票。
+
+### B线本轮交付及M3归位（JT 2026-10-31）
+
+- #330已由PR342锁head85acf4ec合并e88f9a5a，精确CI41166636674全绿并完成独立红线审查/逐字一致main整合复用；send.3/trip-reference.1及原结果版本供A #21/#25消费，旧send.1/send.2/已应用迁移未改。仅讨论型profile：升级scope拒新send.2，既有MEMORY无适配拒升级；不把travel_context冒充Trip，不以该协议授予#25写入/确认权。
+- #315本轮调查与安全诊断随342交付；100次实际Unicode CLI未复现，原历史FAIL/实际失败计数/rootUNKNOWN保留，315保持OPEN。89个原断言条件不变；受控报告1→0仅验证诊断，不当产品复现或已修复。
+- JT已批准把#243框3后台部分完整转记M3 #23并保留UNRUN；PLACE/FACT工具证据保留，#243和#9已关闭。真实结算/外部服务/费用仍→L2 #32，设备适用部分→L3 #29；不制造后台验收或新增B自主队列。

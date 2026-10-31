@@ -113,8 +113,10 @@ class RuntimeFeasChecks(Harness):
         value=json.loads(reader.read(self.headers('alice')['Authorization'][7:],project))
         self.assertIn('ROUTE_EVIDENCE_UNVERIFIED',value['codes'])
         # No Trip or AI draft was created by either input/evaluation path.
-        with database.connect(scope_for(ISSUER,'alice')) as conn:
-            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0],0)
+        for subject in ('alice','route'):
+            with database.connect(scope_for(ISSUER,subject)) as conn:
+                self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0],0)
+                self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0],0)
 
     def test_real_declared_currency_paid_scope_and_time_unknowns(self):
         cases=[

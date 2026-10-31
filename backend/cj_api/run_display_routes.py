@@ -31,6 +31,7 @@ def register_run_display_route(app,reader=None,configuration=None,modules=None):
         request_id=request.state.request_id
         def invoke():
             try:
+                if version==3:return reader.read_trip_display(token,mid,request_id)
                 if version==2:return reader.read_travel_display(token,mid,request_id)
                 return reader.read_projected(token,mid,lambda nine:encode_response(nine,request_id))
             except BaseException as exc:
@@ -50,3 +51,6 @@ def register_run_display_route(app,reader=None,configuration=None,modules=None):
 
     @app.get('/v2/run-display',response_model=RunDisplayV2Response)
     async def read_v2(request:Request):return await read_version(request,version=2)
+
+    @app.get('/v3/run-display')
+    async def read_v3(request:Request):return await read_version(request,version=3)

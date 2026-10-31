@@ -50,6 +50,15 @@ class FakeProvider:
             yield json.dumps({'title': '北京三日游' if chinese else 'Three days in Beijing', 'items': items},
                              ensure_ascii=False)
             return
+        if messages[0]['role']=='system' and messages[0]['content'].startswith('FORMAL_TRIP_CONTEXT_V1\n'):
+            context=json.loads(messages[0]['content'].split('\n',2)[2])
+            if context.get('selection_required') is True:
+                yield '请明确选择正式行程、当地日期或条目。' if chinese else 'Please explicitly select a formal Trip, local date or item.'
+            else:
+                ref=context['reference']; trip=ref['trip_context']
+                yield '(local synthetic Trip reply) '+json.dumps(dict(trip=trip,content_sha256=ref['content_sha256'],
+                    title=context['title'],items=context['items']),ensure_ascii=False,separators=(',',':'))
+            return
         reply = (f'（本地模拟回复）收到：{text}。北京行程建议需要核实开放时间。' if chinese
                  else f'(local simulated reply) Received: {text}. Beijing plans need opening hours checked.')
         size = max(1, len(reply) // self.chunks_per_reply)

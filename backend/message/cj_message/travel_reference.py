@@ -93,6 +93,10 @@ def read_reference(tx, stored):
     receipt=stored.receipt
     try:
         wire_version=json.loads(stored.raw)['version']
+        if wire_version=='MESSAGE-send.3':
+            if not tx.trip_mode:raise Unavailable('explicit formal Trip consumer required')
+            from .trip_reference import read_reference as read_trip
+            return read_trip(tx,stored)
         command=Command.parse_v2(stored.raw) if wire_version=='MESSAGE-send.2' else Command.parse_stored(stored.raw)
     except (InvalidInput,ValueError,KeyError,TypeError) as exc:
         raise Unavailable('original context message unavailable') from exc
@@ -127,10 +131,11 @@ def read_reference(tx, stored):
 
 
 class MessageContextLease:
-    def __init__(self, authority, principal, binding, reference, stored, *, _factory=None):
+    def __init__(self, authority, principal, binding, reference, stored, *, refresh=None, _factory=None):
         if _factory is not _LEASE_FACTORY:
             raise TypeError('message context lease must be issued by authority')
         self._authority,self._principal,self._binding=authority,principal,binding
+        self._refresh=refresh
         self._reference,self._stored=reference,stored
         self._active=True
         self._thread=threading.current_thread()
@@ -141,6 +146,7 @@ class MessageContextLease:
             raise LeaseUnavailable('message context lease expired')
         if self._authority.admit()!=self._principal:
             raise Denied('message context identity changed')
+        if self._refresh is not None:self._refresh()
         return True
 
     def original_message(self):
@@ -234,7 +240,7 @@ class MessageContextAuthority:
                 lease._active=False
 
     @contextmanager
-    def hold_for_effect(self,binding):
+    def hold_for_effect(self,binding,*,source_lock=True):
         active=self._active.get()
         if active is not None:
             active.check(binding)
@@ -253,7 +259,15 @@ class MessageContextAuthority:
                 if chat is None or chat[0]!=binding.generation or chat[1]<reference.sequence:
                     raise Denied('message context conversation invalid')
                 enabled=profile(tx.cur,tx.scope)
-                if reference.context_kind=='legacy':
+                refresh=None
+                if reference.message_version=='MESSAGE-send.3':
+                    from .trip_reference import check_effect,check_source
+                    if not source_lock:
+                        def refresh():
+                            with self._transaction() as current_tx:
+                                check_source(current_tx,reference)
+                    check_effect(tx,reference,chat,source_check=refresh)
+                elif reference.context_kind=='legacy':
                     if enabled:
                         raise Denied('legacy context cannot execute in upgraded scope')
                 else:
@@ -282,7 +296,7 @@ class MessageContextAuthority:
                     if reference.context_kind=='travel':
                         try: check_context(tx.cur,tx.scope,Selection(reference.context_id,reference.context_version))
                         except ContextConflict as exc: raise Denied('travel context changed') from exc
-                lease=MessageContextLease(self,principal,binding,reference,stored,_factory=_LEASE_FACTORY)
+                lease=MessageContextLease(self,principal,binding,reference,stored,refresh=refresh,_factory=_LEASE_FACTORY)
                 token=self._active.set(lease)
                 try:
                     lease.check(binding)
@@ -300,6 +314,12 @@ class MessageContextAuthority:
                 return True
         except Denied:
             return False
+
+    def answer_messages(self,binding,messages):
+        reference=self.read_original(binding)
+        if reference.message_version!='MESSAGE-send.3': return messages
+        from .trip_reference import prompt
+        return [prompt(reference),*messages]
 
     def active_original(self,binding):
         active=self._active.get()

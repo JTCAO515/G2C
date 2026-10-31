@@ -1,0 +1,1179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.g2c.invalid/message/trip-schema.1.json",
+  "title": "MESSAGE-send.3 and original formal Trip reference v1",
+  "$defs": {
+    "MessageReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "message_id",
+        "conversation_id",
+        "generation",
+        "sequence",
+        "run_id",
+        "input_sha256"
+      ],
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "MessageTravelReferenceTravel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "enum": [
+            "MESSAGE-travel-reference.1"
+          ]
+        },
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message_version": {
+          "type": "string",
+          "enum": [
+            "MESSAGE-send.2"
+          ]
+        },
+        "context_kind": {
+          "type": "string",
+          "enum": [
+            "travel"
+          ]
+        },
+        "context_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "context_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "selection_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        }
+      },
+      "required": [
+        "version",
+        "conversation_id",
+        "generation",
+        "message_id",
+        "run_id",
+        "sequence",
+        "input_sha256",
+        "message_version",
+        "context_kind",
+        "context_id",
+        "context_version",
+        "selection_epoch"
+      ]
+    },
+    "MessageTravelReferenceNone": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "enum": [
+            "MESSAGE-travel-reference.1"
+          ]
+        },
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message_version": {
+          "type": "string",
+          "enum": [
+            "MESSAGE-send.2"
+          ]
+        },
+        "context_kind": {
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        "context_id": {
+          "type": "null"
+        },
+        "context_version": {
+          "type": "null"
+        },
+        "selection_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        }
+      },
+      "required": [
+        "version",
+        "conversation_id",
+        "generation",
+        "message_id",
+        "run_id",
+        "sequence",
+        "input_sha256",
+        "message_version",
+        "context_kind",
+        "context_id",
+        "context_version",
+        "selection_epoch"
+      ]
+    },
+    "MessageTravelReferenceLegacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "enum": [
+            "MESSAGE-travel-reference.1"
+          ]
+        },
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message_version": {
+          "type": "string",
+          "enum": [
+            "MESSAGE-send.1",
+            "MESSAGE-draft.1"
+          ]
+        },
+        "context_kind": {
+          "type": "string",
+          "enum": [
+            "legacy"
+          ]
+        },
+        "context_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context_version": {
+          "type": "null"
+        },
+        "selection_epoch": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "version",
+        "conversation_id",
+        "generation",
+        "message_id",
+        "run_id",
+        "sequence",
+        "input_sha256",
+        "message_version",
+        "context_kind",
+        "context_id",
+        "context_version",
+        "selection_epoch"
+      ]
+    },
+    "MessageTravelReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MessageTravelReferenceTravel"
+        },
+        {
+          "$ref": "#/$defs/MessageTravelReferenceNone"
+        },
+        {
+          "$ref": "#/$defs/MessageTravelReferenceLegacy"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "context_kind",
+        "mapping": {
+          "travel": "#/components/schemas/MessageTravelReferenceTravel",
+          "none": "#/components/schemas/MessageTravelReferenceNone",
+          "legacy": "#/components/schemas/MessageTravelReferenceLegacy"
+        }
+      }
+    },
+    "TripDay": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "date",
+        "timezone"
+      ],
+      "additionalProperties": false
+    },
+    "TripSelection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "day": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripDay"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "item_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "expected_version",
+        "day",
+        "item_id"
+      ],
+      "additionalProperties": false
+    },
+    "TravelSelection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        }
+      },
+      "required": [
+        "id",
+        "expected_version"
+      ],
+      "additionalProperties": false
+    },
+    "NeedsSelection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        }
+      },
+      "required": [
+        "id",
+        "expected_version"
+      ],
+      "additionalProperties": false
+    },
+    "MessageSend3": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "MESSAGE-send.3"
+        },
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trip_id": {
+          "type": "null"
+        },
+        "creation_intent": {
+          "const": "none"
+        },
+        "expected_generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "travel_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TravelSelection"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "needs_reference": {
+          "type": "null"
+        },
+        "trip_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripSelection"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "conversation_id",
+        "message_id",
+        "text",
+        "trip_id",
+        "creation_intent",
+        "expected_generation",
+        "expected_sequence",
+        "travel_context",
+        "needs_reference",
+        "trip_context"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "trip_context": {
+                "type": "object"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "creation_intent": {
+                "const": "none"
+              },
+              "travel_context": {
+                "type": "null"
+              },
+              "needs_reference": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "creation_intent": {
+                "const": "none"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "needs_reference": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "needs_reference": {
+                "$ref": "#/$defs/NeedsSelection"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MessageTripReference": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "MESSAGE-trip-reference.1"
+        },
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message_version": {
+          "const": "MESSAGE-send.3"
+        },
+        "context_kind": {
+          "enum": [
+            "none",
+            "travel",
+            "trip"
+          ]
+        },
+        "context_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context_version": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selection_epoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "trip_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripSelection"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_version": {
+          "enum": [
+            "structured.1",
+            "structured.2",
+            null
+          ]
+        },
+        "content_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "conversation_id",
+        "generation",
+        "message_id",
+        "run_id",
+        "sequence",
+        "input_sha256",
+        "message_version",
+        "context_kind",
+        "context_id",
+        "context_version",
+        "selection_epoch",
+        "trip_context",
+        "content_version",
+        "content_sha256"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "context_kind": {
+                "const": "trip"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "context_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "context_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "trip_context": {
+                "$ref": "#/$defs/TripSelection"
+              },
+              "content_version": {
+                "enum": [
+                  "structured.1",
+                  "structured.2"
+                ]
+              },
+              "content_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "context_kind": {
+                "enum": [
+                  "none",
+                  "travel"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "trip_context": {
+                "type": "null"
+              },
+              "content_version": {
+                "type": "null"
+              },
+              "content_sha256": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "context_kind": {
+                "const": "none"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "context_id": {
+                "type": "null"
+              },
+              "context_version": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "context_kind": {
+                "const": "travel"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "context_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}$"
+              },
+              "context_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              }
+            }
+          }
+        }
+      ]
+    },
+    "OriginalReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MessageTripReference"
+        },
+        {
+          "$ref": "#/$defs/MessageTravelReference"
+        }
+      ]
+    },
+    "MessageAccept3": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "const": "MESSAGE-accept.3"
+        },
+        "receipt": {
+          "$ref": "#/$defs/MessageReceipt"
+        },
+        "reference": {
+          "$ref": "#/$defs/MessageTripReference"
+        }
+      },
+      "required": [
+        "request_id",
+        "version",
+        "receipt",
+        "reference"
+      ],
+      "additionalProperties": false
+    },
+    "MessageStatus3": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "const": "MESSAGE-send-status.3"
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MessageReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OriginalReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "head": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "conversation_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "generation": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "last_sequence": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "conversation_id",
+                "generation",
+                "last_sequence"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "request_id",
+        "version",
+        "receipt",
+        "reference",
+        "head"
+      ],
+      "additionalProperties": false
+    },
+    "RunCancel3": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "RUN-cancel.3"
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "version",
+        "message_id"
+      ],
+      "additionalProperties": false
+    },
+    "RunDisplay3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "snapshot",
+        "version",
+        "reference"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "#/$defs/RequestId"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/RunDisplaySnapshot"
+        },
+        "version": {
+          "const": "RUN-display.3"
+        },
+        "reference": {
+          "$ref": "#/$defs/MessageTripReference"
+        }
+      }
+    },
+    "RunCancellation3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "message_id",
+        "run_id",
+        "status",
+        "event_highwater",
+        "version",
+        "reference"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "#/$defs/RequestId"
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled",
+            "context_invalid",
+            "unknown"
+          ]
+        },
+        "event_highwater": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "version": {
+          "const": "RUN-cancel.3"
+        },
+        "reference": {
+          "$ref": "#/$defs/MessageTripReference"
+        }
+      }
+    },
+    "RunDraftStatus4": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conversation_id",
+        "generation",
+        "message_id",
+        "run_id",
+        "message_sequence",
+        "event_highwater",
+        "request_id",
+        "version",
+        "run_status",
+        "draft_outcome",
+        "budget_exhausted_stage",
+        "reference"
+      ],
+      "properties": {
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "event_highwater": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "request_id": {
+          "$ref": "#/$defs/RequestId"
+        },
+        "version": {
+          "const": "RUN-draft-status.4"
+        },
+        "run_status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "completed",
+            "failed",
+            "cancelled",
+            "context_invalid",
+            "unknown"
+          ]
+        },
+        "draft_outcome": {
+          "type": "string",
+          "enum": [
+            "not_requested",
+            "not_recorded",
+            "published",
+            "validation_failed",
+            "provider_failed",
+            "provider_unknown",
+            "budget_exhausted"
+          ]
+        },
+        "budget_exhausted_stage": {
+          "type": "string",
+          "enum": [
+            "none",
+            "answer",
+            "draft"
+          ],
+          "description": "Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization."
+        },
+        "reference": {
+          "$ref": "#/$defs/MessageTripReference"
+        }
+      }
+    },
+    "MessageHistory2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "messages",
+        "next_cursor",
+        "version"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "#/$defs/RequestId"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TripHistoryItem"
+          }
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "enum": [
+                null
+              ]
+            }
+          ]
+        },
+        "version": {
+          "const": "MESSAGE-history.2"
+        }
+      }
+    },
+    "TripHistoryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt",
+        "original_utf8_base64",
+        "text",
+        "reference"
+      ],
+      "properties": {
+        "receipt": {
+          "$ref": "#/$defs/MessageReceipt"
+        },
+        "original_utf8_base64": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+          "description": "RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string."
+        },
+        "text": {
+          "type": "string"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OriginalReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "RequestId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Server-generated per HTTP attempt; never an idempotency or authorization token."
+    },
+    "RunDisplaySnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conversation_id",
+        "generation",
+        "message_id",
+        "run_id",
+        "message_sequence",
+        "status",
+        "event_highwater",
+        "text",
+        "text_state"
+      ],
+      "properties": {
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "completed",
+            "failed",
+            "cancelled",
+            "context_invalid",
+            "unknown"
+          ]
+        },
+        "event_highwater": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "text": {
+          "type": "string",
+          "description": "Exact persisted display text; empty queued text is allowed. Explicit host UTF8 byte bound, never truncation or generated fallback."
+        },
+        "text_state": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial"
+          ],
+          "description": "complete only for completed status; every other status is partial, including failed/cancelled/unknown."
+        }
+      },
+      "description": "Read-time original-message-linked persisted display projection. No scope/raw message/events/effects/usage/outbound bytes/model/failure-stage fields. message_sequence differs from event_highwater. Not SSE, a cursor, dispatch or provider-success proof."
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/MessageSend3"
+    },
+    {
+      "$ref": "#/$defs/MessageAccept3"
+    },
+    {
+      "$ref": "#/$defs/MessageStatus3"
+    },
+    {
+      "$ref": "#/$defs/RunCancel3"
+    },
+    {
+      "$ref": "#/$defs/RunDisplay3"
+    },
+    {
+      "$ref": "#/$defs/RunCancellation3"
+    },
+    {
+      "$ref": "#/$defs/RunDraftStatus4"
+    },
+    {
+      "$ref": "#/$defs/MessageHistory2"
+    }
+  ]
+}

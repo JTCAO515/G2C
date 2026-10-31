@@ -179,7 +179,7 @@ class RunWorker:
                     deadline=(self.budget_exit.prepare_publication(binding)
                               if self.message_context is not None and draft and effect is not None
                               and self.budget_exit is not None else None)
-                    context=(leases.enter_context(self.message_context.hold_for_effect(binding))
+                    context=(leases.enter_context(self.message_context.hold_for_effect(binding,source_lock=effect is not None))
                              if self.message_context is not None else None)
                     if self.runs.valid(binding) is not True:
                         raise Denied('context invalid or unknown')
@@ -405,6 +405,8 @@ class RunWorker:
         try:
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
+            if self.message_context is not None:
+                inputs=self.message_context.answer_messages(binding,inputs)
             chunks=self._stream(binding,inputs) if self.tools is None else self.tools.answer(self,binding,inputs)
             for chunk in chunks:
                 buffer += chunk
