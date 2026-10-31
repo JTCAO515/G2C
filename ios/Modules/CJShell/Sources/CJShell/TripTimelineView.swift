@@ -23,7 +23,9 @@ struct TripTimelineView: View {
                         }
                         if display.hasNext { button("timeline.next",language.text("Read next page","读取下一页"),disabled:display.busy) { run { try host.page(more:true) } } }
                         if let record=display.record,let timeline=display.timeline {
-                            RunSelectableText(text:record.tripID+" · "+language.text("Read version ","读取版本 ")+String(record.version)).accessibilityIdentifier("timeline.record.version")
+                            RunSelectableText(text:record.tripID).accessibilityLabel(language.text("Trip identifier","行程标识"))
+                                .accessibilityValue(record.tripID).accessibilityIdentifier("timeline.record.id")
+                            RunReadableText(text:language.text("Read version ","读取版本 ")+String(record.version)).accessibilityIdentifier("timeline.record.version")
                             RunSelectableText(text:record.document.title).accessibilityIdentifier("timeline.record.title")
                             if onDiscuss != nil {
                                 button("timeline.discuss.trip",language.text("Discuss this whole Trip","讨论整个行程"),disabled:display.busy) { discuss(context:display.discussion,day:nil,itemID:nil) }
@@ -38,7 +40,9 @@ struct TripTimelineView: View {
                                 }
                                 ForEach(group.entries) { entry in
                                     VStack(alignment:.leading,spacing:8) {
-                                        RunSelectableText(text:entry.id+"\n"+entry.item.text).accessibilityIdentifier("timeline.item."+entry.id)
+                                        RunSelectableText(text:entry.id+"\n"+entry.item.text)
+                                            .accessibilityLabel(language.text("Original item identifier and text","原条目标识与内容"))
+                                            .accessibilityValue(entry.id+"\n"+entry.item.text).accessibilityIdentifier("timeline.item."+entry.id)
                                         RunSelectableText(text:language.text("Start: ","开始：")+event(entry.item.start)+"\n"+language.text("End: ","结束：")+event(entry.item.end))
                                             .accessibilityIdentifier("timeline.schedule."+entry.id)
                                         RunReadableText(text:span(entry.span)).accessibilityIdentifier("timeline.span."+entry.id)

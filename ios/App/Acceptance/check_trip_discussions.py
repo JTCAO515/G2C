@@ -1,10 +1,11 @@
 """#21 independent send.3 App acceptance; no formal Trip source is fabricated.
 
-Actual signed API/private PG/unchanged run_once/FakeProvider. These cases prove
-unbound clarification and genuine MEMORY upgrade refusal only. Bound Trip/day/
-item, timeline, maps, real providers and devices remain explicitly UNRUN.
+Actual signed API/private PG/unchanged run_once/FakeProvider. Formal Trips come
+from accepted original MESSAGE-send.2 proposals and C source-initialize.1;
+explicit synthetic schedule declarations retain UNKNOWN item/source association.
+Maps, real providers and devices remain explicitly UNRUN.
 """
-import argparse,asyncio,hashlib,importlib.util,json,os,plistlib,subprocess,sys,tempfile,threading,time,traceback,uuid
+import argparse,asyncio,base64,hashlib,importlib.util,json,os,plistlib,subprocess,sys,tempfile,threading,time,traceback,uuid
 from datetime import datetime,timezone
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
@@ -13,6 +14,9 @@ from urllib.parse import parse_qs,urlparse
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.discussions.acceptance'
 CASES=['testUnboundEnglish','testUnboundChineseLarge','testMemoryUpgradeRefused','testNewChatEnglish','testNewChatChineseLarge','testNewChatUnknownReopen','testDiscussionUnknownReopen','testDiscussionCancel','testDiscussionOwnerLate']
+FORMAL_CASES=['testFormalTimelineEnglish','testFormalTimelineChineseLarge','testFormalItemBinding']
+CASES+=FORMAL_CASES
+def creates_chat(case):return case.startswith('testNewChat') or case=='testFormalItemBinding'
 sys.path.insert(0,str(ROOT/'scripts'))
 
 
@@ -34,7 +38,12 @@ def main():
     from fastapi.testclient import TestClient
     from pg_suites import cluster
     from cj_api.local_app import app_from_environment,LocalDatabase,ISSUER,scope_for
+    from cj_api.local_app import create_local_app
     from cj_api.local_run_context import load_run_context
+    from cj_trip.confirmation import ConfirmationSigner
+    from cj_trip.local_needs_app import create_local_needs_app
+    from cj_trip.local_structured_read import create_local_structured_read_app
+    from cj_trip.domain import packed
     from cj_agent.provider import FakeProvider
     from run_worker import run_once
     context=load_run_context(args.run_context)
@@ -43,7 +52,7 @@ def main():
     sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentTripDiscussionUITests.swift',Path(__file__)]
     for name in ('CJShell','CJMessageClient','CJRunClient','CJTripClient'):
         sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
-    report=dict(status='RUNNING',head=head,cases={},unrun=['bound formal Trip/day/item and current structured source','timeline/maps/provider point alignment','real accounts/models/services/fees/cloud','physical device/VoiceOver'],
+    report=dict(status='RUNNING',head=head,cases={},unrun=['formal scenarios not selected in this run','maps/provider point alignment','real accounts/models/services/fees/cloud','physical device/VoiceOver'],
         source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},run_context=json.loads(args.run_context.read_text()))
     lock=threading.RLock()
     def save():(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
@@ -71,7 +80,7 @@ def main():
                 original_app=app_from_environment()
                 with TestClient(original_app) as client:
                     for case,row in subjects.items():
-                        if case.startswith('testNewChat'):continue # the actual App must create these chats
+                        if creates_chat(case):continue # the actual App must create these chats
                         for key in row:
                             response=client.put('/v1/conversations',params={'conversation_id':case},headers={'Authorization':'Bearer '+tokens[case][key]});assert response.status_code==200
                     memory_command=dict(operation_id='synthetic-memory',item_id='synthetic-retained-memory',subject='self',slot='fact',kind='fact',
@@ -88,10 +97,59 @@ def main():
                             else:raise AssertionError('existing MEMORY was silently upgraded')
                         else:
                             assert dev_auth.activate_travel(connection,subject,context,'MESSAGE-TRAVEL-CONSUMER@1')=='activated'
-                            assert message_trip_profile.activate(connection,subject,context,'MESSAGE-TRIP-CONSUMER@1')=='activated'
+                            if case not in FORMAL_CASES:assert message_trip_profile.activate(connection,subject,context,'MESSAGE-TRIP-CONSUMER@1')=='activated'
                 assert refused
+                formal={}
+                if not args.case or args.case in FORMAL_CASES:
+                    signer=ConfirmationSigner(b'synthetic-App-formal-source-only-signing-123456789')
+                    creation=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,needs_profile='manual-v1',confirmation_signer=signer)
+                    initialization=create_local_needs_app(conninfo_path=connection,auth_dir=auth,run_context=context,confirmation_signer=signer)
+                    creation_db=LocalDatabase(connection,run_context=context,travel_context=True,needs_context=True)
+                    class LabeledFake(FakeProvider):
+                        def __init__(self,index):super().__init__();self.index=index
+                        def stream(self,messages,system=None):
+                            for chunk in super().stream(messages,system):
+                                if system is not None:
+                                    value=json.loads(chunk);value['title']='SYNTHETIC formal Trip '+str(self.index);yield json.dumps(value)
+                                else:yield chunk
+                    def known(value):return dict(state='known',value=value)
+                    def stamp(date,clock):return dict(date=known(date),time=known(clock),timezone=known('Asia/Shanghai'),utc_offset=known('+08:00'))
+                    for case in ([args.case] if args.case in FORMAL_CASES else FORMAL_CASES):
+                        subject=subjects[case]['A'];headers={'Authorization':'Bearer '+tokens[case]['A']};binary={**headers,'Content-Type':'application/octet-stream'}
+                        specs=[]
+                        with TestClient(creation) as client:
+                            need=dict(action_id='synthetic-needs-'+case,needs_id='visit',expected_version=0,source=dict(kind='manual',text='SYNTHETIC explicit initialization source'),changes=dict(party_size=known(1)))
+                            saved=client.post('/v1/needs-actions',content=packed(need),headers=binary);assert saved.status_code==200,saved.text
+                            for index in range(2):
+                                cid='synthetic-origin-'+case+'-'+str(index)
+                                chat=client.put('/v1/conversations',params={'conversation_id':cid},headers=headers);assert chat.status_code==200
+                                command=dict(version='MESSAGE-send.2',conversation_id=cid,message_id=cid,text='SYNTHETIC original source planning',trip_id=None,creation_intent='consider_trip',expected_generation=chat.json()['generation'],expected_sequence=0,travel_context=None,needs_reference=dict(id='visit',expected_version=1))
+                                sent=client.post('/v2/messages',content=packed(command),headers=binary);assert sent.status_code==200,sent.text
+                                model=LabeledFake(index);created=run_once(creation_db,model,auth);assert len(created)==1 and created[0].status=='completed' and model.calls==2
+                                pid=created[0].proposal_id;proposal=client.get('/v1/trip-proposals',params={'proposal_id':pid},headers=headers);assert proposal.status_code==200
+                                confirmation=client.post('/v1/trip-confirmations',json=dict(action_id=cid,kind='accept',proposal_id=pid,candidate_hash=proposal.json()['proposal']['candidate_hash']),headers=headers);assert confirmation.status_code==200
+                                accepted=client.post('/v1/trip-actions',content=base64.b64decode(confirmation.json()['action_utf8_base64']),headers=binary);assert accepted.status_code==200
+                                tid=accepted.json()['receipt']['trip_id'];trip=creation_db.trip_repository(scope_for(ISSUER,subject)).detail(tid);document=json.loads(trip.content)
+                                unknown={key:dict(state='unknown') for key in ('date','time','timezone','utc_offset')}
+                                times=[(stamp('2026-11-02','23:30:00'),stamp('2026-11-03','00:30:00')),(stamp('2026-11-03','09:15:00'),stamp('2026-11-03','10:00:00')),(stamp('2026-11-04','08:00:00'),stamp('2026-11-04','09:00:00'))]
+                                items=[]
+                                for position,item in enumerate(document['items']):
+                                    start,end=times[position] if position<len(times) else (unknown,unknown)
+                                    items.append(dict(id=item['id'],schedule=dict(start=start,end=end),fixed=known(False)))
+                                original=dict(version='TRIP-initialize.1',request_id=cid,trip_id=tid,expected_version=trip.version,original_hash=hashlib.sha256(trip.content).hexdigest(),items=items)
+                                with TestClient(initialization) as source:
+                                    prepared=source.post('/v1/trip-source-initializations',content=packed(dict(version='TRIP-source-initialize.1',needs_reference=dict(id='visit',expected_version=1),initialization=original)),headers=binary);assert prepared.status_code==200,prepared.text
+                                    preparation=prepared.json()['preparation'];assert preparation['item_source_association']['status']=='UNKNOWN'
+                                    committed=source.post('/v1/trip-source-initialization-saves',content=packed(dict(version='TRIP-source-initialize-save.1',action_id=cid,proposal_id=preparation['proposal_id'],candidate_hash=preparation['candidate_hash'])),headers=binary);assert committed.status_code==200,committed.text
+                                    assert committed.json()['receipt']['trip_id']==tid and committed.json()['receipt']['committed_version']==2
+                                content=preparation['content'];specs.append(dict(id=tid,version=2,title=content['title'],content_sha256=hashlib.sha256(packed(content)).hexdigest(),item_ids=[item['id'] for item in content['items']],source_provider_calls=model.calls))
+                        formal[case]=specs
+                    report['formal_sources']=formal;save()
+                for case in FORMAL_CASES:
+                    for subject in subjects[case].values():assert message_trip_profile.activate(connection,subject,context,'MESSAGE-TRIP-CONSUMER@1')=='activated'
                 for target in (os.environ,env):target.update(CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1',CJ_LOCAL_TRIP_CONTEXT='message-trip.1')
                 app=app_from_environment();database=LocalDatabase(connection,run_context=context,travel_context=True,trip_context=True)
+                structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
                 class HeldFake(FakeProvider):
                     def __init__(self):super().__init__();self.entered=threading.Event();self.release=threading.Event()
                     def stream(self,messages,system=None):
@@ -152,7 +210,8 @@ def main():
                             event['withheld_body_bytes']=len(value.get('body',b''))
                             raise ConnectionResetError('local transport ACK loss after actual successful chat commit')
                         await send(value)
-                    await app(scope,inspected,captured)
+                    target=structured if scope['path'] in ('/v1/trip-structured-list','/v5/trip-structured') else app
+                    await target(scope,inspected,captured)
                 server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='critical'))
                 thread=threading.Thread(target=server.run,daemon=True);thread.start();deadline=time.monotonic()+20
                 while not server.started:
@@ -185,14 +244,20 @@ def main():
                     status=None;text='';reference=None
                     if rows:
                         raw=bytes(rows[-1][1]);value=json.loads(raw)
-                        assert value['version']=='MESSAGE-send.3' and value['creation_intent']=='none' and value['trip_context'] is None and value['needs_reference'] is None
+                        assert value['version']=='MESSAGE-send.3' and value['creation_intent']=='none' and value['needs_reference'] is None
+                        if case in FORMAL_CASES:
+                            choice=value['trip_context'];assert choice['id'] in [trip['id'] for trip in formal[case]] and choice['expected_version']==2
+                        else:assert value['trip_context'] is None
                         with TestClient(app) as client:
                             response=client.get('/v3/run-display',params={'message_id':rows[-1][0]},headers={'Authorization':'Bearer '+tokens[case]['A']})
                             report['observations'][case]['run_display_status']=response.status_code
                             if response.status_code!=200:report['observations'][case]['run_display_error']=response.json().get('error')
                             save();assert response.status_code==200
                             snapshot=response.json();status=snapshot['snapshot']['status'];text=snapshot['snapshot']['text'];reference=snapshot['reference']
-                            assert reference['context_kind']=='none' and reference['trip_context'] is None and reference['content_sha256'] is None
+                            if case in FORMAL_CASES:
+                                selected=next(trip for trip in formal[case] if trip['id']==value['trip_context']['id'])
+                                assert reference['context_kind']=='trip' and reference['trip_context']==value['trip_context'] and reference['content_sha256']==selected['content_sha256']
+                            else:assert reference['context_kind']=='none' and reference['trip_context'] is None and reference['content_sha256'] is None
                     if case=='testMemoryUpgradeRefused':
                         assert len(memory)==1 and memory[0][0]=='synthetic-retained-memory' and profile is None
                         with TestClient(original_app) as client:
@@ -202,7 +267,7 @@ def main():
                     events=[x for x in audit if x['case']==case];posts=[x for x in events if x['method']=='POST' and x['path']=='/v3/messages']
                     openings=[x for x in events if x['method']=='PUT' and x['path']=='/v1/conversations']
                     cancellations=[x for x in events if x['method']=='POST' and x['path']=='/v3/run-cancellations']
-                    forbidden=[x for x in events if x['method'] not in ('GET','HEAD') and not (x['method']=='POST' and x['path']=='/v3/messages') and not (case.startswith('testNewChat') and x['method']=='PUT' and x['path']=='/v1/conversations') and not (case=='testDiscussionCancel' and x['method']=='POST' and x['path']=='/v3/run-cancellations')]
+                    forbidden=[x for x in events if x['method'] not in ('GET','HEAD') and not (x['method']=='POST' and x['path']=='/v3/messages') and not (creates_chat(case) and x['method']=='PUT' and x['path']=='/v1/conversations') and not (case=='testDiscussionCancel' and x['method']=='POST' and x['path']=='/v3/run-cancellations')]
                     if case.startswith('testNewChat'):
                         assert len(chats)<=1 and all(chat[0]==cid for chat in chats)
                         assert len(openings)<=1 and all(event.get('status')==200 for event in openings)
@@ -235,7 +300,7 @@ def main():
                             path=urlparse(self.path);case=parse_qs(path.query)['case'][0]
                             if path.path=='/prepare':
                                 with lock:active[0]=case
-                                value=dict(case_id=case,endpoint=endpoint,accounts=tokens[case],subjects=subjects[case],conversation=case)
+                                value=dict(case_id=case,endpoint=endpoint,accounts=tokens[case],subjects=subjects[case],conversation=case,formal_trips=formal.get(case,[]))
                             elif path.path in ('/proof','/wait-completed','/wait-settled'):
                                 deadline=time.monotonic()+30
                                 expected='cancelled' if path.path=='/wait-settled' and case=='testDiscussionCancel' else 'completed'

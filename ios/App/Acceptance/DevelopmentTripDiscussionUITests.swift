@@ -8,6 +8,12 @@ import Foundation
     private struct Fixture:Decodable {
         let case_id,endpoint,conversation:String
         let accounts,subjects:[String:String]
+        let formal_trips:[FormalTrip]
+    }
+    private struct FormalTrip:Decodable {
+        let id,title,content_sha256:String
+        let version:Int
+        let item_ids:[String]
     }
     private struct Proof:Decodable {
         let runtime_role:String
@@ -65,7 +71,7 @@ import Foundation
     private func tap(_ id:String) {
         let target:XCUIElement
         if ["Assistant","助手","Memory","记忆","Trips","行程"].contains(id) { target=app.tabBars.buttons.matching(identifier:id).firstMatch }
-        else if id=="assistant.panel.done" { target=app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        else if ["assistant.panel.done","timeline.done"].contains(id) { target=app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else if id=="assistant.history" { target=app.buttons.matching(identifier:id).firstMatch }
         else if ["Done","完成"].contains(id) { target=app.toolbars.buttons.matching(identifier:id).firstMatch }
         else { target=visible({app.buttons.matching(identifier:id).firstMatch},id:id) }
@@ -92,12 +98,13 @@ import Foundation
         try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print(name,issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
         XCTAssertEqual(issues,0)
     }
-    private func launch(_ f:Fixture,language:String,large:Bool=false,restore:Bool=false) throws {
+    private func launch(_ f:Fixture,language:String,large:Bool=false,restore:Bool=false,timezone:String?=nil) throws {
         app?.terminate();app=XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments=["-cj.ui.language.v1",language]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
             "G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-discussion-v1"]
+        if let timezone { app.launchEnvironment["TZ"]=timezone }
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
         if restore { tap("account.development.restore") }
@@ -244,6 +251,35 @@ import Foundation
         XCTAssertEqual(proof.forbidden_writes,0)
         capture("late-original-A200-discarded-in-B");try audit("late-original-A200-discarded-in-B")
     }
+    private func formal(_ name:String,language:String,large:Bool=false,newChat:Bool=false) async throws {
+        let f=try await prepare(name);defer { app?.terminate() }
+        XCTAssertEqual(f.formal_trips.count,2)
+        let first=f.formal_trips[0],second=f.formal_trips[1]
+        try launch(f,language:language,large:large,timezone:language=="en" ? "Pacific/Honolulu" : "Asia/Tokyo")
+        if !newChat { conversation(f) }
+        tap(language=="en" ? "Trips" : "行程");tap("trips.timeline.open");tap("timeline.refresh")
+        tap("timeline.trip."+first.id);text("timeline.record.title",contains:first.title);text("timeline.record.version",contains:String(first.version))
+        let cross=try XCTUnwrap(first.item_ids.first)
+        text("timeline.schedule."+cross,contains:"2026-11-02");text("timeline.schedule."+cross,contains:"Asia/Shanghai")
+        text("timeline.span."+cross,contains:language=="en" ? "Continues to 2026-11-03" : "跨日至 2026-11-03")
+        tap("timeline.trip."+second.id);text("timeline.record.title",contains:second.title)
+        tap("timeline.trip."+first.id);text("timeline.record.title",contains:first.title)
+        if newChat { tap("timeline.discuss.item."+cross) }
+        else { tap("timeline.discuss.day.2026-11-03|Asia/Shanghai") }
+        text("assistant.trip.choice",contains:first.title);text("assistant.trip.version",contains:"2")
+        text("assistant.trip.day",contains:newChat ? "2026-11-02" : "2026-11-03")
+        if newChat { text("assistant.trip.item",contains:cross);tap("assistant.chat.new");text("assistant.chat.status",contains:language=="en" ? "Original chat is available" : "原聊天已可读取") }
+        enter(language=="en" ? "SYNTHETIC discuss this exact original selection" : "SYNTHETIC 讨论此原始选区",language:language);tap("assistant.send")
+        let proof=try JSONDecoder().decode(Proof.self,from:await call("/wait-completed",caseID:name))
+        XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.posts,1);XCTAssertEqual(proof.model_calls,1);XCTAssertEqual(proof.registered_operations,1);XCTAssertEqual(proof.forbidden_writes,0)
+        XCTAssertTrue(proof.text.contains(first.id));XCTAssertTrue(proof.text.contains(first.content_sha256));XCTAssertTrue(proof.text.contains(first.title))
+        if newChat { XCTAssertEqual(proof.opening_requests,1);XCTAssertTrue(proof.conversation_id.hasPrefix("discussion.")) }
+        tap("run.snapshot.read");text("run.display.status",contains:language=="en" ? "Completed" : "已完成");text("run.display.text",contains:first.content_sha256)
+        capture(name+"-actual-formal-selection");try audit(name)
+    }
+    func testFormalTimelineEnglish() async throws { try await formal("testFormalTimelineEnglish",language:"en") }
+    func testFormalTimelineChineseLarge() async throws { try await formal("testFormalTimelineChineseLarge",language:"zh-Hans",large:true) }
+    func testFormalItemBinding() async throws { try await formal("testFormalItemBinding",language:"en",newChat:true) }
     func testMemoryUpgradeRefused() async throws {
         let f=try await prepare("testMemoryUpgradeRefused");defer { app?.terminate() }
         try launch(f,language:"en");conversation(f)
