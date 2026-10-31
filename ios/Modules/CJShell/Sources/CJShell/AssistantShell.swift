@@ -224,14 +224,15 @@ struct AssistantShell: View {
 
 /// A toolbar hosts this complete native control, preserving both UIKit hit
 /// testing and content-size-category updates; a label-only bridge loses the hit.
-private struct AssistantPanelDoneButton: UIViewRepresentable {
+struct AssistantPanelDoneButton: UIViewRepresentable {
     let title: String
+    var identifier: String = "assistant.panel.done"
     let action: @MainActor () -> Void
     func makeCoordinator() -> Coordinator { Coordinator(action) }
     func makeUIView(context: Context) -> UIButton {
         let button=UIButton(type:.system)
         button.titleLabel?.adjustsFontForContentSizeCategory=true
-        button.accessibilityIdentifier="assistant.panel.done"
+        button.accessibilityIdentifier=identifier
         button.addTarget(context.coordinator,action:#selector(Coordinator.activate),for:.touchUpInside)
         return button
     }

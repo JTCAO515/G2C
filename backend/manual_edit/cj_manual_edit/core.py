@@ -62,6 +62,16 @@ def _ids(ids, known):
         raise ValueError('duplicate or unknown ID')
 
 
+def retain_unselected(before,after,selected_ids,protected_ids):
+    """Existing exact-content/position guard for already validated item documents."""
+    old={item['id']:item for item in before}
+    for index,item in enumerate(after):
+        item_id=item['id']
+        if item_id not in selected_ids or item_id in protected_ids:
+            if packed(item)!=packed(old[item_id]) or before[index]['id']!=item_id:
+                raise ValueError('unselected/protected item must stay exact and in position')
+
+
 @dataclass(frozen=True)
 class Change:
     # JSON values encoded as canonical bytes retain exact Unicode and whitespace.
@@ -95,13 +105,10 @@ class Draft:
             raise ValueError('IDs cannot be added, removed or renumbered')
         if not self.title_selected and before['title'] != after['title']:
             raise ValueError('title is outside selected scope')
-        selected = set(self.selected_ids)
-        for index, item in enumerate(after['items']):
+        retain_unselected(before['items'],after['items'],self.selected_ids,protected)
+        for item in after['items']:
             item_id = item['id']
             original = old[item_id]
-            if item_id not in selected or item_id in protected:
-                if packed(item) != packed(original) or before['items'][index]['id'] != item_id:
-                    raise ValueError('unselected/protected item must stay exact and in position')
             if item['text'] != original['text']:
                 if item['verification'] != 'pending' or item['evidence'] != []:
                     raise ValueError('changed text cannot inherit or acquire evidence')

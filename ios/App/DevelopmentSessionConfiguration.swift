@@ -8,6 +8,7 @@ struct DevelopmentMemorySlot: Decodable {
     let collection_allowed: Bool
     let semantic_resolved: Bool
 }
+enum DevelopmentToolAnswerProfile { case plain,place,fact }
 /// UI choices only. No legacy conversation allow-list is reinterpreted as
 /// travel consent; the frozen typed server policy and B lease remain authoritative.
 struct DevelopmentTypedMemoryProfile: Decodable {
@@ -127,6 +128,16 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
         guard let value = environment["G2C_DEV_PLACE_TOOLS"] else { return false }
         guard value == "synthetic-v1" else { throw DevelopmentToolsFailure.invalidProfile }
         return true
+    }
+    static func toolAnswerProfile(_ environment: [String:String]) throws -> DevelopmentToolAnswerProfile {
+        let place = try placeToolsEnabled(environment)
+        let fact: Bool
+        if let value = environment["G2C_DEV_FACT_TOOLS"] {
+            guard value == "synthetic-fact-v1" else { throw DevelopmentToolsFailure.invalidProfile }
+            fact = true
+        } else { fact = false }
+        guard !place || !fact else { throw DevelopmentToolsFailure.invalidProfile }
+        return fact ? .fact : place ? .place : .plain
     }
     enum DevelopmentToolsFailure: Error { case invalidProfile }
 

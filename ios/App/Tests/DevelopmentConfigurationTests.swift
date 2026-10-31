@@ -9,6 +9,23 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func factAndPlaceProfilesAreExplicitExclusiveAndNeverEnableRelease() throws {
+        #if DEBUG
+        #expect(try DevelopmentSessionConfiguration.toolAnswerProfile([:]) == .plain)
+        #expect(try DevelopmentSessionConfiguration.toolAnswerProfile(["G2C_DEV_FACT_TOOLS":"synthetic-fact-v1"]) == .fact)
+        #expect(try DevelopmentSessionConfiguration.toolAnswerProfile(["G2C_DEV_PLACE_TOOLS":"synthetic-v1"]) == .place)
+        for value in ["", "live", "true", "synthetic-v1"] {
+            #expect(throws:DevelopmentSessionConfiguration.DevelopmentToolsFailure.invalidProfile) {
+                try DevelopmentSessionConfiguration.toolAnswerProfile(["G2C_DEV_FACT_TOOLS":value])
+            }
+        }
+        #expect(throws:DevelopmentSessionConfiguration.DevelopmentToolsFailure.invalidProfile) {
+            try DevelopmentSessionConfiguration.toolAnswerProfile(["G2C_DEV_FACT_TOOLS":"synthetic-fact-v1","G2C_DEV_PLACE_TOOLS":"synthetic-v1"])
+        }
+        #else
+        #expect(DevelopmentSessionConfiguration.read(["G2C_DEV_FACT_TOOLS":"synthetic-fact-v1","G2C_DEV_API_BASE_URL":"http://127.0.0.1:8765","G2C_DEV_TOKEN":try token()]) == nil)
+        #endif
+    }
     @Test func missingEnvironmentNeverAssembles() throws {
         #expect(DevelopmentSessionConfiguration.read([:]) == nil)
         #expect(DevelopmentSessionConfiguration.read(["G2C_DEV_API_BASE_URL": "http://127.0.0.1:8765"]) == nil)

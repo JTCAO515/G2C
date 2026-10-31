@@ -353,6 +353,12 @@ import Observation
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState,
          session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil, isCurrent: @escaping @MainActor () -> Bool) throws {
+        let answerFormat: RunAnswerFormat
+        switch try DevelopmentSessionConfiguration.toolAnswerProfile(ProcessInfo.processInfo.environment) {
+        case .plain:answerFormat = .plainText
+        case .place:answerFormat = .placeToolV1
+        case .fact:answerFormat = .factToolV1
+        }
         let lifetime = DevelopmentMessageLifetime(isCurrent: isCurrent)
         let scope = try StorageScope(environment: configuration.environmentID.uuidString, account: configuration.accountID.uuidString)
         let namespace = MessageKeyNamespace(environment: configuration.environmentID, account: configuration.accountID,
@@ -414,7 +420,7 @@ import Observation
         let runs = RunContainerHost(shell: shell)
         guard runs.configure(RunContainerConfiguration(model: runModel, session: session, operation: operation,
             generation: shell.generation, synthetic: false, followAcceptedMessages: true,
-            answerFormat:try DevelopmentSessionConfiguration.placeToolsEnabled(ProcessInfo.processInfo.environment) ? .placeToolV1 : .plainText,
+            answerFormat:answerFormat,
             isCurrent: { lifetime.current })) else { throw RecoveryError.inactive }
         self.lifetime = lifetime; self.keyAdapter = keyAdapter
         self.messages = messages; self.history = history; self.runs = runs

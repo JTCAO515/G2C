@@ -312,6 +312,36 @@ private actor RunHostWire: ClientTransport {
 
 
 extension RunContainerHostTests {
+    @Test func factProjectionRequiresExplicitFormatAndCurrentOriginalOwner() async throws {
+        let f = try RunHostFixture(shell:shell());try await f.accept("A");try f.bind("A",answerFormat:.factToolV1)
+        #expect(f.host.selectAcceptedMessage(from:f.messages))
+        let text = "{\"version\":\"FACT-answer.1\",\"data_origin\":\"synthetic\",\"text_zh\":\"合成说明\",\"text_en\":\"Synthetic explanation\"}\n"
+        await f.wire.addSnapshot(try f.snapshot("A",status:"completed",text:text));await f.model.perform(f.model.prepareRead())
+        guard case .loaded(let original) = f.host.factProjection else { Issue.record("fact projection missing");return }
+        let panelIdentity = try #require(f.host.originalPresentationID)
+        #expect(original.answer?.english == "Synthetic explanation")
+        guard case .unavailable = f.host.placeProjection else { Issue.record("fact interpreted as place");return }
+        f.shell.selectLanguage(.chinese)
+        guard case .loaded(let changed) = f.host.factProjection else { Issue.record("language lost original");return }
+        #expect(changed.originalUTF8 == original.originalUTF8)
+        #expect(f.host.originalPresentationID == panelIdentity)
+        f.admission = false
+        guard case .unavailable = f.host.factProjection else { Issue.record("old owner fact exposed");return }
+        #expect(f.host.originalPresentationID == nil)
+    }
+    @Test func unknownFactVersionIsUnavailableWithoutPlainOrPlaceFallback() async throws {
+        let f = try RunHostFixture(shell:shell());try await f.accept("A");try f.bind("A",answerFormat:.factToolV1)
+        #expect(f.host.selectAcceptedMessage(from:f.messages))
+        await f.wire.addSnapshot(try f.snapshot("A",status:"completed",text:"{\"version\":\"FACT-answer.99\"}\n"));await f.model.perform(f.model.prepareRead())
+        guard case .loaded = f.model.state,case .unavailable = f.host.factProjection else { Issue.record("future frame became successful fact");return }
+    }
+    @Test func reentrantFactSelectionCannotPublishThePreviousOriginal() async throws {
+        let f = try RunHostFixture(shell:shell());try await f.accept("A");try await f.accept("B");try f.bind("A",answerFormat:.factToolV1)
+        #expect(f.host.selectAcceptedMessage(from:f.messages))
+        await f.wire.addSnapshot(try f.snapshot("A",status:"completed",text:"{\"version\":\"FACT-answer.1\",\"data_origin\":\"synthetic\",\"text_zh\":\"A原文\",\"text_en\":\"A original\"}\n"));await f.model.perform(f.model.prepareRead())
+        f.admissionCallback = { do { try f.selectMessage("B") } catch { Issue.record(error) } }
+        guard case .unavailable = f.host.factProjection else { Issue.record("A fact survived B");return }
+    }
     @Test func explicitPlaceFormatProjectsOnlyTheProtectedOriginalAndRetiresOnAdmissionLoss() async throws {
         let f = try RunHostFixture(shell:shell());try await f.accept("A");try f.bind("A",answerFormat:.placeToolV1)
         #expect(f.host.selectAcceptedMessage(from:f.messages))
