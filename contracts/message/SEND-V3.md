@@ -28,7 +28,11 @@ A non-null formal Trip requires `creation_intent=none`, `travel_context=null` an
 Trip write permission. #25 must use the original Proposal/confirmation protocol.
 send.3 is discussion-only, always `creation_intent=none` and `needs_reference=null`.
 A null formal selection may retain an independent travel_context for discussion;
-creation remains on send.2 and its existing C publisher. travel_context is never a formal Trip. An ambiguous reference with null selection
+creation remains on send.2 and its existing C publisher **in unupgraded scopes**.
+An upgraded message-trip.1 scope accepts only new send.3 discussions, plus original
+old-message replays/reads; new send.2 writes in that scope are refused. Do not activate
+it on a scope that still needs creation until an explicit compatible consumer is
+delivered. travel_context is never a formal Trip. An ambiguous reference with null selection
 asks for an explicit Trip/day/item, never the most recent Trip or parsed IDs in prose.
 
 The source is the authenticated owner's current formal `cj_trip_record`, reached
@@ -98,3 +102,8 @@ this new reference. No memory is dropped, disabled or silently replaced. This re
 has no implicit exit: C must explicitly deliver/verify that adapter before activation
 of those scopes. The local append migration has empty up/down and populated-down refusal;
 no applied migration or old frozen version changes. Real providers/cloud/fees UNRUN.
+
+Default PG coverage: the existing `travel_message` group runs send.2 and send.3
+acceptance in two separate fresh clusters. Both execute even if either fails; an
+earlier failure remains nonzero. Standalone: `uv run --locked python -B
+backend/cj_api/tests/trip_message_pg.py` with explicit local PG configuration.
