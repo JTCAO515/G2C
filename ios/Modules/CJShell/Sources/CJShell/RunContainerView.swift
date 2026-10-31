@@ -9,6 +9,8 @@ struct RunContainerView: View {
     let messages: AssistantMessageHost
     let language: ShellLanguage
     @Environment(\.scenePhase) private var scenePhase
+    private struct FactPanel: Identifiable { let id: UUID }
+    @State private var factPanel: FactPanel?
     private var acceptedMessageID: String? {
         messages.visibleRecord?.phase == .accepted ? messages.visibleRecord?.messageID : nil
     }
@@ -49,7 +51,15 @@ struct RunContainerView: View {
                     switch host.factProjection {
                     case .waiting:RunReadableText(text:language.text("Waiting for synthetic evidence…", "正在等待合成证据…")).accessibilityIdentifier("fact.waiting")
                     case .unavailable:RunReadableText(text:language.text("Fact information unavailable. Read the original result; do not repeat the request.", "事实资料不可用。请读取原结果，不要重新发送请求。")).accessibilityIdentifier("fact.unavailable")
-                    case .loaded(let transcript):FactToolTranscriptView(transcript:transcript,language:language == .english ? .english : .simplifiedChinese)
+                    case .loaded(let transcript):
+                        Button {
+                            guard let id = host.originalPresentationID else { return }
+                            factPanel = FactPanel(id:id)
+                        } label: {
+                            RunReadableText(text:language.text("Read complete sources", "读取完整来源"))
+                                .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                        }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("fact.sources.open")
+                        FactToolTranscriptView(transcript:transcript,language:language == .english ? .english : .simplifiedChinese)
                     }
                 }
                 if host.isSynthetic { Text(language.text("Synthetic test data", "合成测试数据")).font(.caption) }
@@ -62,6 +72,35 @@ struct RunContainerView: View {
         .onChange(of: acceptedMessageID) { _, _ in followAcceptedMessage() }
         .onChange(of: scenePhase) { _, phase in host.setForeground(phase == .active) }
         .onDisappear { host.setForeground(false) }
+        .onChange(of:host.originalPresentationID) { _,id in
+            if factPanel?.id != id { factPanel = nil }
+        }
+        .sheet(item:$factPanel) { panel in
+            NavigationStack {
+                FactSourcePanel(host:host,language:language,expected:panel.id)
+            }.presentationDetents([.large])
+        }
+    }
+}
+
+private struct FactSourcePanel: View {
+    let host: RunContainerHost
+    let language: ShellLanguage
+    let expected: UUID
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        ScrollView {
+            if host.originalPresentationID == expected,case .loaded(let transcript) = host.factProjection {
+                FactToolTranscriptView(transcript:transcript,language:language == .english ? .english : .simplifiedChinese)
+            } else {
+                RunReadableText(text:language.text("Original source unavailable. Close this panel and select the current original result.", "原来源已不可用。请关闭面板并选择当前原结果。"))
+                    .accessibilityIdentifier("fact.sources.unavailable")
+            }
+        }.padding().accessibilityIdentifier("fact.sources.content")
+            .navigationTitle(language.text("Sources", "来源")).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement:.confirmationAction) {
+                Button(language.text("Done", "完成")) {dismiss()}.frame(minWidth:44,minHeight:44).accessibilityIdentifier("fact.sources.done")
+            } }
     }
 }
 #endif

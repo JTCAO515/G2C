@@ -68,11 +68,11 @@ import Foundation
     private func tap(_ id: String) {
         let button: XCUIElement
         if ["Assistant","助手","Memory","记忆"].contains(id) { button = app.tabBars.buttons.matching(identifier:id).firstMatch }
-        else if id == "assistant.panel.done" { button = app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        else if ["assistant.panel.done","fact.sources.done"].contains(id) { button = app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else if ["Done","完成"].contains(id) { button = app.toolbars.buttons.matching(identifier:id).firstMatch }
         else { button = app.buttons.matching(identifier:id).firstMatch }
         XCTAssertTrue(button.waitForExistence(timeout:15),id)
-        if id == "assistant.panel.done" || ["Assistant","助手","Memory","记忆","Done","完成"].contains(id) {
+        if ["assistant.panel.done","fact.sources.done"].contains(id) || ["Assistant","助手","Memory","记忆","Done","完成"].contains(id) {
             let fixedControl = XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == true AND hittable == true"),object:button)
             XCTAssertEqual(XCTWaiter.wait(for:[fixedControl],timeout:20),.completed,id)
         } else { reveal(button,id:id) }
@@ -81,7 +81,8 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,id);button.tap()
     }
     @discardableResult private func text(_ id: String,contains: String,timeout: TimeInterval = 30) -> String {
-        let value = app.staticTexts.matching(identifier:id).firstMatch
+        let panel = app.scrollViews.matching(identifier:"fact.sources.content").firstMatch
+        let value = panel.exists ? panel.staticTexts.matching(identifier:id).firstMatch : app.staticTexts.matching(identifier:id).firstMatch
         XCTAssertTrue(value.waitForExistence(timeout:timeout),id)
         let expected = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",contains),object:value)
         let waited = XCTWaiter.wait(for:[expected],timeout:timeout)
@@ -153,6 +154,7 @@ import Foundation
         text("fact.origin",contains:language == "en" ? "Synthetic" : "合成")
         let displayed = text("fact.output.0.value",contains:"NOT a real forecast")
         XCTAssertEqual(Array(displayed.utf8),Array(original.utf8));XCTAssertTrue(displayed.contains("CNY 100") && displayed.contains(f.date))
+        tap("fact.sources.open")
         text("fact.output.0.source.0.url",contains:"https://synthetic-fact.g2c.invalid/first")
         let sources = try XCTUnwrap(result["sources"] as? [[String:Any]]),source = try XCTUnwrap(sources.first)
         let retrieved = try XCTUnwrap(source["retrieved_at"] as? [String:Any]),declared = try XCTUnwrap(source["declarations"] as? [String:Any])
@@ -162,10 +164,13 @@ import Foundation
         text("fact.output.0.source.0.conditions",contains:"calendar_timezone=Asia/Shanghai")
         text("fact.machine.label",contains:language == "en" ? "not an official" : "非官方")
         capture("synthetic-fact-original-" + language);try audit("FACT_ORIGINAL_" + language)
+        tap("fact.sources.done")
         send(prompt(f,kind:"synthetic rule",conditions:"Asia/Shanghai category=synthetic"));try await completed(f,language:language)
+        tap("fact.sources.open")
         text("fact.output.0.source.0.conditions",contains:"category=synthetic")
         text("fact.output.0.value",contains:"NOT a real forecast")
         capture("synthetic-rule-explicit-scope-" + language);try audit("FACT_RULE_" + language)
+        tap("fact.sources.done")
         if !large {
             send(prompt(f,scenario:"SYNTH_INJECTION"));try await completed(f)
             text("fact.output.0.status",contains:"supported");text("fact.output.0.value",contains:"NOT a real forecast")

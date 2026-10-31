@@ -37,6 +37,13 @@ public enum FactRunProjection: Sendable { case waiting,unavailable,loaded(FactTo
         return configuration.model
     }
     public var answerFormat: RunAnswerFormat? { displayModel != nil ? configuration?.answerFormat : nil }
+    /// Presentation association only. The panel must still obtain its data
+    /// through the current protected projection, never retain an old copy.
+    public var originalPresentationID: UUID? {
+        guard let configuration,let original = origin else { return nil }
+        let token = selection
+        return sourceIsCurrent(original,configurationID:configuration.id,token:token) ? token : nil
+    }
     public var placeProjection: PlaceRunProjection {
         guard let configuration,configuration.answerFormat == .placeToolV1,let original = origin else { return .unavailable }
         let token = selection
