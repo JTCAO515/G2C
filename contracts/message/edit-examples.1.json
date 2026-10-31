@@ -1,0 +1,368 @@
+{
+  "version": "MESSAGE-edit-examples.1",
+  "positive": [
+    {
+      "version": "MESSAGE-send.4",
+      "conversation_id": "chat",
+      "message_id": "edit-original",
+      "text": "第二天轻松一点",
+      "trip_id": null,
+      "creation_intent": "none",
+      "expected_generation": "g",
+      "expected_sequence": 0,
+      "modification_intent": "propose_scoped_edit",
+      "trip_context": {
+        "id": "formal-trip",
+        "expected_version": 3,
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "day": {
+          "date": "2026-11-02",
+          "timezone": "Asia/Shanghai"
+        },
+        "item_ids": []
+      },
+      "travel_context": {
+        "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "expected_version": 1
+      },
+      "needs_reference": {
+        "id": "needs",
+        "expected_version": 2
+      }
+    },
+    {
+      "version": "MESSAGE-send.4",
+      "conversation_id": "chat",
+      "message_id": "edit-items",
+      "text": "第二天轻松一点",
+      "trip_id": null,
+      "creation_intent": "none",
+      "expected_generation": "g",
+      "expected_sequence": 0,
+      "modification_intent": "propose_scoped_edit",
+      "trip_context": {
+        "id": "formal-trip",
+        "expected_version": 3,
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "day": null,
+        "item_ids": [
+          "item-a",
+          "item-b"
+        ]
+      },
+      "travel_context": {
+        "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "expected_version": 1
+      },
+      "needs_reference": {
+        "id": "needs",
+        "expected_version": 2
+      }
+    },
+    {
+      "version": "MESSAGE-send.4",
+      "conversation_id": "chat",
+      "message_id": "discussion",
+      "text": "第二天轻松一点",
+      "trip_id": null,
+      "creation_intent": "none",
+      "expected_generation": "g",
+      "expected_sequence": 0,
+      "modification_intent": "none",
+      "trip_context": {
+        "id": "formal-trip",
+        "expected_version": 3,
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "day": null,
+        "item_ids": []
+      },
+      "travel_context": {
+        "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "expected_version": 1
+      },
+      "needs_reference": null
+    }
+  ],
+  "negative": [
+    {
+      "name": "missing namespace",
+      "input": {
+        "version": "MESSAGE-send.4",
+        "conversation_id": "chat",
+        "message_id": "edit-original",
+        "text": "第二天轻松一点",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "g",
+        "expected_sequence": 0,
+        "modification_intent": "propose_scoped_edit",
+        "trip_context": {
+          "id": "formal-trip",
+          "expected_version": 3,
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "day": {
+            "date": "2026-11-02",
+            "timezone": "Asia/Shanghai"
+          },
+          "item_ids": []
+        },
+        "travel_context": null,
+        "needs_reference": {
+          "id": "needs",
+          "expected_version": 2
+        }
+      },
+      "status": 400
+    },
+    {
+      "name": "caller owner",
+      "input": {
+        "version": "MESSAGE-send.4",
+        "conversation_id": "chat",
+        "message_id": "edit-original",
+        "text": "第二天轻松一点",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "g",
+        "expected_sequence": 0,
+        "modification_intent": "propose_scoped_edit",
+        "trip_context": {
+          "id": "formal-trip",
+          "expected_version": 3,
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "day": {
+            "date": "2026-11-02",
+            "timezone": "Asia/Shanghai"
+          },
+          "item_ids": []
+        },
+        "travel_context": {
+          "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "expected_version": 1
+        },
+        "needs_reference": {
+          "id": "needs",
+          "expected_version": 2
+        },
+        "owner": "client"
+      },
+      "status": 400
+    },
+    {
+      "name": "missing NEEDS",
+      "input": {
+        "version": "MESSAGE-send.4",
+        "conversation_id": "chat",
+        "message_id": "edit-original",
+        "text": "第二天轻松一点",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "g",
+        "expected_sequence": 0,
+        "modification_intent": "propose_scoped_edit",
+        "trip_context": {
+          "id": "formal-trip",
+          "expected_version": 3,
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "day": {
+            "date": "2026-11-02",
+            "timezone": "Asia/Shanghai"
+          },
+          "item_ids": []
+        },
+        "travel_context": {
+          "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "expected_version": 1
+        },
+        "needs_reference": null
+      },
+      "status": 400
+    },
+    {
+      "name": "fake old creation",
+      "input": {
+        "version": "MESSAGE-send.4",
+        "conversation_id": "chat",
+        "message_id": "edit-original",
+        "text": "第二天轻松一点",
+        "trip_id": null,
+        "creation_intent": "consider_trip",
+        "expected_generation": "g",
+        "expected_sequence": 0,
+        "modification_intent": "propose_scoped_edit",
+        "trip_context": {
+          "id": "formal-trip",
+          "expected_version": 3,
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "day": {
+            "date": "2026-11-02",
+            "timezone": "Asia/Shanghai"
+          },
+          "item_ids": []
+        },
+        "travel_context": {
+          "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "expected_version": 1
+        },
+        "needs_reference": {
+          "id": "needs",
+          "expected_version": 2
+        }
+      },
+      "status": 400
+    },
+    {
+      "name": "no edit selection",
+      "input": {
+        "version": "MESSAGE-send.4",
+        "conversation_id": "chat",
+        "message_id": "edit-original",
+        "text": "第二天轻松一点",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "g",
+        "expected_sequence": 0,
+        "modification_intent": "propose_scoped_edit",
+        "trip_context": {
+          "id": "formal-trip",
+          "expected_version": 3,
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "day": null,
+          "item_ids": []
+        },
+        "travel_context": {
+          "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "expected_version": 1
+        },
+        "needs_reference": {
+          "id": "needs",
+          "expected_version": 2
+        }
+      },
+      "status": 400
+    },
+    {
+      "name": "ambiguous union",
+      "input": {
+        "version": "MESSAGE-send.4",
+        "conversation_id": "chat",
+        "message_id": "edit-original",
+        "text": "第二天轻松一点",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "g",
+        "expected_sequence": 0,
+        "modification_intent": "propose_scoped_edit",
+        "trip_context": {
+          "id": "formal-trip",
+          "expected_version": 3,
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "day": {
+            "date": "2026-11-02",
+            "timezone": "Asia/Shanghai"
+          },
+          "item_ids": [
+            "item-a"
+          ]
+        },
+        "travel_context": {
+          "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "expected_version": 1
+        },
+        "needs_reference": {
+          "id": "needs",
+          "expected_version": 2
+        }
+      },
+      "status": 400
+    },
+    {
+      "name": "duplicate item",
+      "input": {
+        "version": "MESSAGE-send.4",
+        "conversation_id": "chat",
+        "message_id": "edit-original",
+        "text": "第二天轻松一点",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "g",
+        "expected_sequence": 0,
+        "modification_intent": "propose_scoped_edit",
+        "trip_context": {
+          "id": "formal-trip",
+          "expected_version": 3,
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "day": null,
+          "item_ids": [
+            "item-a",
+            "item-a"
+          ]
+        },
+        "travel_context": {
+          "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "expected_version": 1
+        },
+        "needs_reference": {
+          "id": "needs",
+          "expected_version": 2
+        }
+      },
+      "status": 400
+    },
+    {
+      "name": "bad hash",
+      "input": {
+        "version": "MESSAGE-send.4",
+        "conversation_id": "chat",
+        "message_id": "edit-original",
+        "text": "第二天轻松一点",
+        "trip_id": null,
+        "creation_intent": "none",
+        "expected_generation": "g",
+        "expected_sequence": 0,
+        "modification_intent": "propose_scoped_edit",
+        "trip_context": {
+          "id": "formal-trip",
+          "expected_version": 3,
+          "content_sha256": "latest",
+          "day": {
+            "date": "2026-11-02",
+            "timezone": "Asia/Shanghai"
+          },
+          "item_ids": []
+        },
+        "travel_context": {
+          "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "expected_version": 1
+        },
+        "needs_reference": {
+          "id": "needs",
+          "expected_version": 2
+        }
+      },
+      "status": 400
+    }
+  ],
+  "runtime_negative": [
+    {
+      "name": "foreign Trip/namespace",
+      "status": 503
+    },
+    {
+      "name": "stale version/hash",
+      "status": 409
+    },
+    {
+      "name": "invalid member/unknown day",
+      "status": 503
+    },
+    {
+      "name": "missing C adapter/publisher",
+      "status": 503
+    },
+    {
+      "name": "ABA/cancel/UNKNOWN/revoked publication",
+      "status": 503
+    }
+  ]
+}
