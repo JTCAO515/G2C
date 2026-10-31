@@ -9,6 +9,34 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func scopedProfileIsExplicitAndCannotActivateOldDiscussionOrRelease() throws {
+        let key="G2C_DEV_MESSAGE_PROFILE"
+        #if DEBUG
+        #expect(try DevelopmentMessageProfile.read([key:"trip-edit-v1"]) == .edit)
+        #expect(try !DevelopmentDiscussionProfile.read([key:"trip-edit-v1"]))
+        #expect(try DevelopmentMessageProfile.read([:]) == nil)
+        #else
+        #expect(try DevelopmentMessageProfile.read([key:"trip-edit-v1"]) == nil)
+        #endif
+    }
+    @Test func scopedConfigurationRequiresNamespaceChoicesSavedNeedsAndCompatibleFormat() throws {
+        #if DEBUG
+        let raw=String(repeating:"b",count:32)
+        let environment=["G2C_DEV_TRAVEL_PROFILE":"{\"version\":\"app-travel.1\",\"travel_ids\":[\""+raw+"\"]}",
+            "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"pace\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}",
+            "G2C_DEV_TYPED_MEMORY_URL":"http://127.0.0.1:8765",
+            "G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":"visit"]
+        let typed=try DevelopmentTypedMode.read(environment),needs=try DevelopmentNeedsProfile.read(environment)
+        try DevelopmentMessageProfile.edit.validate(typed:typed,needs:needs,answer:.plain)
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.edit.validate(typed:nil,needs:needs,answer:.plain) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.edit.validate(typed:typed,needs:nil,answer:.plain) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.edit.validate(typed:typed,needs:needs,answer:.place) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.discussion.validate(typed:typed,needs:needs,answer:.plain) }
+        var empty=environment;empty["G2C_DEV_TRAVEL_PROFILE"]="{\"version\":\"app-travel.1\",\"travel_ids\":[]}"
+        let missing=try DevelopmentTypedMode.read(empty)
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.edit.validate(typed:missing,needs:needs,answer:.plain) }
+        #endif
+    }
     @Test func discussionProfileIsExplicitAndReleaseStaysClosed() throws {
         #if DEBUG
         #expect(try !DevelopmentDiscussionProfile.read([:]))

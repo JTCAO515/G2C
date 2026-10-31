@@ -92,6 +92,24 @@ private actor NeedsHostTransport: ClientTransport {
     private func wait(_ t: NeedsHostTransport) async {
         for _ in 0..<10000 { if await t.held { return }; await Task.yield() }; Issue.record("No held request")
     }
+    @Test func messageNeedsComesOnlyFromCurrentSavedRead() async throws {
+        let s=try shell(),h=NeedsContainerHost(shell:s),f=try NeedsHostFixture()
+        let t=NeedsHostTransport([try response("needs",snapshot()),try response("revision",revision(original()))])
+        try f.bind(h,shell:s,transport:t)
+        #expect(try h.currentMessageSelection()==nil)
+        let detail=h.prepareDetail(context:h.captureAction())
+        #expect(try h.currentMessageSelection()==nil)
+        await h.perform(detail)
+        #expect(try h.currentMessageSelection()==MessageNeedsSelection(id:"needs-A",expectedVersion:2))
+        let historical=h.prepareRevision(2,context:h.captureAction())
+        #expect(try h.currentMessageSelection()==nil)
+        await h.perform(historical)
+        #expect(h.presentation?.state == .loaded)
+        #expect(try h.currentMessageSelection()==nil)
+        f.current=nil
+        #expect(try h.currentMessageSelection()==nil)
+        #expect(await t.bodies.isEmpty)
+    }
     @Test(arguments: ["Etc/UTC", "US/Eastern", "PRC"])
     func legalTimezoneAliasSurvivesHostReadEditAndRevision(alias: String) async throws {
         let zone = NeedsSchema.NeedsTimezoneObservation.NeedsTimezoneObservationKnown(.init(state: .known, value: alias))

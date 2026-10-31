@@ -19,7 +19,8 @@ private actor ConversationWire:ClientTransport {
     var puts:[String]=[],reads:[String]=[]
     var opened:String?
     var loseACK=false,wrongID=false,deny=false
-    func configure(loseACK:Bool=false,wrongID:Bool=false,deny:Bool=false) { self.loseACK=loseACK;self.wrongID=wrongID;self.deny=deny }
+    var edit=false
+    func configure(loseACK:Bool=false,wrongID:Bool=false,deny:Bool=false,edit:Bool=false) { self.loseACK=loseACK;self.wrongID=wrongID;self.deny=deny;self.edit=edit }
     func send(_ request:HTTPRequest,body:HTTPBody?,baseURL:URL,operationID:String) async throws -> (HTTPResponse,HTTPBody?) {
         let path=try #require(request.path)
         let query=try #require(URLComponents(string:path)?.queryItems),id=try #require(query.first?.value),trace=UUID().uuidString
@@ -35,14 +36,29 @@ private actor ConversationWire:ClientTransport {
                 value=["request_id":trace,"conversation_id":wrongID ? "other" : id,"generation":"g","last_sequence":0]
             }
         } else {
-            #expect(operationID=="readTripDiscussionStatusV3" && request.method == .get);reads.append(request.path!)
-            value=["request_id":trace,"version":"MESSAGE-send-status.3","receipt":NSNull(),"reference":NSNull(),"head":opened == id ? ["conversation_id":id,"generation":"g","last_sequence":0] : NSNull()]
+            #expect(operationID==(edit ? "readTripEditStatusV4" : "readTripDiscussionStatusV3") && request.method == .get);reads.append(request.path!)
+            value=["request_id":trace,"version":edit ? "MESSAGE-send-status.4" : "MESSAGE-send-status.3","receipt":NSNull(),"reference":NSNull(),"head":opened == id ? ["conversation_id":id,"generation":"g","last_sequence":0] : NSNull()]
         }
         var headers=HTTPFields();headers[.contentType]="application/json";headers[.cacheControl]="no-store";headers[.init("x-request-id")!]=trace
         return (HTTPResponse(status:.init(code:status),headerFields:headers),HTTPBody(try JSONSerialization.data(withJSONObject:value)))
     }
 }
 @MainActor struct DiscussionConversationTests {
+    @Test func scopedOpeningUsesOriginalIDAndOnlyFourthStatusAfterUnknownACK() async throws {
+        let wire=ConversationWire(),store=ConversationTestStore()
+        let (recovery,lease,client,scope)=try setup(wire,store:store)
+        let work=try client.prepareNewTripEditConversation(lease:lease)
+        await wire.configure(loseACK:true,edit:true)
+        await #expect(throws:(any Error).self) { try await client.performDiscussionConversation(work) }
+        recovery.invalidate()
+        let (_,next,reopened,_)=try setup(wire,store:store,scope:scope)
+        let query=try reopened.prepareTripEditConversationQuery(id:work.conversationID,lease:next)
+        guard case .available(let id)=try await reopened.performDiscussionConversation(query) else { Issue.record("original scoped chat unavailable");return }
+        #expect(id==work.conversationID)
+        #expect(await wire.puts.count==1)
+        #expect(await wire.reads.count==1)
+        #expect(await wire.reads.first?.hasPrefix("/v4/message-send-status?")==true)
+    }
     private func setup(_ wire:ConversationWire,store:ConversationTestStore=ConversationTestStore(),scope:StorageScope?=nil,credentials:ConversationCredentials=ConversationCredentials()) throws -> (MessageRecovery,Lease,MessageHTTPClient,StorageScope) {
         let scope=try scope ?? StorageScope(environment:UUID().uuidString,account:"synthetic"),recovery=MessageRecovery(storage:store),lease=try recovery.activate(scope)
         let endpoint=try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:16384,maximumResponseBytes:65536)

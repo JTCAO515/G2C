@@ -9,16 +9,31 @@ struct DevelopmentMemorySlot: Decodable {
     let semantic_resolved: Bool
 }
 enum DevelopmentToolAnswerProfile { case plain,place,fact,needs }
+enum DevelopmentMessageProfile:String {
+    case discussion="trip-discussion-v1",edit="trip-edit-v1"
+    static func read(_ environment:[String:String]) throws -> Self? {
+        #if DEBUG
+        guard let value=environment["G2C_DEV_MESSAGE_PROFILE"] else { return nil }
+        guard let result=Self(rawValue:value) else { throw DevelopmentDiscussionProfile.Failure.invalidProfile }
+        return result
+        #else
+        return nil
+        #endif
+    }
+    func validate(typed:DevelopmentTypedMode?,needs:DevelopmentNeedsProfile?,answer:DevelopmentToolAnswerProfile) throws {
+        switch self {
+        case .discussion:
+            guard typed == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
+        case .edit:
+            guard let typed,!typed.travel.travel_ids.isEmpty,needs != nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
+            guard case .plain=answer else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
+        }
+    }
+}
 enum DevelopmentDiscussionProfile {
     enum Failure:Error { case invalidProfile,incompatibleProfiles }
     static func read(_ environment:[String:String]) throws -> Bool {
-        #if DEBUG
-        guard let value=environment["G2C_DEV_MESSAGE_PROFILE"] else { return false }
-        guard value=="trip-discussion-v1" else { throw Failure.invalidProfile }
-        return true
-        #else
-        return false
-        #endif
+        try DevelopmentMessageProfile.read(environment) == .discussion
     }
 }
 /// Explicit local record selection only. Server AUTH still derives its owner.

@@ -19,7 +19,7 @@ extension MessageHTTPClient {
         if let liveMessageTransport { try liveMessageTransport.validateTripDiscussionSending(to: endpoint) }
         else if !submissionEnabledForTest { throw MessageHTTPFailure.productionActivationUnavailable }
     }
-    func discussionExchange(path: String, operation: String, raw: Data?, lease: Lease) async throws -> (Int, Data, String) {
+    func versionedMessageExchange(path: String, operation: String, raw: Data?, lease: Lease) async throws -> (Int, Data, String) {
         let transport = try await checkedTransport(lease)
         var headers = HTTPFields()
         headers[.accept] = "application/json"
@@ -27,8 +27,8 @@ extension MessageHTTPClient {
         let request = HTTPRequest(method: raw == nil ? .get : .post, scheme: nil, authority: nil, path: path, headerFields: headers)
         let response: HTTPResponse, body: HTTPBody?
         do { (response, body) = try await transport.send(request, body: raw.map(HTTPBody.init), baseURL: endpoint.url, operationID: operation) }
-        catch { try checkDiscussionLease(lease); throw MessageHTTPFailure.exchangeUnknown }
-        try checkDiscussionLease(lease)
+        catch { try checkSendLease(lease); throw MessageHTTPFailure.exchangeUnknown }
+        try checkSendLease(lease)
         let media = response.headerFields.filter { $0.name == .contentType }
         let controls = response.headerFields.filter { $0.name == .cacheControl }
         guard media.count == 1, let mime = media.first?.value.lowercased(),
@@ -36,7 +36,7 @@ extension MessageHTTPClient {
               controls.count == 1, controls[0].value.lowercased() == "no-store",
               let body, let trace = response.headerFields[.init("x-request-id")!] else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await Data(collecting: body, upTo: endpoint.maximumResponseBytes)
-        try checkDiscussionLease(lease)
+        try checkSendLease(lease)
         return (response.status.code, bytes, trace)
     }
     private func discussionStatusPath(conversation: String, message: String?) throws -> String {
@@ -55,7 +55,7 @@ extension MessageHTTPClient {
         let key = Data(conversationID.utf8), request = UUID()
         tripDiscussionPermitState.reads[key] = request
         tripDiscussionPermitState.heads.removeValue(forKey: key)
-        let (status, bytes, trace) = try await discussionExchange(path: discussionStatusPath(conversation: conversationID, message: nil), operation: "readTripDiscussionStatusV3", raw: nil, lease: lease)
+        let (status, bytes, trace) = try await versionedMessageExchange(path: discussionStatusPath(conversation: conversationID, message: nil), operation: "readTripDiscussionStatusV3", raw: nil, lease: lease)
         guard tripDiscussionPermitState.reads[key] == request else { throw RecoveryError.staleOperation }
         guard status == 200 else {
             throw MessageReadFailure.rejected(status: status, error: try JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: bytes))
@@ -128,7 +128,7 @@ extension MessageHTTPClient {
         tripDiscussionPermitState.prepared.removeValue(forKey: key); tripDiscussionPermitState.intents.insert(key)
         let submission = try recovery.beginSubmission(messageID: messageID, lease: lease)
         do {
-            let (status, bytes, trace) = try await discussionExchange(path: "/v3/messages", operation: "receiveTripDiscussionV3", raw: submission.originalUTF8, lease: lease)
+            let (status, bytes, trace) = try await versionedMessageExchange(path: "/v3/messages", operation: "receiveTripDiscussionV3", raw: submission.originalUTF8, lease: lease)
             if status == 200 {
                 let result = try TripDiscussionAcceptance(raw: bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, original: original)
                 try tripDiscussionSources[key]?.validate(result.reference)
@@ -161,7 +161,7 @@ extension MessageHTTPClient {
         tripDiscussionPermitState.decisions.removeValue(forKey: key); tripDiscussionPermitState.prepared.removeValue(forKey: key); tripDiscussionPermitState.heads.removeValue(forKey: conversation)
         let operation = try recovery.beginQuery(messageID: messageID, lease: lease)
         do {
-            let (status, bytes, trace) = try await discussionExchange(path: discussionStatusPath(conversation: original.head.conversation_id, message: messageID), operation: "readTripDiscussionStatusV3", raw: nil, lease: lease)
+            let (status, bytes, trace) = try await versionedMessageExchange(path: discussionStatusPath(conversation: original.head.conversation_id, message: messageID), operation: "readTripDiscussionStatusV3", raw: nil, lease: lease)
             guard status == 200 else { throw MessageHTTPFailure.exchangeUnknown }
             let result = try TripDiscussionStatus(raw: bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, conversationID: original.head.conversation_id, original: original)
             let decision: MessageSendDecision
