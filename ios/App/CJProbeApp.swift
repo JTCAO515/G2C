@@ -44,6 +44,7 @@ struct CJProbeApp: App {
                       memoryContainerHost: developmentAccounts?.trip?.memory?.host ?? development?.memory?.host,
                       typedMemoryContainerHost:developmentAccounts?.trip?.typedMemory?.host ?? development?.typedMemory?.host,
                       tripContainerHost: developmentAccounts?.trip?.trips ?? development?.trips,
+                      needsContainerHost: developmentAccounts?.trip?.needs?.host ?? development?.needs?.host,
                       runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
                       developmentAccountHost: developmentAccounts?.accounts)
                 .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained

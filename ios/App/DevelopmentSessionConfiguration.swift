@@ -8,7 +8,25 @@ struct DevelopmentMemorySlot: Decodable {
     let collection_allowed: Bool
     let semantic_resolved: Bool
 }
-enum DevelopmentToolAnswerProfile { case plain,place,fact }
+enum DevelopmentToolAnswerProfile { case plain,place,fact,needs }
+/// Explicit local record selection only. Server AUTH still derives its owner.
+struct DevelopmentNeedsProfile {
+    let needsID: String
+    enum Failure: Error { case invalidProfile }
+    static func read(_ environment: [String: String]) throws -> Self? {
+        #if DEBUG
+        let keys = ["G2C_DEV_NEEDS_PROFILE", "G2C_DEV_NEEDS_ID"]
+        guard keys.contains(where: { environment[$0] != nil }) else { return nil }
+        guard environment["G2C_DEV_NEEDS_PROFILE"] == "manual-v1", let id = environment["G2C_DEV_NEEDS_ID"],
+              id.range(of: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$", options: .regularExpression) == (id.startIndex..<id.endIndex) else {
+            throw Failure.invalidProfile
+        }
+        return Self(needsID: id)
+        #else
+        return nil
+        #endif
+    }
+}
 /// UI choices only. No legacy conversation allow-list is reinterpreted as
 /// travel consent; the frozen typed server policy and B lease remain authoritative.
 struct DevelopmentTypedMemoryProfile: Decodable {
@@ -136,8 +154,15 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
             guard value == "synthetic-fact-v1" else { throw DevelopmentToolsFailure.invalidProfile }
             fact = true
         } else { fact = false }
-        guard !place || !fact else { throw DevelopmentToolsFailure.invalidProfile }
-        return fact ? .fact : place ? .place : .plain
+        let needs: Bool
+        if let value = environment["G2C_DEV_NEEDS_PREVIEW"] {
+            guard value == "synthetic-needs-v1", try DevelopmentNeedsProfile.read(environment) != nil else {
+                throw DevelopmentToolsFailure.invalidProfile
+            }
+            needs = true
+        } else { needs = false }
+        guard [place, fact, needs].filter({ $0 }).count <= 1 else { throw DevelopmentToolsFailure.invalidProfile }
+        return needs ? .needs : fact ? .fact : place ? .place : .plain
     }
     enum DevelopmentToolsFailure: Error { case invalidProfile }
 

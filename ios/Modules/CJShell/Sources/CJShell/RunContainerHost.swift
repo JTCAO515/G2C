@@ -46,6 +46,21 @@ public enum NeedsPreviewRunProjection: Sendable { case waiting,unavailable,loade
         let token = selection
         return sourceIsCurrent(original,configurationID:configuration.id,token:token) ? token : nil
     }
+    /// Cross-component copy requires the actual same session operation, not
+    /// merely a shared window, matching caller IDs or a source hash.
+    func currentOriginalUses(session: SessionLifecycle, operation: SessionOperation, generation: ShellGeneration) -> Bool {
+        guard let configured = configuration, configured.session === session, configured.operation == operation,
+              configured.generation == generation, originalPresentationID != nil else { return false }
+        return configuration?.id == configured.id && configured.session.isCurrent(operation)
+    }
+    /// Final local ownership fence after the last peer callback. Canonical
+    /// recovery/lease reads only; this does not replace the earlier admission.
+    func stillOwnsOriginal(_ expected: UUID) -> Bool {
+        guard foreground, selection == expected, let configured = configuration, let original = origin,
+              shell.generation == configured.generation, !shell.messageBindingBlocked,
+              configured.session.isCurrent(configured.operation) else { return false }
+        return original.isStillOwned() && selection == expected && configuration?.id == configured.id && origin === original
+    }
     private struct ToolRead {
         let original: AcceptedMessageRunReceipt
         let configurationID: UUID

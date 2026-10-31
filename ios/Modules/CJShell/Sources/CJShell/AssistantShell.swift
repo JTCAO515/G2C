@@ -44,7 +44,7 @@ struct AssistantShell: View {
                 }
                 Button(state.language.text("Server history and drafts", "服务器历史与草稿")) { panel = .server }
                     .accessibilityIdentifier("assistant.serverHistory")
-                Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }
+                Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }.accessibilityIdentifier("assistant.needs")
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
                 if messageHost.travelSelection != nil {
                     Button { panel = .travel } label: {
@@ -52,7 +52,7 @@ struct AssistantShell: View {
                             .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
                     }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("assistant.travelContext")
                 }
-                RunContainerView(host: runHost, messages: messageHost, language: state.language)
+                RunContainerView(host: runHost, messages: messageHost, language: state.language, openNeeds: { panel = .needs })
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if let text = messageHost.visibleOriginalText {
                     RunSelectableText(text: text).frame(maxWidth: .infinity, alignment: .trailing)
@@ -109,7 +109,7 @@ struct AssistantShell: View {
                     } else if selectedPanel == .feedback {
                         FeedbackContainerView(host: feedbackHost, entry: feedbackEntry, language: state.language)
                     } else if selectedPanel == .needs {
-                        NeedsContainerView(host: needsHost, language: state.language).id(needsHost.viewIdentity)
+                        NeedsContainerView(host: needsHost, runs: runHost, language: state.language).id(needsHost.viewIdentity)
                     } else if selectedPanel == .server {
                         ServerHistoryView(host: serverHistoryHost, language: state.language)
                     } else {

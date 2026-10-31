@@ -26,6 +26,7 @@ public struct NeedsPresentationWork: Sendable {
     let request: UUID
     let owner: UUID
     let work: NeedsWork
+    let keepsEditor: Bool
 }
 
 @MainActor @Observable public final class NeedsPresentation {
@@ -52,7 +53,8 @@ public struct NeedsPresentationWork: Sendable {
         client?.invalidate(); lifetime = UUID(); request = UUID(); started = nil
         self.binding = binding; selectedNeedsID = nil; selectedActionID = nil
         snapshot = nil; revision = nil; receipt = nil; draft = nil
-        pendingActions = []; pendingState = .unavailable; state = .unavailable
+        pendingActions = []; pendingState = .unavailable
+        state = binding != nil && client?.acceptsUserActions == true ? .idle : .unavailable
         verifiedActionIDs = []
     }
     /// Explicit host selection; a new record uses version zero only when the user chooses to create it.
@@ -62,9 +64,18 @@ public struct NeedsPresentationWork: Sendable {
         selectedNeedsID = id; selectedActionID = nil; snapshot = nil; revision = nil; receipt = nil
         draft = NeedsDraft(needsID: id, expectedVersion: 0); state = .idle
     }
-    private func wrap(_ work: NeedsWork) -> NeedsPresentationWork {
+    /// Explicit user replacement of the local editor, never an automatic CAS retry.
+    public func beginCorrectionFromSnapshot() -> Bool {
+        guard let client, let snapshot, binding != nil else { return false }
+        client.retireWork(); request = UUID(); started = nil
+        selectedNeedsID = snapshot.needs_id; selectedActionID = nil
+        draft = NeedsDraft(needsID: snapshot.needs_id, expectedVersion: snapshot.version, fields: snapshot.fields)
+        receipt = nil; revision = nil; state = .idle
+        return true
+    }
+    private func wrap(_ work: NeedsWork, keepsEditor: Bool = false) -> NeedsPresentationWork {
         request = UUID(); started = nil; state = .loading
-        return .init(lifetime: lifetime, request: request, owner: owner, work: work)
+        return .init(lifetime: lifetime, request: request, owner: owner, work: work, keepsEditor: keepsEditor)
     }
     public func prepareDetail(id: String) -> NeedsPresentationWork? {
         guard let client, let binding else { state = .unavailable; return nil }
@@ -78,21 +89,22 @@ public struct NeedsPresentationWork: Sendable {
         selectedNeedsID = id; selectedActionID = nil; snapshot = nil; revision = nil; receipt = nil
         return wrap(client.prepareRevision(id: id, version: version, binding: binding))
     }
-    public func prepareQuery(actionID: String) -> NeedsPresentationWork? {
+    public func prepareQuery(actionID: String, preservingEditor: Bool = false) -> NeedsPresentationWork? {
         guard let client, let binding else { state = .unavailable; return nil }
-        if let original = pendingActions.first(where: { same($0.actionID, actionID) }) {
+        if !preservingEditor, let original = pendingActions.first(where: { same($0.actionID, actionID) }) {
             if selectedNeedsID.map({ same($0, original.needsID) }) != true { draft = nil }
             selectedNeedsID = original.needsID
         }
-        selectedActionID = actionID; receipt = nil; revision = nil; snapshot = nil
-        return wrap(client.prepareQuery(actionID: actionID, binding: binding))
+        selectedActionID = actionID; receipt = nil; revision = nil
+        if !preservingEditor { snapshot = nil }
+        return wrap(client.prepareQuery(actionID: actionID, binding: binding), keepsEditor: preservingEditor)
     }
-    public func prepareReplay(actionID: String) -> NeedsPresentationWork? {
+    public func prepareReplay(actionID: String, preservingEditor: Bool = false) -> NeedsPresentationWork? {
         guard let client, client.acceptsUserActions, let binding,
               verifiedActionIDs.contains(actionID) else { return nil }
         selectedActionID = actionID; receipt = nil
         verifiedActionIDs.remove(actionID)
-        return wrap(client.prepareReplay(actionID: actionID, binding: binding))
+        return wrap(client.prepareReplay(actionID: actionID, binding: binding), keepsEditor: preservingEditor)
     }
     /// Keep a frozen original across errors. No automatic new ID or version update.
     public func prepareSave(actionID: String) -> NeedsPresentationWork? {
@@ -123,8 +135,10 @@ public struct NeedsPresentationWork: Sendable {
                 if draft == nil, let value { draft = .init(needsID: value.needs_id, expectedVersion: value.version, fields: value.fields) }
             case .revision(let value): revision = value; state = value == nil ? .missing : .loaded
             case .confirmed(let receipt, let revision):
-                if selectedNeedsID.map({ same($0, revision.needs_id) }) != true { draft = nil }
-                selectedNeedsID = revision.needs_id
+                if !work.keepsEditor {
+                    if selectedNeedsID.map({ same($0, revision.needs_id) }) != true { draft = nil }
+                    selectedNeedsID = revision.needs_id
+                }
                 self.receipt = receipt; self.revision = revision; state = .confirmed
                 verifiedActionIDs.insert(receipt.action_id)
             case .rejectedOriginal(let original, let status, _):

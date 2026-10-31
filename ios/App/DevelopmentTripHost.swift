@@ -6,6 +6,7 @@ import CJMessageHTTP
 import CJMessageClient
 import CJRunClient
 import CJMemoryClient
+import CJNeedsClient
 import CJMessageKeyBridge
 import CJMessageKeys
 import CJSession
@@ -61,12 +62,15 @@ import Observation
     let messages: DevelopmentMessageHost
     let memory: DevelopmentMemoryHost?
     let typedMemory: DevelopmentTypedMemoryHost?
+    let needs: DevelopmentNeedsHost?
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil) throws {
         let environment = ProcessInfo.processInfo.environment
         let typedMode = try DevelopmentTypedMode.read(environment)
+        let needsProfile = try DevelopmentNeedsProfile.read(environment)
+        _ = try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
         let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 4096,
             maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let lifetime = try DevelopmentLifetime(configuration: configuration, shell: shell, lease: lease)
@@ -107,6 +111,10 @@ import Observation
         }
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
             session: lifetime.session, operation: lifetime.operation,travelProfile:typedMode?.travel,isCurrent: { lifetime.current != nil })
+        if let needsProfile {
+            needs = try DevelopmentNeedsHost(configuration: configuration, profile: needsProfile, shell: shell,
+                session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
+        } else { needs = nil }
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
             typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
@@ -132,10 +140,62 @@ import Observation
         messages.invalidate()
         memory?.invalidate()
         typedMemory?.invalidate()
+        needs?.invalidate()
         trips.invalidate()
         keys.invalidate()
         if lifetime.ownsSession { _ = lifetime.session.clearWithSettlement() }
     }
+}
+
+/// Only an explicit DEBUG Simulator manual-v1 root activates these old HTTP
+/// methods. A model preview neither constructs this capability nor selects IDs.
+@MainActor final class DevelopmentNeedsHost {
+    let host: NeedsContainerHost
+    private let client: NeedsClient
+    private let keys: ScopedMessageKeyProvider
+    init(configuration: DevelopmentSessionConfiguration, profile: DevelopmentNeedsProfile, shell: ShellState,
+         session: SessionLifecycle, operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
+        let binding = NeedsBinding(environment: configuration.environmentID, account: configuration.accountID,
+                                   generation: UUID(), selection: UUID())
+        let generation = shell.generation
+        let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localNeedsPendingV1)
+        guard let applicationID = Bundle.main.bundleIdentifier else { throw NeedsFailure.unconfigured }
+        keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
+                                            protection: .whenUnlockedThisDeviceOnly)
+        let files = FileManager.default
+        let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let directory = support.appendingPathComponent("G2CDevelopmentNeeds", isDirectory: true)
+            .appendingPathComponent(binding.environment.uuidString, isDirectory: true)
+            .appendingPathComponent(binding.account.uuidString, isDirectory: true)
+        try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let root = directory.resolvingSymlinksInPath()
+        let key: MessageEncryptionKey
+        if let existing = try keys.existing(expectedID: nil, for: keys.begin(.lookup)) { key = existing }
+        else {
+            // Reuse the filesystem-only adjacent-journal check. No Memory key
+            // or Memory client is involved; a missing Needs key is never reset.
+            guard try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot: directory, files: files) else { throw NeedsFailure.keyUnavailable }
+            key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
+        }
+        let store = try NeedsPendingStore(directory: root, maximumBytes: 1048576, maximumRecords: 100,
+                                         binding: binding, expectedKeyID: key.id, provider: keys)
+        let endpoint = try NeedsEndpoint(url: configuration.endpoint, maximumRequestBytes: 131072,
+                                         maximumResponseBytes: 1048576, allowLoopbackHTTP: true)
+        let current: @MainActor () -> NeedsBinding? = {
+            isCurrent() && session.isCurrent(operation) && shell.generation == generation ? binding : nil
+        }
+        client = try NeedsClient(localEndpoint: endpoint, credentials: { captured in
+            guard current() == captured else { return nil }
+            return configuration.token
+        }, currentBinding: current, session: session, sessionOperation: operation, pendingStore: store,
+            requestTimeout: 10, resourceTimeout: 20)
+        host = NeedsContainerHost(shell: shell)
+        guard host.bind(NeedsContainerBinding(client: client, needs: binding, selectedNeedsID: profile.needsID,
+            shellGeneration: generation, session: session, sessionOperation: operation, synthetic: true,
+            currentBinding: current)) else { throw NeedsFailure.staleBinding }
+        host.loadPending(context: host.captureAction()) // Local encrypted records only; never an automatic POST.
+    }
+    func invalidate() { host.invalidate(); client.invalidate(); keys.invalidate() }
 }
 
 /// The server receives the existing manual command, with no caller source/owner flags.
@@ -358,6 +418,7 @@ import Observation
         case .plain:answerFormat = .plainText
         case .place:answerFormat = .placeToolV1
         case .fact:answerFormat = .factToolV1
+        case .needs:answerFormat = .needsPreviewV1
         }
         let lifetime = DevelopmentMessageLifetime(isCurrent: isCurrent)
         let scope = try StorageScope(environment: configuration.environmentID.uuidString, account: configuration.accountID.uuidString)

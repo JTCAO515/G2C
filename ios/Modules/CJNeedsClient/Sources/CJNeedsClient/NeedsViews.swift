@@ -72,14 +72,14 @@ public struct NeedsEditorView: View {
                 .font(.footnote)
             Text(language.text("编辑基于版本：", "Editing version: ") + String(draft.expectedVersion))
             TextField(language.text("说明你的明确输入或修改", "Describe your explicit input or correction"), text: $draft.sourceText, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.roundedBorder).accessibilityIdentifier("needs.editor.statement")
             ForEach(NeedsField.allCases, id: \.self) { field in
                 DisclosureGroup(field.label(language)) {
                     ObservationEditor(input: Binding(get: { draft.observations[field] ?? .init() }, set: { draft.set(field, $0) }),
-                                      language: language, isList: field == .includes, choices: field == .basis ? [("total", language.text("总计", "Total")), ("per_person", language.text("每人", "Per person"))] : [])
+                                      language: language, id: "needs.editor." + field.rawValue, isList: field == .includes, choices: field == .basis ? [("total", language.text("总计", "Total")), ("per_person", language.text("每人", "Per person"))] : [])
                     Text(draft.changedFields.contains(field) ? language.text("将包含此修改", "This change is included") : language.text("不修改此字段", "Leave this field unchanged"))
                         .font(.caption)
-                }
+                }.accessibilityIdentifier("needs.editor." + field.rawValue + ".section")
             }
             ForEach(NeedsEventField.allCases, id: \.self) { field in
                 DisclosureGroup(field.label(language)) {
@@ -122,15 +122,16 @@ public struct NeedsEditorView: View {
 private struct ObservationEditor: View {
     @Binding var input: NeedsObservationInput
     let language: NeedsLanguage
+    var id = "needs.observation"
     var isList = false
     var choices: [(String, String)] = []
     var body: some View {
         VStack(alignment: .leading) {
             Picker(language.text("记录状态", "Recorded state"), selection: $input.state) {
                 ForEach(NeedsObservationState.allCases, id: \.self) { state in Text(state.label(language)).tag(state) }
-            }
+            }.accessibilityIdentifier(id + ".state")
             if input.state == .uncertain {
-                TextField(language.text("不确定之处", "What is uncertain"), text: $input.note, axis: .vertical).textFieldStyle(.roundedBorder)
+                TextField(language.text("不确定之处", "What is uncertain"), text: $input.note, axis: .vertical).textFieldStyle(.roundedBorder).accessibilityIdentifier(id + ".note")
             }
             if input.state == .known {
                 if isList {
@@ -147,12 +148,12 @@ private struct ObservationEditor: View {
                     }
                 } else if choices.isEmpty {
                     TextField(language.text("用户提供的值", "User-provided value"), text: $input.value, axis: .vertical)
-                        .textFieldStyle(.roundedBorder).autocorrectionDisabled()
+                        .textFieldStyle(.roundedBorder).autocorrectionDisabled().accessibilityIdentifier(id + ".value")
                 } else {
                     Picker(language.text("明确选择", "Explicit choice"), selection: $input.value) {
                         Text(language.text("请选择", "Choose")).tag("")
                         ForEach(choices, id: \.0) { Text($0.1).tag($0.0) }
-                    }
+                    }.accessibilityIdentifier(id + ".choice")
                 }
             }
         }
@@ -223,64 +224,85 @@ private struct FixedEditor: View {
 
 public struct NeedsDetailsView: View {
     public let fields: NeedsSchema.NeedsFields
-    public let version: Int
+    public let version: Int?
     public let language: NeedsLanguage
-    public init(fields: NeedsSchema.NeedsFields, version: Int, language: NeedsLanguage) {
-        self.fields = fields; self.version = version; self.language = language
+    private let unconfirmed: Bool
+    private let prefix: String
+    public init(fields: NeedsSchema.NeedsFields, version: Int, language: NeedsLanguage, identifierPrefix: String = "needs.detail") {
+        self.fields = fields; self.version = version; self.language = language; unconfirmed = false; prefix = identifierPrefix
     }
-    private var display: NeedsDraft { .init(needsID: "display", expectedVersion: version, fields: fields) }
+    public init(unconfirmedFields: NeedsSchema.NeedsFields, language: NeedsLanguage, identifierPrefix: String = "needs.preview") {
+        fields = unconfirmedFields; version = nil; self.language = language; unconfirmed = true; prefix = identifierPrefix
+    }
+    // Conversion for display only. No action, expected-version claim or writer is exposed.
+    private var display: NeedsDraft { .init(needsID: "display", expectedVersion: 0, fields: fields) }
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(language.text("版本 ", "Version ") + String(version)).font(.headline)
-            Text(language.text("来源：用户提供；预订和时间未由外部服务核实。", "Source: user provided; bookings and times are not externally verified.")).font(.footnote)
+        VStack(alignment: .leading, spacing: 12) {
+            if let version { Text(language.text("读取的版本 ", "Version at read: ") + String(version)).font(.headline).accessibilityIdentifier(prefix + ".version") }
+            Text(unconfirmed
+                ? language.text("来源：合成提取候选，尚未确认或保存。预订和时间未由外部服务核实。", "Source: synthetic extraction candidates, unconfirmed and unsaved. Bookings and times are not externally verified.")
+                : language.text("来源：用户提供；预订和时间未由外部服务核实。", "Source: user provided; bookings and times are not externally verified."))
+                .font(.footnote).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(prefix + ".source")
             ForEach(NeedsField.allCases, id: \.self) { field in
-                LabeledContent(field.label(language), value: summary(display.observations[field] ?? .init(), choice: field == .basis ? "basis" : ""))
+                row(field.label(language), summary(display.observations[field]!, choice: field == .basis ? "basis" : ""), prefix + "." + field.rawValue)
             }
             ForEach(NeedsEventField.allCases, id: \.self) { field in
                 GroupBox(field.label(language)) {
-                    if let event = display.events[field] { eventSummary(event) }
-                    else { Text(NeedsObservationState.absent.label(language)) }
+                    if let event = display.events[field] { eventSummary(event, id: prefix + "." + field.rawValue) }
+                    else { Text(NeedsObservationState.absent.label(language)).accessibilityIdentifier(prefix + "." + field.rawValue) }
                 }
             }
             GroupBox(language.text("同伴", "Companions")) {
                 if let companions = fields.companions?.additionalProperties {
                     if companions.isEmpty { Text(language.text("明确为空", "Explicitly empty")) }
-                    ForEach(companions.keys.sorted(), id: \.self) { id in Text(companions[id] ?? "") }
-                } else { Text(NeedsObservationState.absent.label(language)) }
-            }
-            GroupBox(language.text("固定事项", "Fixed items")) {
-                if let items = fields.fixed_items {
-                    if items.isEmpty { Text(language.text("明确为空", "Explicitly empty")) }
-                    ForEach(items, id: \.item_id) { item in
-                        VStack(alignment: .leading) {
-                            Text(item.description).font(.headline)
-                            Text(kindLabel(item.kind))
-                            Text(subjects(item.applies_to))
-                            LabeledContent(language.text("固定意图", "Lock intent"), value: summary(.init(item.locked), choice: "lock"))
-                            LabeledContent(language.text("预订声称（未核实）", "Booking claim (unverified)"), value: summary(.init(item.booking_status), choice: "booking"))
-                            Text(language.text("开始", "Start")); eventSummary(.init(item.start))
-                            Text(language.text("结束", "End")); eventSummary(.init(item.end))
-                        }
+                    ForEach(companions.keys.sorted(), id: \.self) { id in
+                        Text(companions[id]!).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(prefix + ".companion." + id)
                     }
                 } else { Text(NeedsObservationState.absent.label(language)) }
             }
-            GroupBox(language.text("临时条件", "Temporary conditions")) {
+            GroupBox(language.text("固定事项（非查证订单）", "Fixed items (not verified orders)")) {
+                if let items = fields.fixed_items {
+                    if items.isEmpty { Text(language.text("明确为空", "Explicitly empty")) }
+                    ForEach(Array(items.enumerated()), id: \.element.item_id) { index, item in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(item.description).font(.headline).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(prefix + ".fixed.\(index).description")
+                            Text(kindLabel(item.kind)).accessibilityIdentifier(prefix + ".fixed.\(index).kind")
+                            row(language.text("适用对象", "Applies to"), subjects(item.applies_to), prefix + ".fixed.\(index).subjects")
+                            row(language.text("固定意图", "Lock intent"), summary(.init(item.locked), choice: "lock"), prefix + ".fixed.\(index).locked")
+                            row(language.text("预订声称（未核实）", "Booking claim (unverified)"), summary(.init(item.booking_status), choice: "booking"), prefix + ".fixed.\(index).booking")
+                            Text(language.text("开始", "Start")); eventSummary(.init(item.start), id: prefix + ".fixed.\(index).start")
+                            Text(language.text("结束", "End")); eventSummary(.init(item.end), id: prefix + ".fixed.\(index).end")
+                        }.padding(.vertical, 6)
+                    }
+                } else { Text(NeedsObservationState.absent.label(language)) }
+            }
+            GroupBox(language.text("仅本次的临时条件", "Temporary conditions for this trip only")) {
                 if let items = fields.temporary_conditions {
                     if items.isEmpty { Text(language.text("明确为空", "Explicitly empty")) }
-                    ForEach(items, id: \.condition_id) { item in Text(item.description + " · " + subjects(item.applies_to)) }
+                    ForEach(Array(items.enumerated()), id: \.element.condition_id) { index, item in
+                        Text(item.description + " · " + subjects(item.applies_to)).fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier(prefix + ".temporary.\(index)")
+                    }
                 } else { Text(NeedsObservationState.absent.label(language)) }
             }
         }.textSelection(.enabled)
+    }
+    private func row(_ title: String, _ value: String, _ id: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.caption).fixedSize(horizontal: false, vertical: true)
+            Text(value).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(id)
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func summary(_ input: NeedsObservationInput, choice: String = "") -> String {
         switch input.state {
         case .known:
             var value = input.value
+            if let items = input.items { value = items.isEmpty ? language.text("明确为空", "Explicitly empty") : items.joined(separator: "; ") }
             if choice == "lock" { value = input.value == "true" ? language.text("固定", "Locked") : language.text("可调整", "Flexible") }
             if choice == "booking" { value = ["booked": language.text("已订", "Booked"), "intended": language.text("计划预订", "Intended"), "cancelled": language.text("已取消", "Cancelled")][input.value] ?? input.value }
             if choice == "basis", input.value == "total" { value = language.text("总计", "Total") }
             if choice == "basis", input.value == "per_person" { value = language.text("每人", "Per person") }
-            return input.state.label(language) + ": " + value
+            return (unconfirmed ? language.text("未确认候选", "Unconfirmed candidate") : input.state.label(language)) + ": " + value
         case .uncertain: return input.state.label(language) + ": " + input.note
         default: return input.state.label(language)
         }
@@ -300,12 +322,12 @@ public struct NeedsDetailsView: View {
             return fields.companions?.additionalProperties[String(value.dropFirst(10))] ?? value
         }.joined(separator: ", ")
     }
-    private func eventSummary(_ event: NeedsEventInput) -> some View {
-        VStack(alignment: .leading) {
-            LabeledContent(language.text("当地日期", "Local date"), value: summary(event.date))
-            LabeledContent(language.text("当地时间", "Local time"), value: summary(event.time))
-            LabeledContent(language.text("时区", "Timezone"), value: summary(event.timezone))
-            LabeledContent(language.text("地点", "Place"), value: summary(event.place))
+    private func eventSummary(_ event: NeedsEventInput, id: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            row(language.text("当地日期", "Local date"), summary(event.date), id + ".date")
+            row(language.text("当地时间", "Local time"), summary(event.time), id + ".time")
+            row(language.text("明确时区", "Declared timezone"), summary(event.timezone), id + ".timezone")
+            row(language.text("地点", "Place"), summary(event.place), id + ".place")
         }
     }
 }
