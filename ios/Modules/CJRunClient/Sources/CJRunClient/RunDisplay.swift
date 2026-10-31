@@ -20,15 +20,17 @@ public enum RunDisplayFailure: Error, Equatable, Sendable {
 /// It grants no server permission; no caller principal, scope or token-derived identity.
 @MainActor public final class RunDisplaySource: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     let receipt: Components.Schemas.MessageReceipt
+    let travelReference: RunTravelReference?
     let session: SessionLifecycle
     let operation: SessionOperation
     let isCurrent: @MainActor () -> Bool
-    public init(receipt: Components.Schemas.MessageReceipt, session: SessionLifecycle,
+    public init(receipt: Components.Schemas.MessageReceipt, travelReference: Components.Schemas.MessageTravelReference? = nil, session: SessionLifecycle,
                 operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
         guard receipt.sequence > 0,
               [receipt.message_id, receipt.conversation_id, receipt.generation, receipt.run_id].allSatisfy({ !$0.isEmpty }) else {
             throw RunDisplayFailure.invalidReference
         }
+        self.travelReference = try travelReference.map { try RunTravelReference($0,receipt:receipt) }
         self.receipt = receipt; self.session = session; self.operation = operation; self.isCurrent = isCurrent
     }
     public nonisolated var description: String { "<redacted original run source>" }
@@ -160,7 +162,8 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
     }
     public func prepareRead() -> RunDisplayWork? { prepare(streaming: false) }
     /// Explicit GET-only continuation; never resends a message or starts a model run.
-    public func prepareStream() -> RunDisplayWork? { prepare(streaming: true) }
+    public var supportsStreaming: Bool { source != nil && source?.travelReference == nil }
+    public func prepareStream() -> RunDisplayWork? { supportsStreaming ? prepare(streaming:true) : nil }
     private func prepare(streaming: Bool) -> RunDisplayWork? {
         guard !prepared, !executing, !cancellationPrepared, storedCancellation != .stopping, let original = source else { return nil }
         let token = epoch
@@ -205,29 +208,15 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
                 throw RunDisplayFailure.credentialsUnavailable
             }
             if work.streaming { try await receiveEvents(original, token, bearer: bearer) }
-            let checked = RunReadTransport(underlying: transport, endpoint: endpoint, bearer: bearer,
-                originalMessageID: original.receipt.message_id, validate: { [self] in try check(original, token) })
-            let client = Client(serverURL: endpoint.url, configuration: .memory, transport: checked)
-            let response = try await client.getRunDisplaySnapshot(query: .init(message_id: original.receipt.message_id))
-            try check(original, token)
-            switch response {
-            case .ok(let response):
-                let body = try response.body.json
-                try validate(body.snapshot, original: original.receipt)
-                let value = RunDisplayValue(snapshot: body.snapshot, requestID: body.request_id)
-                if let previous { try validateProgress(body.snapshot, after: previous.snapshot) }
-                if work.streaming, let progress = storedStream {
-                    guard exact(body.snapshot.text, progress.text), body.snapshot.status.rawValue == progress.status else {
-                        throw RunDisplayFailure.inconsistentSnapshot
-                    }
-                }
-                try check(original, token)
-                previous = value; storedStream = nil; storedState = .loaded(value); executing = false; storedCancellation = .idle
-                await readDraftStatus(original, token, bearer: bearer, snapshot: body.snapshot)
-            case .default(let status, let response):
-                _ = try response.body.json // Official BASE decoding; never publish raw server error text.
-                throw RunDisplayFailure.rejected(status: status)
+            let value = try await readSnapshot(original,token,bearer:bearer)
+            let snapshot = value.snapshot
+            if let previous { try validateProgress(snapshot,after:previous.snapshot) }
+            if work.streaming,let progress = storedStream {
+                guard exact(snapshot.text,progress.text),snapshot.status.rawValue == progress.status else { throw RunDisplayFailure.inconsistentSnapshot }
             }
+            try check(original,token)
+            previous = value;storedStream = nil;storedState = .loaded(value);executing = false;storedCancellation = .idle
+            await readDraftStatus(original,token,bearer:bearer,snapshot:snapshot)
         } catch {
             // Generated ClientError may contain the bearer/body. Never expose, log or stringify it.
             guard valid(original, token) else { retireIfOwned(original, token); return }
@@ -243,6 +232,35 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             storedState = .unavailable(failure); executing = false
         }
     }
+    private func readSnapshot(_ original: RunDisplaySource,_ token: UUID,bearer: String) async throws -> RunDisplayValue {
+        let checked = RunReadTransport(travel:original.travelReference != nil,underlying:transport,endpoint:endpoint,bearer:bearer,
+            originalMessageID:original.receipt.message_id,validate:{ [self] in try check(original,token) })
+        let api = Client(serverURL:endpoint.url,configuration:.memory,transport:checked)
+        let value: RunDisplayValue
+        if let reference = original.travelReference {
+            let output = try await api.getTravelRunDisplay(query:.init(message_id:original.receipt.message_id))
+            try check(original,token)
+            switch output {
+            case .ok(let response):
+                let body = try response.body.json;try reference.requireOriginal(body.reference)
+                value = RunDisplayValue(snapshot:body.snapshot,requestID:body.request_id)
+            case .default(let status,let response):
+                _ = try response.body.json;throw RunDisplayFailure.rejected(status:status)
+            }
+        } else {
+            let output = try await api.getRunDisplaySnapshot(query:.init(message_id:original.receipt.message_id))
+            try check(original,token)
+            switch output {
+            case .ok(let response):
+                let body = try response.body.json;value = RunDisplayValue(snapshot:body.snapshot,requestID:body.request_id)
+            case .default(let status,let response):
+                _ = try response.body.json;throw RunDisplayFailure.rejected(status:status)
+            }
+        }
+        try validate(value.snapshot,original:original.receipt)
+        return value
+    }
+
     public var supportsCancellation: Bool { cancellationTransport != nil }
     public var cancellationState: RunCancellationState {
         guard let original = source else { return .idle }
@@ -282,19 +300,25 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else {
                 throw RunDisplayFailure.credentialsUnavailable
             }
-            let input = Components.Schemas.RunCancellationRequest(version: .RUN_hyphen_cancel_period_1,
-                                                                  message_id: original.receipt.message_id)
-            var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v1/run-cancellations")
-            request.headerFields[.contentType] = "application/json"
-            request.headerFields[.authorization] = "Bearer " + bearer
-            let payload = try JSONEncoder().encode(input)
+            let payload: Data
+            let operation: String
+            let path: String
+            if original.travelReference != nil {
+                payload = try JSONEncoder().encode(Components.Schemas.RunTravelCancellationRequest(version:.RUN_hyphen_cancel_period_2,message_id:original.receipt.message_id))
+                operation = Operations.cancelOriginalTravelRun.id;path = "/v2/run-cancellations"
+            } else {
+                payload = try JSONEncoder().encode(Components.Schemas.RunCancellationRequest(version:.RUN_hyphen_cancel_period_1,message_id:original.receipt.message_id))
+                operation = Operations.cancelOriginalRun.id;path = "/v1/run-cancellations"
+            }
+            var request = HTTPRequest(method:.post,scheme:nil,authority:nil,path:path)
+            request.headerFields[.contentType] = "application/json";request.headerFields[.authorization] = "Bearer " + bearer
             let result: (HTTPResponse, HTTPBody?)
             if let live = cancellationTransport as? RunCancellationTransport {
                 result = try await live.sendBound(request, body: HTTPBody(payload), baseURL: endpoint.url,
-                    operationID: Operations.cancelOriginalRun.id, validateOriginal: { [self] in try check(original, token) })
+                    operationID: operation, validateOriginal: { [self] in try check(original, token) })
             } else { // Internal non-network test composition only.
                 result = try await cancellationTransport.send(request, body: HTTPBody(payload), baseURL: endpoint.url,
-                                                              operationID: Operations.cancelOriginalRun.id)
+                                                              operationID: operation)
             }
             let (response, responseBody) = result
             try check(original, token)
@@ -311,25 +335,25 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
                 throw RunDisplayFailure.invalidResponse
             }
             var parser = StrictRunJSON(bytes: Array(bytes)); try parser.check()
-            let receipt = try JSONDecoder().decode(Components.Schemas.RunCancellationResponse.self, from: bytes)
-            guard exact(receipt.request_id, traces[0].value), exact(receipt.message_id, original.receipt.message_id),
-                  exact(receipt.run_id, original.receipt.run_id), receipt.event_highwater > 0 else { throw RunDisplayFailure.invalidResponse }
-            let checked = RunReadTransport(underlying: transport, endpoint: endpoint, bearer: bearer,
-                originalMessageID: original.receipt.message_id, validate: { [self] in try check(original, token) })
-            let api = Client(serverURL: endpoint.url, configuration: .memory, transport: checked)
-            let output = try await api.getRunDisplaySnapshot(query: .init(message_id: original.receipt.message_id))
-            try check(original, token)
-            guard case .ok(let response) = output else { throw RunDisplayFailure.unavailable }
-            let body = try response.body.json
-            try validate(body.snapshot, original: original.receipt)
-            guard body.snapshot.status.rawValue == receipt.status.rawValue,
-                  body.snapshot.event_highwater == receipt.event_highwater,
-                  body.snapshot.text.utf8.starts(with: (storedStream?.text ?? "").utf8) else { throw RunDisplayFailure.inconsistentSnapshot }
-            if let previous { try validateProgress(body.snapshot, after: previous.snapshot) }
-            try check(original, token)
-            let value = RunDisplayValue(snapshot: body.snapshot, requestID: body.request_id)
-            previous = value; storedStream = nil; storedState = .loaded(value); storedCancellation = .idle
-            await readDraftStatus(original, token, bearer: bearer, snapshot: body.snapshot)
+            let receipt: (requestID: String,messageID: String,runID: String,highwater: Int,status: String)
+            if let reference = original.travelReference {
+                let value = try JSONDecoder().decode(Components.Schemas.RunTravelCancellationResponse.self,from:bytes)
+                try reference.requireOriginal(value.reference)
+                receipt = (value.request_id,value.message_id,value.run_id,value.event_highwater,value.status.rawValue)
+            } else {
+                let value = try JSONDecoder().decode(Components.Schemas.RunCancellationResponse.self,from:bytes)
+                receipt = (value.request_id,value.message_id,value.run_id,value.event_highwater,value.status.rawValue)
+            }
+            guard exact(receipt.requestID,traces[0].value),exact(receipt.messageID,original.receipt.message_id),
+                  exact(receipt.runID,original.receipt.run_id),receipt.highwater > 0 else { throw RunDisplayFailure.invalidResponse }
+            let value = try await readSnapshot(original,token,bearer:bearer)
+            let snapshot = value.snapshot
+            guard snapshot.status.rawValue == receipt.status,snapshot.event_highwater == receipt.highwater,
+                  snapshot.text.utf8.starts(with:(storedStream?.text ?? "").utf8) else { throw RunDisplayFailure.inconsistentSnapshot }
+            if let previous { try validateProgress(snapshot,after:previous.snapshot) }
+            try check(original,token)
+            previous = value;storedStream = nil;storedState = .loaded(value);storedCancellation = .idle
+            await readDraftStatus(original,token,bearer:bearer,snapshot:snapshot)
         } catch {
             guard valid(original, token) else { retireIfOwned(original, token); return }
             let failure = (error as? RunDisplayFailure) ?? .unavailable
@@ -352,7 +376,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             try check(original, token)
             storedDraftStatus = .loading
             let value = try await readOriginalDraftStatus(endpoint: endpoint, transport: transport, bearer: bearer,
-                receipt: original.receipt, snapshot: snapshot, version: draftStatusVersion, validate: { [self] in try check(original, token) })
+                receipt: original.receipt, snapshot: snapshot, version: original.travelReference == nil ? draftStatusVersion : .v3, reference:original.travelReference, validate: { [self] in try check(original, token) })
             try check(original, token)
             storedDraftStatus = value
         } catch {

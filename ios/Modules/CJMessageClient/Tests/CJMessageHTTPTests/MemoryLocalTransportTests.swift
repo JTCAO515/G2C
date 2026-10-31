@@ -149,3 +149,33 @@ extension MemoryLocalTransportTests {
         #expect(await spy.calls == 0)
     }
 }
+
+extension MemoryLocalTransportTests {
+    @Test func typedMemoryOnlyGrantsItsThreeExactFrozenWrites() async throws {
+        let spy = MemoryExitSpy(),endpoint = try endpoint(),lease = MemoryExitLease()
+        let typed = NoRedirectTransport(interceptedTransport:spy,typedMemoryEndpoint:endpoint,validateTypedMemory:{ try lease.validate() })
+        let raw = Data(" {\"original\":\"unchanged\"}\n".utf8)
+        let allowed = [("/v2/memories",Operations.saveTypedMemory.id),
+            ("/v2/memory-management-actions",Operations.applyTypedMemoryManagement.id),
+            ("/v2/memory-withdrawal-actions",Operations.applyTypedMemoryStopUse.id)]
+        for (path,operation) in allowed {
+            _ = try await typed.send(request(path:path),body:HTTPBody(raw),baseURL:endpoint.url,operationID:operation)
+            await #expect(throws:(any Error).self) { _ = try await typed.send(request(path:path + "?owner=x"),body:HTTPBody(raw),baseURL:endpoint.url,operationID:operation) }
+        }
+        #expect(await spy.bodies == [raw,raw,raw])
+        let legacy = NoRedirectTransport(interceptedTransport:spy,memoryEndpoint:endpoint,validateMemory:{})
+        for (path,operation) in allowed {
+            await #expect(throws:(any Error).self) { _ = try await legacy.send(request(path:path),body:HTTPBody(raw),baseURL:endpoint.url,operationID:operation) }
+        }
+        for (path,operation) in [("/v1/memories",Operations.saveMemory.id),("/v1/memory-management-actions",Operations.applyMemoryManagementAction.id),
+                                 ("/v2/messages",Operations.receiveMessageV2.id),("/v1/travel-context-actions",Operations.applyTravelContextAction.id)] {
+            await #expect(throws:(any Error).self) { _ = try await typed.send(request(path:path),body:HTTPBody(raw),baseURL:endpoint.url,operationID:operation) }
+        }
+        lease.active = false
+        await #expect(throws:(any Error).self) { _ = try await typed.send(request(path:"/v2/memories"),body:HTTPBody(raw),baseURL:endpoint.url,operationID:Operations.saveTypedMemory.id) }
+        #expect(await spy.bodies == [raw,raw,raw])
+        #if !os(iOS)
+        #expect(throws:MessageHTTPFailure.productionActivationUnavailable) { try NoRedirectTransport.developmentTypedMemory(endpoint:endpoint,requestTimeout:1,resourceTimeout:1,validate:{}) }
+        #endif
+    }
+}

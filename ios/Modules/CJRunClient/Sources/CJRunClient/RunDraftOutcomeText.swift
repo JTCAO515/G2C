@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum RunReadableTextStyle: Sendable { case body, caption }
+public enum RunReadableTextStyle: Sendable { case body, caption, headline }
 
 #if os(iOS)
 import UIKit
@@ -24,7 +24,9 @@ public struct RunReadableText: UIViewRepresentable {
     }
     public func updateUIView(_ label: UILabel, context: Context) {
         label.text = text
-        label.font = UIFont.preferredFont(forTextStyle: style == .body ? .body : .caption1,
+        let textStyle: UIFont.TextStyle
+        switch style { case .body:textStyle = .body;case .caption:textStyle = .caption1;case .headline:textStyle = .headline }
+        label.font = UIFont.preferredFont(forTextStyle:textStyle,
             compatibleWith: UITraitCollection(preferredContentSizeCategory: runTextCategory(size)))
     }
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
@@ -83,7 +85,7 @@ public struct RunReadableText: View {
     let text: String
     let style: RunReadableTextStyle
     public init(text: String, style: RunReadableTextStyle = .body) { self.text = text; self.style = style }
-    public var body: some View { Text(text).font(style == .body ? .body : .caption).fixedSize(horizontal: false, vertical: true) }
+    public var body: some View { Text(text).font(style == .body ? .body : style == .headline ? .headline : .caption).fixedSize(horizontal: false, vertical: true) }
 }
 public struct RunSelectableText: View {
     let text: String

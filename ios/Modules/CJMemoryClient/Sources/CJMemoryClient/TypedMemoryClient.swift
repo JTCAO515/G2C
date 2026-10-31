@@ -1,0 +1,283 @@
+import Foundation
+import CJAPI
+import CJMessageHTTP
+import OpenAPIRuntime
+
+/// Explicit compatible consumer for the additive typed host. V1 remains a
+/// separate client/journal; a failed V2 operation never falls back to V1.
+@MainActor public final class TypedMemoryClient {
+    private let endpoint: MemoryEndpoint
+    private let credentials: MemoryCredentialCallback
+    private let current: @MainActor () -> MemoryBinding?
+    private let transport: any ClientTransport
+    private let store: TypedMemoryPendingStore
+    private let validatePriorOriginals: @MainActor () throws -> Void
+    private let owner = UUID()
+    private var generation = UUID()
+    private var confirmed: Set<Data> = []
+    private var currentReads: [Data:UUID] = [:]
+    private var usedManagementReads: Set<UUID> = []
+    // Historical exact-action completion only, retained across presentation retirement.
+    private var managementConfirmed: Set<Data> = []
+    #if DEBUG && targetEnvironment(simulator)
+    public convenience init(localEndpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
+        currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
+        localTransport: NoRedirectTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void) throws {
+        guard localEndpoint.url.scheme == "http",localEndpoint.url.host == "127.0.0.1",
+              let port = localEndpoint.url.port,(1...65535).contains(port),localEndpoint.maximumRequestBytes <= 32768,
+              localEndpoint.maximumResponseBytes <= 1_000_000 else { throw MemoryFailure.unconfigured }
+        self.init(endpoint:localEndpoint,credentials:credentials,currentBinding:currentBinding,pendingStore:pendingStore,
+            interceptedTransport:localTransport,validatePriorOriginals:validatePriorOriginals)
+    }
+    #endif
+    init(endpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
+        currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
+        interceptedTransport: any ClientTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void = {}) {
+        self.endpoint = endpoint;self.credentials = credentials;current = currentBinding;store = pendingStore;transport = interceptedTransport
+        self.validatePriorOriginals = validatePriorOriginals
+    }
+    private func check(_ binding: MemoryBinding,_ token: UUID) throws {
+        guard generation == token else { throw MemoryFailure.staleBinding }
+        let observed = current()
+        guard generation == token,observed == binding else { throw MemoryFailure.staleBinding }
+    }
+    private func begin(_ binding: MemoryBinding) throws -> UUID {
+        let token = generation;try check(binding,token);return token
+    }
+    /// Retire view work/read authority while retaining only exact, previously
+    /// verified historical completions. UNKNOWN originals remain query-only.
+    public func retirePresentation() {
+        generation = UUID();currentReads.removeAll();usedManagementReads.removeAll()
+    }
+    public func invalidate() { retirePresentation();confirmed.removeAll() }
+    private func api(_ binding: MemoryBinding,_ token: UUID,original: TypedMemoryPending? = nil,lifecycleOriginal: TypedMemoryManagementPending? = nil,managementRead: TypedMemoryRead? = nil,management: Bool = false,newWrite: Bool = false) async throws -> Client {
+        try check(binding,token)
+        let bearer: String?
+        do { bearer = try await credentials(binding) }
+        catch { try check(binding,token);throw MemoryFailure.exchangeUnknown }
+        try check(binding,token)
+        guard let bearer,!bearer.isEmpty,bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MemoryFailure.unconfigured }
+        return Client(serverURL:endpoint.url,configuration:.memory,transport:MemoryTransport(wire:.v2,underlying:transport,
+            endpoint:endpoint,bearer:bearer,writeEnabled:true,managementEnabled:management,validate:{ [self] in
+                try check(binding,token)
+                if newWrite { try validatePriorOriginals();try check(binding,token) }
+                if let original { try store.requireOriginal(original);try check(binding,token) }
+                if let lifecycleOriginal {
+                    guard let records = try store.managementRecords(create:false) else { throw MemoryFailure.storageUnavailable }
+                    try records.requireOriginal(lifecycleOriginal);try check(binding,token)
+                }
+                if let managementRead { try validateRead(managementRead,binding:binding) }
+                try store.validateDirectory()
+            }))
+    }
+    private func exchange<Value>(_ binding: MemoryBinding,_ token: UUID,_ action: () async throws -> Value) async throws -> Value {
+        do { let value = try await action();try check(binding,token);return value }
+        catch { try check(binding,token);throw MemoryFailure.exchangeUnknown }
+    }
+    public func pending(binding: MemoryBinding) throws -> [TypedMemoryCommand] {
+        let token = try begin(binding);try store.validate(binding)
+        let result = try store.pending();try check(binding,token);return result
+    }
+    public func save(_ command: TypedMemoryCommand,binding: MemoryBinding) async throws -> MemorySaveResult {
+        let token = try begin(binding);try store.validate(binding)
+        try validatePriorOriginals();try check(binding,token)
+        let originals = try store.records();try check(binding,token)
+        if let original = originals.first(where:{ same($0.operationID,command.operationID) }) {
+            guard original.originalUTF8 == command.originalUTF8 else { throw MemoryFailure.invalidInput }
+            throw MemoryFailure.pendingRequiresQuery // every existing original is GET-only
+        }
+        try requireResolvedOriginals()
+        try check(binding,token)
+        let record = TypedMemoryPending(command)
+        guard record.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
+        try store.append(record) { try check(binding,token) };try check(binding,token)
+        let api = try await api(binding,token,original:record,newWrite:true)
+        let output = try await exchange(binding,token) { try await api.saveTypedMemory(body:.binary(HTTPBody(record.originalUTF8))) }
+        switch output {
+        case .ok(let value):return try settle(value.body.json.receipt,record:record,binding:binding,token:token)
+        case .default(let status,let value):
+            let error = try value.body.json.error
+            guard error.outcome == .failed else { throw MemoryFailure.exchangeUnknown }
+            try store.recordRejection(record,status:status,code:error.code) { try check(binding,token) }
+            try check(binding,token);throw MemoryFailure.rejected(status,error.code)
+        }
+    }
+    /// A different operation type cannot bypass an unresolved original. Only
+    /// a verified receipt or durable explicit POST rejection resolves a journal.
+    private func requireResolvedOriginals() throws {
+        for record in try store.records() where !confirmed.contains(Data(record.operationID.utf8)) {
+            guard try store.rejection(for:record) != nil else { throw MemoryFailure.pendingRequiresQuery }
+        }
+        if let records = try store.managementRecords(create:false) {
+            for pending in try records.pending() where !managementConfirmed.contains(managementKey(pending)) {
+                guard try records.rejection(for:pending,domain:"CJMemoryTypedManagementRejectionsV2") != nil else { throw MemoryFailure.pendingRequiresQuery }
+            }
+        }
+    }
+    public func query(operationID: String,binding: MemoryBinding) async throws -> MemorySaveResult {
+        let token = try begin(binding);try store.validate(binding)
+        guard let record = try store.records().first(where:{ same($0.operationID,operationID) }) else { throw MemoryFailure.invalidInput }
+        let rejection = try store.rejection(for:record);try check(binding,token)
+        let api = try await api(binding,token,original:record)
+        let output = try await exchange(binding,token) { try await api.getTypedMemoryReceipt(query:.init(operation_id:operationID)) }
+        switch output {
+        case .ok(let value):
+            switch try value.body.json.receipt {
+            case .MemoryReceipt(let receipt):
+                guard rejection == nil else { throw MemoryFailure.invalidResponse }
+                return try settle(receipt,record:record,binding:binding,token:token)
+            case .CJExplicitJSONNull:
+                if let rejection { return .rejected(rejection.status,rejection.code) }
+                return .notObserved
+            }
+        case .default:throw MemoryFailure.exchangeUnknown
+        }
+    }
+    private func settle(_ receipt: Components.Schemas.MemoryReceipt,record: TypedMemoryPending,binding: MemoryBinding,token: UUID) throws -> MemorySaveResult {
+        try check(binding,token)
+        guard same(receipt.operation_id,record.operationID),same(receipt.item_id,record.itemID),
+              same(receipt.input_sha256,record.expectedSHA256),receipt.version == 1,
+              !record.inference || receipt.status == .candidate else { throw MemoryFailure.invalidResponse }
+        confirmed.insert(Data(record.operationID.utf8))
+        return receipt.status == .candidate ? .candidate(receipt) : .saved(receipt)
+    }
+}
+
+
+extension TypedMemoryClient {
+    private func remember(_ item: TypedMemoryItem,token: UUID,binding: MemoryBinding) -> TypedMemoryRead {
+        let stamp = UUID();currentReads[Data(item.value.command.item_id.utf8)] = stamp
+        return TypedMemoryRead(item:item,owner:owner,generation:token,binding:binding,stamp:stamp)
+    }
+    public func validateRead(_ read: TypedMemoryRead,binding: MemoryBinding) throws {
+        let token = try begin(binding)
+        guard read.owner == owner,read.generation == token,read.binding == binding,currentReads[Data(read.item.value.command.item_id.utf8)] == read.stamp else { throw MemoryFailure.staleBinding }
+    }
+    public func list(limit: Int,after: TypedMemoryCursor? = nil,binding: MemoryBinding) async throws -> TypedMemoryPage {
+        let token = try begin(binding)
+        guard (1...100).contains(limit) else { throw MemoryFailure.invalidInput }
+        if let after { guard after.owner == owner,after.generation == token,after.binding == binding else { throw MemoryFailure.staleBinding } }
+        let api = try await api(binding,token)
+        let output = try await exchange(binding,token) { try await api.listTypedMemories(query:.init(limit:limit,after:after?.after)) }
+        switch output {
+        case .ok(let value):
+            let values = try value.body.json.items
+            guard values.count <= limit else { throw MemoryFailure.invalidResponse }
+            var previous = after?.after ?? ""
+            let items = try values.map { value in
+                let item = try TypedMemoryItem(value)
+                guard previous.utf8.lexicographicallyPrecedes(value.command.item_id.utf8) else { throw MemoryFailure.invalidResponse }
+                previous = value.command.item_id
+                return remember(item,token:token,binding:binding)
+            }
+            // V2 has no next_after field. The frozen after parameter is the last
+            // exact item ID; only an actual empty page establishes completion.
+            let next = values.last.map { TypedMemoryCursor(owner:owner,generation:token,binding:binding,after:$0.command.item_id) }
+            return TypedMemoryPage(items:items,next:next)
+        case .default(let status,let value):throw MemoryFailure.rejected(status,try value.body.json.error.code)
+        }
+    }
+    public func detail(itemID: String,binding: MemoryBinding) async throws -> TypedMemoryRead? {
+        let token = try begin(binding)
+        guard memoryText(itemID) else { throw MemoryFailure.invalidInput }
+        let api = try await api(binding,token)
+        let output = try await exchange(binding,token) { try await api.getTypedMemoryItem(query:.init(item_id:itemID)) }
+        switch output {
+        case .ok(let value):
+            switch try value.body.json.item {
+            case .MemoryItemV2(let value):
+                guard same(value.command.item_id,itemID) else { throw MemoryFailure.invalidResponse }
+                return remember(try TypedMemoryItem(value),token:token,binding:binding)
+            case .CJExplicitJSONNull:return nil
+            }
+        case .default(let status,let value):throw MemoryFailure.rejected(status,try value.body.json.error.code)
+        }
+    }
+}
+
+
+extension TypedMemoryClient {
+    private enum ManagementResponse {
+        case receipt(Components.Schemas.MemoryManagementReceiptV2)
+        case failure(Int,Components.Schemas.ErrorInfo)
+    }
+    private func managementKey(_ original: TypedMemoryManagementPending) -> Data {
+        Data(original.actionID.utf8) + Data(original.expectedSHA256.utf8)
+    }
+    public func managementPending(binding: MemoryBinding) throws -> [TypedMemoryManagementPending] {
+        let token = try begin(binding);try store.validate(binding)
+        let result = try store.managementRecords(create:false)?.pending() ?? []
+        try check(binding,token);return result
+    }
+    public func manage(_ operation: TypedMemoryOperation,read: TypedMemoryRead,text: String? = nil,
+                       travelContext: MemoryTravelSelection? = nil,binding: MemoryBinding) async throws -> TypedMemoryManagementResult {
+        let token = try begin(binding);try store.validate(binding);try validateRead(read,binding:binding)
+        try validatePriorOriginals();try check(binding,token)
+        guard !usedManagementReads.contains(read.stamp) else { throw MemoryFailure.pendingRequiresQuery }
+        try requireResolvedOriginals();try check(binding,token)
+        guard let records = try store.managementRecords(create:true) else { throw MemoryFailure.storageUnavailable }
+        let original = try TypedMemoryManagementPending(operation:operation,read:read,text:text,travel:travelContext)
+        try validateRead(read,binding:binding)
+        guard original.originalUTF8.count <= endpoint.maximumRequestBytes else { throw MemoryFailure.invalidInput }
+        usedManagementReads.insert(read.stamp)
+        try records.append(original) { try validateRead(read,binding:binding) }
+        let api = try await api(binding,token,lifecycleOriginal:original,managementRead:read,management:true,newWrite:true)
+        let response: ManagementResponse = try await exchange(binding,token) {
+            if operation == .stopUse {
+                switch try await api.applyTypedMemoryStopUse(body:.binary(HTTPBody(original.originalUTF8))) {
+                case .ok(let value):return .receipt(try value.body.json.receipt)
+                case .default(let status,let value):return .failure(status,try value.body.json.error)
+                }
+            } else {
+                switch try await api.applyTypedMemoryManagement(body:.binary(HTTPBody(original.originalUTF8))) {
+                case .ok(let value):return .receipt(try value.body.json.receipt)
+                case .default(let status,let value):return .failure(status,try value.body.json.error)
+                }
+            }
+        }
+        let result: TypedMemoryManagementResult
+        switch response {
+        case .receipt(let receipt):result = try settleManagement(receipt,original:original,binding:binding,token:token)
+        case .failure(let status,let error):
+            guard error.outcome == .failed else { throw MemoryFailure.exchangeUnknown }
+            try records.recordRejection(original,status:status,code:error.code,domain:"CJMemoryTypedManagementRejectionsV2") { try check(binding,token) }
+            try check(binding,token);result = .rejected(status,error.code)
+        }
+        let item = Data(read.item.value.command.item_id.utf8)
+        if currentReads[item] == read.stamp { currentReads.removeValue(forKey:item) }
+        return result
+    }
+    public func queryManagement(actionID: String,binding: MemoryBinding) async throws -> TypedMemoryManagementResult {
+        let token = try begin(binding);try store.validate(binding)
+        guard let records = try store.managementRecords(create:false),
+              let original = try records.pending().first(where:{ same($0.actionID,actionID) }) else { throw MemoryFailure.invalidInput }
+        if let rejection = try records.rejection(for:original,domain:"CJMemoryTypedManagementRejectionsV2") {
+            try check(binding,token);return .rejected(rejection.status,rejection.code)
+        }
+        let api = try await api(binding,token,lifecycleOriginal:original,management:true)
+        let output = try await exchange(binding,token) { try await api.getTypedMemoryManagementReceipt(query:.init(action_id:actionID)) }
+        switch output {
+        case .ok(let value):
+            switch try value.body.json.receipt {
+            case .MemoryManagementReceiptV2(let receipt):return try settleManagement(receipt,original:original,binding:binding,token:token)
+            case .CJExplicitJSONNull:return .notObserved
+            }
+        case .default:throw MemoryFailure.exchangeUnknown
+        }
+    }
+    private func settleManagement(_ receipt: Components.Schemas.MemoryManagementReceiptV2,original: TypedMemoryManagementPending,
+                                  binding: MemoryBinding,token: UUID) throws -> TypedMemoryManagementResult {
+        try check(binding,token)
+        let action = try original.action,header = action.header
+        let expected: String
+        switch action {
+        case .management(.MemoryStatusActionV2(let value)):expected = value.operation == .pause ? "disabled" : "active"
+        case .management(.MemoryEditActionV2):expected = original.originalStatus
+        case .stopUse:expected = "withdrawn"
+        }
+        guard same(receipt.action_id,original.actionID),same(receipt.item_id,header.item),
+              same(receipt.input_sha256,original.expectedSHA256),receipt.version == header.version + 1,
+              receipt.status.rawValue == expected else { throw MemoryFailure.invalidResponse }
+        managementConfirmed.insert(managementKey(original));return .historicalReceipt(receipt)
+    }
+}

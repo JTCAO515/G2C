@@ -121,6 +121,21 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
         return try MemoryEncryptedRecords<Other>(directory: target, maximumBytes: maximumBytes,
             maximumRecords: maximumRecords, namespace: namespace, keyID: keyID, domain: domain, key: key)
     }
+    func rejection(for original: Record, domain: String) throws -> MemoryRejectedOperation<Record>? {
+        let records: MemoryEncryptedRecords<MemoryRejectedOperation<Record>>? = try adjacentRecords(domain: domain, create: false)
+        guard let record = try records?.pending().first(where: { same($0.journalID, original.journalID) }) else { return nil }
+        guard record.originalUTF8 == original.originalUTF8, record.expectedSHA256 == original.expectedSHA256 else {
+            throw MemoryFailure.storageUnavailable
+        }
+        return record
+    }
+    func recordRejection(_ original: Record, status: Int, code: String, domain: String, validateBinding: () throws -> Void) throws {
+        try requireOriginal(original)
+        guard let records: MemoryEncryptedRecords<MemoryRejectedOperation<Record>> = try adjacentRecords(domain: domain, create: true) else {
+            throw MemoryFailure.storageUnavailable
+        }
+        try records.append(MemoryRejectedOperation(original: original, status: status, code: code), validateBinding: validateBinding)
+    }
     func validate(_ binding: MemoryBinding) throws {
         guard namespace.environment == binding.environment, namespace.account == binding.account,
               namespace.purpose == .localMemoryPendingV1 else { throw MemoryFailure.staleBinding }
@@ -210,19 +225,10 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     func append(_ pending: MemoryPending, validateBinding: () throws -> Void = {}) throws { try storage.append(pending, validateBinding: validateBinding) }
     func requireOriginal(_ expected: MemoryPending) throws { try storage.requireOriginal(expected) }
     func rejection(for original: MemoryPending) throws -> MemoryRejectedOperation<MemoryPending>? {
-        let records: MemoryEncryptedRecords<MemoryRejectedOperation<MemoryPending>>? = try storage.adjacentRecords(domain: "CJMemoryRejections", create: false)
-        guard let record = try records?.pending().first(where: { same($0.journalID, original.operationID) }) else { return nil }
-        guard record.originalUTF8 == original.originalUTF8, record.expectedSHA256 == original.expectedSHA256 else {
-            throw MemoryFailure.storageUnavailable
-        }
-        return record
+        try storage.rejection(for: original, domain: "CJMemoryRejections")
     }
     func recordRejection(_ original: MemoryPending, status: Int, code: String, validateBinding: () throws -> Void) throws {
-        try storage.requireOriginal(original)
-        guard let records: MemoryEncryptedRecords<MemoryRejectedOperation<MemoryPending>> = try storage.adjacentRecords(domain: "CJMemoryRejections", create: true) else {
-            throw MemoryFailure.storageUnavailable
-        }
-        try records.append(MemoryRejectedOperation(original: original, status: status, code: code), validateBinding: validateBinding)
+        try storage.recordRejection(original, status: status, code: code, domain: "CJMemoryRejections", validateBinding: validateBinding)
     }
     public func pending() throws -> [MemoryPending] { try storage.pending() }
 }

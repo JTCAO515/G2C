@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJAPI
+import CJRunClient
 
 struct ServerHistoryView: View {
     let host: ServerHistoryHost
@@ -13,9 +14,12 @@ struct ServerHistoryView: View {
         List {
             Text(language.text("Server records. Local recovery is a separate source. Reads never replace your editor.", "服务器记录，与本地恢复不同。读取不会替换编辑中的草稿。"))
             if host.isSynthetic { Text(language.text("Synthetic intercepted responses", "合成拦截响应")) }
-            Section(language.text("Conversations", "会话")) {
+            Section {
                 status(host.conversationsStatus)
-                Button(language.text("Load from first page", "从第一页读取")) { Task { await host.loadConversations(context: readContext) } }
+                Button { Task { await host.loadConversations(context:readContext) } } label: {
+                    RunReadableText(text:language.text("Load from first page", "从第一页读取"))
+                        .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                }.buttonStyle(.plain)
                     .accessibilityIdentifier("history.loadConversations")
                     .disabled(!host.isConfigured || host.conversationsStatus == .loading || host.draftWriteStatus == .saving || host.draftQueryStatus == .loading)
                 let selectionToken = host.conversationSelectionToken
@@ -29,6 +33,9 @@ struct ServerHistoryView: View {
                         .accessibilityIdentifier("history.nextConversations")
                         .disabled(host.draftWriteStatus == .saving || host.draftQueryStatus == .loading)
                 }
+            } header: {
+                RunReadableText(text:language.text("Conversations", "会话"),style:.headline)
+                    .accessibilityAddTraits(.isHeader)
             }
             if let selected = host.selectedConversation {
                 Section(language.text("Stored messages", "已存消息") + " · " + selected.conversation_id) {

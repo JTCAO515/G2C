@@ -7,7 +7,10 @@ import HTTPTypes
 public typealias MemoryEndpoint = MessageEndpoint
 public typealias MemoryCredentialCallback = @MainActor (MemoryBinding) async throws -> String?
 
+enum MemoryWireVersion { case v1, v2 }
+
 struct MemoryTransport: ClientTransport {
+    var wire: MemoryWireVersion = .v1
     let underlying: any ClientTransport
     let endpoint: MemoryEndpoint
     let bearer: String
@@ -15,12 +18,22 @@ struct MemoryTransport: ClientTransport {
     let managementEnabled: Bool
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        let paths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items", "applyMemoryManagementAction": "/v1/memory-management-actions", "queryMemoryManagementReceipt": "/v1/memory-management-receipts", "applyMemoryEditAction": "/v1/memory-edit-actions", "applyMemoryStopUseAction": "/v1/memory-withdrawal-actions", "getMemoryStopUseReceipt": "/v1/memory-withdrawal-receipts"]
+        let legacyPaths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items", "applyMemoryManagementAction": "/v1/memory-management-actions", "queryMemoryManagementReceipt": "/v1/memory-management-receipts", "applyMemoryEditAction": "/v1/memory-edit-actions", "applyMemoryStopUseAction": "/v1/memory-withdrawal-actions", "getMemoryStopUseReceipt": "/v1/memory-withdrawal-receipts"]
+        let typedPaths = ["saveTypedMemory":"/v2/memories","listTypedMemories":"/v2/memories",
+            "getTypedMemoryReceipt":"/v2/memory-receipts","getTypedMemoryItem":"/v2/memory-items",
+            "applyTypedMemoryManagement":"/v2/memory-management-actions","applyTypedMemoryStopUse":"/v2/memory-withdrawal-actions",
+            "getTypedMemoryManagementReceipt":"/v2/memory-management-receipts"]
+        let paths = wire == .v1 ? legacyPaths : typedPaths
+        let writes = wire == .v1 ? ["saveMemory","applyMemoryManagementAction","applyMemoryEditAction","applyMemoryStopUseAction"]
+            : ["saveTypedMemory","applyTypedMemoryManagement","applyTypedMemoryStopUse"]
+        let save = wire == .v1 ? "saveMemory" : "saveTypedMemory"
+        let lifecycle = wire == .v1 ? ["applyMemoryManagementAction","queryMemoryManagementReceipt","applyMemoryEditAction","applyMemoryStopUseAction","getMemoryStopUseReceipt"]
+            : ["applyTypedMemoryManagement","applyTypedMemoryStopUse","getTypedMemoryManagementReceipt"]
         guard baseURL == endpoint.url, let path = paths[operationID],
               request.path?.split(separator: "?", maxSplits: 1).first.map(String.init) == path,
-              request.method == (["saveMemory", "applyMemoryManagementAction", "applyMemoryEditAction", "applyMemoryStopUseAction"].contains(operationID) ? .post : .get),
-              operationID != "saveMemory" || writeEnabled,
-              !["applyMemoryManagementAction", "queryMemoryManagementReceipt", "applyMemoryEditAction", "applyMemoryStopUseAction", "getMemoryStopUseReceipt"].contains(operationID) || managementEnabled else { throw MemoryFailure.liveWriteUnavailable }
+              request.method == (writes.contains(operationID) ? .post : .get),
+              operationID != save || writeEnabled,
+              !lifecycle.contains(operationID) || managementEnabled || request.method == .get else { throw MemoryFailure.liveWriteUnavailable }
         var request = request
         request.headerFields[.authorization] = "Bearer " + bearer
         let data: Data?
@@ -39,6 +52,26 @@ struct MemoryTransport: ClientTransport {
         guard traces.count == 1, let trace = traces.first?.value, UUID(uuidString: trace) != nil,
               let object = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
               let value = object["request_id"] as? String, same(value, trace) else { throw MemoryFailure.invalidResponse }
+        if wire == .v2,response.status.code == 200 {
+            // The generator's opaque conditional context can normalize a JSON
+            // floating token during decoding. Preserve the frozen integer-token
+            // boundary before that conversion; domains validate the other fields.
+            let items: [(Any?,[String])]
+            if operationID == "listTypedMemories" {
+                guard let values = object["items"] as? [Any] else { throw MemoryFailure.invalidResponse }
+                items = values.enumerated().map { ($0.element,["items",String($0.offset)]) }
+            } else if operationID == "getTypedMemoryItem" { items = [(object["item"],["item"])] }
+            else { items = [] }
+            for (value,path) in items {
+                if value is NSNull { continue }
+                guard let item = value as? [String:Any],let command = item["command"] as? [String:Any],
+                      let version = strict.unsignedIntegers[path + ["version"]],version > 0,
+                      let source = strict.unsignedIntegers[path + ["command","source_version"]],source > 0 else { throw MemoryFailure.invalidResponse }
+                if let context = command["context"] as? [String:Any],context["kind"] as? String == "travel" {
+                    guard let version = strict.unsignedIntegers[path + ["command","context","expected_version"]],version > 0 else { throw MemoryFailure.invalidResponse }
+                }
+            }
+        }
         return (response, HTTPBody(bytes))
     }
 }
@@ -69,6 +102,7 @@ public enum MemorySaveResult: Sendable {
     private let store: MemoryPendingStore?
     private let writeEnabled: Bool
     private let managementEnabled: Bool
+    private let managementReadEnabled: Bool
     public let manualWritesAvailable: Bool
     private let managementStore: MemoryManagementPendingStore?
     private var acceptedManagementItems: [Data: MemoryAcceptedItem] = [:]
@@ -80,9 +114,11 @@ public enum MemorySaveResult: Sendable {
     private var confirmed: Set<Data> = []
     public init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore?,
-                liveReadTransport: NoRedirectTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
-        self.endpoint = endpoint; managementEndpoint = endpoint; self.credentials = credentials; current = currentBinding
+                liveReadTransport: NoRedirectTransport, managementPendingStore: MemoryManagementPendingStore? = nil,
+                managementReadEndpoint: MemoryEndpoint? = nil) {
+        self.endpoint = endpoint; managementEndpoint = managementReadEndpoint ?? endpoint; self.credentials = credentials; current = currentBinding
         store = pendingStore; transport = liveReadTransport; managementTransport = liveReadTransport; writeEnabled = false; managementEnabled = false; manualWritesAvailable = false; managementStore = managementPendingStore
+        managementReadEnabled = managementReadEndpoint != nil && managementPendingStore != nil
     }
     /// Internal capability: tests can intercept POST, public consumers cannot enable live writes.
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
@@ -90,6 +126,7 @@ public enum MemorySaveResult: Sendable {
          interceptedTransport: any ClientTransport, managementPendingStore: MemoryManagementPendingStore? = nil) {
         self.endpoint = endpoint; managementEndpoint = endpoint; self.credentials = credentials; current = currentBinding
         store = pendingStore; transport = interceptedTransport; managementTransport = interceptedTransport; writeEnabled = true; managementEnabled = true; manualWritesAvailable = false; managementStore = managementPendingStore
+        managementReadEnabled = true
     }
     #if DEBUG && targetEnvironment(simulator)
     /// Only the explicit signed local MEMORY host (#226). Ordinary/Release
@@ -105,6 +142,7 @@ public enum MemorySaveResult: Sendable {
         self.endpoint = endpoint; managementEndpoint = endpoint; self.credentials = credentials; current = currentBinding
         store = pendingStore; transport = localTransport; managementTransport = localTransport; writeEnabled = true
         managementEnabled = false; manualWritesAvailable = true; managementStore = nil
+        managementReadEnabled = false
     }
     /// Separate official local management host; manual/read host remains unchanged.
     public init(localEndpoint endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
@@ -120,6 +158,7 @@ public enum MemorySaveResult: Sendable {
         self.credentials = credentials; current = currentBinding
         store = pendingStore; transport = localTransport; self.managementTransport = managementTransport
         writeEnabled = true; manualWritesAvailable = true; managementEnabled = true; managementStore = managementPendingStore
+        managementReadEnabled = true
     }
     #endif
     private func check(_ binding: MemoryBinding, _ token: UUID) throws {
@@ -172,6 +211,25 @@ public enum MemorySaveResult: Sendable {
         try store.validate(binding)
         let records = try store.pending(); try check(binding, token)
         return records
+    }
+    /// Read the complete old journal without retiring an in-flight original
+    /// query. A false result is only historical reconciliation, never a new
+    /// source approval, write capability or current-item snapshot.
+    public func requiresOriginalReconciliation(binding: MemoryBinding) throws -> Bool {
+        let token = generation;try check(binding,token)
+        guard let store,let managementStore else { throw MemoryFailure.unconfigured }
+        try store.validate(binding);try managementStore.validate(binding)
+        let manual = try store.pending();try check(binding,token)
+        let management = try managementStore.pending();try check(binding,token)
+        for original in manual where !confirmed.contains(Data(original.operationID.utf8)) {
+            let failed = try store.rejection(for:original);try check(binding,token)
+            if failed == nil { return true }
+        }
+        for original in management where !managementConfirmed.contains(managementReceiptKey(original)) {
+            let failed = try managementStore.rejection(for:original);try check(binding,token)
+            if failed == nil { return true }
+        }
+        try check(binding,token);return false
     }
     public func save(_ command: Components.Schemas.MemoryManualSaveCommand, binding: MemoryBinding) async throws -> MemorySaveResult {
         let token = try begin(binding)
@@ -444,7 +502,11 @@ extension MemoryClient {
         return failure.map { ($0.status, $0.code) }
     }
     public func queryManagement(actionID: String, binding: MemoryBinding) async throws -> MemoryManagementResult {
-        let token = try begin(binding); try requireManagement()
+        let token = try begin(binding)
+        // An explicit original journal supports GET reconciliation without
+        // granting lifecycle POSTs to the public read-only client.
+        guard managementReadEnabled,managementStore != nil,managementEndpoint.maximumRequestBytes <= 32768,
+              managementEndpoint.maximumResponseBytes <= 65536 else { throw MemoryFailure.unconfigured }
         guard let managementStore else { throw MemoryFailure.unconfigured }
         try managementStore.validate(binding)
         guard let original = try managementStore.pending().first(where: { same($0.actionID, actionID) }) else { throw MemoryFailure.invalidInput }
