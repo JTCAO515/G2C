@@ -270,4 +270,30 @@ class ScopedRuntimeChecks(unittest.TestCase):
             self.assertEqual(p['scope']['reference']['resolved_item_ids'],[item['id']])
             self.assertEqual(p['content']['items'][-1],other)
 
+    def test_final_slow_admission_cannot_commit_expired_original_confirmation(self):
+        import time
+        from unittest.mock import patch
+        from cj_trip.postgres import Repository
+        f=self.fixture('confirmation-expiry')
+        f.configuration.publisher.clock=lambda:time.time()-292
+        binding=f.send('edit');outcome=f.run(Model())[0];self.assertIsNotNone(outcome.proposal_id)
+        with TestClient(self.scoped(f)) as client:
+            p=self.detail(client,f,outcome.proposal_id);raw=self.action(p)
+            state={'finals':0,'delayed':False};original_final=Repository._final_action_eligibility
+            checker=f.configuration.publisher.checker;original_check=type(checker).check
+            def final(repository,*args):
+                result=original_final(repository,*args);state['finals']+=1;return result
+            def check(actual,*args):
+                result=original_check(actual,*args)
+                if state['finals']>=2 and not state['delayed']:
+                    state['delayed']=True;time.sleep(max(0,p['expires_at']-time.time())+.15)
+                return result
+            with patch.object(Repository,'_final_action_eligibility',final),patch.object(type(checker),'check',check):
+                response=self.post(client,f,raw)
+            self.assertTrue(state['delayed']);self.assertIn(response.status_code,(409,503),response.text)
+            self.assertIsNone(client.get('/v1/trip-scoped-action-receipts',params={'action_id':'original-accept'},headers=f.headers).json()['receipt'])
+            self.assertEqual(self.detail(client,f,p['proposal_id'])['status'],'pending')
+        with f.database.connect(f.scope) as conn:
+            self.assertEqual(conn.execute('SELECT version FROM cj_trip_record WHERE trip_id=%s',(f.trip.trip_id,)).fetchone()[0],f.trip.version)
+
 if __name__=='__main__':unittest.main(verbosity=2)

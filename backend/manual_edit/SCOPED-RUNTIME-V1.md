@@ -75,7 +75,9 @@ Duplicate/unknown fields or changed bytes under the same action ID refuse.
 Accept re-enters actual B phase=accept (original completed RUN), captures current
 Memory and compares the full original snapshot/payload/context/selection fingerprint,
 re-reads original NEEDS and repeats the original candidate validation. Actual source
-leases stay held through the same cursor's original Signer/_act_in_tx and receipt.
+leases stay held through the same cursor's original Signer/_act_in_tx and receipt. A C transaction decorator delegates the same original RUN transaction/cursor
+and repeats the original _final_action_eligibility after B's last admission callback,
+immediately before its original physical commit; no second transaction/engine.
 Only the explicitly selected Trip's version grows; an existing planning pointer for
 that Trip is kept consistent without choosing or rewriting another formal plan.
 Source/version/selection/account/cancel/namespace changes refuse old acceptance.

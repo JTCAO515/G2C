@@ -1,5 +1,6 @@
 """Scoped explicit action/recovery through the original confirmation and act."""
 import json
+from contextlib import contextmanager
 from .needs_action import NeedsAction
 from .domain import Conflict,Denied,ProposalDetail,packed
 from cj_message.edit_reference import EditAuthority
@@ -14,6 +15,16 @@ from cj_draft.scoped_publisher import memory_descriptor
 class ScopedAction(NeedsAction):
     @classmethod
     def parse(cls,raw):return cls._parse(raw,'TRIP-scoped-action.1')
+
+
+class ConfirmationRunRepository:
+    """Same original RUN transaction/cursor; final C eligibility before commit."""
+    def __init__(self,original,final):self.original,self.final=original,final
+    @contextmanager
+    def transaction(self):
+        with self.original.transaction() as tx:
+            yield tx
+            self.final(tx.cur)
 
 
 class ScopedActions:
@@ -58,7 +69,12 @@ class ScopedActions:
                 raise Denied('actual scoped action identity unavailable')
             return value.principal
         principal=admit()
-        authority=EditAuthority(self.database.message_repository(owner),admit,self.database.run_repository(owner))
+        action=None;pending=None
+        def before_commit(cur):
+            repository.guard('scoped_commit')
+            repository._final_action_eligibility(cur,action,pending)
+        original_run=ConfirmationRunRepository(self.database.run_repository(owner),before_commit)
+        authority=EditAuthority(self.database.message_repository(owner),admit,original_run)
         memory=self.configuration.memory.bind(self.database,owner,principal.subject,admit,message_context=authority).capture(binding)
         if memory_descriptor(memory)!=bytes(row[6]):raise Denied('original candidate Memory changed')
         source=authority.capture(binding)
@@ -68,7 +84,7 @@ class ScopedActions:
         if prepared.state.needs.raw!=bytes(row[5]):raise Denied('original candidate NEEDS changed')
         candidate,needs_candidate,report,verification=self.publisher.validate_reply(prepared.state,bytes(row[7]))
         if candidate.content!=proposal.content:raise Conflict('original scoped diff changed')
-        action=None;pending=None;publication=None
+        publication=None
         def final():
             repository.guard('scoped_commit')
             repository._final_action_eligibility(publication.cursor,action,pending)
