@@ -49,7 +49,7 @@ import Foundation
             var bottom = navigation.exists ? app.frame.maxY - 24 : app.tabBars.firstMatch.frame.minY
             let header = app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer = app.otherElements.matching(identifier:"assistant.composer").firstMatch
-            if !navigation.exists && !id.hasPrefix("assistant.draft") && header.exists && composer.exists {
+            if !navigation.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
                 top = max(top,header.frame.maxY + 8); bottom = min(bottom,composer.frame.minY)
                 let conversation = app.staticTexts.matching(identifier:"assistant.conversation").firstMatch
                 if conversation.exists { bottom = min(bottom,conversation.frame.minY) }
