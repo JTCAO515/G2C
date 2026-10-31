@@ -127,7 +127,7 @@ import Foundation
         let done=app.toolbars.buttons.matching(identifier:language=="en" ? "Done" : "完成").firstMatch
         if done.exists { done.tap() }
     }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false) async throws {
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -179,7 +179,33 @@ import Foundation
         if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
         else { text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程") }
         capture(name+"-published-not-adopted");try audit(name+"-original-run")
+        if let decision {
+            tap("scoped.discover");text("scoped.discovery.state",contains:activeLanguage=="en" ? "Original candidate" : "原候选")
+            text("scoped.feasibility",contains:"UNKNOWN")
+            text("scoped.before."+chosen,contains:"Jingshan Park")
+            text("scoped.after."+chosen,contains:"本次轻松一点")
+            capture(name+"-original-diff-unknown");try audit(name+"-diff")
+            tap("scoped."+decision)
+            text("scoped.receipt",contains:activeLanguage=="en" ? "confirmed" : "已确认")
+            if decision=="accept" {
+                text("scoped.receipt.version",contains:"3");text("scoped.formal.version",contains:trip.id+" · 3")
+                text("scoped.formal.item."+chosen,contains:"本次轻松一点")
+            }
+            _ = try await call("/decision-proof",caseID:name)
+            capture(name+"-original-decision");try audit(name+"-decision")
+            // Relaunch supplies no token. Explicit restore, original journal and GET only.
+            try launch(f,language:activeLanguage,restore:true)
+            tap("scoped.originals")
+            let original=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","scoped.query.")).firstMatch},id:"scoped.originals")
+            XCTAssertTrue(original.exists && original.isHittable && original.isEnabled);original.tap()
+            text("scoped.receipt",contains:activeLanguage=="en" ? "confirmed" : "已确认")
+            _ = try await call("/decision-proof",caseID:name)
+            capture(name+"-restart-original-receipt");try audit(name+"-restart")
+        }
+
     }
+    func testScopedCandidateAccept() async throws { try await scenario("testScopedCandidateAccept",language:"en",item:true,switchLanguage:true,decision:"accept") }
+    func testScopedCandidateReject() async throws { try await scenario("testScopedCandidateReject",language:"en",item:true,decision:"reject") }
     func testScopedItemAndLanguageSwitch() async throws { try await scenario("testScopedItemAndLanguageSwitch",language:"en",item:true,switchLanguage:true) }
     func testScopedDayChineseLargest() async throws { try await scenario("testScopedDayChineseLargest",language:"zh-Hans",large:true) }
     func testScopedUndeterminedDayWithoutModel() async throws { try await scenario("testScopedUndeterminedDayWithoutModel",language:"en",undetermined:true) }

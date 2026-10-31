@@ -2,6 +2,7 @@
 import Foundation
 import CJShell
 import CJTripClient
+import CJManualPreviewClient
 import CJMessageHTTP
 import CJMessageClient
 import CJRunClient
@@ -95,7 +96,10 @@ import Observation
         let key: MessageEncryptionKey
         if let existing { key = existing }
         else {
-            guard try files.contentsOfDirectory(atPath: root.path).isEmpty else { throw TripFailure.keyUnavailable }
+            let retained = [root, root.appendingPathExtension("ScopedOriginals"), root.appendingPathExtension("ScopedReceipts")]
+            for path in retained where files.fileExists(atPath: path.path) {
+                guard try files.contentsOfDirectory(atPath: path.path).isEmpty else { throw TripFailure.keyUnavailable }
+            }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
         let store = try TripPendingStore(directory: root, maximumBytes: 1_000_000, maximumRecords: 100,
@@ -127,6 +131,20 @@ import Observation
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
             session: lifetime.session, operation: lifetime.operation,travelProfile:typedMode?.travel,tripDiscussions:tripDiscussions,
             scopedEdits:scopedEdits,currentNeeds:currentNeeds,isCurrent: { lifetime.current != nil })
+        if scopedEdits {
+            let originals = root.appendingPathExtension("ScopedOriginals")
+            let receipts = root.appendingPathExtension("ScopedReceipts")
+            for path in [originals, receipts] {
+                try files.createDirectory(at: path, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            }
+            let scopedEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 32768,
+                maximumResponseBytes: 4_000_000, allowLoopbackHTTP: true)
+            let scoped = try ScopedTripClient(endpoint: scopedEndpoint, binding: lifetime.trip, credentials: { binding in
+                guard lifetime.current == binding else { return nil }; return configuration.token
+            }, validate: { guard lifetime.current != nil else { throw TripFailure.staleBinding } },
+                directory: originals, receiptDirectory: receipts, expectedKeyID: key.id, provider: keys)
+            messages.messages.configureScopedCandidates(scoped)
+        }
         needs=try scopedEdits ? preparedNeeds : makeNeeds()
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }

@@ -1,8 +1,8 @@
 """#337 scoped-message App prefix; actual signed API/PG/run_once/Fake only.
 
-Only frozen send.4/RUN and explicit scope selection. Candidate discovery/diff/
-acceptance are UNRUN pending C #366; worker outcomes are backend oracles only,
-never fixture inputs or proposal IDs supplied to the App.
+Frozen send.4/RUN and TRIP-scoped-discovery.1. Worker outcomes remain backend
+oracles only; no candidate ID is supplied to the App. All Trip sources are created
+by the signed MESSAGE/worker/confirmation/source-initialize chain.
 """
 import os,sys,json,time,tempfile,subprocess,uuid,base64,hashlib,argparse,threading,importlib.util,plistlib
 from pathlib import Path
@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject'],required=True)
 ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -36,7 +36,7 @@ import uvicorn
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
-r={'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':['candidate discovery/diff/accept App pending C366','expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver']}
+r={'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver']}
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)
@@ -137,6 +137,7 @@ try:
    cid=CASE
    with TestClient(edit_api) as client:expect(client.put('/v1/conversations',params=dict(conversation_id=cid),headers=headers),'native-original-chat')
    structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
+   scoped_app=create_local_scoped_app(database=edit_db,configuration=configuration)
    typed_app=create_local_typed_app(conninfo_path=connection,auth_dir=auth,configuration=typed)
    fake=ScopedFake();finished=[];worker_errors=[];stop=threading.Event();audit=[];lock=threading.RLock()
    async def observed(scope,receive,send):
@@ -150,7 +151,7 @@ try:
     async def sent(message):
      if message['type']=='http.response.start':entry['status']=message['status']
      await send(message)
-    target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
+    target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else scoped_app if path.startswith('/v1/trip-scoped-') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
     await target(scope,received,sent)
     if scope['method']=='POST':entry['input_sha256']=hashlib.sha256(b''.join(chunks)).hexdigest()
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
@@ -190,12 +191,32 @@ try:
      status=display['snapshot']['status'],draft_outcome=draft['draft_outcome'],trip_id=reference['trip_context']['id'],content_sha256=reference['trip_context']['content_sha256'],namespace=reference['namespace']['id'],needs_version=reference['needs_reference']['expected_version'],item_ids=reference['trip_context']['item_ids'],day=None if reference['trip_context']['day'] is None else reference['trip_context']['day']['date'],
      memory_long='SYNTHETIC LONG' in inputs,memory_current='SYNTHETIC CURRENT' in inputs,memory_other='SYNTHETIC OTHER' in inputs)
     r['proof']=value;r['observed_requests']=list(audit);r['worker_outcomes']=list(finished);r['proposal_ids_are_backend_oracles_only']=True;save();return value
+   def decision_proof():
+    owner=scope_for(ISSUER,subject)
+    with edit_db.connect(owner) as conn:
+     trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
+     actions=conn.execute('SELECT action_id,original_input FROM cj_trip_scoped_action').fetchall()
+     operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(cid,)).fetchone()[0]
+    assert len(trips)==len(actions)==operations==fake.calls==1
+    action=json.loads(bytes(actions[0][1]));kind='accept' if CASE=='testScopedCandidateAccept' else 'reject'
+    assert action['kind']==kind and trips[0][0]==tid and trips[0][1]==(3 if kind=='accept' else 2)
+    doc=json.loads(bytes(trips[0][2]));before=formal['content']
+    assert doc['title']==before['title'] and doc['sources']==before['sources']
+    for old,new in zip(before['items'],doc['items']):
+     if old['id']!='item-2' or kind=='reject':assert old==new
+    if kind=='accept':assert doc['items'][1]['text']=='SYNTHETIC lighter choice / 本次轻松一点'
+    requests=[x for x in audit if x['path']=='/v1/trip-scoped-discovery']
+    writes=[x for x in audit if x['path']=='/v1/trip-scoped-actions' and x['method']=='POST']
+    assert requests and len(writes)==1 and writes[0]['input_sha256']==hashlib.sha256(bytes(actions[0][1])).hexdigest()
+    value=dict(formal_version=trips[0][1],formal_count=len(trips),actions=len(actions),model_calls=fake.calls,registered_operations=operations,kind=kind,original_action_id=actions[0][0],original_action_sha256=writes[0]['input_sha256'])
+    r['decision_proof']=value;save();return value
    class Control(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
     def do_GET(self):
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
       if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=dict(A=headers['Authorization'][7:]),subjects=dict(A=subject),formal_trips=[spec])
+      elif path.path=='/decision-proof':value=decision_proof()
       elif path.path=='/wait-completed':
        deadline=time.monotonic()+90
        while not finished:
@@ -225,14 +246,16 @@ try:
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
     log=(run.stdout+run.stderr).replace(headers['Authorization'][7:],'<redacted-local-token>');(OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    verified=proof();assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
+    verified=r['proof'] if CASE in ('testScopedCandidateAccept','testScopedCandidateReject') else proof()
+    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject'):decision_proof()
+    assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
     if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
     else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
     for file in container.rglob('*'):
      if file.is_file() and not file.is_symlink():
       data=file.read_bytes();assert headers['Authorization'][7:].encode() not in data and b'-----BEGIN PRIVATE KEY-----' not in data
-    r['token_key_scan']='PASS';r['cases'][CASE]='PASS';r['status']='PARTIAL_PASS';save()
+    r['token_key_scan']='PASS';r['cases'][CASE]='PASS';r['status']='PASS';save()
    finally:
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
     if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)
