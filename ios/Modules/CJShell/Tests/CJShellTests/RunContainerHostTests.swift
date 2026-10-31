@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Testing
 import CJAPI
 import CJSession
@@ -371,5 +372,63 @@ extension RunContainerHostTests {
         await f.model.perform(f.model.prepareRead())
         f.admissionCallback = { do { try f.selectMessage("B") } catch { Issue.record(error) } }
         guard case .unavailable = f.host.placeProjection else { Issue.record("A projection survived B selection");return }
+    }
+}
+
+
+extension RunContainerHostTests {
+    private func needsFrame(_ f: RunHostFixture, sourceOverride: String? = nil, version: String = "NEEDS-preview.1") throws -> String {
+        let original = try #require(f.messages.captureAcceptedRunReceipt())
+        let source = try #require(original.originalTextUTF8)
+        let text = sourceOverride.map { Data($0.utf8) } ?? source
+        return String(decoding: try JSONSerialization.data(withJSONObject: [
+            "version": version, "data_origin": "synthetic", "confirmation": "unconfirmed",
+            "source_kind": "unconfirmed_extraction", "source": ["message_id": original.receipt.message_id,
+                "run_id": original.receipt.run_id, "text_utf8_base64": text.base64EncodedString(),
+                "text_sha256": SHA256.hash(data: text).map { String(format: "%02x", $0) }.joined()],
+            "fields": [:] as [String: String], "unresolved": [] as [String], "questions": [] as [String],
+            "deferred_memory_requests": [] as [String],
+            "text_zh": "请核对提取值；这些改动尚未保存到本次需求或长期记忆。",
+            "text_en": "Check the extracted values. These changes have not been saved to your trip requirements or long-term memory."
+        ], options: [.sortedKeys]), as: UTF8.self) + "\n"
+    }
+    @Test func needsPreviewRetainsOriginalTextAcrossComposerAndLanguageChanges() async throws {
+        let f = try RunHostFixture(shell: shell()); try await f.accept("A"); try f.bind("A", answerFormat: .needsPreviewV1)
+        #expect(f.host.selectAcceptedMessage(from: f.messages))
+        let source = try #require(f.messages.captureAcceptedRunReceipt()?.originalTextUTF8)
+        let text = try needsFrame(f)
+        await f.wire.addSnapshot(try f.snapshot("A", status: "completed", text: text)); await f.read()
+        f.shell.draft = "Different composer input"
+        guard case .loaded(let value) = f.host.needsPreviewProjection else { Issue.record("Missing protected NEEDS preview"); return }
+        #expect(value.sourceTextUTF8 == source && value.originalUTF8 == Data(text.utf8))
+        let identity = try #require(f.host.originalPresentationID)
+        f.shell.selectLanguage(.chinese)
+        guard case .loaded(let changed) = f.host.needsPreviewProjection else { Issue.record("Language retired source"); return }
+        #expect(changed.originalUTF8 == value.originalUTF8 && f.host.originalPresentationID == identity)
+        guard case .unavailable = f.host.factProjection, case .unavailable = f.host.placeProjection else {
+            Issue.record("NEEDS was interpreted as another tool ABI"); return
+        }
+        f.admission = false
+        guard case .unavailable = f.host.needsPreviewProjection else { Issue.record("Retired owner exposed preview"); return }
+    }
+    @Test(arguments: ["wrong-original", "future", "unfinished"])
+    func needsPreviewDoesNotAdoptWrongOriginalOrIncompleteResult(mode: String) async throws {
+        let f = try RunHostFixture(shell: shell()); try await f.accept("A"); try f.bind("A", answerFormat: .needsPreviewV1)
+        #expect(f.host.selectAcceptedMessage(from: f.messages))
+        let text = try needsFrame(f, sourceOverride: mode == "wrong-original" ? "Other user's text" : nil,
+                                  version: mode == "future" ? "NEEDS-preview.99" : "NEEDS-preview.1")
+        await f.wire.addSnapshot(try f.snapshot("A", status: mode == "unfinished" ? "running" : "completed", text: text)); await f.read()
+        if mode == "unfinished" {
+            guard case .waiting = f.host.needsPreviewProjection else { Issue.record("Uncommitted preview became ready"); return }
+        } else {
+            guard case .unavailable = f.host.needsPreviewProjection else { Issue.record("Invalid preview became ready"); return }
+        }
+    }
+    @Test func needsPreviewCannotPublishAfterReentrantSourceSelection() async throws {
+        let f = try RunHostFixture(shell: shell()); try await f.accept("A"); try await f.accept("B"); try f.bind("A", answerFormat: .needsPreviewV1)
+        #expect(f.host.selectAcceptedMessage(from: f.messages))
+        await f.wire.addSnapshot(try f.snapshot("A", status: "completed", text: needsFrame(f))); await f.read()
+        f.admissionCallback = { do { try f.selectMessage("B") } catch { Issue.record(error) } }
+        guard case .unavailable = f.host.needsPreviewProjection else { Issue.record("Old A preview survived B selection"); return }
     }
 }

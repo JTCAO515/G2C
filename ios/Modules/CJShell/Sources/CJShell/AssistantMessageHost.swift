@@ -41,11 +41,12 @@ import CJAPI
 @MainActor public final class AcceptedMessageRunReceipt: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     let receipt: Components.Schemas.MessageReceipt
     let travelReference: Components.Schemas.MessageTravelReference?
+    let originalTextUTF8: Data?
     let isCurrent: @MainActor () -> Bool
     let isStillOwned: @MainActor () -> Bool
-    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil, isCurrent: @escaping @MainActor () -> Bool,
+    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil, originalTextUTF8: Data?, isCurrent: @escaping @MainActor () -> Bool,
                      isStillOwned: @escaping @MainActor () -> Bool) {
-        self.receipt = receipt;self.travelReference = travelReference; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
+        self.receipt = receipt;self.travelReference = travelReference;self.originalTextUTF8 = originalTextUTF8; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
     }
     public nonisolated var description: String { "<redacted accepted message receipt>" }
     public nonisolated var debugDescription: String { description }
@@ -260,7 +261,12 @@ public enum MessageHostActivity: Equatable {
             guard Data(receipt.message_id.utf8) == Data(record.messageID.utf8),receipt.input_sha256 == record.inputSHA256,
                   ownsRunReceipt(record,binding:originalBinding,revision:revision) else { return nil }
         } catch { return nil }
-        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference, isCurrent: { [weak self] in
+        // Legacy receipt readers remain available when text is absent. New
+        // extraction consumers require these original decoded text bytes; they
+        // never take source text from a mutable composer or later message.
+        let originalText = (try? JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any])?["text"] as? String
+        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference,
+            originalTextUTF8:originalText.map { Data($0.utf8) }, isCurrent: { [weak self] in
             self?.ownsRunReceipt(record, binding: originalBinding, revision: revision) == true
         }, isStillOwned: { [weak self] in
             self?.ownsRunReceiptWithoutCallbacks(record, binding: originalBinding, revision: revision) == true
