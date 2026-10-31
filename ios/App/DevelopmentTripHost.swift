@@ -60,10 +60,13 @@ import Observation
     let trips: TripContainerHost
     let messages: DevelopmentMessageHost
     let memory: DevelopmentMemoryHost?
+    let typedMemory: DevelopmentTypedMemoryHost?
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil) throws {
+        let environment = ProcessInfo.processInfo.environment
+        let typedMode = try DevelopmentTypedMode.read(environment)
         let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 4096,
             maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let lifetime = try DevelopmentLifetime(configuration: configuration, shell: shell, lease: lease)
@@ -103,11 +106,17 @@ import Observation
             throw TripFailure.staleBinding
         }
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
-                                               session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
-        if let profile = try DevelopmentMemoryProfile.read(ProcessInfo.processInfo.environment) {
+            session: lifetime.session, operation: lifetime.operation,travelProfile:typedMode?.travel,isCurrent: { lifetime.current != nil })
+        if let typedMode {
+            guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
+            typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
+                session:lifetime.session,operation:lifetime.operation,travel:travel,isCurrent:{lifetime.current != nil})
+            memory = nil
+        } else if let profile = try DevelopmentMemoryProfile.read(environment) {
             memory = try DevelopmentMemoryHost(configuration: configuration, profile: profile, shell: shell,
                 session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
-        } else { memory = nil }
+            typedMemory = nil
+        } else { memory = nil;typedMemory = nil }
         shell.selectedTab = .trips
         // Disk restoration only selects an original action for GET reconciliation;
         // it never prepares or submits another action, even while the API is offline.
@@ -122,6 +131,7 @@ import Observation
         lifetime.active = false
         messages.invalidate()
         memory?.invalidate()
+        typedMemory?.invalidate()
         trips.invalidate()
         keys.invalidate()
         if lifetime.ownsSession { _ = lifetime.session.clearWithSettlement() }
@@ -154,11 +164,7 @@ import Observation
         let key: MessageEncryptionKey
         if let existing = try keys.existing(expectedID: nil, for: keys.begin(.lookup)) { key = existing }
         else {
-            guard try files.contentsOfDirectory(atPath: root.path).isEmpty else { throw MemoryFailure.keyUnavailable }
-            // A missing key cannot be replaced over an existing lifecycle journal.
-            for adjacent in [lifecycleRoot, lifecycleRoot.appendingPathExtension("CJMemoryManagementRejections")] where files.fileExists(atPath: adjacent.path) {
-                guard try files.contentsOfDirectory(atPath: adjacent.path).isEmpty else { throw MemoryFailure.keyUnavailable }
-            }
+            guard try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:directory,files:files) else { throw MemoryFailure.keyUnavailable }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
         let store = try MemoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
@@ -169,26 +175,39 @@ import Observation
         let current: @MainActor () -> MemoryBinding? = {
             isCurrent() && session.isCurrent(operation) && shell.generation == generation ? binding : nil
         }
+        let legacyWritesAllowed: Bool
+        do { legacyWritesAllowed = try DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root) }
+        catch { legacyWritesAllowed = false } // Unreadable storage cannot authorize a writer.
         let transport = try NoRedirectTransport.developmentMemory(endpoint: endpoint, requestTimeout: 10,
             resourceTimeout: 20, validate: {
                 guard current() == binding else { throw MemoryFailure.staleBinding }
+                guard try DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root) else { throw MemoryFailure.pendingRequiresQuery }
             })
         let credentials: MemoryCredentialCallback = { requested in
             guard current() == requested else { return nil }
             return configuration.token
         }
-        let client: MemoryClient
-        if let managementURL {
+        let managementEndpoint = try managementURL.map {
+            try MemoryEndpoint(url:$0,maximumRequestBytes:32768,maximumResponseBytes:65536,allowLoopbackHTTP:true)
+        }
+        let lifecycle: MemoryManagementPendingStore?
+        if managementURL != nil {
             if !files.fileExists(atPath: lifecycleRoot.path) {
                 try files.createDirectory(at: lifecycleRoot, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
             }
-            let lifecycle = try MemoryManagementPendingStore(directory: lifecycleRoot, maximumBytes: 100_000,
+            lifecycle = try MemoryManagementPendingStore(directory: lifecycleRoot, maximumBytes: 100_000,
                 maximumRecords: 100, binding: binding, expectedKeyID: key.id, provider: keys)
-            let managementEndpoint = try MemoryEndpoint(url: managementURL, maximumRequestBytes: 32768,
-                maximumResponseBytes: 65536, allowLoopbackHTTP: true)
+        } else { lifecycle = nil }
+        let client: MemoryClient
+        if !legacyWritesAllowed {
+            client = MemoryClient(endpoint:endpoint,credentials:credentials,currentBinding:current,pendingStore:store,
+                liveReadTransport:try NoRedirectTransport(requestTimeout:10,resourceTimeout:20),
+                managementPendingStore:lifecycle,managementReadEndpoint:managementEndpoint)
+        } else if let managementEndpoint,let lifecycle {
             let managementTransport = try NoRedirectTransport.developmentMemoryManagement(endpoint: managementEndpoint,
                 requestTimeout: 10, resourceTimeout: 20, validate: {
                     guard current() == binding else { throw MemoryFailure.staleBinding }
+                    guard try DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root) else { throw MemoryFailure.pendingRequiresQuery }
                 })
             client = try MemoryClient(localEndpoint: endpoint, credentials: credentials, currentBinding: current,
                 pendingStore: store, localTransport: transport, managementEndpoint: managementEndpoint,
@@ -225,12 +244,85 @@ import Observation
     func invalidate() { host.invalidate(); keys.invalidate() }
 }
 
+/// One account/key namespace across wire versions. V1 recovery is query-only;
+/// V2 has its own encrypted domain and cannot bypass unresolved V1 originals.
+@MainActor final class DevelopmentTypedMemoryHost {
+    let host: TypedMemoryContainerHost
+    private let keys: ScopedMessageKeyProvider
+    init(configuration: DevelopmentSessionConfiguration,mode: DevelopmentTypedMode,shell: ShellState,
+         session: SessionLifecycle,operation: SessionOperation,travel: TravelSelectionModel,
+         isCurrent: @escaping @MainActor () -> Bool) throws {
+        let binding = MemoryBinding(environment:configuration.environmentID,account:configuration.accountID,generation:UUID(),selection:UUID())
+        let generation = shell.generation
+        let namespace = MessageKeyNamespace(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1)
+        guard let applicationID = Bundle.main.bundleIdentifier else { throw MemoryFailure.unconfigured }
+        keys = try ScopedMessageKeyProvider(namespace:namespace,applicationIdentifier:applicationID,protection:.whenUnlockedThisDeviceOnly)
+        let files = FileManager.default
+        let support = try files.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true)
+        let directory = support.appendingPathComponent("G2CDevelopmentMemory",isDirectory:true)
+            .appendingPathComponent(binding.environment.uuidString,isDirectory:true).appendingPathComponent(binding.account.uuidString,isDirectory:true)
+        try files.createDirectory(at:directory,withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])
+        let key: MessageEncryptionKey
+        if let existing = try keys.existing(expectedID:nil,for:keys.begin(.lookup)) { key = existing }
+        else {
+            guard try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:directory,files:files) else { throw MemoryFailure.keyUnavailable }
+            key = try keys.create(storageState:.confirmedEmpty,for:keys.begin(.create))
+        }
+        let legacyRoot = directory.resolvingSymlinksInPath()
+        let lifecycleRoot = legacyRoot.appendingPathExtension("lifecycle"),typedRoot = legacyRoot.appendingPathExtension("typed-v2")
+        for root in [lifecycleRoot,typedRoot] where !files.fileExists(atPath:root.path) {
+            try files.createDirectory(at:root,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        }
+        let oldStore = try MemoryPendingStore(directory:legacyRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
+        let oldManagement = try MemoryManagementPendingStore(directory:lifecycleRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
+        let store = try TypedMemoryPendingStore(directory:typedRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
+        let current: @MainActor () -> MemoryBinding? = {
+            isCurrent() && session.isCurrent(operation) && shell.generation == generation ? binding : nil
+        }
+        let credentials: MemoryCredentialCallback = { requested in current() == requested ? configuration.token : nil }
+        let oldEndpoint = try MemoryEndpoint(url:configuration.endpoint,maximumRequestBytes:32768,maximumResponseBytes:1_000_000,allowLoopbackHTTP:true)
+        let oldManagementEndpoint = try DevelopmentMemoryProfile.managementEndpoint(ProcessInfo.processInfo.environment).map {
+            try MemoryEndpoint(url:$0,maximumRequestBytes:32768,maximumResponseBytes:65536,allowLoopbackHTTP:true)
+        }
+        let reads = try NoRedirectTransport(requestTimeout:10,resourceTimeout:20)
+        let legacy = MemoryClient(endpoint:oldEndpoint,credentials:credentials,currentBinding:current,pendingStore:oldStore,
+            liveReadTransport:reads,managementPendingStore:oldManagement,managementReadEndpoint:oldManagementEndpoint)
+        let endpoint = try MemoryEndpoint(url:mode.memoryEndpoint,maximumRequestBytes:32768,maximumResponseBytes:1_000_000,allowLoopbackHTTP:true)
+        let transport = try NoRedirectTransport.developmentTypedMemory(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{
+            guard current() == binding else { throw MemoryFailure.staleBinding }
+        })
+        let client = try TypedMemoryClient(localEndpoint:endpoint,credentials:credentials,currentBinding:current,pendingStore:store,
+            localTransport:transport,validatePriorOriginals:{
+                if try legacy.requiresOriginalReconciliation(binding:binding) { throw MemoryFailure.pendingRequiresQuery }
+            })
+        var options: [TypedMemoryManualOption] = []
+        for subject in mode.memory.subjects {
+            for slot in mode.memory.slots.keys.sorted() {
+                let policy = mode.memory.slots[slot]!
+                guard policy.collection_allowed else { continue }
+                let kind = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue:policy.kind)!
+                for extent in mode.memory.extents {
+                    let scope: TypedMemoryScopeChoice = extent == "current" ? .selectedTravel : .longTerm
+                    let label = extent == "current" ? "Selected travel / 所选旅行" : "Long term / 长期"
+                    options.append(TypedMemoryManualOption(label:subject + " · " + slot + " · " + label,subject:subject,slot:slot,kind:kind,scope:scope))
+                }
+            }
+        }
+        host = try TypedMemoryContainerHost(shell:shell,client:client,binding:binding,pageSize:20,options:options,travel:travel,legacy:legacy,currentBinding:current)
+    }
+    func invalidate() { host.invalidate();keys.invalidate() }
+}
+
 @MainActor private final class DevelopmentMessageLifetime {
     var active = true
     let isCurrent: @MainActor () -> Bool
     init(isCurrent: @escaping @MainActor () -> Bool) { self.isCurrent = isCurrent }
+    var current: Bool {
+        guard active else { return false }
+        let value = isCurrent();return value && active
+    }
     func validate() throws {
-        guard active, isCurrent() else { throw RecoveryError.inactive }
+        guard current else { throw RecoveryError.inactive }
     }
 }
 
@@ -255,11 +347,12 @@ import Observation
     let messages: AssistantMessageHost
     let history: ServerHistoryHost
     let runs: RunContainerHost
+    let travelSelection: TravelSelectionModel?
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState,
-         session: SessionLifecycle, operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
+         session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil, isCurrent: @escaping @MainActor () -> Bool) throws {
         let lifetime = DevelopmentMessageLifetime(isCurrent: isCurrent)
         let scope = try StorageScope(environment: configuration.environmentID.uuidString, account: configuration.accountID.uuidString)
         let namespace = MessageKeyNamespace(environment: configuration.environmentID, account: configuration.accountID,
@@ -284,28 +377,34 @@ import Observation
         let lease = try recovery.activate(scope)
         let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16384,
                                            maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
-        let transport = try NoRedirectTransport.developmentMessages(endpoint: endpoint, requestTimeout: 10,
-            resourceTimeout: 20, validate: { try lifetime.validate() })
+        let transport: NoRedirectTransport
+        if travelProfile != nil {
+            transport = try NoRedirectTransport.developmentTravelMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
+        } else {
+            transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
+        }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,
                                         credentials: credentials, liveReadTransport: transport)
+        let selectedTravel = try travelProfile.map { try TravelSelectionModel(ids:$0.travel_ids,client:client,lease:lease,isCurrent:{lifetime.current}) }
         let messages = AssistantMessageHost(shell: shell), history = ServerHistoryHost(shell: shell)
         guard messages.bind(AssistantMessageBinding(recovery: recovery, scope: scope, lease: lease,
             generation: shell.generation, synthetic: false,
-            isCurrent: { (try? lifetime.validate()) != nil },
-            invalidateResources: { lifetime.active = false; keyAdapter.invalidate() }, sendClient: client)) else {
+            isCurrent: { lifetime.current },
+            invalidateResources: { lifetime.active = false;selectedTravel?.invalidate();keyAdapter.invalidate() },sendClient:client,travelSelection:selectedTravel)) else {
             throw RecoveryError.inactive
         }
         let limits = try MessageReadLimits(maximumPageItems: 20, maximumCursorBytes: 4096,
                                            maximumDecodedBytes: 1_000_000, maximumPages: 50)
         guard history.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease,
             generation: shell.generation, limit: 20, limits: limits, synthetic: false,
-            isCurrent: { (try? lifetime.validate()) != nil },
+            isCurrent: { lifetime.current },
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
         }
         let runReads = try NoRedirectTransport(requestTimeout: 15, resourceTimeout: 150)
-        let runStops = try RunCancellationTransport.development(endpoint: endpoint, validate: { try lifetime.validate() })
+        let runStops = try travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})
+            : RunCancellationTransport.developmentCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
         let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes: 256, maximumTextBytes: 200000,
             credentials: { captured in
                 try lifetime.validate()
@@ -316,13 +415,15 @@ import Observation
         guard runs.configure(RunContainerConfiguration(model: runModel, session: session, operation: operation,
             generation: shell.generation, synthetic: false, followAcceptedMessages: true,
             answerFormat:try DevelopmentSessionConfiguration.placeToolsEnabled(ProcessInfo.processInfo.environment) ? .placeToolV1 : .plainText,
-            isCurrent: { (try? lifetime.validate()) != nil })) else { throw RecoveryError.inactive }
+            isCurrent: { lifetime.current })) else { throw RecoveryError.inactive }
         self.lifetime = lifetime; self.keyAdapter = keyAdapter
         self.messages = messages; self.history = history; self.runs = runs
+        travelSelection = selectedTravel
     }
 
     func invalidate() {
         lifetime.active = false
+        travelSelection?.invalidate()
         runs.invalidate(); history.invalidate(); messages.invalidate(); keyAdapter.invalidate()
     }
 }

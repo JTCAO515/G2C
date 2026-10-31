@@ -33,11 +33,15 @@ struct CheckedTransport: ClientTransport {
     let underlying: any ClientTransport
     let endpoint: MessageEndpoint
     let bearer: String
+    let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard baseURL == endpoint.url,
               (operationID == "receiveMessage" && request.method == .post && request.path == "/v1/messages") ||
               (operationID == "queryMessageReceipt" && request.method == .get && request.path?.hasPrefix("/v1/message-receipts?") == true) ||
               (operationID == "getMessageSendStatus" && request.method == .get && request.path?.hasPrefix("/v1/message-send-status?") == true) ||
+              (operationID == Operations.getMessageSendStatusV2.id && request.method == .get && request.path?.hasPrefix("/v2/message-send-status?") == true) ||
+              (operationID == Operations.receiveMessageV2.id && request.method == .post && request.path == "/v2/messages") ||
+              (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == "readMessageHistory" && request.method == .get && request.path?.hasPrefix("/v1/message-history?") == true) ||
               (operationID == "readMessageDraft" && request.method == .get && request.path?.hasPrefix("/v1/message-drafts?") == true) ||
@@ -46,12 +50,15 @@ struct CheckedTransport: ClientTransport {
         }
         var request = request
         request.headerFields[.authorization] = "Bearer " + bearer
+        try await validate()
         let (response, body) = try await underlying.send(request, body: body, baseURL: baseURL, operationID: operationID)
+        try await validate()
         guard !(300..<400).contains(response.status.code) else { throw MessageHTTPFailure.redirectRejected }
         let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
         guard traces.count == 1, let header = traces.first?.value, UUID(uuidString: header) != nil,
               let body else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await Data(collecting: body, upTo: endpoint.maximumResponseBytes)
+        try await validate()
         var parser = StrictJSON(bytes: Array(bytes)); try parser.check()
         guard let json = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
               let trace = json["request_id"] as? String, trace == header else { throw MessageHTTPFailure.invalidResponse }
@@ -64,12 +71,24 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let endpoint: MessageEndpoint
         let validate: @MainActor @Sendable () throws -> Void
     }
+    private enum MessageWire {
+        case legacy, travel
+        var path: String { self == .legacy ? "/v1/messages" : "/v2/messages" }
+        var operation: String { self == .legacy ? Operations.receiveMessage.id : Operations.receiveMessageV2.id }
+    }
+    private struct MessageCapability: Sendable {
+        let endpoint: MessageEndpoint
+        let validate: @MainActor @Sendable () throws -> Void
+        let wire: MessageWire
+        var boundary: EndpointCapability { EndpointCapability(endpoint:endpoint,validate:validate) }
+    }
     private let session: URLSession?
     private let transport: any ClientTransport
     private let preview: EndpointCapability?
-    private let messages: EndpointCapability?
+    private let messages: MessageCapability?
     private let memory: EndpointCapability?
     private let memoryManagement: EndpointCapability?
+    private let typedMemory: EndpointCapability?
 
     public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
@@ -91,7 +110,21 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
               let port = endpoint.url.port, (1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
-            preview: nil, messages: EndpointCapability(endpoint: endpoint, validate: validate))
+            preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .legacy))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+
+    /// Explicit local send.2 capability. No legacy endpoint or travel actions
+    /// are enabled by this capability; selection is data in immutable originals.
+    public static func developmentTravelMessages(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http",endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port,(1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
+            preview:nil,messages:MessageCapability(endpoint:endpoint,validate:validate,wire:.travel))
         #else
         throw MessageHTTPFailure.productionActivationUnavailable
         #endif
@@ -125,7 +158,22 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         #endif
     }
 
-    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: EndpointCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil) throws {
+    /// Explicit compatible typed Memory host. Exact frozen V2 collection and
+    /// lifecycle writes only; legacy and MESSAGE capabilities remain closed.
+    public static func developmentTypedMemory(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http",endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port,(1...65535).contains(port),
+              endpoint.maximumRequestBytes <= 32768,endpoint.maximumResponseBytes <= 1_000_000 else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
+            preview:nil,typedMemory:EndpointCapability(endpoint:endpoint,validate:validate))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+
+    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil) throws {
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
             throw MessageHTTPFailure.invalidConfiguration
         }
@@ -133,7 +181,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         let session = URLSession(configuration: config, delegate: RedirectBlocker(), delegateQueue: nil)
-        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement
+        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory
     }
 
     /// Internal non-network seam for module tests; never used by live callers.
@@ -145,19 +193,30 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             guard previewEndpoint == nil && validatePreview == nil else {throw MessageHTTPFailure.invalidConfiguration}
             preview=nil
         }
+        typedMemory=nil
         session=nil;transport=interceptedTransport;messages=nil;memory=nil;memoryManagement=nil
     }
 
     /// Module-test-only composition: the supplied transport must be non-network.
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
+        typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; memory = nil; memoryManagement = nil
-        messages = EndpointCapability(endpoint: messageEndpoint, validate: validateMessage)
+        messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: .legacy)
+    }
+
+    /// Non-network typed MESSAGE transport seam for module boundary tests.
+    init(interceptedTransport: any ClientTransport,travelMessageEndpoint: MessageEndpoint,
+         validateMessage: @escaping @MainActor @Sendable () throws -> Void) {
+        typedMemory=nil
+        session=nil;transport=interceptedTransport;preview=nil;memory=nil;memoryManagement=nil
+        messages=MessageCapability(endpoint:travelMessageEndpoint,validate:validateMessage,wire:.travel)
     }
 
     /// Non-network Memory boundary seam for deterministic transport tests.
     init(interceptedTransport: any ClientTransport, memoryEndpoint: MessageEndpoint,
          validateMemory: @escaping @MainActor @Sendable () throws -> Void) {
+        typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; messages = nil; memoryManagement = nil
         memory = EndpointCapability(endpoint: memoryEndpoint, validate: validateMemory)
     }
@@ -165,12 +224,25 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network lifecycle capability seam for boundary tests.
     init(interceptedTransport: any ClientTransport, memoryManagementEndpoint: MessageEndpoint,
          validateManagement: @escaping @MainActor @Sendable () throws -> Void) {
+        typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; messages = nil; memory = nil
         memoryManagement = EndpointCapability(endpoint: memoryManagementEndpoint, validate: validateManagement)
     }
 
+    /// Non-network typed Memory boundary seam; never activated by normal init.
+    init(interceptedTransport: any ClientTransport,typedMemoryEndpoint: MessageEndpoint,
+         validateTypedMemory: @escaping @MainActor @Sendable () throws -> Void) {
+        session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
+        typedMemory=EndpointCapability(endpoint:typedMemoryEndpoint,validate:validateTypedMemory)
+    }
+
     @MainActor func validateMessageSending(to endpoint: MessageEndpoint) throws {
-        guard let messages, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
+        guard let messages, messages.wire == .legacy, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
+        try messages.validate()
+    }
+
+    @MainActor func validateTravelMessageSending(to endpoint: MessageEndpoint) throws {
+        guard let messages,messages.wire == .travel,messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
         try messages.validate()
     }
 
@@ -179,19 +251,19 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         if request.method == .get || request.method == .head {
             return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
         }
-        if let messages, request.method == .post, operationID == Operations.receiveMessage.id,
-           request.path == "/v1/messages", request.scheme == nil, request.authority == nil,
+        if let messages, request.method == .post, operationID == messages.wire.operation,
+           request.path == messages.wire.path, request.scheme == nil, request.authority == nil,
            baseURL == messages.endpoint.url,
            !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
             return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
-                                            capability: messages, originalMessage: true)
+                                            capability: messages.boundary, messageWire: messages.wire)
         }
         if let memory, request.method == .post, operationID == Operations.saveMemory.id,
            request.path == "/v1/memories", request.scheme == nil, request.authority == nil,
            baseURL == memory.endpoint.url,
            !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
             return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
-                                            capability: memory, originalMessage: false)
+                                            capability: memory, messageWire: nil)
         }
         let managementPaths = [Operations.applyMemoryManagementAction.id: "/v1/memory-management-actions",
             Operations.applyMemoryEditAction.id: "/v1/memory-edit-actions",
@@ -201,7 +273,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
            baseURL == memoryManagement.endpoint.url,
            !request.headerFields.contains(where: { $0.name.canonicalName == "host" }), let body {
             return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
-                                            capability: memoryManagement, originalMessage: false)
+                                            capability: memoryManagement, messageWire: nil)
+        }
+        let typedMemoryPaths = [Operations.saveTypedMemory.id:"/v2/memories",
+            Operations.applyTypedMemoryManagement.id:"/v2/memory-management-actions",
+            Operations.applyTypedMemoryStopUse.id:"/v2/memory-withdrawal-actions"]
+        if let typedMemory,request.method == .post,let path = typedMemoryPaths[operationID],
+           request.path == path,request.scheme == nil,request.authority == nil,baseURL == typedMemory.endpoint.url,
+           !request.headerFields.contains(where:{ $0.name.canonicalName == "host" }),let body {
+            return try await sendLocalWrite(request,body:body,baseURL:baseURL,operationID:operationID,
+                                            capability:typedMemory,messageWire:nil)
         }
         // No other write-shaped request is enabled. Exact official operation/path are
         // fixed here; calling an arbitrary request "readonly" cannot grant capability.
@@ -230,12 +311,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         return (response,HTTPBody(result))
     }
     private func sendLocalWrite(_ request: HTTPRequest, body: HTTPBody, baseURL: URL, operationID: String,
-                                capability: EndpointCapability, originalMessage: Bool) async throws -> (HTTPResponse, HTTPBody?) {
+                                capability: EndpointCapability, messageWire: MessageWire?) async throws -> (HTTPResponse, HTTPBody?) {
         let media = request.headerFields.filter { $0.name == .contentType }
         guard media.count == 1, media.first?.value == "application/octet-stream" else { throw MessageHTTPFailure.invalidConfiguration }
         try Task.checkCancellation()
         let bytes = try await Data(collecting: body, upTo: capability.endpoint.maximumRequestBytes)
-        if originalMessage { _ = try OriginalMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes) }
+        switch messageWire {
+        case .legacy: _ = try OriginalMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case .travel: _ = try OriginalTravelMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case nil: break
+        }
         try await capability.validate()
         try Task.checkCancellation()
         let (response, responseBody) = try await transport.send(request, body: HTTPBody(bytes), baseURL: baseURL, operationID: operationID)
@@ -268,6 +353,7 @@ public enum MessageHTTPOutcome: Sendable {
     let submissionEnabledForTest: Bool
     let liveMessageTransport: NoRedirectTransport?
     var sendPermitState = SendPermitState()
+    var travelSendPermitState = SendPermitState()
     private let readOwner = UUID()
     /// Test seam only: caller must supply a non-network interceptor, never a live transport.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
@@ -286,12 +372,13 @@ public enum MessageHTTPOutcome: Sendable {
         submissionEnabledForTest = false
         liveMessageTransport = liveReadTransport
     }
-    func client(_ lease: Lease) async throws -> Client {
+    func client(_ lease: Lease, configuration: Configuration = .init()) async throws -> Client {
         try recovery.validateScope(scope, lease: lease)
         let value = try await credentials.bearer(for: scope, lease: lease)
         try recovery.validateScope(scope, lease: lease)
         guard let value, !value.isEmpty, value.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MessageHTTPFailure.credentialsUnavailable }
-        return Client(serverURL: endpoint.url, transport: CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value))
+        return Client(serverURL: endpoint.url, configuration: configuration, transport: CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value,
+            validate: { [recovery,scope] in try recovery.validateScope(scope,lease:lease) }))
     }
     public func submit(messageID: String, lease: Lease) async throws -> MessageHTTPOutcome {
         if !submissionEnabledForTest { return try await submitPrepared(messageID: messageID, lease: lease) }
@@ -413,6 +500,42 @@ extension MessageHTTPClient {
     public func validateRead<Value>(_ result: MessageReadResult<Value>, lease: Lease) throws {
         try recovery.validateScope(scope, lease: lease)
         guard result.owner == readOwner, result.lease == lease else { throw RecoveryError.inactive }
+    }
+    public func originalSendVersion(messageID: String,lease: Lease) throws -> MessageSendWireVersion {
+        try recovery.validateScope(scope,lease:lease)
+        guard let record = try recovery.action(messageID:messageID,lease:lease) else { throw RecoveryError.invalidInput }
+        var parser = StrictJSON(bytes:Array(record.originalUTF8));try parser.check()
+        guard let object = try JSONSerialization.jsonObject(with:record.originalUTF8) as? [String:Any],
+              let raw = object["version"] as? String,let version = MessageSendWireVersion(rawValue:raw) else { throw RecoveryError.invalidSnapshot }
+        return version
+    }
+    public func acceptedTravelMessage(messageID: String,lease: Lease) throws -> MessageReadResult<Components.Schemas.MessageReceiveV2Response> {
+        try recovery.validateScope(scope,lease:lease)
+        guard let record = try recovery.action(messageID:messageID,lease:lease),record.phase == .accepted,
+              let bytes = record.receipt else { throw RecoveryError.queryOnly }
+        let original = try OriginalTravelMessageSend(raw:record.originalUTF8,maximumBytes:endpoint.maximumRequestBytes,expectedMessageID:messageID)
+        let value = try JSONDecoder().decode(Components.Schemas.MessageReceiveV2Response.self,from:bytes)
+        _ = try ValidatedTravelMessageReceipt(receipt:value.receipt,reference:value.reference,original:original)
+        try recovery.validateScope(scope,lease:lease)
+        return MessageReadResult(value:value,next:nil,requestID:value.request_id,owner:readOwner,lease:lease)
+    }
+    /// Real owned B data under the current client/lease. This result never
+    /// substitutes for B's original accepted-message reference or effect lease.
+    public func readTravelContext(id: String, lease: Lease) async throws -> MessageReadResult<Components.Schemas.TravelContextReadResponse.travel_contextPayload> {
+        try recovery.validateScope(scope, lease: lease)
+        guard id.utf8.count == 32,id.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { throw RecoveryError.invalidInput }
+        let api = try await client(lease, configuration: .memory)
+        let output: Operations.getTravelContext.Output
+        do { output = try await api.getTravelContext(.init(path: .init(context_id: id))) }
+        catch { try recovery.validateScope(scope, lease: lease);throw MessageHTTPFailure.exchangeUnknown }
+        try recovery.validateScope(scope, lease: lease)
+        switch output {
+        case .ok(let response):
+            let body = try response.body.json
+            guard Data(body.travel_context.id.utf8) == Data(id.utf8),body.travel_context.version > 0 else { throw MessageHTTPFailure.invalidResponse }
+            return MessageReadResult(value: body.travel_context,next: nil,requestID: body.request_id,owner: readOwner,lease: lease)
+        case .default(let status,let response):throw MessageReadFailure.rejected(status: status,error: try response.body.json)
+        }
     }
     private func readCursor(_ cursor: MessageReadCursor?, purpose: Data, limit: Int, limits: MessageReadLimits, lease: Lease) throws {
         try recovery.validateScope(scope, lease: lease)

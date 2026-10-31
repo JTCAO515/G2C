@@ -5,6 +5,7 @@ struct StrictJSON {
     var bytes: [UInt8]
     var index = 0
     var topLevelUnsignedIntegers: [String: Int64] = [:]
+    var memberUnsignedIntegers: [[String]: Int64] = [:]
     mutating func check() throws {
         _ = try JSONSerialization.jsonObject(with: Data(bytes))
         try value(depth: 0)
@@ -24,7 +25,7 @@ struct StrictJSON {
         }
         throw MessageHTTPFailure.invalidResponse
     }
-    mutating func value(depth: Int) throws {
+    mutating func value(depth: Int, path: [String] = []) throws {
         guard depth < 64 else { throw MessageHTTPFailure.invalidResponse }
         whitespace()
         guard index < bytes.count else { throw MessageHTTPFailure.invalidResponse }
@@ -37,10 +38,12 @@ struct StrictJSON {
                 guard keys.insert(key).inserted else { throw MessageHTTPFailure.invalidResponse }
                 whitespace(); index += 1 // colon: grammar already validated
                 whitespace(); let start = index
-                try value(depth: depth + 1)
-                if depth == 0, bytes[start..<index].allSatisfy({ (48...57).contains($0) }),
+                let memberPath = path + [key]
+                try value(depth: depth + 1, path: memberPath)
+                if bytes[start..<index].allSatisfy({ (48...57).contains($0) }),
                    let integer = Int64(String(decoding: bytes[start..<index], as: UTF8.self)) {
-                    topLevelUnsignedIntegers[key] = integer
+                    memberUnsignedIntegers[memberPath] = integer
+                    if depth == 0 { topLevelUnsignedIntegers[key] = integer }
                 }
                 whitespace()
                 if bytes[index] == 125 { index += 1; break }
@@ -49,8 +52,10 @@ struct StrictJSON {
         case 91:
             index += 1; whitespace()
             if bytes[index] == 93 { index += 1; return }
+            var element = 0
             while true {
-                try value(depth: depth + 1); whitespace()
+                try value(depth: depth + 1, path: path + [String(element)]); whitespace()
+                element += 1
                 if bytes[index] == 93 { index += 1; break }
                 index += 1
             }

@@ -6,6 +6,7 @@ struct MemoryShell: View {
     @Bindable var state: ShellState
     let accountHost: AccountHost
     let memoryHost: MemoryContainerHost
+    let typedMemoryHost: TypedMemoryContainerHost?
     let feedbackHost: FeedbackContainerHost
     let developmentAccountHost: DevelopmentAccountHost?
     private var language: ShellLanguage { state.language }
@@ -14,16 +15,18 @@ struct MemoryShell: View {
         NavigationStack(path: $state.memoryPath) {
             List {
                 Section {
-                    if memoryHost.canSubmitManual && memoryHost.collectionOptions.count >= 2 {
+                    if typedMemoryHost == nil && memoryHost.canSubmitManual && memoryHost.collectionOptions.count >= 2 {
                         NavigationLink {
                             MemoryCollectionView(host: memoryHost, shell: state)
                         } label: {
                             Text(language.text("Optional travel questions", "可跳过的旅行问题"))
                         }.accessibilityIdentifier("memory.collection.open")
                     }
-                    MemoryContainerGroups(host: memoryHost, state: state)
+                    if typedMemoryHost != nil {
+                        route(language.text("Saved memories", "已保存记忆"),to:.memoryItems,identifier:"memory2.items.open")
+                    } else { MemoryContainerGroups(host: memoryHost, state: state) }
                     route(language.text("Add memory", "新增记忆"), to: .manualMemory, identifier: "memory.add")
-                    if memoryHost.managementAvailable {
+                    if typedMemoryHost != nil || memoryHost.managementAvailable {
                         route(language.text("Previous memory actions", "此前的记忆操作"), to: .memoryActions, identifier: "memory.manage.openOriginals")
                     }
                 } header: { ShellSectionHeading(title: language.text("Your memories", "你的记忆")) }
@@ -84,13 +87,22 @@ struct MemoryShell: View {
                 Text(language.text("Memory details, sources, dates and editing controls will appear when the memory service is connected. No changes can be saved here yet.", "记忆服务接入后提供详情、来源、时间和编辑操作。目前无法在此保存更改。"))
             }.navigationTitle(group.title(language))
         case .memoryItems:
-            MemoryContainerItems(host: memoryHost, state: state)
+            if let typedMemoryHost { TypedMemoryItems(host:typedMemoryHost,shell:state) }
+            else { MemoryContainerItems(host: memoryHost, state: state) }
         case .memoryDetail:
             MemoryContainerDetail(host: memoryHost, language: language)
         case .manualMemory:
-            MemoryContainerManual(host: memoryHost, language: language)
+            if let typedMemoryHost { TypedMemoryManual(host:typedMemoryHost,language:language) }
+            else { MemoryContainerManual(host: memoryHost, language: language) }
         case .memoryActions:
-            MemoryContainerLifecycleRecovery(host: memoryHost, language: language)
+            if let typedMemoryHost { TypedMemoryOriginals(host:typedMemoryHost,language:language) }
+            else { MemoryContainerLifecycleRecovery(host: memoryHost, language: language) }
+        case .typedMemoryDetail(let owner,let bytes):
+            if let typedMemoryHost,typedMemoryHost.id == owner,let id = String(data:bytes,encoding:.utf8) {
+                TypedMemoryDetail(host:typedMemoryHost,itemID:id,language:language)
+            } else {
+                ShellStatusView(state:.notConnected,language:language)
+            }
         case .feedback(let entry):
             FeedbackContainerView(host: feedbackHost, entry: entry, language: language)
         case .account:

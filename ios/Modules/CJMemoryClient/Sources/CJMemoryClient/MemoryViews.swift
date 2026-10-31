@@ -10,7 +10,7 @@ public enum MemoryLoad<Value> {
     case unconfigured, loading, loaded(Value), failed
 }
 public enum MemorySaveState {
-    case unconfigured, ready, saving, saved, candidate, unknown, notObserved, rejected, failed
+    case unconfigured, ready, saving, saved, candidate, unknown, notObserved, rejected, failed, needsOriginalQuery
     public func label(_ language: MemoryLanguage) -> String {
         switch self {
         case .unconfigured: language.text("Saving is not configured", "保存尚未配置")
@@ -22,6 +22,7 @@ public enum MemorySaveState {
         case .notObserved: language.text("Original receipt not observed. Do not resend.", "尚未查到原回执，不可重新发送。")
         case .rejected: language.text("Save rejected. You may start a new save; the original is never resent.", "保存已被拒绝；可以发起新保存，原操作不会重发。")
         case .failed: language.text("Save not confirmed. Check the original operation.", "尚未确认保存，请核查原操作。")
+        case .needsOriginalQuery: language.text("Query the earlier original operation first. No new save was submitted.", "请先查询此前原操作；本次没有新增提交。")
         }
     }
 }

@@ -5,6 +5,7 @@ import HTTPTypes
 import OpenAPIRuntime
 import CJMessageClient
 import CJMessageHTTP
+import CJAPI
 @testable import CJShell
 
 @MainActor private final class SendStore: SecureMessageStorage {
@@ -16,6 +17,10 @@ import CJMessageHTTP
     func bearer(for scope: StorageScope, lease: Lease) async throws -> String? { "synthetic-only" }
 }
 private actor SendServer: ClientTransport {
+    let travel: Bool
+    var selectionEpoch = 0
+    var previousSelection: Data?
+    init(travel: Bool = false) { self.travel = travel }
     var sequence = 0
     var posted: [Data] = []
     var losePost = false
@@ -26,8 +31,11 @@ private actor SendServer: ClientTransport {
     func beforePostReply(_ hook: @escaping @Sendable () async -> Void) { postHook = hook }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let trace = UUID().uuidString
-        let value: [String: Any]
-        if request.method == .get {
+        var value: [String: Any]
+        if operationID == "getTravelContext" {
+            let id = String(request.path!.split(separator:"/").last!)
+            value = ["request_id":trace,"version":"TRAVEL-context.1","travel_context":["id":id,"version":7,"active":true,"created_at":"2026-10-30T11:12:13.123456Z"]]
+        } else if request.method == .get {
             value = ["request_id": trace, "receipt": NSNull(), "head": ["conversation_id": "chat", "generation": "g1", "last_sequence": sequence]]
         } else {
             let bytes = try await Data(collecting: body!, upTo: 10000)
@@ -44,8 +52,19 @@ private actor SendServer: ClientTransport {
             sequence += 1
             let original = try JSONSerialization.jsonObject(with: bytes) as! [String: Any]
             value = ["request_id": trace, "receipt": ["conversation_id": "chat", "message_id": original["message_id"]!, "generation": "g1", "sequence": sequence, "run_id": "run1", "input_sha256": SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()]]
+            if travel {
+                let context = original["travel_context"] as? [String:Any]
+                let selection = try JSONSerialization.data(withJSONObject:["context":original["travel_context"]!],options:.sortedKeys)
+                if previousSelection != selection { selectionEpoch = sequence;previousSelection = selection }
+                var reference = value["receipt"] as! [String:Any]
+                reference["version"] = "MESSAGE-travel-reference.1";reference["message_version"] = "MESSAGE-send.2"
+                reference["context_kind"] = context == nil ? "none" : "travel";reference["context_id"] = context?["id"] ?? NSNull()
+                reference["context_version"] = context?["expected_version"] ?? NSNull();reference["selection_epoch"] = selectionEpoch
+                value["reference"] = reference;value["version"] = "MESSAGE-accept.2"
+            }
             if let postHook { self.postHook = nil; await postHook() }
         }
+        if travel && operationID == "getMessageSendStatusV2" { value["version"] = "MESSAGE-send-status.2";value["reference"] = NSNull() }
         var response = HTTPResponse(status: .ok)
         response.headerFields[.contentType] = "application/json"
         response.headerFields[HTTPField.Name("X-Request-ID")!] = trace
@@ -61,12 +80,13 @@ private actor SendServer: ClientTransport {
         for _ in 0..<2000 { if predicate() { return }; await Task.yield() }
         #expect(predicate())
     }
-    private func bind(shell: ShellState, state: MessageRecovery, scope: StorageScope, lease: Lease, server: SendServer) throws -> AssistantMessageHost {
+    private func bind(shell: ShellState, state: MessageRecovery, scope: StorageScope, lease: Lease, server: SendServer,travel: Bool = false) throws -> AssistantMessageHost {
         let endpoint = try MessageEndpoint(url: #require(URL(string: "https://synthetic.invalid")), maximumRequestBytes: 10000, maximumResponseBytes: 10000)
         let client = MessageHTTPClient(recovery: state, scope: scope, endpoint: endpoint, credentials: SendCredentials(), interceptedTestTransport: server)
         let host = AssistantMessageHost(shell: shell)
+        let selection = try travel ? TravelSelectionModel(ids:[String(repeating:"a",count:32),String(repeating:"b",count:32)],client:client,lease:lease,isCurrent:{true}) : nil
         #expect(host.bind(.init(recovery: state, scope: scope, lease: lease, generation: shell.generation,
-                               synthetic: true, isCurrent: { true }, invalidateResources: {}, sendClient: client)))
+                               synthetic: true, isCurrent: { true }, invalidateResources: {}, sendClient: client,travelSelection:selection)))
         return host
     }
     @Test func unavailableResponseKeepsOriginalUnknownAndQueryOnly() async throws {
@@ -180,5 +200,72 @@ private actor SendServer: ClientTransport {
         await wait { !next.isBusy }
         #expect(reopenedShell.draft == "未发送草稿 / unsent")
         #expect(await server.posted.count == 1)
+    }
+}
+
+
+extension AssistantMessageSendTests {
+    @Test func typedSendRequiresExplicitChoiceAndCarriesAcceptedRunReference() async throws {
+        let shell = try shell(),recovery = MessageRecovery(storage:SendStore())
+        let scope = try StorageScope(environment:UUID().uuidString,account:"a"),lease = try recovery.activate(scope)
+        let server = SendServer(travel:true),host = try bind(shell:shell,state:recovery,scope:scope,lease:lease,server:server,travel:true)
+        #expect(host.selectConversationForSending("chat"));await wait { !host.isBusy }
+        shell.draft = "原文";#expect(!host.canSend)
+        let selection = try #require(host.travelSelection)
+        await selection.selectTravel(String(repeating:"a",count:32));#expect(host.canSend)
+        host.sendNew();await wait { host.activity == .ready }
+        #expect(host.visibleRecord?.phase == .accepted)
+        let captured = try #require(host.captureAcceptedRunReceipt())
+        guard case .travel(let reference) = captured.travelReference else { Issue.record("typed reference lost in shell");return }
+        #expect(reference.context_id == String(repeating:"a",count:32) && reference.context_version == 7 && reference.selection_epoch == 1)
+        await selection.selectTravel(String(repeating:"b",count:32));shell.draft = "另一旅行";host.sendNew();await wait { host.activity == .ready }
+        let next = try #require(host.captureAcceptedRunReceipt())
+        guard case .travel(let switched) = next.travelReference else { Issue.record("typed selection switch lost");return }
+        #expect(switched.context_id == String(repeating:"b",count:32) && switched.selection_epoch == 2)
+        #expect(await server.posted.count == 2)
+    }
+    @Test func typedUnknownReopenQueriesAndConfirmsExactOriginalWithoutRebindingSelection() async throws {
+        let store = SendStore(),shell = try shell(),recovery = MessageRecovery(storage:store)
+        let scope = try StorageScope(environment:UUID().uuidString,account:"a"),lease = try recovery.activate(scope)
+        let server = SendServer(travel:true),host = try bind(shell:shell,state:recovery,scope:scope,lease:lease,server:server,travel:true)
+        #expect(host.selectConversationForSending("chat"));await wait { !host.isBusy }
+        await host.travelSelection?.selectTravel(String(repeating:"a",count:32))
+        shell.draft = "原动作";await server.loseNextPost();host.sendNew();await wait { host.activity == .unknown }
+        let original = try #require(host.visibleRecord)
+        host.invalidate();let nextShell = try self.shell(),restored = MessageRecovery(storage:store),nextLease = try restored.activate(scope)
+        let reopened = try bind(shell:nextShell,state:restored,scope:scope,lease:nextLease,server:server,travel:true)
+        #expect(reopened.selectConversationForSending("chat"));await wait { !reopened.isBusy }
+        await reopened.travelSelection?.selectTravel(String(repeating:"b",count:32))
+        reopened.queryOriginal();await wait { reopened.activity == .ready }
+        let resubmit = try #require(reopened.captureResubmission());#expect(resubmit.requiresConfirmation)
+        reopened.resubmitOriginal(resubmit,confirmed:false);#expect(await server.posted.count == 1)
+        reopened.resubmitOriginal(resubmit,confirmed:true);await wait { reopened.activity == .ready }
+        #expect(reopened.visibleRecord?.originalUTF8 == original.originalUTF8)
+        #expect(await server.posted == [original.originalUTF8,original.originalUTF8])
+        let accepted = try #require(reopened.captureAcceptedRunReceipt())
+        guard case .travel(let reference) = accepted.travelReference else { Issue.record("original reference missing");return }
+        #expect(reference.context_id == String(repeating:"a",count:32))
+    }
+}
+
+extension AssistantMessageSendTests {
+    @Test func historicalAcceptedDraftRemainsReadableWithoutGrantingNewSending() async throws {
+        let shell = try shell(),recovery = MessageRecovery(storage:SendStore())
+        let scope = try StorageScope(environment:UUID().uuidString,account:"a"),lease = try recovery.activate(scope),server = SendServer()
+        let raw = try JSONSerialization.data(withJSONObject:["version":"MESSAGE-draft.1","message_id":"old","conversation_id":"chat","text":"historical / 原文","trip_id":NSNull(),"creation_intent":"none"])
+        try recovery.stage(messageID:"old",originalUTF8:raw,lease:lease)
+        let submission = try recovery.beginSubmission(messageID:"old",lease:lease)
+        let hash = SHA256.hash(data:raw).map { String(format:"%02x",$0) }.joined()
+        let receipt = Components.Schemas.MessageReceipt(message_id:"old",conversation_id:"chat",generation:"g1",run_id:"run1",sequence:1,input_sha256:hash)
+        try recovery.observeReceipt(submission.operation,messageID:"old",inputSHA256:hash,receipt:JSONEncoder().encode(receipt))
+        let endpoint = try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:10000,maximumResponseBytes:10000)
+        let client = MessageHTTPClient(recovery:recovery,scope:scope,endpoint:endpoint,credentials:SendCredentials(),interceptedTestTransport:server)
+        let host = AssistantMessageHost(shell:shell)
+        #expect(host.bind(.init(recovery:recovery,scope:scope,lease:lease,generation:shell.generation,conversationID:"chat",messageID:"old",
+                               synthetic:true,isCurrent:{true},invalidateResources:{},sendClient:client)))
+        let source = try #require(host.captureAcceptedRunReceipt())
+        #expect(source.receipt == receipt && source.travelReference == nil)
+        #expect(host.visibleOriginalText == "historical / 原文" && !host.canSend && !host.canResubmit)
+        #expect(await server.posted.isEmpty)
     }
 }

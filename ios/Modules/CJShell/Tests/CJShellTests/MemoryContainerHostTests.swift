@@ -1,12 +1,23 @@
 import Foundation
 import CryptoKit
+import Observation
 import Testing
 import CJAPI
-import CJMessageHTTP
+import CJMessageClient
+import CJMessageKeys
+@testable import CJMessageHTTP
 import OpenAPIRuntime
 import HTTPTypes
 @testable import CJMemoryClient
 @testable import CJShell
+
+@MainActor private final class TypedHostTravelStorage: SecureMessageStorage {
+    func load(scope: StorageScope) throws -> Snapshot? { nil }
+    func save(_ snapshot: Snapshot,scope: StorageScope) throws {}
+}
+@MainActor private final class TypedHostTravelCredentials: MessageCredentialsProvider {
+    func bearer(for scope: StorageScope,lease: Lease) async throws -> String? { "SYNTHETIC" }
+}
 
 private let memoryTrace = "00000000-0000-4000-8000-000000000001"
 private actor MemoryHostTransport: ClientTransport {
@@ -16,6 +27,7 @@ private actor MemoryHostTransport: ClientTransport {
     var continuation: CheckedContinuation<Void, Never>?
     let holdFirst: Bool
     init(_ replies: [Data], holdFirst: Bool = false) { self.replies = replies; self.holdFirst = holdFirst }
+    func enqueue(_ bytes: Data) { replies.append(bytes) }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         calls.append((operationID, request.method, request.path ?? ""))
         guard !replies.isEmpty else { throw MemoryFailure.exchangeUnknown }
@@ -46,7 +58,185 @@ private actor MemoryHostTransport: ClientTransport {
         #expect(host.bind(value))
     }
 }
+
+@MainActor private final class TypedMemoryHostFixture {
+    let source = MemoryHostFixture()
+    let directory: URL
+    let client: TypedMemoryClient
+    let host: TypedMemoryContainerHost
+    let longTerm: TypedMemoryManualOption
+    let currentTravel: TypedMemoryManualOption
+    let travel: TravelSelectionModel
+    let legacyOriginal: MemoryPending?
+    let legacy: MemoryClient?
+    private var legacyRoots: [URL] = []
+    init(shell: ShellState,transport: MemoryHostTransport,withLegacyOriginal: Bool = false) throws {
+        directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        let f = source,key = SymmetricKey(size:.bits256),keyID = UUID()
+        let namespace = MessageKeyNamespace(environment:f.binding.environment,account:f.binding.account,purpose:.localMemoryPendingV1)
+        let store = try TypedMemoryPendingStore(directory:directory,maximumBytes:100_000,maximumRecords:20,
+            namespace:namespace,keyID:keyID,key:{key})
+        let endpoint = try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:32768,maximumResponseBytes:1_000_000)
+        let oldClient: MemoryClient?,oldRecord: MemoryPending?
+        if withLegacyOriginal {
+            let manualRoot = directory.appendingPathExtension("legacy"),lifeRoot = directory.appendingPathExtension("legacy-life")
+            legacyRoots = [manualRoot,lifeRoot]
+            for root in [manualRoot,lifeRoot] { try FileManager.default.createDirectory(at:root,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700]) }
+            let oldStore = try MemoryPendingStore(directory:manualRoot,maximumBytes:100_000,maximumRecords:20,namespace:namespace,keyID:keyID,key:{key})
+            let lifeStore = try MemoryManagementPendingStore(directory:lifeRoot,maximumBytes:100_000,maximumRecords:20,namespace:namespace,keyID:keyID,key:{key})
+            let record = try MemoryPending(.init(operation_id:"legacy-original",item_id:"legacy-item",subject:"self",slot:"test",text:"original legacy input",occurred_at:"unknown",kind:.preference,extent:.long_term,context_id:.case2(nil)))
+            try oldStore.append(record,validateBinding:{})
+            let reads = try NoRedirectTransport(interceptedTransport:transport,previewEndpoint:nil,validatePreview:nil)
+            oldClient = MemoryClient(endpoint:endpoint,credentials:{_ in "SYNTHETIC"},currentBinding:{f.observed()},pendingStore:oldStore,liveReadTransport:reads,managementPendingStore:lifeStore)
+            oldRecord = record
+        } else { oldClient = nil;oldRecord = nil }
+        legacy = oldClient;legacyOriginal = oldRecord
+        client = TypedMemoryClient(endpoint:endpoint,credentials:{ _ in "SYNTHETIC" },currentBinding:{f.observed()},pendingStore:store,
+            interceptedTransport:transport,validatePriorOriginals:{
+                if let oldClient,try oldClient.requiresOriginalReconciliation(binding:f.binding) { throw MemoryFailure.pendingRequiresQuery }
+            })
+        let recovery = MessageRecovery(storage:TypedHostTravelStorage())
+        let scope = try StorageScope(environment:f.binding.environment.uuidString,account:f.binding.account.uuidString)
+        let lease = try recovery.activate(scope)
+        let message = MessageHTTPClient(recovery:recovery,scope:scope,endpoint:endpoint,credentials:TypedHostTravelCredentials(),interceptedTestTransport:MemoryHostTransport([]))
+        travel = try TravelSelectionModel(ids:[],client:message,lease:lease,isCurrent:{f.current == f.binding})
+        longTerm = TypedMemoryManualOption(label:"long-term",subject:"self",slot:"test",kind:.preference,scope:.longTerm)
+        currentTravel = TypedMemoryManualOption(label:"current travel",subject:"self",slot:"test",kind:.preference,scope:.selectedTravel)
+        host = try TypedMemoryContainerHost(shell:shell,client:client,binding:f.binding,pageSize:2,options:[longTerm,currentTravel],travel:travel,legacy:oldClient,currentBinding:{f.observed()})
+    }
+    func cleanup() {
+        try? FileManager.default.removeItem(at:directory)
+        for root in legacyRoots { try? FileManager.default.removeItem(at:root) }
+    }
+}
+@MainActor private final class TypedSurfaceBox { var surface: TypedMemorySurface? }
 @Suite @MainActor struct MemoryContainerHostTests {
+    @Test func typedDetailRoutesKeepRawUTF8IdentityAndRetireWithTheSurface() async throws {
+        let first = "cafe\u{301}",second = "café"
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","items":[typedItem(first),typedItem(second)]])])
+        let f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        await f.host.loadItems(surface:surface)
+        let values = try rows(f.host.items)
+        let a = try #require(f.host.detailRoute(for:values[0],surface:surface))
+        let b = try #require(f.host.detailRoute(for:values[1],surface:surface))
+        #expect(a != b)
+        guard case .typedMemoryDetail(let owner,let raw) = a else { Issue.record("missing typed route");return }
+        #expect(owner == f.host.id && raw == Data(first.utf8))
+        f.host.leaveSurface(surface)
+        #expect(f.host.detailRoute(for:values[0],surface:surface) == nil)
+    }
+    @Test func typedSurfaceQueriesLegacyJournalExplicitlyAndKeepsItsVersionAcrossNavigation() async throws {
+        let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire,withLegacyOriginal:true);defer {f.cleanup()}
+        let original = try #require(f.legacyOriginal),surface = try #require(f.host.enterSurface())
+        f.host.loadOriginals(surface:surface)
+        #expect(try rows(f.host.legacyOriginals).map(\.originalUTF8) == [original.originalUTF8])
+        #expect(try rows(f.host.originals).isEmpty)
+        guard case .requiresQuery = f.host.legacyRecoveryState else { Issue.record("old pending journal was ignored");return }
+        #expect(throws:MemoryFailure.pendingRequiresQuery) { try f.host.prepareSave(optionID:f.longTerm.id,text:"new input",occurredAt:"unknown",surface:surface) }
+        #expect(await wire.calls.isEmpty)
+        await wire.enqueue(try json(["receipt":["operation_id":original.operationID,"item_id":original.itemID,
+            "version":1,"status":"active","input_sha256":original.expectedSHA256]]))
+        await f.host.queryLegacySave(operationID:original.operationID,surface:surface)
+        guard case .saved = f.host.saveState else { Issue.record("legacy receipt did not settle");return }
+        #expect(f.host.originalReference == .legacySave(original.operationID))
+        let next = try #require(f.host.enterSurface());f.host.leaveSurface(surface)
+        f.host.loadOriginals(surface:next)
+        guard case .reconciled = f.host.legacyRecoveryState else { Issue.record("navigation lost a verified original receipt");return }
+        _ = try f.host.prepareSave(optionID:f.longTerm.id,text:"new input",occurredAt:"unknown",surface:next)
+        #expect(await wire.calls.map(\.0) == ["queryMemoryReceipt"])
+        #expect(try f.legacy?.pending(binding:f.source.binding).map(\.originalUTF8) == [original.originalUTF8])
+    }
+    @Test func typedRepeatedConfirmationUsesOriginalQueryWithoutAnotherPOST() async throws {
+        let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        let work = try f.host.prepareSave(optionID:f.longTerm.id,text:"explicit input",occurredAt:"unknown",surface:surface)
+        let original = work.original
+        let hash = SHA256.hash(data:original.originalUTF8).map {String(format:"%02x",$0)}.joined()
+        await wire.enqueue(try json(["version":"MEMORY-result.2","receipt":["operation_id":original.operationID,"item_id":original.itemID,
+            "version":1,"status":"active","input_sha256":hash]]))
+        await f.host.performSave(work)
+        guard case .saved = f.host.saveState else { Issue.record("first save did not settle");return }
+        await f.host.performSave(work)
+        guard case .needsOriginalQuery = f.host.saveState else { Issue.record("existing original shown as a fresh unknown submission");return }
+        #expect(await wire.calls.map(\.0) == ["saveTypedMemory"])
+        #expect(try f.client.pending(binding:f.source.binding).map(\.originalUTF8) == [original.originalUTF8])
+    }
+    private func typedItem(_ id: String) -> [String:Any] {
+        var value = item(id),command = value["command"] as! [String:Any]
+        command.removeValue(forKey:"context_id");command["context"] = NSNull();value["command"] = command
+        return value
+    }
+    @Test func typedPagesPreserveItemsAndRequireAnActualEmptyPage() async throws {
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","items":[typedItem("a")]]),try json(["version":"MEMORY-result.2","items":[]])])
+        let f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        #expect(await wire.calls.isEmpty)
+        await f.host.loadItems(surface:surface)
+        let values = try rows(f.host.items);#expect(values.first?.item.value.command.item_id == "a" && f.host.hasMore)
+        #expect(values.first?.item.scope == .longTerm)
+        await f.host.loadItems(surface:surface,more:true)
+        #expect(try rows(f.host.items).count == 1 && !f.host.hasMore)
+        #expect(await wire.calls.count == 2)
+    }
+    @Test func typedLateDetailAndOldSurfaceExitCannotReplaceNewDetail() async throws {
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","item":typedItem("a")]),try json(["version":"MEMORY-result.2","item":typedItem("b")])],holdFirst:true)
+        let f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let a = try #require(f.host.enterSurface())
+        let task = Task { await f.host.loadDetail(itemID:"a",surface:a) };await wait(wire)
+        f.host.leaveSurface(a)
+        let b = try #require(f.host.enterSurface())
+        f.host.leaveSurface(a)
+        await f.host.loadDetail(itemID:"b",surface:b)
+        await wire.release();await task.value
+        guard case .loaded(let value) = f.host.detail else { Issue.record("new detail disappeared");return }
+        #expect(value?.item.value.command.item_id == "b")
+        #expect(await wire.calls.count == 2)
+    }
+    @Test func typedIdentityRetirementDropsHeldResult() async throws {
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","item":typedItem("a")])],holdFirst:true)
+        let s = try shell(),f = try TypedMemoryHostFixture(shell:s,transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        let task = Task { await f.host.loadDetail(itemID:"a",surface:surface) };await wait(wire)
+        _ = s.invalidateIdentity();await wire.release();await task.value
+        #expect(!f.host.isConfigured && f.host.options.isEmpty)
+        guard case .unconfigured = f.host.detail else { Issue.record("retired detail visible");return }
+    }
+    @Test func typedPreparedSaveCannotSurviveSurfaceRetirement() async throws {
+        let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        let work = try f.host.prepareSave(optionID:f.longTerm.id,text:"explicit input",occurredAt:"date unknown",surface:surface)
+        f.host.leaveSurface(surface)
+        await f.host.performSave(work)
+        #expect(await wire.calls.isEmpty)
+        #expect(try f.client.pending(binding:f.source.binding).isEmpty)
+    }
+    @Test func typedCurrentScopeNeverFallsBackToLongTermOrImplicitNone() throws {
+        let wire = MemoryHostTransport([]),f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let surface = try #require(f.host.enterSurface())
+        #expect(throws:(any Error).self) { try f.host.prepareSave(optionID:f.currentTravel.id,text:"explicit input",occurredAt:"unknown",surface:surface) }
+        try f.travel.selectNone()
+        #expect(throws:MemoryFailure.invalidInput) { try f.host.prepareSave(optionID:f.currentTravel.id,text:"explicit input",occurredAt:"unknown",surface:surface) }
+        #expect(try f.client.pending(binding:f.source.binding).isEmpty)
+    }
+    @Test func typedObservationReentryRetiresOldReadBeforeDispatch() async throws {
+        let wire = MemoryHostTransport([try json(["version":"MEMORY-result.2","item":typedItem("a")]),try json(["version":"MEMORY-result.2","item":typedItem("b")])])
+        let f = try TypedMemoryHostFixture(shell:shell(),transport:wire);defer {f.cleanup()}
+        let old = try #require(f.host.enterSurface())
+        await f.host.loadDetail(itemID:"a",surface:old)
+        let box = TypedSurfaceBox()
+        withObservationTracking { _ = f.host.detail } onChange: {
+            MainActor.assumeIsolated { box.surface = f.host.enterSurface() }
+        }
+        await f.host.loadDetail(itemID:"a",surface:old)
+        #expect(await wire.calls.count == 1)
+        let current = try #require(box.surface)
+        await f.host.loadDetail(itemID:"b",surface:current)
+        guard case .loaded(let value) = f.host.detail else { Issue.record("new surface failed to read");return }
+        #expect(value?.item.value.command.item_id == "b")
+        #expect(await wire.calls.count == 2)
+    }
     private func shell() throws -> ShellState { ShellState(preferences: try #require(UserDefaults(suiteName: UUID().uuidString))) }
     private func json(_ fields: [String: Any]) throws -> Data {
         try JSONSerialization.data(withJSONObject: fields.merging(["request_id": memoryTrace]) { a, _ in a })

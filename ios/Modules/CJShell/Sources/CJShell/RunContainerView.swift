@@ -15,8 +15,13 @@ struct RunContainerView: View {
     private func followAcceptedMessage() {
         guard host.followsAcceptedMessages, acceptedMessageID != nil,
               host.selectAcceptedMessage(from: messages), let model = host.displayModel else { return }
-        let work = model.prepareStream()
-        Task { await model.performInitialStream(work) }
+        if model.supportsStreaming {
+            let work = model.prepareStream()
+            Task { await model.performInitialStream(work) }
+        } else {
+            let work = model.prepareRead()
+            Task { await model.perform(work) }
+        }
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
