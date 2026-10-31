@@ -96,7 +96,7 @@ import CJManualPreviewClient
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
     public func makeTimelineReader() -> TripTimelineHost? {
         guard let binding,current else { return nil }
-        let value=TripTimelineHost(client:binding.client,binding:binding.trip,current:{ [weak self] in
+        let value=TripTimelineHost(client:binding.client,binding:binding.trip,generation:binding.shellGeneration,current:{ [weak self] in
             guard let self else { return false };return self.binding?.id==binding.id && self.current
         })
         guard self.binding?.id==binding.id,current else { return nil };return value

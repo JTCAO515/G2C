@@ -4,6 +4,12 @@ import CJMessageClient
 import OpenAPIRuntime
 import HTTPTypes
 
+/// Validated original association data, never a server execution permit.
+public struct TripDiscussionMessage: Sendable {
+    public let receipt: Components.Schemas.MessageReceipt
+    public let reference: MessageTripReference
+}
+
 extension MessageHTTPClient {
     private func checkDiscussionLease(_ lease: Lease) throws {
         try checkSendLease(lease)
@@ -24,8 +30,10 @@ extension MessageHTTPClient {
         catch { try checkDiscussionLease(lease); throw MessageHTTPFailure.exchangeUnknown }
         try checkDiscussionLease(lease)
         let media = response.headerFields.filter { $0.name == .contentType }
+        let controls = response.headerFields.filter { $0.name == .cacheControl }
         guard media.count == 1, let mime = media.first?.value.lowercased(),
               mime == "application/json" || mime == "application/json; charset=utf-8",
+              controls.count == 1, controls[0].value.lowercased() == "no-store",
               let body, let trace = response.headerFields[.init("x-request-id")!] else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await Data(collecting: body, upTo: endpoint.maximumResponseBytes)
         try checkDiscussionLease(lease)
@@ -180,11 +188,16 @@ extension MessageHTTPClient {
         }
     }
     public func acceptedTripDiscussionReference(messageID: String, lease: Lease) throws -> MessageTripReference {
+        try acceptedTripDiscussion(messageID: messageID, lease: lease).reference
+    }
+    public func acceptedTripDiscussion(messageID: String, lease: Lease) throws -> TripDiscussionMessage {
         try checkDiscussionLease(lease)
         guard let record = try recovery.action(messageID: messageID, lease: lease), record.phase == .accepted, let receipt = record.receipt else { throw RecoveryError.queryOnly }
         let original = try OriginalTripDiscussion(raw: record.originalUTF8, maximumBytes: endpoint.maximumRequestBytes, expectedMessageID: messageID)
         let json = try DiscussionJSON(receipt, maximumBytes: endpoint.maximumResponseBytes)
         let trace = try DiscussionJSON.text(json.object["request_id"])
-        return try TripDiscussionAcceptance(raw: receipt, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, original: original).reference
+        let accepted = try TripDiscussionAcceptance(raw: receipt, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, original: original)
+        try checkDiscussionLease(lease)
+        return TripDiscussionMessage(receipt: accepted.receipt, reference: accepted.reference)
     }
 }

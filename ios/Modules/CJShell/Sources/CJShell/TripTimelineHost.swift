@@ -1,6 +1,28 @@
 import Foundation
 import Observation
 import CJTripClient
+import CJMessageHTTP
+
+/// Closed hand-off from this root's actual accepted structured read. The public
+/// wire selection remains data; this local entry preserves its source lifetime.
+@MainActor public final class TripDiscussionEntry: CustomStringConvertible, CustomReflectable {
+    let selection: MessageTripSelection
+    let title: String
+    fileprivate let binding: TripBinding
+    fileprivate let generation: ShellGeneration
+    fileprivate let validateSource: @MainActor () throws -> Void
+    fileprivate init(selection: MessageTripSelection, title: String, binding: TripBinding, generation: ShellGeneration,
+                     validateSource: @escaping @MainActor () throws -> Void) {
+        self.selection=selection; self.title=title; self.binding=binding; self.generation=generation; self.validateSource=validateSource
+    }
+    func validate(scopeEnvironment: String, scopeAccount: String, generation: ShellGeneration) throws {
+        guard self.generation == generation, scopeEnvironment == binding.environment.uuidString,
+              scopeAccount == binding.account.uuidString else { throw TripFailure.staleBinding }
+        try validateSource()
+    }
+    public nonisolated var description: String { "<accepted Trip discussion choice>" }
+    public nonisolated var customMirror: Mirror { Mirror(self, children: [:]) }
+}
 
 @MainActor public struct TripTimelineWork {
     fileprivate enum Payload { case page(StructuredTripPageRequest,Bool), detail(StructuredTripDetailRequest) }
@@ -23,6 +45,7 @@ public struct TripTimelineDisplay: Sendable {
     @ObservationIgnored private let client: TripClient
     @ObservationIgnored private let binding: TripBinding
     @ObservationIgnored private let current: @MainActor ()->Bool
+    @ObservationIgnored private let generation: ShellGeneration
     @ObservationIgnored private let owner=UUID()
     @ObservationIgnored private var nonce=UUID()
     @ObservationIgnored private var retired=false
@@ -34,7 +57,9 @@ public struct TripTimelineDisplay: Sendable {
     @ObservationIgnored private var state: TripTimelineLoadState = .idle
     @ObservationIgnored private var busy=false
     public private(set) var revision=UUID()
-    init(client: TripClient,binding: TripBinding,current: @escaping @MainActor ()->Bool) { self.client=client;self.binding=binding;self.current=current }
+    init(client: TripClient,binding: TripBinding,generation: ShellGeneration,current: @escaping @MainActor ()->Bool) {
+        self.client=client;self.binding=binding;self.generation=generation;self.current=current
+    }
     private func check(_ token: UUID) throws { guard !retired,current(),!retired,nonce==token else { throw TripFailure.staleBinding } }
     public func display() -> TripTimelineDisplay? {
         _=revision;let token=nonce
@@ -58,6 +83,33 @@ public struct TripTimelineDisplay: Sendable {
     }
     public func invalidate() {
         retired=true;nonce=UUID();source=nil;record=nil;timeline=nil;rows=[];next=nil;busy=false;revision=UUID()
+    }
+    /// Only explicit rendered choices may cross into the assistant. Day entries
+    /// are known start-day groups; an unknown date/zone never acquires a day ID.
+    public func discussion(day: MessageTripSelection.Day?, itemID: String?) throws -> TripDiscussionEntry {
+        let token=nonce;try check(token)
+        guard !busy, let source else { throw TripFailure.invalidInput }
+        let value=try client.withCurrentStructuredSnapshot(source) { _,record,_,_ in record };try check(token)
+        let candidates=value.document.items.filter { itemID == nil || $0.id == itemID }
+        guard !candidates.isEmpty || (itemID == nil && day == nil) else { throw TripFailure.invalidInput }
+        if let day {
+            // The UI selects declared start groups. Broader interval membership
+            // remains the producer's check; no inferred date is offered here.
+            guard candidates.contains(where:{ item in
+                if case .known(let date)=item.start.date,case .known(let zone)=item.start.timezone {
+                    return date==day.date && zone==day.timezone
+                }
+                return false
+            }) else { throw TripFailure.invalidInput }
+        }
+        let choice=try MessageTripSelection(id:value.tripID,expectedVersion:Int64(value.version),day:day,itemID:itemID)
+        let validate: @MainActor () throws -> Void = { [client,current] in
+            guard current() else { throw TripFailure.staleBinding }
+            try client.withCurrentStructuredSnapshot(source) { _,_,_,_ in () }
+            guard current() else { throw TripFailure.staleBinding }
+        }
+        try validate();try check(token)
+        return TripDiscussionEntry(selection:choice,title:value.document.title,binding:binding,generation:generation,validateSource:validate)
     }
     public func perform(_ work: TripTimelineWork) async {
         guard work.owner==owner else { return }

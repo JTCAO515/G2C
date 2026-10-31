@@ -135,6 +135,12 @@ public struct MessageTripReference: Sendable, Equatable {
     let contextID: String?
     let contextVersion: Int64?
     let contextKind: String
+    /// Parse the reference in an actual versioned response without rewriting its
+    /// numeric lexemes. The consuming module still validates its own envelope.
+    public static func decodeResponseReference(_ bytes: Data, maximumBytes: Int) throws -> Self {
+        let json = try DiscussionJSON(bytes, maximumBytes: maximumBytes)
+        return try read(json.object["reference"], json: json, path: ["reference"])
+    }
     public static func == (lhs: Self, rhs: Self) -> Bool {
         DiscussionJSON.same(lhs.conversationID, rhs.conversationID) && DiscussionJSON.same(lhs.generation, rhs.generation) &&
         DiscussionJSON.same(lhs.messageID, rhs.messageID) && DiscussionJSON.same(lhs.runID, rhs.runID) &&
