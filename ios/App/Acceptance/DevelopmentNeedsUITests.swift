@@ -62,7 +62,7 @@ import Foundation
             }
             let frame = element.exists ? element.frame : .zero
             if element.exists && element.isHittable && (full ? frame.minY >= top && frame.maxY <= bottom : frame.midY > top && frame.midY < bottom) { return }
-            let down = frame == .zero ? attempt >= 20 : frame.midY <= top
+            let down = frame == .zero ? attempt >= 20 : (full ? frame.minY < top : frame.midY <= top)
             let middle = (top + bottom) / 2, step = min(150,(bottom-top)*0.35)
             let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? -step : step)))
             let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:8,dy:middle+(down ? step : -step)))
@@ -74,8 +74,8 @@ import Foundation
         let element: XCUIElement
         let fixed = ["Assistant","助手","Memory","记忆","assistant.history","assistant.panel.done","needs.keyboard.done","Done","完成"].contains(id)
         if ["Assistant","助手","Memory","记忆"].contains(id) { element = app.tabBars.buttons.matching(identifier:id).firstMatch }
-        else if id == "assistant.panel.done" { element = app.navigationBars.buttons.matching(identifier:id).firstMatch }
-        else if ["needs.keyboard.done","Done","完成"].contains(id) { element = app.toolbars.buttons.matching(identifier:id).firstMatch }
+        else if ["assistant.panel.done","needs.keyboard.done"].contains(id) { element = app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        else if ["Done","完成"].contains(id) { element = app.toolbars.buttons.matching(identifier:id).firstMatch }
         else {
             let button = app.buttons.matching(identifier:id).firstMatch
             if button.waitForExistence(timeout:2) { element = button }
@@ -141,7 +141,8 @@ import Foundation
     }
     private func appendStatement(_ value: String, language: String) {
         let target = field("needs.editor.statement"); reveal(target,id:"needs.editor.statement"); target.tap()
-        target.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.95)).tap()
+        // The real tap establishes focus. A second coordinate tap could land
+        // outside a multiline editor after the keyboard changes its viewport.
         target.typeText(value); dismissKeyboard(language)
     }
     private func editKnown(_ field: String, value: String, language: String) {

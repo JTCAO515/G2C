@@ -112,11 +112,13 @@ struct NeedsContainerView: View {
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }.clipped().accessibilityIdentifier("needs.content")
             .scrollDismissesKeyboard(.interactively)
-            .toolbar { ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                AssistantPanelDoneButton(title: language.text("Done", "完成"), identifier: "needs.keyboard.done") {
+            .toolbar { ToolbarItem(placement: .topBarLeading) {
+                Button {
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                }
+                } label: {
+                    Image(systemName: "keyboard.chevron.compact.down")
+                        .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                }.accessibilityLabel(language.text("Hide keyboard", "收起键盘")).accessibilityIdentifier("needs.keyboard.done")
             } }
             .onDisappear { if let containerID { host.leaveContainer(id: containerID) } }
             .navigationTitle(language.text("Journey needs", "本次旅行需求"))

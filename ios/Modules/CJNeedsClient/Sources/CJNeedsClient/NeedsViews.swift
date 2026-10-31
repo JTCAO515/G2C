@@ -72,6 +72,7 @@ public struct NeedsEditorView: View {
                 .font(.footnote)
             Text(language.text("编辑基于版本：", "Editing version: ") + String(draft.expectedVersion))
             TextField(language.text("说明你的明确输入或修改", "Describe your explicit input or correction"), text: $draft.sourceText, axis: .vertical)
+                .lineLimit(1...4).autocorrectionDisabled()
                 .textFieldStyle(.roundedBorder).accessibilityIdentifier("needs.editor.statement")
             ForEach(NeedsField.allCases, id: \.self) { field in
                 DisclosureGroup {
