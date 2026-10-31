@@ -133,7 +133,8 @@ import Foundation
         enter("SYNTHETIC retained draft",language:"en")
         tap("assistant.send")
         text("assistant.trip.refusal",contains:"HTTP 503")
-        text("assistant.trip.refusal",contains:"existing memory was not changed")
+        text("assistant.trip.refusal",contains:"acceptance may still be unknown")
+        text("assistant.trip.refusal",contains:"The App did not disable existing memory")
         let send=app.buttons.matching(identifier:"assistant.send").firstMatch
         XCTAssertTrue(send.exists);XCTAssertFalse(send.isEnabled)
         let proof=try JSONDecoder().decode(Proof.self,from:await call("/proof",caseID:f.case_id))

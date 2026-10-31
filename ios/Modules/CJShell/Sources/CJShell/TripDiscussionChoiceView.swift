@@ -13,7 +13,7 @@ struct TripDiscussionChoiceView:View {
             RunReadableText(text:language.text("This choice applies to your next discussion message.","此选择用于下一条讨论消息。"),style:.caption)
             RunReadableText(text:language.text("It is not a binding receipt or permission to change a Trip.","不是绑定回执，也不授予修改行程的权限。"),style:.caption)
             if let refusal=host.discussionRefusal {
-                RunReadableText(text:language.text("This discussion was refused. No new binding was established; existing memory was not changed.","本次讨论被拒绝，未建立新绑定，已有记忆未被更改。")+"\nHTTP "+String(refusal.status)+" · "+refusal.code)
+                RunReadableText(text:language.text("This discussion request was refused or is unavailable. Reconcile the original message result; acceptance may still be unknown. The App did not disable existing memory.","本次讨论请求被拒绝或不可用。请核对原消息结果，是否已接受仍可能未知。App未关闭已有记忆。")+"\nHTTP "+String(refusal.status)+" · "+refusal.code)
                     .accessibilityIdentifier("assistant.trip.refusal")
             }
             button("assistant.trip.open",language.text("Choose a formal Trip, day or item","选择正式行程、日期或条目"),action:openTrips)
