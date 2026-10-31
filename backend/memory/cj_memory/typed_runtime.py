@@ -49,21 +49,24 @@ class TypedRuntimeConfiguration:
     def bind(self,database,scope,identity,admit,*,message_context):
         if type(message_context) is not MessageContextAuthority or message_context.repository.scope!=scope:
             raise RuntimeDenied('canonical original context authority required')
-        selection=self.selections.get(identity)
-        if selection is None:raise RuntimeDenied('typed runtime identity not configured')
-        profile=self.collection.collection.profiles[identity]
-        def guard(stage):
-            principal=admit()
-            if principal.subject!=identity or profile.expires_at<=datetime.now(timezone.utc):
-                raise RuntimeDenied('typed runtime policy or identity changed')
-            return principal,scope
-        guard('typed_runtime_bind')
-        with database.connect(scope) as conn:
-            conn.execute('INSERT INTO cj_memory_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
-        repository=Repository(lambda:database.connect(scope),scope,
-            transaction_binder=lambda conn,cur:conn.bind_scope(cur),typed_context=True)
-        return TypedRuntimeMemory(Service(repository),guard,selection,message_context)
+        return _bind_runtime(self,TypedRuntimeMemory,database,scope,identity,admit,message_context)
 
+
+def _bind_runtime(configuration,runtime_type,database,scope,identity,admit,message_context):
+    selection=configuration.selections.get(identity)
+    if selection is None:raise RuntimeDenied('typed runtime identity not configured')
+    profile=configuration.collection.collection.profiles[identity]
+    def guard(stage):
+        principal=admit()
+        if principal.subject!=identity or profile.expires_at<=datetime.now(timezone.utc):
+            raise RuntimeDenied('typed runtime policy or identity changed')
+        return principal,scope
+    guard('typed_runtime_bind')
+    with database.connect(scope) as conn:
+        conn.execute('INSERT INTO cj_memory_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
+    repository=Repository(lambda:database.connect(scope),scope,
+        transaction_binder=lambda conn,cur:conn.bind_scope(cur),typed_context=True)
+    return runtime_type(Service(repository),guard,selection,message_context)
 
 def load_typed_runtime_configuration(path):
     return TypedRuntimeConfiguration.from_bytes(read_private_policy(path))
