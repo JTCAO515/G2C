@@ -222,6 +222,7 @@ try:
       data=file.read_bytes();assert headers['Authorization'][7:].encode() not in data and b'-----BEGIN PRIVATE KEY-----' not in data
     r['token_key_scan']='PASS';r['cases'][CASE]='PASS';r['status']='PARTIAL_PASS';save()
    finally:
+    r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
     if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)
     stop.set();worker_thread.join(10);server.should_exit=True;api_thread.join(10);sock.close();control.shutdown();control.server_close()
   r['private_pg_stopped']=True

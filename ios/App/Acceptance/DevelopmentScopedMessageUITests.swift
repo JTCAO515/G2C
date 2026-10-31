@@ -75,6 +75,7 @@ import Foundation
         let outcome=XCTWaiter.wait(for:[ready],timeout:20)
         if outcome != .completed { capture("not-ready-"+id) }
         XCTAssertEqual(outcome,.completed,id+" enabled="+String(target.isEnabled)+" hittable="+String(target.isHittable))
+        if id.hasPrefix("travel.selection.") { print("namespace control",id,"frame",target.frame,"screen",app.frame);capture("before-namespace-tap") }
         target.tap()
     }
     private func text(_ id:String,contains expected:String) {
