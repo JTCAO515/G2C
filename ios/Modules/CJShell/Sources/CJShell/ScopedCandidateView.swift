@@ -27,6 +27,8 @@ struct ScopedCandidateView: View {
                         if let work = host.prepareDecision(.reject, read: read) { Task { await work() } }
                     }
                 }
+            } else if let original = host.actions.first(where: { $0.actionID == host.actionID }) {
+                candidateDetail(original.candidate)
             }
             RunReadableText(text: activityText).accessibilityIdentifier("scoped.activity")
             if let id = host.actionID {
@@ -70,19 +72,28 @@ struct ScopedCandidateView: View {
             }
             RunReadableText(text: language == .english ? candidate.outputEnglish : candidate.outputChinese)
             ForEach(Array(candidate.before.items.enumerated()), id: \.element.id) { index, before in
-                let after = candidate.after.items[index]
+                let afterIndex = candidate.after.items.firstIndex { $0.id == before.id }!
+                let after = candidate.after.items[afterIndex]
                 VStack(alignment: .leading, spacing: 6) {
                     RunReadableText(text: before.id, style: .caption)
+                    RunReadableText(text: language.text("Order: ", "顺序：") + String(index + 1) + " → " + String(afterIndex + 1))
+                        .accessibilityIdentifier("scoped.order." + before.id)
                     RunReadableText(text: language.text("Before: ", "修改前：") + before.text).accessibilityIdentifier("scoped.before." + before.id)
                     RunReadableText(text: schedule(before))
                     RunReadableText(text: language.text("After: ", "修改后：") + after.text).accessibilityIdentifier("scoped.after." + after.id)
                     RunReadableText(text: schedule(after))
                     RunReadableText(text: language.text("Fixed: ", "固定状态：") + observation(after.fixed) { $0 ? language.text("yes", "是") : language.text("no", "否") })
+                    RunReadableText(text: language.text("Original sources: ", "原依据来源：") + sourceText(before, document: candidate.before))
+                    RunReadableText(text: language.text("Candidate sources: ", "候选依据来源：") + sourceText(after, document: candidate.after))
                     RunReadableText(text: language.text("Evidence: ", "依据：") + (after.evidence.isEmpty ? language.text("UNKNOWN — no evidence", "UNKNOWN — 尚无依据") : after.evidence.joined(separator: ", ")))
                 }.padding(.vertical, 4)
             }
             RunReadableText(text: language.text("Only the shown candidate is confirmed. UNKNOWN evidence remains unknown; accepting does not verify it.", "本次只确认展示的候选。UNKNOWN 依据仍未知，接受不代表已核实。"), style: .caption)
         }
+    }
+    private func sourceText(_ item: StructuredTripItem, document: StructuredTripDocument) -> String {
+        let sources = document.sources.filter { item.sourceReferences.contains($0.id) }
+        return sources.isEmpty ? language.text("UNKNOWN — no retained reference", "UNKNOWN — 尚无保留引用") : sources.map(\.text).joined(separator: " · ")
     }
     private func observation<T>(_ value: TripObservation<T>, known: (T) -> String) -> String {
         switch value {

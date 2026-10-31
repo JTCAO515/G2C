@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import CJMessageHTTP
+import CJTripClient
 @testable import CJManualPreviewClient
 
 func scopedFixture() throws -> Data {
@@ -56,5 +57,38 @@ struct ScopedDiscoveryTests {
         let text = String(decoding: bytes, as: UTF8.self)
         #expect(throws: (any Error).self) { try scopedDecode(Data(text.replacingOccurrences(of: "\"expected_version\":2", with: "\"expected_version\":true").utf8), original: original) }
         #expect(throws: (any Error).self) { try scopedDecode(Data("{\"version\":\"duplicate\",".utf8) + bytes.dropFirst(), original: original) }
+    }
+}
+
+struct ScopedActualResponseTests {
+    @Test func actualCProtectedRuntimeResponse() throws {
+        let bytes = try Data(contentsOf: Bundle.module.url(forResource: "SCOPED-DISCOVERY-RUNTIME-V1", withExtension: "json", subdirectory: "Fixtures")!)
+        let json = try ScopedWireJSON(bytes, maximumBytes: 4_000_000)
+        let value = try ScopedDiscovery.decode(bytes, requestID: ScopedWireJSON.text(json.object["request_id"]), original: scopedReference(bytes))
+        #expect(value.state == .published && value.candidate?.feasibilityStatus == "UNKNOWN")
+    }
+}
+
+struct ScopedCCompatibilityTests {
+    @Test(arguments: ["SOURCES", "REORDER"])
+    func acceptsOriginalCCoreCandidates(kind: String) throws {
+        let bytes = try Data(contentsOf: Bundle.module.url(forResource: "SCOPED-" + kind + "-V1", withExtension: "json", subdirectory: "Fixtures")!)
+        let value = try scopedDecode(bytes), candidate = try #require(value.candidate)
+        if kind == "SOURCES" { #expect(candidate.before.sources.count == 1 && candidate.after.sources.isEmpty) }
+        else { #expect(candidate.before.items.map(\.id) != candidate.after.items.map(\.id)) }
+    }
+}
+
+struct ScopedProtectedContentTests {
+    @Test func afterContentAndUnselectedChangesCannotHideInTheDiff() throws {
+        let bytes = try scopedFixture(), original = try scopedReference(bytes)
+        var root = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+        var d = root["discovery"] as! [String: Any], p = d["proposal"] as! [String: Any], diff = p["diff"] as! [String: Any]
+        var after = diff["after"] as! [String: Any], items = after["items"] as! [[String: Any]]
+        items[0]["text"] = "Changed outside the selected range"
+        after["items"] = items; diff["after"] = after; p["diff"] = diff; d["proposal"] = p; root["discovery"] = d
+        #expect(throws: (any Error).self) { try scopedDecode(canonical(root), original: original) }
+        p["content"] = after; d["proposal"] = p; root["discovery"] = d
+        #expect(throws: (any Error).self) { try scopedDecode(canonical(root), original: original) }
     }
 }

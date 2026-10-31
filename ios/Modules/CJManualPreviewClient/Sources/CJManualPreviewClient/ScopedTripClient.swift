@@ -158,17 +158,24 @@ public enum ScopedDecisionResult: Sendable {
             tripID: c.tripID, expectedVersion: c.expectedVersion, maximumBytes: 65536)
         try check()
         guard let receipt else { return .unknown }
+        let originalProof = try originals.requireOriginal(original)
         let settlement = ScopedSettlement(actionID: original.actionID, original: original, responseUTF8: bytes, trace: trace, httpStatus: 200)
         if let prior = try settlements.pending().first(where: { exact($0.actionID, original.actionID) }) {
             guard prior.httpStatus == 200, try prior.receipt().actionID == receipt.actionID, prior.original.actionUTF8 == original.actionUTF8,
                   (try prior.receipt()).committedVersion == receipt.committedVersion else { throw PreviewFailure.invalidResponse }
-        } else { try settlements.append(settlement, validateBinding: { try self.check() }) }
-        try check(); return .confirmed(receipt)
+        } else { try settlements.append(settlement, validateBinding: { try self.check(); try self.originals.validateDurability(originalProof) }) }
+        try check(); try originals.validateDurability(originalProof); return .confirmed(receipt)
     }
     public func readFormal(for receipt: ScopedActionReceipt) async throws -> StructuredTripRecord? {
         let (bytes, trace) = try await exchange(path: "/v5/trip-structured", query: [.init(name: "trip_id", value: receipt.tripID)], operation: "readScopedFormalTripV1")
         let value = try StructuredTripReadV1.detail(bytes, requestID: trace)
-        guard value?.tripID == receipt.tripID else { throw PreviewFailure.invalidResponse }
+        guard let value, exact(value.tripID, receipt.tripID), let committed = receipt.committedVersion,
+              Int64(value.version) >= committed else { throw PreviewFailure.invalidResponse }
+        if Int64(value.version) == committed {
+            guard let original = try originals.pending().first(where: { exact($0.actionID, receipt.actionID) }),
+                  let candidate = try original.discovery().candidate,
+                  value.document.originalUTF8 == candidate.after.originalUTF8 else { throw PreviewFailure.invalidResponse }
+        }
         try check(); return value
     }
     private func exchange(path: String, query: [URLQueryItem] = [], operation: String, body: Data? = nil,

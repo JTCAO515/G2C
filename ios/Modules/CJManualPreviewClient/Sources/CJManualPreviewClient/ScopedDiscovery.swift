@@ -80,6 +80,8 @@ public struct ScopedDiscovery: Sendable {
         let p = try ScopedWireJSON.fields(value, "proposal_id trip_id expected_version candidate_hash status expires_at content scope diff feasibility")
         let pid = try ScopedWireJSON.identifier(p["proposal_id"]), tid = try ScopedWireJSON.identifier(p["trip_id"])
         let version = try json.integer(["discovery", "proposal", "expected_version"], minimum: 1)
+        // C candidate_hash binds scope and proposal metadata as well as content.
+        // It is opaque to this client; it is not a content SHA256.
         let hash = try ScopedWireJSON.hash(p["candidate_hash"]), status = try ScopedWireJSON.text(p["status"])
         guard tid == reference.trip.id, version == reference.trip.expectedVersion,
               ["pending", "accepted", "rejected", "expired"].contains(status) else { throw PreviewFailure.invalidResponse }
@@ -104,21 +106,22 @@ public struct ScopedDiscovery: Sendable {
         guard diff["trip_id"] as? String == tid, diff["request_id"] as? String == request["request_id"] as? String,
               try json.integer(["discovery", "proposal", "diff", "expected_version"], minimum: 1) == version else { throw PreviewFailure.invalidResponse }
         let before = try StructuredTripDocument.decode(canonical(diff["before"])), after = try StructuredTripDocument.decode(canonical(diff["after"]))
-        guard before.contentSHA256 == reference.trip.contentSHA256, after.contentSHA256 == hash,
+        guard before.contentSHA256 == reference.trip.contentSHA256,
               after.originalUTF8 == (try canonical(p["content"])), before.version.rawValue == reference.contentVersion,
               before.version == after.version else { throw PreviewFailure.invalidResponse }
         // Verify the display association at the HTTP boundary. This does not
         // duplicate FEAS or grant scope: the server remains the unique authority.
         let old = try ScopedWireJSON.fields(diff["before"], "content_version title items sources")
         let new = try ScopedWireJSON.fields(diff["after"], "content_version title items sources")
-        guard try canonical(old["title"]) == canonical(new["title"]), (try canonical(old["sources"])) == (try canonical(new["sources"])),
+        guard try canonical(old["title"]) == canonical(new["title"]),
               let oldItems = old["items"] as? [[String: Any]], let newItems = new["items"] as? [[String: Any]],
               oldItems.count == newItems.count else { throw PreviewFailure.invalidResponse }
-        for (a, b) in zip(oldItems, newItems) {
-            guard let id = a["id"] as? String, id == b["id"] as? String else { throw PreviewFailure.invalidResponse }
+        guard Set(before.items.map(\.id)) == Set(after.items.map(\.id)) else { throw PreviewFailure.invalidResponse }
+        for (index, a) in oldItems.enumerated() {
+            let id = before.items[index].id
             let fixed = a["fixed"] as? [String: Any]
             if !reference.resolvedItemIDs.contains(id) || fixed?["value"] as? Bool == true {
-                guard try canonical(a) == canonical(b) else { throw PreviewFailure.invalidResponse }
+                guard newItems[index]["id"] as? String == id, try canonical(a) == canonical(newItems[index]) else { throw PreviewFailure.invalidResponse }
             }
         }
         let report = try ScopedWireJSON.fields(p["feasibility"], "status checks output_check")

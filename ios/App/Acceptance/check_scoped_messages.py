@@ -44,7 +44,7 @@ def expect(response,phase):
 def known(x):return dict(state='known',value=x)
 def event(date,clock):return dict(date=known(date),time=known(clock),timezone=known('Asia/Shanghai'),utc_offset=known('+08:00'))
 sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentScopedMessageUITests.swift',Path(__file__)]
-for name in ('CJShell','CJMessageClient','CJRunClient','CJTripClient','CJNeedsClient','CJMemoryClient'):
+for name in ('CJManualPreviewClient','CJShell','CJMessageClient','CJRunClient','CJTripClient','CJNeedsClient','CJMemoryClient'):
  sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
 r['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources};save()
 try:
@@ -255,6 +255,8 @@ try:
     for file in container.rglob('*'):
      if file.is_file() and not file.is_symlink():
       data=file.read_bytes();assert headers['Authorization'][7:].encode() not in data and b'-----BEGIN PRIVATE KEY-----' not in data
+    assert r['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
+    assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in r['source_hashes'].items()),'source changed during acceptance'
     r['token_key_scan']='PASS';r['cases'][CASE]='PASS';r['status']='PASS';save()
    finally:
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
