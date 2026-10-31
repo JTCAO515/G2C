@@ -20,6 +20,8 @@ import Foundation
         let chat_count,opening_requests,opening_ack_losses:Int
         let message_id:String?
         let message_ack_losses,cancellations:Int
+        let b_messages,held_displays,released_displays,returned_displays:Int
+        let foreign_status:Int?
     }
     private func call(_ path:String,caseID:String) async throws -> Data {
         var url=URLComponents(string:control+path)!
@@ -211,6 +213,34 @@ import Foundation
         XCTAssertEqual(proof.posts,1);XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.model_calls,1)
         XCTAssertEqual(proof.registered_operations,1);XCTAssertEqual(proof.forbidden_writes,0);XCTAssertEqual(proof.text,received)
         capture("original-discussion-cancelled");try audit("original-discussion-cancelled")
+    }
+    func testDiscussionOwnerLate() async throws {
+        let f=try await prepare("testDiscussionOwnerLate");defer { app?.terminate() }
+        try launch(f,language:"en");conversation(f);tap("assistant.trip.none")
+        enter("SYNTHETIC private original A discussion",language:"en");tap("assistant.send")
+        let original=try JSONDecoder().decode(Proof.self,from:await call("/wait-completed",caseID:f.case_id))
+        XCTAssertTrue(original.text.contains("SYNTHETIC_PRIVATE_A_ONLY"))
+        _=try await call("/hold-display",caseID:f.case_id);tap("run.snapshot.read")
+        _=try await call("/wait-display",caseID:f.case_id)
+        // No App terminate/launch: replace identity in the same actual process.
+        tap("Memory");tap("memory.account");tap("account.development.signout");tap("account.development.signin.B")
+        text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+        tap("Assistant");conversation(f)
+        tap("assistant.serverHistory");tap("history.loadMessages")
+        text("history.messages.status",contains:"The read returned no records")
+        XCTAssertFalse(app.staticTexts.matching(identifier:"history.message."+(original.message_id ?? "")).firstMatch.exists)
+        tap("assistant.panel.done")
+        _=try await call("/release-display",caseID:f.case_id)
+        let sentinel=NSPredicate(format:"label CONTAINS %@ OR value CONTAINS %@","SYNTHETIC_PRIVATE_A_ONLY","SYNTHETIC_PRIVATE_A_ONLY")
+        XCTAssertEqual(app.staticTexts.matching(sentinel).count,0);XCTAssertEqual(app.textViews.matching(sentinel).count,0)
+        XCTAssertFalse(app.staticTexts.matching(identifier:"run.display.text").firstMatch.exists)
+        XCTAssertFalse(app.textViews.matching(identifier:"assistant.originalText").firstMatch.exists)
+        let proof=try JSONDecoder().decode(Proof.self,from:await call("/proof",caseID:f.case_id))
+        XCTAssertEqual(proof.posts,1);XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.model_calls,1);XCTAssertEqual(proof.registered_operations,1)
+        XCTAssertEqual(proof.b_messages,0);XCTAssertEqual(proof.foreign_status,503)
+        XCTAssertEqual(proof.held_displays,1);XCTAssertEqual(proof.released_displays,1);XCTAssertEqual(proof.returned_displays,1)
+        XCTAssertEqual(proof.forbidden_writes,0)
+        capture("late-original-A200-discarded-in-B");try audit("late-original-A200-discarded-in-B")
     }
     func testMemoryUpgradeRefused() async throws {
         let f=try await prepare("testMemoryUpgradeRefused");defer { app?.terminate() }

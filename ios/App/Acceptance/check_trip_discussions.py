@@ -4,7 +4,7 @@ Actual signed API/private PG/unchanged run_once/FakeProvider. These cases prove
 unbound clarification and genuine MEMORY upgrade refusal only. Bound Trip/day/
 item, timeline, maps, real providers and devices remain explicitly UNRUN.
 """
-import argparse,hashlib,importlib.util,json,os,plistlib,subprocess,sys,tempfile,threading,time,traceback,uuid
+import argparse,asyncio,hashlib,importlib.util,json,os,plistlib,subprocess,sys,tempfile,threading,time,traceback,uuid
 from datetime import datetime,timezone
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
@@ -12,7 +12,7 @@ from urllib.parse import parse_qs,urlparse
 
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.discussions.acceptance'
-CASES=['testUnboundEnglish','testUnboundChineseLarge','testMemoryUpgradeRefused','testNewChatEnglish','testNewChatChineseLarge','testNewChatUnknownReopen','testDiscussionUnknownReopen','testDiscussionCancel']
+CASES=['testUnboundEnglish','testUnboundChineseLarge','testMemoryUpgradeRefused','testNewChatEnglish','testNewChatChineseLarge','testNewChatUnknownReopen','testDiscussionUnknownReopen','testDiscussionCancel','testDiscussionOwnerLate']
 sys.path.insert(0,str(ROOT/'scripts'))
 
 
@@ -103,13 +103,19 @@ def main():
                                 # after the first real delta was committed.
                                 self.entered.set()
                                 if not self.release.wait(90):raise TimeoutError('actual FakeProvider release')
-                models={case:HeldFake() if case=='testDiscussionCancel' else FakeProvider() for case in CASES};outcomes={case:[] for case in CASES};active=[None];audit=[];worker_errors=[];stop=threading.Event()
+                class PrivateFake(FakeProvider):
+                    def stream(self,messages,system=None):
+                        for index,chunk in enumerate(super().stream(messages,system)):
+                            yield ('SYNTHETIC_PRIVATE_A_ONLY ' if index==0 else '')+chunk
+                models={case:HeldFake() if case=='testDiscussionCancel' else PrivateFake() if case=='testDiscussionOwnerLate' else FakeProvider() for case in CASES};outcomes={case:[] for case in CASES};active=[None];audit=[];worker_errors=[];stop=threading.Event()
                 conversations={case:case for case in CASES};lost_responses=set()
+                late=dict(hold=False,entered=threading.Event(),release=threading.Event(),finished=threading.Event())
                 async def observed(scope,receive,send):
                     if scope['type']!='http':return await app(scope,receive,send)
                     authorization=dict(scope['headers']).get(b'authorization',b'').decode()
                     case=next((case for case,row in tokens.items() if any(authorization=='Bearer '+value for value in row.values())),None)
-                    event=dict(case=case,method=scope['method'],path=scope['path']);audit.append(event);body=bytearray()
+                    account=next((key for key,value in tokens[case].items() if authorization=='Bearer '+value),None) if case else None
+                    event=dict(case=case,account=account,method=scope['method'],path=scope['path'],started_at=time.monotonic());audit.append(event);body=bytearray()
                     if scope['path']=='/v3/message-send-status':
                         event['query']={key:value for key,value in parse_qs(scope['query_string'].decode('ascii')).items() if key in ('conversation_id','message_id')}
                     if case and scope['method']=='PUT' and scope['path']=='/v1/conversations':
@@ -126,6 +132,16 @@ def main():
                         return value
                     async def captured(value):
                         if value['type']=='http.response.start':event['status']=value['status']
+                        if case=='testDiscussionOwnerLate' and account=='A' and event['path']=='/v3/run-display' and value['type']=='http.response.body' and event.get('status')==200 and late['hold']:
+                            late['hold']=False;event['held_actual_200']=True
+                            event['body_sha256']=hashlib.sha256(value.get('body',b'')).hexdigest()
+                            event['contains_private_sentinel']=b'SYNTHETIC_PRIVATE_A_ONLY' in value.get('body',b'')
+                            late['entered'].set()
+                            try:
+                                if not await asyncio.to_thread(late['release'].wait,90):raise TimeoutError('original A200 release')
+                                event['released_at']=time.monotonic();await send(value);event['send_returned']=True
+                            finally:late['finished'].set()
+                            return
                         opening_loss=case=='testNewChatUnknownReopen' and event['method']=='PUT' and event['path']=='/v1/conversations'
                         message_loss=case=='testDiscussionUnknownReopen' and event['method']=='POST' and event['path']=='/v3/messages'
                         if (opening_loss or message_loss) and value['type']=='http.response.body' and event.get('status')==200 and case not in lost_responses:
@@ -193,11 +209,24 @@ def main():
                     hashes=[hashlib.sha256(bytes(row[1])).hexdigest() for row in rows]
                     if rows:assert [x['input_sha256'] for x in posts]==hashes
                     if cancellations:assert len(rows)==1 and all(event['message_id']==rows[0][0] and event.get('status')==200 for event in cancellations)
+                    b_messages=0;foreign_status=None;held=[event for event in events if event.get('held_actual_200')]
+                    if case=='testDiscussionOwnerLate':
+                        with database.connect(scope_for(ISSUER,subjects[case]['B'])) as conn:
+                            assert conn.execute('SELECT current_user').fetchone()[0]=='cj_m1_runtime'
+                            b_messages=conn.execute('SELECT count(*) FROM cj_message_receipt').fetchone()[0]
+                        if rows:
+                            with TestClient(app) as client:
+                                foreign=client.get('/v3/run-display',params={'message_id':rows[-1][0]},headers={'Authorization':'Bearer '+tokens[case]['B']})
+                                foreign_status=foreign.status_code;assert foreign_status==503 and 'snapshot' not in foreign.json()
+                        for event in held:
+                            assert event['contains_private_sentinel']
+                            if 'released_at' in event:assert any(x['account']=='B' and x['path'] in ('/v1/message-history','/v2/message-history') for x in events if x['started_at']<event['released_at'])
                     value=dict(runtime_role=role,pending=pending,status=status,text=text,reference=reference,messages=len(rows),posts=len(posts),model_calls=models[case].calls,
                         memory_items=len(memory),trip_profile=profile[0] if profile else None,upgrade_refused=case=='testMemoryUpgradeRefused',
                         forbidden_writes=len(forbidden),registered_operations=len(operations),input_hashes=hashes,post_statuses=[event['status'] for event in posts],worker_errors=worker_errors,
                         conversation_id=cid,chat_count=len(chats),opening_requests=len(openings),opening_ack_losses=sum(bool(event.get('ack_lost_after_200')) for event in openings),
-                        message_id=rows[-1][0] if rows else None,message_ack_losses=sum(bool(event.get('ack_lost_after_200')) for event in posts),cancellations=len(cancellations))
+                        message_id=rows[-1][0] if rows else None,message_ack_losses=sum(bool(event.get('ack_lost_after_200')) for event in posts),cancellations=len(cancellations),
+                        b_messages=b_messages,foreign_status=foreign_status,held_displays=len(held),released_displays=sum('released_at' in event for event in held),returned_displays=sum(bool(event.get('send_returned')) for event in held))
                     report.setdefault('proofs',{})[case]=value;save();return value
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
@@ -227,6 +256,11 @@ def main():
                                     time.sleep(.05)
                             elif path.path=='/wait-provider':assert case=='testDiscussionCancel' and models[case].entered.wait(30);value={}
                             elif path.path=='/release-provider':assert case=='testDiscussionCancel';models[case].release.set();value={}
+                            elif path.path=='/hold-display':
+                                assert case=='testDiscussionOwnerLate';late['entered'].clear();late['release'].clear();late['finished'].clear();late['hold']=True;value={}
+                            elif path.path=='/wait-display':assert case=='testDiscussionOwnerLate' and late['entered'].wait(30);value={}
+                            elif path.path=='/release-display':
+                                assert case=='testDiscussionOwnerLate';late['release'].set();assert late['finished'].wait(20);value={}
                             else:raise ValueError('unknown control')
                             raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
                         except Exception as error:
@@ -269,6 +303,7 @@ def main():
                             assert verified['opening_ack_losses']==(1 if case=='testNewChatUnknownReopen' else 0)
                         if case=='testDiscussionUnknownReopen':assert verified['message_ack_losses']==1 and verified['messages']==verified['posts']==1
                         if case=='testDiscussionCancel':assert verified['status']=='cancelled' and verified['cancellations']==1
+                        if case=='testDiscussionOwnerLate':assert verified['b_messages']==0 and verified['foreign_status']==503 and verified['held_displays']==verified['released_displays']==verified['returned_displays']==1
                         report['cases'][case]='PASS';save()
                     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
                     private_tokens=[token.encode() for row in tokens.values() for token in row.values()]
@@ -279,6 +314,7 @@ def main():
                     report['token_key_scan']='PASS'
                     report['status']='PARTIAL_PASS';save()
                 finally:
+                    late['release'].set()
                     models['testDiscussionCancel'].release.set()
                     stop.set();worker_thread.join(10);server.should_exit=True;thread.join(10);control.shutdown();control.server_close()
             report['private_pg_stopped']=True;save()
