@@ -22,14 +22,20 @@ public struct FactToolTranscriptView: View {
     private func row(_ text: String,_ id: String) -> some View {
         TripVerificationText(text:text,style:.body).frame(maxWidth:.infinity,alignment:.leading).accessibilityIdentifier(id)
     }
+    private func field(_ title: String,_ value: String,_ id: String) -> some View {
+        VStack(alignment:.leading,spacing:4) {
+            TripVerificationText(text:title,style:.caption).frame(maxWidth:.infinity,alignment:.leading).accessibilityIdentifier(id + ".label")
+            row(value,id)
+        }
+    }
     private func result(_ value: FactResultV1,index: Int) -> some View {
         let p = "fact.output.\(index)"
         return VStack(alignment:.leading,spacing:10) {
             row(outcome(value.outcome),p + ".outcome")
             row(status(value.status),p + ".status")
             row(value.query.factKey + " · " + value.query.region + " · " + value.query.dates.start + " — " + value.query.dates.end,p + ".query")
-            row(conditions(value.query.conditions),p + ".conditions")
-            row(language.text("Evaluated at: ", "评估时点：") + stamp(value.evaluatedAt),p + ".evaluated")
+            field(language.text("Explicit query conditions", "明确查询条件"),conditions(value.query.conditions),p + ".conditions")
+            field(language.text("Evaluated at", "评估时点"),stamp(value.evaluatedAt),p + ".evaluated")
             if let original = value.originalValue { row(original,p + ".value") }
             else { row(language.text("No supported value selected", "未选定适用的事实值"),p + ".value") }
             row(language.text("Applicability explanation · not source truth or official translation", "适用性说明 · 不代表来源真实或官方翻译"),p + ".summary.label")
@@ -40,24 +46,24 @@ public struct FactToolTranscriptView: View {
     }
     private func source(_ value: FactSourceV1,prefix p: String) -> some View {
         VStack(alignment:.leading,spacing:8) {
-            row(language.text("Synthetic source: ", "合成来源：") + value.sourceURL,p + ".url")
+            field(language.text("Synthetic source", "合成来源"),value.sourceURL,p + ".url")
             row(value.originalValue,p + ".original")
             row(status(value.status) + (value.reasons.isEmpty ? "" : " · " + value.reasons.joined(separator:", ")),p + ".status")
-            row(language.text("Retrieved at: ", "检索时点：") + stamp(value.retrievedAt),p + ".retrieved")
-            if let time = value.declarations.publishedAt { row(language.text("Published at: ", "发布时点：") + stamp(time),p + ".published") }
+            field(language.text("Retrieved at", "检索时点"),stamp(value.retrievedAt),p + ".retrieved")
+            if let time = value.declarations.publishedAt { field(language.text("Published at", "发布时点"),stamp(time),p + ".published") }
             else { row(language.text("Publication time: not declared", "发布时间：未声明"),p + ".published") }
-            if let time = value.declarations.expiresAt { row(language.text("Declared expiry: ", "声明失效时点：") + stamp(time),p + ".expiry") }
+            if let time = value.declarations.expiresAt { field(language.text("Declared expiry", "声明失效时点"),stamp(time),p + ".expiry") }
             else { row(language.text("Expiry: not declared · unknown", "失效时点：未声明 · 未知"),p + ".expiry") }
-            if let regions = value.declarations.regions { row(language.text("Declared regions: ", "声明地域：") + regions.joined(separator:" · "),p + ".regions") }
+            if let regions = value.declarations.regions { field(language.text("Declared regions", "声明地域"),regions.joined(separator:" · "),p + ".regions") }
             else { row(language.text("Region: not declared", "适用地域：未声明"),p + ".regions") }
-            if let dates = value.declarations.dates { row(language.text("Inclusive dates: ", "适用日期（含起止日）：") + dates.start + " — " + dates.end,p + ".dates") }
+            if let dates = value.declarations.dates { field(language.text("Inclusive dates", "适用日期（含起止日）"),dates.start + " — " + dates.end,p + ".dates") }
             else { row(language.text("Date window: not declared", "适用日期：未声明"),p + ".dates") }
-            if let declared = value.declarations.conditions { row(conditions(declared),p + ".conditions") }
+            if let declared = value.declarations.conditions { field(language.text("Declared conditions", "声明条件"),conditions(declared),p + ".conditions") }
             else { row(language.text("Conditions: not declared", "适用条件：未声明"),p + ".conditions") }
         }.padding(.vertical,8)
     }
     private func conditions(_ value: [String:String]) -> String {
-        language.text("Explicit conditions: ", "明确条件：") + (value.isEmpty ? language.text("none supplied", "未提供") : value.keys.sorted().map { $0 + "=" + value[$0]! }.joined(separator:" · "))
+        value.isEmpty ? language.text("none supplied", "未提供") : value.keys.sorted().map { $0 + "=" + value[$0]! }.joined(separator:"\n")
     }
     private func stamp(_ value: PlaceTimestampV1) -> String { value.iso8601 + " · fold=" + String(value.fold) }
     private func status(_ value: FactStatusV1) -> String {
