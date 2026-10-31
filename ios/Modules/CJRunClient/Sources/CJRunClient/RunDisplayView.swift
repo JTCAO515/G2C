@@ -57,7 +57,7 @@ extension RunDisplayState {
             }
             if model.readsDraftStatus {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(language.text("Draft result", "草稿结果")).font(.headline)
+                    RunReadableText(text:language.text("Draft result", "草稿结果"),style:.headline)
                     RunReadableText(text: model.draftStatus.label(language))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if let budget = model.draftStatus.budgetLabel(language) {
