@@ -80,6 +80,7 @@ class OperationContext:
     def act_scoped(self,request):return self.__call('act_scoped',request)
     def scoped_receipt(self,action_id):return self.__call('scoped_receipt',action_id)
     def scoped_detail(self,proposal_id):return self.__call('scoped_detail',proposal_id)
+    def discover_scoped(self,query,encode):return self.__call('discover_scoped',query,encode)
     def act_needs(self,request):return self.__call('act_needs',request)
     def act(self, action): return self.__call('act', action)
     def prepare_manual(self, edit): return self.__call('prepare_manual', edit)
