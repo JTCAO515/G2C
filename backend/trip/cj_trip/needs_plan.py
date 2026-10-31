@@ -11,7 +11,7 @@ from .structured_v2 import validate_document
 MODEL_VERSION='TRIP-model-plan.1'
 
 
-def build(raw,capture):
+def parse_model(raw):
     def unique(pairs):
         out={}
         for key,value in pairs:
@@ -22,13 +22,22 @@ def build(raw,capture):
     model=json.loads(raw,object_pairs_hook=unique)
     if type(model) is not dict or set(model)!={'version','title','items','proposed_subjects'} or model['version']!=MODEL_VERSION:
         raise ValueError('explicit structured model plan required')
+    return model
+
+
+def build(raw,capture):
+    return _build(raw,capture,{})
+
+
+def _build(raw,capture,adopted):
+    model=parse_model(raw)
     document=dict(content_version='structured.2',title=model['title'],items=model['items'],sources=[])
     validate_document(document)
     before,revisions=capture.records()
     fields=deepcopy(before.fields)
     originals={item['item_id']:item for item in fields.get('fixed_items',[])}
     subjects=model['proposed_subjects']
-    new_ids={item['id'] for item in document['items']} - set(originals)
+    new_ids={item['id'] for item in document['items']} - set(originals) - set(adopted)
     if type(subjects) is not dict or set(subjects)!=new_ids:raise ValueError('explicit proposed subjects required for each new item')
     proposed=[];selected=set()
     for item in document['items']:
@@ -37,7 +46,10 @@ def build(raw,capture):
         if any(edge['utc_offset'].get('state')=='known' for edge in item['schedule'].values()):
             raise ValueError('model cannot invent an observed UTC offset')
         original=originals.get(item['id'])
-        if original is None:
+        if original is None and item['id'] in adopted:
+            value=deepcopy(adopted[item['id']]);value['description']=item['text']
+            selected.add(item['id'])
+        elif original is None:
             # New model material remains unconfirmed intent/unknown occupancy.
             if item['source_category']!='unknown' or item['fixed']!={'state':'unknown'}:
                 raise ValueError('new model items cannot invent source or fixed intent')
@@ -54,7 +66,7 @@ def build(raw,capture):
         for edge in ('start','end'):
             event=item['schedule'][edge]
             value[edge]={key:deepcopy(event[key]) for key in ('date','time','timezone')}
-            value[edge]['place']=(deepcopy(original[edge]['place']) if original is not None else {'state':'unknown'})
+            value[edge]['place']=(deepcopy(original[edge]['place']) if original is not None else deepcopy(adopted[item['id']][edge]['place']) if item['id'] in adopted else {'state':'unknown'})
         proposed.append(value)
     # Missing original items are explicitly outside generated edit permission.
     if not set(originals)<={item['item_id'] for item in proposed}:raise ValueError('original source item removed')

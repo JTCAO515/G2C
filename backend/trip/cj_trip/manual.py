@@ -26,6 +26,10 @@ class ManualEdit:
 
     @classmethod
     def parse(cls, raw):
+        return cls._parse(raw, VERSION)
+
+    @classmethod
+    def _parse(cls, raw, version):
         if type(raw) is not bytes or not 0 < len(raw) <= 1_000_000:
             raise ValueError('bounded immutable manual input required')
         doc = json.loads(raw)
@@ -33,7 +37,7 @@ class ManualEdit:
                   'original_hash', 'title', 'changes', 'order'}
         if type(doc) is not dict or set(doc) != fields or packed(doc) != raw:
             raise ValueError('exact canonical manual input required')
-        if doc['version'] != VERSION:
+        if doc['version'] != version:
             raise ValueError('unsupported manual input version')
         identifier(doc['request_id']); identifier(doc['trip_id'])
         if type(doc['expected_version']) is not int or doc['expected_version'] < 1:
@@ -81,6 +85,10 @@ class ManualCandidate:
 
 def prepare(original: Trip, edit: ManualEdit):
     """Call with the actual protected read. Never rebase stale user edits."""
+    return _prepare(original,edit,validate_document)
+
+
+def _prepare(original,edit,validate_document):
     if (original.trip_id != edit.trip_id or original.version != edit.expected_version
             or sha256(original.content).hexdigest() != edit.original_hash):
         raise Conflict('original Trip changed; retain original manual input')
