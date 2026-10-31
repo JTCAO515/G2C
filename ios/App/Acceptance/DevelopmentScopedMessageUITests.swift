@@ -76,7 +76,8 @@ import Foundation
         if outcome != .completed { capture("not-ready-"+id) }
         XCTAssertEqual(outcome,.completed,id+" enabled="+String(target.isEnabled)+" hittable="+String(target.isHittable))
         if id.hasPrefix("travel.selection.") { print("namespace control",id,"frame",target.frame,"screen",app.frame);capture("before-namespace-tap") }
-        target.tap()
+        if id.hasPrefix("travel.selection.") { target.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).tap() }
+        else { target.tap() }
     }
     private func text(_ id:String,contains expected:String) {
         let target=visible({textElement(id)},id:id)
