@@ -120,9 +120,18 @@ import Foundation
     }
     private func replace(_ id: String, value: String, language: String) {
         let target = field(id); XCTAssertTrue(target.waitForExistence(timeout:15)); reveal(target,id:id); target.tap()
-        target.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
+        let end = target.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5))
+        end.tap()
         let previous = target.value as? String ?? ""
-        target.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:previous.count)+value)
+        if !previous.isEmpty {
+            end.press(forDuration:1.1)
+            let names = NSPredicate(format:"label IN %@",["Select All","全选"])
+            let menu = app.menuItems.matching(names).firstMatch
+            let select = menu.waitForExistence(timeout:2) ? menu : app.buttons.matching(names).firstMatch
+            XCTAssertTrue(select.waitForExistence(timeout:5),"Select the full old value before replacement")
+            XCTAssertTrue(select.isHittable); select.tap()
+        }
+        target.typeText(value)
         XCTAssertEqual(Array((target.value as? String ?? "").utf8),Array(value.utf8)); dismissKeyboard(language)
     }
     private func appendStatement(_ value: String, language: String) {
