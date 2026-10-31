@@ -41,6 +41,8 @@ struct CheckedTransport: ClientTransport {
               (operationID == "getMessageSendStatus" && request.method == .get && request.path?.hasPrefix("/v1/message-send-status?") == true) ||
               (operationID == Operations.getMessageSendStatusV2.id && request.method == .get && request.path?.hasPrefix("/v2/message-send-status?") == true) ||
               (operationID == Operations.receiveMessageV2.id && request.method == .post && request.path == "/v2/messages") ||
+              (operationID == "receiveTripDiscussionV3" && request.method == .post && request.path == "/v3/messages") ||
+              (operationID == "readTripDiscussionStatusV3" && request.method == .get && request.path?.hasPrefix("/v3/message-send-status?") == true) ||
               (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == "readMessageHistory" && request.method == .get && request.path?.hasPrefix("/v1/message-history?") == true) ||
@@ -72,9 +74,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let validate: @MainActor @Sendable () throws -> Void
     }
     private enum MessageWire {
-        case legacy, travel
-        var path: String { self == .legacy ? "/v1/messages" : "/v2/messages" }
-        var operation: String { self == .legacy ? Operations.receiveMessage.id : Operations.receiveMessageV2.id }
+        case legacy, travel, discussion
+        var path: String {
+            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages" }
+        }
+        var operation: String {
+            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3" }
+        }
     }
     private struct MessageCapability: Sendable {
         let endpoint: MessageEndpoint
@@ -126,6 +132,20 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
               let port = endpoint.url.port,(1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
             preview:nil,messages:MessageCapability(endpoint:endpoint,validate:validate,wire:.travel))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+
+    /// Frozen send.3 is discussion only, isolated from send.1/send.2 capabilities.
+    /// Profile activation is an operator task; no App request upgrades a scope.
+    public static func developmentTripDiscussions(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port, (1...65535).contains(port) else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
+            preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .discussion))
         #else
         throw MessageHTTPFailure.productionActivationUnavailable
         #endif
@@ -231,6 +251,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         messages=MessageCapability(endpoint:travelMessageEndpoint,validate:validateMessage,wire:.travel)
     }
 
+    /// Non-network boundary test seam; no live caller uses this initializer.
+    init(interceptedTransport: any ClientTransport, tripDiscussionEndpoint: MessageEndpoint,
+         validateDiscussion: @escaping @MainActor @Sendable () throws -> Void) {
+        needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
+        preview=nil; memory=nil; memoryManagement=nil
+        messages=MessageCapability(endpoint:tripDiscussionEndpoint, validate:validateDiscussion, wire:.discussion)
+    }
+
     /// Non-network Memory boundary seam for deterministic transport tests.
     init(interceptedTransport: any ClientTransport, memoryEndpoint: MessageEndpoint,
          validateMemory: @escaping @MainActor @Sendable () throws -> Void) {
@@ -268,6 +296,11 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     @MainActor func validateTravelMessageSending(to endpoint: MessageEndpoint) throws {
         guard let messages,messages.wire == .travel,messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
+        try messages.validate()
+    }
+
+    @MainActor func validateTripDiscussionSending(to endpoint: MessageEndpoint) throws {
+        guard let messages, messages.wire == .discussion, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
         try messages.validate()
     }
 
@@ -351,6 +384,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         switch messageWire {
         case .legacy: _ = try OriginalMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .travel: _ = try OriginalTravelMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case .discussion: _ = try OriginalTripDiscussion(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case nil: break
         }
         try await capability.validate()
@@ -386,6 +420,7 @@ public enum MessageHTTPOutcome: Sendable {
     let liveMessageTransport: NoRedirectTransport?
     var sendPermitState = SendPermitState()
     var travelSendPermitState = SendPermitState()
+    var tripDiscussionPermitState = SendPermitState()
     private let readOwner = UUID()
     /// Test seam only: caller must supply a non-network interceptor, never a live transport.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
@@ -405,12 +440,16 @@ public enum MessageHTTPOutcome: Sendable {
         liveMessageTransport = liveReadTransport
     }
     func client(_ lease: Lease, configuration: Configuration = .init()) async throws -> Client {
+        let checked = try await checkedTransport(lease)
+        return Client(serverURL: endpoint.url, configuration: configuration, transport: checked)
+    }
+    func checkedTransport(_ lease: Lease) async throws -> CheckedTransport {
         try recovery.validateScope(scope, lease: lease)
         let value = try await credentials.bearer(for: scope, lease: lease)
         try recovery.validateScope(scope, lease: lease)
         guard let value, !value.isEmpty, value.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MessageHTTPFailure.credentialsUnavailable }
-        return Client(serverURL: endpoint.url, configuration: configuration, transport: CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value,
-            validate: { [recovery,scope] in try recovery.validateScope(scope,lease:lease) }))
+        return CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value,
+            validate: { [recovery,scope] in try recovery.validateScope(scope,lease:lease) })
     }
     public func submit(messageID: String, lease: Lease) async throws -> MessageHTTPOutcome {
         if !submissionEnabledForTest { return try await submitPrepared(messageID: messageID, lease: lease) }
