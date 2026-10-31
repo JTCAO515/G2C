@@ -142,7 +142,7 @@ DEBUG 模拟器可显式选择 `G2C_DEV_MESSAGE_PROFILE=trip-edit-v1`，消费�
 
 本地加密快照版本3仅在保存原 POST 拒绝证据时使用，原1/2格式与数据保留；旧二进制拒绝3，不能丢弃证明后重发。拒绝证明与原动作状态一次原子保存，GET不能制造POST失败证明，存储未知仍按原动作恢复。
 
-候选的原消息→原proposal发现接口尚待C #366冻结交付；扩域/澄清的非可接受结果仍待B #360/C #336阶段二。当前入口不猜proposal前缀、不解析模型request_id当候选ID、不把published或模型原文当可接受diff；候选发现/审核/接受及扩大范围的App验收保持UNRUN，不能声称#337或#25完成。原生前缀由 `ios/App/Acceptance/check_scoped_messages.py` 用实际App、签名本地API、受限私有PG、原run_once、显式@2与FakeProvider核对，worker Outcome仅作后端断言，不传入App。真实来源、模型、服务、费用、云和设备仍按L2/L3单独验证。
+候选发现使用 C #366 已冻结的 `TRIP-scoped-discovery.1`，只携带原回执的 message/run，不猜 proposal 前缀或解析模型 request_id；published 本身不构成接受许可。原生验收脚本用实际 App、签名本地 API、受限私有 PG、原 run_once/Meter、显式配置与 FakeProvider 核对，worker Outcome 仅作后端断言，不传入 App。扩域/澄清的非可接受持久结果仍按 B #360/C #336 的实际冻结交付消费；真实来源、模型、服务、费用、云和设备按 L2/L3 单独验证。
 
 ### 原消息的局部候选（#337）
 

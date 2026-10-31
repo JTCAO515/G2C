@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss'],required=True)
 ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -148,11 +148,24 @@ try:
      message=await receive()
      if message['type']=='http.request':chunks.append(message.get('body',b''))
      return message
+    drop_ack=CASE=='testScopedCandidateACKLoss' and path=='/v1/trip-scoped-actions' and scope['method']=='POST'
+    actual_reply=[]
     async def sent(message):
      if message['type']=='http.response.start':entry['status']=message['status']
-     await send(message)
+     if drop_ack:actual_reply.append(message)
+     else:await send(message)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else scoped_app if path.startswith('/v1/trip-scoped-') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
     await target(scope,received,sent)
+    if drop_ack:
+     # Fault only after the unmodified C API completed its real transaction.
+     # Withhold its original 200 body; this is explicit proxy ACK loss, not a
+     # forged successful receipt or a replacement action/model result.
+     assert entry['status']==200
+     original_body=b''.join(part.get('body',b'') for part in actual_reply if part['type']=='http.response.body')
+     entry.update(actual_backend_reply_sha256=hashlib.sha256(original_body).hexdigest(),delivered_status=503,committed_response_suppressed=True)
+     trace=str(uuid.uuid4());failure=packed(dict(request_id=trace,error=dict(code='TRIP_OUTCOME_UNKNOWN',category='dependency',message_en='Synthetic committed response loss',message_zh='合成已提交回包丢失',outcome='unknown',recovery='reconcile_original')))
+     await send(dict(type='http.response.start',status=503,headers=[(b'content-type',b'application/json'),(b'cache-control',b'no-store'),(b'x-request-id',trace.encode())]))
+     await send(dict(type='http.response.body',body=failure))
     if scope['method']=='POST':entry['input_sha256']=hashlib.sha256(b''.join(chunks)).hexdigest()
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
    import socket
@@ -198,7 +211,7 @@ try:
      actions=conn.execute('SELECT action_id,original_input FROM cj_trip_scoped_action').fetchall()
      operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(cid,)).fetchone()[0]
     assert len(trips)==len(actions)==operations==fake.calls==1
-    action=json.loads(bytes(actions[0][1]));kind='accept' if CASE=='testScopedCandidateAccept' else 'reject'
+    action=json.loads(bytes(actions[0][1]));kind='accept' if CASE in ('testScopedCandidateAccept','testScopedCandidateACKLoss') else 'reject'
     assert action['kind']==kind and trips[0][0]==tid and trips[0][1]==(3 if kind=='accept' else 2)
     doc=json.loads(bytes(trips[0][2]));before=formal['content']
     assert doc['title']==before['title'] and doc['sources']==before['sources']
@@ -208,6 +221,7 @@ try:
     requests=[x for x in audit if x['path']=='/v1/trip-scoped-discovery']
     writes=[x for x in audit if x['path']=='/v1/trip-scoped-actions' and x['method']=='POST']
     assert requests and len(writes)==1 and writes[0]['input_sha256']==hashlib.sha256(bytes(actions[0][1])).hexdigest()
+    if CASE=='testScopedCandidateACKLoss':assert writes[0].get('committed_response_suppressed') and writes[0]['status']==200 and writes[0]['delivered_status']==503
     value=dict(formal_version=trips[0][1],formal_count=len(trips),actions=len(actions),model_calls=fake.calls,registered_operations=operations,kind=kind,original_action_id=actions[0][0],original_action_sha256=writes[0]['input_sha256'])
     r['decision_proof']=value;save();return value
    class Control(BaseHTTPRequestHandler):
@@ -246,8 +260,8 @@ try:
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
     log=(run.stdout+run.stderr).replace(headers['Authorization'][7:],'<redacted-local-token>');(OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    verified=r['proof'] if CASE in ('testScopedCandidateAccept','testScopedCandidateReject') else proof()
-    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject'):decision_proof()
+    verified=r['proof'] if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss') else proof()
+    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss'):decision_proof()
     assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
     if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
     else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
