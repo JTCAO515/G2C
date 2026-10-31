@@ -73,8 +73,10 @@ import Foundation
     private func text(_ id:String,contains expected:String) {
         let target=visible({textElement(id)},id:id)
         let predicate=NSPredicate { _,_ in target.label.contains(expected) || (target.value as? String)?.contains(expected)==true }
-        let expected=expectation(for:predicate,evaluatedWith:target)
-        wait(for:[expected],timeout:15)
+        let observed=XCTNSPredicateExpectation(predicate:predicate,object:target)
+        let outcome=XCTWaiter.wait(for:[observed],timeout:15)
+        if outcome != .completed { capture("unexpected-text-"+id) }
+        XCTAssertEqual(outcome,.completed,id+" expected="+expected+" actual="+target.label+" value="+String(describing:target.value))
     }
     private func capture(_ name:String) {
         let attachment=XCTAttachment(screenshot:app.screenshot());attachment.name=name;attachment.lifetime = .keepAlways;add(attachment)

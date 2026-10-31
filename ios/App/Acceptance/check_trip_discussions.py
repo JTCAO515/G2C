@@ -223,7 +223,12 @@ def main():
                         for row in tokens.values():
                             for token in row.values():log=log.replace(token,'<redacted-local-token>')
                         (output/(case+'.log')).write_text(log)
-                        report['cases'][case]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
+                        report['cases'][case]='FAIL' if run.returncode else 'VERIFYING';save()
+                        if run.returncode:
+                            try:report.setdefault('failure_proofs',{})[case]=proof(case)
+                            except Exception as error:report.setdefault('failure_proof_errors',{})[case]=dict(type=type(error).__name__,frames=[dict(file=Path(f.filename).name,line=f.lineno,function=f.name) for f in traceback.extract_tb(error.__traceback__)])
+                            save()
+                        run.check_returncode()
                         summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],env=env))
                         (output/(case+'-summary.json')).write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==0 and summary['skippedTests']==0
                         verified=proof(case);assert verified['forbidden_writes']==0 and not worker_errors
