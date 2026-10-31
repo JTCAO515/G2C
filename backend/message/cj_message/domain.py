@@ -8,6 +8,7 @@ import uuid
 
 if TYPE_CHECKING:
     from .travel import Selection
+    from .trip_context import TripSelection
     from .travel_reference import OriginalMessageContextRef
 
 
@@ -44,6 +45,7 @@ class Command:
     expected_sequence: int | None = None
     travel_context: Selection | None = None
     needs_reference: tuple[str, int] | None = None
+    trip_context: TripSelection | None = None
 
     @classmethod
     def parse(cls, raw):
@@ -59,7 +61,18 @@ class Command:
         return cls._parse(raw, stored=False, travel=True)
 
     @classmethod
-    def _parse(cls, raw, *, stored, travel=False):
+    def parse_v3(cls, raw):
+        return cls._parse(raw, stored=False, travel=True, formal=True)
+
+    @classmethod
+    def parse_original(cls, raw):
+        version = json.loads(raw)["version"]
+        if version == "MESSAGE-send.3": return cls.parse_v3(raw)
+        if version == "MESSAGE-send.2": return cls.parse_v2(raw)
+        return cls.parse_stored(raw)
+
+    @classmethod
+    def _parse(cls, raw, *, stored, travel=False, formal=False):
         def pairs(items):
             result = {}
             for k, v in items:
@@ -79,6 +92,8 @@ class Command:
         version = obj.get('version')
         if version == 'MESSAGE-send.1':
             fields |= {'expected_generation', 'expected_sequence'}
+        elif version == 'MESSAGE-send.3' and formal:
+            fields |= {'expected_generation', 'expected_sequence', 'travel_context', 'needs_reference', 'trip_context'}
         elif version == 'MESSAGE-send.2' and travel:
             fields |= {'expected_generation', 'expected_sequence', 'travel_context', 'needs_reference'}
         elif version != 'MESSAGE-draft.1' or not stored:
@@ -91,10 +106,10 @@ class Command:
             raise InvalidInput('non-null Trip not supported')
         if obj['creation_intent'] not in ('none', 'consider_trip'):
             raise InvalidInput('unsupported intent')
-        if travel and version != 'MESSAGE-send.2':
+        if travel and version != ('MESSAGE-send.3' if formal else 'MESSAGE-send.2'):
             raise InvalidInput('send.2 required')
         selection, needs = None, None
-        if version == 'MESSAGE-send.2':
+        if version in ('MESSAGE-send.2', 'MESSAGE-send.3'):
             from .travel import Selection
             from cj_needs.domain import identifier, InvalidInput as NeedsInvalid
             if obj['travel_context'] is not None:
@@ -112,13 +127,21 @@ class Command:
                     needs = (identifier(value['id']), value['expected_version'])
                 except NeedsInvalid as exc:
                     raise InvalidInput('invalid NEEDS identity') from exc
-        if version in ('MESSAGE-send.1', 'MESSAGE-send.2'):
+        if formal and obj['creation_intent'] != 'none':
+            raise InvalidInput('send.3 is a read-only discussion version')
+        trip = None
+        if formal and obj['trip_context'] is not None:
+            from .trip_context import TripSelection
+            trip = TripSelection.parse(obj['trip_context'])
+            if selection is not None or needs is not None or obj['creation_intent'] != 'none':
+                raise InvalidInput('formal Trip discussion cannot grant creation authority')
+        if version in ('MESSAGE-send.1', 'MESSAGE-send.2', 'MESSAGE-send.3'):
             if (len(obj['conversation_id'].encode('utf-8')) > 256 or '\x00' in obj['conversation_id']
                     or type(obj['expected_generation']) is not str or not obj['expected_generation'].strip()
                     or type(obj['expected_sequence']) is not int or obj['expected_sequence'] < 0):
                 raise InvalidInput('invalid expected head')
         return cls(obj['conversation_id'], obj['message_id'], raw,
-                   obj.get('expected_generation'), obj.get('expected_sequence'), selection, needs)
+                   obj.get('expected_generation'), obj.get('expected_sequence'), selection, needs, trip)
 
 
 @dataclass(frozen=True)
@@ -136,6 +159,7 @@ class Stored:
     raw: bytes
     receipt: Receipt
     travel_reference_version: int | None = None
+    trip_reference_version: int | None = None
 
 
 @dataclass(frozen=True)
@@ -191,8 +215,11 @@ class Service:
     def receive_v2(self, raw):
         return self._receive(raw, travel=True)
 
-    def _receive(self, raw, *, travel):
-        command = Command.parse_v2(raw) if travel else Command.parse(raw)
+    def receive_v3(self, raw):
+        return self._receive(raw,travel=True,formal=True)
+
+    def _receive(self, raw, *, travel, formal=False):
+        command = Command.parse_v3(raw) if formal else Command.parse_v2(raw) if travel else Command.parse(raw)
         with self.repository.transaction() as tx:
             # Scope lock serializes same-ID requests even across conversations.
             tx.lock_scope()
@@ -207,7 +234,11 @@ class Service:
                     raise SequenceConflict()
                 if travel:
                     from .travel_reference import require_producer
-                    require_producer(tx,command)
+                    if formal:
+                        from .trip_reference import require_producer as require_trip
+                        source=require_trip(tx,command)
+                    else:
+                        require_producer(tx,command)
                 receipt = Receipt(command.message_id, command.conversation_id,
                                   chat.generation, chat.last_sequence + 1,
                                   self.new_run_id(), hashlib.sha256(raw).hexdigest())
@@ -215,7 +246,11 @@ class Service:
                 if travel:
                     from .travel_reference import insert_reference
                     tx.insert(stored,command=command)
-                    insert_reference(tx,stored,command)
+                    if formal:
+                        from .trip_reference import insert_reference as insert_trip
+                        insert_trip(tx,stored,command,source)
+                    else:
+                        insert_reference(tx,stored,command)
                 else:
                     tx.insert(stored)
                 tx.enqueue(receipt)
@@ -249,7 +284,10 @@ class Service:
         # None means absent in this ledger; production retention policy still gates retry.
         return old
 
-    def query_travel_message(self,message_id, *, require_active=True):
+    def query_trip_message(self,message_id, *, require_active=True):
+        return self.query_travel_message(message_id,require_active=require_active,formal=True)
+
+    def query_travel_message(self,message_id, *, require_active=True, formal=False):
         from .travel_reference import read_reference,OriginalTravelMessage
         with self.repository.transaction() as tx:
             tx.lock_scope()
@@ -257,7 +295,7 @@ class Service:
             if stored is None:return None
             if require_active:
                 tx.chat(stored.receipt.conversation_id,stored.receipt.generation)
-            if stored.travel_reference_version!=1:
+            if (stored.trip_reference_version!=1 if formal else stored.travel_reference_version!=1):
                 raise Unavailable('travel read requires original send.2')
             result=OriginalTravelMessage(stored,read_reference(tx,stored))
         return result
@@ -265,10 +303,13 @@ class Service:
     def send_status(self, conversation_id, message_id=None):
         return self._send_status(conversation_id,message_id,travel=False)
 
+    def send_status_v3(self, conversation_id, message_id=None):
+        return self._send_status(conversation_id,message_id,travel=True,formal=True)
+
     def send_status_v2(self, conversation_id, message_id=None):
         return self._send_status(conversation_id,message_id,travel=True)
 
-    def _send_status(self, conversation_id, message_id, *, travel):
+    def _send_status(self, conversation_id, message_id, *, travel, formal=False):
         if (type(conversation_id) is not str or not conversation_id.strip()
                 or len(conversation_id.encode('utf-8')) > 256 or '\x00' in conversation_id
                 or (message_id is not None and (type(message_id) is not str or not message_id.strip()))):
@@ -285,6 +326,8 @@ class Service:
             if travel and stored is not None:
                 from .travel_reference import read_reference
                 reference=read_reference(tx,stored)
+                if not formal and reference.message_version=='MESSAGE-send.3':
+                    raise Unavailable('send.3 requires explicit versioned read')
         return TravelSendStatus(stored,head,reference) if travel else SendStatus(stored, head)
 
     def page(self, conversation_id, cursor=None, limit=20):
@@ -331,7 +374,7 @@ class Service:
                                   rows[-1].list_sequence) if more else None)
         return rows, nxt
 
-    def message_history(self, conversation_id, cursor=None, limit=20):
+    def message_history(self, conversation_id, cursor=None, limit=20, *, formal=False):
         if type(limit) is not int or not 1 <= limit <= 100:
             raise InvalidInput('invalid limit')
         with self.repository.transaction() as tx:
@@ -350,7 +393,7 @@ class Service:
                 raise ResyncRequired()
             rows = []
             for index, item in enumerate(stored):
-                command = Command.parse_stored(item.raw)
+                command = Command.parse_original(item.raw) if formal else Command.parse_stored(item.raw)
                 if (item.receipt.sequence != cursor.after + index + 1 or
                     command.message_id != item.receipt.message_id or
                     command.conversation_id != conversation_id or

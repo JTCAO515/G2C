@@ -71,6 +71,12 @@ class TravelCancelCommand(CancelCommand):
         return cls._parse(raw,'RUN-cancel.2',MAX_TRAVEL_CANCEL_BYTES)
 
 
+class TripCancelCommand(TravelCancelCommand):
+    @classmethod
+    def parse(cls,raw):
+        return cls._parse(raw,'RUN-cancel.3',MAX_TRAVEL_CANCEL_BYTES)
+
+
 class CancellationHandler:
     def __init__(self, message_boundary, resolve_run_repository):
         self.message_boundary = message_boundary
@@ -82,13 +88,17 @@ class CancellationHandler:
     def cancel_travel_projected(self,token,command,project):
         return self._cancel_projected(token,command,project,travel=True)
 
-    def _cancel_projected(self,token,command,project, *, travel):
+    def cancel_trip_projected(self,token,command,project):
+        return self._cancel_projected(token,command,project,travel=True,formal=True)
+
+    def _cancel_projected(self,token,command,project, *, travel, formal=False):
         attempted = False
 
         def operation(context):
             nonlocal attempted
             principal, scope = context.principal, context.scope
-            query=(lambda mid:context.query_travel_message(mid,require_active=False)) if travel else context.query_message
+            query=((lambda mid:context.query_trip_message(mid,require_active=False)) if formal else
+                   (lambda mid:context.query_travel_message(mid,require_active=False)) if travel else context.query_message)
             record=query(command.message_id)
             if record is None: raise CancellationUnavailable()
             original=record.stored if travel else record

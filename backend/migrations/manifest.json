@@ -202,6 +202,14 @@
       "sha256": "8a841eb7aa33cc3f5051427b18d3b11a8caf1804e726da4987fcad43a751a282",
       "down": "backend/migrations/down/0025_trip_needs_actions.down.sql",
       "down_sha256": "bd21f79629a63addbe5f5e0718170fffd19e31c34f32d928ed5e97b3097570d2"
+    },
+    {
+      "version": 26,
+      "name": "message_trip_context",
+      "file": "backend/migrations/0026_message_trip_context.sql",
+      "down": "backend/migrations/down/0026_message_trip_context.down.sql",
+      "sha256": "de6fd48fe2ba6acb592c793624b14d67532acac87e285c83277cfd99e6ffebc8",
+      "down_sha256": "22f246c0388e15f4f5f4122fbabbd641ecfe9c0eaf9e926339eee407ae569839"
     }
   ]
 }

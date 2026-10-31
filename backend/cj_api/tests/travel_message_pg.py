@@ -576,5 +576,12 @@ def exercise(auth,conninfo):
 
 
 if __name__=='__main__':
-    harness.exercise=exercise
-    harness.main()
+    # One default MESSAGE PG entry, two separate fresh clusters. Always run both;
+    # an earlier suite's failure remains a failure after the second finishes.
+    try:
+        harness.exercise=exercise
+        harness.main()
+    finally:
+        from trip_message_pg import exercise as trip_exercise
+        harness.exercise=trip_exercise
+        harness.main()
