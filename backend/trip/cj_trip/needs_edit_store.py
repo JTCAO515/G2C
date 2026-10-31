@@ -10,6 +10,26 @@ from cj_feasibility.validator import Candidate
 from cj_feasibility.proposed import evaluate
 
 
+def mapped_item(item,old,previous):
+    """Original metadata mapping, shared by manual and scoped consumers."""
+    if item['id'] in old:value=deepcopy(old[item['id']])
+    else:
+        # Prior model intent's proposed participants are retained from its
+        # original source-bound candidate by the caller, never guessed here.
+        if item['id'] not in previous:raise Denied('original adopted intent unavailable')
+        value=deepcopy(previous[item['id']])
+    value['description']=item['text']
+    # Trip-local lock does not silently rewrite the canonical NEEDS intent.
+    # A source lock may only be removed after an explicit NEEDS correction.
+    if item['id'] in old and old[item['id']]['locked']=={'state':'known','value':True} and item['fixed']!={'state':'known','value':True}:
+        raise Conflict('correct the explicit NEEDS fixed source before unlocking')
+    for edge in ('start','end'):
+        place=deepcopy(value[edge]['place'])
+        value[edge]={key:deepcopy(item['schedule'][edge][key]) for key in ('date','time','timezone')}
+        value[edge]['place']=place
+    return value
+
+
 def checked(original,request,source,previous_fields):
     candidate=prepare(original,request.edit)
     from cj_feasibility.trip_time_v2 import evaluate as evaluate_time
@@ -20,22 +40,7 @@ def checked(original,request,source,previous_fields):
     previous={item['item_id']:item for item in previous_fields.get('fixed_items',[])}
     document=json.loads(candidate.content);proposed=[]
     for item in document['items']:
-        if item['id'] in old:value=deepcopy(old[item['id']])
-        else:
-            # Prior model intent's proposed participants are retained from its
-            # original source-bound candidate by the caller, never guessed here.
-            if item['id'] not in previous:raise Denied('original adopted intent unavailable')
-            value=deepcopy(previous[item['id']])
-        value['description']=item['text']
-        # Trip-local lock does not silently rewrite the canonical NEEDS intent.
-        # A source lock may only be removed after an explicit NEEDS correction.
-        if item['id'] in old and old[item['id']]['locked']=={'state':'known','value':True} and item['fixed']!={'state':'known','value':True}:
-            raise Conflict('correct the explicit NEEDS fixed source before unlocking')
-        for edge in ('start','end'):
-            place=deepcopy(value[edge]['place'])
-            value[edge]={key:deepcopy(item['schedule'][edge][key]) for key in ('date','time','timezone')}
-            value[edge]['place']=place
-        proposed.append(value)
+        proposed.append(mapped_item(item,old,previous))
     fields['fixed_items']=proposed;validate_fields(fields,complete=True)
     selected=frozenset(item_id for item_id,field,raw in request.edit.changes if field in ('text','schedule')) | frozenset(set(previous)-set(old))
     selected |= frozenset(item['item_id'] for item in proposed if item['item_id'] in old and old[item['item_id']]['locked']=={'state':'known','value':False} and item!=old[item['item_id']])

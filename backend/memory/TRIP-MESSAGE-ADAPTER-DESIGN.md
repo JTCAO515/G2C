@@ -3,12 +3,17 @@
 Owner C；#25 子票 #344；上游为 B #330 / PR342 及追加接口 #343。
 本文只交独立设计与负例矩阵，不假定 B 草案字段、运行许可或实际接线已通过。
 
-## 实时停点
+## 已冻结接口与C实现
 
-PR342 的 message-trip.1 仅讨论：creation_intent=none；升级后拒绝新 send.2；
-已有 MEMORY scope/config 也明确拒绝。不能用它给 #25 生成修改候选，不能静默关闭记忆。
-B #343 先冻结追加的修改/profile/来源接口；C 再冻结本适配版本并验证实际组合。
-旧版本和旧拒绝负例保持，不需要等待 JT 重复批准。
+原B前置已由PR349/350交付：MESSAGE-send.4、message-trip.2及
+CJ-MESSAGE-EDIT/MEMORY/PUBLISHER@1；完整接口见contracts/message/EDIT-V1.md。
+C344的追加运行配置/行为在[EDIT-RUNTIME-V1.md](EDIT-RUNTIME-V1.md)冻结，
+实现为cj_memory.edit_runtime。旧profile/旧配置及拒绝不改。
+
+捕获明确hold_for_effect(binding,source_lock=False)，publication复用实际活lease；
+不继承旧source_lock=True。Memory/Trip两种锁序已加实际并发验收，
+完整回归、精确CI与独立审查分别收证据，未完成前不关闭本票。
+实际C publisher和唯一确认接线由C336另交，不以测试桥接冒称其完成。
 
 ## C 消费边界
 
@@ -27,7 +32,7 @@ B #343 先冻结追加的修改/profile/来源接口；C 再冻结本适配版�
 
 1. 模型前捕获真实当前来源，只把有资格且有界的原 bytes 经原注册出口/Meter送入模型。
    不持 SQL lease 跨模型 IO，不伪称模型/费用或实际来源质量已核验。
-2. 最终发布重取并检查同一捕获；B 冻结可组合锁序/写接口。不能在另一连接持 Trip SHARE
+2. 最终发布重取并检查同一捕获；B 已冻结可组合锁序/写接口。不能在另一连接持 Trip SHARE
    时等待 C 唯一 Trip 事务 FOR UPDATE，形成自锁，也不能另起版本引擎绕开。
 3. C 仍用原 Proposal/ConfirmationSigner/act。来源、当前记忆、Trip/选区检查在原最终
    deadline之前完成；不在 deadline 之后追加 SQL，不增加第二正式写路径。
@@ -50,6 +55,7 @@ BYPASSRLS/SECURITY DEFINER。若实际需要持久化，只按最新 manifest �
   publication-first、限额/取消/UNKNOWN/原动作恢复；真实 worker/FakeProvider。
 - Scope/owner/来源/字节/版本对不上必须零新正式效果，旧草稿与原回执继续可对账。
 
-当前仅设计：C 契约冻结、来源绑定、激活、记忆/模型消费、发布、迁移及 App 全部 UNRUN。
+原设计阶段的UNRUN保留在历史记录；当前C344代码/实际组合与回归证据分别列于PR，
+不声明C336/App或真实服务完成。本适配无需新迁移/权限，已应用0001–0027不改。
 未执行真实服务/模型、费用、云/生产、账号/密钥操作或物理删除。
 上游实际接口和文件锁就绪后自行继续；停点期间推进其他独立 C 工作。
