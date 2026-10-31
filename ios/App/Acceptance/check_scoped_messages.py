@@ -93,7 +93,7 @@ try:
     # Unknown/cross-day scope is retained in its own real zero-model negative.
     schedules=[(event('2026-11-02','09:00:00'),event('2026-11-02','10:00:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00')),(event('2026-11-05','09:00:00'),event('2026-11-05','10:00:00'))]
    if CASE=='testScopedFixedReorderChineseLargest':schedules[3]=(event('2026-11-04','10:00:00'),event('2026-11-04','11:00:00'))
-   r['fixture_profile']='synthetic-fully-known-day-v1' if CASE=='testScopedDayChineseLargest' else 'synthetic-undetermined-crossday-v1'
+   r['fixture_profile']='synthetic-fixed-selected-reorder-day-v1' if CASE=='testScopedFixedReorderChineseLargest' else ('synthetic-fully-known-day-v1' if CASE=='testScopedDayChineseLargest' else 'synthetic-undetermined-crossday-v1')
    unknown={key:dict(state='unknown') for key in ('date','time','timezone','utc_offset')}
    items=[]
    for index,item in enumerate(doc['items']):
@@ -285,7 +285,7 @@ try:
      actions=conn.execute('SELECT action_id,original_input FROM cj_trip_scoped_action').fetchall()
      operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(cid,)).fetchone()[0]
     assert len(trips)==operations==fake.calls==1
-    negative=CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest')
+    negative=CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance')
     kind='reject' if CASE in ('testScopedCandidateReject','testScopedCandidateConflict') else 'accept'
     version=3 if CASE in ('testScopedCandidateConflict','testScopedCandidateStaleAcceptance') else (2 if kind=='reject' or CASE=='testScopedCandidateWithdrawal' else 3)
     assert trips[0][0]==tid and trips[0][1]==version

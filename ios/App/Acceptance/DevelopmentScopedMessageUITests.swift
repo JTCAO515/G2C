@@ -210,13 +210,15 @@ import Foundation
         if let decision {
             tap("scoped.discover");text("scoped.discovery.state",contains:activeLanguage=="en" ? "Original candidate" : "原候选")
             text("scoped.feasibility",contains:"UNKNOWN")
+            if fixedReorder {
+                let fixed=visible({app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","固定状态：是")).firstMatch},id:"fixed.original")
+                XCTAssertTrue(fixed.exists && fixed.isHittable)
+            }
             text("scoped.before."+chosen,contains:fixedReorder ? "Great Wall" : "Jingshan Park")
             text("scoped.after."+chosen,contains:"本次轻松一点")
             if fixedReorder {
                 text("scoped.order."+chosen,contains:"3 → 4")
                 text("scoped.order."+trip.item_ids[3],contains:"4 → 3")
-                let fixed=visible({app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","固定状态：是")).firstMatch},id:"fixed.original")
-                XCTAssertTrue(fixed.exists && fixed.isHittable)
             }
             capture(name+"-original-diff-unknown");try audit(name+"-diff")
             if invalidation != nil { _ = try await call("/invalidate-candidate",caseID:name) }
