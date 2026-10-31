@@ -5,7 +5,7 @@ import OpenAPIRuntime
 
 /// NEEDS selection data, never a currentness/ownership permit. B revalidates the
 /// explicit original reference in the accepted-message transaction.
-public struct MessageNeedsSelection: Sendable {
+public struct MessageNeedsSelection: Sendable, Equatable {
     public let id: String
     public let expectedVersion: Int64
     public init(id: String,expectedVersion: Int64) throws {
