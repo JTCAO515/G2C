@@ -12,7 +12,7 @@ from urllib.parse import parse_qs,urlparse
 
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.discussions.acceptance'
-CASES=['testUnboundEnglish','testUnboundChineseLarge','testMemoryUpgradeRefused','testNewChatEnglish','testNewChatChineseLarge','testNewChatUnknownReopen']
+CASES=['testUnboundEnglish','testUnboundChineseLarge','testMemoryUpgradeRefused','testNewChatEnglish','testNewChatChineseLarge','testNewChatUnknownReopen','testDiscussionUnknownReopen','testDiscussionCancel']
 sys.path.insert(0,str(ROOT/'scripts'))
 
 
@@ -92,8 +92,16 @@ def main():
                 assert refused
                 for target in (os.environ,env):target.update(CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1',CJ_LOCAL_TRIP_CONTEXT='message-trip.1')
                 app=app_from_environment();database=LocalDatabase(connection,run_context=context,travel_context=True,trip_context=True)
-                models={case:FakeProvider() for case in CASES};outcomes={case:[] for case in CASES};active=[None];audit=[];worker_errors=[];stop=threading.Event()
-                conversations={case:case for case in CASES};lost_openings=set()
+                class HeldFake(FakeProvider):
+                    def __init__(self):super().__init__();self.entered=threading.Event();self.release=threading.Event()
+                    def stream(self,messages,system=None):
+                        for index,chunk in enumerate(super().stream(messages,system)):
+                            if index==0:
+                                self.entered.set()
+                                if not self.release.wait(90):raise TimeoutError('actual FakeProvider release')
+                            yield chunk
+                models={case:HeldFake() if case=='testDiscussionCancel' else FakeProvider() for case in CASES};outcomes={case:[] for case in CASES};active=[None];audit=[];worker_errors=[];stop=threading.Event()
+                conversations={case:case for case in CASES};lost_responses=set()
                 async def observed(scope,receive,send):
                     if scope['type']!='http':return await app(scope,receive,send)
                     authorization=dict(scope['headers']).get(b'authorization',b'').decode()
@@ -109,14 +117,19 @@ def main():
                         value=await receive()
                         if value['type']=='http.request':body.extend(value.get('body',b''))
                         if value['type']=='http.request' and not value.get('more_body',False) and scope['path']=='/v3/messages':event['input_sha256']=hashlib.sha256(body).hexdigest()
+                        if value['type']=='http.request' and not value.get('more_body',False) and scope['path']=='/v3/run-cancellations':
+                            command=json.loads(body);assert set(command)=={'version','message_id'} and command['version']=='RUN-cancel.3'
+                            event.update(message_id=command['message_id'],input_sha256=hashlib.sha256(body).hexdigest())
                         return value
                     async def captured(value):
                         if value['type']=='http.response.start':event['status']=value['status']
-                        if case=='testNewChatUnknownReopen' and event['method']=='PUT' and event['path']=='/v1/conversations' and value['type']=='http.response.body' and event.get('status')==200 and case not in lost_openings:
+                        opening_loss=case=='testNewChatUnknownReopen' and event['method']=='PUT' and event['path']=='/v1/conversations'
+                        message_loss=case=='testDiscussionUnknownReopen' and event['method']=='POST' and event['path']=='/v3/messages'
+                        if (opening_loss or message_loss) and value['type']=='http.response.body' and event.get('status')==200 and case not in lost_responses:
                             # Middleware can split JSON into a data chunk plus an
                             # empty terminal chunk. Withhold the FIRST body chunk:
                             # dropping only the terminator loses no JSON bytes.
-                            lost_openings.add(case);event['ack_lost_after_200']=True
+                            lost_responses.add(case);event['ack_lost_after_200']=True
                             event['withheld_body_bytes']=len(value.get('body',b''))
                             raise ConnectionResetError('local transport ACK loss after actual successful chat commit')
                         await send(value)
@@ -169,16 +182,19 @@ def main():
                     else:assert not memory and profile==('message-trip.1',)
                     events=[x for x in audit if x['case']==case];posts=[x for x in events if x['method']=='POST' and x['path']=='/v3/messages']
                     openings=[x for x in events if x['method']=='PUT' and x['path']=='/v1/conversations']
-                    forbidden=[x for x in events if x['method'] not in ('GET','HEAD') and not (x['method']=='POST' and x['path']=='/v3/messages') and not (case.startswith('testNewChat') and x['method']=='PUT' and x['path']=='/v1/conversations')]
+                    cancellations=[x for x in events if x['method']=='POST' and x['path']=='/v3/run-cancellations']
+                    forbidden=[x for x in events if x['method'] not in ('GET','HEAD') and not (x['method']=='POST' and x['path']=='/v3/messages') and not (case.startswith('testNewChat') and x['method']=='PUT' and x['path']=='/v1/conversations') and not (case=='testDiscussionCancel' and x['method']=='POST' and x['path']=='/v3/run-cancellations')]
                     if case.startswith('testNewChat'):
                         assert len(chats)<=1 and all(chat[0]==cid for chat in chats)
                         assert len(openings)<=1 and all(event.get('status')==200 for event in openings)
                     hashes=[hashlib.sha256(bytes(row[1])).hexdigest() for row in rows]
                     if rows:assert [x['input_sha256'] for x in posts]==hashes
+                    if cancellations:assert len(rows)==1 and all(event['message_id']==rows[0][0] and event.get('status')==200 for event in cancellations)
                     value=dict(runtime_role=role,pending=pending,status=status,text=text,reference=reference,messages=len(rows),posts=len(posts),model_calls=models[case].calls,
                         memory_items=len(memory),trip_profile=profile[0] if profile else None,upgrade_refused=case=='testMemoryUpgradeRefused',
                         forbidden_writes=len(forbidden),registered_operations=len(operations),input_hashes=hashes,post_statuses=[event['status'] for event in posts],worker_errors=worker_errors,
-                        conversation_id=cid,chat_count=len(chats),opening_requests=len(openings),opening_ack_losses=sum(bool(event.get('ack_lost_after_200')) for event in openings))
+                        conversation_id=cid,chat_count=len(chats),opening_requests=len(openings),opening_ack_losses=sum(bool(event.get('ack_lost_after_200')) for event in openings),
+                        message_id=rows[-1][0] if rows else None,message_ack_losses=sum(bool(event.get('ack_lost_after_200')) for event in posts),cancellations=len(cancellations))
                     report.setdefault('proofs',{})[case]=value;save();return value
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
@@ -188,10 +204,11 @@ def main():
                             if path.path=='/prepare':
                                 with lock:active[0]=case
                                 value=dict(case_id=case,endpoint=endpoint,accounts=tokens[case],subjects=subjects[case],conversation=case)
-                            elif path.path in ('/proof','/wait-completed'):
+                            elif path.path in ('/proof','/wait-completed','/wait-settled'):
                                 deadline=time.monotonic()+30
+                                expected='cancelled' if path.path=='/wait-settled' and case=='testDiscussionCancel' else 'completed'
                                 while True:
-                                    if path.path=='/wait-completed':
+                                    if path.path in ('/wait-completed','/wait-settled'):
                                         # A real receipt can precede RUN creation. Wait
                                         # for unchanged run_once to return its actual
                                         # terminal outcome before the strict 200 proof.
@@ -200,11 +217,13 @@ def main():
                                         if not finished:
                                             if time.monotonic()>deadline:raise TimeoutError('formal worker outcome')
                                             time.sleep(.05);continue
-                                        if any(value['status']!='completed' for value in finished):raise RuntimeError('formal RUN did not complete')
+                                        if any(value['status']!=expected for value in finished):raise RuntimeError('formal RUN unexpected terminal status')
                                     value=proof(case)
-                                    if path.path=='/proof' or value['status']=='completed' and value['pending']==0:break
+                                    if path.path=='/proof' or value['status']==expected and value['pending']==0:break
                                     if value['worker_errors'] or time.monotonic()>deadline:raise TimeoutError('original RUN completion')
                                     time.sleep(.05)
+                            elif path.path=='/wait-provider':assert case=='testDiscussionCancel' and models[case].entered.wait(30);value={}
+                            elif path.path=='/release-provider':assert case=='testDiscussionCancel';models[case].release.set();value={}
                             else:raise ValueError('unknown control')
                             raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
                         except Exception as error:
@@ -245,6 +264,8 @@ def main():
                         if case.startswith('testNewChat'):
                             assert verified['chat_count']==verified['opening_requests']==1
                             assert verified['opening_ack_losses']==(1 if case=='testNewChatUnknownReopen' else 0)
+                        if case=='testDiscussionUnknownReopen':assert verified['message_ack_losses']==1 and verified['messages']==verified['posts']==1
+                        if case=='testDiscussionCancel':assert verified['status']=='cancelled' and verified['cancellations']==1
                         report['cases'][case]='PASS';save()
                     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
                     private_tokens=[token.encode() for row in tokens.values() for token in row.values()]
@@ -255,6 +276,7 @@ def main():
                     report['token_key_scan']='PASS'
                     report['status']='PARTIAL_PASS';save()
                 finally:
+                    models['testDiscussionCancel'].release.set()
                     stop.set();worker_thread.join(10);server.should_exit=True;thread.join(10);control.shutdown();control.server_close()
             report['private_pg_stopped']=True;save()
     except BaseException as error:

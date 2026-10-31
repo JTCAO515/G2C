@@ -18,6 +18,8 @@ import Foundation
         let post_statuses:[Int]
         let conversation_id:String
         let chat_count,opening_requests,opening_ack_losses:Int
+        let message_id:String?
+        let message_ack_losses,cancellations:Int
     }
     private func call(_ path:String,caseID:String) async throws -> Data {
         var url=URLComponents(string:control+path)!
@@ -172,6 +174,41 @@ import Foundation
         XCTAssertEqual(after.messages,1);XCTAssertEqual(after.model_calls,1);XCTAssertEqual(after.registered_operations,1);XCTAssertEqual(after.forbidden_writes,0)
         tap("run.snapshot.read");text("run.display.text",contains:"Please explicitly select a formal Trip")
         capture("original-new-chat-reconciled");try audit("original-new-chat-reconciled")
+    }
+    func testDiscussionUnknownReopen() async throws {
+        let f=try await prepare("testDiscussionUnknownReopen");defer { app?.terminate() }
+        try launch(f,language:"en");conversation(f);tap("assistant.trip.none")
+        let original="SYNTHETIC original discussion with lost ACK"
+        enter(original,language:"en");tap("assistant.send")
+        text("assistant.recoveryStatus",contains:"result is unknown")
+        XCTAssertFalse(app.buttons.matching(identifier:"assistant.resubmit").firstMatch.exists)
+        let before=try JSONDecoder().decode(Proof.self,from:await call("/wait-completed",caseID:f.case_id))
+        XCTAssertEqual(before.messages,1);XCTAssertEqual(before.posts,1);XCTAssertEqual(before.message_ack_losses,1)
+        let mid=try XCTUnwrap(before.message_id)
+        try launch(f,language:"en",restore:true)
+        tap("assistant.history");tap("recovery.action."+mid);tap("assistant.panel.done")
+        tap("assistant.queryOriginal");text("assistant.recoveryStatus",contains:"confirmed receipt")
+        text("assistant.originalText",contains:original)
+        XCTAssertFalse(app.buttons.matching(identifier:"assistant.resubmit").firstMatch.exists)
+        tap("run.snapshot.read");text("run.display.status",contains:"Completed")
+        let after=try JSONDecoder().decode(Proof.self,from:await call("/proof",caseID:f.case_id))
+        XCTAssertEqual(after.message_id,mid);XCTAssertEqual(after.posts,1);XCTAssertEqual(after.messages,1)
+        XCTAssertEqual(after.model_calls,1);XCTAssertEqual(after.registered_operations,1);XCTAssertEqual(after.forbidden_writes,0)
+        capture("original-discussion-reconciled");try audit("original-discussion-reconciled")
+    }
+    func testDiscussionCancel() async throws {
+        let f=try await prepare("testDiscussionCancel");defer { app?.terminate() }
+        try launch(f,language:"en");conversation(f);tap("assistant.trip.none")
+        enter("SYNTHETIC cancel this original discussion",language:"en");tap("assistant.send")
+        _=try await call("/wait-provider",caseID:f.case_id)
+        tap("run.snapshot.read");text("run.display.status",contains:"Running")
+        tap("run.stop");text("run.display.status",contains:"Cancelled")
+        _=try await call("/release-provider",caseID:f.case_id)
+        let proof=try JSONDecoder().decode(Proof.self,from:await call("/wait-settled",caseID:f.case_id))
+        XCTAssertEqual(proof.status,"cancelled");XCTAssertEqual(proof.cancellations,1)
+        XCTAssertEqual(proof.posts,1);XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.model_calls,1)
+        XCTAssertEqual(proof.registered_operations,1);XCTAssertEqual(proof.forbidden_writes,0);XCTAssertTrue(proof.text.isEmpty)
+        capture("original-discussion-cancelled");try audit("original-discussion-cancelled")
     }
     func testMemoryUpgradeRefused() async throws {
         let f=try await prepare("testMemoryUpgradeRefused");defer { app?.terminate() }
