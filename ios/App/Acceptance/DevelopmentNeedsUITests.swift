@@ -326,7 +326,7 @@ import Foundation
         _ = try await call("/release-read",f); tap("Assistant"); tap("assistant.needs")
         XCTAssertFalse(app.staticTexts.matching(identifier:"needs.receipt").firstMatch.exists)
         tap("needs.originals.read"); XCTAssertFalse(app.buttons.matching(identifier:"needs.original.query."+(try XCTUnwrap(before.manual_originals.first?.action_id))).firstMatch.exists)
-        tap("needs.beginNew"); tap("needs.editor.open"); tap("needs.editor.partySize.section"); tap("needs.editor.partySize.state"); tap("User provided")
+        tap("needs.beginNew"); tap("needs.editor.open"); tap("needs.editor.partySize.section"); selectState("partySize",label:"User provided")
         replace("needs.editor.partySize.value",value:"9",language:"en"); appendStatement("SYNTHETIC owner B separate record",language:"en"); save(); readDetails(1)
         text("needs.detail.partySize",contains:"9")
         let after = try await proof(f); XCTAssertEqual(after.manual_posts,before.manual_posts+1); XCTAssertEqual(after.snapshot_version,1)
