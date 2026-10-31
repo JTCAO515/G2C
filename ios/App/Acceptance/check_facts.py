@@ -209,6 +209,13 @@ def main():
                             parsed=urlparse(self.path);query=parse_qs(parsed.query);case=query['case'][0]
                             if parsed.path=='/prepare':value=prepare(case)
                             elif parsed.path=='/proof':value=proof(case,query.get('settled')==['1'])
+                            elif parsed.path=='/wait-completed':
+                                deadline=time.monotonic()+30
+                                while True:
+                                    value=proof(case,settled=True)
+                                    if value['status']=='completed':break
+                                    if value['status'] in ('failed','cancelled','unknown') or time.monotonic()>deadline:raise RuntimeError('actual completed RUN required')
+                                    time.sleep(.05)
                             elif parsed.path=='/phase':value=dict(stale_finished='real_wait_seconds' in specs[case])
                             elif parsed.path=='/wait-source':
                                 assert specs[case]['entered'].wait(20);value={}

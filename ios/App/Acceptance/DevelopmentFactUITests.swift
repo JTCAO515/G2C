@@ -121,8 +121,17 @@ import Foundation
         else if app.toolbars.buttons.matching(identifier:"完成").firstMatch.exists { tap("完成") }
         tap("assistant.send")
     }
-    private func completed(language: String = "en",timeout: TimeInterval = 60) {
+    private func completed(_ fixture: Fixture,language: String = "en",timeout: TimeInterval = 60) async throws {
+        // Explicit original-result GET is a user action, not a MESSAGE/tool retry.
+        // The real worker must already have completed; retain all stream FAILs.
+        let before = try JSONDecoder().decode(Proof.self,from:await call("/wait-completed",fixture))
+        XCTAssertEqual(before.status,"completed")
+        tap("run.snapshot.read")
         text("run.display.status",contains:language == "en" ? "Completed" : "已完成",timeout:timeout)
+        let after = try await proof(fixture)
+        XCTAssertEqual(after.posts,before.posts);XCTAssertEqual(after.fact_calls,before.fact_calls)
+        XCTAssertEqual(after.model_calls,before.model_calls);XCTAssertEqual(after.originals_sha256,before.originals_sha256)
+        XCTAssertEqual(after.registered_sha256,before.registered_sha256);XCTAssertEqual(after.ledger_sha256,before.ledger_sha256)
     }
     private func prompt(_ fixture: Fixture,kind: String = "weather",scenario: String = "",conditions: String = "Asia/Shanghai") -> String {
         kind + " synthetic-city " + fixture.date + " " + conditions + " " + scenario
@@ -137,7 +146,7 @@ import Foundation
     private func normal(_ name: String,language: String,large: Bool) async throws {
         let f = try await prepare(name);defer {app?.terminate()}
         try launch(f,language:language,large:large);openConversation(f)
-        send(prompt(f));completed(language:language)
+        send(prompt(f));try await completed(f,language:language)
         let first = try await proof(f),result = try frame(first),original = try XCTUnwrap(result["original_value"] as? String)
         text("fact.origin",contains:language == "en" ? "Synthetic" : "合成")
         let displayed = text("fact.output.0.value",contains:"NOT a real forecast")
@@ -151,12 +160,12 @@ import Foundation
         text("fact.output.0.source.0.conditions",contains:"calendar_timezone=Asia/Shanghai")
         text("fact.machine.label",contains:language == "en" ? "not an official" : "非官方")
         capture("synthetic-fact-original-" + language);try audit("FACT_ORIGINAL_" + language)
-        send(prompt(f,kind:"synthetic rule",conditions:"Asia/Shanghai category=synthetic"));completed(language:language)
+        send(prompt(f,kind:"synthetic rule",conditions:"Asia/Shanghai category=synthetic"));try await completed(f,language:language)
         text("fact.output.0.source.0.conditions",contains:"category=synthetic")
         text("fact.output.0.value",contains:"NOT a real forecast")
         capture("synthetic-rule-explicit-scope-" + language);try audit("FACT_RULE_" + language)
         if !large {
-            send(prompt(f,scenario:"SYNTH_INJECTION"));completed()
+            send(prompt(f,scenario:"SYNTH_INJECTION"));try await completed(f)
             text("fact.output.0.status",contains:"supported");text("fact.output.0.value",contains:"NOT a real forecast")
         }
         let final = try await proof(f)
@@ -169,12 +178,12 @@ import Foundation
     func testConditions() async throws {
         let f = try await prepare("testConditions");defer {app?.terminate()}
         try launch(f,language:"en");openConversation(f)
-        send(prompt(f,conditions:""));completed();text("fact.output.0.status",contains:"unknown")
+        send(prompt(f,conditions:""));try await completed(f);text("fact.output.0.status",contains:"unknown")
         text("fact.output.0.source.0.status",contains:"condition_not_supplied")
-        send(prompt(f,kind:"synthetic rule"));completed();text("fact.output.0.status",contains:"unknown")
-        send("weather synthetic-city " + f.outside_date + " Asia/Shanghai");completed()
+        send(prompt(f,kind:"synthetic rule"));try await completed(f);text("fact.output.0.status",contains:"unknown")
+        send("weather synthetic-city " + f.outside_date + " Asia/Shanghai");try await completed(f)
         text("fact.output.0.status",contains:"Outside declared scope")
-        send("weather synthetic-city");completed();text("fact.answer",contains:"Specify synthetic-city")
+        send("weather synthetic-city");try await completed(f);text("fact.answer",contains:"Specify synthetic-city")
         text("fact.pending",contains:"No complete fact result")
         let value = try await proof(f);XCTAssertEqual(value.messages,4);XCTAssertEqual(value.fact_calls,3);XCTAssertEqual(value.model_calls,7)
         try audit("FACT_CONDITIONS")
@@ -182,11 +191,11 @@ import Foundation
     func testOutcomes() async throws {
         let f = try await prepare("testOutcomes");defer {app?.terminate()}
         try launch(f,language:"en");openConversation(f)
-        send(prompt(f,scenario:"SYNTH_EXPIRED"));completed();text("fact.output.0.status",contains:"Expired")
-        send(prompt(f,scenario:"SYNTH_CONFLICT"));completed();text("fact.output.0.status",contains:"Conflicting")
+        send(prompt(f,scenario:"SYNTH_EXPIRED"));try await completed(f);text("fact.output.0.status",contains:"Expired")
+        send(prompt(f,scenario:"SYNTH_CONFLICT"));try await completed(f);text("fact.output.0.status",contains:"Conflicting")
         text("fact.output.0.value",contains:"No supported value")
         text("fact.output.0.source.1.original",contains:"different value")
-        send(prompt(f,scenario:"SYNTH_MISSING"));completed();text("fact.output.0.outcome",contains:"No applicable source")
+        send(prompt(f,scenario:"SYNTH_MISSING"));try await completed(f);text("fact.output.0.outcome",contains:"No applicable source")
         text("fact.output.0.noSource",contains:"No source body")
         let value = try await proof(f);XCTAssertEqual(value.fact_calls,3);XCTAssertEqual(value.model_calls,6)
         XCTAssertEqual(value.transport_calls,3);try audit("FACT_OUTCOMES")
@@ -195,7 +204,7 @@ import Foundation
         let f = try await prepare("testFailures");defer {app?.terminate()}
         try launch(f,language:"en");openConversation(f)
         for scenario in ["SYNTH_RATE","SYNTH_MALFORMED","SYNTH_OVERSIZE","SYNTH_REDIRECT"] {
-            send(prompt(f,scenario:scenario));completed()
+            send(prompt(f,scenario:scenario));try await completed(f)
             text("fact.output.0.outcome",contains:scenario == "SYNTH_RATE" ? "rate limited" : "Invalid source response")
             text("fact.output.0.status",contains:"unknown");text("fact.output.0.noSource",contains:"No source body")
             XCTAssertFalse(app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","SYNTHETIC_PRIVATE_FACT_SENTINEL")).firstMatch.exists)
@@ -235,7 +244,7 @@ import Foundation
     }
     func testSwitchLate() async throws {
         let f = try await prepare("testSwitchLate");defer {app?.terminate()}
-        try launch(f,language:"en");openConversation(f);send(prompt(f));completed()
+        try launch(f,language:"en");openConversation(f);send(prompt(f));try await completed(f)
         let before = try await proof(f)
         _ = try await call("/hold-read",f);tap("run.snapshot.read");_ = try await call("/wait-read",f)
         tap("Memory");text("account.development.status",contains:f.subjects["A"]!)
