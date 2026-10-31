@@ -106,7 +106,8 @@ import Foundation
     private func unbound(_ name:String,language:String,large:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         try launch(f,language:language,large:large);conversation(f)
-        text("assistant.trip.choice",contains:language=="en" ? "No latest Trip" : "不会自动选择最近行程")
+        text("assistant.trip.choice",contains:language=="en" ? "Choose a Trip" : "请选择行程或明确不绑定")
+        text("assistant.trip.noAutomatic",contains:language=="en" ? "No latest Trip" : "不会自动选择最近行程")
         tap("assistant.trip.none")
         text("assistant.trip.choice",contains:language=="en" ? "Explicitly no formal Trip" : "已明确不绑定正式行程")
         XCTAssertFalse(app.switches.matching(identifier:"assistant.intent").firstMatch.exists)
