@@ -67,8 +67,101 @@ struct DevelopmentMemoryConfigurationTests {
 }
 #endif
 
-#if DEBUG
 extension DevelopmentConfigurationTests {
+    @Test func typedActivationRemainsClosedInRelease() throws {
+        #if !DEBUG
+        let environment = ["G2C_DEV_TRAVEL_PROFILE":"{\"version\":\"app-travel.1\",\"travel_ids\":[]}",
+            "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"test\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\"]}",
+            "G2C_DEV_TYPED_MEMORY_URL":"http://127.0.0.1:8765"]
+        #expect(try DevelopmentTypedMode.read(environment) == nil)
+        #expect(try DevelopmentTypedMemoryProfile.read(environment) == nil)
+        #expect(try DevelopmentTravelProfile.read(environment) == nil)
+        #else
+        #expect(try DevelopmentTypedMode.read([:]) == nil)
+        #endif
+    }
+    @Test func typedModeRequiresBothProfilesAndAnExplicitLoopbackMemoryHost() throws {
+        let travel = "{\"version\":\"app-travel.1\",\"travel_ids\":[]}"
+        let memory = "{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"test\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}"
+        let profile = ["G2C_DEV_TRAVEL_PROFILE":travel,"G2C_DEV_TYPED_MEMORY_PROFILE":memory,"G2C_DEV_TYPED_MEMORY_URL":"http://127.0.0.1:8765"]
+        #if DEBUG
+        #expect(try DevelopmentTypedMode.read([:]) == nil)
+        #expect(try DevelopmentTypedMode.read(profile)?.memoryEndpoint.absoluteString == "http://127.0.0.1:8765")
+        for missing in profile.keys {
+            var incomplete = profile;incomplete.removeValue(forKey:missing)
+            #expect(throws:(any Error).self) { try DevelopmentTypedMode.read(incomplete) }
+        }
+        for endpoint in ["https://example.com","http://localhost:8765","http://127.0.0.1:8765/path","http://user@127.0.0.1:8765"] {
+            var changed = profile;changed["G2C_DEV_TYPED_MEMORY_URL"] = endpoint
+            #expect(throws:(any Error).self) { try DevelopmentTypedMode.read(changed) }
+        }
+        let legacy = String(memory.replacingOccurrences(of:"\"version\":\"app-memory.2\",",with:"").dropLast()) + ",\"context_ids\":[\"legacy-chat\"]}"
+        #expect(throws:(any Error).self) { try DevelopmentTypedMemoryProfile.read(["G2C_DEV_TYPED_MEMORY_PROFILE":String(legacy)]) }
+        #expect(throws:(any Error).self) { try DevelopmentTypedMemoryProfile.read(["G2C_DEV_TYPED_MEMORY_PROFILE":memory.replacingOccurrences(of:"app-memory.2",with:"future")]) }
+        #else
+        #expect(try DevelopmentTypedMode.read(profile) == nil)
+        #endif
+    }
+    @Test func memoryKeyCreationChecksEveryOwnedJournalButNotOtherAccounts() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        defer {try? files.removeItem(at:parent)}
+        let root = parent.appendingPathComponent("account-a"),typed = root.appendingPathExtension("typed-v2")
+        let rejection = typed.appendingPathExtension("CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2")
+        for directory in [root,typed,rejection,parent.appendingPathComponent("account-b")] {
+            try files.createDirectory(at:directory,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        }
+        try Data("unrelated".utf8).write(to:parent.appendingPathComponent("account-b/other"))
+        #expect(try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:root))
+        let original = rejection.appendingPathComponent("original"),bytes = Data("retained encrypted original".utf8)
+        try bytes.write(to:original)
+        #expect(try !DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:root))
+        #expect(try Data(contentsOf:original) == bytes)
+    }
+    @Test func legacyWriterRemainsAvailableBeforeTypedNamespaceActivation() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false)
+        defer {try? files.removeItem(at:parent)}
+        let root = parent.appendingPathComponent("account-a")
+        for name in ["account-a","account-a.lifecycle","account-a.CJMemoryRejectionsV1","account-b.typed-v2"] {
+            try files.createDirectory(at:parent.appendingPathComponent(name),withIntermediateDirectories:false)
+        }
+        #expect(try DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root))
+    }
+    @Test func evenEmptyTypedNamespaceCannotReactivateAnOlderWriter() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false)
+        defer {try? files.removeItem(at:parent)}
+        let root = parent.appendingPathComponent("account-a"),typed = root.appendingPathExtension("typed-v2")
+        try files.createDirectory(at:typed,withIntermediateDirectories:false)
+        #expect(try !DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root))
+        #expect(try files.contentsOfDirectory(atPath:typed.path).isEmpty)
+    }
+    @Test func typedLifecycleRejectionsAndUnexpectedEntriesKeepLegacyReadOnly() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false)
+        defer {try? files.removeItem(at:parent)}
+        for suffix in ["typed-v2.CJMemoryTypedManagementV2","typed-v2.CJMemoryTypedRejectionsV2","typed-v2"] {
+            let root = parent.appendingPathComponent(UUID().uuidString),entry = root.appendingPathExtension(suffix)
+            let bytes = Data("retained original namespace".utf8)
+            try bytes.write(to:entry)
+            #expect(try !DevelopmentMemoryStorageNamespace.legacyWritesAllowed(legacyRoot:root))
+            #expect(try Data(contentsOf:entry) == bytes)
+        }
+    }
+    @Test func aSymlinkOrUnexpectedFileCannotBeAnEmptyMemoryNamespace() throws {
+        let files = FileManager.default,parent = files.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try files.createDirectory(at:parent,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        defer {try? files.removeItem(at:parent)}
+        let root = parent.appendingPathComponent("account"),target = parent.appendingPathComponent("target")
+        try files.createDirectory(at:target,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
+        try files.createSymbolicLink(at:root.appendingPathExtension("typed-v2"),withDestinationURL:target)
+        #expect(try !DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:root))
+        let another = parent.appendingPathComponent("another-account")
+        try Data().write(to:another.appendingPathExtension("journal"))
+        #expect(try !DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:another))
+    }
+    #if DEBUG
     @Test func managementEndpointIsExplicitAndLoopbackOnly() throws {
         #expect(try DevelopmentMemoryProfile.managementEndpoint([:]) == nil)
         let key = "G2C_DEV_MEMORY_MANAGEMENT_URL"
@@ -79,5 +172,39 @@ extension DevelopmentConfigurationTests {
             }
         }
     }
+    #endif
 }
-#endif
+
+
+extension DevelopmentConfigurationTests {
+    @Test func typedTravelChoicesAreExplicitVersionedAndNeverEnabledInRelease() throws {
+        let key = "G2C_DEV_TRAVEL_PROFILE"
+        let id = "0123456789abcdef0123456789abcdef"
+        let valid = "{\"version\":\"app-travel.1\",\"travel_ids\":[\"" + id + "\"]}"
+        #if DEBUG
+        #expect(try DevelopmentTravelProfile.read([:]) == nil)
+        #expect(try DevelopmentTravelProfile.read([key:valid])?.travel_ids == [id])
+        #expect(try DevelopmentTravelProfile.read([key:"{\"version\":\"app-travel.1\",\"travel_ids\":[]}"])?.travel_ids == [])
+        for raw in ["{}", "null", valid.replacingOccurrences(of:"app-travel.1",with:"future"),
+                    valid.replacingOccurrences(of:id,with:"legacy-conversation"),
+                    valid.replacingOccurrences(of:"[\"" + id + "\"]",with:"[\"" + id + "\",\"" + id + "\"]")] {
+            #expect(throws:(any Error).self) { try DevelopmentTravelProfile.read([key:raw]) }
+        }
+        #else
+        #expect(try DevelopmentTravelProfile.read([key:valid]) == nil)
+        #endif
+    }
+    @Test func placeConsumerFormatIsExplicitAndReleaseRemainsClosed() throws {
+        #if DEBUG
+        #expect(try !DevelopmentSessionConfiguration.placeToolsEnabled([:]))
+        #expect(try DevelopmentSessionConfiguration.placeToolsEnabled(["G2C_DEV_PLACE_TOOLS":"synthetic-v1"]))
+        for value in ["", "true", "live", "synthetic-v2"] {
+            #expect(throws:DevelopmentSessionConfiguration.DevelopmentToolsFailure.invalidProfile) {
+                try DevelopmentSessionConfiguration.placeToolsEnabled(["G2C_DEV_PLACE_TOOLS":value])
+            }
+        }
+        #else
+        #expect(DevelopmentSessionConfiguration.read(["G2C_DEV_PLACE_TOOLS":"synthetic-v1","G2C_DEV_API_BASE_URL":"http://127.0.0.1:8765","G2C_DEV_TOKEN":try token()]) == nil)
+        #endif
+    }
+}

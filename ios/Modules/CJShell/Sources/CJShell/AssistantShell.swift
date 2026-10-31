@@ -2,6 +2,7 @@
 import SwiftUI
 import CJMessageHTTP
 import CJRunClient
+import UIKit
 
 private struct ShellHeaderHeight: PreferenceKey {
     static let defaultValue: CGFloat = 0
@@ -17,7 +18,7 @@ struct AssistantShell: View {
     let runHost: RunContainerHost
     let usageHost: OriginalUsageContainerHost
     let bodyText: String?
-    private enum Panel: String, Identifiable { case local, server, needs, feedback, usage; var id: String { rawValue } }
+    private enum Panel: String, Identifiable { case local, server, needs, feedback, usage, travel; var id: String { rawValue } }
     @State private var panel: Panel?
     @State private var feedbackEntry: FeedbackContainerEntry?
     @FocusState private var draftFocused: Bool
@@ -45,6 +46,12 @@ struct AssistantShell: View {
                     .accessibilityIdentifier("assistant.serverHistory")
                 Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
+                if messageHost.travelSelection != nil {
+                    Button { panel = .travel } label: {
+                        RunReadableText(text:state.language.text("Choose travel context", "选择旅行上下文"))
+                            .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                    }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("assistant.travelContext")
+                }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language)
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if let text = messageHost.visibleOriginalText {
@@ -63,14 +70,14 @@ struct AssistantShell: View {
                 .accessibilityHidden(true)
         }
         .overlay(alignment: .top) {
-            floatingControls.background {
+            floatingControls.accessibilityElement(children:.contain).accessibilityIdentifier("assistant.header").background {
                 GeometryReader { geometry in
                     Color.clear.preference(key: ShellHeaderHeight.self, value: geometry.size.height)
                 }
             }
         }
         .onPreferenceChange(ShellHeaderHeight.self) { headerHeight = $0 }
-        .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+        .safeAreaInset(edge: .bottom, spacing: 0) { composer.accessibilityElement(children:.contain).accessibilityIdentifier("assistant.composer") }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -91,7 +98,13 @@ struct AssistantShell: View {
         .sheet(item: $panel) { selectedPanel in
             NavigationStack {
                 Group {
-                    if selectedPanel == .usage {
+                    if selectedPanel == .travel {
+                        if let travel = messageHost.travelSelection {
+                            TravelSelectionView(model:travel,language:state.language)
+                        } else {
+                            RunReadableText(text:state.language.text("Travel context unavailable", "旅行上下文不可用"))
+                        }
+                    } else if selectedPanel == .usage {
                         OriginalUsageContainerView(host: usageHost, messages: messageHost, language: state.language)
                     } else if selectedPanel == .feedback {
                         FeedbackContainerView(host: feedbackHost, entry: feedbackEntry, language: state.language)
@@ -105,8 +118,7 @@ struct AssistantShell: View {
                     }
                 }
                 .toolbar { ToolbarItem(placement: .confirmationAction) {
-                    Button(state.language.text("Done", "完成")) { panel = nil }
-                        .accessibilityIdentifier("assistant.panel.done")
+                    AssistantPanelDoneButton(title:state.language.text("Done", "完成")) { panel = nil }
                 }}
             }
         }
@@ -207,6 +219,37 @@ struct AssistantShell: View {
         }
             .disabled(true)
             .accessibilityLabel(state.language.text(english, chinese))
+    }
+}
+
+/// A toolbar hosts this complete native control, preserving both UIKit hit
+/// testing and content-size-category updates; a label-only bridge loses the hit.
+private struct AssistantPanelDoneButton: UIViewRepresentable {
+    let title: String
+    let action: @MainActor () -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(action) }
+    func makeUIView(context: Context) -> UIButton {
+        let button=UIButton(type:.system)
+        button.titleLabel?.adjustsFontForContentSizeCategory=true
+        button.accessibilityIdentifier="assistant.panel.done"
+        button.addTarget(context.coordinator,action:#selector(Coordinator.activate),for:.touchUpInside)
+        return button
+    }
+    func updateUIView(_ button: UIButton,context: Context) {
+        context.coordinator.action=action
+        button.setTitle(title,for:.normal)
+        button.setTitleColor(.label,for:.normal)
+        button.titleLabel?.font=UIFont.preferredFont(forTextStyle:.body,compatibleWith:button.traitCollection)
+        button.accessibilityLabel=title
+    }
+    func sizeThatFits(_ proposal: ProposedViewSize,uiView: UIButton,context: Context) -> CGSize? {
+        let size=uiView.intrinsicContentSize
+        return CGSize(width:max(44,size.width),height:max(44,size.height))
+    }
+    final class Coordinator: NSObject {
+        var action: @MainActor () -> Void
+        init(_ action: @escaping @MainActor () -> Void) { self.action=action }
+        @MainActor @objc func activate() { action() }
     }
 }
 #endif

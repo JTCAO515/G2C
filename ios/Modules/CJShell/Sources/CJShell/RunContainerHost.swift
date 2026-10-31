@@ -2,6 +2,10 @@ import Foundation
 import Observation
 import CJRunClient
 import CJSession
+import CJTripClient
+
+public enum RunAnswerFormat: Sendable { case plainText,placeToolV1 }
+public enum PlaceRunProjection: Sendable { case waiting,unavailable,loaded(PlaceToolTranscriptV1) }
 
 @MainActor public struct RunContainerConfiguration {
     fileprivate let id = UUID()
@@ -11,12 +15,13 @@ import CJSession
     let generation: ShellGeneration
     let synthetic: Bool
     let followAcceptedMessages: Bool
+    let answerFormat: RunAnswerFormat
     let isCurrent: @MainActor () -> Bool
     /// Model credentials must use this same original session operation and the existing trusted bridge.
     public init(model: RunDisplayModel, session: SessionLifecycle, operation: SessionOperation,
-                generation: ShellGeneration, synthetic: Bool, followAcceptedMessages: Bool = false, isCurrent: @escaping @MainActor () -> Bool) {
+                generation: ShellGeneration, synthetic: Bool, followAcceptedMessages: Bool = false,answerFormat: RunAnswerFormat = .plainText, isCurrent: @escaping @MainActor () -> Bool) {
         self.model = model; self.session = session; self.operation = operation
-        self.generation = generation; self.synthetic = synthetic; self.followAcceptedMessages = followAcceptedMessages; self.isCurrent = isCurrent
+        self.generation = generation; self.synthetic = synthetic; self.followAcceptedMessages = followAcceptedMessages;self.answerFormat = answerFormat; self.isCurrent = isCurrent
     }
 }
 @MainActor @Observable public final class RunContainerHost {
@@ -29,6 +34,27 @@ import CJSession
     public var displayModel: RunDisplayModel? {
         guard foreground, let configuration, configurationIsCurrent(configuration) else { return nil }
         return configuration.model
+    }
+    public var answerFormat: RunAnswerFormat? { displayModel != nil ? configuration?.answerFormat : nil }
+    public var placeProjection: PlaceRunProjection {
+        guard let configuration,configuration.answerFormat == .placeToolV1,let original = origin else { return .unavailable }
+        let token = selection
+        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return .unavailable }
+        let state = configuration.model.state,progress = configuration.model.streamProgress
+        let text: String,completed: Bool
+        if let progress { text = progress.text;completed = false }
+        else {
+            switch state {
+            case .loaded(let value):text = value.snapshot.text;completed = value.snapshot.status == .completed
+            case .ready,.loading:return .waiting
+            case .unselected,.unavailable:return .unavailable
+            }
+        }
+        let projection: PlaceRunProjection
+        do { projection = .loaded(try PlaceToolTranscriptV1.decode(Data(text.utf8),runID:original.receipt.run_id,completed:completed)) }
+        catch { projection = .unavailable }
+        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return .unavailable }
+        return projection
     }
     public var followsAcceptedMessages: Bool { displayModel != nil && configuration?.followAcceptedMessages == true }
     public var isShowingOriginal: Bool { origin != nil || sourceUnavailable }
@@ -96,7 +122,7 @@ import CJSession
         let token = UUID(); selection = token; origin = source; sourceUnavailable = false
         do {
             let configurationID = configuration.id
-            let runSource = try RunDisplaySource(receipt: source.receipt, session: configuration.session, operation: configuration.operation,
+            let runSource = try RunDisplaySource(receipt: source.receipt,travelReference:source.travelReference, session: configuration.session, operation: configuration.operation,
                 isCurrent: { [weak self] in self?.sourceIsCurrent(source, configurationID: configurationID, token: token) == true })
             let accepted = configuration.model.select(runSource)
             guard ownsConfiguration(configuration), origin === source, selection == token else { return false }

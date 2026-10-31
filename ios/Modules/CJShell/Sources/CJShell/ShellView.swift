@@ -16,14 +16,16 @@ public struct ShellView: View {
     @State private var needsContainerHost: NeedsContainerHost
     @State private var tripContainerHost: TripContainerHost
     @State private var memoryContainerHost: MemoryContainerHost
+    @State private var typedMemoryContainerHost: TypedMemoryContainerHost?
     @Environment(\.scenePhase) private var scenePhase
 
-    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil) {
+    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, typedMemoryContainerHost: TypedMemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil) {
         if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
         if let developmentAccountHost { precondition(developmentAccountHost.belongs(to: state)) }
         if let messageHost { precondition(messageHost.belongs(to: state), "Message host must own the same ShellState") }
         if let serverHistoryHost { precondition(serverHistoryHost.belongs(to: state)) }
         if let memoryContainerHost { precondition(memoryContainerHost.belongs(to: state)) }
+        if let typedMemoryContainerHost { precondition(typedMemoryContainerHost.belongs(to: state)) }
         if let tripContainerHost { precondition(tripContainerHost.belongs(to: state)) }
         if let needsContainerHost { precondition(needsContainerHost.belongs(to: state)) }
         if let answerFeedbackHost { precondition(answerFeedbackHost.belongs(to: state, surface: .answer)) }
@@ -44,6 +46,8 @@ public struct ShellView: View {
         self._needsContainerHost = State(initialValue: needsContainerHost ?? state.needsContainerHost ?? NeedsContainerHost(shell: state))
         self._tripContainerHost = State(initialValue: tripContainerHost ?? state.tripContainerHost ?? TripContainerHost(shell: state))
         self._memoryContainerHost = State(initialValue: memoryContainerHost ?? state.memoryContainerHost ?? MemoryContainerHost(shell: state))
+        // Typed consumption is explicit; a stale weak host is never activation.
+        self._typedMemoryContainerHost = State(initialValue: typedMemoryContainerHost)
     }
 
     public var body: some View {
@@ -65,7 +69,7 @@ public struct ShellView: View {
             }
             .tabItem { Label(ShellTab.plugins.title(state.language), systemImage: "square.grid.2x2") }
             .tag(ShellTab.plugins)
-            MemoryShell(state: state, accountHost: accountHost, memoryHost: memoryContainerHost, feedbackHost: generalFeedbackHost, developmentAccountHost: developmentAccountHost)
+            MemoryShell(state: state, accountHost: accountHost, memoryHost: memoryContainerHost, typedMemoryHost: typedMemoryContainerHost, feedbackHost: generalFeedbackHost, developmentAccountHost: developmentAccountHost)
                 .tabItem { Label(ShellTab.memory.title(state.language), systemImage: "tray") }
                 .tag(ShellTab.memory)
         }
@@ -81,6 +85,7 @@ public struct ShellView: View {
                 needsContainerHost.suspendForBackground()
                 tripContainerHost.suspendForBackground()
                 memoryContainerHost.suspendForBackground()
+                typedMemoryContainerHost?.suspendForBackground()
             }
         }
     }
