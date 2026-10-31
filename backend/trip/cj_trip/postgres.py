@@ -192,6 +192,11 @@ class Repository:
             if row is None:raise Denied('original scoped basis unavailable')
             return detail,tuple(bytes(value) for value in row)
 
+    def discover_scoped(self,query,encode):
+        if self.scoped_actions is None:raise Denied('actual scoped host required')
+        from .scoped_discovery import ScopedDiscovery
+        return ScopedDiscovery(self.scoped_actions).read(self,query,encode)
+
     def prepare_needs(self,request):
         if self.needs_edits is None:raise Denied('source-bound editor unconfigured')
         return self.needs_edits.prepare(self,request)

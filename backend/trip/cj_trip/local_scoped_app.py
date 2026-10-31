@@ -1,5 +1,6 @@
 """Local scoped diff/explicit action API; canonical AUTH and original act only."""
-import json,os
+import json,os,re
+from urllib.parse import parse_qsl
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
@@ -8,6 +9,7 @@ from cj_api.message_routes import _token,_error
 from cj_api.local_app import scope_for
 from .auth_boundary import Boundary
 from .scoped_actions import ScopedAction,ScopedActions
+from .scoped_discovery import DiscoveryQuery
 from .domain import Conflict,Denied,identifier
 from cj_agent.draft import trip_scope_for
 
@@ -31,22 +33,31 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
     boundary=ScopedBoundary(checker,resolve,publisher.confirmation,structured=True);app=create_app()
     def receipt(value):return None if value is None else dict(action_id=value.action_id,kind=value.kind,proposal_id=value.proposal_id,
         candidate_hash=value.candidate_hash,trip_id=value.trip_id,committed_version=value.committed_version)
+    def proposal_value(value):
+        detail,rows=value;p=detail.proposal
+        return dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,
+            candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content),
+            scope=json.loads(rows[0]),diff=json.loads(rows[1]),feasibility=json.loads(rows[2]))
+    def encode(result):
+        raw=json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+        if len(raw)>max_response_bytes:raise Denied('bounded private response required')
+        return raw
     async def invoke(request,kind,arg):
         token=_token(request)
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
         def operation():
             def project(ctx):
+                if kind=='discovery':
+                    def discovery(value):
+                        if value['proposal'] is not None:value=dict(value,proposal=proposal_value(value['proposal']))
+                        return encode(dict(version='TRIP-scoped-discovery.1',request_id=request.state.request_id,discovery=value))
+                    return ctx.discover_scoped(arg,discovery)
                 result=dict(version='TRIP-scoped-result.1',request_id=request.state.request_id)
                 if kind=='action':result['receipt']=receipt(ctx.act_scoped(ScopedAction.parse(arg)))
                 elif kind=='receipt':result['receipt']=receipt(ctx.scoped_receipt(arg))
                 else:
-                    detail,rows=ctx.scoped_detail(arg);p=detail.proposal
-                    result['proposal']=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,
-                        candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content),
-                        scope=json.loads(rows[0]),diff=json.loads(rows[1]),feasibility=json.loads(rows[2]))
-                raw=json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
-                if len(raw)>max_response_bytes:raise Denied('bounded private response required')
-                return raw
+                    result['proposal']=proposal_value(ctx.scoped_detail(arg))
+                return encode(result)
             return boundary.with_operation(token,project)
         try:return Response(content=await run_in_threadpool(operation),media_type='application/json')
         except Conflict:return _error(request,409,'TRIP_CONFLICT','conflict','failed','do_not_retry')
@@ -62,6 +73,18 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
         return await invoke(request,kind,values[0][1])
     @app.get('/v1/trip-scoped-proposals')
     async def proposal(request:Request):return await read(request,'proposal','proposal_id')
+    @app.get('/v1/trip-scoped-discovery')
+    async def discover(request:Request):
+        try:
+            query_bytes=request.scope['query_string']
+            if len(query_bytes)>12400:raise ValueError('bounded original query required')
+            raw=query_bytes.decode('ascii')
+            if re.search(r'%(?![0-9A-Fa-f]{2})',raw):raise ValueError('invalid URI encoding')
+            pairs=parse_qsl(raw,keep_blank_values=True,strict_parsing=True,
+                            encoding='utf8',errors='strict')
+            query=DiscoveryQuery.parse(pairs)
+        except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
+        return await invoke(request,'discovery',query)
     @app.get('/v1/trip-scoped-action-receipts')
     async def original(request:Request):return await read(request,'receipt','action_id')
     @app.post('/v1/trip-scoped-actions')

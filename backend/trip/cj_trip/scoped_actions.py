@@ -1,6 +1,7 @@
 """Scoped explicit action/recovery through the original confirmation and act."""
 import json
 from contextlib import contextmanager
+from dataclasses import dataclass
 from .needs_action import NeedsAction
 from .domain import Conflict,Denied,ProposalDetail,packed
 from cj_message.edit_reference import EditAuthority
@@ -25,6 +26,16 @@ class ConfirmationRunRepository:
         with self.original.transaction() as tx:
             yield tx
             self.final(tx.cur)
+
+
+@dataclass(frozen=True,repr=False)
+class CurrentScopedSources:
+    binding:object
+    authority:object
+    memory:object
+    source:object
+    prepared:object
+    candidate:object
 
 
 class ScopedActions:
@@ -61,29 +72,14 @@ class ScopedActions:
                         (repository.scope,proposal.proposal_id));row=cur.fetchone()
             if row is None:raise Denied('original scoped source unavailable')
         if request.kind=='reject':return self.reject(repository,request)
-        reference=json.loads(bytes(row[4]))['reference'];owner=row[0]
-        binding=Binding(owner,reference['conversation_id'],reference['generation'],reference['message_id'],row[1],reference['sequence'])
-        def admit():
-            value=self.checker.check(self.token)
-            if value.status is not AdmissionStatus.ALLOWED or scope_for(value.principal.issuer,value.principal.subject)!=owner:
-                raise Denied('actual scoped action identity unavailable')
-            return value.principal
-        principal=admit()
         action=None;pending=None
         def before_commit(cur):
             repository.guard('scoped_commit')
             repository._final_action_eligibility(cur,action,pending)
-        original_run=ConfirmationRunRepository(self.database.run_repository(owner),before_commit)
-        authority=EditAuthority(self.database.message_repository(owner),admit,original_run)
-        memory=self.configuration.memory.bind(self.database,owner,principal.subject,admit,message_context=authority).capture(binding)
-        if memory_descriptor(memory)!=bytes(row[6]):raise Denied('original candidate Memory changed')
-        source=authority.capture(binding)
-        if (source.original_utf8,source.trip_content,source.reference.public_value())!=(bytes(row[2]),bytes(row[3]),reference):
-            raise Denied('original scoped message/Trip changed')
-        prepared=self.publisher._prepare(binding,source,self.token)
-        if prepared.state.needs.raw!=bytes(row[5]):raise Denied('original candidate NEEDS changed')
-        candidate,needs_candidate,report,verification=self.publisher.validate_reply(prepared.state,bytes(row[7]))
-        if candidate.content!=proposal.content:raise Conflict('original scoped diff changed')
+        original_run=ConfirmationRunRepository(self.database.run_repository(row[0]),before_commit)
+        captured=self.capture_sources(row,original_run)
+        binding,authority,memory,source,prepared=(captured.binding,captured.authority,captured.memory,captured.source,captured.prepared)
+        if captured.candidate.content!=proposal.content:raise Conflict('original scoped diff changed')
         publication=None
         def final():
             repository.guard('scoped_commit')
@@ -111,6 +107,28 @@ class ScopedActions:
                         (receipt.committed_version,repository.scope,proposal.trip_id,proposal.expected_version))
             publication.before_write()
             return receipt
+
+    def capture_sources(self,row,run_repository,*,readonly=False):
+        """Same original source checks for accept and protected discovery."""
+        reference=json.loads(bytes(row[4]))['reference'];owner=row[0]
+        binding=Binding(owner,reference['conversation_id'],reference['generation'],reference['message_id'],row[1],reference['sequence'])
+        def admit():
+            value=self.checker.check(self.token)
+            if value.status is not AdmissionStatus.ALLOWED or scope_for(value.principal.issuer,value.principal.subject)!=owner:
+                raise Denied('actual scoped action identity unavailable')
+            return value.principal
+        principal=admit()
+        authority=EditAuthority(self.database.message_repository(owner),admit,run_repository)
+        bind=self.configuration.memory.bind_readonly if readonly else self.configuration.memory.bind
+        memory=bind(self.database,owner,principal.subject,admit,message_context=authority).capture(binding)
+        if memory_descriptor(memory)!=bytes(row[6]):raise Denied('original candidate Memory changed')
+        source=authority.capture(binding)
+        if (source.original_utf8,source.trip_content,source.reference.public_value())!=(bytes(row[2]),bytes(row[3]),reference):
+            raise Denied('original scoped message/Trip changed')
+        prepared=self.publisher._prepare(binding,source,self.token)
+        if prepared.state.needs.raw!=bytes(row[5]):raise Denied('original candidate NEEDS changed')
+        candidate,needs_candidate,report,verification=self.publisher.validate_reply(prepared.state,bytes(row[7]))
+        return CurrentScopedSources(binding,authority,memory,source,prepared,candidate)
 
     def reject(self,repository,request):
         action=None;pending=None
