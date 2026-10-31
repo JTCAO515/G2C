@@ -21,6 +21,7 @@ from .needs_action_store import NeedsActions
 from .manual_needs import NeedsEdit,NeedsSave
 from .current_needs_source import CurrentNeedsSource
 from .needs_edit_store import NeedsEdits
+from .source_initialization import SourceInitializations,SourceInitialization,SourceInitializationSave
 from cj_api.local_needs import protected_reader
 from .domain import Conflict,Denied,identifier
 
@@ -47,9 +48,11 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
             repository.needs_actions=service
             edits=NeedsEdits(CurrentNeedsSource(database,checker,token,protected_reader(database,checker)))
             repository.needs_edits=edits
+            initializations=SourceInitializations(database,owner,source)
+            repository.source_initializations=initializations
             def guard(stage):
                 check(stage)
-                if repository.needs_actions is not service or repository.needs_edits is not edits:raise Denied('source action binding changed')
+                if repository.needs_actions is not service or repository.needs_edits is not edits or repository.source_initializations is not initializations:raise Denied('source action binding changed')
             return repository,principal,guard
     boundary=NeedsBoundary(checker,resolve,confirmation_signer,structured=True)
     app=create_app()
@@ -63,13 +66,18 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
             candidate_hash=value.candidate_hash,trip_id=value.trip_id,committed_version=value.committed_version)
     def project(request,kind,value):
         result=dict(version='TRIP-needs-result.1',request_id=request.state.request_id)
-        if kind in ('action','receipt','save'):result['receipt']=receipt(value)
-        elif kind in ('prepare','preparation'):
+        if kind.startswith('source_'):result['version']='TRIP-source-initialize-result.1'
+        if kind in ('action','receipt','save','source_save','source_receipt'):result['receipt']=receipt(value)
+        elif kind in ('prepare','preparation','source_prepare','source_preparation'):
             if value is None:result['preparation']=None
             else:
                 p=value.detail.proposal
                 result['preparation']=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,
                     candidate_hash=value.detail.candidate_hash,status=value.detail.status,content=json.loads(p.content),diff=json.loads(value.diff))
+                if kind in ('source_prepare','source_preparation'):
+                    result['preparation']['item_source_association']=dict(status='UNKNOWN',
+                        zh='原legacy条目没有NEEDS条目映射；保留原文与未知，不推断整体可行。',
+                        en='Legacy items have no NEEDS item mapping; retain original text and unknowns, without inferring overall feasibility.')
         elif kind=='trip':result['trip']=None if value is None else dict(trip_id=value.trip_id,version=value.version,content=json.loads(value.content))
         else:
             original=value.proposal
@@ -85,6 +93,10 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
         def operation():
             def callback(ctx):
                 if kind=='prepare':value=ctx.prepare_needs(NeedsEdit.parse(arg))
+                elif kind=='source_prepare':value=ctx.prepare_source_initialization(SourceInitialization.parse(arg))
+                elif kind=='source_save':value=ctx.save_source_initialization(SourceInitializationSave.parse(arg))
+                elif kind=='source_preparation':value=ctx.source_initialization(arg)
+                elif kind=='source_receipt':value=ctx.source_initialization_receipt(arg)
                 elif kind=='save':value=ctx.save_needs(NeedsSave.parse(arg))
                 elif kind=='preparation':value=ctx.needs_preparation(arg)
                 elif kind=='action':value=ctx.act_needs(NeedsAction.parse(arg))
@@ -96,8 +108,8 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
         try:return Response(content=await run_in_threadpool(operation),media_type='application/json')
         except Conflict:return _error(request,409,'TRIP_CONFLICT','conflict','failed','do_not_retry')
         except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
-        except Exception:return _error(request,503,'TRIP_OUTCOME_UNKNOWN' if kind in ('action','prepare','save') else 'TRIP_UNAVAILABLE',
-            'dependency','unknown','reconcile_original' if kind in ('action','prepare','save') else 'retry_safe_read')
+        except Exception:return _error(request,503,'TRIP_OUTCOME_UNKNOWN' if kind in ('action','prepare','save','source_prepare','source_save') else 'TRIP_UNAVAILABLE',
+            'dependency','unknown','reconcile_original' if kind in ('action','prepare','save','source_prepare','source_save') else 'retry_safe_read')
     @app.post('/v1/trip-needs-actions')
     async def action(request:Request):
         media=request.headers.getlist('content-type')
@@ -127,7 +139,7 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
         parts=[];size=0
         async for chunk in request.stream():
             size+=len(chunk)
-            if size>(1000000 if kind=='prepare' else 32768):return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
+            if size>(1000000 if kind in ('prepare','source_prepare') else 32768):return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
             parts.append(chunk)
         return await invoke(request,kind,b''.join(parts))
     @app.post('/v1/trip-needs-edits')
@@ -136,4 +148,12 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
     async def edit_query(request:Request):return await read(request,'preparation','request_id')
     @app.post('/v1/trip-needs-saves')
     async def edit_save(request:Request):return await edit_write(request,'save')
+    @app.post('/v1/trip-source-initializations')
+    async def source_prepare(request:Request):return await edit_write(request,'source_prepare')
+    @app.get('/v1/trip-source-initializations')
+    async def source_query(request:Request):return await read(request,'source_preparation','request_id')
+    @app.post('/v1/trip-source-initialization-saves')
+    async def source_save(request:Request):return await edit_write(request,'source_save')
+    @app.get('/v1/trip-source-initialization-receipts')
+    async def source_receipt(request:Request):return await read(request,'source_receipt','action_id')
     return app
