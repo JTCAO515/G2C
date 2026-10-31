@@ -3,7 +3,7 @@ import Observation
 import CJAPI
 
 public enum NeedsViewState: Equatable, Sendable {
-    case unavailable, idle, loading, loaded, missing, cancelled, failed, invalidInput, unknown, conflict, confirmed
+    case unavailable, idle, loading, loaded, missing, cancelled, failed, saveRejected, invalidInput, unknown, conflict, confirmed
     public func message(_ l: NeedsLanguage) -> String {
         switch self {
         case .unavailable: l.text("真实保存尚未启用。", "Live saving is not enabled.")
@@ -13,6 +13,7 @@ public enum NeedsViewState: Equatable, Sendable {
         case .missing: l.text("本次读取未找到记录。", "No record observed in this read.")
         case .cancelled: l.text("已停止读取。", "Read cancelled.")
         case .failed: l.text("暂时无法读取；没有更改条件。", "Unable to read; details were not changed.")
+        case .saveRejected: l.text("原保存明确失败；原动作仍保留，请明确审阅新的修改。", "The original save was rejected. Its bytes are preserved; explicitly review any new correction.")
         case .invalidInput: l.text("请检查已修改字段的格式、状态和输入说明；无需补齐其它条件。", "Check the format, state and source statement of edited fields. Other details may remain incomplete.")
         case .unknown: l.text("结果尚未核定。仅核对原动作，不重新发送。", "Result unknown. Reconcile the original action; do not resend.")
         case .conflict: l.text("版本或原输入冲突。保留你的编辑，请对照最新版本重新审阅。", "Version or original-input conflict. Your edits are preserved; review against the latest version.")
@@ -37,6 +38,7 @@ public struct NeedsPresentationWork: Sendable {
     public private(set) var state: NeedsViewState = .unavailable
     public private(set) var pendingState: NeedsViewState = .unavailable
     public private(set) var pendingActions: [NeedsPending] = []
+    public private(set) var verifiedActionIDs: Set<String> = []
     public var draft: NeedsDraft?
     public var canSave: Bool { client?.acceptsUserActions == true }
     private let client: NeedsClient?
@@ -51,10 +53,12 @@ public struct NeedsPresentationWork: Sendable {
         self.binding = binding; selectedNeedsID = nil; selectedActionID = nil
         snapshot = nil; revision = nil; receipt = nil; draft = nil
         pendingActions = []; pendingState = .unavailable; state = .unavailable
+        verifiedActionIDs = []
     }
     /// Explicit host selection; a new record uses version zero only when the user chooses to create it.
     public func beginNew(id: String) {
-        client?.invalidate(); request = UUID(); started = nil
+        if client?.acceptsUserActions == true { client?.retireWork() } else { client?.invalidate() }
+        request = UUID(); started = nil
         selectedNeedsID = id; selectedActionID = nil; snapshot = nil; revision = nil; receipt = nil
         draft = NeedsDraft(needsID: id, expectedVersion: 0); state = .idle
     }
@@ -82,6 +86,13 @@ public struct NeedsPresentationWork: Sendable {
         }
         selectedActionID = actionID; receipt = nil; revision = nil; snapshot = nil
         return wrap(client.prepareQuery(actionID: actionID, binding: binding))
+    }
+    public func prepareReplay(actionID: String) -> NeedsPresentationWork? {
+        guard let client, client.acceptsUserActions, let binding,
+              verifiedActionIDs.contains(actionID) else { return nil }
+        selectedActionID = actionID; receipt = nil
+        verifiedActionIDs.remove(actionID)
+        return wrap(client.prepareReplay(actionID: actionID, binding: binding))
     }
     /// Keep a frozen original across errors. No automatic new ID or version update.
     public func prepareSave(actionID: String) -> NeedsPresentationWork? {
@@ -115,6 +126,11 @@ public struct NeedsPresentationWork: Sendable {
                 if selectedNeedsID.map({ same($0, revision.needs_id) }) != true { draft = nil }
                 selectedNeedsID = revision.needs_id
                 self.receipt = receipt; self.revision = revision; state = .confirmed
+                verifiedActionIDs.insert(receipt.action_id)
+            case .rejectedOriginal(let original, let status, _):
+                selectedActionID = original.actionID; receipt = nil; revision = nil
+                verifiedActionIDs.remove(original.actionID)
+                state = status == 409 ? .conflict : .saveRejected
             case .notObserved: state = .unknown
             }
         } catch {
@@ -122,7 +138,7 @@ public struct NeedsPresentationWork: Sendable {
             if let failure = error as? NeedsFailure, case .rejected(409, _) = failure { state = .conflict; return }
             if error as? NeedsFailure == .liveWriteUnavailable { state = .unavailable; return }
             switch work.work.kind {
-            case .query, .submit: state = .unknown
+            case .query, .submit, .replay: state = .unknown
             case .detail, .revision: state = error is CancellationError ? .cancelled : .failed
             }
         }

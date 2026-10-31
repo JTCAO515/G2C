@@ -4,44 +4,67 @@ import Foundation
 import CryptoKit
 import Darwin
 import CJMessageKeys
+import CJAPI
 
 func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 
+protocol NeedsJournalRecord: Codable {
+    var actionID: String { get }
+    func validate() throws
+}
+extension NeedsPending: NeedsJournalRecord {}
+
+/// Separate encrypted evidence of a canonical pre-commit rejection. Original
+/// journal files remain byte-for-byte intact; unknown transport has no record.
+struct NeedsRejectedOriginal: NeedsJournalRecord {
+    let original: NeedsPending
+    let status: Int
+    let response: NeedsSchema.ErrorResponse
+    var actionID: String { original.actionID }
+    func validate() throws {
+        try original.validate()
+        guard UUID(uuidString: response.request_id) != nil,
+              response.error.outcome == .failed, response.error.recovery == .do_not_retry,
+              (status == 400 && response.error.code == "INVALID_INPUT") ||
+              (status == 409 && response.error.code == "NEEDS_CONFLICT") else { throw NeedsFailure.invalidResponse }
+    }
+}
+
 /// Immutable, exclusive encrypted records. Reopening grants query only; no resend/delete API.
-@MainActor public final class NeedsPendingStore {
+@MainActor final class NeedsEncryptedRecords<Record: NeedsJournalRecord> {
     private let root: URL
+    private let domain: String
     private let directory: Int32
     private let maximumBytes: Int
     private let maximumRecords: Int
     private let namespace: MessageKeyNamespace
     private let keyID: UUID
     private let key: () throws -> SymmetricKey
-    private var ad: Data { Data("CJNeedsPending|1|\(namespace.environment.uuidString)|\(namespace.account.uuidString)|\(namespace.purpose.rawValue)|\(keyID.uuidString)".utf8) }
-    public convenience init(directory: URL, maximumBytes: Int, maximumRecords: Int, binding: NeedsBinding,
-                            expectedKeyID: UUID, provider: any MessageEncryptionKeyProvider) throws {
-        let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localNeedsPendingV1)
-        guard provider.namespace == namespace else { throw NeedsFailure.keyUnavailable }
-        try self.init(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords, namespace: namespace, keyID: expectedKeyID) {
-            guard provider.namespace == namespace else { throw NeedsFailure.keyUnavailable }
-            let op = try provider.begin(.lookup)
-            guard let key = try provider.existing(expectedID: expectedKeyID, for: op), provider.isCurrent(op),
-                  key.namespace == namespace, key.id == expectedKeyID else { throw NeedsFailure.keyUnavailable }
-            return key.withSymmetricKey { $0 }
-        }
-    }
+    private var ad: Data { Data("\(domain)|1|\(namespace.environment.uuidString)|\(namespace.account.uuidString)|\(namespace.purpose.rawValue)|\(keyID.uuidString)".utf8) }
     // Package-only test seam; no public raw key initializer and no platform key calls in tests.
     init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID,
-         key: @escaping () throws -> SymmetricKey) throws {
+         domain: String = "CJNeedsPending", key: @escaping () throws -> SymmetricKey) throws {
         guard maximumBytes > 0, maximumBytes <= Int.max - 28, maximumRecords > 0, directory.isFileURL,
               directory.standardizedFileURL.path == directory.resolvingSymlinksInPath().path else { throw NeedsFailure.storageUnavailable }
         let fd = open(directory.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
         guard fd >= 0 else { throw NeedsFailure.storageUnavailable }
         var st = stat()
         guard fstat(fd, &st) == 0, st.st_uid == getuid(), st.st_mode & 0o077 == 0 else { close(fd); throw NeedsFailure.storageUnavailable }
-        root = directory; self.directory = fd; self.maximumBytes = maximumBytes; self.maximumRecords = maximumRecords
+        root = directory; self.domain = domain; self.directory = fd; self.maximumBytes = maximumBytes; self.maximumRecords = maximumRecords
         self.namespace = namespace; self.keyID = keyID; self.key = key
     }
     deinit { close(directory) }
+    func adjacentRejections(create: Bool) throws -> NeedsEncryptedRecords<NeedsRejectedOriginal>? {
+        try validateDirectory()
+        let target = root.appendingPathExtension("CJNeedsRejections")
+        if !FileManager.default.fileExists(atPath: target.path) {
+            guard create else { return nil }
+            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false,
+                                                    attributes: [.posixPermissions: 0o700])
+        }
+        return try NeedsEncryptedRecords<NeedsRejectedOriginal>(directory: target, maximumBytes: maximumBytes,
+            maximumRecords: maximumRecords, namespace: namespace, keyID: keyID, domain: "CJNeedsRejections", key: key)
+    }
     func validate(_ binding: NeedsBinding) throws {
         guard namespace.environment == binding.environment, namespace.account == binding.account,
               namespace.purpose == .localNeedsPendingV1 else { throw NeedsFailure.staleBinding }
@@ -50,7 +73,7 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         guard needsID(id) else { throw NeedsFailure.invalidInput }
         return digest(Data(id.utf8)) + ".needs"
     }
-    func append(_ pending: NeedsPending, validateBinding: () throws -> Void = {}) throws {
+    func append(_ pending: Record, validateBinding: () throws -> Void = {}) throws {
         let existing = try self.pending()
         guard existing.count < maximumRecords, !existing.contains(where: { same($0.actionID, pending.actionID) }) else { throw NeedsFailure.storageUnavailable }
         try pending.validate()
@@ -76,19 +99,25 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
               current.st_mode & S_IFMT == S_IFDIR, current.st_uid == getuid(), current.st_mode & 0o077 == 0,
               root.path == root.resolvingSymlinksInPath().path else { throw NeedsFailure.storageUnavailable }
     }
+    func validateInventory(_ ids: [String]) throws {
+        try validateDirectory()
+        guard try ids.map(name).sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else {
+            throw NeedsFailure.storageUnavailable
+        }
+    }
     struct Durability {
         fileprivate let filename: String
         fileprivate let ciphertext: Data
     }
     /// Captures the exact ciphertext whose plaintext was checked, before the last host callback.
-    func requireOriginal(_ expected: NeedsPending) throws -> Durability {
+    func requireOriginal(_ expected: Record) throws -> Durability {
         try validateDirectory()
         let filename = try name(expected.actionID)
         let bytes = try readCiphertext(filename)
         let material = try key()
         try validateDirectory()
         let plain = try AES.GCM.open(AES.GCM.SealedBox(combined: bytes), using: material, authenticating: ad)
-        let observed = try JSONDecoder().decode(NeedsPending.self, from: plain)
+        let observed = try JSONDecoder().decode(Record.self, from: plain)
         try observed.validate()
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         guard try encoder.encode(observed) == encoder.encode(expected) else { throw NeedsFailure.storageUnavailable }
@@ -115,7 +144,7 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         guard count == bytes.count else { throw NeedsFailure.storageUnavailable }
         return bytes
     }
-    public func pending() throws -> [NeedsPending] {
+    func pending() throws -> [Record] {
         try validateDirectory()
         let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
         guard names.count <= maximumRecords else { throw NeedsFailure.storageUnavailable }
@@ -126,13 +155,70 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
             let material = try key()
             try validateDirectory()
             let plain = try AES.GCM.open(AES.GCM.SealedBox(combined: bytes), using: material, authenticating: ad)
-            let pending = try JSONDecoder().decode(NeedsPending.self, from: plain)
+            let pending = try JSONDecoder().decode(Record.self, from: plain)
             try pending.validate()
             guard try name(pending.actionID) == filename else { throw NeedsFailure.storageUnavailable }
             return pending
         }
         try validateDirectory()
+        guard try names.sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else { throw NeedsFailure.storageUnavailable }
         guard Set(result.map { Data($0.actionID.utf8) }).count == result.count else { throw NeedsFailure.storageUnavailable }
         return result
+    }
+}
+
+/// Existing public read-only/append-only journal. New local rejection evidence
+/// lives in an adjacent authenticated namespace; older readers are retained.
+@MainActor public final class NeedsPendingStore {
+    private let storage: NeedsEncryptedRecords<NeedsPending>
+    typealias Durability = NeedsEncryptedRecords<NeedsPending>.Durability
+    public convenience init(directory: URL, maximumBytes: Int, maximumRecords: Int, binding: NeedsBinding,
+                            expectedKeyID: UUID, provider: any MessageEncryptionKeyProvider) throws {
+        let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localNeedsPendingV1)
+        guard provider.namespace == namespace else { throw NeedsFailure.keyUnavailable }
+        try self.init(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords, namespace: namespace, keyID: expectedKeyID) {
+            guard provider.namespace == namespace else { throw NeedsFailure.keyUnavailable }
+            let op = try provider.begin(.lookup)
+            guard let key = try provider.existing(expectedID: expectedKeyID, for: op), provider.isCurrent(op),
+                  key.namespace == namespace, key.id == expectedKeyID else { throw NeedsFailure.keyUnavailable }
+            return key.withSymmetricKey { $0 }
+        }
+    }
+    init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID,
+         key: @escaping () throws -> SymmetricKey) throws {
+        storage = try NeedsEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
+            namespace: namespace, keyID: keyID, key: key)
+    }
+    func validate(_ binding: NeedsBinding) throws { try storage.validate(binding) }
+    func validateDirectory() throws { try storage.validateDirectory() }
+    func append(_ original: NeedsPending, validateBinding: () throws -> Void = {}) throws { try storage.append(original, validateBinding: validateBinding) }
+    func requireOriginal(_ original: NeedsPending) throws -> Durability { try storage.requireOriginal(original) }
+    func validateDurability(_ proof: Durability) throws { try storage.validateDurability(proof) }
+    func validateInventory(_ ids: [String]) throws { try storage.validateInventory(ids) }
+    public func pending() throws -> [NeedsPending] { try storage.pending() }
+    @MainActor struct RejectionProof {
+        let record: NeedsRejectedOriginal
+        fileprivate let journal: NeedsEncryptedRecords<NeedsRejectedOriginal>
+        fileprivate let proof: NeedsEncryptedRecords<NeedsRejectedOriginal>.Durability
+        func validateDurability() throws { try journal.validateDurability(proof) }
+    }
+    func rejectionProof(for original: NeedsPending) throws -> RejectionProof? {
+        guard let journal = try storage.adjacentRejections(create: false),
+              let rejected = try journal.pending().first(where: { same($0.actionID, original.actionID) }) else { return nil }
+        guard rejected.original.originalUTF8 == original.originalUTF8 else { throw NeedsFailure.storageUnavailable }
+        return RejectionProof(record: rejected, journal: journal, proof: try journal.requireOriginal(rejected))
+    }
+    func rejection(for original: NeedsPending) throws -> NeedsRejectedOriginal? {
+        try rejectionProof(for: original)?.record
+    }
+    func recordRejection(_ original: NeedsPending, status: Int, response: NeedsSchema.ErrorResponse,
+                         validateBinding: () throws -> Void) throws {
+        let originalProof = try storage.requireOriginal(original)
+        guard let journal = try storage.adjacentRejections(create: true) else { throw NeedsFailure.storageUnavailable }
+        let rejected = NeedsRejectedOriginal(original: original, status: status, response: response)
+        try journal.append(rejected) {
+            try validateBinding()
+            try self.storage.validateDurability(originalProof)
+        }
     }
 }

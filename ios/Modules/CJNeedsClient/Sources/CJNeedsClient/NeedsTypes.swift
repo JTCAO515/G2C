@@ -56,13 +56,14 @@ public enum NeedsResult: Sendable {
     case detail(NeedsSchema.NeedsSnapshot?)
     case revision(NeedsSchema.NeedsRevision?)
     case confirmed(NeedsSchema.NeedsReceipt, NeedsSchema.NeedsRevision)
+    case rejectedOriginal(NeedsPending, Int, String) // Durable failed POST, never an unknown/null inference.
     case notObserved // Unknown, never a resend permit.
 }
 
 /// Opaque one-use operation. Capture synchronously before starting a Task.
 public struct NeedsWork: Sendable {
     enum Kind: Sendable {
-        case detail(String), revision(String, Int), query(String), submit(NeedsPending)
+        case detail(String), revision(String, Int), query(String), submit(NeedsPending), replay(String)
     }
     let owner: UUID
     let generation: UUID

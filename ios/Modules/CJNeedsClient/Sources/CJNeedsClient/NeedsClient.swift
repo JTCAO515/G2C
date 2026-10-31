@@ -21,8 +21,8 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
     private let owner = UUID()
     private var generation = UUID()
     private var started: UUID?
-    private var confirmed = Set<Data>()
-    public var acceptsUserActions: Bool { false }
+    private var confirmed: [Data: String] = [:]
+    public let acceptsUserActions: Bool
 
     public init(endpoint: NeedsEndpoint, credentials: @escaping NeedsCredentialCallback,
                 currentBinding: @escaping @MainActor () -> NeedsBinding?, session: SessionLifecycle,
@@ -30,17 +30,35 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
                 liveReadTransport: NoRedirectTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
-        transport = liveReadTransport; testWrites = false
+        transport = liveReadTransport; testWrites = false; acceptsUserActions = false
     }
     /// Internal synthetic transport seam. Never exported as production write permission.
     init(endpoint: NeedsEndpoint, credentials: @escaping NeedsCredentialCallback,
          currentBinding: @escaping @MainActor () -> NeedsBinding?, pendingStore: NeedsPendingStore?,
-         interceptedTransport: any ClientTransport) {
+         interceptedTransport: any ClientTransport, manualWritesAvailable: Bool = false) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         session = nil; sessionOperation = nil; store = pendingStore
-        transport = interceptedTransport; testWrites = true
+        transport = interceptedTransport; testWrites = true; acceptsUserActions = manualWritesAvailable
     }
+    #if DEBUG && targetEnvironment(simulator)
+    /// Explicit CJ-LOCAL-NEEDS@1 manual-v1 capability. Ordinary and Release
+    /// construction retains its read-only path and original session fences.
+    public init(localEndpoint endpoint: NeedsEndpoint, credentials: @escaping NeedsCredentialCallback,
+                currentBinding: @escaping @MainActor () -> NeedsBinding?, session: SessionLifecycle,
+                sessionOperation: SessionOperation, pendingStore: NeedsPendingStore,
+                localTransport: NoRedirectTransport) throws {
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port, (1...65535).contains(port),
+              endpoint.maximumRequestBytes <= 131072, endpoint.maximumResponseBytes <= 1048576 else {
+            throw NeedsFailure.unconfigured
+        }
+        self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
+        self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
+        transport = localTransport; testWrites = true; acceptsUserActions = true
+    }
+    #endif
     public func invalidate() { generation = UUID(); started = nil; confirmed.removeAll() }
+    func retireWork() { generation = UUID(); started = nil }
     private var sessionIsCurrent: Bool {
         if let session, let sessionOperation { return session.isCurrent(sessionOperation) }
         return testWrites && session == nil && sessionOperation == nil
@@ -61,6 +79,7 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
     public func prepareDetail(id: String, binding: NeedsBinding) -> NeedsWork { prepare(.detail(id), binding: binding) }
     public func prepareRevision(id: String, version: Int, binding: NeedsBinding) -> NeedsWork { prepare(.revision(id, version), binding: binding) }
     public func prepareQuery(actionID: String, binding: NeedsBinding) -> NeedsWork { prepare(.query(actionID), binding: binding) }
+    public func prepareReplay(actionID: String, binding: NeedsBinding) -> NeedsWork { prepare(.replay(actionID), binding: binding) }
     public func prepareManualAction(_ original: NeedsPending, binding: NeedsBinding) -> NeedsWork { prepare(.submit(original), binding: binding) }
 
     public func pending(binding: NeedsBinding) throws -> [NeedsPending] {
@@ -76,7 +95,34 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
         try store.validateDirectory()
         return records
     }
-    private func api(_ work: NeedsWork, original: NeedsPending? = nil) async throws -> Client {
+    /// Read-only admission for an explicit *new* manual action. A null/failed
+    /// GET cannot settle an old POST. Only exact history or durable failed-POST
+    /// evidence qualifies, with all resources checked after the last callback.
+    public func requiresOriginalReconciliation(binding: NeedsBinding) throws -> Bool {
+        let work = NeedsWork(owner: owner, generation: generation, binding: binding, kind: .query(""))
+        try check(work)
+        guard let store else { throw NeedsFailure.unconfigured }
+        try store.validate(binding)
+        let records = try store.pending()
+        var originals: [NeedsPendingStore.Durability] = []
+        var rejections: [NeedsPendingStore.RejectionProof] = []
+        for original in records {
+            originals.append(try store.requireOriginal(original))
+            if confirmed[Data(original.actionID.utf8)] != digest(original.originalUTF8) {
+                guard acceptsUserActions, let proof = try store.rejectionProof(for: original) else {
+                    try check(work)
+                    return true
+                }
+                rejections.append(proof)
+            }
+        }
+        try check(work)
+        try store.validateInventory(records.map(\.actionID))
+        for proof in originals { try store.validateDurability(proof) }
+        for proof in rejections { try proof.validateDurability() }
+        return false
+    }
+    private func api(_ work: NeedsWork, original: NeedsPending? = nil, prerequisites: [NeedsPending]? = nil) async throws -> Client {
         try check(work)
         let bearer: String?
         do { bearer = try await credentials(work.binding) }
@@ -88,10 +134,23 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
             try check(work)
             if let original {
                 guard let store else { throw NeedsFailure.unconfigured }
-                let proof = try store.requireOriginal(original)
+                var originals = [try store.requireOriginal(original)]
+                var rejections: [NeedsPendingStore.RejectionProof] = []
+                if let prerequisites {
+                    for prior in prerequisites {
+                        originals.append(try store.requireOriginal(prior))
+                        if confirmed[Data(prior.actionID.utf8)] != digest(prior.originalUTF8) {
+                            guard let proof = try store.rejectionProof(for: prior) else { throw NeedsFailure.pendingRequiresQuery }
+                            rejections.append(proof)
+                        }
+                    }
+                }
                 try check(work)
-                // Final resource callback finished. No callback or await after this durability fence.
-                try store.validateDurability(proof)
+                // All key/binding callbacks have finished. The entire prefix,
+                // originals and rejection ciphertexts must still be durable.
+                if let prerequisites { try store.validateInventory(prerequisites.map(\.actionID) + [original.actionID]) }
+                for proof in originals { try store.validateDurability(proof) }
+                for proof in rejections { try proof.validateDurability() }
             }
         })
     }
@@ -125,13 +184,26 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
             try store.validate(work.binding)
             guard let original = try store.pending().first(where: { same($0.actionID, id) }) else { throw NeedsFailure.invalidInput }
             try check(work)
+            let rejected = acceptsUserActions ? try store.rejectionProof(for: original) : nil
+            try check(work)
             let client = try await api(work, original: original)
             let output = try await exchange(work) { try await client.queryNeedsAction(query: .init(action_id: original.actionID)) }
             switch output {
             case .ok(let response):
                 switch try response.body.json.receipt {
-                case .NeedsReceipt(let receipt): return try await settle(receipt, original, work)
-                case .case2(let null): guard null.value == nil else { throw NeedsFailure.invalidResponse }; return .notObserved
+                case .NeedsReceipt(let receipt):
+                    guard rejected == nil else { throw NeedsFailure.invalidResponse }
+                    return try await settle(receipt, original, work)
+                case .case2(let null):
+                    guard null.value == nil else { throw NeedsFailure.invalidResponse }
+                    if let rejected {
+                        // The proof was read before credential/transport callbacks.
+                        // It must still be the same durable evidence at settlement.
+                        try check(work)
+                        try rejected.validateDurability()
+                        return .rejectedOriginal(original, rejected.record.status, rejected.record.response.error.code)
+                    }
+                    return .notObserved
                 }
             case .default(let status, let response): throw NeedsFailure.rejected(status, try response.body.json.error.code)
             }
@@ -142,14 +214,39 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
             guard original.originalUTF8.count <= endpoint.maximumRequestBytes else { throw NeedsFailure.invalidInput }
             let existing = try store.pending(); try check(work)
             guard !existing.contains(where: { same($0.actionID, original.actionID) }),
-                  existing.allSatisfy({ confirmed.contains(Data($0.actionID.utf8)) }) else { throw NeedsFailure.pendingRequiresQuery }
+                  try existing.allSatisfy({ prior in
+                      if confirmed[Data(prior.actionID.utf8)] == digest(prior.originalUTF8) { return true }
+                      return try acceptsUserActions && store.rejection(for: prior) != nil
+                  }) else { throw NeedsFailure.pendingRequiresQuery }
             try store.append(original) { try self.check(work) }
             try check(work)
+            let client = try await api(work, original: original, prerequisites: acceptsUserActions ? existing : nil)
+            let output = try await exchange(work) { try await client.actOnNeeds(body: .binary(HTTPBody(original.originalUTF8))) }
+            switch output {
+            case .ok(let response): return try await settle(response.body.json.receipt, original, work)
+            case .default(let status, let response):
+                let body = try response.body.json
+                if acceptsUserActions, body.error.outcome == .failed, body.error.recovery == .do_not_retry,
+                   (status == 400 && body.error.code == "INVALID_INPUT") || (status == 409 && body.error.code == "NEEDS_CONFLICT") {
+                    try store.recordRejection(original, status: status, response: body) { try self.check(work) }
+                    try check(work)
+                    return .rejectedOriginal(original, status, body.error.code)
+                }
+                if acceptsUserActions { throw NeedsFailure.exchangeUnknown }
+                throw NeedsFailure.rejected(status, body.error.code)
+            }
+        case .replay(let id):
+            guard acceptsUserActions, let store else { throw NeedsFailure.liveWriteUnavailable }
+            try store.validate(work.binding)
+            guard let original = try store.pending().first(where: { same($0.actionID, id) }),
+                  confirmed[Data(id.utf8)] == digest(original.originalUTF8) else { throw NeedsFailure.pendingRequiresQuery }
+            try check(work)
+            confirmed.removeValue(forKey: Data(id.utf8)) // Unknown replay returns to query-only.
             let client = try await api(work, original: original)
             let output = try await exchange(work) { try await client.actOnNeeds(body: .binary(HTTPBody(original.originalUTF8))) }
             switch output {
             case .ok(let response): return try await settle(response.body.json.receipt, original, work)
-            case .default(let status, let response): throw NeedsFailure.rejected(status, try response.body.json.error.code)
+            case .default: throw NeedsFailure.exchangeUnknown
             }
         }
     }
@@ -178,7 +275,7 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
               Data(base64Encoded: revision.original_input_utf8_base64) == original.originalUTF8 else { throw NeedsFailure.invalidResponse }
         guard let store else { throw NeedsFailure.unconfigured }
         let proof = try store.requireOriginal(original); try check(work); try store.validateDurability(proof)
-        confirmed.insert(Data(original.actionID.utf8))
+        confirmed[Data(original.actionID.utf8)] = digest(original.originalUTF8)
         return .confirmed(receipt, revision)
     }
 }
@@ -205,6 +302,11 @@ struct NeedsTransport: ClientTransport {
         guard !(300..<400).contains(response.status.code), let responseBody else { throw NeedsFailure.invalidResponse }
         let data = try await Data(collecting: responseBody, upTo: endpoint.maximumResponseBytes)
         try await validate()
+        _ = try validateUnambiguousJSON(data)
+        guard response.headerFields[.contentType]?.split(separator: ";", maxSplits: 1).first?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "application/json",
+              let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let trace = root["request_id"] as? String, UUID(uuidString: trace) != nil,
+              let header = response.headerFields[HTTPField.Name("X-Request-ID")!], same(trace, header) else { throw NeedsFailure.invalidResponse }
         // Formal parsing stays in the official generated Client. No parallel wire/parser.
         return (response, HTTPBody(data))
     }
