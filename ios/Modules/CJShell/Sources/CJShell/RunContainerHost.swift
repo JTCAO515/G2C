@@ -4,8 +4,9 @@ import CJRunClient
 import CJSession
 import CJTripClient
 
-public enum RunAnswerFormat: Sendable { case plainText,placeToolV1 }
+public enum RunAnswerFormat: Sendable { case plainText,placeToolV1,factToolV1 }
 public enum PlaceRunProjection: Sendable { case waiting,unavailable,loaded(PlaceToolTranscriptV1) }
+public enum FactRunProjection: Sendable { case waiting,unavailable,loaded(FactToolTranscriptV1) }
 
 @MainActor public struct RunContainerConfiguration {
     fileprivate let id = UUID()
@@ -57,6 +58,26 @@ public enum PlaceRunProjection: Sendable { case waiting,unavailable,loaded(Place
         return projection
     }
     public var followsAcceptedMessages: Bool { displayModel != nil && configuration?.followAcceptedMessages == true }
+    public var factProjection: FactRunProjection {
+        guard let configuration,configuration.answerFormat == .factToolV1,let original = origin else { return .unavailable }
+        let token = selection
+        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return .unavailable }
+        let state = configuration.model.state,progress = configuration.model.streamProgress
+        let text: String,completed: Bool
+        if let progress { text = progress.text;completed = false }
+        else {
+            switch state {
+            case .loaded(let value):text = value.snapshot.text;completed = value.snapshot.status == .completed
+            case .ready,.loading:return .waiting
+            case .unselected,.unavailable:return .unavailable
+            }
+        }
+        let projection: FactRunProjection
+        do { projection = .loaded(try FactToolTranscriptV1.decode(Data(text.utf8),runID:original.receipt.run_id,completed:completed)) }
+        catch { projection = .unavailable }
+        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return .unavailable }
+        return projection
+    }
     public var isShowingOriginal: Bool { origin != nil || sourceUnavailable }
     public var isSynthetic: Bool { displayModel != nil && configuration?.synthetic == true }
     public init(shell: ShellState) {

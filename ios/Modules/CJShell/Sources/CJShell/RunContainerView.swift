@@ -36,13 +36,20 @@ struct RunContainerView: View {
                         .font(.footnote)
                 }
                 // Public view prepares opaque original read work synchronously before Task.
-                RunDisplayView(model:model,language:language == .english ? .english : .chinese,showAnswerText:host.answerFormat != .placeToolV1)
+                RunDisplayView(model:model,language:language == .english ? .english : .chinese,showAnswerText:host.answerFormat == .plainText)
                 if host.answerFormat == .placeToolV1 {
                     switch host.placeProjection {
                     case .waiting:RunReadableText(text:language.text("Waiting for place information…", "正在等待地点资料…"))
                     case .unavailable:RunReadableText(text:language.text("Place information unavailable. Read the original result; do not repeat the request.", "地点资料不可用。请读取原结果，不要重新发送请求。"))
                             .accessibilityIdentifier("place.unavailable")
                     case .loaded(let transcript):PlaceToolTranscriptView(transcript:transcript,language:language == .english ? .english : .simplifiedChinese)
+                    }
+                }
+                if host.answerFormat == .factToolV1 {
+                    switch host.factProjection {
+                    case .waiting:RunReadableText(text:language.text("Waiting for synthetic evidence…", "正在等待合成证据…")).accessibilityIdentifier("fact.waiting")
+                    case .unavailable:RunReadableText(text:language.text("Fact information unavailable. Read the original result; do not repeat the request.", "事实资料不可用。请读取原结果，不要重新发送请求。")).accessibilityIdentifier("fact.unavailable")
+                    case .loaded(let transcript):FactToolTranscriptView(transcript:transcript,language:language == .english ? .english : .simplifiedChinese)
                     }
                 }
                 if host.isSynthetic { Text(language.text("Synthetic test data", "合成测试数据")).font(.caption) }
