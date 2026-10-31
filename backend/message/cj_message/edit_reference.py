@@ -111,7 +111,15 @@ class EditSource:
     def __init__(self,authority,principal,binding,reference,stored,*,_factory=None):
         if _factory is not _FACTORY:raise TypeError('canonical capture required')
         self._authority,self._principal,self._binding=authority,principal,binding
-        self.reference,self.original_utf8,self.trip_content,self.selected_item_ids=reference,stored.raw,reference.source,reference.selected_item_ids
+        self._reference,self._original_utf8,self._trip_content,self._selected_item_ids=reference,stored.raw,reference.source,reference.selected_item_ids
+    @property
+    def reference(self):return self._reference
+    @property
+    def original_utf8(self):return self._original_utf8
+    @property
+    def trip_content(self):return self._trip_content
+    @property
+    def selected_item_ids(self):return self._selected_item_ids
 
 
 class NamespaceLease:
@@ -131,8 +139,12 @@ class EditLease:
     def __init__(self,authority,principal,binding,reference,stored,*,refresh=None,_factory=None):
         if _factory is not _FACTORY:raise TypeError('canonical lease required')
         self.authority,self.principal,self.binding=authority,principal,binding
-        self.reference,self.stored=reference,stored
+        self._reference,self._stored=reference,stored
         self.refresh=refresh;self.active=True;self.thread=threading.current_thread()
+    @property
+    def reference(self):return self._reference
+    @property
+    def stored(self):return self._stored
     def check(self,binding):
         if not self.active or self.thread is not threading.current_thread() or self.authority._active.get() is not self or binding!=self.binding:raise LeaseUnavailable('edit lease expired')
         if self.authority.admit()!=self.principal:raise Denied('edit identity changed')

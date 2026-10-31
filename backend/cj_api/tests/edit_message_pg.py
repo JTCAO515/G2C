@@ -98,7 +98,7 @@ class Model(FakeProvider):
 
 
 def exercise(auth,conninfo):
-    subjects=['alice','bob'];dev_auth.init(auth,subjects)
+    subjects=['alice','bob'];dev_auth.init(auth,subjects+['history'])
     cfg=json.loads(conninfo.read_text());now=int(time.time());path=auth.parent/'edit-run.json'
     path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',budget=50,
         period_start=now-60,period_end=now+3600,max_steps=50,max_tools=10,max_output=100000,max_seconds=600),
@@ -173,6 +173,23 @@ def exercise(auth,conninfo):
             assert outcomes[0].status==status,outcomes
             assert not saved(value).effects and not saved(value).text
             with psycopg.connect(**cfg) as admin:assert admin.execute('SELECT count(*) FROM cj_trip_proposal WHERE proposal_id=%s',('p-'+value['receipt']['run_id'],)).fetchone()[0]==0
+        # #327: accepted send.2 uses supported history.2, never stripped by v1.
+        operator.provision_budget(conninfo,context,'history');dev_auth.activate_travel(conninfo,'history',context,'MESSAGE-TRAVEL-CONSUMER@1')
+        history_headers={'Authorization':'Bearer '+dev_auth.token(auth,'history',30)}
+        old_app=create_local_app(conninfo_path=conninfo,auth_dir=auth,run_context=context,travel_context=True,history_configuration=load_history_configuration(auth))
+        with TestClient(old_app) as legacy:
+            travel=harness.expect(legacy.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id='h-ns',operation='create',travel_context=None)),headers={**history_headers,'Content-Type':'application/octet-stream'}))['receipt']['travel_context']
+            head=harness.expect(legacy.put('/v1/conversations',params=dict(conversation_id='typed-history'),headers=history_headers))
+            legacy_raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id='typed-history',message_id='typed-history',text='原文本 e\u0301/中文',trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0,travel_context=dict(id=travel['id'],expected_version=1),needs_reference=None),ensure_ascii=False,indent=2).encode()+b'\n'
+            original=harness.expect(legacy.post('/v2/messages',content=legacy_raw,headers={**history_headers,'Content-Type':'application/octet-stream'}))
+            historical_model=FakeProvider();assert run_worker.run_once(olddb,historical_model,auth)[0].status=='completed' and historical_model.calls==1
+            page=harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1),headers=history_headers))
+            assert base64.b64decode(page['messages'][0]['original_utf8_base64'])==legacy_raw and page['messages'][0]['reference']==original['reference']
+            assert page['messages'][0]['receipt']['input_sha256']==hashlib.sha256(legacy_raw).hexdigest() and page['messages'][0]['text']=='原文本 e\u0301/中文'
+            harness.expect(legacy.get('/v1/message-history',params=dict(conversation_id='typed-history',limit=1),headers=history_headers),503)
+            harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1),headers=headers['bob']),503)
+            harness.expect(legacy.get('/v2/message-history',params=dict(conversation_id='typed-history',limit=1),headers={'Authorization':'Bearer invalid'}),401)
+        print('PASS327 supported history.2 exact original send.2 bytes/hash/text/reference via signed API/runtime PG/formal worker; v1 refusal and owner/auth preserved')
         # Boundary refusals do not issue receipts or create a second exit.
         send('foreign',subject='bob',code=503)
         send('foreign-namespace',namespace=dict(id=travels['bob']['id'],expected_version=1),code=503)
@@ -191,6 +208,19 @@ def exercise(auth,conninfo):
         try:old_profile.activate(conninfo,'alice',context,'MESSAGE-TRIP-CONSUMER@1')
         except psycopg.errors.RaiseException:pass
         else:raise AssertionError('old profile MEMORY refusal was removed')
+        discussion,_=send('discussion-gate',intent='none')
+        discussion_host=run_worker._worker_for_scope(database,Model(),auth,scope,checker_for(auth))
+        discussion_binding=binding_for(discussion);discussion_queued=discussion_host.runs.accept(discussion_binding)
+        discussion_exit=discussion_host.budget_exit.for_run(discussion_binding,discussion_queued)
+        from cj_run.core import Event as RunEvent
+        discussion_host.runs.apply(RunEvent(discussion_binding,1,'discussion-start','started'))
+        discussion_exit.prepare(discussion_host.runs,discussion_binding,'draft',[dict(role='user',content='explicit discussion')],'discussion source',Model())
+        discussion_source=discussion_host.message_context.capture(discussion_binding)
+        try:
+            with discussion_host.message_context.publication(discussion_binding,discussion_source,deadline=lambda:None):raise AssertionError('discussion gained write authority')
+        except Denied:pass
+        assert cancel('discussion-gate')['status']=='cancelled'
+        discussion_model=Model();assert run_worker.run_once(database,discussion_model,auth)[0].status=='cancelled' and discussion_model.calls==0
         # Same selector continues, but A→B→A invalidates old work even when IDs return.
         selection=dict(id='trip-a',expected_version=1,content_sha256=hashlib.sha256(source).hexdigest(),day=dict(date='2026-10-31',timezone='Asia/Shanghai'),item_ids=[])
         a,_=send('aba-a',cid='aba');b,_=send('aba-b',cid='aba',selection=selection);c,_=send('aba-c',cid='aba')
@@ -240,6 +270,8 @@ def exercise(auth,conninfo):
         try:no_effect(revoked,'context_invalid',model)
         finally:(auth/'invited.json').write_bytes(invitations)
         assert model.calls==1
+        inflight,_=send('cancel-inflight');model=Model();model.hook=lambda:cancel('cancel-inflight')
+        no_effect(inflight,'cancelled',model);assert model.calls==1
         # Namespace version/currentness is not inferred from the Trip or from memory.
         moved,_=send('namespace-before')
         expect(client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id='advance',operation='advance',travel_context=dict(id=travels['alice']['id'],expected_version=1))),headers={**headers['alice'],'Content-Type':'application/octet-stream'}))
