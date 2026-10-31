@@ -37,6 +37,15 @@ struct RunContainerView: View {
                     Text(language.text("No current accepted message receipt is available. Select an original message in recovery first.", "没有可用的当前已接受消息回执，请先在恢复列表中选择原消息。"))
                         .font(.footnote)
                 }
+                if host.answerFormat == .factToolV1,case .loaded = host.factProjection {
+                        Button {
+                            guard let id = host.originalPresentationID else { return }
+                            factPanel = FactPanel(id:id)
+                        } label: {
+                            RunReadableText(text:language.text("Read complete sources", "读取完整来源"))
+                                .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                        }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("fact.sources.open")
+                }
                 // Public view prepares opaque original read work synchronously before Task.
                 RunDisplayView(model:model,language:language == .english ? .english : .chinese,showAnswerText:host.answerFormat == .plainText)
                 if host.answerFormat == .placeToolV1 {
@@ -52,13 +61,6 @@ struct RunContainerView: View {
                     case .waiting:RunReadableText(text:language.text("Waiting for synthetic evidence…", "正在等待合成证据…")).accessibilityIdentifier("fact.waiting")
                     case .unavailable:RunReadableText(text:language.text("Fact information unavailable. Read the original result; do not repeat the request.", "事实资料不可用。请读取原结果，不要重新发送请求。")).accessibilityIdentifier("fact.unavailable")
                     case .loaded(let transcript):
-                        Button {
-                            guard let id = host.originalPresentationID else { return }
-                            factPanel = FactPanel(id:id)
-                        } label: {
-                            RunReadableText(text:language.text("Read complete sources", "读取完整来源"))
-                                .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                        }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("fact.sources.open")
                         FactToolTranscriptView(transcript:transcript,language:language == .english ? .english : .simplifiedChinese)
                     }
                 }
