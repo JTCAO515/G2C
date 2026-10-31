@@ -64,6 +64,8 @@ try:
    signer=ConfirmationSigner(b'synthetic-source-init-app-only-signing-123456789')
    api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,needs_profile='manual-v1',confirmation_signer=signer)
    headers={'Authorization':'Bearer '+dev_auth.token(auth,subject,120)};binary={**headers,'Content-Type':'application/octet-stream'}
+   native_tokens=dict(A=headers['Authorization'][7:])
+   if CASE=='testScopedCandidateLateAccount':native_tokens['B']=dev_auth.token(auth,other_subject,120)
    def fixed(key,start,end):
     def edge(clock):return dict(date=known('2026-11-02'),time=known(clock),timezone=known('Asia/Shanghai'),place=dict(state='unknown'))
     return dict(item_id=key,kind='appointment',description='SYNTHETIC declared source '+key,applies_to=['self'],locked=known(False),booking_status=dict(state='unknown'),start=edge(start),end=edge(end))
@@ -130,7 +132,7 @@ try:
    message_edit_profile.activate(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
    edit_api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,edit_configuration=configuration,needs_profile='manual-v1',history_configuration=load_history_configuration(auth))
    if CASE=='testScopedCandidateLateAccount':
-    other_headers={'Authorization':'Bearer '+dev_auth.token(auth,other_subject,120)}
+    other_headers={'Authorization':'Bearer '+native_tokens['B']}
     with TestClient(edit_api) as client:expect(client.get('/v1/message-receipts',params=dict(message_id='synthetic-session-probe'),headers=other_headers),'actual-B-session-readiness')
    class ScopedFake(FakeProvider):
     def __init__(self):super().__init__();self.inputs=[]
@@ -307,7 +309,7 @@ try:
     def do_GET(self):
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
-      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=dict(A=headers['Authorization'][7:],**({'B':dev_auth.token(auth,other_subject,120)} if CASE=='testScopedCandidateLateAccount' else {})),subjects=dict(A=subject,**({'B':other_subject} if CASE=='testScopedCandidateLateAccount' else {})),formal_trips=[spec])
+      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE=='testScopedCandidateLateAccount' else {})),formal_trips=[spec])
       elif path.path=='/wait-discovery':
        assert CASE=='testScopedCandidateLateAccount' and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
@@ -343,7 +345,11 @@ try:
     subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',desired],check=True,capture_output=True);r['simulator_content_size']=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip();assert r['simulator_content_size']==desired;save()
     result=OUT/(CASE+'.xcresult');command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+ARGS.simulator,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
-    log=(run.stdout+run.stderr).replace(headers['Authorization'][7:],'<redacted-local-token>');(OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
+    log=run.stdout+run.stderr
+    for temporary_token in native_tokens.values():log=log.replace(temporary_token,'<redacted-local-token>')
+    assert all(temporary_token not in log for temporary_token in native_tokens.values())
+    r['redacted_log_accounts']=sorted(native_tokens);r['token_scan_accounts']=sorted(native_tokens)
+    (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     if CASE=='testScopedCandidateLateAccount':late_proof()
     if CASE=='testScopedCandidateDiscoveryUnavailable':discovery_refusal_proof()
@@ -355,7 +361,7 @@ try:
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
     for file in container.rglob('*'):
      if file.is_file() and not file.is_symlink():
-      data=file.read_bytes();assert headers['Authorization'][7:].encode() not in data and b'-----BEGIN PRIVATE KEY-----' not in data
+      data=file.read_bytes();assert all(temporary_token.encode() not in data for temporary_token in native_tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in data
     assert r['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
     assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in r['source_hashes'].items()),'source changed during acceptance'
     r['token_key_scan']='PASS';r['cases'][CASE]='PASS';r['status']='PASS';save()
