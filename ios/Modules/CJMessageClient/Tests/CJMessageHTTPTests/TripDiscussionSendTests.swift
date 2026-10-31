@@ -139,3 +139,105 @@ private actor DiscussionWire: ClientTransport {
         #expect(await wire.posts.isEmpty)
     }
 }
+
+private let discussionHistoryTrace="00000000-0000-4000-8000-000000000031"
+private actor DiscussionHistoryWire: ClientTransport {
+    var pages:[Data]
+    var requests:[String]=[]
+    init(_ pages:[Data]) { self.pages=pages }
+    func send(_ request:HTTPRequest,body:HTTPBody?,baseURL:URL,operationID:String) async throws -> (HTTPResponse,HTTPBody?) {
+        #expect(operationID=="readTripDiscussionHistoryV2" && request.method == .get && body==nil)
+        requests.append(request.path!)
+        var headers=HTTPFields();headers[.contentType]="application/json";headers[.cacheControl]="no-store";headers[.init("x-request-id")!]=discussionHistoryTrace
+        return (HTTPResponse(status:.ok,headerFields:headers),HTTPBody(pages.removeFirst()))
+    }
+}
+@MainActor struct TripDiscussionHistoryTests {
+    func row(_ sequence:Int64) throws -> [String:Any] {
+        let helper=TripDiscussionWireTests()
+        let raw=try helper.original { $0["expected_sequence"]=sequence-1 }
+        let command=try OriginalTripDiscussion(raw:raw,maximumBytes:65536)
+        let bytes=try helper.acceptance(original:command,trace:discussionHistoryTrace) {
+            var ref=$0["reference"] as! [String:Any];ref["selection_epoch"]=1;$0["reference"]=ref
+        }
+        let accepted=try #require(JSONSerialization.jsonObject(with:bytes) as? [String:Any])
+        return ["receipt":accepted["receipt"]!,"reference":accepted["reference"]!,"original_utf8_base64":raw.base64EncodedString(),"text":command.text]
+    }
+    func page(_ rows:[[String:Any]],next:String?=nil) throws -> Data {
+        try JSONSerialization.data(withJSONObject:["version":"MESSAGE-history.2","request_id":discussionHistoryTrace,"messages":rows,"next_cursor":next as Any? ?? NSNull()],options:[.sortedKeys])
+    }
+    @Test func historyKeepsOriginalBytesAndReferenceWithoutStagingOrSelectingTrip() async throws {
+        let raw=try page([row(1)])
+        let wire=DiscussionHistoryWire([raw]),scope=try StorageScope(environment:UUID().uuidString,account:"synthetic")
+        let recovery=MessageRecovery(storage:DiscussionStorage()),lease=try recovery.activate(scope)
+        let endpoint=try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:65536,maximumResponseBytes:65536)
+        let client=MessageHTTPClient(recovery:recovery,scope:scope,endpoint:endpoint,credentials:DiscussionCredentials(),interceptedTestTransport:wire)
+        let limits=try MessageReadLimits(maximumPageItems:20,maximumCursorBytes:1024,maximumDecodedBytes:65536,maximumPages:3)
+        let result=try await client.tripDiscussionHistory(conversationID:"chat",limit:20,limits:limits,lease:lease)
+        try client.validateRead(result,lease:lease)
+        let value=try #require(result.value.first)
+        guard case .trip(let reference)=value.association else { Issue.record("original association lost");return }
+        #expect(reference.trip?.id=="trip-a" && reference.trip?.expectedVersion==9 && reference.selectionEpoch==1)
+        #expect(value.originalUTF8.base64EncodedString()==(try row(1))["original_utf8_base64"] as? String)
+        #expect(try recovery.localProjection(scope:scope,lease:lease).actions.isEmpty)
+        #expect(await wire.requests.count==1 && result.next==nil)
+    }
+    @Test func cursorCannotCrossWireAndSameGenerationPagingMustBeContiguous() async throws {
+        var second=try row(2)
+        // IDs remain distinct across rows; mutate all original/receipt/reference
+        // fields and hash together, not just the displayed row.
+        let original=try #require(Data(base64Encoded:second["original_utf8_base64"] as! String))
+        let changed=Data(String(decoding:original,as:UTF8.self).replacingOccurrences(of:"\"message_id\":\"m1\"",with:"\"message_id\":\"m2\"").utf8)
+        let hash=SHA256.hash(data:changed).map { String(format:"%02x",$0) }.joined()
+        for field in ["receipt","reference"] {
+            var value=second[field] as! [String:Any];value["message_id"]="m2";value["input_sha256"]=hash;second[field]=value
+        }
+        second["original_utf8_base64"]=changed.base64EncodedString()
+        let wire=DiscussionHistoryWire([try page([row(1)],next:"opaque"),try page([second])]),scope=try StorageScope(environment:UUID().uuidString,account:"synthetic")
+        let recovery=MessageRecovery(storage:DiscussionStorage()),lease=try recovery.activate(scope)
+        let endpoint=try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:65536,maximumResponseBytes:65536)
+        let client=MessageHTTPClient(recovery:recovery,scope:scope,endpoint:endpoint,credentials:DiscussionCredentials(),interceptedTestTransport:wire)
+        let limits=try MessageReadLimits(maximumPageItems:20,maximumCursorBytes:1024,maximumDecodedBytes:65536,maximumPages:3)
+        let first=try await client.tripDiscussionHistory(conversationID:"chat",limit:1,limits:limits,lease:lease),cursor=try #require(first.next)
+        await #expect(throws:(any Error).self) { try await client.history(conversationID:"chat",limit:1,after:cursor,limits:limits,lease:lease) }
+        let secondPage=try await client.tripDiscussionHistory(conversationID:"chat",limit:1,after:cursor,limits:limits,lease:lease)
+        #expect(secondPage.value.first?.receipt.message_id=="m2" && secondPage.next==nil)
+        #expect(await wire.requests.last?.contains("cursor=opaque")==true)
+    }
+    @Test func malformedOriginalReferenceAndNumericLexemesAreNeverNormalized() throws {
+        let original=try page([row(1)]),text=String(decoding:original,as:UTF8.self)
+        let changed=[
+            text.replacingOccurrences(of:"\"expected_version\":9",with:"\"expected_version\":9.0"),
+            text.replacingOccurrences(of:"\"sequence\":1",with:"\"sequence\":true"),
+            text.replacingOccurrences(of:"\"content_version\":\"structured.2\"",with:"\"content_version\":\"structured.9\""),
+            text.replacingOccurrences(of:"\"selection_epoch\":1",with:"\"selection_epoch\":1,\"selection_epoch\":1")
+        ]
+        for value in changed { #expect(throws:(any Error).self) { try TripDiscussionHistory(raw:Data(value.utf8),maximumBytes:65536,decodedLimit:65536,limit:20,requestID:discussionHistoryTrace) } }
+        #expect(throws:(any Error).self) { try TripDiscussionHistory(raw:original,maximumBytes:65536,decodedLimit:1,limit:20,requestID:discussionHistoryTrace) }
+    }
+    @Test(arguments:["MESSAGE-send.1","MESSAGE-send.2","MESSAGE-draft.1"])
+    func originalOldWireIsRetainedInsteadOfUpgraded(version:String) throws {
+        var item=try row(1)
+        let raw=try #require(Data(base64Encoded:item["original_utf8_base64"] as! String))
+        var command=try #require(JSONSerialization.jsonObject(with:raw) as? [String:Any])
+        command["version"]=version;command.removeValue(forKey:"trip_context")
+        if version != "MESSAGE-send.2" { command.removeValue(forKey:"travel_context");command.removeValue(forKey:"needs_reference") }
+        let original=try JSONSerialization.data(withJSONObject:command,options:[.sortedKeys])
+        let hash=SHA256.hash(data:original).map { String(format:"%02x",$0) }.joined()
+        var receipt=item["receipt"] as! [String:Any];receipt["input_sha256"]=hash;item["receipt"]=receipt
+        item["original_utf8_base64"]=original.base64EncodedString()
+        if version=="MESSAGE-send.2" {
+            var ref=receipt
+            ref.merge(["version":"MESSAGE-travel-reference.1","message_version":version,"context_kind":"none","context_id":NSNull(),"context_version":NSNull(),"selection_epoch":1],uniquingKeysWith:{ _,new in new })
+            item["reference"]=ref
+        } else { item["reference"]=NSNull() }
+        let parsed=try TripDiscussionHistory(raw:page([item]),maximumBytes:65536,decodedLimit:65536,limit:20,requestID:discussionHistoryTrace)
+        let value=try #require(parsed.rows.first)
+        #expect(value.originalUTF8==original)
+        if version=="MESSAGE-send.2" {
+            guard case .travel(let ref)=value.association,case .none=ref else { Issue.record("old travel reference lost");return }
+        } else {
+            guard case .legacy=value.association else { Issue.record("old record upgraded");return }
+        }
+    }
+}

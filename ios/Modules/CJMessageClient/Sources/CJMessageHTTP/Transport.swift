@@ -43,6 +43,7 @@ struct CheckedTransport: ClientTransport {
               (operationID == Operations.receiveMessageV2.id && request.method == .post && request.path == "/v2/messages") ||
               (operationID == "receiveTripDiscussionV3" && request.method == .post && request.path == "/v3/messages") ||
               (operationID == "readTripDiscussionStatusV3" && request.method == .get && request.path?.hasPrefix("/v3/message-send-status?") == true) ||
+              (operationID == "readTripDiscussionHistoryV2" && request.method == .get && request.path?.hasPrefix("/v2/message-history?") == true) ||
               (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == "readMessageHistory" && request.method == .get && request.path?.hasPrefix("/v1/message-history?") == true) ||
@@ -728,6 +729,36 @@ extension MessageHTTPClient {
             return MessageReadResult(value:value,next:nil,requestID:body.request_id,owner:readOwner,lease:lease)
         case .default(let status, let response): try readError(status, response.body.json)
         }
+    }
+    public func tripDiscussionHistory(conversationID:String,limit:Int,after:MessageReadCursor?=nil,limits:MessageReadLimits,lease:Lease) async throws -> MessageReadResult<[MessageTripHistoryItem]> {
+        guard !conversationID.isEmpty else { throw MessageHTTPFailure.invalidConfiguration }
+        try checkSendLease(lease)
+        let key=Data(conversationID.utf8),historyEpoch=sendPermitState.historyEpochs[Data(conversationID.utf8)]
+        let purpose=Data("trip-discussion-history:".utf8)+key
+        try readCursor(after,purpose:purpose,limit:limit,limits:limits,lease:lease)
+        var query=URLComponents();query.path="/v2/message-history"
+        query.queryItems=[.init(name:"conversation_id",value:conversationID),.init(name:"limit",value:String(limit))]
+        if let after { query.queryItems!.append(.init(name:"cursor",value:after.opaque)) }
+        query.percentEncodedQuery=query.percentEncodedQuery?.replacingOccurrences(of:"+",with:"%2B")
+        guard let path=query.string else { throw MessageHTTPFailure.invalidConfiguration }
+        let (status,bytes,trace)=try await discussionExchange(path:path,operation:"readTripDiscussionHistoryV2",raw:nil,lease:lease)
+        guard status==200 else { try readError(status,JSONDecoder().decode(Components.Schemas.ErrorResponse.self,from:bytes)) }
+        let page=try TripDiscussionHistory(raw:bytes,maximumBytes:endpoint.maximumResponseBytes,decodedLimit:limits.maximumDecodedBytes,limit:limit,requestID:trace)
+        guard !page.rows.isEmpty || (after==nil && page.next==nil) else { throw MessageHTTPFailure.invalidResponse }
+        var last=after?.last ?? 0,generation=after?.generation,ids=after?.seenIDs ?? []
+        for row in page.rows {
+            let r=row.receipt
+            guard DiscussionJSON.same(r.conversation_id,conversationID),!r.message_id.isEmpty,!r.generation.isEmpty,!r.run_id.isEmpty,last<Int64.max,
+                  Int64(exactly:r.sequence)==last+1,ids.insert(Data(r.message_id.utf8)).inserted,
+                  generation.map({DiscussionJSON.same($0,r.generation)}) ?? true else { throw MessageReadFailure.resyncRequired }
+            generation=r.generation;last=Int64(r.sequence)
+        }
+        let next=try nextRead(page.next,previous:after,purpose:purpose,last:last,generation:generation,ids:ids,limits:limits,lease:lease)
+        try checkSendLease(lease)
+        if sendPermitState.historyEpochs[key]==historyEpoch,let generation {
+            sendPermitState.historyHeads[key] = .init(conversation_id:conversationID,generation:generation,last_sequence:last)
+        }
+        return MessageReadResult(value:page.rows,next:next,requestID:trace,owner:readOwner,lease:lease)
     }
 }
 

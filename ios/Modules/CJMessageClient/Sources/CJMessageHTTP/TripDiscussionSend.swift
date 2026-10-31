@@ -19,7 +19,7 @@ extension MessageHTTPClient {
         if let liveMessageTransport { try liveMessageTransport.validateTripDiscussionSending(to: endpoint) }
         else if !submissionEnabledForTest { throw MessageHTTPFailure.productionActivationUnavailable }
     }
-    private func discussionExchange(path: String, operation: String, raw: Data?, lease: Lease) async throws -> (Int, Data, String) {
+    func discussionExchange(path: String, operation: String, raw: Data?, lease: Lease) async throws -> (Int, Data, String) {
         let transport = try await checkedTransport(lease)
         var headers = HTTPFields()
         headers[.accept] = "application/json"
