@@ -14,10 +14,14 @@ class NeedsAction:
 
     @classmethod
     def parse(cls,raw):
+        return cls._parse(raw,'TRIP-needs-action.1')
+
+    @classmethod
+    def _parse(cls,raw,version):
         if type(raw) is not bytes or not 0<len(raw)<=32768:raise ValueError('bounded original action required')
         value=json.loads(raw)
         if (type(value) is not dict or set(value)!={'version','action_id','kind','proposal_id','candidate_hash'}
-                or value['version']!='TRIP-needs-action.1' or packed(value)!=raw):
+                or value['version']!=version or packed(value)!=raw):
             raise ValueError('exact canonical needs action required')
         identifier(value['action_id']);identifier(value['proposal_id'])
         if value['kind'] not in ('accept','reject'):raise ValueError('explicit choice required')
