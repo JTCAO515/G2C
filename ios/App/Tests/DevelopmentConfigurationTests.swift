@@ -9,6 +9,17 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func discussionProfileIsExplicitAndReleaseStaysClosed() throws {
+        #if DEBUG
+        #expect(try !DevelopmentDiscussionProfile.read([:]))
+        #expect(try DevelopmentDiscussionProfile.read(["G2C_DEV_MESSAGE_PROFILE":"trip-discussion-v1"]))
+        for value in ["", "true", "message-trip.2", "trip-discussion-v2", "live"] {
+            #expect(throws:DevelopmentDiscussionProfile.Failure.invalidProfile) { try DevelopmentDiscussionProfile.read(["G2C_DEV_MESSAGE_PROFILE":value]) }
+        }
+        #else
+        #expect(try !DevelopmentDiscussionProfile.read(["G2C_DEV_MESSAGE_PROFILE":"trip-discussion-v1"]))
+        #endif
+    }
     @Test func factAndPlaceProfilesAreExplicitExclusiveAndNeverEnableRelease() throws {
         #if DEBUG
         #expect(try DevelopmentSessionConfiguration.toolAnswerProfile([:]) == .plain)

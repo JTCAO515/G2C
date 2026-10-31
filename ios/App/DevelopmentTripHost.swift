@@ -70,6 +70,8 @@ import Observation
         let environment = ProcessInfo.processInfo.environment
         let typedMode = try DevelopmentTypedMode.read(environment)
         let needsProfile = try DevelopmentNeedsProfile.read(environment)
+        let tripDiscussions=try DevelopmentDiscussionProfile.read(environment)
+        guard !tripDiscussions || typedMode == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         _ = try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
         let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 4096,
             maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
@@ -110,7 +112,7 @@ import Observation
             throw TripFailure.staleBinding
         }
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
-            session: lifetime.session, operation: lifetime.operation,travelProfile:typedMode?.travel,isCurrent: { lifetime.current != nil })
+            session: lifetime.session, operation: lifetime.operation,travelProfile:typedMode?.travel,tripDiscussions:tripDiscussions,isCurrent: { lifetime.current != nil })
         if let needsProfile {
             needs = try DevelopmentNeedsHost(configuration: configuration, profile: needsProfile, shell: shell,
                 session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
@@ -412,7 +414,8 @@ import Observation
     private let keyAdapter: ExistingMessageKeyAdapter
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState,
-         session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil, isCurrent: @escaping @MainActor () -> Bool) throws {
+         session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil,tripDiscussions:Bool = false,isCurrent: @escaping @MainActor () -> Bool) throws {
+        guard !tripDiscussions || travelProfile == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         let answerFormat: RunAnswerFormat
         switch try DevelopmentSessionConfiguration.toolAnswerProfile(ProcessInfo.processInfo.environment) {
         case .plain:answerFormat = .plainText
@@ -445,7 +448,9 @@ import Observation
         let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16384,
                                            maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let transport: NoRedirectTransport
-        if travelProfile != nil {
+        if tripDiscussions {
+            transport=try NoRedirectTransport.developmentTripDiscussions(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
+        } else if travelProfile != nil {
             transport = try NoRedirectTransport.developmentTravelMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
         } else {
             transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
@@ -458,21 +463,22 @@ import Observation
         guard messages.bind(AssistantMessageBinding(recovery: recovery, scope: scope, lease: lease,
             generation: shell.generation, synthetic: false,
             isCurrent: { lifetime.current },
-            invalidateResources: { lifetime.active = false;selectedTravel?.invalidate();keyAdapter.invalidate() },sendClient:client,travelSelection:selectedTravel)) else {
+            invalidateResources: { lifetime.active = false;selectedTravel?.invalidate();keyAdapter.invalidate() },sendClient:client,travelSelection:selectedTravel,tripDiscussions:tripDiscussions)) else {
             throw RecoveryError.inactive
         }
         let limits = try MessageReadLimits(maximumPageItems: 20, maximumCursorBytes: 4096,
                                            maximumDecodedBytes: 1_000_000, maximumPages: 50)
         guard history.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease,
-            generation: shell.generation, limit: 20, limits: limits, synthetic: false,
+            generation: shell.generation, limit: 20, limits: limits, synthetic: false,tripDiscussions:tripDiscussions,
             isCurrent: { lifetime.current },
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
         }
         let runReads = try NoRedirectTransport(requestTimeout: 15, resourceTimeout: 150)
-        let runStops = try travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})
+        let runStops = try tripDiscussions ? RunCancellationTransport.developmentTripCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
+            : travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})
             : RunCancellationTransport.developmentCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
-        let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes: 256, maximumTextBytes: 200000,
+        let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes:tripDiscussions ? 16384 : 256, maximumTextBytes: 200000,
             credentials: { captured in
                 try lifetime.validate()
                 guard captured == operation, session.isCurrent(captured) else { throw RecoveryError.inactive }

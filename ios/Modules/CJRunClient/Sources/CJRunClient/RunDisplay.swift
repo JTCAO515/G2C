@@ -21,16 +21,23 @@ public enum RunDisplayFailure: Error, Equatable, Sendable {
 @MainActor public final class RunDisplaySource: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     let receipt: Components.Schemas.MessageReceipt
     let travelReference: RunTravelReference?
+    let tripReference: MessageTripReference?
     let session: SessionLifecycle
     let operation: SessionOperation
     let isCurrent: @MainActor () -> Bool
-    public init(receipt: Components.Schemas.MessageReceipt, travelReference: Components.Schemas.MessageTravelReference? = nil, session: SessionLifecycle,
+    public init(receipt: Components.Schemas.MessageReceipt, travelReference: Components.Schemas.MessageTravelReference? = nil, tripReference: MessageTripReference? = nil, session: SessionLifecycle,
                 operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
         guard receipt.sequence > 0,
               [receipt.message_id, receipt.conversation_id, receipt.generation, receipt.run_id].allSatisfy({ !$0.isEmpty }) else {
             throw RunDisplayFailure.invalidReference
         }
         self.travelReference = try travelReference.map { try RunTravelReference($0,receipt:receipt) }
+        if let tripReference {
+            guard travelReference == nil, exact(tripReference.messageID,receipt.message_id), exact(tripReference.conversationID,receipt.conversation_id),
+                  exact(tripReference.generation,receipt.generation),exact(tripReference.runID,receipt.run_id),
+                  tripReference.sequence == receipt.sequence,tripReference.inputSHA256 == receipt.input_sha256 else { throw RunDisplayFailure.invalidReference }
+        }
+        self.tripReference = tripReference
         self.receipt = receipt; self.session = session; self.operation = operation; self.isCurrent = isCurrent
     }
     public nonisolated var description: String { "<redacted original run source>" }
@@ -162,7 +169,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
     }
     public func prepareRead() -> RunDisplayWork? { prepare(streaming: false) }
     /// Explicit GET-only continuation; never resends a message or starts a model run.
-    public var supportsStreaming: Bool { source != nil && source?.travelReference == nil }
+    public var supportsStreaming: Bool { source != nil && source?.travelReference == nil && source?.tripReference == nil }
     public func prepareStream() -> RunDisplayWork? { supportsStreaming ? prepare(streaming:true) : nil }
     private func prepare(streaming: Bool) -> RunDisplayWork? {
         guard !prepared, !executing, !cancellationPrepared, storedCancellation != .stopping, let original = source else { return nil }
@@ -233,11 +240,25 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
         }
     }
     private func readSnapshot(_ original: RunDisplaySource,_ token: UUID,bearer: String) async throws -> RunDisplayValue {
-        let checked = RunReadTransport(travel:original.travelReference != nil,underlying:transport,endpoint:endpoint,bearer:bearer,
+        let checked = RunReadTransport(travel:original.travelReference != nil,discussion:original.tripReference != nil,underlying:transport,endpoint:endpoint,bearer:bearer,
             originalMessageID:original.receipt.message_id,validate:{ [self] in try check(original,token) })
         let api = Client(serverURL:endpoint.url,configuration:.memory,transport:checked)
         let value: RunDisplayValue
-        if let reference = original.travelReference {
+        if let reference = original.tripReference {
+            var components=URLComponents();components.path="/v3/run-display";components.queryItems=[.init(name:"message_id",value:original.receipt.message_id)]
+            components.percentEncodedQuery=components.percentEncodedQuery?.replacingOccurrences(of:"+",with:"%2B")
+            guard let path=components.string else { throw RunDisplayFailure.invalidReference }
+            let (response,body)=try await checked.send(HTTPRequest(method:.get,scheme:nil,authority:nil,path:path),body:nil,baseURL:endpoint.url,operationID:"getTripRunDisplayV3")
+            try check(original,token)
+            guard response.status.code == 200 else { throw RunDisplayFailure.rejected(status:response.status.code) }
+            let media=response.headerFields.filter { $0.name == .contentType }
+            guard media.count==1,media[0].value.split(separator:";").first?.lowercased()=="application/json" else { throw RunDisplayFailure.invalidResponse }
+            guard let body else { throw RunDisplayFailure.invalidResponse }
+            let bytes=try await Data(collecting:body,upTo:endpoint.maximumResponseBytes);try check(original,token)
+            let envelope=try RunTripEnvelope(bytes,fields:"request_id version snapshot reference",version:"RUN-display.3",reference:reference)
+            let (snapshot,trace)=try envelope.display()
+            value=RunDisplayValue(snapshot:snapshot,requestID:trace)
+        } else if let reference = original.travelReference {
             let output = try await api.getTravelRunDisplay(query:.init(message_id:original.receipt.message_id))
             try check(original,token)
             switch output {
@@ -303,7 +324,10 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             let payload: Data
             let operation: String
             let path: String
-            if original.travelReference != nil {
+            if original.tripReference != nil {
+                payload=try JSONSerialization.data(withJSONObject:["version":"RUN-cancel.3","message_id":original.receipt.message_id],options:[.sortedKeys])
+                operation="cancelOriginalTripRunV3";path="/v3/run-cancellations"
+            } else if original.travelReference != nil {
                 payload = try JSONEncoder().encode(Components.Schemas.RunTravelCancellationRequest(version:.RUN_hyphen_cancel_period_2,message_id:original.receipt.message_id))
                 operation = Operations.cancelOriginalTravelRun.id;path = "/v2/run-cancellations"
             } else {
@@ -336,7 +360,15 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             }
             var parser = StrictRunJSON(bytes: Array(bytes)); try parser.check()
             let receipt: (requestID: String,messageID: String,runID: String,highwater: Int,status: String)
-            if let reference = original.travelReference {
+            if let reference = original.tripReference {
+                let envelope=try RunTripEnvelope(bytes,fields:"request_id version message_id run_id status event_highwater reference",version:"RUN-cancel.3",reference:reference)
+                try envelope.requireIntegers(["event_highwater"])
+                guard let trace=envelope.object["request_id"] as? String,let message=envelope.object["message_id"] as? String,
+                      let run=envelope.object["run_id"] as? String,let status=envelope.object["status"] as? String,
+                      ["completed","failed","cancelled","context_invalid","unknown"].contains(status),
+                      let highwater=envelope.integers[["event_highwater"]] else { throw RunDisplayFailure.invalidResponse }
+                receipt=(trace,message,run,Int(highwater),status)
+            } else if let reference = original.travelReference {
                 let value = try JSONDecoder().decode(Components.Schemas.RunTravelCancellationResponse.self,from:bytes)
                 try reference.requireOriginal(value.reference)
                 receipt = (value.request_id,value.message_id,value.run_id,value.event_highwater,value.status.rawValue)
@@ -376,7 +408,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             try check(original, token)
             storedDraftStatus = .loading
             let value = try await readOriginalDraftStatus(endpoint: endpoint, transport: transport, bearer: bearer,
-                receipt: original.receipt, snapshot: snapshot, version: original.travelReference == nil ? draftStatusVersion : .v3, reference:original.travelReference, validate: { [self] in try check(original, token) })
+                receipt: original.receipt, snapshot: snapshot, version: original.tripReference != nil ? .v4 : original.travelReference == nil ? draftStatusVersion : .v3, reference:original.travelReference, tripReference:original.tripReference, validate: { [self] in try check(original, token) })
             try check(original, token)
             storedDraftStatus = value
         } catch {

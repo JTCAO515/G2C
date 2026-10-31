@@ -39,7 +39,7 @@ struct ServerHistoryView: View {
             }
             if let selected = host.selectedConversation {
                 Section(language.text("Stored messages", "已存消息") + " · " + selected.conversation_id) {
-                    status(host.historyStatus)
+                    status(host.historyStatus).accessibilityIdentifier("history.messages.status")
                     Button(language.text("Load messages from first page", "从第一页读取消息")) { Task { await host.loadHistory(context: readContext) } }
                         .accessibilityIdentifier("history.loadMessages")
                         .disabled(host.historyStatus == .loading)

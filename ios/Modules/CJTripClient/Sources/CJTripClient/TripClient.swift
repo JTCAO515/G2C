@@ -20,6 +20,9 @@ import OpenAPIRuntime
     var generation = UUID()
     var detailSnapshotSource = UUID()
     var startedDetailSnapshotSource: UUID?
+    var structuredPageEpoch = UUID()
+    var structuredPageWork = UUID()
+    var startedStructuredPageWork: UUID?
 
     public init(endpoint: TripEndpoint, credentials: @escaping TripCredentialCallback,
                 currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
@@ -47,7 +50,9 @@ import OpenAPIRuntime
         transport = interceptedTransport; testWrites = true; liveWrites = false; store = pendingStore
         self.session = session; self.sessionOperation = sessionOperation
     }
-    public func invalidate() { generation = UUID(); confirmed.removeAll(); invalidateDetailSnapshots() }
+    public func invalidate() {
+        generation = UUID(); confirmed.removeAll(); invalidateDetailSnapshots(); invalidateStructuredPages()
+    }
     /// True only for a host-granted live-write client with a durable pending store.
     public var acceptsUserActions: Bool { liveWrites && store != nil }
     var writesEnabled: Bool { testWrites || liveWrites }
