@@ -63,7 +63,10 @@ import Foundation
             }
             let frame = element.exists ? element.frame : .zero
             if element.exists && element.isHittable && (full ? frame.minY >= top && frame.maxY <= bottom : frame.midY > top && frame.midY < bottom) { return element }
-            let down = frame == .zero ? attempt >= 30 : (full ? frame.minY < top : frame.midY <= top)
+            // XCTest uses infinite origins for clipped fields. They provide no
+            // direction; search both ways just as for a missing lazy row.
+            let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
+            let down = located ? (full ? frame.minY < top : frame.midY <= top) : attempt >= 30
             let middle = (top + bottom) / 2, step = min(150,(bottom-top)*0.35)
             let panel = app.scrollViews.matching(identifier:"needs.content").firstMatch
             let surface: XCUIElement = panel.exists ? panel : app!
@@ -238,6 +241,14 @@ import Foundation
         if !large {
             tap("needs.detail.open"); tap("needs.useCurrent"); tap("needs.editor.open")
             editKnown("currency",value:"CNY",language:language)
+            text("needs.currencyReview",contains:"does not convert")
+            XCTAssertFalse(app.buttons.matching(identifier:"needs.save").firstMatch.isEnabled)
+            // "Not recorded" omits a correction; the server would retain the
+            // old USD amount. It must not bypass the currency review guard.
+            for amount in ["total", "paid"] {
+                tap("needs.editor."+amount+".section"); tap("needs.editor."+amount+".state"); tap("Not recorded")
+                tap("needs.editor."+amount+".section")
+            }
             text("needs.currencyReview",contains:"does not convert")
             XCTAssertFalse(app.buttons.matching(identifier:"needs.save").firstMatch.isEnabled)
             let unchanged = try await proof(f); XCTAssertEqual(unchanged.manual_posts,1)

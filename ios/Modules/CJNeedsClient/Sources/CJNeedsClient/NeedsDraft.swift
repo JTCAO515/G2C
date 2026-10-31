@@ -129,12 +129,16 @@ public struct NeedsDraft: Sendable {
     // Missing source currency is not silently replaced by a later selection.
     private var amountCurrencies: [NeedsField: NeedsObservationInput] = [:]
     private var manuallyEnteredWithoutCurrency: Set<NeedsField> = []
+    // Omitted changes preserve the server basis, not the editor's absent value.
+    private let basisObservations: [NeedsField: NeedsObservationInput]
     public var currencyReviewRequired: Set<NeedsField> {
-        let currency = observations[.currency]!
+        let currency = changedFields.contains(.currency) ? observations[.currency]! : basisObservations[.currency]!
         guard currency.state == .known else { return [] }
         return Set(Self.amounts.filter { field in
-            guard observations[field]!.state == .known else { return false }
-            let original = amountCurrencies[field]!
+            let changed = changedFields.contains(field)
+            let amount = changed ? observations[field]! : basisObservations[field]!
+            guard amount.state == .known else { return false }
+            let original = changed ? amountCurrencies[field]! : basisObservations[.currency]!
             return original.state != .known || !same(original.value, currency.value)
         })
     }
@@ -144,6 +148,7 @@ public struct NeedsDraft: Sendable {
                         .overseasTimezone: .init(fields.overseas_timezone), .currency: .init(fields.budget_currency),
                         .total: .init(fields.budget_total), .perPerson: .init(fields.budget_per_person), .paid: .init(fields.budget_paid),
                         .basis: .init(fields.budget_basis), .includes: .init(fields.budget_includes), .pace: .init(fields.pace)]
+        basisObservations = observations
         if let e = fields.overseas_departure { events[.overseasDeparture] = .init(e) }
         if let e = fields.arrival { events[.arrival] = .init(e) }
         if let e = fields.departure { events[.departure] = .init(e) }

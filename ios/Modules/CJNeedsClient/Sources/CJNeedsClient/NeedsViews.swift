@@ -66,7 +66,7 @@ public struct NeedsEditorView: View {
     private let language: NeedsLanguage
     public init(draft: Binding<NeedsDraft>, language: NeedsLanguage) { _draft = draft; self.language = language }
     public var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        LazyVStack(alignment: .leading, spacing: 16) {
             Text(language.text("纠正本次条件", "Correct journey details")).font(.headline)
             Text(language.text("只提交主动修改的字段；日期未定也可以保留。金额原样保存，不换算或平均。", "Only explicitly edited fields are included. Dates may remain undecided. Amounts are preserved without conversion or division."))
                 .font(.footnote)

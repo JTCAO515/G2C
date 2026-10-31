@@ -15,7 +15,7 @@ struct NeedsContainerView: View {
         let containerID = host.viewIdentity
         let cancellation = host.captureCancellation()
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            LazyVStack(alignment: .leading, spacing: 20) {
                 RunReadableText(text: language.text("Review or correct only what you know. Dates and budget may stay undecided.", "只查看或纠正已经明确的条件；日期和预算可以保持未定。"))
                 RunReadableText(text: language.text("Manual changes do not update long-term memory or the formal trip. Booking and lock declarations are unverified user claims.", "手工改动不会更新长期记忆或正式行程。预订和固定意图均是未经外部核实的用户陈述。"), style: .caption)
                 if let model = host.presentation {

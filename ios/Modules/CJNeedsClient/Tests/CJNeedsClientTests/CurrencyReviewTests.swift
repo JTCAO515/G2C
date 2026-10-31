@@ -33,6 +33,44 @@ struct CurrencyReviewTests {
         #expect(value.currencyReviewRequired.isEmpty)
         #expect(try value.freeze(actionID: "unchanged-unit").command.changes.budget_total == nil)
     }
+    @Test func omittedAmountsStillPreserveTheServerCurrencyClaim() throws {
+        var value = draft()
+        value.set(.currency, .init(state: .known, value: "CNY"))
+        value.set(.total, .init(state: .absent))
+        value.set(.paid, .init(state: .absent))
+        #expect(!value.changedFields.contains(.total) && !value.changedFields.contains(.paid))
+        #expect(value.currencyReviewRequired == [.total, .paid])
+        #expect(throws: NeedsFailure.invalidInput) { try value.freeze(actionID: "omission-is-not-conversion") }
+        value.set(.total, .init(state: .unknown))
+        value.set(.paid, .init(state: .missing))
+        #expect(value.currencyReviewRequired.isEmpty)
+        let command = try value.freeze(actionID: "explicit-unknown").command
+        #expect(NeedsObservationInput(command.changes.budget_total).state == .unknown)
+        #expect(NeedsObservationInput(command.changes.budget_paid).state == .missing)
+    }
+    @Test func omittedCurrencyRevertsToServerBasisForNewAmounts() throws {
+        var value = draft()
+        value.set(.currency, .init(state: .known, value: "CNY"))
+        value.set(.total, .init(state: .known, value: "7000.00"))
+        value.set(.paid, .init(state: .known, value: "500.00"))
+        value.set(.currency, .init(state: .absent))
+        #expect(value.currencyReviewRequired == [.total, .paid])
+        #expect(throws: NeedsFailure.invalidInput) { try value.freeze(actionID: "preserved-usd") }
+        value.set(.total, .init(state: .known, value: "1100.00"))
+        // An absent editor currency is not a new claim of the server currency.
+        #expect(value.currencyReviewRequired == [.total, .paid])
+    }
+    @Test func omittedNewPreviewAmountDoesNotInventAnOldServerAmount() throws {
+        let fixture = try #require(PreviewV1Tests().fixtures().first(where: { $0.name == "en" }))
+        var value = NeedsDraft(needsID: "new-needs", expectedVersion: 0)
+        value.applyUnconfirmedPreview(try fixture.decode())
+        value.set(.currency, .init(state: .known, value: "CNY"))
+        value.set(.total, .init(state: .absent))
+        value.set(.paid, .init(state: .absent))
+        #expect(value.currencyReviewRequired.isEmpty)
+        let changes = try value.freeze(actionID: "no-prior-amount").command.changes
+        #expect(changes.budget_total == nil && changes.budget_paid == nil)
+    }
     @Test func newlyTypedAmountAndExplicitCurrencyAreOneManualClaim() throws {
         var value = NeedsDraft(needsID: "new-needs", expectedVersion: 0)
         value.sourceText = "I explicitly enter these values"
