@@ -2,6 +2,20 @@ import Foundation
 import CryptoKit
 import CJAPI
 
+/// Expected content from an accepted Trip read, never encoded in send.3 and
+/// never treated as permission. It cross-checks the returned original reference.
+public struct MessageTripContent:Sendable {
+    public let version:String
+    public let sha256:String
+    public init(version:String,sha256:String) throws {
+        guard version=="structured.1" || version=="structured.2" else { throw MessageHTTPFailure.invalidResponse }
+        self.version=version;self.sha256=try DiscussionJSON.hash(sha256)
+    }
+    func validate(_ reference:MessageTripReference) throws {
+        guard reference.contentVersion==version,reference.contentSHA256==sha256 else { throw MessageHTTPFailure.invalidResponse }
+    }
+}
+
 /// Explicit selection data for frozen SEND-V3. This is neither an ownership
 /// permit nor a Trip write capability; the server validates current membership.
 public struct MessageTripSelection: Sendable, Equatable {

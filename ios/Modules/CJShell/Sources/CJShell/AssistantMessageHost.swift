@@ -20,6 +20,7 @@ import CJAPI
     let sendClient: MessageHTTPClient?
     let travelSelection: TravelSelectionModel?
     let currentNeeds: (@MainActor () -> MessageNeedsSelection?)?
+    let tripDiscussions: Bool
 
     public init(recovery: MessageRecovery, scope: StorageScope, lease: Lease,
                 generation: ShellGeneration, conversationID: String? = nil, messageID: String? = nil,
@@ -27,12 +28,13 @@ import CJAPI
                 invalidateResources: @escaping @MainActor () -> Void,
                 queryOriginal: (@MainActor (String, Lease) async throws -> Void)? = nil,
                 sendClient: MessageHTTPClient? = nil,travelSelection: TravelSelectionModel? = nil,
-                currentNeeds: (@MainActor () -> MessageNeedsSelection?)? = nil) {
+                currentNeeds: (@MainActor () -> MessageNeedsSelection?)? = nil,tripDiscussions: Bool = false) {
         self.recovery = recovery; self.scope = scope; self.lease = lease
         self.generation = generation; self.conversationID = conversationID; self.messageID = messageID
         self.synthetic = synthetic; self.isCurrent = isCurrent; self.queryOriginal = queryOriginal
         self.invalidateResources = invalidateResources
         self.sendClient = sendClient;self.travelSelection = travelSelection;self.currentNeeds = currentNeeds
+        self.tripDiscussions=tripDiscussions
     }
 }
 
@@ -41,12 +43,13 @@ import CJAPI
 @MainActor public final class AcceptedMessageRunReceipt: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     let receipt: Components.Schemas.MessageReceipt
     let travelReference: Components.Schemas.MessageTravelReference?
+    let tripReference: MessageTripReference?
     let originalTextUTF8: Data?
     let isCurrent: @MainActor () -> Bool
     let isStillOwned: @MainActor () -> Bool
-    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil, originalTextUTF8: Data?, isCurrent: @escaping @MainActor () -> Bool,
+    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil,tripReference:MessageTripReference? = nil, originalTextUTF8: Data?, isCurrent: @escaping @MainActor () -> Bool,
                      isStillOwned: @escaping @MainActor () -> Bool) {
-        self.receipt = receipt;self.travelReference = travelReference;self.originalTextUTF8 = originalTextUTF8; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
+        self.receipt = receipt;self.travelReference = travelReference;self.tripReference=tripReference;self.originalTextUTF8 = originalTextUTF8; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
     }
     public nonisolated var description: String { "<redacted accepted message receipt>" }
     public nonisolated var debugDescription: String { description }
@@ -76,6 +79,13 @@ import CJAPI
 public enum MessageHostActivity: Equatable {
     case unavailable, ready, preparing, sending, querying, inputRejected, unknown, storageBlocked, invalidated
 }
+public enum TripDiscussionChoiceDisplay {
+    case unselected,none,trip(title:String,selection:MessageTripSelection),unavailable
+}
+public struct MessageDiscussionRefusal {
+    public let status:Int
+    public let code:String
+}
 
 @MainActor public struct MessageResubmissionContext: Identifiable {
     public let id = UUID()
@@ -100,11 +110,50 @@ public enum MessageHostActivity: Equatable {
     private var selectedMessageID: String?
     private var runSelectionRevision = UUID()
     private var runSelectionAllowed = false
+    private var discussionEntry:TripDiscussionEntry?
+    private var discussionChoiceMade=false
+    private var discussionRevision=UUID()
+    private var storedDiscussionRefusal:MessageDiscussionRefusal?
     public var creationIntent: MessageCreationIntent = .none
     public var isBusy: Bool { activity == .preparing || activity == .sending || activity == .querying }
     public var selectedConversation: String? { bindingIsCurrent ? selectedConversationID : nil }
     public var travelSelection: TravelSelectionModel? { bindingIsCurrent ? binding?.travelSelection : nil }
     public var supportsSending: Bool { bindingIsCurrent && binding?.sendClient != nil }
+    public var supportsTripDiscussions:Bool { bindingIsCurrent && binding?.tripDiscussions == true }
+    public var discussionRefusal:MessageDiscussionRefusal? { bindingIsCurrent ? storedDiscussionRefusal : nil }
+    public var tripDiscussionChoice:TripDiscussionChoiceDisplay {
+        guard supportsTripDiscussions else { return .unavailable }
+        guard discussionChoiceMade else { return .unselected }
+        do {
+            let choice=try capturedDiscussion()
+            if let choice,let entry=discussionEntry { return .trip(title:entry.title,selection:choice) }
+            return .none
+        } catch { return .unavailable }
+    }
+    private func capturedDiscussion() throws -> MessageTripSelection? {
+        let revision=discussionRevision
+        guard bindingIsCurrent,let binding,binding.tripDiscussions,discussionChoiceMade else { throw RecoveryError.queryOnly }
+        let entry=discussionEntry
+        try entry?.validate(scopeEnvironment:binding.scope.environment,scopeAccount:binding.scope.account,generation:binding.generation)
+        guard revision==discussionRevision,isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),revision==discussionRevision else { throw RecoveryError.inactive }
+        return entry?.selection
+    }
+    @discardableResult public func selectTripDiscussion(_ entry:TripDiscussionEntry) -> Bool {
+        let revision=discussionRevision
+        guard supportsTripDiscussions,!isBusy,let binding else { return false }
+        do {
+            try entry.validate(scopeEnvironment:binding.scope.environment,scopeAccount:binding.scope.account,generation:binding.generation)
+            guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),!isBusy,revision==discussionRevision else { return false }
+            discussionEntry=entry;discussionChoiceMade=true;discussionRevision=UUID()
+            retireRunSelection();return true
+        } catch { return false }
+    }
+    @discardableResult public func selectUnboundDiscussion() -> Bool {
+        let revision=discussionRevision
+        guard supportsTripDiscussions,!isBusy,revision==discussionRevision else { return false }
+        discussionEntry=nil;discussionChoiceMade=true;discussionRevision=UUID()
+        retireRunSelection();return true
+    }
     public var visibleOriginalText: String? {
         guard let record = visibleRecord,
               let value = try? JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any] else { return nil }
@@ -129,6 +178,11 @@ public enum MessageHostActivity: Equatable {
     public var canStartMessage: Bool {
         guard bindingIsCurrent, !isBusy, let binding, let client = binding.sendClient,
               let conversation = selectedConversationID else { return false }
+        if binding.tripDiscussions {
+            do { _=try capturedDiscussion();guard creationIntent == .none else { return false }
+                return try client.canStartTripDiscussion(conversationID:conversation,lease:binding.lease)
+            } catch { return false }
+        }
         if let travel = binding.travelSelection {
             guard (try? travel.capture()) != nil,creationIntent == .none || binding.currentNeeds?() != nil else { return false }
             return (try? client.canStartTravelSend(conversationID:conversation,lease:binding.lease)) == true
@@ -141,10 +195,12 @@ public enum MessageHostActivity: Equatable {
               let record, record.phase == .notObserved,
               let cid = try? originalConversation(record), selectedConversationID.map({ Data($0.utf8) == Data(cid.utf8) }) == true else { return false }
         switch try? client.originalSendVersion(messageID:record.messageID,lease:binding.lease) {
+        case .tripDiscussion:
+            return binding.tripDiscussions && (try? client.tripDiscussionDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
         case .travel:
             return binding.travelSelection != nil && (try? client.travelSendDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
         case .legacy:
-            return binding.travelSelection == nil && (try? client.sendDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
+            return !binding.tripDiscussions && binding.travelSelection == nil && (try? client.sendDecision(messageID:record.messageID,lease:binding.lease)) == .resubmitOriginal
         case .historicalDraft,nil:return false
         }
     }
@@ -159,6 +215,7 @@ public enum MessageHostActivity: Equatable {
     /// Once per UI generation. Rebinding cannot erase ambiguity within an identity lifetime.
     @discardableResult public func bind(_ value: AssistantMessageBinding) -> Bool {
         guard !shell.messageBindingBlocked, value.generation == shell.generation, usedGeneration != value.generation,
+              !value.tripDiscussions || (value.travelSelection == nil && value.currentNeeds == nil),
               value.isCurrent(), value.conversationID?.isEmpty != true else { return false }
         // isCurrent is injected and may synchronously reenter with a newer account.
         guard !shell.messageBindingBlocked, value.generation == shell.generation,
@@ -250,13 +307,17 @@ public enum MessageHostActivity: Equatable {
               let bytes = record.receipt,ownsRunReceipt(record,binding:originalBinding,revision:revision) else { return nil }
         let receipt: Components.Schemas.MessageReceipt
         let reference: Components.Schemas.MessageTravelReference?
+        let tripReference:MessageTripReference?
         do {
-            if let client = originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .travel {
+            if let client=originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .tripDiscussion {
+                let accepted=try client.acceptedTripDiscussion(messageID:id,lease:originalBinding.lease)
+                receipt=accepted.receipt;reference=nil;tripReference=accepted.reference
+            } else if let client = originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .travel {
                 let accepted = try client.acceptedTravelMessage(messageID:id,lease:originalBinding.lease)
                 try client.validateRead(accepted,lease:originalBinding.lease)
-                receipt = accepted.value.receipt;reference = accepted.value.reference
+                receipt = accepted.value.receipt;reference = accepted.value.reference;tripReference=nil
             } else {
-                receipt = try JSONDecoder().decode(Components.Schemas.MessageReceipt.self,from:bytes);reference = nil
+                receipt = try JSONDecoder().decode(Components.Schemas.MessageReceipt.self,from:bytes);reference = nil;tripReference=nil
             }
             guard Data(receipt.message_id.utf8) == Data(record.messageID.utf8),receipt.input_sha256 == record.inputSHA256,
                   ownsRunReceipt(record,binding:originalBinding,revision:revision) else { return nil }
@@ -265,7 +326,7 @@ public enum MessageHostActivity: Equatable {
         // extraction consumers require these original decoded text bytes; they
         // never take source text from a mutable composer or later message.
         let originalText = (try? JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any])?["text"] as? String
-        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference,
+        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference,tripReference:tripReference,
             originalTextUTF8:originalText.map { Data($0.utf8) }, isCurrent: { [weak self] in
             self?.ownsRunReceipt(record, binding: originalBinding, revision: revision) == true
         }, isStillOwned: { [weak self] in
@@ -320,6 +381,7 @@ public enum MessageHostActivity: Equatable {
             do {
                 if let client = binding.sendClient {
                     switch try client.originalSendVersion(messageID:messageID,lease:binding.lease) {
+                    case .tripDiscussion:_ = try await client.reconcileTripDiscussion(messageID:messageID,lease:binding.lease)
                     case .legacy:_ = try await client.reconcileSend(messageID:messageID,lease:binding.lease)
                     case .travel:_ = try await client.reconcileTravelSend(messageID:messageID,lease:binding.lease)
                     case .historicalDraft:throw RecoveryError.queryOnly
@@ -377,14 +439,21 @@ public enum MessageHostActivity: Equatable {
             task = Task { [weak self] in
                 do {
                     if needsHead {
-                        if binding.travelSelection != nil { _ = try await client.readTravelSendHead(conversationID:conversationID,lease:binding.lease) }
+                        if binding.tripDiscussions { _ = try await client.readTripDiscussionHead(conversationID:conversationID,lease:binding.lease) }
+                        else if binding.travelSelection != nil { _ = try await client.readTravelSendHead(conversationID:conversationID,lease:binding.lease) }
                         else { _ = try await client.readSendHead(conversationID:conversationID,lease:binding.lease) }
                     }
                     guard let self, self.isSameBinding(binding), self.runSelectionRevision == revision else { return }
                     guard self.bindingIsCurrent else { self.blockStorage(for: binding); return }
+                    if binding.tripDiscussions && needsHead { self.storedDiscussionRefusal=nil }
                     self.activity = .ready; self.task = nil
                     self.saveDraft()
-                } catch { self?.sendFailed(binding, revision: revision) }
+                } catch {
+                    if binding.tripDiscussions,case MessageReadFailure.rejected(let status,let error)=error {
+                        self?.recordDiscussionRefusal(status:status,code:error.error.code,binding:binding,revision:revision)
+                    }
+                    self?.sendFailed(binding, revision: revision)
+                }
             }
             return true
         } catch { blockStorage(for: binding); return false }
@@ -399,7 +468,11 @@ public enum MessageHostActivity: Equatable {
         do {
             let original: ActionRecord
             let travelWire = binding.travelSelection != nil
-            if let travel = binding.travelSelection {
+            if binding.tripDiscussions {
+                let choice=try capturedDiscussion()
+                guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),creationIntent == .none else { return }
+                original=try client.stageTripDiscussion(messageID:UUID().uuidString,conversationID:conversation,text:text,trip:choice,content:discussionEntry?.content,lease:binding.lease)
+            } else if let travel = binding.travelSelection {
                 let selection = try travel.capture()
                 let needs = creationIntent == .none ? nil : binding.currentNeeds?()
                 try travel.validate(selection)
@@ -414,7 +487,10 @@ public enum MessageHostActivity: Equatable {
             projection = try binding.recovery.localProjection(scope: binding.scope, lease: binding.lease)
             task = Task { [weak self] in
                 do {
-                    if travelWire { _ = try await client.submitPreparedTravelSend(messageID:original.messageID,lease:binding.lease) }
+                    if binding.tripDiscussions {
+                        let outcome=try await client.submitPreparedTripDiscussion(messageID:original.messageID,lease:binding.lease)
+                        if case .rejected(let status,let error)=outcome { self?.recordDiscussionRefusal(status:status,code:error.error.code,binding:binding,revision:revision) }
+                    } else if travelWire { _ = try await client.submitPreparedTravelSend(messageID:original.messageID,lease:binding.lease) }
                     else { _ = try await client.submitPrepared(messageID:original.messageID,lease:binding.lease) }
                     try self?.sendFinished(binding, messageID: original.messageID, revision: revision,
                                           clearEditorRevision: editorRevision)
@@ -432,7 +508,8 @@ public enum MessageHostActivity: Equatable {
         guard canResubmit,let binding,let client = binding.sendClient,let record else { return nil }
         do {
             let wire = try client.originalSendVersion(messageID:record.messageID,lease:binding.lease)
-            let confirmation = try wire == .travel ? client.requiresTravelResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
+            let confirmation = try wire == .tripDiscussion ? client.requiresTripDiscussionResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
+                : wire == .travel ? client.requiresTravelResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
                 : client.requiresResubmissionConfirmation(messageID:record.messageID,lease:binding.lease)
             return MessageResubmissionContext(requiresConfirmation:confirmation,binding:binding,messageID:record.messageID,revision:runSelectionRevision,wire:wire)
         } catch { return nil }
@@ -448,6 +525,7 @@ public enum MessageHostActivity: Equatable {
         task = Task { [weak self] in
             do {
                 switch context.wire {
+                case .tripDiscussion:_ = try await client.submitPreparedTripDiscussion(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
                 case .legacy:_ = try await client.submitPrepared(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
                 case .travel:_ = try await client.submitPreparedTravelSend(messageID:context.messageID,lease:binding.lease,confirmRestored:confirmed)
                 case .historicalDraft:throw RecoveryError.queryOnly
@@ -463,6 +541,7 @@ public enum MessageHostActivity: Equatable {
         guard bindingIsCurrent else { blockStorage(for: original); return }
         guard isSameBinding(original), runSelectionRevision == revision else { return }
         record = try original.recovery.action(messageID: messageID, lease: original.lease)
+        if original.tripDiscussions,record?.phase == .accepted { storedDiscussionRefusal=nil }
         if record?.phase == .accepted, let clearEditorRevision, shell.draftRevision == clearEditorRevision,
            let conversation = selectedConversationID {
             try original.recovery.saveDraft(Data(), conversationID: conversation, lease: original.lease)
@@ -484,6 +563,10 @@ public enum MessageHostActivity: Equatable {
         activity = .unknown; task = nil
         saveDraft()
     }
+    private func recordDiscussionRefusal(status:Int,code:String,binding:AssistantMessageBinding,revision:UUID) {
+        guard isSameBinding(binding),runSelectionRevision==revision,bindingIsCurrent,isSameBinding(binding),runSelectionRevision==revision else { return }
+        storedDiscussionRefusal=MessageDiscussionRefusal(status:status,code:code)
+    }
 
     private func originalConversation(_ record: ActionRecord) throws -> String {
         guard let value = try JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any],
@@ -498,6 +581,7 @@ public enum MessageHostActivity: Equatable {
         let previous = binding
         binding = nil; record = nil; projection = nil; storedDraftBytes = nil
         selectedConversationID = nil; selectedMessageID = nil
+        discussionEntry=nil;discussionChoiceMade=false;discussionRevision=UUID();storedDiscussionRefusal=nil
         creationIntent = .none
         retireRunSelection()
         task?.cancel(); task = nil

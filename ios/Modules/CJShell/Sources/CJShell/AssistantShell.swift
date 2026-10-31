@@ -46,6 +46,9 @@ struct AssistantShell: View {
                     .accessibilityIdentifier("assistant.serverHistory")
                 Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }.accessibilityIdentifier("assistant.needs")
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
+                if messageHost.supportsTripDiscussions {
+                    TripDiscussionChoiceView(host:messageHost,language:state.language,openTrips:{ state.selectedTab = .trips })
+                }
                 if messageHost.travelSelection != nil {
                     Button { panel = .travel } label: {
                         RunReadableText(text:state.language.text("Choose travel context", "选择旅行上下文"))
@@ -162,7 +165,7 @@ struct AssistantShell: View {
                     RunReadableText(text: state.language.text("Conversation: ", "会话：") + conversation, style: .caption)
                         .accessibilityIdentifier("assistant.conversation")
                 }
-                Toggle(isOn: Binding(
+                if !messageHost.supportsTripDiscussions { Toggle(isOn: Binding(
                     get: { messageHost.creationIntent == .considerTrip },
                     set: { messageHost.creationIntent = $0 ? .considerTrip : .none })) {
                     RunReadableText(text: state.language.text("Trip planning", "规划行程"))
@@ -170,6 +173,7 @@ struct AssistantShell: View {
                     .accessibilityLabel(state.language.text("Trip planning", "规划行程"))
                     .disabled(messageHost.isBusy)
                     .accessibilityIdentifier("assistant.intent")
+                }
             }
             HStack(alignment: .bottom, spacing: 4) {
                 unavailableIcon("plus", english: "Attachments — not available", chinese: "附件——尚未开放")

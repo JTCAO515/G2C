@@ -71,7 +71,7 @@ private actor DiscussionWire: ClientTransport {
         #expect(try !client.canStartTripDiscussion(conversationID: "chat", lease: lease))
         _ = try await client.readTripDiscussionHead(conversationID: "chat", lease: lease)
         let choice = try MessageTripSelection(id: "trip-a", expectedVersion: 8, day: nil, itemID: "i1")
-        let record = try client.stageTripDiscussion(messageID: "m1", conversationID: "chat", text: "原文", trip: choice, lease: lease)
+        let record = try client.stageTripDiscussion(messageID: "m1", conversationID: "chat", text: "原文", trip: choice,content:MessageTripContent(version:"structured.2",sha256:String(repeating:"a",count:64)), lease: lease)
         #expect(try !client.canStartTripDiscussion(conversationID: "chat", lease: lease))
         guard case .accepted = try await client.submitPreparedTripDiscussion(messageID: "m1", lease: lease) else { Issue.record("not accepted"); return }
         #expect(await wire.posts == [record.originalUTF8])
@@ -137,6 +137,17 @@ private actor DiscussionWire: ClientTransport {
         catch MessageReadFailure.rejected(let status, let error) { #expect(status == 503 && error.error.code == "MESSAGE_CONTEXT_UNAVAILABLE") }
         #expect(try !client.canStartTripDiscussion(conversationID: "chat", lease: lease))
         #expect(await wire.posts.isEmpty)
+    }
+    @Test func contentMismatchAtSameTripVersionStaysUnknownAndDoesNotUnlockNewID() async throws {
+        let wire=DiscussionWire();let (recovery,lease,client,_)=try setup(wire)
+        _=try await client.readTripDiscussionHead(conversationID:"chat",lease:lease)
+        let choice=try MessageTripSelection(id:"trip-a",expectedVersion:8,day:nil,itemID:"i1")
+        let content=try MessageTripContent(version:"structured.2",sha256:String(repeating:"b",count:64))
+        try client.stageTripDiscussion(messageID:"m1",conversationID:"chat",text:"original",trip:choice,content:content,lease:lease)
+        await #expect(throws:(any Error).self) { try await client.submitPreparedTripDiscussion(messageID:"m1",lease:lease) }
+        #expect(try recovery.action(messageID:"m1",lease:lease)?.phase == .queryRequired)
+        await #expect(throws:(any Error).self) { try await client.reconcileTripDiscussion(messageID:"m1",lease:lease) }
+        #expect(await wire.posts.count==1)
     }
 }
 

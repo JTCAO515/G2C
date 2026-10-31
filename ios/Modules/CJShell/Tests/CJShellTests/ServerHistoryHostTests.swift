@@ -21,9 +21,12 @@ private actor HistoryInterceptor: ClientTransport {
     var holding = false
     var releaseReply: CheckedContinuation<Void, Never>?
     var methods: [HTTPRequest.Method] = []
-    init(_ bodies: [Data], hold: String? = nil) { self.bodies = bodies; heldOperation = hold }
+    var operations:[String]=[]
+    let noStore:Bool
+    init(_ bodies: [Data], hold: String? = nil,noStore:Bool=false) { self.bodies = bodies; heldOperation = hold;self.noStore=noStore }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         methods.append(request.method)
+        operations.append(operationID)
         guard !bodies.isEmpty else { throw MessageHTTPFailure.invalidResponse }
         let bytes = bodies.removeFirst()
         if heldOperation == operationID && !holding {
@@ -33,6 +36,7 @@ private actor HistoryInterceptor: ClientTransport {
         var response = HTTPResponse(status: .ok)
         response.headerFields[HTTPField.Name("X-Request-ID")!] = "00000000-0000-4000-8000-000000000001"
         response.headerFields[.contentType] = "application/json"
+        if noStore { response.headerFields[.cacheControl]="no-store" }
         return (response, HTTPBody(bytes))
     }
     func release() { releaseReply?.resume(); releaseReply = nil }
@@ -54,7 +58,7 @@ private actor HistoryInterceptor: ClientTransport {
                            "input_sha256":SHA256.hash(data: raw).map { String(format:"%02x",$0) }.joined()],
                 "original_utf8_base64":raw.base64EncodedString(),"text":"synthetic "+conversation]
     }
-    private func setup(_ shell: ShellState, _ transport: HistoryInterceptor) throws -> ServerHistoryHost {
+    private func setup(_ shell: ShellState, _ transport: HistoryInterceptor,tripDiscussions:Bool=false) throws -> ServerHistoryHost {
         let recovery = MessageRecovery(storage: HistoryStore())
         let scope = try StorageScope(environment: UUID().uuidString, account: "synthetic")
         let lease = try recovery.activate(scope)
@@ -63,12 +67,46 @@ private actor HistoryInterceptor: ClientTransport {
             credentials: HistoryCredentials(), interceptedTestTransport: transport)
         let host = ServerHistoryHost(shell: shell)
         #expect(host.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease, generation: shell.generation,
-            limit:2, limits:try MessageReadLimits(maximumPageItems:2,maximumCursorBytes:128,maximumDecodedBytes:4096,maximumPages:5), synthetic:true,isCurrent:{true})))
+            limit:2, limits:try MessageReadLimits(maximumPageItems:2,maximumCursorBytes:128,maximumDecodedBytes:4096,maximumPages:5), synthetic:true,tripDiscussions:tripDiscussions,isCurrent:{true})))
         return host
     }
     private func waitForHold(_ transport: HistoryInterceptor) async {
         for _ in 0..<1000 { if await transport.holding { return }; await Task.yield() }
         #expect(Bool(false), "Synthetic response did not enter held state")
+    }
+    private func tripHistory(_ conversation:String,sequence:Int=1) throws -> [String:Any] {
+        let mid="m-"+conversation+"-"+String(sequence),text="SYNTHETIC "+conversation
+        let raw=try JSONSerialization.data(withJSONObject:["version":"MESSAGE-send.3","conversation_id":conversation,"message_id":mid,"text":text,"trip_id":NSNull(),"creation_intent":"none","expected_generation":"g1","expected_sequence":sequence-1,"travel_context":NSNull(),"needs_reference":NSNull(),"trip_context":NSNull()],options:[.sortedKeys])
+        let receipt:[String:Any]=["message_id":mid,"conversation_id":conversation,"generation":"g1","run_id":"run-"+mid,"sequence":sequence,"input_sha256":SHA256.hash(data:raw).map { String(format:"%02x",$0) }.joined()]
+        var ref=receipt
+        ref.merge(["version":"MESSAGE-trip-reference.1","message_version":"MESSAGE-send.3","selection_epoch":1,"context_kind":"none","context_id":NSNull(),"context_version":NSNull(),"trip_context":NSNull(),"content_version":NSNull(),"content_sha256":NSNull()],uniquingKeysWith:{ _,new in new })
+        return ["receipt":receipt,"reference":ref,"text":text,"original_utf8_base64":raw.base64EncodedString()]
+    }
+    @Test func discussionHistoryUsesTypedRouteAndRetainsReferencesBesideTextProjection() async throws {
+        let first=try tripHistory("a"),second=try tripHistory("a",sequence:2)
+        let wire=HistoryInterceptor([try json(["conversations":[chat("a",1)],"next_cursor":NSNull()]),
+            try json(["version":"MESSAGE-history.2","messages":[first],"next_cursor":"opaque"]),
+            try json(["version":"MESSAGE-history.2","messages":[second],"next_cursor":NSNull()])],noStore:true)
+        let host=try setup(shell(),wire,tripDiscussions:true)
+        await host.loadConversations(context:host.captureReadContext())
+        #expect(host.selectConversation(try #require(host.conversations.first),token:host.conversationSelectionToken))
+        await host.loadHistory(context:host.captureReadContext());#expect(host.hasMoreMessages)
+        await host.loadHistory(context:host.captureReadContext(),more:true)
+        #expect(host.messages.count==2 && host.tripMessages.count==2 && !host.hasMoreMessages)
+        guard case .trip(let ref)=try #require(host.tripMessages.first).association else { Issue.record("reference discarded");return }
+        #expect(ref.messageID=="m-a-1" && ref.trip==nil)
+        #expect(host.messages.first?.original_utf8_base64==first["original_utf8_base64"] as? String)
+        #expect(await wire.operations==["listConversations","readTripDiscussionHistoryV2","readTripDiscussionHistoryV2"])
+    }
+    @Test func retiredAccountCannotPublishLateDiscussionHistoryOrTextProjection() async throws {
+        let shell=try shell(),wire=HistoryInterceptor([try json(["conversations":[chat("a",1)],"next_cursor":NSNull()]),
+            try json(["version":"MESSAGE-history.2","messages":[tripHistory("a")],"next_cursor":NSNull()])],hold:"readTripDiscussionHistoryV2",noStore:true)
+        let host=try setup(shell,wire,tripDiscussions:true)
+        await host.loadConversations(context:host.captureReadContext())
+        #expect(host.selectConversation(try #require(host.conversations.first),token:host.conversationSelectionToken))
+        let read=Task { await host.loadHistory(context:host.captureReadContext()) }
+        await waitForHold(wire);shell.invalidateIdentity();await wire.release();await read.value
+        #expect(host.historyStatus == .unconfigured && host.messages.isEmpty && host.tripMessages.isEmpty)
     }
     @Test func defaultUnavailableAndValidEmptyAreDifferent() async throws {
         let shell = try shell(); let empty = ServerHistoryHost(shell: shell)

@@ -103,7 +103,12 @@ struct TripShell: View {
             .sheet(item: $sheet) { value in
                 switch value {
                 case .manual(let entry): ManualPreviewContainerView(host: host, entry: entry, language: language)
-                case .timeline(_,let reader): TripTimelineView(host:reader,language:language)
+                case .timeline(_,let reader):
+                    let messages=state.messageHost
+                    TripTimelineView(host:reader,language:language,onDiscuss:messages?.supportsTripDiscussions == true ? { entry in
+                        guard state.messageHost === messages,messages?.selectTripDiscussion(entry)==true else { return false }
+                        sheet=nil;state.selectedTab = .assistant;return true
+                    } : nil)
                 }
             }
             .onAppear { host.setManualForeground(scenePhase == .active) }

@@ -2,10 +2,12 @@
 import SwiftUI
 import CJTripClient
 import CJRunClient
+import CJMessageHTTP
 
 struct TripTimelineView: View {
     let host: TripTimelineHost
     let language: ShellLanguage
+    var onDiscuss:((TripDiscussionEntry)->Bool)?
     @Environment(\.dismiss) private var dismiss
     @State private var issue: String?
     var body: some View {
@@ -23,8 +25,17 @@ struct TripTimelineView: View {
                         if let record=display.record,let timeline=display.timeline {
                             RunSelectableText(text:record.tripID+" · "+language.text("Read version ","读取版本 ")+String(record.version)).accessibilityIdentifier("timeline.record.version")
                             RunSelectableText(text:record.document.title).accessibilityIdentifier("timeline.record.title")
+                            if onDiscuss != nil {
+                                button("timeline.discuss.trip",language.text("Discuss this whole Trip","讨论整个行程"),disabled:display.busy) { discuss(day:nil,itemID:nil) }
+                            }
                             ForEach(timeline.groups) { group in
                                 RunReadableText(text:groupLabel(group),style:.headline).accessibilityIdentifier("timeline.day."+group.id)
+                                if onDiscuss != nil,let date=group.date,let zone=group.timezone {
+                                    button("timeline.discuss.day."+group.id,language.text("Discuss this declared day","讨论此声明日期"),disabled:display.busy) {
+                                        do { discuss(day:try MessageTripSelection.Day(date:date,timezone:zone),itemID:nil) }
+                                        catch { discussionFailed() }
+                                    }
+                                }
                                 ForEach(group.entries) { entry in
                                     VStack(alignment:.leading,spacing:8) {
                                         RunSelectableText(text:entry.id+"\n"+entry.item.text).accessibilityIdentifier("timeline.item."+entry.id)
@@ -32,6 +43,15 @@ struct TripTimelineView: View {
                                             .accessibilityIdentifier("timeline.schedule."+entry.id)
                                         RunReadableText(text:span(entry.span)).accessibilityIdentifier("timeline.span."+entry.id)
                                         RunReadableText(text:language.text("Source declaration: ","来源声明：")+entry.item.sourceCategory.rawValue+" · "+entry.item.verification.rawValue,style:.caption)
+                                        if onDiscuss != nil {
+                                            button("timeline.discuss.item."+entry.id,language.text("Discuss this original item","讨论此原条目"),disabled:display.busy) {
+                                                do {
+                                                    let day:MessageTripSelection.Day?
+                                                    if let date=group.date,let zone=group.timezone { day=try .init(date:date,timezone:zone) } else { day=nil }
+                                                    discuss(day:day,itemID:entry.id)
+                                                } catch { discussionFailed() }
+                                            }
+                                        }
                                     }.padding(.vertical,10)
                                 }
                             }
@@ -53,6 +73,13 @@ struct TripTimelineView: View {
         do { let work=try make();issue=nil;Task { await host.perform(work) } }
         catch { issue=language.text("Read unavailable; select the current original account again.","读取不可用，请重新选择当前原账号。") }
     }
+    private func discuss(day:MessageTripSelection.Day?,itemID:String?) {
+        do {
+            let entry=try host.discussion(day:day,itemID:itemID)
+            guard onDiscuss?(entry)==true else { discussionFailed();return }
+        } catch { discussionFailed() }
+    }
+    private func discussionFailed() { issue=language.text("The original choice cannot be used. Read and select the current original account again.","原选择不可用，请重新读取并选择当前原账号的记录。") }
     private func groupLabel(_ group:TripTimelineGroup) -> String {
         if let date=group.date,let zone=group.timezone { return date+" · "+zone }
         return language.text("Date or timezone undetermined","日期或时区尚未确定")

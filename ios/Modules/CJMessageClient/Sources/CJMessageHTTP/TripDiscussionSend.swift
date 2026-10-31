@@ -13,7 +13,7 @@ public struct TripDiscussionMessage: Sendable {
 extension MessageHTTPClient {
     private func checkDiscussionLease(_ lease: Lease) throws {
         try checkSendLease(lease)
-        if tripDiscussionPermitState.lease != lease { tripDiscussionPermitState = SendPermitState(lease: lease) }
+        if tripDiscussionPermitState.lease != lease { tripDiscussionPermitState = SendPermitState(lease: lease);tripDiscussionSources=[:] }
     }
     private func requireDiscussionCapability() throws {
         if let liveMessageTransport { try liveMessageTransport.validateTripDiscussionSending(to: endpoint) }
@@ -98,8 +98,9 @@ extension MessageHTTPClient {
     /// Selection is data only. The App must capture its accepted Trip read and
     /// choice before invoking this seam; B checks owner/version/day/item again.
     @discardableResult public func stageTripDiscussion(messageID: String, conversationID: String, text: String,
-        trip: MessageTripSelection?, lease: Lease) throws -> ActionRecord {
+        trip: MessageTripSelection?, content:MessageTripContent?=nil,lease: Lease) throws -> ActionRecord {
         try requireDiscussionCapability(); try checkDiscussionLease(lease)
+        guard (trip == nil)==(content == nil) else { throw RecoveryError.invalidInput }
         guard let head = try readyDiscussionHead(conversationID: conversationID, lease: lease),
               try recovery.action(messageID: messageID, lease: lease) == nil else { throw RecoveryError.queryOnly }
         let raw = try JSONSerialization.data(withJSONObject: ["version": "MESSAGE-send.3", "message_id": messageID, "conversation_id": conversationID, "text": text, "trip_id": NSNull(), "creation_intent": "none", "expected_generation": head.generation, "expected_sequence": head.last_sequence, "travel_context": NSNull(), "needs_reference": NSNull(), "trip_context": trip.map { $0.object as Any } ?? NSNull()], options: [.sortedKeys])
@@ -108,6 +109,7 @@ extension MessageHTTPClient {
         try recovery.stage(messageID: messageID, originalUTF8: raw, lease: lease)
         guard let record = try recovery.action(messageID: messageID, lease: lease) else { throw RecoveryError.staleOperation }
         tripDiscussionPermitState.prepared[Data(messageID.utf8)] = PreparedMessageSend(digest: record.inputSHA256, head: head)
+        if let content { tripDiscussionSources[Data(messageID.utf8)]=content }
         return record
     }
     public func submitPreparedTripDiscussion(messageID: String, lease: Lease, confirmRestored: Bool = false) async throws -> MessageHTTPOutcome {
@@ -128,6 +130,7 @@ extension MessageHTTPClient {
             let (status, bytes, trace) = try await discussionExchange(path: "/v3/messages", operation: "receiveTripDiscussionV3", raw: submission.originalUTF8, lease: lease)
             if status == 200 {
                 let result = try TripDiscussionAcceptance(raw: bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, original: original)
+                try tripDiscussionSources[key]?.validate(result.reference)
                 try recovery.observeReceipt(submission.operation, messageID: result.receipt.message_id, inputSHA256: result.receipt.input_sha256, receipt: bytes)
                 tripDiscussionPermitState.heads[Data(original.head.conversation_id.utf8)] = .init(conversation_id: result.receipt.conversation_id, generation: result.receipt.generation, last_sequence: Int64(result.receipt.sequence))
                 return .accepted
@@ -162,6 +165,7 @@ extension MessageHTTPClient {
             let result = try TripDiscussionStatus(raw: bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, conversationID: original.head.conversation_id, original: original)
             let decision: MessageSendDecision
             if let accepted = result.acceptance, let receiptBytes = result.acceptedUTF8 {
+                try tripDiscussionSources[key]?.validate(accepted.reference)
                 try recovery.observeReceipt(operation, messageID: accepted.receipt.message_id, inputSHA256: accepted.receipt.input_sha256, receipt: receiptBytes)
                 decision = .accepted
             } else {
@@ -197,6 +201,7 @@ extension MessageHTTPClient {
         let json = try DiscussionJSON(receipt, maximumBytes: endpoint.maximumResponseBytes)
         let trace = try DiscussionJSON.text(json.object["request_id"])
         let accepted = try TripDiscussionAcceptance(raw: receipt, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, original: original)
+        try tripDiscussionSources[Data(messageID.utf8)]?.validate(accepted.reference)
         try checkDiscussionLease(lease)
         return TripDiscussionMessage(receipt: accepted.receipt, reference: accepted.reference)
     }

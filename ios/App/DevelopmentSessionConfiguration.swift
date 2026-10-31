@@ -9,6 +9,18 @@ struct DevelopmentMemorySlot: Decodable {
     let semantic_resolved: Bool
 }
 enum DevelopmentToolAnswerProfile { case plain,place,fact,needs }
+enum DevelopmentDiscussionProfile {
+    enum Failure:Error { case invalidProfile,incompatibleProfiles }
+    static func read(_ environment:[String:String]) throws -> Bool {
+        #if DEBUG
+        guard let value=environment["G2C_DEV_MESSAGE_PROFILE"] else { return false }
+        guard value=="trip-discussion-v1" else { throw Failure.invalidProfile }
+        return true
+        #else
+        return false
+        #endif
+    }
+}
 /// Explicit local record selection only. Server AUTH still derives its owner.
 struct DevelopmentNeedsProfile {
     let needsID: String

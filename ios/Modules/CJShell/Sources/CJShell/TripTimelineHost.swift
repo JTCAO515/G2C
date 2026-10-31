@@ -7,13 +7,14 @@ import CJMessageHTTP
 /// wire selection remains data; this local entry preserves its source lifetime.
 @MainActor public final class TripDiscussionEntry: CustomStringConvertible, CustomReflectable {
     let selection: MessageTripSelection
+    let content:MessageTripContent
     let title: String
     fileprivate let binding: TripBinding
     fileprivate let generation: ShellGeneration
     fileprivate let validateSource: @MainActor () throws -> Void
-    fileprivate init(selection: MessageTripSelection, title: String, binding: TripBinding, generation: ShellGeneration,
+    fileprivate init(selection: MessageTripSelection,content:MessageTripContent,title: String, binding: TripBinding, generation: ShellGeneration,
                      validateSource: @escaping @MainActor () throws -> Void) {
-        self.selection=selection; self.title=title; self.binding=binding; self.generation=generation; self.validateSource=validateSource
+        self.selection=selection;self.content=content; self.title=title; self.binding=binding; self.generation=generation; self.validateSource=validateSource
     }
     func validate(scopeEnvironment: String, scopeAccount: String, generation: ShellGeneration) throws {
         guard self.generation == generation, scopeEnvironment == binding.environment.uuidString,
@@ -109,7 +110,7 @@ public struct TripTimelineDisplay: Sendable {
             guard current() else { throw TripFailure.staleBinding }
         }
         try validate();try check(token)
-        return TripDiscussionEntry(selection:choice,title:value.document.title,binding:binding,generation:generation,validateSource:validate)
+        return try TripDiscussionEntry(selection:choice,content:MessageTripContent(version:value.document.version.rawValue,sha256:value.document.contentSHA256),title:value.document.title,binding:binding,generation:generation,validateSource:validate)
     }
     public func perform(_ work: TripTimelineWork) async {
         guard work.owner==owner else { return }

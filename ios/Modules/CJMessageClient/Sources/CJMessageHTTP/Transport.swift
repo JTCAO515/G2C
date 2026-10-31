@@ -422,6 +422,7 @@ public enum MessageHTTPOutcome: Sendable {
     var sendPermitState = SendPermitState()
     var travelSendPermitState = SendPermitState()
     var tripDiscussionPermitState = SendPermitState()
+    var tripDiscussionSources:[Data:MessageTripContent]=[:]
     private let readOwner = UUID()
     /// Test seam only: caller must supply a non-network interceptor, never a live transport.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
