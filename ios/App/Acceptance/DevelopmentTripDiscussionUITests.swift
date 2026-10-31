@@ -56,9 +56,14 @@ import Foundation
         capture("not-visible-"+id);XCTFail("Expected visible control: "+id);return lookup()
     }
     private func tap(_ id:String) {
-        let tab=app.tabBars.buttons.matching(identifier:id).firstMatch
-        if tab.exists { XCTAssertTrue(tab.isHittable);tab.tap();return }
-        let target=visible({app.buttons.matching(identifier:id).firstMatch},id:id)
+        let target:XCUIElement
+        if ["Assistant","助手","Memory","记忆","Trips","行程"].contains(id) { target=app.tabBars.buttons.matching(identifier:id).firstMatch }
+        else if id=="assistant.panel.done" { target=app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        else if ["Done","完成"].contains(id) { target=app.toolbars.buttons.matching(identifier:id).firstMatch }
+        else { target=visible({app.buttons.matching(identifier:id).firstMatch},id:id) }
+        XCTAssertTrue(target.waitForExistence(timeout:15),id)
+        let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == true AND hittable == true AND enabled == true"),object:target)
+        XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:20),.completed,id)
         target.tap()
     }
     private func text(_ id:String,contains expected:String) {
