@@ -223,7 +223,9 @@ import Foundation
         _=try await call("/hold-display",caseID:f.case_id);tap("run.snapshot.read")
         _=try await call("/wait-display",caseID:f.case_id)
         // No App terminate/launch: replace identity in the same actual process.
-        tap("Memory");tap("memory.account");tap("account.development.signout");tap("account.development.signin.B")
+        tap("Memory")
+        if !app.buttons.matching(identifier:"account.development.signout").firstMatch.exists { tap("memory.account") }
+        tap("account.development.signout");tap("account.development.signin.B")
         text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
         tap("Assistant");conversation(f)
         tap("assistant.serverHistory");tap("history.loadMessages")
