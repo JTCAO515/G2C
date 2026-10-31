@@ -127,7 +127,7 @@ import Foundation
         let done=app.toolbars.buttons.matching(identifier:language=="en" ? "Done" : "完成").firstMatch
         if done.exists { done.tap() }
     }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false) async throws {
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -210,8 +210,14 @@ import Foundation
         if let decision {
             tap("scoped.discover");text("scoped.discovery.state",contains:activeLanguage=="en" ? "Original candidate" : "原候选")
             text("scoped.feasibility",contains:"UNKNOWN")
-            text("scoped.before."+chosen,contains:"Jingshan Park")
+            text("scoped.before."+chosen,contains:fixedReorder ? "Great Wall" : "Jingshan Park")
             text("scoped.after."+chosen,contains:"本次轻松一点")
+            if fixedReorder {
+                text("scoped.order."+chosen,contains:"3 → 4")
+                text("scoped.order."+trip.item_ids[3],contains:"4 → 3")
+                let fixed=visible({app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","固定状态：是")).firstMatch},id:"fixed.original")
+                XCTAssertTrue(fixed.exists && fixed.isHittable)
+            }
             capture(name+"-original-diff-unknown");try audit(name+"-diff")
             if invalidation != nil { _ = try await call("/invalidate-candidate",caseID:name) }
             tap("scoped."+decision)
@@ -240,6 +246,7 @@ import Foundation
         }
 
     }
+    func testScopedFixedReorderChineseLargest() async throws { try await scenario("testScopedFixedReorderChineseLargest",language:"zh-Hans",large:true,decision:"accept",fixedReorder:true) }
     func testScopedCandidateDiscoveryUnavailable() async throws { try await scenario("testScopedCandidateDiscoveryUnavailable",language:"en",item:true,discoveryUnavailable:true) }
     func testScopedCandidateLateAccount() async throws { try await scenario("testScopedCandidateLateAccount",language:"en",item:true,lateAccount:true) }
     func testScopedCandidateStaleAcceptance() async throws { try await scenario("testScopedCandidateStaleAcceptance",language:"en",item:true,decision:"accept",invalidation:"stale") }

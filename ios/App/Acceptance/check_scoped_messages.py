@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest'],required=True)
 ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -88,16 +88,17 @@ try:
     action=base64.b64decode(confirmation['action_utf8_base64']);adopted=expect(client.post('/v1/trip-actions',content=action,headers=binary),'actual-legacy-adopt')['receipt'];tid=adopted['trip_id']
    original=database.trip_repository(scope_for(ISSUER,subject)).detail(tid);doc=json.loads(original.content);r['original_version']=original.version
    schedules=[(event('2026-11-02','23:30:00'),event('2026-11-03','00:30:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00'))]
-   if CASE=='testScopedDayChineseLargest':
+   if CASE in ('testScopedDayChineseLargest','testScopedFixedReorderChineseLargest'):
     # Independent explicit synthetic declarations for the READY date positive.
     # Unknown/cross-day scope is retained in its own real zero-model negative.
     schedules=[(event('2026-11-02','09:00:00'),event('2026-11-02','10:00:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00')),(event('2026-11-05','09:00:00'),event('2026-11-05','10:00:00'))]
+   if CASE=='testScopedFixedReorderChineseLargest':schedules[3]=(event('2026-11-04','10:00:00'),event('2026-11-04','11:00:00'))
    r['fixture_profile']='synthetic-fully-known-day-v1' if CASE=='testScopedDayChineseLargest' else 'synthetic-undetermined-crossday-v1'
    unknown={key:dict(state='unknown') for key in ('date','time','timezone','utc_offset')}
    items=[]
    for index,item in enumerate(doc['items']):
     start,end=schedules[index] if index<len(schedules) else (unknown,unknown)
-    items.append(dict(id=item['id'],schedule=dict(start=start,end=end),fixed=known(False)))
+    items.append(dict(id=item['id'],schedule=dict(start=start,end=end),fixed=known(CASE=='testScopedFixedReorderChineseLargest' and index==0)))
    initialization=dict(version='TRIP-initialize.1',request_id='synthetic-initialize-source',trip_id=tid,expected_version=original.version,original_hash=hashlib.sha256(original.content).hexdigest(),items=items)
    source=create_local_needs_app(conninfo_path=connection,auth_dir=auth,run_context=context,confirmation_signer=signer)
    with TestClient(source) as client:
@@ -139,7 +140,11 @@ try:
     def stream(self,messages,system=None):
      self.calls+=1;self.inputs.append(messages);yield ''
      prompt=json.loads(system);assert prompt['version']=='TRIP-scoped-model.1'
-     yield packed(dict(version=prompt['edit_version'],request_id=prompt['request_id'],trip_id=prompt['trip_id'],expected_version=prompt['expected_version'],original_hash=prompt['original_hash'],title=None,order=None,changes=[dict(item_id=prompt['selected_item_ids'][0],field='text',value='SYNTHETIC lighter choice / 本次轻松一点')])).decode()
+     order=None
+     if CASE=='testScopedFixedReorderChineseLargest':
+      order=[item['id'] for item in prompt['original_content']['items']];selected=prompt['selected_item_ids'];assert len(selected)==2
+      a,b=map(order.index,selected);order[a],order[b]=order[b],order[a]
+     yield packed(dict(version=prompt['edit_version'],request_id=prompt['request_id'],trip_id=prompt['trip_id'],expected_version=prompt['expected_version'],original_hash=prompt['original_hash'],title=None,order=order,changes=[dict(item_id=prompt['selected_item_ids'][0],field='text',value='SYNTHETIC lighter choice / 本次轻松一点')])).decode()
    formal=detail['trip'];spec=dict(id=tid,title=formal['content']['title'],version=formal['version'],content_sha256=formal['content_sha256'],item_ids=[item['id'] for item in formal['content']['items']])
    cid=CASE
    with TestClient(edit_api) as client:expect(client.put('/v1/conversations',params=dict(conversation_id=cid),headers=headers),'native-original-chat')
@@ -280,15 +285,21 @@ try:
      actions=conn.execute('SELECT action_id,original_input FROM cj_trip_scoped_action').fetchall()
      operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',(cid,)).fetchone()[0]
     assert len(trips)==operations==fake.calls==1
-    negative=CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance')
+    negative=CASE in ('testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest')
     kind='reject' if CASE in ('testScopedCandidateReject','testScopedCandidateConflict') else 'accept'
     version=3 if CASE in ('testScopedCandidateConflict','testScopedCandidateStaleAcceptance') else (2 if kind=='reject' or CASE=='testScopedCandidateWithdrawal' else 3)
     assert trips[0][0]==tid and trips[0][1]==version
     doc=json.loads(bytes(trips[0][2]));before=formal['content']
     assert doc['title']==before['title'] and doc['sources']==before['sources']
-    for old,new in zip(before['items'],doc['items']):
-     if old['id']!='item-2' or version==2:assert old==new
-    if version==3:assert doc['items'][1]['text']=='SYNTHETIC lighter choice / 本次轻松一点'
+    selected_ids=set(spec['item_ids'][2:]) if CASE=='testScopedFixedReorderChineseLargest' else {spec['item_ids'][1]}
+    for index,old in enumerate(before['items']):
+     if old['id'] not in selected_ids or version==2:assert old==doc['items'][index]
+    if version==3:
+     changed_id=spec['item_ids'][2] if CASE=='testScopedFixedReorderChineseLargest' else spec['item_ids'][1]
+     assert next(item for item in doc['items'] if item['id']==changed_id)['text']=='SYNTHETIC lighter choice / 本次轻松一点'
+    if CASE=='testScopedFixedReorderChineseLargest':
+     assert doc['items'][0]==before['items'][0] and doc['items'][0]['fixed']==known(True)
+     assert [item['id'] for item in doc['items']]==spec['item_ids'][:2]+list(reversed(spec['item_ids'][2:]))
     requests=[x for x in audit if x['path']=='/v1/trip-scoped-discovery']
     writes=[x for x in audit if x['path']=='/v1/trip-scoped-actions' and x['method']=='POST']
     queries=[x for x in audit if x['path']=='/v1/trip-scoped-action-receipts']
@@ -353,8 +364,8 @@ try:
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     if CASE=='testScopedCandidateLateAccount':late_proof()
     if CASE=='testScopedCandidateDiscoveryUnavailable':discovery_refusal_proof()
-    verified=r['proof'] if CASE=='testScopedCandidateDiscoveryUnavailable' or CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance') else proof()
-    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance'):assert decision_proof()['receipt_queries']>=1
+    verified=r['proof'] if CASE=='testScopedCandidateDiscoveryUnavailable' or CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest') else proof()
+    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest'):assert decision_proof()['receipt_queries']>=1
     assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
     if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
     else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
