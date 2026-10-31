@@ -47,6 +47,10 @@ struct AssistantShell: View {
                 Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }.accessibilityIdentifier("assistant.needs")
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
                 if messageHost.supportsTripDiscussions {
+                    if let conversation=messageHost.selectedConversation {
+                        RunReadableText(text:state.language.text("Conversation: ","会话：")+conversation,style:.caption)
+                            .accessibilityIdentifier("assistant.conversation")
+                    }
                     TripDiscussionChoiceView(host:messageHost,language:state.language,openTrips:{ state.selectedTab = .trips })
                 }
                 if messageHost.travelSelection != nil {
@@ -161,7 +165,7 @@ struct AssistantShell: View {
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
             if messageHost.supportsSending {
-                if let conversation = messageHost.selectedConversation {
+                if !messageHost.supportsTripDiscussions,let conversation = messageHost.selectedConversation {
                     RunReadableText(text: state.language.text("Conversation: ", "会话：") + conversation, style: .caption)
                         .accessibilityIdentifier("assistant.conversation")
                 }
