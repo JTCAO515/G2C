@@ -176,6 +176,8 @@ import Foundation
         if !undetermined { XCTAssertTrue(proof.memory_long);XCTAssertTrue(proof.memory_current) }
         XCTAssertFalse(proof.memory_other)
         tap("run.snapshot.read");text("run.display.status",contains:activeLanguage=="en" ? "Completed" : "已完成")
+        XCTAssertFalse(textElement("run.display.text").exists, "Scoped model wire output is not a user-facing answer")
+        XCTAssertFalse(textElement("run.stream.text").exists, "Scoped model wire progress is not a user-facing answer")
         if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
         else { text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程") }
         capture(name+"-published-not-adopted");try audit(name+"-original-run")
