@@ -11,8 +11,9 @@ struct TripShell: View {
     @Bindable var state: ShellState
     let host: TripContainerHost
     let onClose: (() -> Void)?
-    init(state: ShellState, host: TripContainerHost, onClose: (() -> Void)? = nil) {
-        self.state = state; self.host = host; self.onClose = onClose
+    let openTimeline: (() -> Void)?
+    init(state: ShellState, host: TripContainerHost, onClose: (() -> Void)? = nil, openTimeline: (() -> Void)? = nil) {
+        self.state = state; self.host = host; self.onClose = onClose; self.openTimeline = openTimeline
     }
     private enum Sheet: Identifiable {
         case manual(ManualPreviewEntry), timeline(UUID,TripTimelineHost)
@@ -28,7 +29,8 @@ struct TripShell: View {
                 if let presentation = host.presentation {
                     Section(language.text("Formal trips", "正式行程")) {
                         Button(language.text("Read destination-local timeline", "读取目的地当地时间线")) {
-                            if let reader=host.makeTimelineReader() { sheet = .timeline(UUID(),reader) }
+                            if let openTimeline { openTimeline() }
+                            else if let reader=host.makeTimelineReader() { sheet = .timeline(UUID(),reader) }
                         }.disabled(action == nil).accessibilityIdentifier("trips.timeline.open")
                         TripContainerLoadLabel(state: presentation.listState, language: language)
                         if presentation.listState == .loaded && presentation.trips.isEmpty {

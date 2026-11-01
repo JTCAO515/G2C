@@ -11,7 +11,11 @@ struct StructuredTripHome: View {
     @State private var issue: String?
     @State private var task: Task<Void,Never>?
     @State private var panel: Panel = .record
-    @State private var showsBrowse = false
+    private enum BrowsePanel: Identifiable {
+        case records(UUID), timeline(UUID, TripTimelineHost)
+        var id: UUID { switch self { case .records(let id): id; case .timeline(let id, _): id } }
+    }
+    @State private var browsePanel: BrowsePanel?
     private enum Panel { case record, editor, diff }
     private var language: ShellLanguage { state.language }
     private var edit: ManualTripDisplay? { host.editor?.display() }
@@ -104,7 +108,7 @@ struct StructuredTripHome: View {
                         }
                     } else { RunReadableText(text:language.text("Trip context is unavailable. Read again in the current account.","行程上下文不可用，请在当前账号下重新读取。")) }
                     if let issue { RunReadableText(text:issue).accessibilityIdentifier("trip.manual.issue") }
-                    button("trip.manual.browse", language.text("Timelines, browsing and original actions","时间线、浏览与原动作")) { showsBrowse = true }
+                    button("trip.manual.browse", language.text("Timelines, browsing and original actions","时间线、浏览与原动作")) { browsePanel = .records(UUID()) }
                 }.frame(maxWidth:.infinity,alignment:.leading).padding()
             }.accessibilityIdentifier("trip.manual.content").scrollDismissesKeyboard(.interactively)
                 .navigationTitle(language.text("Edit trip","编辑行程")).navigationBarTitleDisplayMode(.inline)
@@ -115,11 +119,25 @@ struct StructuredTripHome: View {
                 } }
                 .onChange(of:edit?.state) { _,value in if value == .prepared { panel = .diff } }
         }
-        .sheet(isPresented: $showsBrowse) {
-            TripShell(state: state, host: legacy, onClose: { showsBrowse = false })
+        .sheet(item: $browsePanel) { panel in
+            switch panel {
+            case .records:
+                TripShell(state: state, host: legacy, onClose: { browsePanel = nil }, openTimeline: {
+                    act {
+                        guard let reader = legacy.makeTimelineReader() else { throw TripFailure.staleBinding }
+                        browsePanel = .timeline(UUID(), reader)
+                    }
+                })
+            case .timeline(_, let reader):
+                let messages = state.messageHost
+                TripTimelineView(host: reader, language: language, onDiscuss: messages?.supportsTripMessages == true ? { entry in
+                    guard state.messageHost === messages, messages?.selectTripDiscussion(entry) == true else { return false }
+                    browsePanel = nil; state.selectedTab = .assistant; return true
+                } : nil)
+            }
         }
-        .onChange(of: state.selectedTab) { _, tab in if tab != .trips { showsBrowse = false } }
-        .onChange(of: state.generation) { _, _ in showsBrowse = false }
+        .onChange(of: state.selectedTab) { _, tab in if tab != .trips { browsePanel = nil } }
+        .onChange(of: state.generation) { _, _ in browsePanel = nil }
     }
     private func button(_ id: String,_ title: String,disabled: Bool = false,action:@escaping ()->Void) -> some View {
         Button(action:action) { RunReadableText(text:title).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle()) }
