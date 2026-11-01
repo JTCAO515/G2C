@@ -326,7 +326,9 @@ import Foundation
     func testNeedsPlanningLateAccount() async throws { try await planningScenario("testNeedsPlanningLateAccount",lateAccount:true) }
     func testNeedsPlanningInterruptedAccept() async throws { try await planningScenario("testNeedsPlanningInterruptedAccept",decision:"accept",interrupted:true) }
     func testNeedsPlanningManualComposition() async throws { try await planningScenario("testNeedsPlanningManualComposition",decision:"accept",composition:true) }
-    private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false,composition:Bool=false) async throws {
+    func testNeedsPlanningCurrentFixedAccept() async throws { try await planningScenario("testNeedsPlanningCurrentFixedAccept",decision:"accept",composition:true,currentDecision:"accept") }
+    func testNeedsPlanningCurrentFixedReject() async throws { try await planningScenario("testNeedsPlanningCurrentFixedReject",decision:"accept",composition:true,currentDecision:"reject") }
+    private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false,composition:Bool=false,currentDecision:String?=nil) async throws {
         let f=try await prepare(name)
         defer { app?.terminate() }
         XCTAssertEqual(f.needs_planning,true)
@@ -457,8 +459,45 @@ import Foundation
                 XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.exists)
                 _ = try await call("/planning-composition-proof",caseID:name)
                 capture(name+"-old-receipt-current-manual-version");try audit(name+"-historical")
+                if let currentDecision { try await currentPlanningAfterManual(f,name:name,tripID:identity.trip_id,decision:currentDecision) }
             }
         }
+    }
+    private func currentPlanningAfterManual(_ f:Fixture,name:String,tripID:String,decision:String) async throws {
+        try launch(f,language:"en",restore:true)
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+tripID);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+        let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.b").firstMatch},id:"trip.manual.item.open.b")
+        XCTAssertTrue(item.isEnabled && item.isHittable);item.tap()
+        let selected=visible({app.switches.matching(identifier:"trip.manual.selected.b").firstMatch},id:"trip.manual.selected.b")
+        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();tap("trip.manual.fixed.true.b")
+        tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared");tap("trip.manual.save");text("trip.manual.receipt",contains:"3")
+        tap("trip.manual.current");text("trip.manual.current.version",contains:"3")
+        _ = try await call("/current-planning-source",caseID:name)
+        tap("Assistant");conversation(f)
+        tap("assistant.travelContext");tap("travel.selection."+f.namespace);tap("assistant.panel.done")
+        tap("assistant.needs");tap("needs.read");text("needs.container.state",contains:"User-provided details loaded");tap("assistant.panel.done")
+        let intent=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+        XCTAssertEqual(intent.value as? String,"0");intent.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
+        XCTAssertEqual(intent.value as? String,"1")
+        enter("SYNTHETIC Replan from my current edited and fixed Trip / 按已手改和固定的行程重新规划",language:"en")
+        tap("assistant.send");_ = try await call("/current-planning-published",caseID:name)
+        tap("run.snapshot.read");text("run.display.status",contains:"Completed")
+        tap("planning.discover");text("planning.discovery.state",contains:"Original planning candidate recorded")
+        text("planning.context",contains:tripID);text("planning.context",contains:" · 3")
+        tap("planning."+decision)
+        text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
+        struct CurrentProof:Decodable { let original_action_id,proposed_trip_id,source_content_sha256:String }
+        let proof=try JSONDecoder().decode(CurrentProof.self,from:await call("/current-planning-proof",caseID:name))
+        text("planning.context.hash",contains:proof.source_content_sha256)
+        if decision=="accept" { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }
+        else { XCTAssertFalse(textElement("planning.formal.version").exists) }
+        capture(name+"-source2-decision");try audit(name+"-source2")
+        try launch(f,language:"zh-Hans",restore:true);tap("planning.originals");tap("planning.query."+proof.original_action_id)
+        text("planning.receipt",contains:decision=="accept" ? "原采用动作已确认" : "原拒绝动作已确认")
+        text("planning.context",contains:tripID);text("planning.context",contains:" · 3")
+        if decision=="accept" { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }
+        _ = try await call("/current-planning-proof",caseID:name)
+        capture(name+"-source2-original-recovery");try audit(name+"-source2-restart")
     }
     func testNeedsManualCanonicalFixedRefusal() async throws {
         try await manualRejectedPreparation("testNeedsManualCanonicalFixedRefusal",invalidWindow:false)
