@@ -534,7 +534,8 @@ import Foundation
             text("planning.activity",contains:"UNKNOWN")
             XCTAssertFalse(textElement("planning.receipt").exists)
             XCTAssertFalse(textElement("planning.formal.version").exists)
-            XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.isEnabled)
+            let accept=app.buttons.matching(identifier:"planning.accept").firstMatch
+            XCTAssertFalse(accept.exists && accept.isEnabled)
         } else { text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed") }
         struct CurrentProof:Decodable { let original_action_id,proposed_trip_id,source_content_sha256:String }
         let proof=try JSONDecoder().decode(CurrentProof.self,from:await call("/current-planning-proof",caseID:name))
