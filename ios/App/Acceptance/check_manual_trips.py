@@ -46,7 +46,8 @@ backend_files=[BACKEND/name for name in subprocess.check_output(['git','ls-files
 r=dict(status='RUNNING',layer='actual Simulator/signed API/private PG/pinned backend candidate',app_head=head(APP),backend_head=head(BACKEND),backend_root_verified=True,source_hashes=fingerprint(APP,source_files),backend_hashes=fingerprint(BACKEND,backend_files),responses=[],unrun=['main backend delivery if pin unmerged','real services/models/fees/cloud/device'])
 if PLANNING_PREFIX:
  r['verified_scope']='original NEEDS planning discovery/decision/recovery' if PLANNING_DECISION else 'explicit MESSAGE-send.2 / original RUN published prefix only'
- r['unrun']+=['NEEDS candidate discovery/accept/reject pending C frozen read interface','source-input.2 formal replanning']
+ r['unrun']+=['source-input.2 formal replanning']
+ if not PLANNING_DECISION:r['unrun']+=['planning discovery/decision not exercised by prefix-only case']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def check(resp,phase):
  r['responses'].append(dict(phase=phase,status=resp.status_code,error=resp.json().get('error')));save();assert resp.status_code==200,(phase,resp.status_code,resp.text);return resp.json()
