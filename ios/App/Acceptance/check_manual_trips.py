@@ -13,8 +13,9 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsPlanningPrefix'],required=True)
-a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case;PLANNING_PREFIX=CASE=='testNeedsPlanningPrefix'
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss'],required=True)
+a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case;PLANNING_PREFIX=CASE.startswith('testNeedsPlanning')
+PLANNING_DECISION=CASE in ('testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss')
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
 head=lambda root:subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 assert head(BACKEND)==a.backend_head and not subprocess.check_output(['git','status','--porcelain'],cwd=BACKEND)
@@ -38,13 +39,13 @@ import run_worker,cj_api.local_app,cj_trip.local_needs_app,cj_draft.needs_local
 modules=[run_worker,cj_api.local_app,cj_trip.local_needs_app,cj_draft.needs_local]
 assert all(Path(m.__file__).is_relative_to(BACKEND) for m in modules),'wrong backend import root'
 source_files=[*list((APP/'ios/App').glob('*.swift')),HERE/'DevelopmentScopedMessageUITests.swift',Path(__file__)]
-for module in ('CJShell','CJTripClient','CJMessageClient','CJNeedsClient','CJAuth'):
+for module in ('CJShell','CJTripClient','CJMessageClient','CJNeedsClient','CJAuth','CJManualPreviewClient','CJRunClient'):
  source_files+=list((APP/'ios/Modules'/module/'Sources').rglob('*.swift'))
 def fingerprint(root,paths):return {str(path.relative_to(root)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
 backend_files=[BACKEND/name for name in subprocess.check_output(['git','ls-files','backend','scripts','contracts','pyproject.toml','uv.lock'],cwd=BACKEND,text=True).splitlines()]
 r=dict(status='RUNNING',layer='actual Simulator/signed API/private PG/pinned backend candidate',app_head=head(APP),backend_head=head(BACKEND),backend_root_verified=True,source_hashes=fingerprint(APP,source_files),backend_hashes=fingerprint(BACKEND,backend_files),responses=[],unrun=['main backend delivery if pin unmerged','real services/models/fees/cloud/device'])
 if PLANNING_PREFIX:
- r['verified_scope']='explicit MESSAGE-send.2 / original RUN published prefix only'
+ r['verified_scope']='original NEEDS planning discovery/decision/recovery' if PLANNING_DECISION else 'explicit MESSAGE-send.2 / original RUN published prefix only'
  r['unrun']+=['NEEDS candidate discovery/accept/reject pending C frozen read interface','source-input.2 formal replanning']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def check(resp,phase):
@@ -89,11 +90,11 @@ try:
     with TestClient(structured) as client:formal=check(client.get('/v5/trip-structured',params=dict(trip_id=tid),headers=headers),'formal')['trip']
     assert formal['content']['content_version']=='structured.2' and formal['version']==1
     r['source_formal']=formal;r['source_message']=original['receipt'];save()
-   audit=[];latest_preparation={};late_captured=threading.Event();late_release=threading.Event();late_state={}
+   audit=[];planning_discoveries=[];latest_preparation={};late_captured=threading.Event();late_release=threading.Event();late_state={}
    async def observed(scope,receive,send):
     if scope.get('type')!='http':return await api(scope,receive,send)
     path=scope['path'];authorization=dict(scope['headers']).get(b'authorization',b'').decode('ascii');label=next((label for label,value in tokens.items() if authorization=='Bearer '+value),None);entry=dict(method=scope['method'],path=path,account=label);audit.append(entry);parts=[];actual_reply=[];reply_parts=[]
-    drop_ack=CASE=='testNeedsManualSaveACKLoss' and path=='/v1/trip-needs-saves' and scope['method']=='POST'
+    drop_ack=scope['method']=='POST' and ((CASE=='testNeedsManualSaveACKLoss' and path=='/v1/trip-needs-saves') or (CASE=='testNeedsPlanningACKLoss' and path=='/v1/trip-needs-actions'))
     hold_prepare=CASE in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation') and path=='/v1/trip-needs-edits' and scope['method']=='POST'
     if scope.get('query_string'):entry['query']=parse_qs(scope['query_string'].decode('ascii'))
     async def received():
@@ -107,6 +108,7 @@ try:
      else:await send(value)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else needs_app if path.startswith('/v1/trip-needs-') else api
     await target(scope,received,sent)
+    if path=='/v1/trip-needs-discovery' and entry['status']==200:planning_discoveries.append(json.loads(b''.join(reply_parts))['discovery'])
     if path=='/v1/trip-needs-edits' and scope['method']=='POST' and entry['status']==200:latest_preparation['value']=json.loads(b''.join(reply_parts))['preparation']
     if path=='/v1/trip-needs-edits' and scope['method']=='GET' and entry['status']==200:entry['preparation_present']=json.loads(b''.join(reply_parts))['preparation'] is not None
     if path=='/v1/trip-needs-action-receipts' and entry['status']==200:entry['receipt_present']=json.loads(b''.join(reply_parts))['receipt'] is not None
@@ -128,6 +130,7 @@ try:
      await send(dict(type='http.response.body',body=failure))
     if scope['method']=='POST':
      raw=b''.join(parts);entry['input_sha256']=hashlib.sha256(raw).hexdigest();value=json.loads(raw);entry['original_id']=value.get('action_id') or value.get('edit',{}).get('request_id')
+     if path=='/v1/trip-needs-actions':entry['decision']=value['kind'];entry['proposal_id']=value['proposal_id'];entry['candidate_hash']=value['candidate_hash']
      if PLANNING_PREFIX and path=='/v2/messages' and entry['status']==200:
       entry['message_id']=value['message_id'];message_receipt['value']=json.loads(b''.join(reply_parts))['receipt'];message_ready.set()
    def prefix_worker():
@@ -238,6 +241,28 @@ try:
     assert model.calls==r['source_provider_calls'] and not any(x['method']=='POST' and x['path'] not in ('/v1/trip-needs-edits','/v1/trip-needs-saves') for x in audit)
     value=dict(runtime_role=role,formal_version=expected_version,formal_count=1,prepares=expected_count,saves=expected_count,save_ids=sorted(ids),receipt_queries=len(queries),source_provider_calls=model.calls,edit_model_calls=0,unselected_exact=True,needs_unchanged=True if fixed_case else None,stage=stage)
     r['proof']=value;r.setdefault('proof_history',[]).append(value);save();return value
+   def planning_decision_proof():
+    assert PLANNING_DECISION and worker_done.is_set() and not worker_errors and model.calls==2
+    assert planning_discoveries and planning_discoveries[0]['state']=='published'
+    found=planning_discoveries[0];candidate=found['proposal']
+    assert found['reference']['message_id']==message_receipt['value']['message_id'] and found['reference']['run_id']==message_receipt['value']['run_id']
+    assert found['needs_reference']==dict(id='visit',expected_version=1) and found['source_profile']=='TRIP-source-input.1' and found['planning_context'] is None
+    acts=[x for x in audit if x['method']=='POST' and x['path']=='/v1/trip-needs-actions'];messages=[x for x in audit if x['method']=='POST' and x['path']=='/v2/messages']
+    assert len(acts)==len(messages)==1 and acts[0]['status']==200 and acts[0]['proposal_id']==candidate['proposal_id'] and acts[0]['candidate_hash']==candidate['candidate_hash']
+    assert all(x['method']!='POST' or x['path'] in ('/v2/messages','/v1/trip-needs-actions') for x in audit)
+    kind='reject' if CASE=='testNeedsPlanningReject' else 'accept';assert acts[0]['decision']==kind
+    if CASE=='testNeedsPlanningACKLoss':assert acts[0]['committed_response_suppressed'] and acts[0]['delivered_status']==503
+    with TestClient(needs_app) as client:receipt=check(client.get('/v1/trip-needs-action-receipts',params=dict(action_id=acts[0]['original_id']),headers=headers),'planning-original-action')['receipt']
+    assert receipt and receipt['action_id']==acts[0]['original_id'] and receipt['kind']==kind and receipt['trip_id']==candidate['trip_id'] and receipt['candidate_hash']==candidate['candidate_hash']
+    with database.connect(scope_for(ISSUER,subject)) as conn:
+     role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
+    assert role=='cj_m1_runtime'
+    if kind=='accept':assert receipt['committed_version']==1 and len(trips)==1 and trips[0][0]==candidate['trip_id'] and trips[0][1]==1 and json.loads(bytes(trips[0][2]))==candidate['content']
+    else:assert receipt['committed_version'] is None and trips==[]
+    queries=[x for x in audit if x['path']=='/v1/trip-needs-action-receipts'];assert all(q['status']==200 and q['query']==dict(action_id=[acts[0]['original_id']]) and q['receipt_present'] for q in queries)
+    reads=[x for x in audit if x['path']=='/v1/trip-needs-discovery'];assert all(q['query']==dict(message_id=[message_receipt['value']['message_id']],run_id=[message_receipt['value']['run_id']]) for q in reads)
+    value=dict(runtime_role=role,messages=1,model_calls=2,registered_operations=2,actions=1,kind=kind,formal_count=len(trips),committed_version=receipt['committed_version'],original_action_id=acts[0]['original_id'],original_action_sha256=acts[0]['input_sha256'],receipt_queries=len(queries),discovery_reads=len(reads),trip_id=receipt['trip_id'],proposal_ids_are_backend_oracles_only=True)
+    r['decision_proof']=value;save();return value
    class Control(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
     def do_GET(self):
@@ -256,6 +281,7 @@ try:
        original=latest_preparation['value'];raw=packed(dict(version='TRIP-needs-save.1',action_id='competing-original-save',proposal_id=original['proposal_id'],candidate_hash=original['candidate_hash']))
        with TestClient(needs_app) as client:value=check(client.post('/v1/trip-needs-saves',content=raw,headers=binary),'competing-save')
        r['competing_receipt']=value['receipt'];save()
+      elif url.path=='/planning-decision-proof':value=planning_decision_proof()
       elif url.path=='/manual-save-proof':value=proof()
       elif url.path=='/manual-fixed-on-proof':value=proof('locked')
       else:raise ValueError('unknown control')
@@ -275,7 +301,8 @@ try:
     for secret in tokens.values():log=log.replace(secret,'<redacted-local-token>')
     (OUT/'native.log').write_text(log);run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));r['test_summary']=summary;assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    verified=proof()
+    verified=planning_decision_proof() if PLANNING_DECISION else proof()
+    if PLANNING_DECISION:assert verified['receipt_queries']>=1
     if not PLANNING_PREFIX and CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal'):assert verified['receipt_queries']>=1
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',a.simulator,bundle,'data'],text=True).strip())
     for f in container.rglob('*'):
