@@ -78,7 +78,7 @@ class RegisteredExit(MeteredExitCore):
             with meter.repo.transaction() as ledger:previous=ledger.last_clock
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
             raise BudgetUnknown('original result clock unavailable') from None
-        started=self._now(previous)
+        started=previous=self._now(previous)
         def check():
             nonlocal previous
             previous=self._now(previous)
