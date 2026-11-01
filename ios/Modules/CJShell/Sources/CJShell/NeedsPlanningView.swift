@@ -60,7 +60,7 @@ struct NeedsPlanningView:View {
     }
     private func detail(_ candidate:NeedsPlanningCandidate,discovery:NeedsPlanningDiscovery) -> some View {
         VStack(alignment:.leading,spacing:10) {
-            RunReadableText(text:language.text("Unaccepted new plan · ","未采用的新规划 · ")+candidate.status).accessibilityIdentifier("planning.candidate.status")
+            RunReadableText(text:language.text("Original candidate snapshot · ","原候选快照 · ")+candidate.status).accessibilityIdentifier("planning.candidate.status")
             RunReadableText(text:language.text("Requirements ","需求 ")+discovery.needsID!+" · "+String(discovery.needsVersion!)).accessibilityIdentifier("planning.needs")
             if case .travel(let reference)=discovery.reference {
                 RunReadableText(text:language.text("Original travel context ","原旅行上下文 ")+reference.context_id).accessibilityIdentifier("planning.namespace")
