@@ -183,10 +183,11 @@ struct TripEditStatus {
     let head: Components.Schemas.MessageHead?
     let acceptance: TripEditAcceptance?
     let acceptedUTF8: Data?
-    init(raw: Data, maximumBytes: Int, requestID: String, conversationID: String, original: OriginalTripEdit?) throws {
+    let scopedResult: RunScopedResultReference?
+    init(raw: Data, maximumBytes: Int, requestID: String, conversationID: String, original: OriginalTripEdit?, scopedResults: Bool = false) throws {
         let json = try DiscussionJSON(raw, maximumBytes: maximumBytes)
-        let f = try DiscussionJSON.fields(json.object, "request_id version receipt reference head")
-        guard f["version"] as? String == "MESSAGE-send-status.4", f["request_id"] as? String == requestID,
+        let f = try DiscussionJSON.fields(json.object, scopedResults ? "request_id version receipt reference head scoped_result" : "request_id version receipt reference head")
+        guard f["version"] as? String == (scopedResults ? "MESSAGE-send-status.5" : "MESSAGE-send-status.4"), f["request_id"] as? String == requestID,
               UUID(uuidString: requestID) != nil else { throw MessageHTTPFailure.invalidResponse }
         if f["head"] is NSNull { head = nil }
         else {
@@ -202,6 +203,12 @@ struct TripEditStatus {
             guard let original else { throw MessageHTTPFailure.invalidResponse }
             acceptance = try .init(fields: f, json: json, original: original)
             acceptedUTF8 = try JSONSerialization.data(withJSONObject: ["request_id": requestID, "version": "MESSAGE-accept.4", "receipt": f["receipt"]!, "reference": f["reference"]!], options: [.sortedKeys])
+        }
+        if scopedResults, let acceptance {
+            scopedResult = try RunScopedResultReference.read(f["scoped_result"], matching: acceptance.reference)
+        } else {
+            if scopedResults { guard f["scoped_result"] is NSNull else { throw MessageHTTPFailure.invalidResponse } }
+            scopedResult = nil
         }
     }
 }

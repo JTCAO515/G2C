@@ -63,13 +63,13 @@ extension MessageHTTPClient {
         if !work.creation {
             if work.edit { tripEditPermitState.heads.removeValue(forKey:Data(work.conversationID.utf8)) }
             else { tripDiscussionPermitState.heads.removeValue(forKey:Data(work.conversationID.utf8)) }
-            var parts=URLComponents();parts.path=work.edit ? "/v4/message-send-status" : "/v3/message-send-status";parts.queryItems=[.init(name:"conversation_id",value:work.conversationID)]
+            var parts=URLComponents();parts.path=work.edit ? "/v\(tripEditStatusVersion)/message-send-status" : "/v3/message-send-status";parts.queryItems=[.init(name:"conversation_id",value:work.conversationID)]
             guard let path=parts.string else { throw MessageHTTPFailure.invalidConfiguration }
-            let (status,raw,trace)=try await versionedMessageExchange(path:path,operation:work.edit ? "readTripEditStatusV4" : "readTripDiscussionStatusV3",raw:nil,lease:work.lease)
+            let (status,raw,trace)=try await versionedMessageExchange(path:path,operation:work.edit ? tripEditStatusOperation : "readTripDiscussionStatusV3",raw:nil,lease:work.lease)
             try validateOpening(work)
             guard status==200 else { return .rejected(status:status,error:try JSONDecoder().decode(Components.Schemas.ErrorResponse.self,from:raw)) }
             let available:Bool
-            if work.edit { available=try TripEditStatus(raw:raw,maximumBytes:endpoint.maximumResponseBytes,requestID:trace,conversationID:work.conversationID,original:nil).head != nil }
+            if work.edit { available=try TripEditStatus(raw:raw,maximumBytes:endpoint.maximumResponseBytes,requestID:trace,conversationID:work.conversationID,original:nil,scopedResults:readsScopedEditResults).head != nil }
             else { available=try TripDiscussionStatus(raw:raw,maximumBytes:endpoint.maximumResponseBytes,requestID:trace,conversationID:work.conversationID,original:nil).head != nil }
             guard available else { return .unknown }
             try recovery.observeConversationOpening(work.operation,phase:.available,httpStatus:200,responseUTF8:raw)

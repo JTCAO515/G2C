@@ -47,6 +47,8 @@ struct CheckedTransport: ClientTransport {
               (operationID == "receiveTripEditV4" && request.method == .post && request.path == "/v4/messages") ||
               (operationID == "readTripEditStatusV4" && request.method == .get && request.path?.hasPrefix("/v4/message-send-status?") == true) ||
               (operationID == "readTripEditHistoryV3" && request.method == .get && request.path?.hasPrefix("/v3/message-history?") == true) ||
+              (operationID == "readTripEditStatusV5" && request.method == .get && request.path?.hasPrefix("/v5/message-send-status?") == true) ||
+              (operationID == "readTripEditHistoryV4" && request.method == .get && request.path?.hasPrefix("/v4/message-history?") == true) ||
               (operationID == Operations.openConversation.id && request.method == .put && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
@@ -499,6 +501,9 @@ public enum MessageHTTPOutcome: Sendable {
     private let credentials: any MessageCredentialsProvider
     private let transport: any ClientTransport
     let submissionEnabledForTest: Bool
+    let readsScopedEditResults: Bool
+    var tripEditStatusOperation: String { readsScopedEditResults ? "readTripEditStatusV5" : "readTripEditStatusV4" }
+    var tripEditStatusVersion: Int { readsScopedEditResults ? 5 : 4 }
     let liveMessageTransport: NoRedirectTransport?
     var sendPermitState = SendPermitState()
     var travelSendPermitState = SendPermitState()
@@ -510,18 +515,20 @@ public enum MessageHTTPOutcome: Sendable {
     private let readOwner = UUID()
     /// Test seam only: caller must supply a non-network interceptor, never a live transport.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
-                credentials: any MessageCredentialsProvider, interceptedTestTransport: any ClientTransport) {
+                credentials: any MessageCredentialsProvider, interceptedTestTransport: any ClientTransport, readsScopedEditResults: Bool = false) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
         self.credentials = credentials; self.transport = interceptedTestTransport
+        self.readsScopedEditResults=readsScopedEditResults
         submissionEnabledForTest = true
         liveMessageTransport = nil
     }
     /// Production/default transports stay read-only. Only the explicit DEBUG Simulator
     /// message capability can send, through the current-process head/permit path.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
-                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport) {
+                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport, readsScopedEditResults: Bool = false) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
         self.credentials = credentials; self.transport = liveReadTransport
+        self.readsScopedEditResults=readsScopedEditResults
         submissionEnabledForTest = false
         liveMessageTransport = liveReadTransport
     }
@@ -835,16 +842,17 @@ extension MessageHTTPClient {
         guard !conversationID.isEmpty else { throw MessageHTTPFailure.invalidConfiguration }
         try checkSendLease(lease)
         let key=Data(conversationID.utf8),historyEpoch=sendPermitState.historyEpochs[Data(conversationID.utf8)]
-        let purpose=Data((edit ? "trip-edit-history:" : "trip-discussion-history:").utf8)+key
+        let scopedResults=edit && readsScopedEditResults
+        let purpose=Data((scopedResults ? "trip-edit-result-history:" : edit ? "trip-edit-history:" : "trip-discussion-history:").utf8)+key
         try readCursor(after,purpose:purpose,limit:limit,limits:limits,lease:lease)
-        var query=URLComponents();query.path=edit ? "/v3/message-history" : "/v2/message-history"
+        var query=URLComponents();query.path=scopedResults ? "/v4/message-history" : edit ? "/v3/message-history" : "/v2/message-history"
         query.queryItems=[.init(name:"conversation_id",value:conversationID),.init(name:"limit",value:String(limit))]
         if let after { query.queryItems!.append(.init(name:"cursor",value:after.opaque)) }
         query.percentEncodedQuery=query.percentEncodedQuery?.replacingOccurrences(of:"+",with:"%2B")
         guard let path=query.string else { throw MessageHTTPFailure.invalidConfiguration }
-        let (status,bytes,trace)=try await versionedMessageExchange(path:path,operation:edit ? "readTripEditHistoryV3" : "readTripDiscussionHistoryV2",raw:nil,lease:lease)
+        let (status,bytes,trace)=try await versionedMessageExchange(path:path,operation:scopedResults ? "readTripEditHistoryV4" : edit ? "readTripEditHistoryV3" : "readTripDiscussionHistoryV2",raw:nil,lease:lease)
         guard status==200 else { try readError(status,JSONDecoder().decode(Components.Schemas.ErrorResponse.self,from:bytes)) }
-        let page=try TripDiscussionHistory(raw:bytes,maximumBytes:endpoint.maximumResponseBytes,decodedLimit:limits.maximumDecodedBytes,limit:limit,requestID:trace,edit:edit)
+        let page=try TripDiscussionHistory(raw:bytes,maximumBytes:endpoint.maximumResponseBytes,decodedLimit:limits.maximumDecodedBytes,limit:limit,requestID:trace,edit:edit,scopedResults:scopedResults)
         guard !page.rows.isEmpty || (after==nil && page.next==nil) else { throw MessageHTTPFailure.invalidResponse }
         var last=after?.last ?? 0,generation=after?.generation,ids=after?.seenIDs ?? []
         for row in page.rows {

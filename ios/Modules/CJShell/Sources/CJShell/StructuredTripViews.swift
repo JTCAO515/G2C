@@ -141,7 +141,7 @@ struct StructuredTripHome: View {
                 TripTimelineView(host: reader, language: language, onDiscuss: messages?.supportsTripMessages == true ? { entry in
                     guard state.messageHost === messages, messages?.selectTripDiscussion(entry) == true else { return false }
                     browsePanel = nil; state.selectedTab = .assistant; return true
-                } : nil)
+                } : nil,allowsScopedItems:messages?.supportsScopedEdits == true)
             }
         }
         .onChange(of: state.selectedTab) { _, tab in if tab != .trips { browsePanel = nil } }

@@ -121,7 +121,7 @@ struct TripShell: View {
                     TripTimelineView(host:reader,language:language,onDiscuss:messages?.supportsTripMessages == true ? { entry in
                         guard state.messageHost === messages,messages?.selectTripDiscussion(entry)==true else { return false }
                         sheet=nil;state.selectedTab = .assistant;return true
-                    } : nil)
+                    } : nil,allowsScopedItems:messages?.supportsScopedEdits == true)
                 }
             }
             .onAppear { host.setManualForeground(scenePhase == .active) }

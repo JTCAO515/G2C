@@ -8,8 +8,10 @@ struct TripTimelineView: View {
     let host: TripTimelineHost
     let language: ShellLanguage
     var onDiscuss:((TripDiscussionEntry)->Bool)?
+    var allowsScopedItems=false
     @Environment(\.dismiss) private var dismiss
     @State private var issue: String?
+    @State private var selectedItemIDs:Set<String>=[]
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -30,6 +32,17 @@ struct TripTimelineView: View {
                             if onDiscuss != nil {
                                 button("timeline.discuss.trip",language.text("Discuss this whole Trip","讨论整个行程"),disabled:display.busy) { discuss(context:display.discussion,day:nil,itemID:nil) }
                             }
+                            if allowsScopedItems,onDiscuss != nil {
+                                RunReadableText(text:language.text("Choose each item for a new scoped request, including items on other days. Nothing is selected from an earlier result.","逐一选择新请求涉及的条目，可跨日期选择；不会沿用先前结果自动勾选。"))
+                                RunReadableText(text:record.document.items.filter { selectedItemIDs.contains($0.id) }.map(\.id).joined(separator:", ")).accessibilityIdentifier("timeline.scope.selected")
+                                button("timeline.scope.use",language.text("Use these explicitly selected items","使用这些明确选中的条目"),disabled:display.busy || selectedItemIDs.isEmpty) {
+                                    do {
+                                        let ids=record.document.items.filter { selectedItemIDs.contains($0.id) }.map(\.id)
+                                        let entry=try host.discussion(context:display.discussion,day:nil,itemID:nil,scopedItemIDs:ids)
+                                        guard onDiscuss?(entry)==true else { discussionFailed();return }
+                                    } catch { discussionFailed() }
+                                }
+                            }
                             ForEach(timeline.groups) { group in
                                 RunReadableText(text:groupLabel(group),style:.headline).accessibilityIdentifier("timeline.day."+group.id)
                                 if onDiscuss != nil,let date=group.date,let zone=group.timezone {
@@ -48,6 +61,11 @@ struct TripTimelineView: View {
                                         RunReadableText(text:span(entry.span)).accessibilityIdentifier("timeline.span."+entry.id)
                                         RunReadableText(text:language.text("Source declaration: ","来源声明：")+entry.item.sourceCategory.rawValue+" · "+entry.item.verification.rawValue,style:.caption)
                                         if onDiscuss != nil {
+                                            if allowsScopedItems {
+                                                button("timeline.scope.item."+entry.id,(selectedItemIDs.contains(entry.id) ? language.text("Selected: ","已选：") : language.text("Select: ","选择："))+entry.id,disabled:display.busy) {
+                                                    if selectedItemIDs.contains(entry.id) { selectedItemIDs.remove(entry.id) } else { selectedItemIDs.insert(entry.id) }
+                                                }
+                                            }
                                             button("timeline.discuss.item."+entry.id,language.text("Discuss this original item","讨论此原条目"),disabled:display.busy) {
                                                 do {
                                                     let day:MessageTripSelection.Day?
@@ -67,6 +85,7 @@ struct TripTimelineView: View {
             }.accessibilityIdentifier("timeline.content").navigationTitle(language.text("Timeline","时间线")).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement:.topBarTrailing) { AssistantPanelDoneButton(title:language.text("Done","完成"),identifier:"timeline.done") { host.invalidate();dismiss() } } }
                 .onDisappear { host.invalidate() }
+                .onChange(of:host.revision) { _,_ in selectedItemIDs=[] }
         }
     }
     private func button(_ id:String,_ title:String,disabled:Bool,action:@escaping()->Void) -> some View {

@@ -148,7 +148,19 @@ DEBUG 模拟器可显式选择 `G2C_DEV_MESSAGE_PROFILE=trip-edit-v1`，消费�
 
 候选面板使用原 MESSAGE 回执的 message/run 读取受保护的候选发现，显示原版本、修改前后、固定状态、当地时间和原可行性/缺失依据；UNKNOWN 不改成已核实。读取失败仅允许再次读取原记录，不创建 action 或重调模型。
 
-用户明确接受或拒绝这份确切候选后，先加密保存原 action ID、字节和候选响应，再发送一次。重启通过“此前局部动作”查询原回执；null/断网保持 UNKNOWN，没有重发入口。正式保存的回执与当前 Trip 读回分别显示，读回不可用不抹去已核实的回执。账号和原消息选择变化使旧读取失效，中英切换保留同一候选。扩域/澄清结果在实际冻结交付前不显示为可接受候选，地图保持原未连接状态。
+用户明确接受或拒绝这份确切候选后，先加密保存原 action ID、字节和候选响应，再发送一次。重启通过“此前局部动作”查询原回执；null/断网保持 UNKNOWN，没有重发入口。正式保存的回执与当前 Trip 读回分别显示，读回不可用不抹去已核实的回执。账号和原消息选择变化使旧读取失效，中英切换保留同一候选。扩域/澄清结果不显示为可接受候选，地图保持原未连接状态。
+
+### 原消息的澄清与扩域结果（#337）
+
+仅 DEBUG 模拟器显式配置 `G2C_DEV_MESSAGE_PROFILE=trip-edit-result-v1` 时消费 B #360 的 RUN-display.5、RUN-draft-status.6、MESSAGE-send-status.5 与 MESSAGE-history.4。发送仍用原 MESSAGE-send.4，取消仍用 RUN-cancel.4；旧 `trip-edit-v1` 和 Release 默认路径不变。此模式要求与旧局部模式相同的 typed Memory、独立旅行选择和已保存需求，并拒绝环境 proposal ID。服务端还须由 operator 显式激活冻结的 `message-edit-result.1`，App 配置不授予运行权限。
+
+App 核对原 message/run/input hash 和完整 MESSAGE-edit-reference，再核对 RUN display 与 draft 的同一个 `RUN-scoped-result.1` 指针。只用指针中的原 result_id GET 受保护 `TRIP-scoped-display.1`，不从模型正文、worker Outcome 或命名前缀猜结果。新 outcome 只有完成状态和正确指针才可读取；历史普通 outcome 必须没有指针。原 MESSAGE-accept.4 加密字节保留，重启重新读取原 RUN，不改写旧回执格式。
+
+澄清显示未知日期、跨日条目、未匹配日期与原因；扩域显示越界条目/日期、具体 before/after、所需范围和原可行性报告。UNKNOWN、missing 与未通过输出检查不冒充可接受候选。中英只切换原结果对应的语言文字，不重新规划。结果不提供接受或拒绝写入；“保留原行程”只是本地展示选择，零 Trip action。整份标题变化不能由局部条目选区授权，须保留或明确使用手动标题编辑。
+
+用户可重新读取当前正式行程，逐个明确选择不同日期的条目，再点击使用选区；初始不勾选结果建议，更换读取或刷新清空尚未提交的勾选。多个条目复用同一正式读取和账号生命期，只传该记录真实存在的原 ID、version/hash，不补齐日期或复制条目。新范围仍需重新明确 namespace、需求和修改意图并发送新请求；结果展示不会自动复制范围、发送消息或创建 action。旧讨论模式拒绝多条目专用选择，不能静默退成整份 Trip 讨论。
+
+读取失败清除先前正文并显示不可用，不制造新 MESSAGE、模型调用或 Trip action。账号/原消息/会话变化使在途及已读结果失效。Trip 版本变化只展示 stale 和原/当前版本，不保留旧原因或建议范围。实际签名本地 API、受限 PG、原 worker/Fake 与模拟器证据分场保存；真实服务/费用/云/生产及真机仍分别由 L2/L3 验证。
 
 ### 本地正式行程手动编辑（#286）
 

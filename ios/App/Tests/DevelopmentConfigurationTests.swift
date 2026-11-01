@@ -57,10 +57,12 @@ struct DevelopmentConfigurationTests {
         let key="G2C_DEV_MESSAGE_PROFILE"
         #if DEBUG
         #expect(try DevelopmentMessageProfile.read([key:"trip-edit-v1"]) == .edit)
+        #expect(try DevelopmentMessageProfile.read([key:"trip-edit-result-v1"]) == .editResults)
         #expect(try !DevelopmentDiscussionProfile.read([key:"trip-edit-v1"]))
         #expect(try DevelopmentMessageProfile.read([:]) == nil)
         #else
         #expect(try DevelopmentMessageProfile.read([key:"trip-edit-v1"]) == nil)
+        #expect(try DevelopmentMessageProfile.read([key:"trip-edit-result-v1"]) == nil)
         #endif
     }
     @Test func scopedConfigurationRequiresNamespaceChoicesSavedNeedsAndCompatibleFormat() throws {
@@ -72,6 +74,12 @@ struct DevelopmentConfigurationTests {
             "G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":"visit"]
         let typed=try DevelopmentTypedMode.read(environment),needs=try DevelopmentNeedsProfile.read(environment)
         try DevelopmentMessageProfile.edit.validate(typed:typed,needs:needs,answer:.plain)
+        try DevelopmentMessageProfile.editResults.validate(typed:typed,needs:needs,answer:.plain)
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.editResults.validate(typed:nil,needs:needs,answer:.plain) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.editResults.validate(typed:typed,needs:nil,answer:.plain) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.editResults.validate(typed:typed,needs:needs,answer:.place) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.editResults.validate(typed:typed,needs:needs,answer:.plain,legacyProposal:true) }
+        try DevelopmentMessageProfile.edit.validate(typed:typed,needs:needs,answer:.plain,legacyProposal:true)
         #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.edit.validate(typed:nil,needs:needs,answer:.plain) }
         #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.edit.validate(typed:typed,needs:nil,answer:.plain) }
         #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.edit.validate(typed:typed,needs:needs,answer:.place) }

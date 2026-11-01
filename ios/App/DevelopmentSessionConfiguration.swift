@@ -22,7 +22,7 @@ struct DevelopmentTripEditingProfile {
     }
 }
 enum DevelopmentMessageProfile:String {
-    case discussion="trip-discussion-v1",edit="trip-edit-v1",planning="needs-planning-v1"
+    case discussion="trip-discussion-v1",edit="trip-edit-v1",editResults="trip-edit-result-v1",planning="needs-planning-v1"
     static func read(_ environment:[String:String]) throws -> Self? {
         #if DEBUG
         guard let value=environment["G2C_DEV_MESSAGE_PROFILE"] else { return nil }
@@ -37,7 +37,8 @@ enum DevelopmentMessageProfile:String {
         switch self {
         case .discussion:
             guard typed == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
-        case .edit:
+        case .edit,.editResults:
+            if self == .editResults { guard !legacyProposal else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles } }
             guard let typed,!typed.travel.travel_ids.isEmpty,needs != nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
             guard case .plain=answer else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         case .planning:

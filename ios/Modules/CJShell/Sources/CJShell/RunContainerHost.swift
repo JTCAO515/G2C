@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import CJRunClient
+import CJMessageHTTP
 import CJSession
 import CJTripClient
 import CJNeedsClient
@@ -27,6 +28,15 @@ public enum NeedsPreviewRunProjection: Sendable { case waiting,unavailable,loade
         self.generation = generation; self.synthetic = synthetic; self.followAcceptedMessages = followAcceptedMessages;self.answerFormat = answerFormat; self.isCurrent = isCurrent
     }
 }
+@MainActor final class ScopedDisplayRunSource {
+    let original: AcceptedMessageRunReceipt
+    let pointer: RunScopedResultReference
+    let isCurrent: @MainActor () -> Bool
+    fileprivate init(original: AcceptedMessageRunReceipt, pointer: RunScopedResultReference, isCurrent: @escaping @MainActor () -> Bool) {
+        self.original=original;self.pointer=pointer;self.isCurrent=isCurrent
+    }
+}
+
 @MainActor @Observable public final class RunContainerHost {
     private let shell: ShellState
     private var configuration: RunContainerConfiguration?
@@ -48,6 +58,31 @@ public enum NeedsPreviewRunProjection: Sendable { case waiting,unavailable,loade
         guard let configuration,let original = origin else { return nil }
         let token = selection
         return sourceIsCurrent(original,configurationID:configuration.id,token:token) ? token : nil
+    }
+    var scopedResultMarker: RunScopedResultReference? {
+        guard let configuration,let original=origin else { return nil }
+        let token=selection
+        guard sourceIsCurrent(original,configurationID:configuration.id,token:token),original.editReference != nil else { return nil }
+        let draft=configuration.model.draftStatus.scopedResult
+        let display:RunScopedResultReference?
+        if case .loaded(let value)=configuration.model.state { display=value.scopedResult } else { display=nil }
+        guard sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return nil }
+        return draft ?? display
+    }
+    func captureScopedDisplaySource() -> ScopedDisplayRunSource? {
+        guard let configuration,let original=origin,let reference=original.editReference else { return nil }
+        let token=selection
+        guard sourceIsCurrent(original,configurationID:configuration.id,token:token),
+              case .loaded(let displayed)=configuration.model.state,displayed.snapshot.status == .completed,
+              case .loadedScoped(let draft)=configuration.model.draftStatus,let pointer=draft.scopedResult,
+              displayed.scopedResult == pointer,draft.reference == reference,
+              sourceIsCurrent(original,configurationID:configuration.id,token:token) else { return nil }
+        return .init(original:original,pointer:pointer,isCurrent:{ [weak self] in
+            guard let self,self.sourceIsCurrent(original,configurationID:configuration.id,token:token),
+                  self.configuration?.model.draftStatus.scopedResult == pointer,
+                  case .loaded(let current)=self.configuration?.model.state,current.scopedResult == pointer else { return false }
+            return self.sourceIsCurrent(original,configurationID:configuration.id,token:token)
+        })
     }
     /// Cross-component copy requires the actual same session operation, not
     /// merely a shared window, matching caller IDs or a source hash.

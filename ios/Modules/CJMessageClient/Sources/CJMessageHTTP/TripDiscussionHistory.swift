@@ -15,19 +15,24 @@ public struct MessageTripHistoryItem: Sendable {
     public let originalUTF8: Data
     public let text: String
     public let association: MessageHistoryAssociation
+    public let scopedResult: RunScopedResultReference?
+    init(receipt: Components.Schemas.MessageReceipt, originalUTF8: Data, text: String, association: MessageHistoryAssociation, scopedResult: RunScopedResultReference? = nil) {
+        self.receipt=receipt;self.originalUTF8=originalUTF8;self.text=text;self.association=association;self.scopedResult=scopedResult
+    }
 }
 struct TripDiscussionHistory {
     let rows: [MessageTripHistoryItem]
     let next: String?
-    init(raw: Data, maximumBytes: Int, decodedLimit: Int, limit: Int, requestID: String, edit: Bool = false) throws {
+    init(raw: Data, maximumBytes: Int, decodedLimit: Int, limit: Int, requestID: String, edit: Bool = false, scopedResults: Bool = false) throws {
+        guard !scopedResults || edit else { throw MessageHTTPFailure.invalidConfiguration }
         let json=try DiscussionJSON(raw,maximumBytes:maximumBytes)
         let f=try DiscussionJSON.fields(json.object,"request_id version messages next_cursor")
-        guard f["version"] as? String == (edit ? "MESSAGE-history.3" : "MESSAGE-history.2"),f["request_id"] as? String == requestID,UUID(uuidString:requestID) != nil,
+        guard f["version"] as? String == (scopedResults ? "MESSAGE-history.4" : edit ? "MESSAGE-history.3" : "MESSAGE-history.2"),f["request_id"] as? String == requestID,UUID(uuidString:requestID) != nil,
               let messages=f["messages"] as? [[String:Any]],messages.count<=limit else { throw MessageHTTPFailure.invalidResponse }
         next=try DiscussionJSON.nullableText(f["next_cursor"])
         var rows:[MessageTripHistoryItem]=[],remaining=decodedLimit
         for (index,item) in messages.enumerated() {
-            let fields=try DiscussionJSON.fields(item,"receipt original_utf8_base64 text reference")
+            let fields=try DiscussionJSON.fields(item,scopedResults ? "receipt original_utf8_base64 text reference scoped_result" : "receipt original_utf8_base64 text reference")
             _=try DiscussionJSON.fields(fields["receipt"],"message_id conversation_id generation sequence run_id input_sha256")
             _=try json.integer(["messages",String(index),"receipt","sequence"],minimum:1)
             let receipt=try JSONDecoder().decode(Components.Schemas.MessageReceipt.self,from:JSONSerialization.data(withJSONObject:fields["receipt"]!))
@@ -62,7 +67,13 @@ struct TripDiscussionHistory {
                 association = .legacy
             default:throw MessageHTTPFailure.invalidResponse
             }
-            rows.append(.init(receipt:receipt,originalUTF8:original,text:text,association:association))
+            let pointer:RunScopedResultReference?
+            if scopedResults,case .edit(let reference)=association { pointer=try RunScopedResultReference.read(fields["scoped_result"],matching:reference) }
+            else {
+                if scopedResults { guard fields["scoped_result"] is NSNull else { throw MessageHTTPFailure.invalidResponse } }
+                pointer=nil
+            }
+            rows.append(.init(receipt:receipt,originalUTF8:original,text:text,association:association,scopedResult:pointer))
         }
         self.rows=rows
     }
