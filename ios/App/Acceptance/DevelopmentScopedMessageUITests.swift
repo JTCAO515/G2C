@@ -10,6 +10,7 @@ import Foundation
         let accounts,subjects:[String:String]
         let formal_trips:[FormalTrip]
         let manual_profile:Bool?
+        let manual_only:Bool?
     }
     private struct FormalTrip:Decodable {
         let id,title,content_sha256:String
@@ -109,6 +110,9 @@ import Foundation
             "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"food\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true},\"pace\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}",
             "G2C_DEV_TYPED_MEMORY_URL":f.endpoint]
         if f.manual_profile == true { app.launchEnvironment["G2C_DEV_TRIP_MANUAL_PROFILE"]="manual-v1" }
+        if f.manual_only == true {
+            for key in ["G2C_DEV_MESSAGE_PROFILE","G2C_DEV_TRAVEL_PROFILE","G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
+        }
         if let timezone { app.launchEnvironment["TZ"]=timezone }
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
@@ -255,6 +259,42 @@ import Foundation
             capture(name+"-restart-original-receipt");try audit(name+"-restart")
         }
 
+    }
+    func testNeedsManualTitleSave() async throws {
+        let name="testNeedsManualTitleSave",f=try await prepare(name)
+        defer { app?.terminate() }
+        XCTAssertEqual(f.manual_profile,true);XCTAssertEqual(f.manual_only,true)
+        let trip=try XCTUnwrap(f.formal_trips.first),input="SYNTHETIC manual saved title / 手动保存标题"
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id)
+        tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+        let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
+        XCTAssertTrue(selected.isEnabled);selected.tap()
+        func titleField() -> XCUIElement {
+            let multiline=app.textViews.matching(identifier:"trip.manual.title.value").firstMatch
+            return multiline.exists ? multiline : app.textFields.matching(identifier:"trip.manual.title.value").firstMatch
+        }
+        let field=visible({titleField()},id:"trip.manual.title.value")
+        XCTAssertEqual(try XCTUnwrap(field.value as? String),trip.title)
+        field.tap();field.press(forDuration:1.1)
+        let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
+        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(input)
+        XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
+        tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
+        text("trip.manual.after.title",contains:input)
+        tap("trip.manual.save");text("trip.manual.receipt",contains:"2")
+        tap("trip.manual.current");text("trip.manual.current.version",contains:"2")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-saved-original");try audit(name+"-saved")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");tap("trip.manual.originals.read")
+        let row=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.s:")).firstMatch},id:"manual.saved.original")
+        XCTAssertTrue(row.isEnabled && row.isHittable);row.tap()
+        let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.s:")).firstMatch},id:"manual.saved.query")
+        XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
+        text("trip.manual.original.result",contains:"原回执已核对")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-restart-original-only");try audit(name+"-restart")
     }
     func testManualProtectedPrepareUnknownRestart() async throws {
         let name="testManualProtectedPrepareUnknownRestart", f=try await prepare(name)
