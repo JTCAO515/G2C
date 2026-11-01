@@ -5,6 +5,7 @@ import Foundation
     private let bundle="space.go2china.scoped.acceptance"
     private let control="__FIXTURE_URL__"
     private var app:XCUIApplication!
+    private var largestFont=false
     private struct Fixture:Decodable {
         let case_id,endpoint,conversation,namespace:String
         let accounts,subjects:[String:String]
@@ -12,6 +13,7 @@ import Foundation
         let manual_profile:Bool?
         let manual_only:Bool?
         let needs_planning:Bool?
+        let largest_recovery:Bool?
     }
     private struct FormalTrip:Decodable {
         let id,title,content_sha256:String
@@ -58,12 +60,13 @@ import Foundation
                 top=max(top,header.frame.maxY+8);bottom=min(bottom,composer.frame.minY)
             }
             let frame=element.exists ? element.frame : .zero
+            if id.hasPrefix("planning.") && attempt % 10 == 0 { print("PLANNING_VIEWPORT",id,element.identifier,frame,top,bottom,element.exists,element.isHittable,navigation.exists) }
             if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { return element }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
             let down=located ? frame.midY<=top : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
-            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? -step : step)))
-            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? step : -step)))
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? -step : step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id)
@@ -103,6 +106,7 @@ import Foundation
         XCTAssertEqual(issues,0)
     }
     private func launch(_ f:Fixture,language:String,large:Bool=false,restore:Bool=false,timezone:String?=nil) throws {
+        largestFont=large
         app?.terminate();app=XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments=["-cj.ui.language.v1",language]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
@@ -325,7 +329,20 @@ import Foundation
     func testNeedsPlanningConflict() async throws { try await planningScenario("testNeedsPlanningConflict",decision:"accept",invalidation:"compete") }
     func testNeedsPlanningLateAccount() async throws { try await planningScenario("testNeedsPlanningLateAccount",lateAccount:true) }
     func testNeedsPlanningInterruptedAccept() async throws { try await planningScenario("testNeedsPlanningInterruptedAccept",decision:"accept",interrupted:true) }
-    private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false) async throws {
+    func testNeedsPlanningManualComposition() async throws { try await planningScenario("testNeedsPlanningManualComposition",decision:"accept",composition:true) }
+    func testNeedsPlanningOriginalsLargest() async throws {
+        let name="testNeedsPlanningOriginalsLargest",f=try await prepare(name)
+        defer { app?.terminate() }
+        try launch(f,language:"zh-Hans",large:true)
+        tap("planning.originals");text("planning.activity",contains:"请选择已接受的原消息")
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).count,0)
+        _ = try await call("/prefix-not-sent",caseID:name)
+        capture(name+"-visible-originals");try audit(name+"-largest")
+    }
+    func testNeedsPlanningCurrentFixedAccept() async throws { try await planningScenario("testNeedsPlanningCurrentFixedAccept",decision:"accept",composition:true,currentDecision:"accept") }
+    func testNeedsPlanningCurrentFixedACKLoss() async throws { try await planningScenario("testNeedsPlanningCurrentFixedACKLoss",decision:"accept",composition:true,currentDecision:"accept") }
+    func testNeedsPlanningCurrentUnlockedReject() async throws { try await planningScenario("testNeedsPlanningCurrentUnlockedReject",decision:"accept",composition:true,currentDecision:"reject") }
+    private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false,composition:Bool=false,currentDecision:String?=nil) async throws {
         let f=try await prepare(name)
         defer { app?.terminate() }
         XCTAssertEqual(f.needs_planning,true)
@@ -418,7 +435,8 @@ import Foundation
             }
             _ = try await call("/planning-decision-proof",caseID:name)
             if !interrupted { capture(name+"-original-decision");try audit(name+"-decision") }
-            try launch(f,language:"en",restore:true)
+            let recoveredChinese=f.largest_recovery==true
+            try launch(f,language:recoveredChinese ? "zh-Hans" : "en",large:recoveredChinese,restore:true)
             tap("planning.originals")
             let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).firstMatch},id:"planning.original.query")
             XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
@@ -427,29 +445,150 @@ import Foundation
                 XCTAssertFalse(textElement("planning.receipt").exists)
                 XCTAssertFalse(textElement("planning.formal.version").exists)
             } else {
-                text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
+                text("planning.receipt",contains:recoveredChinese ? "原采用动作已确认" : decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
                 if decision=="accept" { text("planning.receipt.version",contains:"1");text("planning.formal.version",contains:" · 1") }
                 else { XCTAssertFalse(textElement("planning.formal.version").exists) }
             }
             XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.exists)
             _ = try await call("/planning-decision-proof",caseID:name)
             capture(name+"-restart-original-only");try audit(name+"-restart")
+            if composition {
+                struct FormalIdentity:Decodable { let trip_id:String }
+                let identity=try JSONDecoder().decode(FormalIdentity.self,from:await call("/planning-decision-proof",caseID:name))
+                let input="SYNTHETIC manual after App adoption / 采用后手改"
+                tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+identity.trip_id)
+                tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+                let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
+                XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();replaceManualText("trip.manual.title.value",input)
+                tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared");text("trip.manual.after.title",contains:input)
+                tap("trip.manual.save");text("trip.manual.receipt",contains:"2")
+                tap("trip.manual.current");text("trip.manual.current.version",contains:"2")
+                _ = try await call("/planning-composition-proof",caseID:name)
+                capture(name+"-actual-manual-save");try audit(name+"-manual")
+                try launch(f,language:"zh-Hans",restore:true)
+                tap("planning.originals")
+                let historical=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).firstMatch},id:"planning.historical.query")
+                XCTAssertTrue(historical.isEnabled && historical.isHittable);historical.tap()
+                text("planning.receipt.version",contains:"1");text("planning.formal.version",contains:" · 2")
+                text("planning.formal.title",contains:input)
+                XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.exists)
+                _ = try await call("/planning-composition-proof",caseID:name)
+                capture(name+"-old-receipt-current-manual-version");try audit(name+"-historical")
+                if let currentDecision { try await currentPlanningAfterManual(f,name:name,tripID:identity.trip_id,decision:currentDecision) }
+            }
         }
     }
+    private func currentPlanningAfterManual(_ f:Fixture,name:String,tripID:String,decision:String) async throws {
+        try launch(f,language:"en",restore:true)
+        let sourceVersion=decision=="reject" ? 5 : 3
+        func beginBEdit(replaceBasis:Bool) {
+            if replaceBasis { tap("trip.manual.replaceBasis") }
+            tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+            let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.b").firstMatch},id:"trip.manual.item.open.b")
+            XCTAssertTrue(item.isEnabled && item.isHittable);item.tap()
+            let selected=visible({app.switches.matching(identifier:"trip.manual.selected.b").firstMatch},id:"trip.manual.selected.b")
+            XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();XCTAssertEqual(selected.value as? String,"1")
+        }
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+tripID)
+        beginBEdit(replaceBasis:false);tap("trip.manual.fixed.true.b")
+        tap("trip.manual.prepare");text("trip.manual.issue",contains:"Reconcile retained original actions before another write")
+        text("trip.manual.fixed.input.b",contains:"Selected change: fixed")
+        _ = try await call("/current-planning-blocked",caseID:name)
+        tap("trip.manual.originals.read")
+        for (stage,expected) in [("p:","Original preparation verified"),("s:","Original receipt verified")] {
+            let row=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open."+stage)).firstMatch},id:"manual.current.original."+stage)
+            XCTAssertTrue(row.isEnabled && row.isHittable);row.tap()
+            let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query."+stage)).firstMatch},id:"manual.current.query."+stage)
+            XCTAssertTrue(query.isEnabled && query.isHittable);query.tap();text("trip.manual.original.result",contains:expected)
+        }
+        text("trip.manual.original.result",contains:" · 2");text("trip.manual.fixed.input.b",contains:"Selected change: fixed")
+        tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared");tap("trip.manual.save");text("trip.manual.receipt",contains:"3")
+        tap("trip.manual.current");text("trip.manual.current.version",contains:"3")
+        if decision=="reject" {
+            beginBEdit(replaceBasis:true);tap("trip.manual.fixed.false.b")
+            tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared");tap("trip.manual.save");text("trip.manual.receipt",contains:"4")
+            tap("trip.manual.current");text("trip.manual.current.version",contains:"4")
+            beginBEdit(replaceBasis:true)
+            let textChange=visible({app.switches.matching(identifier:"trip.manual.text.selected.b").firstMatch},id:"trip.manual.text.selected.b")
+            XCTAssertTrue(textChange.isEnabled && textChange.isHittable);textChange.tap()
+            replaceManualText("trip.manual.text.value.b","SYNTHETIC current replan edit / 后续规划手改")
+            let schedule=visible({app.switches.matching(identifier:"trip.manual.schedule.selected.b").firstMatch},id:"trip.manual.schedule.selected.b")
+            XCTAssertTrue(schedule.isEnabled && schedule.isHittable);schedule.tap()
+            replaceManualText("trip.manual.start.b.time.value","11:15");replaceManualText("trip.manual.end.b.time.value","12:15")
+            tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
+            text("trip.manual.after.item.b",contains:"SYNTHETIC current replan edit / 后续规划手改")
+            text("trip.manual.after.schedule.b",contains:"11:15");text("trip.manual.after.schedule.b",contains:"12:15")
+            tap("trip.manual.save");text("trip.manual.receipt",contains:"5")
+            tap("trip.manual.current");text("trip.manual.current.version",contains:"5")
+        }
+        _ = try await call("/current-planning-source",caseID:name)
+        tap("Assistant");conversation(f)
+        tap("assistant.travelContext");tap("travel.selection."+f.namespace);tap("assistant.panel.done")
+        tap("assistant.needs");tap("needs.read");text("needs.container.state",contains:"User-provided details loaded");tap("assistant.panel.done")
+        let intent=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+        XCTAssertEqual(intent.value as? String,"0");intent.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
+        XCTAssertEqual(intent.value as? String,"1")
+        enter("SYNTHETIC Replan from my current edited and fixed Trip / 按已手改和固定的行程重新规划",language:"en")
+        tap("assistant.send");_ = try await call("/current-planning-published",caseID:name)
+        tap("run.snapshot.read");text("run.display.status",contains:"Completed")
+        tap("planning.discover");text("planning.discovery.state",contains:"Original planning candidate recorded")
+        text("planning.context",contains:tripID);text("planning.context",contains:" · "+String(sourceVersion))
+        let ackLoss=name.hasSuffix("ACKLoss")
+        tap("planning."+decision)
+        if ackLoss {
+            text("planning.activity",contains:"UNKNOWN")
+            XCTAssertFalse(textElement("planning.receipt").exists)
+            XCTAssertFalse(textElement("planning.formal.version").exists)
+            let accept=app.buttons.matching(identifier:"planning.accept").firstMatch
+            XCTAssertFalse(accept.exists && accept.isEnabled)
+        } else { text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed") }
+        struct CurrentProof:Decodable { let original_action_id,proposed_trip_id,source_content_sha256:String }
+        let proof=try JSONDecoder().decode(CurrentProof.self,from:await call("/current-planning-proof",caseID:name))
+        text("planning.context.hash",contains:proof.source_content_sha256)
+        if decision=="accept" && !ackLoss { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }
+        else { XCTAssertFalse(textElement("planning.formal.version").exists) }
+        capture(name+"-source2-decision");try audit(name+"-source2")
+        try launch(f,language:"zh-Hans",large:decision=="reject",restore:true);tap("planning.originals");tap("planning.query."+proof.original_action_id)
+        text("planning.receipt",contains:decision=="accept" ? "原采用动作已确认" : "原拒绝动作已确认")
+        text("planning.context",contains:tripID);text("planning.context",contains:" · "+String(sourceVersion))
+        if decision=="accept" { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }
+        _ = try await call("/current-planning-proof",caseID:name)
+        capture(name+"-source2-original-recovery");try audit(name+"-source2-restart")
+    }
     func testNeedsManualCanonicalFixedRefusal() async throws {
-        let name="testNeedsManualCanonicalFixedRefusal",f=try await prepare(name)
+        try await manualRejectedPreparation("testNeedsManualCanonicalFixedRefusal",invalidWindow:false)
+    }
+    func testNeedsManualInvalidWindow() async throws {
+        try await manualRejectedPreparation("testNeedsManualInvalidWindow",invalidWindow:true)
+    }
+    private func manualRejectedPreparation(_ name:String,invalidWindow:Bool) async throws {
+        let f=try await prepare(name)
         defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:"en")
         tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
-        let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.a").firstMatch},id:"trip.manual.item.open.a")
+        let itemID=invalidWindow ? "b" : "a"
+        let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open."+itemID).firstMatch},id:"trip.manual.item.open."+itemID)
         XCTAssertTrue(item.isEnabled && item.isHittable);item.tap()
-        let selected=visible({app.switches.matching(identifier:"trip.manual.selected.a").firstMatch},id:"trip.manual.selected.a")
-        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();tap("trip.manual.fixed.false.a")
-        text("trip.manual.fixed.input.a",contains:"Selected change: unlocked")
+        let selected=visible({app.switches.matching(identifier:"trip.manual.selected."+itemID).firstMatch},id:"trip.manual.selected."+itemID)
+        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap()
+        if invalidWindow {
+            let schedule=visible({app.switches.matching(identifier:"trip.manual.schedule.selected.b").firstMatch},id:"trip.manual.schedule.selected.b")
+            XCTAssertTrue(schedule.isEnabled && schedule.isHittable);schedule.tap()
+            replaceManualText("trip.manual.start.b.time.value","11:15")
+            replaceManualText("trip.manual.end.b.time.value","10:30")
+        } else {
+            tap("trip.manual.fixed.false.a")
+            text("trip.manual.fixed.input.a",contains:"Selected change: unlocked")
+        }
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Original request refused")
         text("trip.manual.refusal",contains:"Save conflict");text("trip.manual.refusal",contains:"409")
-        text("trip.manual.fixed.input.a",contains:"Selected change: unlocked")
+        if invalidWindow {
+            for (id,value) in [("trip.manual.start.b.time.value","11:15"),("trip.manual.end.b.time.value","10:30")] {
+                let field=visible({app.textFields.matching(identifier:id).firstMatch},id:id)
+                XCTAssertEqual(field.value as? String,value)
+            }
+        } else { text("trip.manual.fixed.input.a",contains:"Selected change: unlocked") }
         XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
         XCTAssertFalse(textElement("trip.manual.receipt").exists)
         tap("trip.manual.current");text("trip.manual.current.version",contains:"1")

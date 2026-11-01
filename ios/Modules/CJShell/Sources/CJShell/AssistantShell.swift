@@ -160,7 +160,7 @@ struct AssistantShell: View {
             VStack(spacing: 4) {
                 BrandAvatar(compact: draftFocused || dynamicTypeSize.isAccessibilitySize)
                 if !draftFocused {
-                    Text(state.language.text("Assistant", "助手")).font(.headline)
+                    RunReadableText(text: state.language.text("Assistant", "助手"), style: .headline)
                 }
             }
             .padding(8)
