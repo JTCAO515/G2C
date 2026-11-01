@@ -12,8 +12,8 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--manual-trip-profile',action='store_true')
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart'],required=True)
-ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep'],required=True)
+ARGS=parser.parse_args();RESULT_PROFILE=ARGS.case.startswith('testScopedResult');OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
 os.umask(0o077);OUT.mkdir(parents=True,mode=0o700)
@@ -37,7 +37,7 @@ import uvicorn
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
-r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver']}
+r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device/VoiceOver','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver'])}
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)
@@ -112,7 +112,10 @@ try:
    from cj_memory.typed_local import TypedConfiguration
    from cj_memory.typed_api import create_local_typed_app
    from cj_memory.edit_runtime import EditRuntimeConfiguration
-   from cj_draft.scoped_publisher import local_configuration
+   if RESULT_PROFILE:
+    from cj_draft.scoped_result_publisher import local_configuration
+   else:
+    from cj_draft.scoped_publisher import local_configuration
    from cj_trip.local_scoped_app import create_local_scoped_app
    from cj_message.travel import Selection
    from cj_feasibility.solver import Limits
@@ -131,7 +134,11 @@ try:
    credentials={scope_for(ISSUER,subject):headers['Authorization'][7:]}
    limits=Limits(datetime(2026,11,1,tzinfo=timezone.utc),7*86400,1,10_000_000,60,120,128,.05,.05,100)
    edit_db,configuration=local_configuration(conninfo_path=connection,auth_dir=auth,run_context=context,memory=memory,credentials=credentials.__getitem__,confirmation=signer,limits=limits,language='en')
-   message_edit_profile.activate(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
+   if RESULT_PROFILE:
+    from cj_api.edit_result_profile import activate as activate_result
+    activate_result(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
+   else:
+    message_edit_profile.activate(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
    edit_api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,edit_configuration=configuration,needs_profile='manual-v1',history_configuration=load_history_configuration(auth))
    if CASE=='testScopedCandidateLateAccount':
     other_headers={'Authorization':'Bearer '+native_tokens['B']}
@@ -145,7 +152,8 @@ try:
      if CASE=='testScopedFixedReorderChineseLargest':
       order=[item['id'] for item in prompt['original_content']['items']];selected=prompt['selected_item_ids'];assert len(selected)==2
       a,b=map(order.index,selected);order[a],order[b]=order[b],order[a]
-     yield packed(dict(version=prompt['edit_version'],request_id=prompt['request_id'],trip_id=prompt['trip_id'],expected_version=prompt['expected_version'],original_hash=prompt['original_hash'],title=None,order=order,changes=[dict(item_id=prompt['selected_item_ids'][0],field='text',value='SYNTHETIC lighter choice / 本次轻松一点')])).decode()
+     changed=prompt['original_content']['items'][2]['id'] if RESULT_PROFILE else prompt['selected_item_ids'][0]
+     yield packed(dict(version=prompt['edit_version'],request_id=prompt['request_id'],trip_id=prompt['trip_id'],expected_version=prompt['expected_version'],original_hash=prompt['original_hash'],title=None,order=order,changes=[dict(item_id=changed,field='text',value='SYNTHETIC lighter choice / 本次轻松一点')])).decode()
    formal=detail['trip'];spec=dict(id=tid,title=formal['content']['title'],version=formal['version'],content_sha256=formal['content_sha256'],item_ids=[item['id'] for item in formal['content']['items']])
    cid=CASE
    with TestClient(edit_api) as client:expect(client.put('/v1/conversations',params=dict(conversation_id=cid),headers=headers),'native-original-chat')
@@ -160,7 +168,7 @@ try:
     path=scope.get('path','')
     if scope.get('type')!='http':return await edit_api(scope,receive,send)
     entry=dict(method=scope['method'],path=path);audit.append(entry);chunks=[];reply=[]
-    if path in ('/v1/trip-scoped-action-receipts','/v1/trip-scoped-discovery','/v1/trip-manual-preparations'):entry['original_query']=parse_qs(scope.get('query_string',b'').decode('ascii'))
+    if path in ('/v1/trip-scoped-action-receipts','/v1/trip-scoped-discovery','/v1/trip-manual-preparations','/v1/trip-scoped-results'):entry['original_query']=parse_qs(scope.get('query_string',b'').decode('ascii'))
     async def received():
      message=await receive()
      if message['type']=='http.request':chunks.append(message.get('body',b''))
@@ -227,7 +235,7 @@ try:
     assert len(rows)==1 and len(formal_rows)==1 and formal_rows[0][0]==tid and formal_rows[0][1]==2 and bytes(formal_rows[0][2])==packed(formal['content'])
     command=json.loads(bytes(rows[0][1]));assert command['version']=='MESSAGE-send.4' and command['creation_intent']=='none' and command['trip_id'] is None and command['modification_intent']=='propose_scoped_edit'
     with TestClient(edit_api) as client:
-     display=expect(client.get('/v4/run-display',params=dict(message_id=rows[0][0]),headers=headers),'oracle-original-run');draft=expect(client.get('/v5/run-draft-status',params=dict(message_id=rows[0][0]),headers=headers),'oracle-original-draft')
+     display=expect(client.get('/v5/run-display' if RESULT_PROFILE else '/v4/run-display',params=dict(message_id=rows[0][0]),headers=headers),'oracle-original-run');draft=expect(client.get('/v6/run-draft-status' if RESULT_PROFILE else '/v5/run-draft-status',params=dict(message_id=rows[0][0]),headers=headers),'oracle-original-draft')
     reference=display['reference'];assert reference==draft['reference'] and reference['trip_context']==command['trip_context'] and reference['namespace']['id']==selected_namespace['id'] and reference['needs_reference']==dict(id='visit',expected_version=1)
     posts=[x for x in audit if x['method']=='POST' and x['path']=='/v4/messages']
     forbidden=[x for x in audit if x['method'] not in ('GET','HEAD') and not (x['method']=='POST' and x['path']=='/v4/messages')]
@@ -238,6 +246,23 @@ try:
      status=display['snapshot']['status'],draft_outcome=draft['draft_outcome'],trip_id=reference['trip_context']['id'],content_sha256=reference['trip_context']['content_sha256'],namespace=reference['namespace']['id'],needs_version=reference['needs_reference']['expected_version'],item_ids=reference['trip_context']['item_ids'],day=None if reference['trip_context']['day'] is None else reference['trip_context']['day']['date'],
      memory_long='SYNTHETIC LONG' in inputs,memory_current='SYNTHETIC CURRENT' in inputs,memory_other='SYNTHETIC OTHER' in inputs)
     r['proof']=value;r['observed_requests']=list(audit);r['worker_outcomes']=list(finished);r['proposal_ids_are_backend_oracles_only']=True;save();return value
+   def result_proof():
+    assert RESULT_PROFILE
+    value=proof();kind='clarification_required' if CASE=='testScopedResultClarification' else 'expansion_required'
+    expected=0 if kind=='clarification_required' else 1
+    assert value['draft_outcome']==kind and fake.calls==value['registered_operations']==expected and value['pending_proposals']==0 and value['forbidden_writes']==0
+    assert len(actual_message_receipts)==1
+    original=actual_message_receipts[0]
+    with TestClient(edit_api) as client:
+     display=expect(client.get('/v6/run-draft-status',params=dict(message_id=original['message_id']),headers=headers),'original-result-pointer')
+    pointer=display['scoped_result'];assert pointer['kind']==kind and pointer['message_id']==original['message_id'] and pointer['run_id']==original['run_id']
+    with edit_db.connect(scope_for(ISSUER,subject)) as conn:
+     rows=conn.execute('SELECT result_id,kind,original_input,input_sha256,model_input FROM cj_trip_scoped_result').fetchall()
+    assert len(rows)==1 and rows[0][0]==pointer['result_id'] and rows[0][1]==kind and hashlib.sha256(bytes(rows[0][2])).hexdigest()==rows[0][3]==pointer['input_sha256']
+    assert (rows[0][4] is None)==(kind=='clarification_required')
+    reads=[x for x in audit if x['path']=='/v1/trip-scoped-results'];assert reads and all(x['method']=='GET' and x['status']==200 and x['original_query']==dict(result_id=[pointer['result_id']]) for x in reads)
+    value=dict(value,result_id=pointer['result_id'],result_kind=kind,body_reads=len(reads),result_rows=1,result_has_model_bytes=rows[0][4] is not None,no_trip_action=True)
+    r['result_proof']=value;save();return value
    def manual_unknown_proof():
     assert CASE=='testManualProtectedPrepareUnknownRestart' and ARGS.manual_trip_profile
     posts=[x for x in audit if x['path']=='/v1/trip-manual-preparations' and x['method']=='POST']
@@ -341,11 +366,12 @@ try:
     def do_GET(self):
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
-      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE=='testScopedCandidateLateAccount' else {})),formal_trips=[spec],manual_profile=ARGS.manual_trip_profile)
+      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE=='testScopedCandidateLateAccount' else {})),formal_trips=[spec],manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE)
       elif path.path=='/wait-discovery':
        assert CASE=='testScopedCandidateLateAccount' and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
        assert CASE=='testScopedCandidateLateAccount' and late_captured.is_set();late_release.set();value=dict(status='release requested')
+      elif path.path=='/result-proof':value=result_proof()
       elif path.path=='/manual-unknown-proof':value=manual_unknown_proof()
       elif path.path=='/discovery-refusal-proof':value=discovery_refusal_proof()
       elif path.path=='/late-proof':value=late_proof()
@@ -357,7 +383,8 @@ try:
         if worker_errors or time.monotonic()>deadline:raise TimeoutError('formal worker completion')
         time.sleep(.05)
        assert len(finished)==1 and finished[0]['status']=='completed'
-       if CASE=='testScopedUndeterminedDayWithoutModel':assert finished[0]['proposal_id'] is None and fake.calls==0
+       if RESULT_PROFILE:assert finished[0]['proposal_id'] is None and fake.calls==(0 if CASE=='testScopedResultClarification' else 1)
+       elif CASE=='testScopedUndeterminedDayWithoutModel':assert finished[0]['proposal_id'] is None and fake.calls==0
        else:assert finished[0]['proposal_id'] and fake.calls==1
        value=proof()
       else:raise ValueError('unknown control')
@@ -384,7 +411,8 @@ try:
     r['redacted_log_accounts']=sorted(native_tokens);r['token_scan_accounts']=sorted(native_tokens)
     (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    if CASE=='testManualProtectedPrepareUnknownRestart':manual_unknown_proof()
+    if RESULT_PROFILE:result_proof()
+    elif CASE=='testManualProtectedPrepareUnknownRestart':manual_unknown_proof()
     else:
      if CASE=='testScopedCandidateLateAccount':late_proof()
      if CASE=='testScopedCandidateDiscoveryUnavailable':discovery_refusal_proof()

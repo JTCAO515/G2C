@@ -12,6 +12,7 @@ import Foundation
         let manual_profile:Bool?
         let manual_only:Bool?
         let needs_planning:Bool?
+        let scoped_results:Bool?
     }
     private struct FormalTrip:Decodable {
         let id,title,content_sha256:String
@@ -120,6 +121,7 @@ import Foundation
             app.launchEnvironment["G2C_DEV_MESSAGE_PROFILE"]="needs-planning-v1"
             for key in ["G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
         }
+        if f.scoped_results == true { app.launchEnvironment["G2C_DEV_MESSAGE_PROFILE"]="trip-edit-result-v1" }
         if let timezone { app.launchEnvironment["TZ"]=timezone }
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
@@ -153,7 +155,9 @@ import Foundation
         XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
         XCTAssertEqual(input().value as? String,value);tap("trip.manual.keyboard.done")
     }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false) async throws {
+    func testScopedResultClarification() async throws { try await scenario("testScopedResultClarification",language:"en",item:true,resultKind:"clarification_required") }
+    func testScopedResultExpansionKeep() async throws { try await scenario("testScopedResultExpansionKeep",language:"en",item:true,resultKind:"expansion_required") }
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false,resultKind:String?=nil) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -187,10 +191,15 @@ import Foundation
             text("assistant.edit.needs",contains:"visit");text("assistant.edit.intent",contains:"请求局部候选")
         }
         capture(name+"-explicit-original-choices");try audit(name+"-choices")
-        enter(activeLanguage=="en" ? "SYNTHETIC Make selected item lighter" : "SYNTHETIC 本次轻松一点",language:activeLanguage);tap("assistant.send")
+        let requestText=resultKind=="clarification_required" ? "SYNTHETIC tomorrow make the selected item lighter" : activeLanguage=="en" ? "SYNTHETIC Make selected item lighter" : "SYNTHETIC 本次轻松一点"
+        enter(requestText,language:activeLanguage);tap("assistant.send")
         let proof=try JSONDecoder().decode(Proof.self,from:await call("/wait-completed",caseID:name))
         XCTAssertEqual(proof.runtime_role,"cj_m1_runtime");XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.posts,1)
-        if undetermined {
+        if let resultKind {
+            let calls=resultKind=="clarification_required" ? 0 : 1
+            XCTAssertEqual(proof.model_calls,calls);XCTAssertEqual(proof.registered_operations,calls);XCTAssertEqual(proof.pending_proposals,0)
+            XCTAssertEqual(proof.draft_outcome,resultKind)
+        } else if undetermined {
             XCTAssertEqual(proof.model_calls,0);XCTAssertEqual(proof.registered_operations,0);XCTAssertEqual(proof.pending_proposals,0)
             XCTAssertEqual(proof.draft_outcome,"validation_failed")
         } else {
@@ -201,14 +210,40 @@ import Foundation
         XCTAssertEqual(proof.status,"completed")
         XCTAssertEqual(proof.trip_id,trip.id);XCTAssertEqual(proof.content_sha256,trip.content_sha256);XCTAssertEqual(proof.namespace,f.namespace);XCTAssertEqual(proof.needs_version,1)
         XCTAssertEqual(proof.item_ids,item ? [chosen] : []);XCTAssertEqual(proof.day,item ? nil : "2026-11-04")
-        if !undetermined { XCTAssertTrue(proof.memory_long);XCTAssertTrue(proof.memory_current) }
+        if !undetermined && resultKind != "clarification_required" { XCTAssertTrue(proof.memory_long);XCTAssertTrue(proof.memory_current) }
         XCTAssertFalse(proof.memory_other)
         tap("run.snapshot.read");text("run.display.status",contains:activeLanguage=="en" ? "Completed" : "已完成")
         XCTAssertFalse(textElement("run.display.text").exists, "Scoped model wire output is not a user-facing answer")
         XCTAssertFalse(textElement("run.stream.text").exists, "Scoped model wire progress is not a user-facing answer")
-        if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
+        if let resultKind { text("run.draft.status",contains:resultKind=="clarification_required" ? "Clarification needed" : "wider selection") }
+        else if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
         else { text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程") }
         capture(name+"-published-not-adopted");try audit(name+"-original-run")
+        if let resultKind {
+            tap("scope.result.read");text("scope.result.activity",contains:"Original result read")
+            text("scope.result.kind",contains:resultKind=="clarification_required" ? "Clarification needed" : "wider selection")
+            XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"scoped.reject").firstMatch.exists)
+            if resultKind=="expansion_required" {
+                text("scope.result.outside.items",contains:trip.item_ids[2]);text("scope.result.change.after.0",contains:"SYNTHETIC lighter choice")
+                text("scope.result.required.items",contains:chosen);text("scope.result.required.items",contains:trip.item_ids[2])
+                text("scope.result.feasibility",contains:"UNKNOWN")
+            } else { text("scope.result.no.inferred.scope",contains:"No replacement selection") }
+            _ = try await call("/result-proof",caseID:name)
+            capture(name+"-protected-result");try audit(name+"-result")
+            tap("Memory")
+            for _ in 0..<3 {
+                if app.buttons.matching(identifier:"memory.language").firstMatch.exists { break }
+                let back=app.navigationBars.buttons.firstMatch;XCTAssertTrue(back.exists);back.tap()
+            }
+            tap("memory.language");tap("简体中文");tap("助手")
+            tap("run.snapshot.read");tap("scope.result.read");text("scope.result.activity",contains:"已读取原结果")
+            text("scope.result.kind",contains:resultKind=="clarification_required" ? "需要澄清" : "需要扩大选区")
+            if resultKind=="expansion_required" { text("scope.result.change.after.0",contains:"本次轻松一点") }
+            tap("scope.result.keep.original");text("scope.result.activity",contains:"未发送任何接受或拒绝动作")
+            _ = try await call("/result-proof",caseID:name)
+            capture(name+"-kept-original-Chinese");try audit(name+"-kept-original")
+        }
         if discoveryUnavailable {
             _ = try await call("/invalidate-candidate",caseID:name)
             for _ in 0..<2 {
