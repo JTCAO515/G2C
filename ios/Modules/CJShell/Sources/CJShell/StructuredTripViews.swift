@@ -101,8 +101,9 @@ struct StructuredTripHome: View {
                             DisclosureGroup {
                                 RunSelectableText(text:original.tripID+" · "+String(original.originalVersion)+"\n"+String(decoding:original.originalUTF8,as:UTF8.self)).accessibilityIdentifier("trip.manual.original.input."+original.storageID)
                                 button("trip.manual.original.query."+original.storageID,language.text("Query this original only","只查询此原动作"),disabled:display.busy) { run { try host.query(storageID:original.storageID) } }
-                            } label: { Text(original.originalID) }
-                            .accessibilityIdentifier("trip.manual.original.open."+original.storageID)
+                            } label: {
+                                Text(original.originalID).accessibilityIdentifier("trip.manual.original.open."+original.storageID)
+                            }
                         }
                         if let result=display.originalOutcome {
                             RunReadableText(text:historyMessage(result)).accessibilityIdentifier("trip.manual.original.result")
