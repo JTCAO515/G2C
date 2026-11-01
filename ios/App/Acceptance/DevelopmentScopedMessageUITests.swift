@@ -470,6 +470,17 @@ import Foundation
         XCTAssertTrue(item.isEnabled && item.isHittable);item.tap()
         let selected=visible({app.switches.matching(identifier:"trip.manual.selected.b").firstMatch},id:"trip.manual.selected.b")
         XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();tap("trip.manual.fixed.true.b")
+        tap("trip.manual.prepare");text("trip.manual.issue",contains:"Reconcile retained original actions before another write")
+        text("trip.manual.fixed.input.b",contains:"Selected change: fixed")
+        _ = try await call("/current-planning-blocked",caseID:name)
+        tap("trip.manual.originals.read")
+        for (stage,expected) in [("p:","Original preparation verified"),("s:","Original receipt verified")] {
+            let row=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open."+stage)).firstMatch},id:"manual.current.original."+stage)
+            XCTAssertTrue(row.isEnabled && row.isHittable);row.tap()
+            let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query."+stage)).firstMatch},id:"manual.current.query."+stage)
+            XCTAssertTrue(query.isEnabled && query.isHittable);query.tap();text("trip.manual.original.result",contains:expected)
+        }
+        text("trip.manual.original.result",contains:" · 2");text("trip.manual.fixed.input.b",contains:"Selected change: fixed")
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared");tap("trip.manual.save");text("trip.manual.receipt",contains:"3")
         tap("trip.manual.current");text("trip.manual.current.version",contains:"3")
         _ = try await call("/current-planning-source",caseID:name)
@@ -492,7 +503,7 @@ import Foundation
         if decision=="accept" { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }
         else { XCTAssertFalse(textElement("planning.formal.version").exists) }
         capture(name+"-source2-decision");try audit(name+"-source2")
-        try launch(f,language:"zh-Hans",restore:true);tap("planning.originals");tap("planning.query."+proof.original_action_id)
+        try launch(f,language:"zh-Hans",large:decision=="reject",restore:true);tap("planning.originals");tap("planning.query."+proof.original_action_id)
         text("planning.receipt",contains:decision=="accept" ? "原采用动作已确认" : "原拒绝动作已确认")
         text("planning.context",contains:tripID);text("planning.context",contains:" · 3")
         if decision=="accept" { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }

@@ -337,8 +337,18 @@ try:
     queries=[x for x in audit if x['path']=='/v1/trip-needs-action-receipts' and x['query']==dict(action_id=[acts[0]['original_id']])];assert len(queries)>=1 and all(x['status']==200 and x['receipt_present'] for x in queries)
     value=dict(runtime_role=role,message_posts=1,model_calls=2,registered_operations=2,planning_action_posts=1,manual_prepare_posts=1,manual_save_posts=1,formal_count=1,formal_version=2,historical_planning_receipt_version=1,manual_receipt_version=2,trip_id=candidate['trip_id'],original_planning_id=acts[0]['original_id'],original_planning_sha256=acts[0]['input_sha256'],original_manual_id=saves[0]['original_id'],original_manual_sha256=saves[0]['input_sha256'],planning_receipt_queries=len(queries),unselected_exact=True)
     r['composition_proof']=value;save();return value
+   def current_planning_blocked():
+    assert CURRENT_REPLAN and not current_ready.is_set()
+    assert len([x for x in audit if x['method']=='POST' and x['path']=='/v1/trip-needs-edits'])==1
+    assert len([x for x in audit if x['method']=='POST' and x['path']=='/v1/trip-needs-saves'])==1
+    assert len(message_receipts)==1 and model.calls==2 and current_model.calls==0
+    r['current_write_blocked_before_reconciliation']=True;save();return dict(new_prepare_posts=0,new_save_posts=0)
    def current_planning_source():
     assert CURRENT_REPLAN and not current_source and not current_ready.is_set()
+    assert r['current_write_blocked_before_reconciliation']
+    first_prepare=next(x for x in audit if x['method']=='POST' and x['path']=='/v1/trip-needs-edits');first_save=next(x for x in audit if x['method']=='POST' and x['path']=='/v1/trip-needs-saves')
+    assert any(x['method']=='GET' and x['path']=='/v1/trip-needs-edits' and x['query']==dict(request_id=[first_prepare['original_id']]) and x['status']==200 and x['preparation_present'] for x in audit)
+    assert any(x['method']=='GET' and x['path']=='/v1/trip-needs-action-receipts' and x['query']==dict(action_id=[first_save['original_id']]) and x['status']==200 and x['receipt_present'] for x in audit)
     tid=planning_discoveries[0]['proposal']['trip_id']
     with TestClient(structured) as client:source=check(client.get('/v5/trip-structured',params=dict(trip_id=tid),headers=headers),'source2-current-trip')['trip']
     assert source['version']==3 and source['content']['title']=='SYNTHETIC manual after App adoption / 采用后手改'
@@ -409,6 +419,7 @@ try:
        original=latest_preparation['value'];raw=packed(dict(version='TRIP-needs-save.1',action_id='competing-original-save',proposal_id=original['proposal_id'],candidate_hash=original['candidate_hash']))
        with TestClient(needs_app) as client:value=check(client.post('/v1/trip-needs-saves',content=raw,headers=binary),'competing-save')
        r['competing_receipt']=value['receipt'];save()
+      elif url.path=='/current-planning-blocked':value=current_planning_blocked()
       elif url.path=='/current-planning-source':value=current_planning_source()
       elif url.path=='/current-planning-published':value=current_planning_published()
       elif url.path=='/current-planning-proof':value=current_planning_proof()
