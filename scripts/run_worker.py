@@ -92,6 +92,11 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     if editing:
         from cj_message.edit_reference import configured
         edit_config=configured(database.edit_configuration)
+        from cj_api.edit_result_profile import profile as result_profile
+        with database.connect(scope) as connection:
+            with connection.cursor() as cursor:result_mode=result_profile(cursor,scope)
+        if result_mode!=database.edit_results:
+            raise CompositionUnavailable('explicit activated publisher2 profile/configuration required')
         if memory_configuration is not None or tools_configuration is not None:
             raise CompositionUnavailable('edit profile requires its negotiated memory/publisher only')
     else:require_memory_configuration(database, scope, memory_configuration)
@@ -123,7 +128,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             return decision.principal
         if editing:
             from cj_message.edit_reference import EditAuthority
-            message_context=EditAuthority(database.message_repository(scope),travel_admit,database.run_repository(scope))
+            message_context=EditAuthority(database.message_repository(scope),travel_admit,database.run_repository(scope),result_mode=database.edit_results)
         else:message_context=MessageContextAuthority(database.message_repository(scope),travel_admit)
     if editing:
         memory=edit_config.memory.bind(database,scope,subject,memory_admit,message_context=message_context)
@@ -155,7 +160,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         from cj_draft.needs_local import publisher
         drafts=publisher(database,checker,message_context,token,scope)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
-        memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,
+        memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         message_context=message_context,
         tools=tools_configuration,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
