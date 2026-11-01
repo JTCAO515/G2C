@@ -157,3 +157,11 @@ DEBUG 模拟器可显式选择 `G2C_DEV_MESSAGE_PROFILE=trip-edit-v1`，消费�
 读取当前版本保留输入；替换基准须用户明确操作。失败、冲突与 UNKNOWN 分别显示，读取相同内容或更新版本不能冒充原 save 成功。原准备／保存字节先进入账号与环境隔离的加密日志，重启后只查询原 ID，不自动重发；缺键且已有日志时拒绝生成替代键。历史回执不授予新写入权限。账号／页面退出使旧结果失效，迟到回包不得覆盖新上下文。
 
 Trip-local 固定／取消固定只改变正式 Trip，不改写 NEEDS。完整后续重新规划还需正式 `TRIP-source-input.2` 生产入口；创建用 `source-input.1` 和局部 send.4 不替代这项组合。地图及真实服务／设备仍按各自验收记录，不由本地编辑入口启用。
+
+### 本地 NEEDS 规划发送前缀（#373）
+
+仅 DEBUG 模拟器显式选择 `G2C_DEV_MESSAGE_PROFILE=needs-planning-v1` 时组装独立旅行选择和已保存 NEEDS 的 MESSAGE-send.2 规划入口；同时要求明确的 `app-travel.1` 选择列表、`manual-v1` 需求记录配置及普通回答格式。typed Memory 配置、工具回答或旧环境 proposal ID 与该模式不兼容，旧模式的部分配置拒绝规则保持。
+
+用户明确开启“规划行程”，读取保存的旅行需求并选择服务端核实的旅行上下文后才可派发。未读需求、无上下文或失效的选择不能派发，不回退到其他旅行或本地草稿。复用原 MESSAGE 加密日志、原 UUID/字节/hash、回执、RUN 与只读恢复；中英切换不重发消息或重调模型。
+
+RUN 的 published 仅说明已记录候选，不代表正式 Trip。此发送前缀不从正文、worker Outcome、命名前缀或环境 ID 查找候选，也不走旧 provenance/action 降级。受保护 NEEDS 规划发现/采用仍按 C 实际冻结交付接入；source2 后续规划区分来源 context Trip 与新规划 Trip，不冒称原地手改，正式组合另验。
