@@ -46,9 +46,14 @@ def fingerprint(root,paths):return {str(path.relative_to(root)):hashlib.sha256(p
 backend_files=[BACKEND/name for name in subprocess.check_output(['git','ls-files','backend','scripts','contracts','pyproject.toml','uv.lock'],cwd=BACKEND,text=True).splitlines()]
 r=dict(status='RUNNING',layer='actual Simulator/signed API/private PG/pinned backend candidate',app_head=head(APP),backend_head=head(BACKEND),backend_root_verified=True,source_hashes=fingerprint(APP,source_files),backend_hashes=fingerprint(BACKEND,backend_files),responses=[],unrun=['main backend delivery if pin unmerged','real services/models/fees/cloud/device'])
 if PLANNING_PREFIX:
- r['verified_scope']='original NEEDS planning discovery/decision/recovery' if PLANNING_DECISION or PLANNING_NO_DECISION else 'explicit MESSAGE-send.2 / original RUN published prefix only'
  r['unrun']+=['source-input.2 formal replanning']
- if not PLANNING_DECISION and not PLANNING_NO_DECISION:r['unrun']+=['planning discovery/decision not exercised by prefix-only case']
+ if PLANNING_DECISION:r['verified_scope']='original NEEDS planning discovery/decision/recovery'
+ elif PLANNING_NO_DECISION:
+  r['verified_scope']='planning discovery refusal/account lifetime only'
+  r['unrun']+=['decision and original action recovery not exercised by this zero-action case']
+ else:
+  r['verified_scope']='explicit MESSAGE-send.2 / original RUN published prefix only'
+  r['unrun']+=['planning discovery/decision not exercised by prefix-only case']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def check(resp,phase):
  r['responses'].append(dict(phase=phase,status=resp.status_code,error=resp.json().get('error')));save();assert resp.status_code==200,(phase,resp.status_code,resp.text);return resp.json()
