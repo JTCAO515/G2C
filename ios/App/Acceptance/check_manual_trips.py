@@ -13,7 +13,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
 head=lambda root:subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
@@ -96,16 +96,29 @@ try:
      raw=b''.join(parts);entry['input_sha256']=hashlib.sha256(raw).hexdigest();value=json.loads(raw);entry['original_id']=value.get('action_id') or value.get('edit',{}).get('request_id')
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
    sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1]);thread=threading.Thread(target=lambda:server.run(sockets=[sock]),daemon=True);thread.start()
-   def proof():
+   def proof(stage=None):
+    fixed_case=CASE=='testNeedsManualFixedRoundTrip'
+    expected_version=2 if not fixed_case or stage=='locked' else 3
+    expected_count=1 if not fixed_case or stage=='locked' else 2
     with database.connect(scope_for(ISSUER,subject)) as conn:
      role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
-    assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid and trips[0][1]==2
-    current=json.loads(bytes(trips[0][2]));assert current['title']=='SYNTHETIC manual saved title / 手动保存标题' and current['items']==formal['content']['items'] and current['sources']==formal['content']['sources']
+    assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid and trips[0][1]==expected_version
+    current=json.loads(bytes(trips[0][2]))
+    if fixed_case:
+     assert current['title']==formal['content']['title'] and current['sources']==formal['content']['sources']
+     assert current['items'][0]==formal['content']['items'][0]
+     original_item=dict(formal['content']['items'][1]);original_item['fixed']=known(stage=='locked')
+     assert current['items'][1]==original_item
+     with TestClient(api) as client:needs=check(client.get('/v1/needs',params=dict(needs_id='visit'),headers=headers),'current-needs')['snapshot']
+     assert needs['version']==1 and needs['fields']['fixed_items'][1]['locked']==known(False)
+    else:
+     assert current['title']=='SYNTHETIC manual saved title / 手动保存标题' and current['items']==formal['content']['items'] and current['sources']==formal['content']['sources']
     prepares=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='POST'];saves=[x for x in audit if x['path']=='/v1/trip-needs-saves' and x['method']=='POST'];queries=[x for x in audit if x['path']=='/v1/trip-needs-action-receipts']
-    assert len(prepares)==len(saves)==1 and prepares[0]['status']==saves[0]['status']==200
-    assert all(q['query']==dict(action_id=[saves[0]['original_id']]) and q['status']==200 for q in queries)
+    assert len(prepares)==len(saves)==expected_count and all(x['status']==200 for x in prepares+saves)
+    ids={x['original_id'] for x in saves};assert all(q['query'].get('action_id',[None])[0] in ids and q['status']==200 for q in queries)
     assert model.calls==r['source_provider_calls'] and not any(x['method']=='POST' and x['path'] not in ('/v1/trip-needs-edits','/v1/trip-needs-saves') for x in audit)
-    r['proof']=dict(runtime_role=role,formal_version=2,formal_count=1,prepares=1,saves=1,save_id=saves[0]['original_id'],save_sha256=saves[0]['input_sha256'],receipt_queries=len(queries),source_provider_calls=model.calls,edit_model_calls=0,unselected_exact=True);save();return r['proof']
+    value=dict(runtime_role=role,formal_version=expected_version,formal_count=1,prepares=expected_count,saves=expected_count,save_ids=sorted(ids),receipt_queries=len(queries),source_provider_calls=model.calls,edit_model_calls=0,unselected_exact=True,needs_unchanged=True if fixed_case else None,stage=stage)
+    r['proof']=value;r.setdefault('proof_history',[]).append(value);save();return value
    class Control(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
     def do_GET(self):
@@ -113,6 +126,7 @@ try:
       url=urlparse(self.path);assert parse_qs(url.query).get('case')==[CASE]
       if url.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts=dict(A=token),subjects=dict(A=subject),formal_trips=[dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=True)
       elif url.path=='/manual-save-proof':value=proof()
+      elif url.path=='/manual-fixed-on-proof':value=proof('locked')
       else:raise ValueError('unknown control')
       raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
      except Exception as error:r.setdefault('control_errors',[]).append(type(error).__name__);save();self.send_response(500);self.end_headers();self.wfile.write(type(error).__name__.encode())

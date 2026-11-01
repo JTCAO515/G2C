@@ -262,6 +262,38 @@ import Foundation
         }
 
     }
+    func testNeedsManualFixedRoundTrip() async throws {
+        let name="testNeedsManualFixedRoundTrip",f=try await prepare(name)
+        defer { app?.terminate() }
+        let trip=try XCTUnwrap(f.formal_trips.first)
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read")
+        func changeFixed(_ value:Bool) {
+            tap("trip.manual.edit.open")
+            let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.b").firstMatch},id:"trip.manual.item.open.b")
+            XCTAssertTrue(item.isHittable && item.isEnabled);item.tap()
+            let selected=visible({app.switches.matching(identifier:"trip.manual.selected.b").firstMatch},id:"trip.manual.selected.b")
+            XCTAssertTrue(selected.isEnabled);selected.tap()
+            tap(value ? "trip.manual.fixed.true.b" : "trip.manual.fixed.false.b")
+            tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
+            text("trip.manual.after.fixed.b",contains:value ? "Explicitly fixed" : "Explicitly unlocked")
+            text("trip.manual.after.fixed.a",contains:"Explicitly fixed")
+            tap("trip.manual.save")
+        }
+        changeFixed(true);text("trip.manual.receipt",contains:"2")
+        _ = try await call("/manual-fixed-on-proof",caseID:name)
+        tap("trip.manual.replaceBasis");text("trip.manual.record.fixed.b",contains:"Explicitly fixed")
+        changeFixed(false);text("trip.manual.receipt",contains:"3")
+        tap("trip.manual.current");text("trip.manual.current.version",contains:"3")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-fixed-roundtrip");try audit(name+"-roundtrip")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id)
+        text("trip.manual.record.fixed.a",contains:"明确固定")
+        text("trip.manual.record.fixed.b",contains:"明确未固定")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-fixed-readback");try audit(name+"-restart")
+    }
     func testNeedsManualTitleSave() async throws {
         let name="testNeedsManualTitleSave",f=try await prepare(name)
         defer { app?.terminate() }
