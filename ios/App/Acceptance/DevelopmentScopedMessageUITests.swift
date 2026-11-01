@@ -374,7 +374,13 @@ import Foundation
         if lateAccount {
             tap("planning.discover");_ = try await call("/wait-planning-response",caseID:name)
             tap("记忆")
-            if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
+            if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists {
+                for _ in 0..<3 {
+                    if app.buttons.matching(identifier:"memory.account").firstMatch.exists { break }
+                    let back=app.navigationBars.buttons.firstMatch;XCTAssertTrue(back.exists);back.tap()
+                }
+                tap("memory.account")
+            }
             tap("account.development.signin.B");text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
             _ = try await call("/release-planning-response",caseID:name)
             tap("助手");text("planning.activity",contains:"请选择已接受的原消息")

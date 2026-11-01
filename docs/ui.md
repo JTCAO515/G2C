@@ -165,3 +165,5 @@ Trip-local 固定／取消固定只改变正式 Trip，不改写 NEEDS。完整�
 用户明确开启“规划行程”，读取保存的旅行需求并选择服务端核实的旅行上下文后才可派发。未读需求、无上下文或失效的选择不能派发，不回退到其他旅行或本地草稿。复用原 MESSAGE 加密日志、原 UUID/字节/hash、回执、RUN 与只读恢复；中英切换不重发消息或重调模型。
 
 RUN 的 published 仅说明已记录候选，不代表正式 Trip。此发送前缀不从正文、worker Outcome、命名前缀或环境 ID 查找候选，也不走旧 provenance/action 降级。受保护 NEEDS 规划发现/采用仍按 C 实际冻结交付接入；source2 后续规划区分来源 context Trip 与新规划 Trip，不冒称原地手改，正式组合另验。
+
+C 的 `TRIP-needs-discovery.1` 已接入该模式：从原 accepted MESSAGE 的完整 travel reference/NEEDS 与 message_id/run_id 查找候选，保留 opaque candidate hash；候选快照、来源 context Trip 与新规划 Trip 分别展示。采用／拒绝只确认当前这份已读候选，原 action 字节先进入独立加密域，再一次 POST；未知不重发，重启只核原 receipt。采用按原 receipt 的新 Trip ID 读回，拒绝要求 committed_version=null。GET null 保持 UNKNOWN 或已记录的原明确拒绝，不凭同内容或竞争方版本冒成功。正式 source2 重新规划入口与整票组合仍另验。
