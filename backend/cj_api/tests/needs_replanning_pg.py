@@ -75,6 +75,12 @@ def exercise(auth,conninfo):
             return current
     for s in ('program','cli'):
         old=setup(s);r,raw=send(s,'replanning')
+        from cj_trip.planning_context import read_current
+        from cj_trip.postgres import Repository
+        from cj_agent.draft import trip_scope_for
+        from cj_message.needs_binding import needs_scope_for
+        owner=scope_for(ISSUER,s)
+        captured=read_current(Repository(lambda:db(s).connect(owner),trip_scope_for(owner),structured=True),needs_scope_for(owner),'visit')
         if s=='program':
             model=CurrentTripPlanFakeProvider();outcome=run_worker.run_once(db(s),model,auth,draft_profile='needs-current-trip.1')[0]
             assert outcome.status=='completed' and outcome.proposal_id and model.calls==2
@@ -82,6 +88,12 @@ def exercise(auth,conninfo):
             result=subprocess.run([sys.executable,'-B',str(harness.ROOT/'scripts/run_worker.py'),'--conninfo-json',str(conninfo),'--auth-dir',str(auth),'--run-context',str(host.profiles[s][0]),'--travel-context','message-travel.1','--draft-profile','needs-current-trip.1','--once'],capture_output=True,text=True,env=dict(os.environ,CJ_ENV='local'),timeout=60)
             assert result.returncode==0,(result.stdout,result.stderr)
             assert 'local_provider_calls=2' in result.stdout and 'proposal=' in result.stdout
+        with db(s).connect(owner) as c:
+            rows=c.execute("SELECT input_bytes FROM cj_run_metered_operation WHERE run_id=%s AND registration_id='model.draft'",(r['run_id'],)).fetchall()
+            assert len(rows)==1
+            invocation=json.loads(bytes(rows[0][0]));source_input=json.loads(invocation['messages'][-1]['content'])
+            assert invocation['system']==SYSTEM and source_input['version']=='TRIP-source-input.2'
+            assert source_input['current_trip']==dict(trip_id=captured.trip.trip_id,version=captured.trip.version,content=json.loads(captured.trip.content),proposed_fields=json.loads(captured.proposed))
         with TestClient(needs(s)) as c:
             import hashlib
             d=discover(c,s,r);assert d['source_profile']=='TRIP-source-input.2'
