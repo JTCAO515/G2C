@@ -9,6 +9,37 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func needsPlanningProfileIsExplicitWithoutActivatingDiscussionOrRelease() throws {
+        let environment=["G2C_DEV_MESSAGE_PROFILE":"needs-planning-v1"]
+        #if DEBUG
+        #expect(try DevelopmentMessageProfile.read(environment) == .planning)
+        #expect(try !DevelopmentDiscussionProfile.read(environment))
+        #else
+        #expect(try DevelopmentMessageProfile.read(environment) == nil)
+        #endif
+    }
+    @Test func needsPlanningRequiresExplicitTravelAndSavedNeedsWithoutOtherWriters() throws {
+        #if DEBUG
+        let environment=["G2C_DEV_TRAVEL_PROFILE":"{\"version\":\"app-travel.1\",\"travel_ids\":[\""+String(repeating:"b",count:32)+"\"]}",
+            "G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":"visit"]
+        let needs=try DevelopmentNeedsProfile.read(environment),travel=try DevelopmentTravelProfile.read(environment)
+        #expect(try DevelopmentTypedMode.read(environment,messageProfile:.planning) == nil)
+        try DevelopmentMessageProfile.planning.validate(typed:nil,needs:needs,answer:.plain,travel:travel)
+        // The existing typed-mode entry still refuses a partial old configuration.
+        #expect(throws:DevelopmentTypedMemoryProfile.ConfigurationFailure.incompleteMode) { try DevelopmentTypedMode.read(environment) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.planning.validate(typed:nil,needs:nil,answer:.plain,travel:travel) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.planning.validate(typed:nil,needs:needs,answer:.plain) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.planning.validate(typed:nil,needs:needs,answer:.place,travel:travel) }
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.planning.validate(typed:nil,needs:needs,answer:.plain,travel:travel,legacyProposal:true) }
+        var empty=environment;empty["G2C_DEV_TRAVEL_PROFILE"]="{\"version\":\"app-travel.1\",\"travel_ids\":[]}"
+        let noChoices=try DevelopmentTravelProfile.read(empty)
+        #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentMessageProfile.planning.validate(typed:nil,needs:needs,answer:.plain,travel:noChoices) }
+        for key in ["G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] {
+            var mixed=environment;mixed[key]="unaccepted"
+            #expect(throws:DevelopmentDiscussionProfile.Failure.incompatibleProfiles) { try DevelopmentTypedMode.read(mixed,messageProfile:.planning) }
+        }
+        #endif
+    }
     @Test func manualTripProfileIsExplicitAndReleaseDoesNotActivateIt() throws {
         #if DEBUG
         #expect(try DevelopmentTripEditingProfile.read([:]) == nil)

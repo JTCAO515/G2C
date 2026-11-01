@@ -666,7 +666,7 @@ extension MessageHTTPClient {
               let raw = object["version"] as? String,let version = MessageSendWireVersion(rawValue:raw) else { throw RecoveryError.invalidSnapshot }
         return version
     }
-    public func acceptedTravelMessage(messageID: String,lease: Lease) throws -> MessageReadResult<Components.Schemas.MessageReceiveV2Response> {
+    private func acceptedTravelSource(messageID:String,lease:Lease) throws -> (OriginalTravelMessageSend,Components.Schemas.MessageReceiveV2Response) {
         try recovery.validateScope(scope,lease:lease)
         guard let record = try recovery.action(messageID:messageID,lease:lease),record.phase == .accepted,
               let bytes = record.receipt else { throw RecoveryError.queryOnly }
@@ -674,7 +674,17 @@ extension MessageHTTPClient {
         let value = try JSONDecoder().decode(Components.Schemas.MessageReceiveV2Response.self,from:bytes)
         _ = try ValidatedTravelMessageReceipt(receipt:value.receipt,reference:value.reference,original:original)
         try recovery.validateScope(scope,lease:lease)
+        return (original,value)
+    }
+    public func acceptedTravelMessage(messageID: String,lease: Lease) throws -> MessageReadResult<Components.Schemas.MessageReceiveV2Response> {
+        let (_,value)=try acceptedTravelSource(messageID:messageID,lease:lease)
         return MessageReadResult(value:value,next:nil,requestID:value.request_id,owner:readOwner,lease:lease)
+    }
+    public func acceptedTravelMessageSource(messageID:String,lease:Lease) throws -> MessageReadResult<AcceptedTravelMessageSource> {
+        let (original,value)=try acceptedTravelSource(messageID:messageID,lease:lease)
+        let source=AcceptedTravelMessageSource(receipt:value.receipt,reference:value.reference,creationIntent:original.creationIntent,
+            needsID:original.needsReference?.id,needsVersion:original.needsReference?.expectedVersion)
+        return MessageReadResult(value:source,next:nil,requestID:value.request_id,owner:readOwner,lease:lease)
     }
     /// Real owned B data under the current client/lease. This result never
     /// substitutes for B's original accepted-message reference or effect lease.

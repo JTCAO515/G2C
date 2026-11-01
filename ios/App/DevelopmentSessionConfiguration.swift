@@ -22,7 +22,7 @@ struct DevelopmentTripEditingProfile {
     }
 }
 enum DevelopmentMessageProfile:String {
-    case discussion="trip-discussion-v1",edit="trip-edit-v1"
+    case discussion="trip-discussion-v1",edit="trip-edit-v1",planning="needs-planning-v1"
     static func read(_ environment:[String:String]) throws -> Self? {
         #if DEBUG
         guard let value=environment["G2C_DEV_MESSAGE_PROFILE"] else { return nil }
@@ -32,12 +32,18 @@ enum DevelopmentMessageProfile:String {
         return nil
         #endif
     }
-    func validate(typed:DevelopmentTypedMode?,needs:DevelopmentNeedsProfile?,answer:DevelopmentToolAnswerProfile) throws {
+    func validate(typed:DevelopmentTypedMode?,needs:DevelopmentNeedsProfile?,answer:DevelopmentToolAnswerProfile,
+                  travel:DevelopmentTravelProfile?=nil,legacyProposal:Bool=false) throws {
         switch self {
         case .discussion:
             guard typed == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         case .edit:
             guard let typed,!typed.travel.travel_ids.isEmpty,needs != nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
+            guard case .plain=answer else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
+        case .planning:
+            guard typed == nil,needs != nil,let travel,!travel.travel_ids.isEmpty,!legacyProposal else {
+                throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles
+            }
             guard case .plain=answer else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         }
     }
@@ -97,8 +103,14 @@ struct DevelopmentTypedMode {
     let travel: DevelopmentTravelProfile
     let memory: DevelopmentTypedMemoryProfile
     let memoryEndpoint: URL
-    static func read(_ environment: [String:String]) throws -> Self? {
+    static func read(_ environment: [String:String],messageProfile:DevelopmentMessageProfile?=nil) throws -> Self? {
         #if DEBUG
+        if messageProfile == .planning {
+            guard environment["G2C_DEV_TYPED_MEMORY_PROFILE"] == nil,environment["G2C_DEV_TYPED_MEMORY_URL"] == nil else {
+                throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles
+            }
+            return nil
+        }
         let keys = ["G2C_DEV_TRAVEL_PROFILE","G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"]
         guard keys.contains(where:{environment[$0] != nil}) else { return nil }
         guard let travel = try DevelopmentTravelProfile.read(environment),let memory = try DevelopmentTypedMemoryProfile.read(environment),
