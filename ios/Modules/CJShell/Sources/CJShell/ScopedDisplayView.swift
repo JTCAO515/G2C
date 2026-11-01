@@ -58,10 +58,10 @@ struct ScopedDisplayView:View {
                         ForEach(Array(report.checks.enumerated()),id:\.offset) { _,check in RunReadableText(text:language == .english ? check.english : check.chinese) }
                         RunReadableText(text:language == .english ? report.english : report.chinese)
                     }
-                    Button { host.keepOriginal() } label: { RunReadableText(text:language.text("Keep the original Trip","保留原行程")).frame(maxWidth:.infinity,minHeight:44,alignment:.leading) }
+                    Button { host.keepOriginal() } label: { RunReadableText(text:language.text("Keep the original Trip","保留原行程")).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle()) }
                         .buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("scope.result.keep.original")
                 }
-                Button(action:chooseAgain) { RunReadableText(text:language.text("Open the current Trip and choose a new scope","查看当前行程并明确新范围")).frame(maxWidth:.infinity,minHeight:44,alignment:.leading) }
+                Button(action:chooseAgain) { RunReadableText(text:language.text("Open the current Trip and choose a new scope","查看当前行程并明确新范围")).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle()) }
                     .buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("scope.result.choose.again")
             }
             RunReadableText(text:language.text("This result is not a candidate and cannot be accepted. A change needs a new explicit selection and message; reading never plans again.","此结果不是候选，不能接受。修改需要你明确新选区并发送新请求；读取不会重新规划。"),style:.caption)
