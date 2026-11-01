@@ -83,7 +83,9 @@ def require_memory_configuration(database, scope, configuration):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None):
+    if draft_profile not in (None,'needs-structured.1'):
+        raise CompositionUnavailable('unknown explicit draft profile')
     database.require_execution(scope)
     editing=database.edit_profile(scope)
     edit_config=None
@@ -145,7 +147,13 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         if last.status is AdmissionStatus.UNKNOWN: raise LeaseUnavailable('worker admission unknown')
         return original is True and last.status is AdmissionStatus.ALLOWED and last.principal==first.principal
     runs = RunService(database.run_repository(scope),valid=valid)
-    drafts = DraftPublisher(database.trip_repository(scope))
+    if draft_profile is None:
+        drafts=DraftPublisher(database.trip_repository(scope))
+    else:
+        if editing or tools_configuration is not None or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None:
+            raise CompositionUnavailable('NEEDS draft profile requires registered M2/travel creation host')
+        from cj_draft.needs_local import publisher
+        drafts=publisher(database,checker,message_context,token,scope)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,
         message_context=message_context,
@@ -156,7 +164,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None):
     pending_scopes=scopes(database,auth_dir)
     if not pending_scopes: return []
     if database.run_context is None:
@@ -167,7 +175,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,tools_confi
     results = []
     for scope in pending_scopes:
         results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                     memory_configuration=memory_configuration,tools_configuration=tools_configuration).process()
+                                     memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile).process()
     return results
 
 
@@ -180,6 +188,7 @@ def main():
     parser.add_argument('--travel-context',choices=['message-travel.1'],default=os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT'))
     parser.add_argument('--trip-context',choices=['message-trip.1'],default=os.environ.get('CJ_LOCAL_TRIP_CONTEXT'))
     parser.add_argument('--tools-profile',choices=['synthetic-v1','synthetic-fact-v1','synthetic-needs-v1'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
+    parser.add_argument('--draft-profile',choices=['needs-structured.1'])
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
     parser.add_argument('--interval', type=float, default=0.5)
@@ -201,6 +210,8 @@ def main():
     for scope in scopes(database,args.auth_dir):
         database.require_execution(scope)
         require_memory_configuration(database, scope, memory)
+    if args.draft_profile is not None and args.tools_profile is not None:
+        parser.error('explicit NEEDS draft and tool profiles cannot be combined')
     tools=None
     if args.tools_profile=='synthetic-v1':
         from cj_api.local_tools import LocalTools,SyntheticToolModel
@@ -211,10 +222,14 @@ def main():
     elif args.tools_profile=='synthetic-needs-v1':
         from cj_api.local_needs_preview import LocalNeedsPreview,SyntheticNeedsModel
         tools=LocalNeedsPreview();model=SyntheticNeedsModel()
-    elif args.tools_profile is None:model=provider(args.real)
+    elif args.tools_profile is None:
+        if args.draft_profile=='needs-structured.1':
+            from cj_api.local_plan_model import NeedsPlanFakeProvider
+            model=NeedsPlanFakeProvider()
+        else:model=provider(args.real)
     else:raise CompositionUnavailable('unknown tools profile')
     while True:
-        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory,tools_configuration=tools):
+        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory,tools_configuration=tools,draft_profile=args.draft_profile):
             print(f'{outcome.status} run={outcome.run_id}'
                   + (f' proposal={outcome.proposal_id}' if outcome.proposal_id else ''), flush=True)
         if args.once:
