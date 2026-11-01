@@ -49,7 +49,7 @@ def _require_unbound(cursor):
     cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true), "
                    "current_setting('cj.needs_scope',true), current_setting('cj.usage_scope',true), "
                    "current_setting('cj.message_context_abi',true), "
-                   "current_setting('cj.needs_runtime_abi',true), current_setting('cj.message_trip_abi',true), current_setting('cj.message_edit_abi',true)")
+                   "current_setting('cj.needs_runtime_abi',true), current_setting('cj.message_trip_abi',true), current_setting('cj.message_edit_abi',true), current_setting('cj.message_edit_result_abi',true)")
     if any(value not in (None, '') for value in cursor.fetchone()):
         raise CompositionUnavailable('database scope already present')
 
@@ -61,9 +61,10 @@ class _ScopedConnection:
     before reading data. Direct host `with` consumers use the same hook here.
     Plain execute/cursor calls never silently rebind after commit or rollback.
     """
-    def __init__(self, connection, scope, *, needs_scope=None, usage_scope=None):
+    def __init__(self, connection, scope, *, needs_scope=None, usage_scope=None,edit_results=False):
         self._connection, self._scope = connection, scope
         self._needs_scope, self._usage_scope = needs_scope, usage_scope
+        self._edit_results=edit_results
 
     def __getattr__(self, name):
         return getattr(self._connection, name)
@@ -80,6 +81,9 @@ class _ScopedConnection:
             cursor.execute("SELECT set_config('cj.message_trip_abi',%s,true)",(ABI,))
             from cj_message.edit_protocol import EDIT_ABI
             cursor.execute("SELECT set_config('cj.message_edit_abi',%s,true)",(EDIT_ABI,))
+            if self._edit_results:
+                from cj_message.edit_result_protocol import CONFIGURATION_ABI
+                cursor.execute("SELECT set_config('cj.message_edit_result_abi',%s,true)",(CONFIGURATION_ABI,))
             if self._needs_scope is not None:
                 if self._usage_scope is None:
                     cursor.execute("SELECT set_config('cj.needs_scope',%s,true)",(self._needs_scope,))
@@ -139,6 +143,13 @@ class LocalDatabase:
         self.conninfo = dict(config, user='cj_m1_runtime', passfile=self._empty_passfile.name)
         self.conninfo.pop('password', None)
 
+    @property
+    def edit_results(self):
+        # C's actual factory creates its publisher with this database, then
+        # installs the explicit configuration on that same database identity.
+        from cj_message.edit_result_protocol import EditResultConfiguration
+        return type(self.edit_configuration) is EditResultConfiguration
+
     def __del__(self):
         passfile = getattr(self, '_empty_passfile', None)
         if passfile is not None:
@@ -165,12 +176,12 @@ class LocalDatabase:
             conn.autocommit = False
             if self.run_context is None:
                 if usage_profile is not None: raise CompositionUnavailable('run context unavailable')
-                return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope) if self.needs_context else None)
+                return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope) if self.needs_context else None,edit_results=self.edit_results)
             profile=self.run_context.current if usage_profile is None else usage_profile
             if profile not in self.run_context.profiles:
                 raise CompositionUnavailable('unregistered original period')
             return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope),
-                                     usage_scope=ledger_scope_for(scope,profile.meter))
+                                     usage_scope=ledger_scope_for(scope,profile.meter),edit_results=self.edit_results)
         except BaseException:
             conn.close()
             raise
@@ -367,7 +378,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             scope=scope_for(principal.issuer,principal.subject)
             return lambda:database.connect(scope),needs_scope_for(scope)
 
-    return create_composed_app(
+    app=create_composed_app(
         environment='local', jwt_configuration=config, verification_keys=keys,
         memory_configuration=memory_wire, resolve_memory_binding=resolve_memory,
         memory_source_policy=memory_source_policy,
@@ -384,6 +395,14 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                                                  max_private_response_bytes=1_000_000),
         resolve_trip=trip, trip_confirmation_validator=local_confirmation if confirmation_signer is None else None,
         trip_confirmation_signer=confirmation_signer)
+    if database.edit_results:
+        from .run_display_composition import build_run_display_reader
+        from .scoped_result_routes import register_scoped_result_routes
+        reader,_=build_run_display_reader(environment='local',jwt_configuration=config,verification_keys=keys,
+            access_provider=InvitedSubjects(auth_dir/'invited.json'),resolve_message_repository=message_repository,
+            resolve_run=run_repository,configuration=RunDisplayWireConfiguration(256,200000,400000))
+        register_scoped_result_routes(app,reader,history_configuration)
+    return app
 
 
 CONFIRMATION_KEY_FILE = 'trip-confirmation.key'

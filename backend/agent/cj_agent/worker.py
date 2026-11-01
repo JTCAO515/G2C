@@ -101,7 +101,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -116,6 +116,7 @@ class RunWorker:
         self.message_context=message_context
         self._publication_check=None
         self.edit_publisher=edit_publisher
+        self.edit_results=edit_results
         self.tools=tools
 
     def process(self, limit=20):
@@ -353,7 +354,7 @@ class RunWorker:
                               needs_lease=self.needs_lease, budget_exit=self.budget_exit,
                               memory=self.memory,
                               message_context=self.message_context,
-                              tools=self.tools,edit_publisher=self.edit_publisher,
+                              tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -401,6 +402,7 @@ class RunWorker:
         if state.status == 'running':
             # Interrupted by a crash or restart: the provider may have billed or answered.
             return self._finish(receipt, self._event(binding, state, 'unknown'))
+        result_deadline=self.budget_exit.prepare_result_publication(self.runs,binding) if self.edit_results else None
         try:
             state = self._event(binding, state, 'started')
         except Conflict:
@@ -416,9 +418,11 @@ class RunWorker:
             with self.needs_lease(binding) as check_needs:
                 check_needs()
         if self.edit_publisher is not None and command.get('modification_intent')=='propose_scoped_edit':
-            from .scoped_edit import execute
+            if self.edit_results:
+                from cj_run.scoped_edit_result import execute
+            else:from .scoped_edit import execute
             inputs=self.message_context.answer_messages(binding,self.memory_run.messages(text))
-            return execute(self,receipt,binding,state,inputs)
+            return execute(self,receipt,binding,state,inputs,deadline=result_deadline) if self.edit_results else execute(self,receipt,binding,state,inputs)
         proposal_id = None
         buffer = ''
         try:
