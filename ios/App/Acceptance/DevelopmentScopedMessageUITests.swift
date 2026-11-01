@@ -269,11 +269,14 @@ import Foundation
         }
         let field=visible({titleField()},id:"trip.manual.title.value")
         XCTAssertEqual(try XCTUnwrap(field.value as? String),trip.title)
-        field.press(forDuration:1.1)
-        let menuItem=app.menuItems.matching(identifier:"Select All").firstMatch
-        let selectAll=menuItem.exists ? menuItem : app.buttons.matching(identifier:"Select All").firstMatch
-        XCTAssertTrue(selectAll.waitForExistence(timeout:5),"Use the real edit menu to replace the full original title")
-        selectAll.tap();field.typeText(input)
+        field.tap();field.press(forDuration:1.1)
+        let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
+        if !selection.waitForExistence(timeout:5) {
+            capture("manual-title-edit-menu-unavailable")
+            let tree=XCTAttachment(string:app.debugDescription);tree.name="manual-title-edit-menu-tree";tree.lifetime = .keepAlways;add(tree)
+            XCTFail("Expected the native Select All action");return
+        }
+        selection.tap();field.typeText(input)
         XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Result unknown")
         XCTAssertEqual(titleField().value as? String,input)
