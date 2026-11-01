@@ -1,6 +1,5 @@
 """Local scoped diff/explicit action API; canonical AUTH and original act only."""
-import json,os,re
-from urllib.parse import parse_qsl
+import json,os
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
@@ -9,7 +8,7 @@ from cj_api.message_routes import _token,_error
 from cj_api.local_app import scope_for
 from .auth_boundary import Boundary
 from .scoped_actions import ScopedAction,ScopedActions
-from .scoped_discovery import DiscoveryQuery
+from .scoped_discovery import parse_discovery_query
 from .domain import Conflict,Denied,identifier
 from cj_agent.draft import trip_scope_for
 
@@ -76,13 +75,7 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
     @app.get('/v1/trip-scoped-discovery')
     async def discover(request:Request):
         try:
-            query_bytes=request.scope['query_string']
-            if len(query_bytes)>12400:raise ValueError('bounded original query required')
-            raw=query_bytes.decode('ascii')
-            if re.search(r'%(?![0-9A-Fa-f]{2})',raw):raise ValueError('invalid URI encoding')
-            pairs=parse_qsl(raw,keep_blank_values=True,strict_parsing=True,
-                            encoding='utf8',errors='strict')
-            query=DiscoveryQuery.parse(pairs)
+            query=parse_discovery_query(request.scope['query_string'])
         except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         return await invoke(request,'discovery',query)
     @app.get('/v1/trip-scoped-action-receipts')
