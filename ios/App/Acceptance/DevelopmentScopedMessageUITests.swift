@@ -320,7 +320,12 @@ import Foundation
     func testNeedsPlanningAccept() async throws { try await planningScenario("testNeedsPlanningAccept",decision:"accept") }
     func testNeedsPlanningReject() async throws { try await planningScenario("testNeedsPlanningReject",decision:"reject") }
     func testNeedsPlanningACKLoss() async throws { try await planningScenario("testNeedsPlanningACKLoss",decision:"accept",ackLoss:true) }
-    private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false) async throws {
+    func testNeedsPlanningDiscoveryUnavailable() async throws { try await planningScenario("testNeedsPlanningDiscoveryUnavailable",discoveryUnavailable:true) }
+    func testNeedsPlanningStaleAccept() async throws { try await planningScenario("testNeedsPlanningStaleAccept",decision:"accept",invalidation:"needs") }
+    func testNeedsPlanningConflict() async throws { try await planningScenario("testNeedsPlanningConflict",decision:"accept",invalidation:"compete") }
+    func testNeedsPlanningLateAccount() async throws { try await planningScenario("testNeedsPlanningLateAccount",lateAccount:true) }
+    func testNeedsPlanningInterruptedAccept() async throws { try await planningScenario("testNeedsPlanningInterruptedAccept",decision:"accept",interrupted:true) }
+    private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false) async throws {
         let f=try await prepare(name)
         defer { app?.terminate() }
         XCTAssertEqual(f.needs_planning,true)
@@ -359,14 +364,43 @@ import Foundation
         text("run.display.status",contains:"已完成");text("run.draft.status",contains:"已记录草稿候选，尚非正式行程")
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-same-original-Chinese");try audit(name+"-Chinese")
+        if discoveryUnavailable {
+            _ = try await call("/invalidate-planning-needs",caseID:name)
+            for _ in 0..<2 { tap("planning.discover");text("planning.activity",contains:"原读取不可用") }
+            XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.exists)
+            _ = try await call("/planning-no-decision-proof",caseID:name)
+            capture(name+"-read-refused-no-write");try audit(name+"-refused")
+        }
+        if lateAccount {
+            tap("planning.discover");_ = try await call("/wait-planning-response",caseID:name)
+            tap("记忆")
+            if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
+            tap("account.development.signin.B");text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+            _ = try await call("/release-planning-response",caseID:name)
+            tap("助手");text("planning.activity",contains:"请选择已接受的原消息")
+            XCTAssertFalse(textElement("planning.proposal.title").exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"planning.discover").firstMatch.isEnabled)
+            tap("planning.originals");XCTAssertEqual(app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).count,0)
+            _ = try await call("/planning-no-decision-proof",caseID:name)
+            capture(name+"-B-withholds-late-A");try audit(name+"-late")
+        }
         if let decision {
             tap("planning.discover");text("planning.discovery.state",contains:"原规划候选已记录")
             text("planning.needs",contains:"visit");text("planning.namespace",contains:f.namespace)
             text("planning.proposal.title",contains:"本地合成来源行程")
             text("planning.proposal.fixed.a",contains:"明确固定")
             capture(name+"-actual-original-candidate");try audit(name+"-candidate")
+            if invalidation=="needs" { _ = try await call("/invalidate-planning-needs",caseID:name) }
+            if invalidation=="compete" { _ = try await call("/compete-planning",caseID:name) }
             tap("planning."+decision)
-            if ackLoss {
+            if interrupted {
+                _ = try await call("/wait-planning-response",caseID:name)
+                app.terminate();XCTAssertEqual(app.state,.notRunning)
+                _ = try await call("/release-planning-response",caseID:name)
+            } else if invalidation=="compete" {
+                text("planning.activity",contains:"冲突");XCTAssertFalse(textElement("planning.receipt").exists)
+            } else if ackLoss || invalidation=="needs" {
                 text("planning.activity",contains:"UNKNOWN")
                 XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.isEnabled)
                 XCTAssertFalse(app.buttons.matching(identifier:"planning.reject").firstMatch.isEnabled)
@@ -377,14 +411,20 @@ import Foundation
                 else { XCTAssertFalse(textElement("planning.formal.version").exists) }
             }
             _ = try await call("/planning-decision-proof",caseID:name)
-            capture(name+"-original-decision");try audit(name+"-decision")
+            if !interrupted { capture(name+"-original-decision");try audit(name+"-decision") }
             try launch(f,language:"en",restore:true)
             tap("planning.originals")
             let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).firstMatch},id:"planning.original.query")
             XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
-            text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
-            if decision=="accept" { text("planning.receipt.version",contains:"1");text("planning.formal.version",contains:" · 1") }
-            else { XCTAssertFalse(textElement("planning.formal.version").exists) }
+            if let invalidation {
+                text("planning.activity",contains:invalidation=="compete" ? "Conflict" : "UNKNOWN")
+                XCTAssertFalse(textElement("planning.receipt").exists)
+                XCTAssertFalse(textElement("planning.formal.version").exists)
+            } else {
+                text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
+                if decision=="accept" { text("planning.receipt.version",contains:"1");text("planning.formal.version",contains:" · 1") }
+                else { XCTAssertFalse(textElement("planning.formal.version").exists) }
+            }
             XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.exists)
             _ = try await call("/planning-decision-proof",caseID:name)
             capture(name+"-restart-original-only");try audit(name+"-restart")
