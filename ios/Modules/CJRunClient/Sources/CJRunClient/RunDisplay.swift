@@ -60,6 +60,10 @@ public enum RunDisplayFailure: Error, Equatable, Sendable {
 public struct RunDisplayValue: Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     public let snapshot: Components.Schemas.RunDisplaySnapshot
     public let requestID: String
+    public let scopedResult: RunScopedResultReference?
+    init(snapshot: Components.Schemas.RunDisplaySnapshot, requestID: String, scopedResult: RunScopedResultReference? = nil) {
+        self.snapshot=snapshot; self.requestID=requestID; self.scopedResult=scopedResult
+    }
     public var description: String { "<redacted run display>" }
     public var debugDescription: String { description }
     public var customMirror: Mirror { Mirror(self, children: [:]) }
@@ -234,7 +238,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             }
             try check(original,token)
             previous = value;storedStream = nil;storedState = .loaded(value);executing = false;storedCancellation = .idle
-            await readDraftStatus(original,token,bearer:bearer,snapshot:snapshot)
+            await readDraftStatus(original,token,bearer:bearer,snapshot:snapshot,scopedResult:value.scopedResult)
         } catch {
             // Generated ClientError may contain the bearer/body. Never expose, log or stringify it.
             guard valid(original, token) else { retireIfOwned(original, token); return }
@@ -251,24 +255,33 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
         }
     }
     private func readSnapshot(_ original: RunDisplaySource,_ token: UUID,bearer: String) async throws -> RunDisplayValue {
-        let checked = RunReadTransport(travel:original.travelReference != nil,discussion:original.tripReference != nil,edit:original.editReference != nil,underlying:transport,endpoint:endpoint,bearer:bearer,
+        let scopedResults=original.editReference != nil && draftStatusVersion == .v6
+        let checked = RunReadTransport(travel:original.travelReference != nil,discussion:original.tripReference != nil,edit:original.editReference != nil,scopedResults:scopedResults,underlying:transport,endpoint:endpoint,bearer:bearer,
             originalMessageID:original.receipt.message_id,validate:{ [self] in try check(original,token) })
         let api = Client(serverURL:endpoint.url,configuration:.memory,transport:checked)
         let value: RunDisplayValue
         if let reference = original.formalReference {
-            var components=URLComponents();components.path="/v\(reference.wireVersion)/run-display";components.queryItems=[.init(name:"message_id",value:original.receipt.message_id)]
+            let displayVersion=scopedResults ? 5 : reference.wireVersion
+            let displayOperation=scopedResults ? "getTripEditRunDisplayV5" : reference.displayOperation
+            var components=URLComponents();components.path="/v\(displayVersion)/run-display";components.queryItems=[.init(name:"message_id",value:original.receipt.message_id)]
             components.percentEncodedQuery=components.percentEncodedQuery?.replacingOccurrences(of:"+",with:"%2B")
             guard let path=components.string else { throw RunDisplayFailure.invalidReference }
-            let (response,body)=try await checked.send(HTTPRequest(method:.get,scheme:nil,authority:nil,path:path),body:nil,baseURL:endpoint.url,operationID:reference.displayOperation)
+            let (response,body)=try await checked.send(HTTPRequest(method:.get,scheme:nil,authority:nil,path:path),body:nil,baseURL:endpoint.url,operationID:displayOperation)
             try check(original,token)
             guard response.status.code == 200 else { throw RunDisplayFailure.rejected(status:response.status.code) }
             let media=response.headerFields.filter { $0.name == .contentType }
             guard media.count==1,media[0].value.split(separator:";").first?.lowercased()=="application/json" else { throw RunDisplayFailure.invalidResponse }
             guard let body else { throw RunDisplayFailure.invalidResponse }
             let bytes=try await Data(collecting:body,upTo:endpoint.maximumResponseBytes);try check(original,token)
-            let envelope=try RunTripEnvelope(bytes,fields:"request_id version snapshot reference",version:"RUN-display.\(reference.wireVersion)",reference:reference)
+            let fields=scopedResults ? "request_id version snapshot reference scoped_result" : "request_id version snapshot reference"
+            let envelope=try RunTripEnvelope(bytes,fields:fields,version:"RUN-display.\(displayVersion)",reference:reference)
             let (snapshot,trace)=try envelope.display()
-            value=RunDisplayValue(snapshot:snapshot,requestID:trace)
+            var result:RunScopedResultReference?
+            if scopedResults,let editReference=original.editReference {
+                result=try RunScopedResultReference.decodeResponseReference(bytes,maximumBytes:endpoint.maximumResponseBytes,matching:editReference)
+                guard result == nil || snapshot.status == .completed else { throw RunDisplayFailure.inconsistentSnapshot }
+            }
+            value=RunDisplayValue(snapshot:snapshot,requestID:trace,scopedResult:result)
         } else if let reference = original.travelReference {
             let output = try await api.getTravelRunDisplay(query:.init(message_id:original.receipt.message_id))
             try check(original,token)
@@ -396,7 +409,7 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
             if let previous { try validateProgress(snapshot,after:previous.snapshot) }
             try check(original,token)
             previous = value;storedStream = nil;storedState = .loaded(value);storedCancellation = .idle
-            await readDraftStatus(original,token,bearer:bearer,snapshot:snapshot)
+            await readDraftStatus(original,token,bearer:bearer,snapshot:snapshot,scopedResult:value.scopedResult)
         } catch {
             guard valid(original, token) else { retireIfOwned(original, token); return }
             let failure = (error as? RunDisplayFailure) ?? .unavailable
@@ -413,13 +426,13 @@ public enum RunCancellationState: Sendable { case idle, stopping, unknown }
     // This independent read never changes answer text or the canonical RUN state.
     // One attempt per explicit/initial snapshot read; an unknown outcome grants no retry/write.
     private func readDraftStatus(_ original: RunDisplaySource, _ token: UUID, bearer: String,
-                                 snapshot: Components.Schemas.RunDisplaySnapshot) async {
+                                 snapshot: Components.Schemas.RunDisplaySnapshot, scopedResult: RunScopedResultReference? = nil) async {
         guard readsDraftStatus else { return }
         do {
             try check(original, token)
             storedDraftStatus = .loading
             let value = try await readOriginalDraftStatus(endpoint: endpoint, transport: transport, bearer: bearer,
-                receipt: original.receipt, snapshot: snapshot, version: original.editReference != nil ? .v5 : original.tripReference != nil ? .v4 : original.travelReference == nil ? draftStatusVersion : .v3, reference:original.travelReference, tripReference:original.tripReference, editReference:original.editReference, validate: { [self] in try check(original, token) })
+                receipt: original.receipt, snapshot: snapshot, version: original.editReference != nil ? (draftStatusVersion == .v6 ? .v6 : .v5) : original.tripReference != nil ? .v4 : original.travelReference == nil ? draftStatusVersion : .v3, reference:original.travelReference, tripReference:original.tripReference, editReference:original.editReference, observedResult:scopedResult, validate: { [self] in try check(original, token) })
             try check(original, token)
             storedDraftStatus = value
         } catch {

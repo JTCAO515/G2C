@@ -29,6 +29,10 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         case .loadedScoped(let value): outcomeLabel(value.draftOutcome.rawValue, language)
         }
     }
+    public var scopedResult: RunScopedResultReference? {
+        if case .loadedScoped(let value) = self { return value.scopedResult }
+        return nil
+    }
     public var runStatus: Components.Schemas.RunDisplaySnapshot.statusPayload? {
         switch self {
         case .loaded(let value): Components.Schemas.RunDisplaySnapshot.statusPayload(rawValue:value.run_status.rawValue)
@@ -78,7 +82,7 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
 
 @MainActor func readOriginalDraftStatus(endpoint: MessageEndpoint, transport: any ClientTransport,
     bearer: String, receipt: Components.Schemas.MessageReceipt, snapshot: Components.Schemas.RunDisplaySnapshot,
-    version: RunDraftStatusVersion = .v1, reference: RunTravelReference? = nil, tripReference: MessageTripReference? = nil, editReference: MessageEditReference? = nil, validate: @MainActor @Sendable () throws -> Void) async throws -> RunDraftReadState {
+    version: RunDraftStatusVersion = .v1, reference: RunTravelReference? = nil, tripReference: MessageTripReference? = nil, editReference: MessageEditReference? = nil, observedResult: RunScopedResultReference? = nil, validate: @MainActor @Sendable () throws -> Void) async throws -> RunDraftReadState {
     guard (version == .v3) == (reference != nil), (version == .v4) == (tripReference != nil), (version == .v5 || version == .v6) == (editReference != nil) else { throw RunDisplayFailure.invalidReference }
     var url = URLComponents()
     url.path = version == .v1 ? "/v1/run-draft-status" : version == .v2 ? "/v2/run-draft-status" : version == .v3 ? "/v3/run-draft-status" : version == .v4 ? "/v4/run-draft-status" : version == .v5 ? "/v5/run-draft-status" : "/v6/run-draft-status"
@@ -142,6 +146,7 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
     if references.highwater == snapshot.event_highwater || (snapshot.status != .queued && snapshot.status != .running) {
         guard references.status == snapshot.status.rawValue,
               references.highwater == snapshot.event_highwater else { throw RunDisplayFailure.inconsistentSnapshot }
+        if version == .v6 { guard result.scopedResult == observedResult else { throw RunDisplayFailure.inconsistentSnapshot } }
     }
     try validate()
     return result
