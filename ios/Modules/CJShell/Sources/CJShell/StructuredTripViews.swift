@@ -63,7 +63,7 @@ struct StructuredTripHome: View {
                             RunReadableText(text:editorMessage(edit)).accessibilityIdentifier("trip.manual.editor.state")
                             if let refusal=edit.refusal {
                                 RunReadableText(text:(refusal.status == 409
-                                    ? language.text("Version conflict. Input retained; read the current version and explicitly choose a new basis. ","版本冲突。输入已保留；请读取当前版本并明确选择新基准。")
+                                    ? language.text("Save conflict (version, source or constraints). Input retained; check the current Trip and requirements before explicitly choosing a new basis. ","保存冲突（版本、来源或约束）。输入已保留；请核对当前行程与需求，再明确选择新基准。")
                                     : language.text("Original request refused; input retained. ","原请求被拒；输入已保留。"))+String(refusal.status)+" · "+refusal.code)
                                     .accessibilityIdentifier("trip.manual.refusal")
                             }

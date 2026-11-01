@@ -377,7 +377,7 @@ import Foundation
         tap("trip.manual.save")
         if conflict {
             text("trip.manual.editor.state",contains:"Original request refused")
-            text("trip.manual.refusal",contains:"Version conflict")
+            text("trip.manual.refusal",contains:"Save conflict")
             text("trip.manual.refusal",contains:"409")
             XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
             XCTAssertFalse(textElement("trip.manual.receipt").exists)
@@ -389,7 +389,7 @@ import Foundation
         } else { text("trip.manual.receipt",contains:"2") }
         tap("trip.manual.current");text("trip.manual.current.version",contains:"2")
         if ackLoss { text("trip.manual.editor.state",contains:"Result unknown");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
-        if conflict { text("trip.manual.refusal",contains:"Version conflict");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
+        if conflict { text("trip.manual.refusal",contains:"Save conflict");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-saved-original");try audit(name+"-saved")
         try launch(f,language:"zh-Hans",restore:true)
