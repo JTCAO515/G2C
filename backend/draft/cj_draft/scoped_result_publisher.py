@@ -31,6 +31,9 @@ class ScopedResultPublisher(ScopedPublisher):
         if explanation is None:return None,None
         version=json.loads(state.scope.original.content)['content_version']
         candidate=(prepare_one if version=='structured.1' else prepare_two)(state.scope.original,(ManualEdit if version=='structured.1' else EditV2).parse(reply))
+        if version=='structured.1':from cj_feasibility.trip_time import evaluate
+        else:from cj_feasibility.trip_time_v2 import evaluate
+        if evaluate(candidate.content).status=='CONFLICT':raise Conflict('explicit Trip time conflict')
         required=json.loads(explanation.raw)['required_selection']['item_ids']
         _,report,verification=check_constraints(candidate.content,state.needs,json.loads(state.previous),required,self.limits)
         return explanation,report_bytes(report,verification)
@@ -45,8 +48,9 @@ class ScopedResultPublisher(ScopedPublisher):
         values=(repository.scope,result_id,state.binding.scope,state.binding.run_id,kind,state.source.original_utf8,
             sha256(state.source.original_utf8).hexdigest(),state.scope.original.trip_id,state.scope.original.version,
             state.scope.original.content,scope,state.needs.raw,state.memory,reply,explanation.raw,report)
+        cur=publication.cursor
         publication.before_write()
-        publication.cursor.execute('INSERT INTO cj_trip_scoped_result(scope,result_id,message_scope,run_id,kind,original_input,input_sha256,trip_id,trip_version,original_trip,scope_input,needs_input,memory_input,model_input,explanation,report) '
+        cur.execute('INSERT INTO cj_trip_scoped_result(scope,result_id,message_scope,run_id,kind,original_input,input_sha256,trip_id,trip_version,original_trip,scope_input,needs_input,memory_input,model_input,explanation,report) '
             'VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',values)
         return ScopedResult(kind,result_id)
 

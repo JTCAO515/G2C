@@ -333,3 +333,30 @@ class ScopedResultChecks(unittest.TestCase):
         self.assertIn('WHOLE_TRIP_TITLE',body['explanation']['reason_codes'])
         self.assertIn(body['feasibility']['status'],('UNKNOWN','PASS'))
         self.assertEqual(self.counts(f),(before[0],before[1],before[2]+1));self.assertEqual(model.calls,1)
+
+    def test_outside_selection_reversed_explicit_time_remains_validation_failure(self):
+        from copy import deepcopy
+        f=self.fixture('time-reversed');binding,_,_=self.send(f)
+        first=json.loads(f.trip.content)['items'][0];schedule=deepcopy(first['schedule'])
+        for edge,t in [('start','10:00:00'),('end','09:00:00')]:
+            schedule[edge]={k:dict(state='known',value=v) for k,v in dict(date='2026-11-01',time=t,timezone='Asia/Shanghai',utc_offset='+08:00').items()}
+        model=Model(lambda d:d['changes'][0].update(item_id=first['id'],field='schedule',value=schedule))
+        before=self.counts(f);f.run(model)
+        self.assertEqual(f.database.run_repository(f.scope).recover(binding).state.draft_outcome,'validation_failed')
+        self.assertEqual(self.rows(f),[]);self.assertEqual(self.counts(f),before)
+
+    def test_cursor_admission_elapsed_before_last_guard_cannot_commit_body_or_proposal(self):
+        from cj_message.edit_reference import EditPublication
+        from cj_usage.metered_exit import MeteredExitCore
+        for clarify in (True,False):
+            f=self.fixture('last-guard-'+str(clarify));binding,_,_=self.send(f,clarify=clarify)
+            original=EditPublication.cursor.fget;now=MeteredExitCore._now;expired=[False];before=self.counts(f)
+            def cursor(p):
+                value=original(p);expired[0]=True;return value
+            def clock(core,previous):
+                value=now(core,previous);return value+core.config.max_seconds+1 if expired[0] else value
+            model=Model()
+            with patch.object(EditPublication,'cursor',property(cursor)),patch.object(MeteredExitCore,'_now',clock):f.run(model)
+            self.assertTrue(expired[0]);self.assertEqual(self.rows(f),[]);self.assertEqual(self.counts(f),before)
+            state=f.database.run_repository(f.scope).recover(binding).state
+            self.assertEqual(state.effects,());self.assertEqual(state.draft_outcome,'budget_exhausted')

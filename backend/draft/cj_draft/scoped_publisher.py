@@ -125,9 +125,9 @@ class ScopedPublisher:
             output_check=dict(accepted=verification.accepted,codes=list(verification.codes),zh=verification.zh,en=verification.en)))
         scope_raw=packed(dict(version='TRIP-scoped-basis.1',reference=state.source.reference.public_value(),request=json.loads(state.scope.request.raw)))
         if len(report_raw)>1_000_000:raise DraftRejected('bounded feasibility explanation required')
-        publication.before_write()
-        repository._publish_in_tx(publication.cursor,proposal)
         cur=publication.cursor
+        publication.before_write()
+        repository._publish_in_tx(cur,proposal)
         cur.execute('INSERT INTO cj_trip_scoped_basis(scope,proposal_id,message_scope,run_id,original_input,original_trip,scope_input,needs_input,memory_input,model_input,diff,report) '
             'VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',(repository.scope,proposal.proposal_id,state.binding.scope,state.binding.run_id,
             state.source.original_utf8,trip.content,scope_raw,state.needs.raw,state.memory,reply.encode(),candidate.diff,report_raw))
