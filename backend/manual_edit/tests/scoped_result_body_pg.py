@@ -8,7 +8,7 @@ import psycopg
 from fastapi.testclient import TestClient
 
 from scoped_discovery_pg import DiscoveryFixture
-from edit_support import ProbePublisher,Harness,CONNINFO,ROOT
+from edit_support import Fixture,ProbePublisher,Harness,CONNINFO,ROOT
 from cj_draft.scoped_result_publisher import local_configuration,ScopedResultPublisher
 from cj_trip.local_scoped_app import create_local_scoped_app
 from cj_trip.domain import packed
@@ -25,10 +25,10 @@ def Model(*args,**kwargs):
 
 class ScopedResultChecks(unittest.TestCase):
     headers=Harness.headers;setUpClass=classmethod(Harness.setUpClass.__func__);tearDownClass=classmethod(Harness.tearDownClass.__func__)
-    def fixture(self,subject):
+    def fixture(self,subject,*,legacy=True):
         from scoped_runtime_pg import limits
         from cj_api.edit_result_profile import activate
-        f=DiscoveryFixture(self,'c-result-'+subject,ProbePublisher(),legacy=True)
+        f=(DiscoveryFixture if legacy else Fixture)(self,'c-result-'+subject,ProbePublisher(),legacy=legacy)
         credentials=lambda owner:f.host.headers[owner.removeprefix('local:'+ISSUER+':')]['Authorization'][7:]
         f.database,f.configuration=local_configuration(conninfo_path=CONNINFO,auth_dir=f.auth,run_context=f.context,memory=f.memory,
             credentials=credentials,confirmation=f.signer,limits=limits(),language='en')
@@ -223,7 +223,8 @@ class ScopedResultChecks(unittest.TestCase):
                     with self.assertRaises(OSError):f.run(model)
                 else:f.run(model)
             self.assertEqual(model.calls,1)
-            if mode=='rollback':self.assertEqual(self.rows(f),[])
+            if mode=='rollback':
+                self.assertEqual(self.rows(f),[]);f.run(model);self.assertEqual(model.calls,1);self.assertEqual(self.rows(f),[])
             else:
                 key=self.pointer(f,binding)['result_id'];self.assertEqual(self.get(f,key).status_code,200)
                 self.assertEqual(len(self.rows(f)),1)
@@ -319,3 +320,16 @@ class ScopedResultChecks(unittest.TestCase):
         with patch.object(LocalDatabase,'connect',wrapped):
             response=self.get(f,key);self.assertEqual(response.status_code,503,response.text);self.assertNotIn('changes',response.text)
         self.assertEqual(self.get(f,key).status_code,200);self.assertEqual(model.calls,1)
+
+    def test_structured_two_whole_title_remains_display_only_and_keeps_unknown_evidence(self):
+        f=self.fixture('structured-two',legacy=False);binding,_,_=self.send(f)
+        self.assertEqual(json.loads(f.trip.content)['content_version'],'structured.2')
+        model=Model(lambda value:value.update(title='Explicit new title / 新标题'))
+        before=self.counts(f);f.run(model);pointer=self.pointer(f,binding)
+        self.assertEqual(pointer['kind'],'expansion_required')
+        response=self.get(f,pointer['result_id']);self.assertEqual(response.status_code,200,response.text)
+        body=response.json()['display']['result'];selection=body['explanation']['required_selection']
+        self.assertTrue(selection['whole_trip']);self.assertFalse(selection['local_selection_sufficient'])
+        self.assertIn('WHOLE_TRIP_TITLE',body['explanation']['reason_codes'])
+        self.assertIn(body['feasibility']['status'],('UNKNOWN','PASS'))
+        self.assertEqual(self.counts(f),(before[0],before[1],before[2]+1));self.assertEqual(model.calls,1)
