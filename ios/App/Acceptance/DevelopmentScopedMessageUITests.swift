@@ -254,6 +254,47 @@ import Foundation
         }
 
     }
+    func testManualProtectedPrepareUnknownRestart() async throws {
+        let name="testManualProtectedPrepareUnknownRestart", f=try await prepare(name)
+        defer { app?.terminate() }
+        XCTAssertEqual(f.manual_profile,true)
+        let trip=try XCTUnwrap(f.formal_trips.first), input="SYNTHETIC retained title / 原输入保留"
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.edit.open")
+        let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
+        XCTAssertTrue(selected.isEnabled);selected.tap()
+        func titleField() -> XCUIElement {
+            let multiline=app.textViews.matching(identifier:"trip.manual.title.value").firstMatch
+            return multiline.exists ? multiline : app.textFields.matching(identifier:"trip.manual.title.value").firstMatch
+        }
+        let field=visible({titleField()},id:"trip.manual.title.value")
+        field.tap();let old=field.value as? String ?? ""
+        field.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:old.count)+input)
+        XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
+        tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Result unknown")
+        XCTAssertEqual(titleField().value as? String,input)
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.exists)
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.prepare").firstMatch.isEnabled)
+        func queryRetained() {
+            tap("trip.manual.originals.read")
+            let row=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.")).firstMatch},id:"manual.original.open")
+            XCTAssertTrue(row.isEnabled && row.isHittable);row.tap()
+            let raw=visible({
+                let predicate=NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.input.")
+                let selectable=app.textViews.matching(predicate).firstMatch
+                return selectable.exists ? selectable : app.staticTexts.matching(predicate).firstMatch
+            },id:"manual.original.input")
+            XCTAssertTrue(raw.label.contains(input) || (raw.value as? String)?.contains(input)==true)
+            let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.")).firstMatch},id:"manual.original.query")
+            XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
+        }
+        queryRetained();text("trip.manual.original.result",contains:"remains unknown")
+        capture(name+"-original-input-retained");try audit(name+"-unknown")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");queryRetained();text("trip.manual.original.result",contains:"仍未知")
+        _ = try await call("/manual-unknown-proof",caseID:name)
+        capture(name+"-restart-original-only");try audit(name+"-restart")
+    }
     func testScopedFixedReorderChineseLargest() async throws { try await scenario("testScopedFixedReorderChineseLargest",language:"zh-Hans",large:true,decision:"accept",fixedReorder:true) }
     func testScopedCandidateDiscoveryUnavailable() async throws { try await scenario("testScopedCandidateDiscoveryUnavailable",language:"en",item:true,discoveryUnavailable:true) }
     func testScopedCandidateLateAccount() async throws { try await scenario("testScopedCandidateLateAccount",language:"en",item:true,lateAccount:true) }

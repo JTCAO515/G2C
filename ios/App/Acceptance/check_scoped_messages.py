@@ -12,7 +12,7 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--manual-trip-profile',action='store_true')
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart'],required=True)
 ARGS=parser.parse_args();OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -151,6 +151,8 @@ try:
    with TestClient(edit_api) as client:expect(client.put('/v1/conversations',params=dict(conversation_id=cid),headers=headers),'native-original-chat')
    structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
    scoped_app=create_local_scoped_app(database=edit_db,configuration=configuration)
+   from cj_trip.local_manual_app import create_local_manual_app
+   manual_app=create_local_manual_app(conninfo_path=connection,auth_dir=auth,confirmation_signer=signer,run_context=context)
    typed_app=create_local_typed_app(conninfo_path=connection,auth_dir=auth,configuration=typed)
    fake=ScopedFake();finished=[];actual_message_receipts=[];worker_errors=[];stop=threading.Event();audit=[];lock=threading.RLock()
    late_captured=threading.Event();late_release=threading.Event();late_state={}
@@ -158,7 +160,7 @@ try:
     path=scope.get('path','')
     if scope.get('type')!='http':return await edit_api(scope,receive,send)
     entry=dict(method=scope['method'],path=path);audit.append(entry);chunks=[];reply=[]
-    if path in ('/v1/trip-scoped-action-receipts','/v1/trip-scoped-discovery'):entry['original_query']=parse_qs(scope.get('query_string',b'').decode('ascii'))
+    if path in ('/v1/trip-scoped-action-receipts','/v1/trip-scoped-discovery','/v1/trip-manual-preparations'):entry['original_query']=parse_qs(scope.get('query_string',b'').decode('ascii'))
     async def received():
      message=await receive()
      if message['type']=='http.request':chunks.append(message.get('body',b''))
@@ -168,10 +170,10 @@ try:
     actual_reply=[]
     async def sent(message):
      if message['type']=='http.response.start':entry['status']=message['status']
-     if path=='/v4/messages' and message['type']=='http.response.body':reply.append(message.get('body',b''))
+     if path in ('/v4/messages','/v1/trip-manual-preparations') and message['type']=='http.response.body':reply.append(message.get('body',b''))
      if drop_ack or hold_discovery:actual_reply.append(message)
      else:await send(message)
-    target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else scoped_app if path.startswith('/v1/trip-scoped-') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
+    target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else manual_app if path.startswith(('/v1/trip-manual-','/v1/trip-structured-initialization')) else scoped_app if path.startswith('/v1/trip-scoped-') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
     await target(scope,received,sent)
     if drop_ack:
      # Fault only after the unmodified C API completed its real transaction.
@@ -193,10 +195,12 @@ try:
      for message in actual_reply:await send(message)
      late_state['original_response_delivered']=True
     if path=='/v1/trip-scoped-discovery':entry['completed']=True
+    if path=='/v1/trip-manual-preparations' and scope['method']=='GET' and entry.get('status')==200:entry['preparation_present']=json.loads(b''.join(reply))['preparation'] is not None
     if path=='/v4/messages' and entry.get('status')==200:actual_message_receipts.append(json.loads(b''.join(reply))['receipt'])
     if scope['method']=='POST':
      raw=b''.join(chunks);entry['input_sha256']=hashlib.sha256(raw).hexdigest()
      if path=='/v1/trip-scoped-actions':entry['original_action_id']=json.loads(raw)['action_id']
+     if path=='/v1/trip-manual-preparations':entry['original_request_id']=json.loads(raw)['request_id']
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
    import socket
    sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1])
@@ -234,6 +238,22 @@ try:
      status=display['snapshot']['status'],draft_outcome=draft['draft_outcome'],trip_id=reference['trip_context']['id'],content_sha256=reference['trip_context']['content_sha256'],namespace=reference['namespace']['id'],needs_version=reference['needs_reference']['expected_version'],item_ids=reference['trip_context']['item_ids'],day=None if reference['trip_context']['day'] is None else reference['trip_context']['day']['date'],
      memory_long='SYNTHETIC LONG' in inputs,memory_current='SYNTHETIC CURRENT' in inputs,memory_other='SYNTHETIC OTHER' in inputs)
     r['proof']=value;r['observed_requests']=list(audit);r['worker_outcomes']=list(finished);r['proposal_ids_are_backend_oracles_only']=True;save();return value
+   def manual_unknown_proof():
+    assert CASE=='testManualProtectedPrepareUnknownRestart' and ARGS.manual_trip_profile
+    posts=[x for x in audit if x['path']=='/v1/trip-manual-preparations' and x['method']=='POST']
+    reads=[x for x in audit if x['path']=='/v1/trip-manual-preparations' and x['method']=='GET']
+    assert len(posts)==1 and posts[0]['status']==503 and len(reads)>=2
+    assert all(x['status']==200 and x['preparation_present'] is False and x['original_query']==dict(request_id=[posts[0]['original_request_id']]) for x in reads)
+    assert not any(x['method']=='POST' and x['path']!='/v1/trip-manual-preparations' for x in audit)
+    with edit_db.connect(scope_for(ISSUER,subject)) as conn:
+     role=conn.execute('SELECT current_user').fetchone()[0]
+     trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
+     messages=conn.execute('SELECT count(*) FROM cj_message_receipt WHERE conversation_id=%s',(cid,)).fetchone()[0]
+     actions=conn.execute('SELECT count(*) FROM cj_trip_scoped_action').fetchone()[0]
+    assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid and trips[0][1]==2 and bytes(trips[0][2])==packed(formal['content'])
+    assert messages==actions==fake.calls==0 and not worker_errors
+    r['manual_unknown_proof']=dict(runtime_role=role,prepare_posts=1,prepare_status=503,original_request_id=posts[0]['original_request_id'],original_input_sha256=posts[0]['input_sha256'],original_queries=len(reads),null_preparations=True,formal_version=2,formal_unchanged=True,new_messages=0,scoped_model_calls=0,saves=0)
+    save();return r['manual_unknown_proof']
    def discovery_refusal_proof():
     assert CASE=='testScopedCandidateDiscoveryUnavailable' and len(actual_message_receipts)==1
     deadline=time.monotonic()+5
@@ -326,6 +346,7 @@ try:
        assert CASE=='testScopedCandidateLateAccount' and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
        assert CASE=='testScopedCandidateLateAccount' and late_captured.is_set();late_release.set();value=dict(status='release requested')
+      elif path.path=='/manual-unknown-proof':value=manual_unknown_proof()
       elif path.path=='/discovery-refusal-proof':value=discovery_refusal_proof()
       elif path.path=='/late-proof':value=late_proof()
       elif path.path=='/invalidate-candidate':value=invalidate_candidate()
@@ -363,13 +384,15 @@ try:
     r['redacted_log_accounts']=sorted(native_tokens);r['token_scan_accounts']=sorted(native_tokens)
     (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    if CASE=='testScopedCandidateLateAccount':late_proof()
-    if CASE=='testScopedCandidateDiscoveryUnavailable':discovery_refusal_proof()
-    verified=r['proof'] if CASE=='testScopedCandidateDiscoveryUnavailable' or CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest') else proof()
-    if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest'):assert decision_proof()['receipt_queries']>=1
-    assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
-    if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
-    else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
+    if CASE=='testManualProtectedPrepareUnknownRestart':manual_unknown_proof()
+    else:
+     if CASE=='testScopedCandidateLateAccount':late_proof()
+     if CASE=='testScopedCandidateDiscoveryUnavailable':discovery_refusal_proof()
+     verified=r['proof'] if CASE=='testScopedCandidateDiscoveryUnavailable' or CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest') else proof()
+     if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest'):assert decision_proof()['receipt_queries']>=1
+     assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
+     if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
+     else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
     for file in container.rglob('*'):
      if file.is_file() and not file.is_symlink():
