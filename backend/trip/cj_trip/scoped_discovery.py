@@ -2,6 +2,8 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
 import json
+import re
+from urllib.parse import parse_qsl
 
 from cj_auth.interfaces import AdmissionStatus
 from cj_api.local_app import scope_for
@@ -24,6 +26,13 @@ class DiscoveryQuery:
             if type(value) is not str or not value.strip() or '\0' in value or len(value.encode('utf8'))>2048:
                 raise ValueError('bounded original UTF-8 identity required')
         return cls(values['message_id'],values['run_id'])
+
+
+def parse_discovery_query(raw):
+    if len(raw)>12400:raise ValueError('bounded original query required')
+    value=raw.decode('ascii')
+    if re.search(r'%(?![0-9A-Fa-f]{2})',value):raise ValueError('invalid URI encoding')
+    return DiscoveryQuery.parse(parse_qsl(value,keep_blank_values=True,strict_parsing=True,encoding='utf8',errors='strict'))
 
 
 class ReadRunRepository:
