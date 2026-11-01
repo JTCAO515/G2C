@@ -67,7 +67,7 @@ import Foundation
     private func tap(_ id:String) {
         let target:XCUIElement
         if ["Assistant","助手","Memory","记忆","Trips","行程"].contains(id) { target=app.tabBars.buttons.matching(identifier:id).firstMatch }
-        else if ["assistant.panel.done","timeline.done"].contains(id) { target=app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        else if ["assistant.panel.done","timeline.done","trip.manual.keyboard.done"].contains(id) { target=app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else if id=="assistant.history" { target=app.buttons.matching(identifier:id).firstMatch }
         else if ["Done","完成"].contains(id) { target=app.toolbars.buttons.matching(identifier:id).firstMatch }
         else { target=visible({app.buttons.matching(identifier:id).firstMatch},id:id) }
