@@ -62,8 +62,8 @@ import Foundation
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
             let down=located ? frame.midY<=top : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
-            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? -step : step)))
-            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? step : -step)))
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.85,dy:middle+(down ? -step : step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.85,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id)
@@ -326,6 +326,15 @@ import Foundation
     func testNeedsPlanningLateAccount() async throws { try await planningScenario("testNeedsPlanningLateAccount",lateAccount:true) }
     func testNeedsPlanningInterruptedAccept() async throws { try await planningScenario("testNeedsPlanningInterruptedAccept",decision:"accept",interrupted:true) }
     func testNeedsPlanningManualComposition() async throws { try await planningScenario("testNeedsPlanningManualComposition",decision:"accept",composition:true) }
+    func testNeedsPlanningOriginalsLargest() async throws {
+        let name="testNeedsPlanningOriginalsLargest",f=try await prepare(name)
+        defer { app?.terminate() }
+        try launch(f,language:"zh-Hans",large:true)
+        tap("planning.originals");text("planning.activity",contains:"请选择已接受的原消息")
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).count,0)
+        _ = try await call("/prefix-not-sent",caseID:name)
+        capture(name+"-visible-originals");try audit(name+"-largest")
+    }
     func testNeedsPlanningCurrentFixedAccept() async throws { try await planningScenario("testNeedsPlanningCurrentFixedAccept",decision:"accept",composition:true,currentDecision:"accept") }
     func testNeedsPlanningCurrentUnlockedReject() async throws { try await planningScenario("testNeedsPlanningCurrentUnlockedReject",decision:"accept",composition:true,currentDecision:"reject") }
     private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false,composition:Bool=false,currentDecision:String?=nil) async throws {
