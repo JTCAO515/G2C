@@ -27,7 +27,7 @@ os.environ['CJ_ENV']='local';sys.path.insert(0,str(BACKEND/'scripts'))
 import dev_auth,migrate,psycopg,uvicorn
 from pg_suites import cluster
 from fastapi.testclient import TestClient
-from cj_api.local_app import create_local_app,LocalDatabase,ISSUER,scope_for,load_confirmation_signer
+from cj_api.local_app import create_local_app,LocalDatabase,ISSUER,scope_for,load_confirmation_signer,load_history_configuration
 from cj_api.local_run_context import load_run_context
 from cj_api.local_plan_model import NeedsPlanFakeProvider
 from cj_trip.local_needs_app import create_local_needs_app
@@ -68,7 +68,7 @@ try:
     dev_auth.activate_travel(connection,owner,context,'MESSAGE-TRAVEL-CONSUMER@1')
    signer=load_confirmation_signer(auth);tokens={label:dev_auth.token(auth,owner,120) for label,owner in subjects.items()}
    token=tokens['A'];headers={'Authorization':'Bearer '+token};binary={**headers,'Content-Type':'application/octet-stream'}
-   api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,needs_profile='manual-v1',confirmation_signer=signer)
+   api=create_local_app(conninfo_path=connection,auth_dir=auth,history_configuration=load_history_configuration(auth),run_context=context,travel_context=True,needs_profile='manual-v1',confirmation_signer=signer)
    with TestClient(api) as client:
     check(client.post('/v1/needs-actions',content=packed(dict(action_id='source',needs_id='visit',expected_version=0,source=dict(kind='manual',text='SYNTHETIC explicit source'),changes=dict(fixed_items=[item('a','09:00','10:00',True),item('b','11:00','12:00',False)]))),headers=binary),'needs')
     namespace=check(client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id='namespace',operation='create',travel_context=None)),headers=binary),'namespace')['receipt']['travel_context']
