@@ -10,6 +10,11 @@ private extension ShellLanguage {
 struct TripShell: View {
     @Bindable var state: ShellState
     let host: TripContainerHost
+    let onClose: (() -> Void)?
+    let openTimeline: (() -> Void)?
+    init(state: ShellState, host: TripContainerHost, onClose: (() -> Void)? = nil, openTimeline: (() -> Void)? = nil) {
+        self.state = state; self.host = host; self.onClose = onClose; self.openTimeline = openTimeline
+    }
     private enum Sheet: Identifiable {
         case manual(ManualPreviewEntry), timeline(UUID,TripTimelineHost)
         var id: UUID { switch self { case .manual(let value): value.id;case .timeline(let id,_): id } }
@@ -24,7 +29,8 @@ struct TripShell: View {
                 if let presentation = host.presentation {
                     Section(language.text("Formal trips", "正式行程")) {
                         Button(language.text("Read destination-local timeline", "读取目的地当地时间线")) {
-                            if let reader=host.makeTimelineReader() { sheet = .timeline(UUID(),reader) }
+                            if let openTimeline { openTimeline() }
+                            else if let reader=host.makeTimelineReader() { sheet = .timeline(UUID(),reader) }
                         }.disabled(action == nil).accessibilityIdentifier("trips.timeline.open")
                         TripContainerLoadLabel(state: presentation.listState, language: language)
                         if presentation.listState == .loaded && presentation.trips.isEmpty {
@@ -100,6 +106,13 @@ struct TripShell: View {
                 } header: { ShellSectionHeading(title: language.text("Map", "地图")) }
             }
             .navigationTitle(ShellTab.trips.title(language))
+            .toolbar {
+                if let onClose {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(language.text("Done", "完成"), action: onClose).accessibilityIdentifier("trip.browse.done")
+                    }
+                }
+            }
             .sheet(item: $sheet) { value in
                 switch value {
                 case .manual(let entry): ManualPreviewContainerView(host: host, entry: entry, language: language)

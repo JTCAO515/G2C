@@ -101,6 +101,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     private let memoryManagement: EndpointCapability?
     private let typedMemory: EndpointCapability?
     private let needs: EndpointCapability?
+    private let tripEditing: EndpointCapability?
 
     public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
@@ -214,7 +215,22 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         #endif
     }
 
-    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil) throws {
+    /// Per-work signed local Trip editing capability. Ordinary/Release construction
+    /// never enables these routes, and no other write or remote host is admitted.
+    public static func developmentTripEditing(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
+              let port = endpoint.url.port, (1...65535).contains(port),
+              endpoint.maximumRequestBytes <= 1_000_000, endpoint.maximumResponseBytes <= 1_000_000 else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
+            preview: nil, tripEditing: EndpointCapability(endpoint: endpoint, validate: validate))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+
+    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil, tripEditing: EndpointCapability? = nil) throws {
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
             throw MessageHTTPFailure.invalidConfiguration
         }
@@ -222,7 +238,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         let session = URLSession(configuration: config, delegate: RedirectBlocker(), delegateQueue: nil)
-        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory;self.needs=needs
+        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory;self.needs=needs;self.tripEditing=tripEditing
     }
 
     /// Internal non-network seam for module tests; never used by live callers.
@@ -234,14 +250,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             guard previewEndpoint == nil && validatePreview == nil else {throw MessageHTTPFailure.invalidConfiguration}
             preview=nil
         }
-        needs=nil;typedMemory=nil
+        tripEditing=nil;needs=nil;typedMemory=nil
         session=nil;transport=interceptedTransport;messages=nil;memory=nil;memoryManagement=nil
     }
 
     /// Module-test-only composition: the supplied transport must be non-network.
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
-        needs = nil;typedMemory = nil
+        tripEditing = nil; needs = nil;typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; memory = nil; memoryManagement = nil
         messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: .legacy)
     }
@@ -249,7 +265,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network typed MESSAGE transport seam for module boundary tests.
     init(interceptedTransport: any ClientTransport,travelMessageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) {
-        needs=nil;typedMemory=nil
+        tripEditing=nil;needs=nil;typedMemory=nil
         session=nil;transport=interceptedTransport;preview=nil;memory=nil;memoryManagement=nil
         messages=MessageCapability(endpoint:travelMessageEndpoint,validate:validateMessage,wire:.travel)
     }
@@ -257,14 +273,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network boundary test seam; no live caller uses this initializer.
     init(interceptedTransport: any ClientTransport, tripDiscussionEndpoint: MessageEndpoint,
          validateDiscussion: @escaping @MainActor @Sendable () throws -> Void) {
-        needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
+        tripEditing=nil; needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
         preview=nil; memory=nil; memoryManagement=nil
         messages=MessageCapability(endpoint:tripDiscussionEndpoint, validate:validateDiscussion, wire:.discussion)
     }
 
     init(interceptedTransport: any ClientTransport, tripEditEndpoint: MessageEndpoint,
          validateEdit: @escaping @MainActor @Sendable () throws -> Void) {
-        needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
+        tripEditing=nil; needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
         preview=nil; memory=nil; memoryManagement=nil
         messages=MessageCapability(endpoint:tripEditEndpoint, validate:validateEdit, wire:.edit)
     }
@@ -272,7 +288,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network Memory boundary seam for deterministic transport tests.
     init(interceptedTransport: any ClientTransport, memoryEndpoint: MessageEndpoint,
          validateMemory: @escaping @MainActor @Sendable () throws -> Void) {
-        needs = nil;typedMemory = nil
+        tripEditing = nil; needs = nil;typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; messages = nil; memoryManagement = nil
         memory = EndpointCapability(endpoint: memoryEndpoint, validate: validateMemory)
     }
@@ -280,7 +296,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network lifecycle capability seam for boundary tests.
     init(interceptedTransport: any ClientTransport, memoryManagementEndpoint: MessageEndpoint,
          validateManagement: @escaping @MainActor @Sendable () throws -> Void) {
-        needs = nil;typedMemory = nil
+        tripEditing = nil; needs = nil;typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; messages = nil; memory = nil
         memoryManagement = EndpointCapability(endpoint: memoryManagementEndpoint, validate: validateManagement)
     }
@@ -289,19 +305,25 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport,typedMemoryEndpoint: MessageEndpoint,
          validateTypedMemory: @escaping @MainActor @Sendable () throws -> Void) {
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
-        needs=nil;typedMemory=EndpointCapability(endpoint:typedMemoryEndpoint,validate:validateTypedMemory)
+        tripEditing=nil;needs=nil;typedMemory=EndpointCapability(endpoint:typedMemoryEndpoint,validate:validateTypedMemory)
     }
 
     /// Non-network seam for exact NEEDS operation/host/body boundary tests.
     init(interceptedTransport: any ClientTransport, needsEndpoint: MessageEndpoint,
          validateNeeds: @escaping @MainActor @Sendable () throws -> Void) {
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil;typedMemory=nil
-        needs=EndpointCapability(endpoint:needsEndpoint,validate:validateNeeds)
+        tripEditing=nil;needs=EndpointCapability(endpoint:needsEndpoint,validate:validateNeeds)
     }
 
     @MainActor func validateMessageSending(to endpoint: MessageEndpoint) throws {
         guard let messages, messages.wire == .legacy, messages.endpoint.url == endpoint.url else { throw MessageHTTPFailure.productionActivationUnavailable }
         try messages.validate()
+    }
+
+    init(interceptedTransport: any ClientTransport, tripEditingEndpoint: MessageEndpoint,
+         validateTripEditing: @escaping @MainActor @Sendable () throws -> Void) {
+        session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil;typedMemory=nil;needs=nil
+        tripEditing=EndpointCapability(endpoint:tripEditingEndpoint,validate:validateTripEditing)
     }
 
     @MainActor func validateTravelMessageSending(to endpoint: MessageEndpoint) throws {
@@ -341,6 +363,30 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     deinit { session?.invalidateAndCancel() }
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        if let tripEditing {
+            guard let operation = LocalTripEditingOperation(rawValue: operationID), baseURL == tripEditing.endpoint.url,
+                  request.scheme == nil, request.authority == nil,
+                  !request.headerFields.contains(where: { $0.name.canonicalName == "host" }) else { throw MessageHTTPFailure.productionActivationUnavailable }
+            if let field = operation.queryField {
+                guard request.method == .get, body == nil, let path = request.path,
+                      let parts = URLComponents(string: path), parts.scheme == nil, parts.host == nil,
+                      parts.percentEncodedPath == operation.path, parts.fragment == nil,
+                      let values = parts.queryItems, values.count == 1, values[0].name == field,
+                      let id = values[0].value, id.range(of: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", options: .regularExpression) == id.startIndex..<id.endIndex else { throw MessageHTTPFailure.invalidConfiguration }
+                try await tripEditing.validate(); try Task.checkCancellation()
+                let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
+                try await tripEditing.validate(); try Task.checkCancellation()
+                guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
+                let bytes = try await Data(collecting: responseBody, upTo: tripEditing.endpoint.maximumResponseBytes)
+                try await tripEditing.validate(); try Task.checkCancellation()
+                return (response, HTTPBody(bytes))
+            }
+            guard request.method == .post, request.path == operation.path, let body else { throw MessageHTTPFailure.productionActivationUnavailable }
+            // The save contract has a tighter ceiling than preparation.
+            let bytes = try await Data(collecting: body, upTo: min(operation.maximumRequestBytes, tripEditing.endpoint.maximumRequestBytes))
+            return try await sendLocalWrite(request, body: HTTPBody(bytes), baseURL: baseURL, operationID: operationID,
+                capability: tripEditing, messageWire: nil)
+        }
         if request.method == .get || request.method == .head {
             return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
         }

@@ -9,6 +9,8 @@ import Foundation
         let case_id,endpoint,conversation,namespace:String
         let accounts,subjects:[String:String]
         let formal_trips:[FormalTrip]
+        let manual_profile:Bool?
+        let manual_only:Bool?
     }
     private struct FormalTrip:Decodable {
         let id,title,content_sha256:String
@@ -47,6 +49,8 @@ import Foundation
             let element=lookup(),navigation=app.navigationBars.firstMatch
             var top=navigation.exists ? navigation.frame.maxY+4 : app.frame.minY+60
             var bottom=navigation.exists ? app.frame.maxY-24 : app.tabBars.firstMatch.frame.minY
+            let tabBar=app.tabBars.firstMatch
+            if tabBar.exists && tabBar.isHittable { bottom=min(bottom,tabBar.frame.minY) }
             let header=app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer=app.otherElements.matching(identifier:"assistant.composer").firstMatch
             if !navigation.exists && !["assistant.draft","assistant.send"].contains(id) && header.exists && composer.exists {
@@ -61,12 +65,14 @@ import Foundation
             let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
-        capture("not-visible-"+id);XCTFail("Expected visible control: "+id);return lookup()
+        capture("not-visible-"+id)
+        let tree=XCTAttachment(string:app.debugDescription);tree.name="not-visible-tree-"+id;tree.lifetime = .keepAlways;add(tree)
+        XCTFail("Expected visible control: "+id);return lookup()
     }
     private func tap(_ id:String) {
         let target:XCUIElement
         if ["Assistant","助手","Memory","记忆","Trips","行程"].contains(id) { target=app.tabBars.buttons.matching(identifier:id).firstMatch }
-        else if ["assistant.panel.done","timeline.done"].contains(id) { target=app.navigationBars.buttons.matching(identifier:id).firstMatch }
+        else if ["assistant.panel.done","timeline.done","trip.manual.keyboard.done"].contains(id) { target=app.navigationBars.buttons.matching(identifier:id).firstMatch }
         else if id=="assistant.history" { target=app.buttons.matching(identifier:id).firstMatch }
         else if ["Done","完成"].contains(id) { target=app.toolbars.buttons.matching(identifier:id).firstMatch }
         else { target=visible({app.buttons.matching(identifier:id).firstMatch},id:id) }
@@ -105,6 +111,10 @@ import Foundation
             "G2C_DEV_TRAVEL_PROFILE":String(data:try JSONSerialization.data(withJSONObject:["version":"app-travel.1","travel_ids":[f.namespace]]),encoding:.utf8)!,
             "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"food\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true},\"pace\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}",
             "G2C_DEV_TYPED_MEMORY_URL":f.endpoint]
+        if f.manual_profile == true { app.launchEnvironment["G2C_DEV_TRIP_MANUAL_PROFILE"]="manual-v1" }
+        if f.manual_only == true {
+            for key in ["G2C_DEV_MESSAGE_PROFILE","G2C_DEV_TRAVEL_PROFILE","G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
+        }
         if let timezone { app.launchEnvironment["TZ"]=timezone }
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
@@ -131,7 +141,9 @@ import Foundation
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
-        tap(language=="en" ? "Trips" : "行程");tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
+        tap(language=="en" ? "Trips" : "行程")
+        if f.manual_profile == true { tap("trip.manual.browse") }
+        tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
         text("timeline.record.title",contains:trip.title)
         capture(name+"-formal-source");try audit(name+"-formal-source")
         let chosen=trip.item_ids[item ? 1 : 2]
@@ -249,6 +261,196 @@ import Foundation
             capture(name+"-restart-original-receipt");try audit(name+"-restart")
         }
 
+    }
+    func testNeedsManualFixedRoundTrip() async throws {
+        let name="testNeedsManualFixedRoundTrip",f=try await prepare(name)
+        defer { app?.terminate() }
+        let trip=try XCTUnwrap(f.formal_trips.first)
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read")
+        func changeFixed(_ value:Bool) {
+            tap("trip.manual.edit.open")
+            let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.b").firstMatch},id:"trip.manual.item.open.b")
+            XCTAssertTrue(item.isHittable && item.isEnabled);item.tap()
+            let selected=visible({app.switches.matching(identifier:"trip.manual.selected.b").firstMatch},id:"trip.manual.selected.b")
+            XCTAssertTrue(selected.isEnabled);selected.tap()
+            tap(value ? "trip.manual.fixed.true.b" : "trip.manual.fixed.false.b")
+            tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
+            text("trip.manual.after.fixed.b",contains:value ? "Explicitly fixed" : "Explicitly unlocked")
+            text("trip.manual.after.fixed.a",contains:"Explicitly fixed")
+            tap("trip.manual.save")
+        }
+        changeFixed(true);text("trip.manual.receipt",contains:"2")
+        _ = try await call("/manual-fixed-on-proof",caseID:name)
+        tap("trip.manual.replaceBasis");text("trip.manual.record.fixed.b",contains:"Explicitly fixed")
+        changeFixed(false);text("trip.manual.receipt",contains:"3")
+        tap("trip.manual.current");text("trip.manual.current.version",contains:"3")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-fixed-roundtrip");try audit(name+"-roundtrip")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");tap("trip.manual.originals.read")
+        let original=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.s:")).firstMatch},id:"manual.fixed.original")
+        XCTAssertTrue(original.isEnabled && original.isHittable);original.tap()
+        let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.s:")).firstMatch},id:"manual.fixed.query")
+        XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
+        text("trip.manual.original.result",contains:"原回执已核对")
+        tap("trip.structured.refresh");tap("trip.structured.item."+trip.id)
+        text("trip.manual.record.fixed.a",contains:"明确固定")
+        text("trip.manual.record.fixed.b",contains:"明确未固定")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-fixed-readback");try audit(name+"-restart")
+    }
+    func testNeedsManualTimeTextSave() async throws {
+        let name="testNeedsManualTimeTextSave",f=try await prepare(name)
+        defer { app?.terminate() }
+        let trip=try XCTUnwrap(f.formal_trips.first),input="SYNTHETIC explicit time and text / 明确修改"
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+        let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.b").firstMatch},id:"trip.manual.item.open.b")
+        XCTAssertTrue(item.isHittable);item.tap()
+        for id in ["trip.manual.selected.b","trip.manual.text.selected.b"] {
+            let selected=visible({app.switches.matching(identifier:id).firstMatch},id:id)
+            XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap()
+        }
+        func replace(_ id:String,_ value:String) {
+            let field=visible({
+                let multiline=self.app.textViews.matching(identifier:id).firstMatch
+                return multiline.exists ? multiline : self.app.textFields.matching(identifier:id).firstMatch
+            },id:id)
+            XCTAssertTrue(field.isEnabled);field.tap();field.press(forDuration:1.1)
+            let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
+            XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
+            XCTAssertEqual(field.value as? String,value);tap("trip.manual.keyboard.done")
+        }
+        replace("trip.manual.text.value.b",input)
+        let schedule=visible({app.switches.matching(identifier:"trip.manual.schedule.selected.b").firstMatch},id:"trip.manual.schedule.selected.b")
+        XCTAssertTrue(schedule.isEnabled);schedule.tap()
+        replace("trip.manual.start.b.time.value","11:15")
+        replace("trip.manual.end.b.time.value","12:15")
+        tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
+        text("trip.manual.after.item.b",contains:input)
+        text("trip.manual.after.schedule.b",contains:"11:15")
+        text("trip.manual.after.schedule.b",contains:"12:15")
+        text("trip.manual.after.fixed.a",contains:"Explicitly fixed")
+        tap("trip.manual.save");text("trip.manual.receipt",contains:"2")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-saved");try audit(name+"-saved")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");tap("trip.manual.originals.read")
+        let original=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.s:")).firstMatch},id:"manual.time.original")
+        XCTAssertTrue(original.isEnabled && original.isHittable);original.tap()
+        let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.s:")).firstMatch},id:"manual.time.query")
+        XCTAssertTrue(query.isEnabled && query.isHittable);query.tap();text("trip.manual.original.result",contains:"原回执已核对")
+        tap("trip.structured.refresh");tap("trip.structured.item."+trip.id)
+        text("trip.manual.record.item.b",contains:input)
+        text("trip.manual.record.schedule.b",contains:"11:15")
+        text("trip.manual.record.schedule.b",contains:"12:15")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-restart");try audit(name+"-restart")
+    }
+    func testNeedsManualTitleSave() async throws { try await manualTitleSave("testNeedsManualTitleSave",ackLoss:false) }
+    func testNeedsManualSaveACKLoss() async throws { try await manualTitleSave("testNeedsManualSaveACKLoss",ackLoss:true) }
+    func testNeedsManualSaveConflict() async throws { try await manualTitleSave("testNeedsManualSaveConflict",ackLoss:false,conflict:true) }
+    private func manualTitleSave(_ name:String,ackLoss:Bool,conflict:Bool=false) async throws {
+        let f=try await prepare(name)
+        defer { app?.terminate() }
+        XCTAssertEqual(f.manual_profile,true);XCTAssertEqual(f.manual_only,true)
+        let trip=try XCTUnwrap(f.formal_trips.first),input="SYNTHETIC manual saved title / 手动保存标题"
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id)
+        tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+        let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
+        XCTAssertTrue(selected.isEnabled);selected.tap()
+        func titleField() -> XCUIElement {
+            let multiline=app.textViews.matching(identifier:"trip.manual.title.value").firstMatch
+            return multiline.exists ? multiline : app.textFields.matching(identifier:"trip.manual.title.value").firstMatch
+        }
+        let field=visible({titleField()},id:"trip.manual.title.value")
+        XCTAssertEqual(try XCTUnwrap(field.value as? String),trip.title)
+        field.tap();field.press(forDuration:1.1)
+        let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
+        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(input)
+        XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
+        tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
+        text("trip.manual.after.title",contains:input)
+        if conflict { _ = try await call("/manual-compete",caseID:name) }
+        tap("trip.manual.save")
+        if conflict {
+            text("trip.manual.editor.state",contains:"Original request refused")
+            text("trip.manual.refusal",contains:"Save conflict")
+            text("trip.manual.refusal",contains:"409")
+            XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
+            XCTAssertFalse(textElement("trip.manual.receipt").exists)
+            text("trip.manual.after.title",contains:input)
+        } else if ackLoss {
+            text("trip.manual.editor.state",contains:"Result unknown")
+            XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
+            XCTAssertFalse(textElement("trip.manual.receipt").exists)
+        } else { text("trip.manual.receipt",contains:"2") }
+        tap("trip.manual.current");text("trip.manual.current.version",contains:"2")
+        if ackLoss { text("trip.manual.editor.state",contains:"Result unknown");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
+        if conflict { text("trip.manual.refusal",contains:"Save conflict");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-saved-original");try audit(name+"-saved")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");tap("trip.manual.originals.read")
+        let row=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.s:")).firstMatch},id:"manual.saved.original")
+        XCTAssertTrue(row.isEnabled && row.isHittable);row.tap()
+        let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.s:")).firstMatch},id:"manual.saved.query")
+        XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
+        text("trip.manual.original.result",contains:conflict ? "原拒绝已核对" : "原回执已核对")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-restart-original-only");try audit(name+"-restart")
+    }
+    func testManualProtectedPrepareUnknownRestart() async throws {
+        let name="testManualProtectedPrepareUnknownRestart", f=try await prepare(name)
+        defer { app?.terminate() }
+        XCTAssertEqual(f.manual_profile,true)
+        let trip=try XCTUnwrap(f.formal_trips.first), input="SYNTHETIC retained title / 原输入保留"
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.edit.open")
+        let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
+        XCTAssertTrue(selected.isEnabled);selected.tap()
+        func titleField() -> XCUIElement {
+            let multiline=app.textViews.matching(identifier:"trip.manual.title.value").firstMatch
+            return multiline.exists ? multiline : app.textFields.matching(identifier:"trip.manual.title.value").firstMatch
+        }
+        let field=visible({titleField()},id:"trip.manual.title.value")
+        XCTAssertEqual(try XCTUnwrap(field.value as? String),trip.title)
+        field.tap();field.press(forDuration:1.1)
+        let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
+        if !selection.waitForExistence(timeout:5) {
+            capture("manual-title-edit-menu-unavailable")
+            let tree=XCTAttachment(string:app.debugDescription);tree.name="manual-title-edit-menu-tree";tree.lifetime = .keepAlways;add(tree)
+            XCTFail("Expected the native Select All action");return
+        }
+        selection.tap();field.typeText(input)
+        XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
+        tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Result unknown")
+        XCTAssertEqual(titleField().value as? String,input)
+        let save=app.buttons.matching(identifier:"trip.manual.save").firstMatch
+        XCTAssertTrue(save.exists,"The retained editor explains the blocked save")
+        XCTAssertFalse(save.isEnabled,"Unknown preparation cannot be saved")
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.prepare").firstMatch.isEnabled)
+        func queryRetained() {
+            tap("trip.manual.originals.read")
+            let row=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.")).firstMatch},id:"manual.original.open")
+            XCTAssertTrue(row.isEnabled && row.isHittable);row.tap()
+            let raw=visible({
+                let predicate=NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.input.")
+                let selectable=app.textViews.matching(predicate).firstMatch
+                return selectable.exists ? selectable : app.staticTexts.matching(predicate).firstMatch
+            },id:"manual.original.input")
+            XCTAssertTrue(raw.label.contains(input) || (raw.value as? String)?.contains(input)==true)
+            let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.")).firstMatch},id:"manual.original.query")
+            XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
+        }
+        queryRetained();text("trip.manual.original.result",contains:"remains unknown")
+        capture(name+"-original-input-retained");try audit(name+"-unknown")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");queryRetained();text("trip.manual.original.result",contains:"仍未知")
+        _ = try await call("/manual-unknown-proof",caseID:name)
+        capture(name+"-restart-original-only");try audit(name+"-restart")
     }
     func testScopedFixedReorderChineseLargest() async throws { try await scenario("testScopedFixedReorderChineseLargest",language:"zh-Hans",large:true,decision:"accept",fixedReorder:true) }
     func testScopedCandidateDiscoveryUnavailable() async throws { try await scenario("testScopedCandidateDiscoveryUnavailable",language:"en",item:true,discoveryUnavailable:true) }
