@@ -300,6 +300,39 @@ import Foundation
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-fixed-readback");try audit(name+"-restart")
     }
+    func testNeedsManualLateAccount() async throws {
+        let name="testNeedsManualLateAccount",f=try await prepare(name)
+        defer { app?.terminate() }
+        let trip=try XCTUnwrap(f.formal_trips.first)
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+        let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
+        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap()
+        let field=visible({
+            let multiline=self.app.textViews.matching(identifier:"trip.manual.title.value").firstMatch
+            return multiline.exists ? multiline : self.app.textFields.matching(identifier:"trip.manual.title.value").firstMatch
+        },id:"trip.manual.title.value")
+        field.tap();field.press(forDuration:1.1)
+        let selectAll=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
+        XCTAssertTrue(selectAll.waitForExistence(timeout:5));selectAll.tap();field.typeText("SYNTHETIC private A pending / A私有修改")
+        XCTAssertEqual(field.value as? String,"SYNTHETIC private A pending / A私有修改");tap("trip.manual.keyboard.done")
+        tap("trip.manual.prepare");_ = try await call("/wait-manual-preparation",caseID:name)
+        tap("Memory")
+        if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
+        tap("account.development.signin.B");text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+        _ = try await call("/release-manual-preparation",caseID:name)
+        tap("Trips");tap("trip.structured.refresh");text("trip.structured.state",contains:"Formal record read")
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.structured.item."+trip.id).firstMatch.exists)
+        XCTAssertFalse(textElement("trip.manual.basis").exists)
+        XCTAssertFalse(textElement("trip.manual.editor.state").exists)
+        XCTAssertFalse(textElement("trip.manual.after.title").exists)
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.exists)
+        tap("trip.manual.originals.read")
+        XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.")).count,0)
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.")).count,0)
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-B-after-late-A");try audit(name+"-account")
+    }
     func testNeedsManualTimeTextSave() async throws {
         let name="testNeedsManualTimeTextSave",f=try await prepare(name)
         defer { app?.terminate() }

@@ -13,7 +13,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
 head=lambda root:subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
@@ -56,11 +56,15 @@ try:
   with cluster('manualapp',port=55929,role='cj286_manual_initializer',root=root/'pg') as cfg:
    with psycopg.connect(**cfg,autocommit=True) as conn:
     chain=migrate.load();migrate.up(conn,chain,chain[-1]['version'])
-   connection=root/'connection.json';connection.write_text(json.dumps(cfg));auth=root/'auth';subject='manual-native-'+uuid.uuid4().hex;dev_auth.init(auth,[subject])
+   connection=root/'connection.json';connection.write_text(json.dumps(cfg));auth=root/'auth';subject='manual-native-'+uuid.uuid4().hex;subjects={'A':subject}
+   if CASE=='testNeedsManualLateAccount':subjects['B']='manual-native-b-'+uuid.uuid4().hex
+   dev_auth.init(auth,list(subjects.values()))
    context=load_run_context(a.run_context.resolve())
-   subprocess.run([sys.executable,'-B',str(BACKEND/'scripts/local_run_context.py'),'--conninfo-json',str(connection),'--auth-dir',str(auth),'--run-context',str(a.run_context.resolve()),'--subject',subject,'init-budget'],cwd=BACKEND,check=True,capture_output=True)
-   dev_auth.activate_travel(connection,subject,context,'MESSAGE-TRAVEL-CONSUMER@1');signer=load_confirmation_signer(auth)
-   token=dev_auth.token(auth,subject,120);headers={'Authorization':'Bearer '+token};binary={**headers,'Content-Type':'application/octet-stream'}
+   for owner in subjects.values():
+    subprocess.run([sys.executable,'-B',str(BACKEND/'scripts/local_run_context.py'),'--conninfo-json',str(connection),'--auth-dir',str(auth),'--run-context',str(a.run_context.resolve()),'--subject',owner,'init-budget'],cwd=BACKEND,check=True,capture_output=True)
+    dev_auth.activate_travel(connection,owner,context,'MESSAGE-TRAVEL-CONSUMER@1')
+   signer=load_confirmation_signer(auth);tokens={label:dev_auth.token(auth,owner,120) for label,owner in subjects.items()}
+   token=tokens['A'];headers={'Authorization':'Bearer '+token};binary={**headers,'Content-Type':'application/octet-stream'}
    api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,needs_profile='manual-v1',confirmation_signer=signer)
    with TestClient(api) as client:
     check(client.post('/v1/needs-actions',content=packed(dict(action_id='source',needs_id='visit',expected_version=0,source=dict(kind='manual',text='SYNTHETIC explicit source'),changes=dict(fixed_items=[item('a','09:00','10:00',True),item('b','11:00','12:00',False)]))),headers=binary),'needs')
@@ -78,11 +82,12 @@ try:
    with TestClient(structured) as client:formal=check(client.get('/v5/trip-structured',params=dict(trip_id=tid),headers=headers),'formal')['trip']
    assert formal['content']['content_version']=='structured.2' and formal['version']==1
    r['source_formal']=formal;r['source_message']=original['receipt'];save()
-   audit=[];latest_preparation={}
+   audit=[];latest_preparation={};late_captured=threading.Event();late_release=threading.Event();late_state={}
    async def observed(scope,receive,send):
     if scope.get('type')!='http':return await api(scope,receive,send)
-    path=scope['path'];entry=dict(method=scope['method'],path=path);audit.append(entry);parts=[];actual_reply=[];reply_parts=[]
+    path=scope['path'];authorization=dict(scope['headers']).get(b'authorization',b'').decode('ascii');label=next((label for label,value in tokens.items() if authorization=='Bearer '+value),None);entry=dict(method=scope['method'],path=path,account=label);audit.append(entry);parts=[];actual_reply=[];reply_parts=[]
     drop_ack=CASE=='testNeedsManualSaveACKLoss' and path=='/v1/trip-needs-saves' and scope['method']=='POST'
+    hold_prepare=CASE=='testNeedsManualLateAccount' and path=='/v1/trip-needs-edits' and scope['method']=='POST'
     if scope.get('query_string'):entry['query']=parse_qs(scope['query_string'].decode('ascii'))
     async def received():
      value=await receive()
@@ -91,12 +96,20 @@ try:
     async def sent(value):
      if value['type']=='http.response.start':entry['status']=value['status']
      if value['type']=='http.response.body':reply_parts.append(value.get('body',b''))
-     if drop_ack:actual_reply.append(value)
+     if drop_ack or hold_prepare:actual_reply.append(value)
      else:await send(value)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else needs_app if path.startswith('/v1/trip-needs-') else api
     await target(scope,received,sent)
     if path=='/v1/trip-needs-edits' and scope['method']=='POST' and entry['status']==200:latest_preparation['value']=json.loads(b''.join(reply_parts))['preparation']
     if path=='/v1/trip-needs-action-receipts' and entry['status']==200:entry['receipt_present']=json.loads(b''.join(reply_parts))['receipt'] is not None
+    if hold_prepare:
+     assert entry['status']==200
+     started=time.monotonic();late_state['original_protected_status']=200;late_state['reply_sha256']=hashlib.sha256(b''.join(reply_parts)).hexdigest();late_captured.set()
+     import asyncio
+     assert await asyncio.to_thread(late_release.wait,40),'held original preparation never released'
+     late_state['release_elapsed_seconds']=time.monotonic()-started
+     for value in actual_reply:await send(value)
+     late_state['original_response_sent']=True
     if drop_ack:
      # Explicit proxy response loss after the original C transaction returned 200.
      assert entry['status']==200
@@ -110,6 +123,20 @@ try:
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
    sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1]);thread=threading.Thread(target=lambda:server.run(sockets=[sock]),daemon=True);thread.start()
    def proof(stage=None):
+    if CASE=='testNeedsManualLateAccount':
+     assert late_captured.is_set() and late_release.is_set() and late_state.get('original_response_sent')
+     prepares=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='POST']
+     assert len(prepares)==1 and prepares[0]['account']=='A' and prepares[0]['status']==200
+     assert not any(x['method']=='POST' and x['path']!='/v1/trip-needs-edits' for x in audit)
+     assert any(x['account']=='B' and x['path']=='/v1/message-receipts' and x.get('status')==200 for x in audit)
+     assert any(x['account']=='B' and x['path']=='/v1/trip-structured-list' and x.get('status')==200 for x in audit)
+     with TestClient(needs_app) as client:foreign=check(client.get('/v1/trip-needs-edits',params=dict(request_id=prepares[0]['original_id']),headers={'Authorization':'Bearer '+tokens['B']}),'other-owner-original')['preparation']
+     assert foreign is None
+     with database.connect(scope_for(ISSUER,subject)) as conn:trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
+     assert len(trips)==1 and trips[0][0]==tid and trips[0][1]==1 and json.loads(bytes(trips[0][2]))==formal['content']
+     assert model.calls==r['source_provider_calls']
+     value=dict(late_state,verified_B_before_release=True,formal_version=1,formal_unchanged=True,prepare_posts=1,saves=0,edit_model_calls=0,foreign_original=None)
+     r['proof']=value;save();return value
     fixed_case=CASE=='testNeedsManualFixedRoundTrip'
     expected_version=2 if not fixed_case or stage=='locked' else 3
     expected_count=1 if not fixed_case or stage=='locked' else 2
@@ -146,7 +173,13 @@ try:
     def do_GET(self):
      try:
       url=urlparse(self.path);assert parse_qs(url.query).get('case')==[CASE]
-      if url.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts=dict(A=token),subjects=dict(A=subject),formal_trips=[dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=True)
+      if url.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts=tokens,subjects=subjects,formal_trips=[dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=True)
+      elif url.path=='/wait-manual-preparation':
+       assert CASE=='testNeedsManualLateAccount' and late_captured.wait(20);value=dict(status='actual protected 200 held')
+      elif url.path=='/release-manual-preparation':
+       assert CASE=='testNeedsManualLateAccount' and late_captured.is_set()
+       assert any(x['account']=='B' and x['path']=='/v1/message-receipts' and x.get('status')==200 for x in audit)
+       late_release.set();value=dict(status='release after verified B')
       elif url.path=='/manual-compete':
        assert CASE=='testNeedsManualSaveConflict' and 'competing_receipt' not in r
        original=latest_preparation['value'];raw=packed(dict(version='TRIP-needs-save.1',action_id='competing-original-save',proposal_id=original['proposal_id'],candidate_hash=original['candidate_hash']))
@@ -167,18 +200,21 @@ try:
     entitlements=builder.directory/'Manual.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':bundle,'keychain-access-groups':[bundle]}));pbx.write_text(text.replace(json.dumps(str(APP/'ios/App/Development.entitlements')),json.dumps(str(entitlements))))
     result=OUT/(CASE+'.xcresult');cmd=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+a.simulator,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
     print('MANUAL '+CASE+' backend='+r['backend_head'],flush=True);run=subprocess.run(cmd,cwd=APP,capture_output=True,text=True,timeout=1800)
-    log=(run.stdout+run.stderr).replace(token,'<redacted-local-token>');(OUT/'native.log').write_text(log);run.check_returncode()
+    log=run.stdout+run.stderr
+    for secret in tokens.values():log=log.replace(secret,'<redacted-local-token>')
+    (OUT/'native.log').write_text(log);run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));r['test_summary']=summary;assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    assert proof()['receipt_queries']>=1
+    verified=proof()
+    if CASE!='testNeedsManualLateAccount':assert verified['receipt_queries']>=1
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',a.simulator,bundle,'data'],text=True).strip())
     for f in container.rglob('*'):
-     if f.is_file() and not f.is_symlink():assert token.encode() not in f.read_bytes() and b'-----BEGIN PRIVATE KEY-----' not in f.read_bytes()
+     if f.is_file() and not f.is_symlink():assert all(secret.encode() not in f.read_bytes() for secret in tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in f.read_bytes()
     assert head(APP)==r['app_head'] and head(BACKEND)==r['backend_head']
     assert all(hashlib.sha256((APP/f).read_bytes()).hexdigest()==h for f,h in r['source_hashes'].items())
     assert all(hashlib.sha256((BACKEND/f).read_bytes()).hexdigest()==h for f,h in r['backend_hashes'].items())
     r['status']='PASS_APP_WITH_PINNED_CANDIDATE_BACKEND';r['token_key_scan']='PASS'
    finally:
-    r['observed_requests']=audit;save();server.should_exit=True;thread.join(10);sock.close();control.shutdown();control.server_close()
+    late_release.set();r['observed_requests']=audit;save();server.should_exit=True;thread.join(10);sock.close();control.shutdown();control.server_close()
   r['private_pg_stopped']=True
 except BaseException as error:r['status']='FAIL';r['error']=type(error).__name__;raise
 finally:save()
