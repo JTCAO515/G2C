@@ -12,12 +12,22 @@ public struct ScopedDisplayChange: Sendable {
     /// Original bounded JSON values for display only; never an edit command.
     public let beforeUTF8: Data
     public let afterUTF8: Data
+    public let beforeEnglish: String
+    public let beforeChinese: String
+    public let afterEnglish: String
+    public let afterChinese: String
 }
 public struct ScopedRequiredSelection: Sendable {
     public let itemIDs: [String]
     public let dates: ScopedDisplayDates
     public let wholeTrip: Bool
     public let localSelectionSufficient: Bool
+}
+public struct ScopedClarificationFacts: Sendable {
+    public let unknownDateItemIDs:[String]
+    public let crossDayItemIDs:[String]
+    public let unmatchedDates:[String]
+    public let observedDates:ScopedDisplayDates
 }
 public struct ScopedDisplayExplanation: Sendable {
     public let resolvedItemIDs: [String]
@@ -30,6 +40,7 @@ public struct ScopedDisplayExplanation: Sendable {
     public let requiredSelection: ScopedRequiredSelection?
     /// Original clarification facts, including UNKNOWN observations.
     public let factsUTF8: Data?
+    public let facts:ScopedClarificationFacts?
 }
 public struct ScopedDisplayFeasibility: Sendable {
     public let status: String
@@ -123,23 +134,45 @@ public struct ScopedResultDisplay: Sendable {
             if ["text", "title"].contains(field) { _ = try ScopedWireJSON.text(c["before"]); _ = try ScopedWireJSON.text(c["after"]) }
             if field == "order" { _ = try identifiers(c["before"]); _ = try identifiers(c["after"]) }
             if field == "schedule" { _ = try ScopedWireJSON.fields(c["before"], "start end"); _ = try ScopedWireJSON.fields(c["after"], "start end") }
-            return try .init(itemID: id, field: field, beforeUTF8: canonical(c["before"]), afterUTF8: canonical(c["after"]))
+            let before=try displayValue(c["before"],field:field),after=try displayValue(c["after"],field:field)
+            return try .init(itemID:id,field:field,beforeUTF8:canonical(c["before"]),afterUTF8:canonical(c["after"]),beforeEnglish:before.0,beforeChinese:before.1,afterEnglish:after.0,afterChinese:after.1)
         }
-        let required: ScopedRequiredSelection?, facts: Data?
+        let required: ScopedRequiredSelection?, facts: Data?, factsValue:ScopedClarificationFacts?
         switch kind {
         case .clarificationRequired:
             guard resolved.isEmpty, outside.isEmpty, outsideDates.isEmpty, changes.isEmpty, e["required_selection"] is NSNull, codes == ["EXPLICIT_SELECTION_UNRESOLVED"] else { throw PreviewFailure.invalidResponse }
             let f = try ScopedWireJSON.fields(e["facts"], "unknown_date_item_ids cross_day_item_ids unmatched_dates observed_dates")
-            _ = try identifiers(f["unknown_date_item_ids"]); _ = try identifiers(f["cross_day_item_ids"]); _ = try dates(f["unmatched_dates"]); _ = try dateObservations(f["observed_dates"])
+            factsValue=try .init(unknownDateItemIDs:identifiers(f["unknown_date_item_ids"]),crossDayItemIDs:identifiers(f["cross_day_item_ids"]),unmatchedDates:dates(f["unmatched_dates"]),observedDates:dateObservations(f["observed_dates"]))
             required = nil; facts = try canonical(f)
         case .expansionRequired:
             guard Set(resolved) == Set(original.resolvedItemIDs), Set(codes).isSubset(of: ["ITEMS_OUTSIDE_SELECTION", "DATES_OUTSIDE_SELECTION", "WHOLE_TRIP_TITLE"]) else { throw PreviewFailure.invalidResponse }
             let r = try ScopedWireJSON.fields(e["required_selection"], "item_ids dates whole_trip local_selection_sufficient")
             let ids = try identifiers(r["item_ids"]), whole = try boolean(r["whole_trip"]), sufficient = try boolean(r["local_selection_sufficient"])
             guard whole != sufficient, Set(resolved + outside).isSubset(of: Set(ids)) else { throw PreviewFailure.invalidResponse }
-            required = try .init(itemIDs: ids, dates: dateObservations(r["dates"]), wholeTrip: whole, localSelectionSufficient: sufficient); facts = nil
+            required = try .init(itemIDs: ids, dates: dateObservations(r["dates"]), wholeTrip: whole, localSelectionSufficient: sufficient); facts = nil;factsValue=nil
         }
-        return try .init(resolvedItemIDs: resolved, reasonCodes: codes, english: ScopedWireJSON.text(reason["en"]), chinese: ScopedWireJSON.text(reason["zh"]), outsideItemIDs: outside, outsideDates: outsideDates, changes: changes, requiredSelection: required, factsUTF8: facts)
+        return try .init(resolvedItemIDs: resolved, reasonCodes: codes, english: ScopedWireJSON.text(reason["en"]), chinese: ScopedWireJSON.text(reason["zh"]), outsideItemIDs: outside, outsideDates: outsideDates, changes: changes, requiredSelection: required, factsUTF8: facts,facts:factsValue)
+    }
+    private static func displayValue(_ value:Any?,field:String) throws -> (String,String) {
+        if field == "text" || field == "title" { let text=try ScopedWireJSON.text(value);return (text,text) }
+        if field == "order" { let ids=try identifiers(value).joined(separator:" → ");return (ids,ids) }
+        let schedule=try ScopedWireJSON.fields(value,"start end")
+        var en:[String]=[],zh:[String]=[]
+        let fields=["date","time","timezone","utc_offset"]
+        for (edge,english,chinese) in [("start","Start","开始"),("end","End","结束")] {
+            let event=try ScopedWireJSON.fields(schedule[edge],fields.joined(separator:" "))
+            var values:[String]=[]
+            for field in fields {
+                guard let observation=event[field] as? [String:Any],let state=observation["state"] as? String else { throw PreviewFailure.invalidResponse }
+                switch state {
+                case "known":let known=try ScopedWireJSON.fields(observation,"state value");values.append(try ScopedWireJSON.text(known["value"]))
+                case "unknown","missing":_ = try ScopedWireJSON.fields(observation,"state");values.append(state == "unknown" ? "UNKNOWN" : "MISSING")
+                default:throw PreviewFailure.invalidResponse
+                }
+            }
+            let declared=values.joined(separator:" · ");en.append(english+": "+declared);zh.append(chinese+"："+declared)
+        }
+        return (en.joined(separator:"\n"),zh.joined(separator:"\n"))
     }
     private static func decodeFeasibility(_ value: Any?) throws -> ScopedDisplayFeasibility {
         let f = try ScopedWireJSON.fields(value, "status checks output_check"), status = try ScopedWireJSON.text(f["status"])

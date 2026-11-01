@@ -65,8 +65,11 @@ struct AssistantShell: View {
                     }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("assistant.travelContext")
                 }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language, openNeeds: { panel = .needs })
-                if messageHost.supportsScopedEdits, let scoped = messageHost.scopedCandidates {
+                if messageHost.supportsScopedEdits, let scoped = messageHost.scopedCandidates,messageHost.scopedDisplays?.hasResult != true {
                     ScopedCandidateView(host: scoped, messages: messageHost, language: state.language)
+                }
+                if let display=messageHost.scopedDisplays {
+                    ScopedDisplayView(host:display,runs:runHost,language:state.language,chooseAgain:{ state.selectedTab = .trips })
                 }
                 if let planning=messageHost.planningCandidates {
                     NeedsPlanningView(host:planning,messages:messageHost,language:state.language)

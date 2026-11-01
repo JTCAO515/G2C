@@ -138,6 +138,11 @@ public enum DiscussionConversationState {
 }
 
 @MainActor @Observable public final class AssistantMessageHost {
+    public private(set) var scopedDisplays: ScopedDisplayHost?
+    public func configureScopedDisplays(_ client: ScopedDisplayClient, runs: RunContainerHost) {
+        guard supportsScopedEdits,scopedDisplays == nil else { return }
+        scopedDisplays=ScopedDisplayHost(runs:runs,client:client)
+    }
     public private(set) var scopedCandidates: ScopedCandidateHost?
     public func configureScopedCandidates(_ client: ScopedTripClient) {
         guard supportsScopedEdits, scopedCandidates == nil else { return }
@@ -832,7 +837,7 @@ public enum DiscussionConversationState {
     }
 
     /// Called synchronously by ShellState BEFORE its identity generation/clear changes.
-    public func invalidate() { planningCandidates?.invalidate();planningCandidates=nil;scopedCandidates?.invalidate(); scopedCandidates = nil; retire(as: .invalidated) }
+    public func invalidate() { scopedDisplays?.invalidate();scopedDisplays=nil;planningCandidates?.invalidate();planningCandidates=nil;scopedCandidates?.invalidate(); scopedCandidates = nil; retire(as: .invalidated) }
 
     private func retire(as nextActivity: MessageHostActivity) {
         let previous = binding

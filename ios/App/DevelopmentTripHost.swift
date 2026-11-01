@@ -74,7 +74,8 @@ import Observation
         let typedMode = try DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
         let needsProfile = try DevelopmentNeedsProfile.read(environment)
         let tripEditingProfile = try DevelopmentTripEditingProfile.read(environment)
-        let tripDiscussions=messageProfile == .discussion,scopedEdits=messageProfile == .edit
+        let tripDiscussions=messageProfile == .discussion,scopedEdits=messageProfile == .edit || messageProfile == .editResults
+        let scopedResults=messageProfile == .editResults
         let needsPlanning=messageProfile == .planning
         let travelProfile=try needsPlanning ? DevelopmentTravelProfile.read(environment) : typedMode?.travel
         let answerProfile=try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
@@ -145,7 +146,7 @@ import Observation
         } else { currentNeeds=nil }
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
             session: lifetime.session, operation: lifetime.operation,travelProfile:travelProfile,tripDiscussions:tripDiscussions,
-            scopedEdits:scopedEdits,needsPlanning:needsPlanning,currentNeeds:currentNeeds,isCurrent: { lifetime.current != nil })
+            scopedEdits:scopedEdits,scopedResults:scopedResults,needsPlanning:needsPlanning,currentNeeds:currentNeeds,isCurrent: { lifetime.current != nil })
         if scopedEdits {
             let originals = root.appendingPathExtension("ScopedOriginals")
             let receipts = root.appendingPathExtension("ScopedReceipts")
@@ -159,6 +160,12 @@ import Observation
             }, validate: { guard lifetime.current != nil else { throw TripFailure.staleBinding } },
                 directory: originals, receiptDirectory: receipts, expectedKeyID: key.id, provider: keys)
             messages.messages.configureScopedCandidates(scoped)
+            if scopedResults {
+                let display=try ScopedDisplayClient(endpoint:scopedEndpoint,binding:lifetime.trip,credentials:{ binding in
+                    guard lifetime.current == binding else { return nil };return configuration.token
+                },validate:{ guard lifetime.current != nil else { throw TripFailure.staleBinding } })
+                messages.messages.configureScopedDisplays(display,runs:messages.runs)
+            }
         }
         if needsPlanning {
             let originals=root.appendingPathExtension("NeedsPlanningOriginals"),receipts=root.appendingPathExtension("NeedsPlanningReceipts")
@@ -483,7 +490,7 @@ import Observation
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState,
          session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil,tripDiscussions:Bool = false,
-         scopedEdits:Bool=false,needsPlanning:Bool=false,currentNeeds:(@MainActor ()->MessageNeedsSelection?)?=nil,isCurrent: @escaping @MainActor () -> Bool) throws {
+         scopedEdits:Bool=false,scopedResults:Bool=false,needsPlanning:Bool=false,currentNeeds:(@MainActor ()->MessageNeedsSelection?)?=nil,isCurrent: @escaping @MainActor () -> Bool) throws {
         guard !tripDiscussions || travelProfile == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         let answerFormat: RunAnswerFormat
         switch try DevelopmentSessionConfiguration.toolAnswerProfile(ProcessInfo.processInfo.environment) {
@@ -528,7 +535,7 @@ import Observation
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,
-                                        credentials: credentials, liveReadTransport: transport)
+                                        credentials: credentials, liveReadTransport: transport,readsScopedEditResults:scopedResults)
         let selectedTravel = try travelProfile.map { try TravelSelectionModel(ids:$0.travel_ids,client:client,lease:lease,isCurrent:{lifetime.current}) }
         let needsForBinding:(@MainActor ()->MessageNeedsSelection?)?
         if needsPlanning {
@@ -570,7 +577,7 @@ import Observation
                 try lifetime.validate()
                 guard captured == operation, session.isCurrent(captured) else { throw RecoveryError.inactive }
                 return configuration.token
-            }, liveReadTransport: runReads, liveCancellationTransport: runStops, readsDraftStatus: true, draftStatusVersion: .v2)
+            }, liveReadTransport: runReads, liveCancellationTransport: runStops, readsDraftStatus: true, draftStatusVersion: scopedResults ? .v6 : .v2)
         let runs = RunContainerHost(shell: shell)
         guard runs.configure(RunContainerConfiguration(model: runModel, session: session, operation: operation,
             generation: shell.generation, synthetic: false, followAcceptedMessages: true,

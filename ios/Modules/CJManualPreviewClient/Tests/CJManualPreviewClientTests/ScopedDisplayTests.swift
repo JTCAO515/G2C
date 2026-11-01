@@ -50,6 +50,29 @@ struct ScopedDisplayTests {
             #expect(String(decoding:content.explanation.changes[0].beforeUTF8,as:UTF8.self)=="\"Original declared text\"")
         }
     }
+    @Test func scheduleAndClarificationFactsPreserveUnknownWithoutInventingAnInstant() throws {
+        let (bytes,original,pointer)=try displayFixture()
+        let discovery=try ScopedWireJSON(scopedFixture(),maximumBytes:4_000_000).object["discovery"] as! [String:Any],proposal=discovery["proposal"] as! [String:Any]
+        let diff=proposal["diff"] as! [String:Any],before=diff["before"] as! [String:Any],item=(before["items"] as! [[String:Any]])[0],schedule=item["schedule"]!
+        var root=try #require(JSONSerialization.jsonObject(with:bytes) as? [String:Any]),d=root["display"] as! [String:Any],result=d["result"] as! [String:Any],explanation=result["explanation"] as! [String:Any]
+        explanation["changes"]=[["item_id":"outside-item","field":"schedule","before":schedule,"after":schedule]]
+        result["explanation"]=explanation;d["result"]=result;root["display"]=d
+        let read=try ScopedResultDisplay.decode(canonical(root),requestID:displayTrace,pointer:pointer,original:original)
+        let change=try #require(read.result?.explanation.changes.first)
+        #expect(change.beforeEnglish.contains("Start:") && change.beforeChinese.contains("开始："))
+        #expect(change.beforeEnglish.contains("+08:00") && change.beforeUTF8==change.afterUTF8)
+        var unknownSchedule=schedule as! [String:Any],start=unknownSchedule["start"] as! [String:Any]
+        start["time"]=["state":"unknown"];start["utc_offset"]=["state":"missing"];unknownSchedule["start"]=start
+        explanation["changes"]=[["item_id":"outside-item","field":"schedule","before":unknownSchedule,"after":unknownSchedule]]
+        result["explanation"]=explanation;d["result"]=result;root["display"]=d
+        let unknown=try ScopedResultDisplay.decode(canonical(root),requestID:displayTrace,pointer:pointer,original:original)
+        #expect(unknown.result?.explanation.changes.first?.beforeEnglish.contains("UNKNOWN") == true)
+        #expect(unknown.result?.explanation.changes.first?.beforeChinese.contains("MISSING") == true)
+        let (clarify,reference,ref)=try displayFixture(.clarificationRequired)
+        let value=try ScopedResultDisplay.decode(clarify,requestID:displayTrace,pointer:ref,original:reference)
+        #expect(value.result?.explanation.facts?.observedDates.incomplete == true)
+        #expect(value.result?.explanation.facts?.unknownDateItemIDs == reference.resolvedItemIDs)
+    }
     @Test func staleMetadataCannotCarryOldContentOrPretendToBeCurrent() throws {
         let (_,original,pointer)=try displayFixture()
         var d:[String:Any]=["result_id":pointer.resultID,"state":"stale","expected_version":original.trip.expectedVersion,"current_version":original.trip.expectedVersion+1,"result":NSNull()]
