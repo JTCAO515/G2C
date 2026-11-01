@@ -29,3 +29,18 @@ class NeedsPlanFakeProvider(FakeProvider):
                 evidence=[],schedule=schedule,fixed=original['locked'],source_category='user_provided',source_refs=[]))
         yield json.dumps(dict(version='TRIP-model-plan.1',title='本地合成来源行程 / synthetic sourced plan',
             items=items,proposed_subjects={}),ensure_ascii=False,separators=(',',':'))
+
+
+class CurrentTripPlanFakeProvider(FakeProvider):
+    """Synthetic original-preserving source2 output, with no newly invented ID."""
+    def stream(self,messages,system=None):
+        if system!=SYSTEM:
+            yield from super().stream(messages,system=system)
+            return
+        self.calls+=1
+        source=json.loads(messages[-1]['content'])
+        if source.get('version')!='TRIP-source-input.2' or source['current_trip'] is None:
+            raise ProviderFailed('actual current Trip source2 prompt required')
+        current=source['current_trip']['content']
+        yield json.dumps(dict(version='TRIP-model-plan.1',title=current['title'],items=deepcopy(current['items']),
+            proposed_subjects={}),ensure_ascii=False,separators=(',',':'))
