@@ -311,6 +311,36 @@ import Foundation
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-fixed-readback");try audit(name+"-restart")
     }
+    func testNeedsManualCanonicalFixedRefusal() async throws {
+        let name="testNeedsManualCanonicalFixedRefusal",f=try await prepare(name)
+        defer { app?.terminate() }
+        let trip=try XCTUnwrap(f.formal_trips.first)
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+        let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.a").firstMatch},id:"trip.manual.item.open.a")
+        XCTAssertTrue(item.isEnabled && item.isHittable);item.tap()
+        let selected=visible({app.switches.matching(identifier:"trip.manual.selected.a").firstMatch},id:"trip.manual.selected.a")
+        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();tap("trip.manual.fixed.false.a")
+        text("trip.manual.fixed.input.a",contains:"Selected change: unlocked")
+        tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Original request refused")
+        text("trip.manual.refusal",contains:"Save conflict");text("trip.manual.refusal",contains:"409")
+        text("trip.manual.fixed.input.a",contains:"Selected change: unlocked")
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
+        XCTAssertFalse(textElement("trip.manual.receipt").exists)
+        tap("trip.manual.current");text("trip.manual.current.version",contains:"1")
+        text("trip.manual.refusal",contains:"Save conflict")
+        capture(name+"-canonical-protection");try audit(name+"-refused")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");tap("trip.manual.originals.read")
+        let original=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.p:")).firstMatch},id:"manual.fixed.refused.original")
+        XCTAssertTrue(original.isEnabled && original.isHittable);original.tap()
+        let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.p:")).firstMatch},id:"manual.fixed.refused.query")
+        XCTAssertTrue(query.isEnabled && query.isHittable);query.tap();text("trip.manual.original.result",contains:"原拒绝已核对")
+        text("trip.manual.original.result",contains:"TRIP_CONFLICT")
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.exists)
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-original-refusal");try audit(name+"-restart")
+    }
     func testNeedsManualPrepareCancellation() async throws {
         let name="testNeedsManualPrepareCancellation",f=try await prepare(name)
         defer { app?.terminate() }

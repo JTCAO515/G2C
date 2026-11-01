@@ -13,7 +13,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
 head=lambda root:subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
@@ -123,6 +123,11 @@ try:
      raw=b''.join(parts);entry['input_sha256']=hashlib.sha256(raw).hexdigest();value=json.loads(raw);entry['original_id']=value.get('action_id') or value.get('edit',{}).get('request_id')
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
    sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1]);thread=threading.Thread(target=lambda:server.run(sockets=[sock]),daemon=True);thread.start()
+   def current_formal():
+    with database.connect(scope_for(ISSUER,subject)) as conn:
+     role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
+    assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid
+    return role,trips[0][1],json.loads(bytes(trips[0][2]))
    def proof(stage=None):
     if CASE=='testNeedsManualLateAccount':
      assert late_captured.is_set() and late_release.is_set() and late_state.get('original_response_sent')
@@ -133,10 +138,9 @@ try:
      assert any(x['account']=='B' and x['path']=='/v1/trip-structured-list' and x.get('status')==200 for x in audit)
      with TestClient(needs_app) as client:foreign=check(client.get('/v1/trip-needs-edits',params=dict(request_id=prepares[0]['original_id']),headers={'Authorization':'Bearer '+tokens['B']}),'other-owner-original')['preparation']
      assert foreign is None
-     with database.connect(scope_for(ISSUER,subject)) as conn:trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
-     assert len(trips)==1 and trips[0][0]==tid and trips[0][1]==1 and json.loads(bytes(trips[0][2]))==formal['content']
+     role,version,current=current_formal();assert version==1 and current==formal['content']
      assert model.calls==r['source_provider_calls']
-     value=dict(late_state,verified_B_before_release=True,formal_version=1,formal_unchanged=True,prepare_posts=1,saves=0,edit_model_calls=0,foreign_original=None)
+     value=dict(late_state,runtime_role=role,verified_B_before_release=True,formal_version=1,formal_unchanged=True,prepare_posts=1,saves=0,edit_model_calls=0,foreign_original=None)
      r['proof']=value;save();return value
     if CASE=='testNeedsManualPrepareCancellation':
      assert late_captured.is_set() and late_release.is_set() and late_state.get('original_response_sent')
@@ -144,18 +148,23 @@ try:
      assert len(prepares)==1 and prepares[0]['account']=='A' and prepares[0]['status']==200
      assert len(queries)>=1 and all(q['query']==dict(request_id=[prepares[0]['original_id']]) and q['status']==200 and q['preparation_present'] for q in queries)
      assert not any(x['method']=='POST' and x['path']!='/v1/trip-needs-edits' for x in audit) and model.calls==r['source_provider_calls']
-     with database.connect(scope_for(ISSUER,subject)) as conn:
-      role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
-     assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid and trips[0][1]==1 and json.loads(bytes(trips[0][2]))==formal['content']
+     role,version,current=current_formal();assert version==1 and current==formal['content']
      value=dict(late_state,runtime_role=role,formal_version=1,formal_unchanged=True,prepare_posts=1,original_queries=len(queries),same_original_id=True,saves=0,edit_model_calls=0)
+     r['proof']=value;save();return value
+    if CASE=='testNeedsManualCanonicalFixedRefusal':
+     prepares=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='POST'];queries=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='GET']
+     assert len(prepares)==1 and prepares[0]['status']==409
+     assert len(queries)>=1 and all(q['query']==dict(request_id=[prepares[0]['original_id']]) and q['status']==200 and q['preparation_present'] is False for q in queries)
+     assert not any(x['method']=='POST' and x['path']!='/v1/trip-needs-edits' for x in audit) and model.calls==r['source_provider_calls']
+     role,version,current=current_formal();assert version==1 and current==formal['content']
+     with TestClient(api) as client:needs=check(client.get('/v1/needs',params=dict(needs_id='visit'),headers=headers),'canonical-needs')['needs']
+     assert needs['version']==1 and needs['fields']['fixed_items'][0]['locked']==known(True)
+     value=dict(runtime_role=role,formal_version=1,formal_unchanged=True,prepare_posts=1,prepare_status=409,original_queries=len(queries),same_original_id=True,null_preparation=True,needs_unchanged=True,saves=0,edit_model_calls=0)
      r['proof']=value;save();return value
     fixed_case=CASE=='testNeedsManualFixedRoundTrip'
     expected_version=2 if not fixed_case or stage=='locked' else 3
     expected_count=1 if not fixed_case or stage=='locked' else 2
-    with database.connect(scope_for(ISSUER,subject)) as conn:
-     role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
-    assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid and trips[0][1]==expected_version
-    current=json.loads(bytes(trips[0][2]))
+    role,version,current=current_formal();assert version==expected_version
     if fixed_case:
      assert current['title']==formal['content']['title'] and current['sources']==formal['content']['sources']
      assert current['items'][0]==formal['content']['items'][0]
@@ -217,7 +226,7 @@ try:
     (OUT/'native.log').write_text(log);run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));r['test_summary']=summary;assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     verified=proof()
-    if CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation'):assert verified['receipt_queries']>=1
+    if CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal'):assert verified['receipt_queries']>=1
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',a.simulator,bundle,'data'],text=True).strip())
     for f in container.rglob('*'):
      if f.is_file() and not f.is_symlink():assert all(secret.encode() not in f.read_bytes() for secret in tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in f.read_bytes()
