@@ -31,8 +31,19 @@ private actor DiscussionTripRead: ClientTransport {
         var root=URL(fileURLWithPath:#filePath)
         for _ in 0..<4 { root.deleteLastPathComponent() }
         let values=try JSONDecoder().decode([Golden].self,from:Data(contentsOf:root.appendingPathComponent("CJTripClient/Tests/CJTripClientTests/Fixtures/STRUCTURED-V1.json")))
-        let fixture=try #require(values.first { $0.name==name }),raw=try #require(Data(base64Encoded:fixture.canonical_utf8_base64))
-        return Data(("{\"version\":\"TRIP-structured-read.1\",\"request_id\":\""+discussionTripTrace+"\",\"trip\":{\"trip_id\":\"trip-a\",\"version\":7,\"content_sha256\":\""+fixture.sha256+"\",\"content\":"+String(decoding:raw,as:UTF8.self)+"}}").utf8)
+        let fixture=try #require(values.first { $0.name==(name == "multi" ? "explicit" : name) })
+        var raw=try #require(Data(base64Encoded:fixture.canonical_utf8_base64)),hash=fixture.sha256
+        if name == "multi" {
+            var document=try #require(JSONSerialization.jsonObject(with:raw) as? [String:Any])
+            var items=try #require(document["items"] as? [[String:Any]]),second=try #require(items.first)
+            second["id"]="item-2";second["text"]="SYNTHETIC other day"
+            var schedule=try #require(second["schedule"] as? [String:[String:Any]])
+            for end in ["start","end"] { schedule[end]?["date"]=["state":"known","value":"2026-11-03"] }
+            second["schedule"]=schedule;items.append(second);document["items"]=items
+            raw=try JSONSerialization.data(withJSONObject:document,options:[.sortedKeys,.withoutEscapingSlashes])
+            hash=SHA256.hash(data:raw).map { String(format:"%02x",$0) }.joined()
+        }
+        return Data(("{\"version\":\"TRIP-structured-read.1\",\"request_id\":\""+discussionTripTrace+"\",\"trip\":{\"trip_id\":\"trip-a\",\"version\":7,\"content_sha256\":\""+hash+"\",\"content\":"+String(decoding:raw,as:UTF8.self)+"}}").utf8)
     }
     private func setup(_ name:String,shell:ShellState?=nil) throws -> (TripTimelineHost,TripClient,DiscussionTripLifetime,ShellGeneration,DiscussionTripRead) {
         let lifetime=DiscussionTripLifetime(),shell=try shell ?? ShellState(preferences:#require(UserDefaults(suiteName:UUID().uuidString)))
@@ -226,9 +237,9 @@ private actor DiscussionTripRead: ClientTransport {
         #expect(host.conversationOpenings.isEmpty && host.selectedConversation==nil && host.captureNewConversationIntent()==nil)
         #expect(await wire.created.count==1)
     }
-    private func scopedMessages() async throws -> ScopedShellFixture {
+    private func scopedMessages(_ fixture:String="explicit") async throws -> ScopedShellFixture {
         let shell=ShellState(preferences:try #require(UserDefaults(suiteName:UUID().uuidString)))
-        let (timeline,_,lifetime,_,_)=try setup("explicit",shell:shell)
+        let (timeline,_,lifetime,_,_)=try setup(fixture,shell:shell)
         await timeline.perform(try timeline.select("trip-a"))
         let entry=try timeline.discussion(context:timeline.display()?.discussion,day:MessageTripSelection.Day(date:"2026-11-01",timezone:"Asia/Shanghai"),itemID:"item-1")
         let ids=try #require(timeline.display()?.record?.document.items.map(\.id))
@@ -248,6 +259,35 @@ private actor DiscussionTripRead: ClientTransport {
         #expect(f.host.performScopedChoice(try #require(f.host.captureScopedIntent(.proposeScopedEdit,for:first))))
         let next=try #require(f.host.scopedPresentation)
         #expect(f.host.performScopedChoice(try #require(f.host.captureScopedNeedsChoice(for:next))))
+    }
+    @Test func explicitCrossDayItemsUseFreshScopeAndNeverDowngradeToLegacyDiscussion() async throws {
+        let f=try await scopedMessages("multi")
+        try chooseScopedCandidate(f);await f.travel.selectTravel(ScopedShellWire.namespace)
+        let context=try #require(f.timeline.display()?.discussion)
+        let entry=try f.timeline.discussion(context:context,day:nil,itemID:nil,scopedItemIDs:["item-1","item-2"])
+        #expect(entry.scopedSelection?.itemIDs==["item-1","item-2"] && entry.scopedSelection?.day==nil)
+        #expect(f.host.selectTripDiscussion(entry))
+        #expect(f.host.scopedPresentation?.needs==nil && f.host.scopedPresentation?.intent == MessageModificationIntent.none)
+        #expect(f.host.scopedPresentation?.trip?.itemIDs==["item-1","item-2"])
+        try chooseScopedCandidate(f);await f.travel.selectTravel(ScopedShellWire.namespace)
+        f.shell.draft="SYNTHETIC explicitly include both days";#expect(f.host.canSend)
+        f.host.sendNew();await wait { !f.host.isBusy }
+        let accepted=try #require(f.host.captureAcceptedRunReceipt()),reference=try #require(accepted.editReference)
+        #expect(reference.trip.itemIDs==["item-1","item-2"] && reference.trip.expectedVersion==7 && reference.trip.day==nil)
+        let posted=try #require(await f.wire.posts.first),body=try #require(JSONSerialization.jsonObject(with:posted) as? [String:Any])
+        let trip=try #require(body["trip_context"] as? [String:Any])
+        #expect(trip["item_ids"] as? [String]==["item-1","item-2"] && trip["day"] is NSNull)
+        #expect(throws:(any Error).self) { try f.timeline.discussion(context:context,day:nil,itemID:nil,scopedItemIDs:[]) }
+        #expect(throws:(any Error).self) { try f.timeline.discussion(context:context,day:nil,itemID:nil,scopedItemIDs:["item-1","item-1"]) }
+        #expect(throws:(any Error).self) { try f.timeline.discussion(context:context,day:nil,itemID:nil,scopedItemIDs:["foreign"]) }
+        let shell=ShellState(preferences:try #require(UserDefaults(suiteName:UUID().uuidString)))
+        let (timeline,_,lifetime,_,_)=try setup("multi",shell:shell)
+        let (legacy,_)=try messages(shell,lifetime:lifetime,wire:DiscussionMessageWire())
+        await timeline.perform(try timeline.select("trip-a"))
+        let scoped=try timeline.discussion(context:timeline.display()?.discussion,day:nil,itemID:nil,scopedItemIDs:["item-1","item-2"])
+        #expect(!legacy.selectTripDiscussion(scoped))
+        await timeline.perform(try timeline.select("trip-a"))
+        #expect(throws:TripFailure.staleBinding) { try timeline.discussion(context:context,day:nil,itemID:nil,scopedItemIDs:["item-1","item-2"]) }
     }
     @Test func scopedRequestRequiresIndependentNamespaceAndExplicitSavedNeeds() async throws {
         let f=try await scopedMessages();f.shell.draft="SYNTHETIC 本次轻松一点"

@@ -8,13 +8,14 @@ import CJMessageHTTP
 @MainActor public final class TripDiscussionEntry: CustomStringConvertible, CustomReflectable {
     let selection: MessageTripSelection
     let content:MessageTripContent
+    let scopedSelection:MessageEditTripSelection?
     let title: String
     fileprivate let binding: TripBinding
     fileprivate let generation: ShellGeneration
     fileprivate let validateSource: @MainActor () throws -> Void
-    fileprivate init(selection: MessageTripSelection,content:MessageTripContent,title: String, binding: TripBinding, generation: ShellGeneration,
+    fileprivate init(selection: MessageTripSelection,content:MessageTripContent,scopedSelection:MessageEditTripSelection?=nil,title: String, binding: TripBinding, generation: ShellGeneration,
                      validateSource: @escaping @MainActor () throws -> Void) {
-        self.selection=selection;self.content=content; self.title=title; self.binding=binding; self.generation=generation; self.validateSource=validateSource
+        self.selection=selection;self.content=content;self.scopedSelection=scopedSelection; self.title=title; self.binding=binding; self.generation=generation; self.validateSource=validateSource
     }
     func validate(scopeEnvironment: String, scopeAccount: String, generation: ShellGeneration) throws {
         guard self.generation == generation, scopeEnvironment == binding.environment.uuidString,
@@ -95,11 +96,17 @@ public struct TripTimelineDisplay: Sendable {
     }
     /// Only explicit rendered choices may cross into the assistant. Day entries
     /// are known start-day groups; an unknown date/zone never acquires a day ID.
-    public func discussion(context:TripTimelineDiscussionContext?,day: MessageTripSelection.Day?, itemID: String?) throws -> TripDiscussionEntry {
+    public func discussion(context:TripTimelineDiscussionContext?,day: MessageTripSelection.Day?, itemID: String?,scopedItemIDs:[String]?=nil) throws -> TripDiscussionEntry {
         guard let context else { throw TripFailure.invalidInput }
         let token=context.nonce;try check(token)
         guard context.owner==owner,!busy,let source,source === context.source else { throw TripFailure.staleBinding }
         let value=try client.withCurrentStructuredSnapshot(source) { _,record,_,_ in record };try check(token)
+        let scopedSelection:MessageEditTripSelection?
+        if let scopedItemIDs {
+            guard day == nil,itemID == nil,!scopedItemIDs.isEmpty,
+                  Set(scopedItemIDs).isSubset(of:Set(value.document.items.map(\.id))) else { throw TripFailure.invalidInput }
+            scopedSelection=try .init(id:value.tripID,expectedVersion:Int64(value.version),contentSHA256:value.document.contentSHA256,day:nil,itemIDs:scopedItemIDs)
+        } else { scopedSelection=nil }
         let candidates=value.document.items.filter { itemID == nil || $0.id == itemID }
         guard !candidates.isEmpty || (itemID == nil && day == nil) else { throw TripFailure.invalidInput }
         if let day {
@@ -119,7 +126,7 @@ public struct TripTimelineDisplay: Sendable {
             guard current() else { throw TripFailure.staleBinding }
         }
         try validate();try check(token)
-        return try TripDiscussionEntry(selection:choice,content:MessageTripContent(version:value.document.version.rawValue,sha256:value.document.contentSHA256),title:value.document.title,binding:binding,generation:generation,validateSource:validate)
+        return try TripDiscussionEntry(selection:choice,content:MessageTripContent(version:value.document.version.rawValue,sha256:value.document.contentSHA256),scopedSelection:scopedSelection,title:value.document.title,binding:binding,generation:generation,validateSource:validate)
     }
     public func perform(_ work: TripTimelineWork) async {
         guard work.owner==owner else { return }

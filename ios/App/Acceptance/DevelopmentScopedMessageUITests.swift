@@ -161,7 +161,8 @@ import Foundation
     }
     func testScopedResultClarification() async throws { try await scenario("testScopedResultClarification",language:"en",item:true,resultKind:"clarification_required") }
     func testScopedResultExpansionKeep() async throws { try await scenario("testScopedResultExpansionKeep",language:"en",item:true,resultKind:"expansion_required") }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false,resultKind:String?=nil) async throws {
+    func testScopedResultExpansionReselection() async throws { try await scenario("testScopedResultExpansionReselection",language:"en",item:true,resultKind:"expansion_required",resultFollowup:true) }
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false,resultKind:String?=nil,resultFollowup:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -244,9 +245,52 @@ import Foundation
             tap("run.snapshot.read");tap("scope.result.read");text("scope.result.activity",contains:"已读取原结果")
             text("scope.result.kind",contains:resultKind=="clarification_required" ? "需要澄清" : "需要扩大选区")
             if resultKind=="expansion_required" { text("scope.result.change.after.0",contains:"本次轻松一点") }
-            tap("scope.result.keep.original");text("scope.result.activity",contains:"未发送任何接受或拒绝动作")
-            _ = try await call("/result-proof",caseID:name)
-            capture(name+"-kept-original-Chinese");try audit(name+"-kept-original")
+            if resultFollowup {
+                try launch(f,language:"zh-Hans",restore:true)
+                conversation(f);tap("assistant.serverHistory");tap("history.loadMessages")
+                let history=app.staticTexts.matching(NSPredicate(format:"identifier BEGINSWITH %@","history.message.")).firstMatch
+                XCTAssertTrue(history.waitForExistence(timeout:15));tap("assistant.panel.done")
+                tap("assistant.history")
+                let original=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","recovery.action.")).firstMatch},id:"result.original.message")
+                let originalID=original.identifier;XCTAssertTrue(original.isEnabled);original.tap();tap("assistant.panel.done")
+                text("assistant.originalText",contains:requestText)
+                tap("run.snapshot.read");text("run.draft.status",contains:"需要扩大")
+                tap("scope.result.read");text("scope.result.kind",contains:"需要扩大选区")
+                _ = try await call("/result-proof",caseID:name)
+                capture(name+"-restart-protected-result");try audit(name+"-restart-result")
+                tap("scope.result.choose.again")
+                tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
+                tap("timeline.scope.item."+chosen);tap("timeline.scope.item."+trip.item_ids[2])
+                text("timeline.scope.selected",contains:chosen);text("timeline.scope.selected",contains:trip.item_ids[2]);tap("timeline.scope.use")
+                text("assistant.edit.trip.item",contains:chosen);text("assistant.edit.trip.item",contains:trip.item_ids[2])
+                text("assistant.edit.trip.version",contains:"2");text("assistant.edit.intent",contains:"仅讨论")
+                tap("assistant.travelContext");tap("travel.selection."+f.namespace);tap("assistant.panel.done")
+                tap("assistant.edit.needs.open");tap("needs.read");tap("assistant.panel.done")
+                tap("assistant.edit.needs.choose");tap("assistant.edit.intent.propose")
+                enter("SYNTHETIC 明确选择两个条目后继续",language:"zh-Hans");tap("assistant.send")
+                _ = try await call("/wait-followup",caseID:name)
+                tap("run.snapshot.read");text("run.draft.status",contains:"尚非正式行程")
+                XCTAssertFalse(app.buttons.matching(identifier:"scope.result.read").firstMatch.isEnabled)
+                tap("scoped.discover");text("scoped.discovery.state",contains:"候选")
+                text("scoped.after."+trip.item_ids[2],contains:"本次轻松一点")
+                tap("scoped.accept");text("scoped.receipt",contains:"已确认");text("scoped.formal.version",contains:trip.id+" · 3")
+                _ = try await call("/followup-proof",caseID:name)
+                capture(name+"-new-explicit-scope-accepted");try audit(name+"-accepted")
+                try launch(f,language:"zh-Hans",restore:true)
+                tap("scoped.originals")
+                let action=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","scoped.query.")).firstMatch},id:"result.original.action")
+                XCTAssertTrue(action.isEnabled);action.tap();text("scoped.receipt",contains:"已确认")
+                tap("assistant.history");tap(originalID);tap("assistant.panel.done")
+                tap("run.snapshot.read");tap("scope.result.read");text("scope.result.stale",contains:"行程已变化")
+                XCTAssertFalse(textElement("scope.result.kind").exists)
+                XCTAssertFalse(app.buttons.matching(identifier:"scope.result.keep.original").firstMatch.exists)
+                _ = try await call("/followup-proof",caseID:name)
+                capture(name+"-old-result-stale");try audit(name+"-stale")
+            } else {
+                tap("scope.result.keep.original");text("scope.result.activity",contains:"未发送任何接受或拒绝动作")
+                _ = try await call("/result-proof",caseID:name)
+                capture(name+"-kept-original-Chinese");try audit(name+"-kept-original")
+            }
         }
         if discoveryUnavailable {
             _ = try await call("/invalidate-candidate",caseID:name)

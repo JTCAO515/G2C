@@ -199,6 +199,7 @@ public enum DiscussionConversationState {
         } catch { return nil }
     }
     private func editSelection(_ entry:TripDiscussionEntry) throws -> MessageEditTripSelection {
+        if let scoped=entry.scopedSelection { return scoped }
         let value=entry.selection
         return try .init(id:value.id,expectedVersion:value.expectedVersion,contentSHA256:entry.content.sha256,
             day:value.itemID == nil ? value.day : nil,itemIDs:value.itemID.map { [$0] } ?? [])
@@ -371,7 +372,7 @@ public enum DiscussionConversationState {
     @discardableResult public func selectTripDiscussion(_ entry:TripDiscussionEntry) -> Bool {
         if binding?.scopedEdits == true { return selectScopedTrip(entry) }
         let revision=discussionRevision
-        guard supportsTripDiscussions,!isBusy,let binding else { return false }
+        guard supportsTripDiscussions,!isBusy,let binding,entry.scopedSelection == nil else { return false }
         do {
             try entry.validate(scopeEnvironment:binding.scope.environment,scopeAccount:binding.scope.account,generation:binding.generation)
             guard isSameBinding(binding),bindingIsCurrent,isSameBinding(binding),!isBusy,revision==discussionRevision else { return false }
