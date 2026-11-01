@@ -164,7 +164,8 @@ try:
       formal_count=conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0]
       pending=conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0]
       operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',('source',)).fetchone()[0]
-     assert role=='cj_m1_runtime' and len(rows)==1 and formal_count==0 and pending==1 and operations==1 and model.calls==2
+     r['prefix_measurements']=dict(runtime_role=role,messages=len(rows),formal_count=formal_count,pending_proposals=pending,registered_operations=operations,model_calls=model.calls);save()
+     assert role=='cj_m1_runtime' and len(rows)==1 and formal_count==0 and pending==1 and operations==2 and model.calls==2
      command=json.loads(bytes(rows[0][1]));assert command['version']=='MESSAGE-send.2' and command['trip_id'] is None and command['creation_intent']=='consider_trip'
      assert command['needs_reference']==dict(id='visit',expected_version=1) and command['travel_context']==dict(id=namespace['id'],expected_version=1)
      assert message_receipt['value']['message_id']==rows[0][0] and message_receipt['value']['run_id']==rows[0][2]
@@ -174,7 +175,7 @@ try:
      with TestClient(needs_app) as client:pending_proposal=check(client.get('/v2/trip-needs-proposals',params=dict(proposal_id=outcomes[0].proposal_id),headers=headers),'prefix-backend-oracle')['proposal']
      assert pending_proposal['status']=='pending' and pending_proposal['expected_version']==0 and pending_proposal['content']['content_version']=='structured.2'
      assert r['prefix_no_send_checks']>=2
-     value=dict(runtime_role=role,messages=1,posts=1,model_calls=2,registered_operations=1,pending_proposals=1,formal_count=0,actions=0,namespace=namespace['id'],needs_version=1,message_id=rows[0][0],run_id=rows[0][2],original_input_sha256=hashlib.sha256(bytes(rows[0][1])).hexdigest(),no_send_checks=r['prefix_no_send_checks'])
+     value=dict(runtime_role=role,messages=1,posts=1,model_calls=2,registered_operations=2,pending_proposals=1,formal_count=0,actions=0,namespace=namespace['id'],needs_version=1,message_id=rows[0][0],run_id=rows[0][2],original_input_sha256=hashlib.sha256(bytes(rows[0][1])).hexdigest(),no_send_checks=r['prefix_no_send_checks'])
      r['proof']=value;save();return value
 
     if CASE=='testNeedsManualLateAccount':
