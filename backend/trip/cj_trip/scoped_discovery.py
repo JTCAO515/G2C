@@ -68,8 +68,8 @@ class ScopedDiscovery:
         effects=tuple(v for v in state.effects if v.startswith('trip_proposal:'))
         requested=reference['modification_intent']=='propose_scoped_edit'
         def metadata(result):
-            # No candidate bytes use Memory. Still retain the real RUN/M/TRAVEL/
-            # NEEDS/Trip source guards through encoding, in the original order.
+            # No candidate content is returned. Hold original RUN/M/TRAVEL/Trip
+            # reference checks; this metadata grants no current NEEDS/Memory permission.
             with original_run.transaction(require_clean_close=True) as tx:
                 if tx.get(binding)!=state:raise Denied('RUN changed during discovery')
                 with authority.hold_for_effect(binding) as lease:

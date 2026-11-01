@@ -81,6 +81,7 @@ class OperationContext:
     def scoped_receipt(self,action_id):return self.__call('scoped_receipt',action_id)
     def scoped_detail(self,proposal_id):return self.__call('scoped_detail',proposal_id)
     def discover_scoped(self,query,encode):return self.__call('discover_scoped',query,encode)
+    def scoped_result(self,result_id,encode):return self.__call('scoped_result',result_id,encode)
     def discover_needs(self,query,encode):return self.__call('discover_needs',query,encode)
     def act_needs(self,request):return self.__call('act_needs',request)
     def act(self, action): return self.__call('act', action)

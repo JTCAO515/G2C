@@ -46,6 +46,8 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
         def operation():
             def project(ctx):
+                if kind=='result':
+                    return ctx.scoped_result(arg,lambda value:encode(dict(version='TRIP-scoped-display.1',request_id=request.state.request_id,display=value)))
                 if kind=='discovery':
                     def discovery(value):
                         if value['proposal'] is not None:value=dict(value,proposal=proposal_value(value['proposal']))
@@ -72,6 +74,10 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
         return await invoke(request,kind,values[0][1])
     @app.get('/v1/trip-scoped-proposals')
     async def proposal(request:Request):return await read(request,'proposal','proposal_id')
+    from cj_message.edit_result_protocol import EditResultConfiguration
+    if type(configuration) is EditResultConfiguration:
+        @app.get('/v1/trip-scoped-results')
+        async def display_result(request:Request):return await read(request,'result','result_id')
     @app.get('/v1/trip-scoped-discovery')
     async def discover(request:Request):
         try:

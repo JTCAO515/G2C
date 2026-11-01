@@ -53,7 +53,7 @@ class ScopedPublisher:
     def prepare(self,binding,source):
         return self._prepare(binding,source,self.credentials(binding.scope))
 
-    def _prepare(self,binding,source,token):
+    def resolve_source(self,binding,source):
         ref=source.reference.public_value()
         if ref['modification_intent']!='propose_scoped_edit':raise DraftRejected('explicit modification intent required')
         trip=Trip(ref['trip_context']['id'],ref['trip_context']['expected_version'],source.trip_content)
@@ -62,11 +62,10 @@ class ScopedPublisher:
         request=Request.parse(packed(dict(version='TRIP-scoped-request.1',request_id='scoped-'+binding.run_id,
             trip_id=trip.trip_id,expected_version=trip.version,original_hash=ref['trip_context']['content_sha256'],
             text=json.loads(source.original_utf8)['text'],language=self.language,selection=selection)))
-        scope=resolve(trip,request)
-        if scope.status!='READY':raise DraftRejected(scope.reason_zh+' / '+scope.reason_en)
-        permitted=tuple(item for item in scope.selected_ids if item in source.selected_item_ids)
-        if not permitted or set(permitted)!=set(source.selected_item_ids):raise DraftRejected('original resolved selection requires clarification')
-        scope=replace(scope,selected_ids=permitted)
+        return resolve(trip,request)
+
+    def capture_state(self,binding,source,token,scope):
+        ref=source.reference.public_value();trip=scope.original
         current=CurrentNeedsSource(self.database,self.checker,token,protected_reader(self.database,self.checker))
         needs=current.capture(ref['needs_reference']['id'],ref['needs_reference']['expected_version'])
         repository=self.repository(binding.scope)
@@ -78,7 +77,18 @@ class ScopedPublisher:
                 "WHERE r.scope=%s AND r.trip_id=%s AND r.committed_version=%s AND r.kind='accept'",(repository.scope,trip.trip_id,trip.version))
             previous=current_origin(cur,repository,trip)['proposed'] if cur.fetchone() is not None else packed({})
         run=self.memory.registry.captured(binding)
-        state=ScopedState(binding,source,scope,needs,previous,memory_descriptor(run),token)
+        return ScopedState(binding,source,scope,needs,previous,memory_descriptor(run),token)
+
+    def _prepare(self,binding,source,token):
+        return self.prepare_ready(binding,source,token,self.resolve_source(binding,source))
+
+    def prepare_ready(self,binding,source,token,scope):
+        if scope.status!='READY':raise DraftRejected(scope.reason_zh+' / '+scope.reason_en)
+        permitted=tuple(item for item in scope.selected_ids if item in source.selected_item_ids)
+        if not permitted or set(permitted)!=set(source.selected_item_ids):raise DraftRejected('original resolved selection requires clarification')
+        scope=replace(scope,selected_ids=permitted)
+        state=self.capture_state(binding,source,token,scope)
+        ref=source.reference.public_value();trip=scope.original;request=scope.request;needs=state.needs
         system=packed(dict(version='TRIP-scoped-model.1',instruction='Return only the exact canonical TRIP-manual-edit JSON, '
             'within selected IDs. Preserve fixed/unknown and all unselected values; do not set intent, owner, evidence or sources.',
             edit_version='TRIP-manual-edit.2' if ref['content_version']=='structured.2' else 'TRIP-manual-edit.1',

@@ -298,4 +298,6 @@ class ScopedRuntimeChecks(unittest.TestCase):
 
 from scoped_discovery_pg import ScopedDiscoveryChecks
 
+from scoped_result_body_pg import ScopedResultChecks
+
 if __name__=='__main__':unittest.main(verbosity=2)
