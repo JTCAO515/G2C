@@ -13,7 +13,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
 head=lambda root:subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
@@ -87,7 +87,7 @@ try:
     if scope.get('type')!='http':return await api(scope,receive,send)
     path=scope['path'];authorization=dict(scope['headers']).get(b'authorization',b'').decode('ascii');label=next((label for label,value in tokens.items() if authorization=='Bearer '+value),None);entry=dict(method=scope['method'],path=path,account=label);audit.append(entry);parts=[];actual_reply=[];reply_parts=[]
     drop_ack=CASE=='testNeedsManualSaveACKLoss' and path=='/v1/trip-needs-saves' and scope['method']=='POST'
-    hold_prepare=CASE=='testNeedsManualLateAccount' and path=='/v1/trip-needs-edits' and scope['method']=='POST'
+    hold_prepare=CASE in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation') and path=='/v1/trip-needs-edits' and scope['method']=='POST'
     if scope.get('query_string'):entry['query']=parse_qs(scope['query_string'].decode('ascii'))
     async def received():
      value=await receive()
@@ -101,6 +101,7 @@ try:
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else needs_app if path.startswith('/v1/trip-needs-') else api
     await target(scope,received,sent)
     if path=='/v1/trip-needs-edits' and scope['method']=='POST' and entry['status']==200:latest_preparation['value']=json.loads(b''.join(reply_parts))['preparation']
+    if path=='/v1/trip-needs-edits' and scope['method']=='GET' and entry['status']==200:entry['preparation_present']=json.loads(b''.join(reply_parts))['preparation'] is not None
     if path=='/v1/trip-needs-action-receipts' and entry['status']==200:entry['receipt_present']=json.loads(b''.join(reply_parts))['receipt'] is not None
     if hold_prepare:
      assert entry['status']==200
@@ -136,6 +137,17 @@ try:
      assert len(trips)==1 and trips[0][0]==tid and trips[0][1]==1 and json.loads(bytes(trips[0][2]))==formal['content']
      assert model.calls==r['source_provider_calls']
      value=dict(late_state,verified_B_before_release=True,formal_version=1,formal_unchanged=True,prepare_posts=1,saves=0,edit_model_calls=0,foreign_original=None)
+     r['proof']=value;save();return value
+    if CASE=='testNeedsManualPrepareCancellation':
+     assert late_captured.is_set() and late_release.is_set() and late_state.get('original_response_sent')
+     prepares=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='POST'];queries=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='GET']
+     assert len(prepares)==1 and prepares[0]['account']=='A' and prepares[0]['status']==200
+     assert len(queries)>=1 and all(q['query']==dict(request_id=[prepares[0]['original_id']]) and q['status']==200 and q['preparation_present'] for q in queries)
+     assert not any(x['method']=='POST' and x['path']!='/v1/trip-needs-edits' for x in audit) and model.calls==r['source_provider_calls']
+     with database.connect(scope_for(ISSUER,subject)) as conn:
+      role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
+     assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid and trips[0][1]==1 and json.loads(bytes(trips[0][2]))==formal['content']
+     value=dict(late_state,runtime_role=role,formal_version=1,formal_unchanged=True,prepare_posts=1,original_queries=len(queries),same_original_id=True,saves=0,edit_model_calls=0)
      r['proof']=value;save();return value
     fixed_case=CASE=='testNeedsManualFixedRoundTrip'
     expected_version=2 if not fixed_case or stage=='locked' else 3
@@ -175,11 +187,11 @@ try:
       url=urlparse(self.path);assert parse_qs(url.query).get('case')==[CASE]
       if url.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts=tokens,subjects=subjects,formal_trips=[dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=True)
       elif url.path=='/wait-manual-preparation':
-       assert CASE=='testNeedsManualLateAccount' and late_captured.wait(20);value=dict(status='actual protected 200 held')
+       assert CASE in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation') and late_captured.wait(20);value=dict(status='actual protected 200 held')
       elif url.path=='/release-manual-preparation':
-       assert CASE=='testNeedsManualLateAccount' and late_captured.is_set()
-       assert any(x['account']=='B' and x['path']=='/v1/message-receipts' and x.get('status')==200 for x in audit)
-       late_release.set();value=dict(status='release after verified B')
+       assert CASE in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation') and late_captured.is_set()
+       if CASE=='testNeedsManualLateAccount':assert any(x['account']=='B' and x['path']=='/v1/message-receipts' and x.get('status')==200 for x in audit)
+       late_release.set();value=dict(status='release after explicit lifecycle change')
       elif url.path=='/manual-compete':
        assert CASE=='testNeedsManualSaveConflict' and 'competing_receipt' not in r
        original=latest_preparation['value'];raw=packed(dict(version='TRIP-needs-save.1',action_id='competing-original-save',proposal_id=original['proposal_id'],candidate_hash=original['candidate_hash']))
@@ -205,7 +217,7 @@ try:
     (OUT/'native.log').write_text(log);run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));r['test_summary']=summary;assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     verified=proof()
-    if CASE!='testNeedsManualLateAccount':assert verified['receipt_queries']>=1
+    if CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation'):assert verified['receipt_queries']>=1
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',a.simulator,bundle,'data'],text=True).strip())
     for f in container.rglob('*'):
      if f.is_file() and not f.is_symlink():assert all(secret.encode() not in f.read_bytes() for secret in tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in f.read_bytes()

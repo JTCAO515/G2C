@@ -137,6 +137,17 @@ import Foundation
         let done=app.toolbars.buttons.matching(identifier:language=="en" ? "Done" : "完成").firstMatch
         if done.exists { done.tap() }
     }
+    private func replaceManualText(_ id:String,_ value:String) {
+        func input() -> XCUIElement {
+            let multiline=app.textViews.matching(identifier:id).firstMatch
+            return multiline.exists ? multiline : app.textFields.matching(identifier:id).firstMatch
+        }
+        let field=visible({input()},id:id)
+        XCTAssertTrue(field.isEnabled && field.isHittable);field.tap();field.press(forDuration:1.1)
+        let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
+        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
+        XCTAssertEqual(input().value as? String,value);tap("trip.manual.keyboard.done")
+    }
     private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
@@ -300,6 +311,34 @@ import Foundation
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-fixed-readback");try audit(name+"-restart")
     }
+    func testNeedsManualPrepareCancellation() async throws {
+        let name="testNeedsManualPrepareCancellation",f=try await prepare(name)
+        defer { app?.terminate() }
+        let trip=try XCTUnwrap(f.formal_trips.first),input="SYNTHETIC cancelled manual / 停止等待保留"
+        try launch(f,language:"en")
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+        let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
+        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();replaceManualText("trip.manual.title.value",input)
+        tap("trip.manual.prepare");_ = try await call("/wait-manual-preparation",caseID:name)
+        tap("trip.manual.stop");text("trip.manual.editor.state",contains:"Result unknown")
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.prepare").firstMatch.isEnabled)
+        _ = try await call("/release-manual-preparation",caseID:name)
+        text("trip.manual.editor.state",contains:"Result unknown")
+        XCTAssertFalse(textElement("trip.manual.receipt").exists)
+        capture(name+"-cancelled");try audit(name+"-cancelled")
+        try launch(f,language:"zh-Hans",restore:true)
+        tap("行程");tap("trip.manual.originals.read")
+        let original=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.p:")).firstMatch},id:"manual.cancel.original")
+        XCTAssertTrue(original.isEnabled && original.isHittable);original.tap()
+        let raw=visible({app.textViews.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.input.p:")).firstMatch},id:"manual.cancel.input")
+        XCTAssertTrue((raw.value as? String)?.contains(input)==true || raw.label.contains(input))
+        let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.p:")).firstMatch},id:"manual.cancel.query")
+        XCTAssertTrue(query.isEnabled && query.isHittable);query.tap();text("trip.manual.original.result",contains:"原准备记录已核对")
+        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.exists)
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-original-only");try audit(name+"-restart")
+    }
     func testNeedsManualLateAccount() async throws {
         let name="testNeedsManualLateAccount",f=try await prepare(name)
         defer { app?.terminate() }
@@ -308,14 +347,7 @@ import Foundation
         tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
         let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
         XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap()
-        let field=visible({
-            let multiline=self.app.textViews.matching(identifier:"trip.manual.title.value").firstMatch
-            return multiline.exists ? multiline : self.app.textFields.matching(identifier:"trip.manual.title.value").firstMatch
-        },id:"trip.manual.title.value")
-        field.tap();field.press(forDuration:1.1)
-        let selectAll=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
-        XCTAssertTrue(selectAll.waitForExistence(timeout:5));selectAll.tap();field.typeText("SYNTHETIC private A pending / A私有修改")
-        XCTAssertEqual(field.value as? String,"SYNTHETIC private A pending / A私有修改");tap("trip.manual.keyboard.done")
+        replaceManualText("trip.manual.title.value","SYNTHETIC private A pending / A私有修改")
         tap("trip.manual.prepare");_ = try await call("/wait-manual-preparation",caseID:name)
         tap("Memory")
         if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
@@ -345,21 +377,11 @@ import Foundation
             let selected=visible({app.switches.matching(identifier:id).firstMatch},id:id)
             XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap()
         }
-        func replace(_ id:String,_ value:String) {
-            let field=visible({
-                let multiline=self.app.textViews.matching(identifier:id).firstMatch
-                return multiline.exists ? multiline : self.app.textFields.matching(identifier:id).firstMatch
-            },id:id)
-            XCTAssertTrue(field.isEnabled);field.tap();field.press(forDuration:1.1)
-            let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
-            XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
-            XCTAssertEqual(field.value as? String,value);tap("trip.manual.keyboard.done")
-        }
-        replace("trip.manual.text.value.b",input)
+        replaceManualText("trip.manual.text.value.b",input)
         let schedule=visible({app.switches.matching(identifier:"trip.manual.schedule.selected.b").firstMatch},id:"trip.manual.schedule.selected.b")
         XCTAssertTrue(schedule.isEnabled);schedule.tap()
-        replace("trip.manual.start.b.time.value","11:15")
-        replace("trip.manual.end.b.time.value","12:15")
+        replaceManualText("trip.manual.start.b.time.value","11:15")
+        replaceManualText("trip.manual.end.b.time.value","12:15")
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
         text("trip.manual.after.item.b",contains:input)
         text("trip.manual.after.schedule.b",contains:"11:15")
@@ -400,10 +422,7 @@ import Foundation
         }
         let field=visible({titleField()},id:"trip.manual.title.value")
         XCTAssertEqual(try XCTUnwrap(field.value as? String),trip.title)
-        field.tap();field.press(forDuration:1.1)
-        let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
-        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(input)
-        XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
+        replaceManualText("trip.manual.title.value",input)
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
         text("trip.manual.after.title",contains:input)
         if conflict { _ = try await call("/manual-compete",caseID:name) }
