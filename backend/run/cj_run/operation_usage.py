@@ -27,6 +27,17 @@ class OperationStore:
     def __init__(self, runs, config, *, new_id=lambda:uuid.uuid4().hex):
         self.runs,self.config,self.new_id=runs,config,new_id
 
+    def bind_period_without_operation(self,binding):
+        """Pin the zero-model RUN's original account; never creates an operation."""
+        with self.runs.repository.transaction() as tx:
+            state=tx.get(binding)
+            if state.status!='queued' or self.runs.valid(binding) is not True:
+                raise Denied('new original RUN required for zero-model clock')
+            expected=(ledger_scope_for(binding.scope,self.config),'provider_call',self.config.period_start,self.config.period_end,ABI)
+            tx.cur.execute('INSERT INTO cj_run_metered_binding VALUES(%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING',(binding.scope,binding.run_id,*expected))
+            tx.cur.execute('SELECT ledger_scope,unit,period_start,period_end,source_abi FROM cj_run_metered_binding WHERE scope=%s AND run_id=%s',(binding.scope,binding.run_id))
+            if tx.cur.fetchone()!=expected:raise OriginalStepOnly('original zero-model period mismatch')
+
     def _read(self, tx, binding, key):
         tx.cur.execute('SELECT o.registration_id,o.kind,o.attempt_id,o.operation_id,o.ledger_scope,'
                        'b.unit,b.period_start,b.period_end,b.source_abi,o.command_bytes,o.input_bytes '

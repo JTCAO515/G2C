@@ -8,6 +8,9 @@ from cj_run.operation_usage import OperationStore
 from cj_run.step_usage import OriginalStepOnly
 from cj_run.postgres import CommitUnknown as RunCommitUnknown
 from .metered_exit import MeteredExitCore, _PreparedCall, BudgetUnknown
+from .postgres import CommitUnknown,RepositoryUnavailable
+from .codec import CorruptLedger
+from .core import Blocked
 
 
 @dataclass(frozen=True)
@@ -58,6 +61,29 @@ class RegisteredExit(MeteredExitCore):
         self.registrations=MappingProxyType(dict(registrations))
 
     def for_run(self,binding,state): return self
+
+    def prepare_result_publication(self,runs,binding):
+        """Zero-model original clock. No operation, reserve, claim or ledger write.
+
+        The worker captures this before started/source preparation. Running RUNs
+        are never resumed through this path, so a lost clock cannot be reset.
+        """
+        from cj_run.step_usage import ledger_scope_for
+        from .metered_exit import BudgetExceeded
+        try:OperationStore(runs,self.config).bind_period_without_operation(binding)
+        except (OriginalStepOnly,RunCommitUnknown,DatabaseError):
+            raise BudgetUnknown('original zero-model period unavailable') from None
+        meter=self._original_meter(binding,ledger_scope_for(binding.scope,self.config))
+        try:
+            with meter.repo.transaction() as ledger:previous=ledger.last_clock
+        except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
+            raise BudgetUnknown('original result clock unavailable') from None
+        started=self._now(previous)
+        def check():
+            nonlocal previous
+            previous=self._now(previous)
+            if previous-started>=self.config.max_seconds:raise BudgetExceeded('draft')
+        return check
 
     def prepare_operation(self,runs,binding,operation_key,registration_id,argument,*,stage):
         try: registration=self.registrations[registration_id]

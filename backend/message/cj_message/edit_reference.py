@@ -13,13 +13,15 @@ from .travel import Selection
 from .travel_reference import check_context,ContextConflict
 from .edit_protocol import EditConfiguration,EDIT_ABI,MEMORY_ABI,PUBLISHER_ABI,PROFILE
 from .edit_input import current_trip,validate_source
+from .edit_result_protocol import EditResultConfiguration,CONFIGURATION_ABI, PUBLISHER_ABI as RESULT_PUBLISHER_ABI
 
 _FACTORY=object()
 
 
 def configured(value):
-    if (type(value) is not EditConfiguration or value.memory is None or value.publisher is None or value.abi!=EDIT_ABI
-            or value.memory.abi!=MEMORY_ABI or value.publisher.abi!=PUBLISHER_ABI):
+    expected=(CONFIGURATION_ABI,RESULT_PUBLISHER_ABI) if type(value) is EditResultConfiguration else (EDIT_ABI,PUBLISHER_ABI)
+    if (type(value) not in (EditConfiguration,EditResultConfiguration) or value.memory is None or value.publisher is None or value.abi!=expected[0]
+            or value.memory.abi!=MEMORY_ABI or value.publisher.abi!=expected[1]):
         raise Unavailable('explicit compatible C memory/publisher configuration required')
     return value
 
@@ -179,11 +181,21 @@ class EditPublication(EditLease):
         self.check(self.binding);state=self.tx.get(self.binding)
         updated=advance(state,Event(self.binding,state.sequence+1,f'{self.binding.run_id}:{state.sequence+1}','effect_committed','trip_proposal:'+proposal_id),self.authority.valid)
         self.tx.put(updated);self.effect=True;return updated
+    def record_result(self,result):
+        from cj_run.scoped_result import effect
+        if not self.authority.result_mode or not self.guarded:raise Denied('negotiated guarded result publication required')
+        self.check(self.binding);state=self.tx.get(self.binding)
+        value=effect(result.kind,result.result_id)
+        for kind,payload in (('result_committed',value),('completed','')):
+            state=advance(state,Event(self.binding,state.sequence+1,f'{self.binding.run_id}:{state.sequence+1}',kind,payload),self.authority.valid)
+            self.tx.put(state)
+        self.effect=True;return state
 
 
 class EditAuthority:
-    def __init__(self,repository,admit,run_repository):
+    def __init__(self,repository,admit,run_repository,*,result_mode=False):
         self.repository,self.admit,self.run_repository=repository,admit,run_repository
+        self.result_mode=result_mode
         self._active=ContextVar('message_edit_lease',default=None)
         self._worker_repository=ContextVar('message_edit_worker_repository',default=run_repository)
     @contextmanager
@@ -265,7 +277,7 @@ class EditAuthority:
                     if ref!=source.reference:raise Denied('captured origin changed')
                     if ref.command.modification_intent!='propose_scoped_edit':raise Denied('explicit modification intent required')
                     published=any(effect.startswith('trip_proposal:') for effect in state.effects)
-                    if (phase=='proposal' and published) or (phase=='accept' and not published):
+                    if (phase=='proposal' and (published or state.scoped_result is not None)) or (phase=='accept' and not published):
                         raise Denied('original proposal lifecycle cannot publish/accept')
                     lease=EditPublication(self,principal,binding,ref,stored,tx=rtx,stack=stack,deadline=deadline,source=source,_factory=_FACTORY)
                     token=self._active.set(lease)

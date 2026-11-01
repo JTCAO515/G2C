@@ -107,6 +107,12 @@ class DisplaySnapshotReader:
     def read_draft_status_v5(self,token,message_id,request_id):
         return self._read_draft_status(token,message_id,request_id,version=5)
 
+    def read_draft_status_v6(self,token,message_id,request_id):
+        return self._read_draft_status(token,message_id,request_id,version=6)
+
+    def read_result_display(self,token,message_id,request_id):
+        return self._context_display(token,message_id,request_id,formal=True,edit=True,results=True)
+
     def read_trip_display(self,token,message_id,request_id):
         return self._context_display(token,message_id,request_id,formal=True)
 
@@ -116,23 +122,27 @@ class DisplaySnapshotReader:
     def read_travel_display(self,token,message_id,request_id):
         return self._context_display(token,message_id,request_id,formal=False)
 
-    def _context_display(self,token,message_id,request_id,*,formal,edit=False):
+    def _context_display(self,token,message_id,request_id,*,formal,edit=False,results=False):
         def encode(state,original,reference):
-            value=dict(request_id=request_id,version='RUN-display.4' if edit else 'RUN-display.3' if formal else 'RUN-display.2',
+            value=dict(request_id=request_id,version='RUN-display.5' if results else 'RUN-display.4' if edit else 'RUN-display.3' if formal else 'RUN-display.2',
                 snapshot=json.loads(_encode_snapshot(state,self.configuration)),reference=reference.public_value())
+            if results:
+                from .scoped_result import descriptor
+                value['scoped_result']=descriptor(state,original)
             return json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
-        return self._read_materialized(token,message_id,encode,travel=True,formal=formal,edit=edit)
+        return self._read_materialized(token,message_id,encode,travel=True,formal=formal,edit=edit,results=results)
 
     def _read_draft_status(self, token, message_id, request_id, *, version):
         def encode(state, original, reference=None):
             if version == 1 and (state.draft_outcome == 'budget_exhausted' or state.budget_exhausted_stage != 'none'):
                 raise SnapshotUnavailable('budget result requires version 2')
             command = json.loads(original.raw)
-            requested = command['creation_intent'] == 'consider_trip' or version==5 and command.get('modification_intent')=='propose_scoped_edit'
+            requested = command['creation_intent'] == 'consider_trip' or version>=5 and command.get('modification_intent')=='propose_scoped_edit'
             published = any(effect.startswith('trip_proposal:') for effect in state.effects)
             if not requested and (published or state.draft_outcome is not None):
                 raise SnapshotUnavailable('draft evidence contradicts original message')
             outcome = ('not_requested' if not requested else
+                       state.scoped_result[0] if version==6 and state.scoped_result is not None else
                        state.draft_outcome if state.draft_outcome is not None else
                        'published' if published else 'not_recorded')
             b = state.binding
@@ -142,10 +152,13 @@ class DisplaySnapshotReader:
                 run_status=state.status, event_highwater=state.sequence, draft_outcome=outcome)
             if version >= 2: payload['budget_exhausted_stage']=state.budget_exhausted_stage
             if version >= 3: payload['reference']=reference.public_value()
+            if version==6:
+                from .scoped_result import descriptor
+                payload['scoped_result']=descriptor(state,original)
             return json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
-        return self._read_materialized(token, message_id, encode,travel=version>=3,formal=version>=4,edit=version==5)
+        return self._read_materialized(token, message_id, encode,travel=version>=3,formal=version>=4,edit=version>=5,results=version==6)
 
-    def _read_materialized(self, token, message_id, encode, *, travel=False, formal=False, edit=False):
+    def _read_materialized(self, token, message_id, encode, *, travel=False, formal=False, edit=False,results=False):
         if type(message_id) is not str or not message_id.strip():
             raise ValueError('original message ID required')
         configuration = self.configuration  # Freeze bounds for this read.
@@ -170,6 +183,8 @@ class DisplaySnapshotReader:
 
             source_guard()  # Resolver callbacks cannot replace the original source.
             first = _checked_recovery(repository, binding)
+            if first.state.scoped_result is not None and not results:
+                raise SnapshotUnavailable('scoped result requires appended read version')
             encoded = encode(first.state,original,record.reference) if travel else encode(first.state, original)
             if type(encoded) is not bytes:
                 if inspect.iscoroutine(encoded):

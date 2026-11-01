@@ -36,6 +36,11 @@ class Repository:
         self.connect, self.scope, self.expires_at = connect, scope, expires_at
         self.statement_timeout_ms, self.lock_timeout_ms = statement_timeout_ms, lock_timeout_ms
 
+    def snapshot_optional(self,binding):
+        """Original history may precede RUN acceptance; failure is never absence."""
+        with self.transaction(require_clean_close=True) as tx:
+            return None if tx._record(binding) is None else tx.get(binding)
+
     @contextmanager
     def worker_lease(self, binding):
         """One physical-session owner per chat; no row lock is held across the run.

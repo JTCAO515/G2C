@@ -22,7 +22,7 @@ class WorkerOwnershipLost(Exception):
 
 TERMINAL = frozenset({'completed', 'failed', 'cancelled', 'context_invalid', 'unknown'})
 DRAFT_OUTCOMES = frozenset({'validation_failed', 'provider_failed', 'provider_unknown', 'budget_exhausted'})
-KINDS = frozenset({'started', 'text_delta', 'effect_committed', 'draft_outcome', 'budget_denied'}) | TERMINAL
+KINDS = frozenset({'started', 'text_delta', 'effect_committed', 'draft_outcome', 'budget_denied', 'result_committed'}) | TERMINAL
 
 
 @dataclass(frozen=True)
@@ -66,7 +66,12 @@ class Event:
             raise ValueError('unsupported draft outcome')
         if self.kind == 'budget_denied' and self.value not in ('answer','draft'):
             raise ValueError('unsupported budget stage')
-        if self.kind not in {'text_delta', 'effect_committed', 'draft_outcome', 'budget_denied'} and self.value:
+        if self.kind == 'result_committed':
+            from .scoped_result import parse
+            parse(self.value)
+        if self.kind == 'effect_committed' and self.value.startswith('scoped_result:'):
+            raise ValueError('scoped result requires its own event')
+        if self.kind not in {'text_delta', 'effect_committed', 'draft_outcome', 'budget_denied', 'result_committed'} and self.value:
             raise ValueError('status events have no payload')
 
 
@@ -86,6 +91,11 @@ class State:
     @property
     def budget_exhausted_stage(self):
         return next((event.value for event in self.events if event.kind == 'budget_denied'), 'none')
+
+    @property
+    def scoped_result(self):
+        from .scoped_result import parse
+        return next((parse(event.value) for event in self.events if event.kind=='result_committed'),None)
 
     @property
     def sequence(self):
@@ -113,6 +123,11 @@ def advance(state: State, event: Event, valid: Callable[[Binding], bool]) -> Sta
         raise Conflict('not started')
     if state.status == 'running' and event.kind == 'started':
         raise Conflict('already started')
+    if state.scoped_result is not None and event.kind!='completed':
+        raise Conflict('scoped result must complete its original RUN')
+    if event.kind=='result_committed' and (state.draft_outcome is not None
+            or state.budget_exhausted_stage!='none' or any(e.startswith('trip_proposal:') for e in state.effects)):
+        raise Conflict('scoped result contradicts original outcome')
     if event.kind == 'budget_denied':
         if (state.budget_exhausted_stage != 'none' or state.draft_outcome is not None
                 or any(effect.startswith('trip_proposal:') for effect in state.effects)):
@@ -125,7 +140,7 @@ def advance(state: State, event: Event, valid: Callable[[Binding], bool]) -> Sta
     if event.kind == 'effect_committed' and event.value.startswith('trip_proposal:') and state.draft_outcome is not None:
         raise Conflict('draft failure already recorded')
     effects = state.effects
-    if event.kind == 'effect_committed':
+    if event.kind in {'effect_committed','result_committed'}:
         if event.value in effects:
             raise Conflict('effect requires original event replay')
         effects += (event.value,)
