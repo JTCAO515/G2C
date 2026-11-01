@@ -325,7 +325,8 @@ import Foundation
     func testNeedsPlanningConflict() async throws { try await planningScenario("testNeedsPlanningConflict",decision:"accept",invalidation:"compete") }
     func testNeedsPlanningLateAccount() async throws { try await planningScenario("testNeedsPlanningLateAccount",lateAccount:true) }
     func testNeedsPlanningInterruptedAccept() async throws { try await planningScenario("testNeedsPlanningInterruptedAccept",decision:"accept",interrupted:true) }
-    private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false) async throws {
+    func testNeedsPlanningManualComposition() async throws { try await planningScenario("testNeedsPlanningManualComposition",decision:"accept",composition:true) }
+    private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false,composition:Bool=false) async throws {
         let f=try await prepare(name)
         defer { app?.terminate() }
         XCTAssertEqual(f.needs_planning,true)
@@ -434,6 +435,29 @@ import Foundation
             XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.exists)
             _ = try await call("/planning-decision-proof",caseID:name)
             capture(name+"-restart-original-only");try audit(name+"-restart")
+            if composition {
+                struct FormalIdentity:Decodable { let trip_id:String }
+                let identity=try JSONDecoder().decode(FormalIdentity.self,from:await call("/planning-decision-proof",caseID:name))
+                let input="SYNTHETIC manual after App adoption / 采用后手改"
+                tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+identity.trip_id)
+                tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+                let selected=visible({app.switches.matching(identifier:"trip.manual.title.selected").firstMatch},id:"trip.manual.title.selected")
+                XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();replaceManualText("trip.manual.title.value",input)
+                tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared");text("trip.manual.after.title",contains:input)
+                tap("trip.manual.save");text("trip.manual.receipt",contains:"2")
+                tap("trip.manual.current");text("trip.manual.current.version",contains:"2")
+                _ = try await call("/planning-composition-proof",caseID:name)
+                capture(name+"-actual-manual-save");try audit(name+"-manual")
+                try launch(f,language:"zh-Hans",restore:true)
+                tap("planning.originals")
+                let historical=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).firstMatch},id:"planning.historical.query")
+                XCTAssertTrue(historical.isEnabled && historical.isHittable);historical.tap()
+                text("planning.receipt.version",contains:"1");text("planning.formal.version",contains:" · 2")
+                text("planning.formal.title",contains:input)
+                XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.exists)
+                _ = try await call("/planning-composition-proof",caseID:name)
+                capture(name+"-old-receipt-current-manual-version");try audit(name+"-historical")
+            }
         }
     }
     func testNeedsManualCanonicalFixedRefusal() async throws {
