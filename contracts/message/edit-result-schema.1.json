@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.g2c.invalid/message/edit-result-schema.1.json",
+  "title": "RUN-scoped-result.1 historical descriptor, not permission",
+  "$defs": {
+    "ScopedResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "kind",
+        "result_id",
+        "message_id",
+        "run_id",
+        "input_sha256"
+      ],
+      "properties": {
+        "version": {
+          "const": "RUN-scoped-result.1"
+        },
+        "kind": {
+          "enum": [
+            "clarification_required",
+            "expansion_required"
+          ]
+        },
+        "result_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "RunDraftStatus6": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conversation_id",
+        "generation",
+        "message_id",
+        "run_id",
+        "message_sequence",
+        "event_highwater",
+        "request_id",
+        "version",
+        "run_status",
+        "draft_outcome",
+        "budget_exhausted_stage",
+        "reference",
+        "scoped_result"
+      ],
+      "properties": {
+        "conversation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "event_highwater": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "request_id": {
+          "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/RequestId"
+        },
+        "version": {
+          "const": "RUN-draft-status.6"
+        },
+        "run_status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "completed",
+            "failed",
+            "cancelled",
+            "context_invalid",
+            "unknown"
+          ]
+        },
+        "draft_outcome": {
+          "type": "string",
+          "enum": [
+            "not_requested",
+            "not_recorded",
+            "published",
+            "validation_failed",
+            "provider_failed",
+            "provider_unknown",
+            "budget_exhausted",
+            "clarification_required",
+            "expansion_required"
+          ]
+        },
+        "budget_exhausted_stage": {
+          "type": "string",
+          "enum": [
+            "none",
+            "answer",
+            "draft"
+          ],
+          "description": "Original persisted budget_denied stage only; none when no such event. Not inferred from failed/unknown and not a receipt or retry authorization."
+        },
+        "reference": {
+          "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/MessageEditReference"
+        },
+        "scoped_result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ScopedResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "RunDisplay5": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "snapshot",
+        "version",
+        "reference",
+        "scoped_result"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/RequestId"
+        },
+        "snapshot": {
+          "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/RunDisplaySnapshot"
+        },
+        "version": {
+          "const": "RUN-display.5"
+        },
+        "reference": {
+          "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/MessageEditReference"
+        },
+        "scoped_result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ScopedResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "MessageStatus5": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "const": "MESSAGE-send-status.5"
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/MessageReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/EditOriginalReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "head": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "conversation_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "generation": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "last_sequence": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "conversation_id",
+                "generation",
+                "last_sequence"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scoped_result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ScopedResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "request_id",
+        "version",
+        "receipt",
+        "reference",
+        "head",
+        "scoped_result"
+      ],
+      "additionalProperties": false
+    },
+    "MessageHistory4": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "messages",
+        "next_cursor",
+        "version"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/RequestId"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultHistoryItem"
+          }
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "enum": [
+                null
+              ]
+            }
+          ]
+        },
+        "version": {
+          "const": "MESSAGE-history.4"
+        }
+      }
+    },
+    "ResultHistoryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt",
+        "original_utf8_base64",
+        "text",
+        "reference",
+        "scoped_result"
+      ],
+      "properties": {
+        "receipt": {
+          "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/MessageReceipt"
+        },
+        "original_utf8_base64": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+          "description": "RFC4648 base64 exact original UTF8 bytes, no text reconstruction; empty draft bytes encode as empty string."
+        },
+        "text": {
+          "type": "string"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "$ref": "https://contracts.g2c.invalid/message/edit-schema.1.json#/$defs/EditOriginalReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scoped_result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ScopedResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/ScopedResult"
+}
