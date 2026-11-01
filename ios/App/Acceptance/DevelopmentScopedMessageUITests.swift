@@ -11,6 +11,7 @@ import Foundation
         let formal_trips:[FormalTrip]
         let manual_profile:Bool?
         let manual_only:Bool?
+        let needs_planning:Bool?
     }
     private struct FormalTrip:Decodable {
         let id,title,content_sha256:String
@@ -114,6 +115,10 @@ import Foundation
         if f.manual_profile == true { app.launchEnvironment["G2C_DEV_TRIP_MANUAL_PROFILE"]="manual-v1" }
         if f.manual_only == true {
             for key in ["G2C_DEV_MESSAGE_PROFILE","G2C_DEV_TRAVEL_PROFILE","G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
+        }
+        if f.needs_planning == true {
+            app.launchEnvironment["G2C_DEV_MESSAGE_PROFILE"]="needs-planning-v1"
+            for key in ["G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
         }
         if let timezone { app.launchEnvironment["TZ"]=timezone }
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
@@ -310,6 +315,40 @@ import Foundation
         text("trip.manual.record.fixed.b",contains:"明确未固定")
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-fixed-readback");try audit(name+"-restart")
+    }
+    func testNeedsPlanningPrefix() async throws {
+        let name="testNeedsPlanningPrefix",f=try await prepare(name)
+        defer { app?.terminate() }
+        XCTAssertEqual(f.needs_planning,true)
+        try launch(f,language:"en");conversation(f)
+        tap("assistant.travelContext");tap("travel.selection."+f.namespace);tap("assistant.panel.done")
+        let intent=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+        XCTAssertTrue(intent.isEnabled && intent.isHittable);intent.tap()
+        enter("SYNTHETIC Plan using my explicit saved requirements / 使用已保存需求",language:"en")
+        XCTAssertFalse(app.buttons.matching(identifier:"assistant.send").firstMatch.isEnabled)
+        _ = try await call("/prefix-not-sent",caseID:name)
+        intent.tap()
+        tap("assistant.needs");tap("needs.read");text("needs.container.state",contains:"User-provided details loaded");tap("assistant.panel.done")
+        tap("assistant.travelContext");tap("travel.selection.none");tap("assistant.panel.done")
+        let planning=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+        XCTAssertTrue(planning.isEnabled && planning.isHittable);planning.tap()
+        XCTAssertFalse(app.buttons.matching(identifier:"assistant.send").firstMatch.isEnabled)
+        _ = try await call("/prefix-not-sent",caseID:name)
+        tap("assistant.travelContext");tap("travel.selection."+f.namespace);text("travel.selection.status",contains:f.namespace);tap("assistant.panel.done")
+        tap("assistant.send");_ = try await call("/manual-save-proof",caseID:name)
+        tap("run.snapshot.read");text("run.display.status",contains:"Completed")
+        text("run.draft.status",contains:"Draft candidate recorded; not a saved trip")
+        XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
+        capture(name+"-original-planning-run");try audit(name+"-published")
+        tap("Memory")
+        for _ in 0..<3 {
+            if app.buttons.matching(identifier:"memory.language").firstMatch.exists { break }
+            let back=app.navigationBars.buttons.firstMatch;XCTAssertTrue(back.exists);back.tap()
+        }
+        tap("memory.language");tap("简体中文");tap("助手")
+        text("run.display.status",contains:"已完成");text("run.draft.status",contains:"已记录草稿候选，尚非正式行程")
+        _ = try await call("/manual-save-proof",caseID:name)
+        capture(name+"-same-original-Chinese");try audit(name+"-Chinese")
     }
     func testNeedsManualCanonicalFixedRefusal() async throws {
         let name="testNeedsManualCanonicalFixedRefusal",f=try await prepare(name)

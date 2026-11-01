@@ -1,4 +1,4 @@
-"""Actual App manual Trip diagnostics against an explicitly pinned local backend.
+"""Actual App Trip/manual/planning diagnostics against an explicitly pinned local backend.
 
 An unmerged backend pin is candidate evidence, never main or Issue acceptance.
 Source creation uses its unmodified run_once/draft_profile, original C writer,
@@ -13,8 +13,8 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal'],required=True)
-a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsPlanningPrefix'],required=True)
+a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case;PLANNING_PREFIX=CASE=='testNeedsPlanningPrefix'
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
 head=lambda root:subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 assert head(BACKEND)==a.backend_head and not subprocess.check_output(['git','status','--porcelain'],cwd=BACKEND)
@@ -43,6 +43,9 @@ for module in ('CJShell','CJTripClient','CJMessageClient','CJNeedsClient','CJAut
 def fingerprint(root,paths):return {str(path.relative_to(root)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
 backend_files=[BACKEND/name for name in subprocess.check_output(['git','ls-files','backend','scripts','contracts','pyproject.toml','uv.lock'],cwd=BACKEND,text=True).splitlines()]
 r=dict(status='RUNNING',layer='actual Simulator/signed API/private PG/pinned backend candidate',app_head=head(APP),backend_head=head(BACKEND),backend_root_verified=True,source_hashes=fingerprint(APP,source_files),backend_hashes=fingerprint(BACKEND,backend_files),responses=[],unrun=['main backend delivery if pin unmerged','real services/models/fees/cloud/device'])
+if PLANNING_PREFIX:
+ r['verified_scope']='explicit MESSAGE-send.2 / original RUN published prefix only'
+ r['unrun']+=['NEEDS candidate discovery/accept/reject pending C frozen read interface','source-input.2 formal replanning']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def check(resp,phase):
  r['responses'].append(dict(phase=phase,status=resp.status_code,error=resp.json().get('error')));save();assert resp.status_code==200,(phase,resp.status_code,resp.text);return resp.json()
@@ -70,18 +73,22 @@ try:
     check(client.post('/v1/needs-actions',content=packed(dict(action_id='source',needs_id='visit',expected_version=0,source=dict(kind='manual',text='SYNTHETIC explicit source'),changes=dict(fixed_items=[item('a','09:00','10:00',True),item('b','11:00','12:00',False)]))),headers=binary),'needs')
     namespace=check(client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id='namespace',operation='create',travel_context=None)),headers=binary),'namespace')['receipt']['travel_context']
     chat=check(client.put('/v1/conversations',params=dict(conversation_id='source'),headers=headers),'chat')
-    original=check(client.post('/v2/messages',content=packed(dict(version='MESSAGE-send.2',conversation_id='source',message_id='source-message',text='SYNTHETIC use declared constraints',trip_id=None,creation_intent='consider_trip',expected_generation=chat['generation'],expected_sequence=0,travel_context=dict(id=namespace['id'],expected_version=1),needs_reference=dict(id='visit',expected_version=1))),headers=binary),'message')
+    if not PLANNING_PREFIX:original=check(client.post('/v2/messages',content=packed(dict(version='MESSAGE-send.2',conversation_id='source',message_id='source-message',text='SYNTHETIC use declared constraints',trip_id=None,creation_intent='consider_trip',expected_generation=chat['generation'],expected_sequence=0,travel_context=dict(id=namespace['id'],expected_version=1),needs_reference=dict(id='visit',expected_version=1))),headers=binary),'message')
    database=LocalDatabase(connection,run_context=context,travel_context=True,needs_context=True);model=NeedsPlanFakeProvider()
-   outcomes=run_once(database,model,auth,draft_profile='needs-structured.1');assert len(outcomes)==1 and outcomes[0].status=='completed' and outcomes[0].proposal_id
-   r['source_provider_calls']=model.calls
    needs_app=create_local_needs_app(conninfo_path=connection,auth_dir=auth,run_context=context,confirmation_signer=signer)
-   with TestClient(needs_app) as client:
-    proposal=check(client.get('/v2/trip-needs-proposals',params=dict(proposal_id=outcomes[0].proposal_id),headers=headers),'source-proposal')['proposal']
-    receipt=check(client.post('/v1/trip-needs-actions',content=packed(dict(version='TRIP-needs-action.1',action_id='source-accept',kind='accept',proposal_id=proposal['proposal_id'],candidate_hash=proposal['candidate_hash'])),headers=binary),'source-adopt')['receipt']
-   tid=receipt['trip_id'];structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
-   with TestClient(structured) as client:formal=check(client.get('/v5/trip-structured',params=dict(trip_id=tid),headers=headers),'formal')['trip']
-   assert formal['content']['content_version']=='structured.2' and formal['version']==1
-   r['source_formal']=formal;r['source_message']=original['receipt'];save()
+   structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
+   outcomes=[];message_ready=threading.Event();worker_done=threading.Event();prefix_stop=threading.Event();worker_errors=[];message_receipt={}
+   r['source_provider_calls']=0
+   if not PLANNING_PREFIX:
+    outcomes=run_once(database,model,auth,draft_profile='needs-structured.1');assert len(outcomes)==1 and outcomes[0].status=='completed' and outcomes[0].proposal_id
+    r['source_provider_calls']=model.calls
+    with TestClient(needs_app) as client:
+     proposal=check(client.get('/v2/trip-needs-proposals',params=dict(proposal_id=outcomes[0].proposal_id),headers=headers),'source-proposal')['proposal']
+     receipt=check(client.post('/v1/trip-needs-actions',content=packed(dict(version='TRIP-needs-action.1',action_id='source-accept',kind='accept',proposal_id=proposal['proposal_id'],candidate_hash=proposal['candidate_hash'])),headers=binary),'source-adopt')['receipt']
+    tid=receipt['trip_id']
+    with TestClient(structured) as client:formal=check(client.get('/v5/trip-structured',params=dict(trip_id=tid),headers=headers),'formal')['trip']
+    assert formal['content']['content_version']=='structured.2' and formal['version']==1
+    r['source_formal']=formal;r['source_message']=original['receipt'];save()
    audit=[];latest_preparation={};late_captured=threading.Event();late_release=threading.Event();late_state={}
    async def observed(scope,receive,send):
     if scope.get('type')!='http':return await api(scope,receive,send)
@@ -121,6 +128,18 @@ try:
      await send(dict(type='http.response.body',body=failure))
     if scope['method']=='POST':
      raw=b''.join(parts);entry['input_sha256']=hashlib.sha256(raw).hexdigest();value=json.loads(raw);entry['original_id']=value.get('action_id') or value.get('edit',{}).get('request_id')
+     if PLANNING_PREFIX and path=='/v2/messages' and entry['status']==200:
+      entry['message_id']=value['message_id'];message_receipt['value']=json.loads(b''.join(reply_parts))['receipt'];message_ready.set()
+   def prefix_worker():
+    try:
+     if not message_ready.wait(600) or prefix_stop.is_set():return
+     outcomes.extend(run_once(database,model,auth,draft_profile='needs-structured.1'))
+     r['prefix_worker_outcomes']=[dict(status=x.status,proposal_id=x.proposal_id) for x in outcomes]
+     r['proposal_ids_are_backend_oracles_only']=True;r['source_provider_calls']=model.calls;save()
+    except Exception as error:worker_errors.append(type(error).__name__)
+    finally:worker_done.set()
+   if PLANNING_PREFIX:
+    worker_thread=threading.Thread(target=prefix_worker,daemon=True);worker_thread.start()
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
    sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1]);thread=threading.Thread(target=lambda:server.run(sockets=[sock]),daemon=True);thread.start()
    def current_formal():
@@ -128,7 +147,36 @@ try:
      role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
     assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid
     return role,trips[0][1],json.loads(bytes(trips[0][2]))
+   def prefix_not_sent():
+    assert PLANNING_PREFIX and not message_ready.is_set() and model.calls==0
+    assert not any(x['method']=='POST' for x in audit)
+    with database.connect(scope_for(ISSUER,subject)) as conn:
+     role=conn.execute('SELECT current_user').fetchone()[0]
+     count=conn.execute('SELECT count(*) FROM cj_message_receipt WHERE conversation_id=%s',('source',)).fetchone()[0]
+    assert role=='cj_m1_runtime' and count==0
+    r['prefix_no_send_checks']=r.get('prefix_no_send_checks',0)+1;save();return dict(messages=0,model_calls=0)
    def proof(stage=None):
+    if PLANNING_PREFIX:
+     assert worker_done.wait(20) and not worker_errors and len(outcomes)==1 and outcomes[0].status=='completed' and outcomes[0].proposal_id
+     with database.connect(scope_for(ISSUER,subject)) as conn:
+      role=conn.execute('SELECT current_user').fetchone()[0]
+      rows=conn.execute('SELECT message_id,raw_input,run_id FROM cj_message_receipt WHERE conversation_id=%s',('source',)).fetchall()
+      formal_count=conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0]
+      pending=conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0]
+      operations=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',('source',)).fetchone()[0]
+     assert role=='cj_m1_runtime' and len(rows)==1 and formal_count==0 and pending==1 and operations==1 and model.calls==2
+     command=json.loads(bytes(rows[0][1]));assert command['version']=='MESSAGE-send.2' and command['trip_id'] is None and command['creation_intent']=='consider_trip'
+     assert command['needs_reference']==dict(id='visit',expected_version=1) and command['travel_context']==dict(id=namespace['id'],expected_version=1)
+     assert message_receipt['value']['message_id']==rows[0][0] and message_receipt['value']['run_id']==rows[0][2]
+     posts=[x for x in audit if x['method']=='POST'];assert len(posts)==1 and posts[0]['path']=='/v2/messages' and posts[0]['input_sha256']==hashlib.sha256(bytes(rows[0][1])).hexdigest()
+     with TestClient(api) as client:draft=check(client.get('/v3/run-draft-status',params=dict(message_id=rows[0][0]),headers=headers),'prefix-original-draft')
+     assert draft['message_id']==rows[0][0] and draft['run_id']==rows[0][2] and draft['run_status']=='completed' and draft['draft_outcome']=='published'
+     with TestClient(needs_app) as client:pending_proposal=check(client.get('/v2/trip-needs-proposals',params=dict(proposal_id=outcomes[0].proposal_id),headers=headers),'prefix-backend-oracle')['proposal']
+     assert pending_proposal['status']=='pending' and pending_proposal['expected_version']==0 and pending_proposal['content']['content_version']=='structured.2'
+     assert r['prefix_no_send_checks']>=2
+     value=dict(runtime_role=role,messages=1,posts=1,model_calls=2,registered_operations=1,pending_proposals=1,formal_count=0,actions=0,namespace=namespace['id'],needs_version=1,message_id=rows[0][0],run_id=rows[0][2],original_input_sha256=hashlib.sha256(bytes(rows[0][1])).hexdigest(),no_send_checks=r['prefix_no_send_checks'])
+     r['proof']=value;save();return value
+
     if CASE=='testNeedsManualLateAccount':
      assert late_captured.is_set() and late_release.is_set() and late_state.get('original_response_sent')
      prepares=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='POST']
@@ -194,7 +242,8 @@ try:
     def do_GET(self):
      try:
       url=urlparse(self.path);assert parse_qs(url.query).get('case')==[CASE]
-      if url.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts=tokens,subjects=subjects,formal_trips=[dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=True)
+      if url.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts=tokens,subjects=subjects,formal_trips=[] if PLANNING_PREFIX else [dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=not PLANNING_PREFIX,needs_planning=PLANNING_PREFIX)
+      elif url.path=='/prefix-not-sent':value=prefix_not_sent()
       elif url.path=='/wait-manual-preparation':
        assert CASE in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation') and late_captured.wait(20);value=dict(status='actual protected 200 held')
       elif url.path=='/release-manual-preparation':
@@ -226,7 +275,7 @@ try:
     (OUT/'native.log').write_text(log);run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));r['test_summary']=summary;assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     verified=proof()
-    if CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal'):assert verified['receipt_queries']>=1
+    if not PLANNING_PREFIX and CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal'):assert verified['receipt_queries']>=1
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',a.simulator,bundle,'data'],text=True).strip())
     for f in container.rglob('*'):
      if f.is_file() and not f.is_symlink():assert all(secret.encode() not in f.read_bytes() for secret in tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in f.read_bytes()
@@ -235,6 +284,8 @@ try:
     assert all(hashlib.sha256((BACKEND/f).read_bytes()).hexdigest()==h for f,h in r['backend_hashes'].items())
     r['status']='PASS_APP_WITH_PINNED_CANDIDATE_BACKEND';r['token_key_scan']='PASS'
    finally:
+    prefix_stop.set();message_ready.set()
+    if PLANNING_PREFIX:worker_thread.join(20)
     late_release.set();r['observed_requests']=audit;save();server.should_exit=True;thread.join(10);sock.close();control.shutdown();control.server_close()
   r['private_pg_stopped']=True
 except BaseException as error:r['status']='FAIL';r['error']=type(error).__name__;raise
