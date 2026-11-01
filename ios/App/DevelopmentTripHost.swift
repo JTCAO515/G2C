@@ -102,7 +102,7 @@ import Observation
         if let existing { key = existing }
         else {
             try TripPendingStore.requireEmptyNamespace(directory: root)
-            let scopedDirectories = [root.appendingPathExtension("ScopedOriginals"), root.appendingPathExtension("ScopedReceipts")]
+            let scopedDirectories = ["ScopedOriginals","ScopedReceipts","NeedsPlanningOriginals","NeedsPlanningReceipts"].map { root.appendingPathExtension($0) }
             for path in scopedDirectories where files.fileExists(atPath: path.path) {
                 guard try files.contentsOfDirectory(atPath: path.path).isEmpty else { throw TripFailure.keyUnavailable }
             }
@@ -159,6 +159,17 @@ import Observation
             }, validate: { guard lifetime.current != nil else { throw TripFailure.staleBinding } },
                 directory: originals, receiptDirectory: receipts, expectedKeyID: key.id, provider: keys)
             messages.messages.configureScopedCandidates(scoped)
+        }
+        if needsPlanning {
+            let originals=root.appendingPathExtension("NeedsPlanningOriginals"),receipts=root.appendingPathExtension("NeedsPlanningReceipts")
+            for path in [originals,receipts] {
+                try files.createDirectory(at:path,withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])
+            }
+            let planningEndpoint=try MessageEndpoint(url:configuration.endpoint,maximumRequestBytes:32768,maximumResponseBytes:4_000_000,allowLoopbackHTTP:true)
+            let planning=try NeedsPlanningClient(endpoint:planningEndpoint,binding:lifetime.trip,credentials:{ binding in
+                guard lifetime.current==binding else { return nil };return configuration.token
+            },validate:{guard lifetime.current != nil else {throw TripFailure.staleBinding}},directory:originals,receiptDirectory:receipts,expectedKeyID:key.id,provider:keys)
+            messages.messages.configurePlanningCandidates(planning)
         }
         needs=try messageNeeds ? preparedNeeds : makeNeeds()
         if let typedMode {

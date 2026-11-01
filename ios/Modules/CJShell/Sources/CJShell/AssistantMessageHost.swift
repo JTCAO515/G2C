@@ -48,12 +48,13 @@ import CJManualPreviewClient
     let travelReference: Components.Schemas.MessageTravelReference?
     let tripReference: MessageTripReference?
     let editReference: MessageEditReference?
+    let planningSource:AcceptedTravelMessageSource?
     let originalTextUTF8: Data?
     let isCurrent: @MainActor () -> Bool
     let isStillOwned: @MainActor () -> Bool
-    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil,tripReference:MessageTripReference? = nil,editReference:MessageEditReference? = nil, originalTextUTF8: Data?, isCurrent: @escaping @MainActor () -> Bool,
+    fileprivate init(receipt: Components.Schemas.MessageReceipt,travelReference: Components.Schemas.MessageTravelReference? = nil,tripReference:MessageTripReference? = nil,editReference:MessageEditReference? = nil,planningSource:AcceptedTravelMessageSource?=nil, originalTextUTF8: Data?, isCurrent: @escaping @MainActor () -> Bool,
                      isStillOwned: @escaping @MainActor () -> Bool) {
-        self.receipt = receipt;self.travelReference = travelReference;self.tripReference=tripReference;self.editReference=editReference;self.originalTextUTF8 = originalTextUTF8; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
+        self.receipt = receipt;self.travelReference = travelReference;self.tripReference=tripReference;self.editReference=editReference;self.planningSource=planningSource;self.originalTextUTF8 = originalTextUTF8; self.isCurrent = isCurrent; self.isStillOwned = isStillOwned
     }
     public nonisolated var description: String { "<redacted accepted message receipt>" }
     public nonisolated var debugDescription: String { description }
@@ -167,6 +168,8 @@ public enum DiscussionConversationState {
     public var isBusy: Bool { activity == .preparing || activity == .sending || activity == .querying }
     public var selectedConversation: String? { bindingIsCurrent ? selectedConversationID : nil }
     public var travelSelection: TravelSelectionModel? { bindingIsCurrent ? binding?.travelSelection : nil }
+    public private(set) var planningCandidates:NeedsPlanningHost?
+    public func configurePlanningCandidates(_ client:NeedsPlanningClient) { planningCandidates?.invalidate();planningCandidates=NeedsPlanningHost(messages:self,client:client) }
     public var supportsSending: Bool { bindingIsCurrent && binding?.sendClient != nil }
     public var supportsTripDiscussions:Bool { bindingIsCurrent && binding?.tripDiscussions == true }
     public var supportsScopedEdits:Bool { bindingIsCurrent && binding?.scopedEdits == true }
@@ -543,19 +546,20 @@ public enum DiscussionConversationState {
         let reference: Components.Schemas.MessageTravelReference?
         let tripReference:MessageTripReference?
         let editReference:MessageEditReference?
+        let planningSource:AcceptedTravelMessageSource?
         do {
             if let client=originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .scopedEdit {
                 let accepted=try client.acceptedTripEdit(messageID:id,lease:originalBinding.lease)
-                receipt=accepted.receipt;reference=nil;tripReference=nil;editReference=accepted.reference
+                receipt=accepted.receipt;reference=nil;tripReference=nil;editReference=accepted.reference;planningSource=nil
             } else if let client=originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .tripDiscussion {
                 let accepted=try client.acceptedTripDiscussion(messageID:id,lease:originalBinding.lease)
-                receipt=accepted.receipt;reference=nil;tripReference=accepted.reference;editReference=nil
+                receipt=accepted.receipt;reference=nil;tripReference=accepted.reference;editReference=nil;planningSource=nil
             } else if let client = originalBinding.sendClient,try client.originalSendVersion(messageID:id,lease:originalBinding.lease) == .travel {
-                let accepted = try client.acceptedTravelMessage(messageID:id,lease:originalBinding.lease)
+                let accepted = try client.acceptedTravelMessageSource(messageID:id,lease:originalBinding.lease)
                 try client.validateRead(accepted,lease:originalBinding.lease)
-                receipt = accepted.value.receipt;reference = accepted.value.reference;tripReference=nil;editReference=nil
+                receipt = accepted.value.receipt;reference = accepted.value.reference;tripReference=nil;editReference=nil;planningSource=accepted.value
             } else {
-                receipt = try JSONDecoder().decode(Components.Schemas.MessageReceipt.self,from:bytes);reference = nil;tripReference=nil;editReference=nil
+                receipt = try JSONDecoder().decode(Components.Schemas.MessageReceipt.self,from:bytes);reference = nil;tripReference=nil;editReference=nil;planningSource=nil
             }
             guard Data(receipt.message_id.utf8) == Data(record.messageID.utf8),receipt.input_sha256 == record.inputSHA256,
                   ownsRunReceipt(record,binding:originalBinding,revision:revision) else { return nil }
@@ -564,7 +568,7 @@ public enum DiscussionConversationState {
         // extraction consumers require these original decoded text bytes; they
         // never take source text from a mutable composer or later message.
         let originalText = (try? JSONSerialization.jsonObject(with: record.originalUTF8) as? [String: Any])?["text"] as? String
-        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference,tripReference:tripReference,editReference:editReference,
+        return AcceptedMessageRunReceipt(receipt: receipt,travelReference:reference,tripReference:tripReference,editReference:editReference,planningSource:planningSource,
             originalTextUTF8:originalText.map { Data($0.utf8) }, isCurrent: { [weak self] in
             self?.ownsRunReceipt(record, binding: originalBinding, revision: revision) == true
         }, isStillOwned: { [weak self] in
@@ -828,7 +832,7 @@ public enum DiscussionConversationState {
     }
 
     /// Called synchronously by ShellState BEFORE its identity generation/clear changes.
-    public func invalidate() { scopedCandidates?.invalidate(); scopedCandidates = nil; retire(as: .invalidated) }
+    public func invalidate() { planningCandidates?.invalidate();planningCandidates=nil;scopedCandidates?.invalidate(); scopedCandidates = nil; retire(as: .invalidated) }
 
     private func retire(as nextActivity: MessageHostActivity) {
         let previous = binding
