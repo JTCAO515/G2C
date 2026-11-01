@@ -268,8 +268,12 @@ import Foundation
             return multiline.exists ? multiline : app.textFields.matching(identifier:"trip.manual.title.value").firstMatch
         }
         let field=visible({titleField()},id:"trip.manual.title.value")
-        field.tap();let old=field.value as? String ?? ""
-        field.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:old.count)+input)
+        XCTAssertEqual(try XCTUnwrap(field.value as? String),trip.title)
+        field.press(forDuration:1.1)
+        let menuItem=app.menuItems.matching(identifier:"Select All").firstMatch
+        let selectAll=menuItem.exists ? menuItem : app.buttons.matching(identifier:"Select All").firstMatch
+        XCTAssertTrue(selectAll.waitForExistence(timeout:5),"Use the real edit menu to replace the full original title")
+        selectAll.tap();field.typeText(input)
         XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Result unknown")
         XCTAssertEqual(titleField().value as? String,input)
