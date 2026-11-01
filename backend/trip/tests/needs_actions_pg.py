@@ -567,4 +567,6 @@ class NeedsActionChecks(unittest.TestCase):
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0],1)
 
 
+from needs_discovery_pg import NeedsDiscoveryChecks
+
 if __name__=='__main__':unittest.main(verbosity=2)

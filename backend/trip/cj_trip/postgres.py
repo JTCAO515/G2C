@@ -43,8 +43,7 @@ class Repository:
             bind_scope = getattr(conn, 'bind_scope', None)
             if bind_scope is not None:
                 bind_scope(cur)
-            cur.execute('SELECT scope FROM cj_trip_scope WHERE scope=%s FOR UPDATE', (self.scope,))
-            if cur.fetchone() is None: raise Denied('scope not provisioned')
+            self._lock_scope(cur)
             self.guard('transaction')
             yield cur
             self.guard('commit')
@@ -77,6 +76,15 @@ class Repository:
         # Even a broken log handler must not replace the original business result.
         try: logger.warning('TRIP connection cleanup failed: %s', operation)
         except BaseException: pass
+
+    def _lock_scope(self,cur):
+        cur.execute('SELECT scope FROM cj_trip_scope WHERE scope=%s FOR UPDATE',(self.scope,))
+        if cur.fetchone() is None:raise Denied('scope not provisioned')
+
+    def discover_needs(self,query,encode):
+        if self.needs_actions is None:raise Denied('actual source-bound host required')
+        from .needs_discovery import NeedsDiscovery
+        return NeedsDiscovery(self.needs_actions).read(self,query,encode)
 
     def _content(self, content, *, validated=False):
         document = json.loads(content)

@@ -22,6 +22,7 @@ from .manual_needs import NeedsEdit,NeedsSave
 from .current_needs_source import CurrentNeedsSource
 from .needs_edit_store import NeedsEdits
 from .source_initialization import SourceInitializations,SourceInitialization,SourceInitializationSave
+from .scoped_discovery import parse_discovery_query
 from cj_api.local_needs import protected_reader
 from .domain import Conflict,Denied,identifier
 
@@ -92,6 +93,17 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
         def operation():
             def callback(ctx):
+                if kind=='discovery':
+                    def encode_discovery(value):
+                        value=dict(value)
+                        if value['proposal'] is not None:
+                            detail=value['proposal'];p=detail.proposal
+                            value['proposal']=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,
+                                candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content))
+                        raw=json.dumps(dict(version='TRIP-needs-discovery.1',request_id=request.state.request_id,discovery=value),ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+                        if len(raw)>max_response_bytes:raise Denied('bounded planning discovery required')
+                        return raw
+                    return ctx.discover_needs(arg,encode_discovery)
                 if kind=='prepare':value=ctx.prepare_needs(NeedsEdit.parse(arg))
                 elif kind=='source_prepare':value=ctx.prepare_source_initialization(SourceInitialization.parse(arg))
                 elif kind=='source_save':value=ctx.save_source_initialization(SourceInitializationSave.parse(arg))
@@ -132,6 +144,11 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
     async def trip(request:Request):return await read(request,'trip','trip_id')
     @app.get('/v2/trip-needs-proposals')
     async def proposal(request:Request):return await read(request,'proposal','proposal_id')
+    @app.get('/v1/trip-needs-discovery')
+    async def discovery(request:Request):
+        try:query=parse_discovery_query(request.scope['query_string'])
+        except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
+        return await invoke(request,'discovery',query)
     async def edit_write(request,kind):
         media=request.headers.getlist('content-type')
         if request.query_params or len(media)!=1 or media[0].split(';')[0].strip().lower()!='application/octet-stream' or request.headers.get('content-encoding','identity').lower()!='identity':
