@@ -13,7 +13,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
 head=lambda root:subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
@@ -81,7 +81,8 @@ try:
    audit=[]
    async def observed(scope,receive,send):
     if scope.get('type')!='http':return await api(scope,receive,send)
-    path=scope['path'];entry=dict(method=scope['method'],path=path);audit.append(entry);parts=[]
+    path=scope['path'];entry=dict(method=scope['method'],path=path);audit.append(entry);parts=[];actual_reply=[]
+    drop_ack=CASE=='testNeedsManualSaveACKLoss' and path=='/v1/trip-needs-saves' and scope['method']=='POST'
     if scope.get('query_string'):entry['query']=parse_qs(scope['query_string'].decode('ascii'))
     async def received():
      value=await receive()
@@ -89,9 +90,18 @@ try:
      return value
     async def sent(value):
      if value['type']=='http.response.start':entry['status']=value['status']
-     await send(value)
+     if drop_ack:actual_reply.append(value)
+     else:await send(value)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else needs_app if path.startswith('/v1/trip-needs-') else api
     await target(scope,received,sent)
+    if drop_ack:
+     # Explicit proxy response loss after the original C transaction returned 200.
+     assert entry['status']==200
+     original_body=b''.join(part.get('body',b'') for part in actual_reply if part['type']=='http.response.body')
+     entry.update(actual_backend_reply_sha256=hashlib.sha256(original_body).hexdigest(),delivered_status=503,committed_response_suppressed=True)
+     trace=str(uuid.uuid4());failure=packed(dict(request_id=trace,error=dict(code='TRIP_OUTCOME_UNKNOWN',category='dependency',message_en='Synthetic committed response loss',message_zh='合成已提交回包丢失',outcome='unknown',recovery='reconcile_original')))
+     await send(dict(type='http.response.start',status=503,headers=[(b'content-type',b'application/json'),(b'cache-control',b'no-store'),(b'x-request-id',trace.encode())]))
+     await send(dict(type='http.response.body',body=failure))
     if scope['method']=='POST':
      raw=b''.join(parts);entry['input_sha256']=hashlib.sha256(raw).hexdigest();value=json.loads(raw);entry['original_id']=value.get('action_id') or value.get('edit',{}).get('request_id')
    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
@@ -111,10 +121,17 @@ try:
      assert current['items'][1]==original_item
      with TestClient(api) as client:needs=check(client.get('/v1/needs',params=dict(needs_id='visit'),headers=headers),'current-needs')['needs']
      assert needs['version']==1 and needs['fields']['fixed_items'][1]['locked']==known(False)
+    elif CASE=='testNeedsManualTimeTextSave':
+     assert current['title']==formal['content']['title'] and current['sources']==formal['content']['sources']
+     assert current['items'][0]==formal['content']['items'][0]
+     expected=json.loads(json.dumps(formal['content']['items'][1]));expected['text']='SYNTHETIC explicit time and text / 明确修改'
+     expected['schedule']['start']['time']=known('11:15');expected['schedule']['end']['time']=known('12:15')
+     assert current['items'][1]==expected
     else:
      assert current['title']=='SYNTHETIC manual saved title / 手动保存标题' and current['items']==formal['content']['items'] and current['sources']==formal['content']['sources']
     prepares=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='POST'];saves=[x for x in audit if x['path']=='/v1/trip-needs-saves' and x['method']=='POST'];queries=[x for x in audit if x['path']=='/v1/trip-needs-action-receipts']
     assert len(prepares)==len(saves)==expected_count and all(x['status']==200 for x in prepares+saves)
+    if CASE=='testNeedsManualSaveACKLoss':assert saves[0].get('committed_response_suppressed') and saves[0]['delivered_status']==503
     ids={x['original_id'] for x in saves};assert all(q['query'].get('action_id',[None])[0] in ids and q['status']==200 for q in queries)
     assert model.calls==r['source_provider_calls'] and not any(x['method']=='POST' and x['path'] not in ('/v1/trip-needs-edits','/v1/trip-needs-saves') for x in audit)
     value=dict(runtime_role=role,formal_version=expected_version,formal_count=1,prepares=expected_count,saves=expected_count,save_ids=sorted(ids),receipt_queries=len(queries),source_provider_calls=model.calls,edit_model_calls=0,unselected_exact=True,needs_unchanged=True if fixed_case else None,stage=stage)
