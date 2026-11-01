@@ -39,6 +39,9 @@ public enum NeedsPreviewRunProjection: Sendable { case waiting,unavailable,loade
         return configuration.model
     }
     public var answerFormat: RunAnswerFormat? { displayModel != nil ? configuration?.answerFormat : nil }
+    /// The canonical intent classifies an internal model reply for presentation
+    /// only. The protected scoped candidate remains the source of the visible diff.
+    var hidesScopedEditReply: Bool { origin?.editReference?.intent == .proposeScopedEdit }
     /// Presentation association only. The panel must still obtain its data
     /// through the current protected projection, never retain an old copy.
     public var originalPresentationID: UUID? {
@@ -193,7 +196,7 @@ public enum NeedsPreviewRunProjection: Sendable { case waiting,unavailable,loade
         let token = UUID(); selection = token; origin = source; sourceUnavailable = false
         do {
             let configurationID = configuration.id
-            let runSource = try RunDisplaySource(receipt: source.receipt,travelReference:source.travelReference, session: configuration.session, operation: configuration.operation,
+            let runSource = try RunDisplaySource(receipt: source.receipt,travelReference:source.travelReference,tripReference:source.tripReference,editReference:source.editReference, session: configuration.session, operation: configuration.operation,
                 isCurrent: { [weak self] in self?.sourceIsCurrent(source, configurationID: configurationID, token: token) == true })
             let accepted = configuration.model.select(runSource)
             guard ownsConfiguration(configuration), origin === source, selection == token else { return false }

@@ -15,11 +15,15 @@ import OpenAPIRuntime
     let testWrites: Bool
     let liveWrites: Bool
     let store: TripPendingStore?
-    var confirmed = Set<Data>()
+    var confirmed: [Data: String] = [:]
     let owner = UUID()
     var generation = UUID()
     var detailSnapshotSource = UUID()
     var startedDetailSnapshotSource: UUID?
+    var structuredPageEpoch = UUID()
+    var structuredPageWork = UUID()
+    var startedStructuredPageWork: UUID?
+    var manualRuntime: ManualTripRuntime?
 
     public init(endpoint: TripEndpoint, credentials: @escaping TripCredentialCallback,
                 currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
@@ -47,7 +51,9 @@ import OpenAPIRuntime
         transport = interceptedTransport; testWrites = true; liveWrites = false; store = pendingStore
         self.session = session; self.sessionOperation = sessionOperation
     }
-    public func invalidate() { generation = UUID(); confirmed.removeAll(); invalidateDetailSnapshots() }
+    public func invalidate() {
+        generation = UUID(); confirmed.removeAll(); invalidateDetailSnapshots(); invalidateStructuredPages(); manualRuntime?.invalidate()
+    }
     /// True only for a host-granted live-write client with a durable pending store.
     public var acceptsUserActions: Bool { liveWrites && store != nil }
     var writesEnabled: Bool { testWrites || liveWrites }
@@ -81,7 +87,7 @@ import OpenAPIRuntime
         guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw TripFailure.unconfigured }
         return Client(serverURL: endpoint.url, configuration: .memory,
                       transport: TripTransport(underlying: transport, endpoint: endpoint, bearer: bearer, writes: writesEnabled, detailCapture: detailCapture,
-                        validate: { [self] in
+                        validate: { [self] isWrite in
                             try check(binding, token)
                             if let detailSource, detailSnapshotSource != detailSource { throw TripFailure.staleBinding }
                             if let original {
@@ -90,6 +96,10 @@ import OpenAPIRuntime
                                 try check(binding, token)
                                 // Last resource callback has returned. Do not call it again after this check.
                                 try store.validateDurability(proof)
+                            }
+                            if isWrite {
+                                guard let store else { throw TripFailure.unconfigured }
+                                try store.requireLegacyWritesAllowed() // No callback after this filesystem fence.
                             }
                         }))
     }

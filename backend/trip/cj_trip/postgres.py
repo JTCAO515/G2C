@@ -21,6 +21,7 @@ class Repository:
         self.needs_actions = None
         self.needs_edits = None
         self.scoped_actions = None
+        self.source_initializations = None
 
     @contextmanager
     def transaction(self, before_commit=None):
@@ -42,8 +43,7 @@ class Repository:
             bind_scope = getattr(conn, 'bind_scope', None)
             if bind_scope is not None:
                 bind_scope(cur)
-            cur.execute('SELECT scope FROM cj_trip_scope WHERE scope=%s FOR UPDATE', (self.scope,))
-            if cur.fetchone() is None: raise Denied('scope not provisioned')
+            self._lock_scope(cur)
             self.guard('transaction')
             yield cur
             self.guard('commit')
@@ -76,6 +76,15 @@ class Repository:
         # Even a broken log handler must not replace the original business result.
         try: logger.warning('TRIP connection cleanup failed: %s', operation)
         except BaseException: pass
+
+    def _lock_scope(self,cur):
+        cur.execute('SELECT scope FROM cj_trip_scope WHERE scope=%s FOR UPDATE',(self.scope,))
+        if cur.fetchone() is None:raise Denied('scope not provisioned')
+
+    def discover_needs(self,query,encode):
+        if self.needs_actions is None:raise Denied('actual source-bound host required')
+        from .needs_discovery import NeedsDiscovery
+        return NeedsDiscovery(self.needs_actions).read(self,query,encode)
 
     def _content(self, content, *, validated=False):
         document = json.loads(content)
@@ -191,6 +200,11 @@ class Repository:
             if row is None:raise Denied('original scoped basis unavailable')
             return detail,tuple(bytes(value) for value in row)
 
+    def discover_scoped(self,query,encode):
+        if self.scoped_actions is None:raise Denied('actual scoped host required')
+        from .scoped_discovery import ScopedDiscovery
+        return ScopedDiscovery(self.scoped_actions).read(self,query,encode)
+
     def prepare_needs(self,request):
         if self.needs_edits is None:raise Denied('source-bound editor unconfigured')
         return self.needs_edits.prepare(self,request)
@@ -229,6 +243,22 @@ class Repository:
         from .manual_storage import manual_preparation
         from .initialization import BASIS
         return manual_preparation(self, request_id, basis_version=BASIS)
+
+    def prepare_source_initialization(self,request):
+        if self.source_initializations is None:raise Denied('explicit original source initialization host required')
+        return self.source_initializations.prepare(self,request)
+
+    def save_source_initialization(self,request):
+        if self.source_initializations is None:raise Denied('explicit original source initialization host required')
+        return self.source_initializations.save(self,request)
+
+    def source_initialization(self,request_id):
+        if self.source_initializations is None:raise Denied('explicit original source initialization host required')
+        return self.source_initializations.query(self,identifier(request_id))
+
+    def source_initialization_receipt(self,action_id):
+        if self.source_initializations is None:raise Denied('explicit original source initialization host required')
+        return self.source_initializations.receipt(self,identifier(action_id))
 
     def retire(self, proposal_id, state, replacement_id=None):
         """Trusted lifecycle; generation cancellation must never call this method."""

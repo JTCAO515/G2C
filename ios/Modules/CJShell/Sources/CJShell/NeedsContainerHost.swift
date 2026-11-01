@@ -4,6 +4,7 @@ import CJNeedsClient
 import CJSession
 import CJFeasibilityClient
 import CryptoKit
+import CJMessageHTTP
 
 /// One existing journey selection, supplied by the trusted root; never authentication or extraction.
 @MainActor public struct NeedsContainerBinding {
@@ -51,6 +52,17 @@ import CryptoKit
     public var isConfigured: Bool { current }
     public var isSynthetic: Bool { current && binding?.synthetic == true }
     public var canSave: Bool { current && !busy && value?.canSave == true }
+    /// Saved current read only. Neither a local draft nor a historical revision
+    /// is converted into a current MESSAGE source; B/C still validate its lease.
+    public func currentMessageSelection() throws -> MessageNeedsSelection? {
+        let token=epoch
+        guard current,!busy,let binding,let value,value.state == .loaded,
+              let snapshot=value.snapshot,snapshot.needs_id == binding.selectedNeedsID,snapshot.version > 0 else { return nil }
+        let result=try MessageNeedsSelection(id:snapshot.needs_id,expectedVersion:Int64(snapshot.version))
+        guard current,epoch==token,self.binding?.id==binding.id,self.value === value,
+              value.state == .loaded,value.snapshot == snapshot else { return nil }
+        return result
+    }
     public enum ManualIssue: Sendable { case reconcileOriginals, storageUnavailable }
     public private(set) var manualIssue: ManualIssue?
     public var originalActions: [NeedsPending] {

@@ -46,6 +46,18 @@ struct AssistantShell: View {
                     .accessibilityIdentifier("assistant.serverHistory")
                 Button(state.language.text("Journey needs", "本次旅行需求")) { panel = .needs }.accessibilityIdentifier("assistant.needs")
                 Button(state.language.text("Original usage status", "原调用用量")) { panel = .usage }
+                if messageHost.supportsTripMessages {
+                    if let conversation=messageHost.selectedConversation {
+                        RunReadableText(text:state.language.text("Conversation identifier","会话标识"),style:.caption)
+                        RunSelectableText(text:conversation)
+                            .accessibilityLabel(state.language.text("Conversation identifier","会话标识"))
+                            .accessibilityValue(conversation)
+                            .accessibilityIdentifier("assistant.conversation")
+                    }
+                    if messageHost.supportsScopedEdits {
+                        ScopedMessageChoiceView(host:messageHost,language:state.language,openTrips:{state.selectedTab = .trips},openNeeds:{panel = .needs})
+                    } else { TripDiscussionChoiceView(host:messageHost,language:state.language,openTrips:{ state.selectedTab = .trips }) }
+                }
                 if messageHost.travelSelection != nil {
                     Button { panel = .travel } label: {
                         RunReadableText(text:state.language.text("Choose travel context", "选择旅行上下文"))
@@ -53,6 +65,12 @@ struct AssistantShell: View {
                     }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("assistant.travelContext")
                 }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language, openNeeds: { panel = .needs })
+                if messageHost.supportsScopedEdits, let scoped = messageHost.scopedCandidates {
+                    ScopedCandidateView(host: scoped, messages: messageHost, language: state.language)
+                }
+                if let planning=messageHost.planningCandidates {
+                    NeedsPlanningView(host:planning,messages:messageHost,language:state.language)
+                }
                 MessageRecoveryStatus(host: messageHost, language: state.language)
                 if let text = messageHost.visibleOriginalText {
                     RunSelectableText(text: text).frame(maxWidth: .infinity, alignment: .trailing)
@@ -100,7 +118,7 @@ struct AssistantShell: View {
                 Group {
                     if selectedPanel == .travel {
                         if let travel = messageHost.travelSelection {
-                            TravelSelectionView(model:travel,language:state.language)
+                            TravelSelectionView(model:travel,language:state.language,requiresTravel:messageHost.supportsScopedEdits).disabled(messageHost.supportsScopedEdits && messageHost.isBusy)
                         } else {
                             RunReadableText(text:state.language.text("Travel context unavailable", "旅行上下文不可用"))
                         }
@@ -158,11 +176,11 @@ struct AssistantShell: View {
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
             if messageHost.supportsSending {
-                if let conversation = messageHost.selectedConversation {
+                if !messageHost.supportsTripMessages,let conversation = messageHost.selectedConversation {
                     RunReadableText(text: state.language.text("Conversation: ", "会话：") + conversation, style: .caption)
                         .accessibilityIdentifier("assistant.conversation")
                 }
-                Toggle(isOn: Binding(
+                if !messageHost.supportsTripMessages { Toggle(isOn: Binding(
                     get: { messageHost.creationIntent == .considerTrip },
                     set: { messageHost.creationIntent = $0 ? .considerTrip : .none })) {
                     RunReadableText(text: state.language.text("Trip planning", "规划行程"))
@@ -170,6 +188,7 @@ struct AssistantShell: View {
                     .accessibilityLabel(state.language.text("Trip planning", "规划行程"))
                     .disabled(messageHost.isBusy)
                     .accessibilityIdentifier("assistant.intent")
+                }
             }
             HStack(alignment: .bottom, spacing: 4) {
                 unavailableIcon("plus", english: "Attachments — not available", chinese: "附件——尚未开放")

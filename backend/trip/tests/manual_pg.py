@@ -383,4 +383,6 @@ class ManualChecks(Harness):
         self.assertEqual(self.repository.detail(self.trip_id).version,self.base_version)
 
 
+from source_initialization_pg import SourceInitializationChecks
+
 if __name__=='__main__':unittest.main(verbosity=2)

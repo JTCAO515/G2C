@@ -2,6 +2,7 @@
 import Foundation
 import CJShell
 import CJTripClient
+import CJManualPreviewClient
 import CJMessageHTTP
 import CJMessageClient
 import CJRunClient
@@ -63,15 +64,23 @@ import Observation
     let memory: DevelopmentMemoryHost?
     let typedMemory: DevelopmentTypedMemoryHost?
     let needs: DevelopmentNeedsHost?
+    let structuredTrips: StructuredTripHost?
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil) throws {
         let environment = ProcessInfo.processInfo.environment
-        let typedMode = try DevelopmentTypedMode.read(environment)
+        let messageProfile=try DevelopmentMessageProfile.read(environment)
+        let typedMode = try DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
         let needsProfile = try DevelopmentNeedsProfile.read(environment)
-        _ = try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
-        let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 4096,
+        let tripEditingProfile = try DevelopmentTripEditingProfile.read(environment)
+        let tripDiscussions=messageProfile == .discussion,scopedEdits=messageProfile == .edit
+        let needsPlanning=messageProfile == .planning
+        let travelProfile=try needsPlanning ? DevelopmentTravelProfile.read(environment) : typedMode?.travel
+        let answerProfile=try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
+        try messageProfile?.validate(typed:typedMode,needs:needsProfile,answer:answerProfile,
+            travel:travelProfile,legacyProposal:configuration.proposalID != nil)
+        let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: tripEditingProfile == nil ? 4096 : 1_000_000,
             maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let lifetime = try DevelopmentLifetime(configuration: configuration, shell: shell, lease: lease)
         self.lifetime = lifetime
@@ -92,29 +101,77 @@ import Observation
         let key: MessageEncryptionKey
         if let existing { key = existing }
         else {
-            guard try files.contentsOfDirectory(atPath: root.path).isEmpty else { throw TripFailure.keyUnavailable }
+            try TripPendingStore.requireEmptyNamespace(directory: root)
+            let scopedDirectories = ["ScopedOriginals","ScopedReceipts","NeedsPlanningOriginals","NeedsPlanningReceipts"].map { root.appendingPathExtension($0) }
+            for path in scopedDirectories where files.fileExists(atPath: path.path) {
+                guard try files.contentsOfDirectory(atPath: path.path).isEmpty else { throw TripFailure.keyUnavailable }
+            }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
         let store = try TripPendingStore(directory: root, maximumBytes: 1_000_000, maximumRecords: 100,
             binding: lifetime.trip, expectedKeyID: key.id, provider: keys)
         let transport = try NoRedirectTransport(requestTimeout: 10, resourceTimeout: 20)
-        let client = TripClient(endpoint: endpoint, credentials: { binding in
+        let credentials: TripCredentialCallback = { binding in
             guard lifetime.current == binding else { return nil }
             return configuration.token
-        }, currentBinding: { lifetime.current }, session: lifetime.session, sessionOperation: lifetime.operation,
-            pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
+        }
+        let client: TripClient
+        if tripEditingProfile != nil {
+            client = try TripClient(developmentManual: endpoint, credentials: credentials, currentBinding: { lifetime.current },
+                session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store,
+                requestTimeout: 10, resourceTimeout: 20, maximumJournalBytes: 4_000_000, maximumJournalRecords: 100)
+        } else {
+            client = TripClient(endpoint: endpoint, credentials: credentials, currentBinding: { lifetime.current },
+                session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
+        }
         trips = TripContainerHost(shell: shell)
         guard trips.bind(TripContainerBinding(client: client, trip: lifetime.trip, shellGeneration: shell.generation,
             session: lifetime.session, sessionOperation: lifetime.operation, pageSize: 20,
             proposalID: configuration.proposalID, synthetic: false, currentBinding: { lifetime.current })) else {
             throw TripFailure.staleBinding
         }
+        let makeNeeds = { try needsProfile.map { profile in
+            try DevelopmentNeedsHost(configuration:configuration,profile:profile,shell:shell,
+                session:lifetime.session,operation:lifetime.operation,isCurrent:{lifetime.current != nil})
+        } }
+        let messageNeeds=scopedEdits || needsPlanning
+        let preparedNeeds=try messageNeeds ? makeNeeds() : nil
+        let currentNeeds:(@MainActor ()->MessageNeedsSelection?)?
+        if let preparedNeeds {
+            currentNeeds = { [weak preparedNeeds] in
+                do { return try preparedNeeds?.host.currentMessageSelection() }
+                catch { return nil } // unavailable saved source; never substitute a draft/default
+            }
+        } else { currentNeeds=nil }
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
-            session: lifetime.session, operation: lifetime.operation,travelProfile:typedMode?.travel,isCurrent: { lifetime.current != nil })
-        if let needsProfile {
-            needs = try DevelopmentNeedsHost(configuration: configuration, profile: needsProfile, shell: shell,
-                session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
-        } else { needs = nil }
+            session: lifetime.session, operation: lifetime.operation,travelProfile:travelProfile,tripDiscussions:tripDiscussions,
+            scopedEdits:scopedEdits,needsPlanning:needsPlanning,currentNeeds:currentNeeds,isCurrent: { lifetime.current != nil })
+        if scopedEdits {
+            let originals = root.appendingPathExtension("ScopedOriginals")
+            let receipts = root.appendingPathExtension("ScopedReceipts")
+            for path in [originals, receipts] {
+                try files.createDirectory(at: path, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            }
+            let scopedEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 32768,
+                maximumResponseBytes: 4_000_000, allowLoopbackHTTP: true)
+            let scoped = try ScopedTripClient(endpoint: scopedEndpoint, binding: lifetime.trip, credentials: { binding in
+                guard lifetime.current == binding else { return nil }; return configuration.token
+            }, validate: { guard lifetime.current != nil else { throw TripFailure.staleBinding } },
+                directory: originals, receiptDirectory: receipts, expectedKeyID: key.id, provider: keys)
+            messages.messages.configureScopedCandidates(scoped)
+        }
+        if needsPlanning {
+            let originals=root.appendingPathExtension("NeedsPlanningOriginals"),receipts=root.appendingPathExtension("NeedsPlanningReceipts")
+            for path in [originals,receipts] {
+                try files.createDirectory(at:path,withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])
+            }
+            let planningEndpoint=try MessageEndpoint(url:configuration.endpoint,maximumRequestBytes:32768,maximumResponseBytes:4_000_000,allowLoopbackHTTP:true)
+            let planning=try NeedsPlanningClient(endpoint:planningEndpoint,binding:lifetime.trip,credentials:{ binding in
+                guard lifetime.current==binding else { return nil };return configuration.token
+            },validate:{guard lifetime.current != nil else {throw TripFailure.staleBinding}},directory:originals,receiptDirectory:receipts,expectedKeyID:key.id,provider:keys)
+            messages.messages.configurePlanningCandidates(planning)
+        }
+        needs=try messageNeeds ? preparedNeeds : makeNeeds()
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
             typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
@@ -125,6 +182,18 @@ import Observation
                 session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
             typedMemory = nil
         } else { memory = nil;typedMemory = nil }
+        if tripEditingProfile != nil {
+            let needsHost = needs?.host
+            structuredTrips = StructuredTripHost(shell: shell, client: client, binding: lifetime.trip,
+                session: lifetime.session, sessionOperation: lifetime.operation, currentBinding: { lifetime.current },
+                needsSelection: {
+                    guard let snapshot = needsHost?.presentation?.snapshot else { return nil }
+                    return try TripNeedsReference(id: snapshot.needs_id, expectedVersion: snapshot.version)
+                }, readNeeds: {
+                    guard let needsHost, let context = needsHost.captureAction(), let work = needsHost.prepareDetail(context: context) else { return }
+                    await needsHost.perform(work)
+                })
+        } else { structuredTrips = nil }
         shell.selectedTab = .trips
         // Disk restoration only selects an original action for GET reconciliation;
         // it never prepares or submits another action, even while the API is offline.
@@ -141,6 +210,7 @@ import Observation
         memory?.invalidate()
         typedMemory?.invalidate()
         needs?.invalidate()
+        structuredTrips?.invalidate()
         trips.invalidate()
         keys.invalidate()
         if lifetime.ownsSession { _ = lifetime.session.clearWithSettlement() }
@@ -412,7 +482,9 @@ import Observation
     private let keyAdapter: ExistingMessageKeyAdapter
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState,
-         session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil, isCurrent: @escaping @MainActor () -> Bool) throws {
+         session: SessionLifecycle, operation: SessionOperation,travelProfile: DevelopmentTravelProfile? = nil,tripDiscussions:Bool = false,
+         scopedEdits:Bool=false,needsPlanning:Bool=false,currentNeeds:(@MainActor ()->MessageNeedsSelection?)?=nil,isCurrent: @escaping @MainActor () -> Bool) throws {
+        guard !tripDiscussions || travelProfile == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         let answerFormat: RunAnswerFormat
         switch try DevelopmentSessionConfiguration.toolAnswerProfile(ProcessInfo.processInfo.environment) {
         case .plain:answerFormat = .plainText
@@ -445,7 +517,11 @@ import Observation
         let endpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16384,
                                            maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let transport: NoRedirectTransport
-        if travelProfile != nil {
+        if scopedEdits {
+            transport=try NoRedirectTransport.developmentTripEdits(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
+        } else if tripDiscussions {
+            transport=try NoRedirectTransport.developmentTripDiscussions(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
+        } else if travelProfile != nil {
             transport = try NoRedirectTransport.developmentTravelMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
         } else {
             transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
@@ -454,25 +530,42 @@ import Observation
         let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,
                                         credentials: credentials, liveReadTransport: transport)
         let selectedTravel = try travelProfile.map { try TravelSelectionModel(ids:$0.travel_ids,client:client,lease:lease,isCurrent:{lifetime.current}) }
+        let needsForBinding:(@MainActor ()->MessageNeedsSelection?)?
+        if needsPlanning {
+            needsForBinding = {
+                guard lifetime.current,let selectedTravel else { return nil }
+                do {
+                    let travel=try selectedTravel.capture()
+                    guard travel.context != nil else { return nil }
+                    let needs=currentNeeds?()
+                    try selectedTravel.validate(travel)
+                    guard lifetime.current else { return nil }
+                    return needs
+                } catch { return nil } // No current explicit namespace; never substitute another journey.
+            }
+        } else { needsForBinding=currentNeeds }
         let messages = AssistantMessageHost(shell: shell), history = ServerHistoryHost(shell: shell)
         guard messages.bind(AssistantMessageBinding(recovery: recovery, scope: scope, lease: lease,
             generation: shell.generation, synthetic: false,
             isCurrent: { lifetime.current },
-            invalidateResources: { lifetime.active = false;selectedTravel?.invalidate();keyAdapter.invalidate() },sendClient:client,travelSelection:selectedTravel)) else {
+            invalidateResources: { lifetime.active = false;selectedTravel?.invalidate();keyAdapter.invalidate() },sendClient:client,travelSelection:selectedTravel,
+            currentNeeds:needsForBinding,tripDiscussions:tripDiscussions,scopedEdits:scopedEdits)) else {
             throw RecoveryError.inactive
         }
         let limits = try MessageReadLimits(maximumPageItems: 20, maximumCursorBytes: 4096,
                                            maximumDecodedBytes: 1_000_000, maximumPages: 50)
         guard history.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease,
-            generation: shell.generation, limit: 20, limits: limits, synthetic: false,
+            generation: shell.generation, limit: 20, limits: limits, synthetic: false,tripDiscussions:tripDiscussions,scopedEdits:scopedEdits,
             isCurrent: { lifetime.current },
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
         }
         let runReads = try NoRedirectTransport(requestTimeout: 15, resourceTimeout: 150)
-        let runStops = try travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})
+        let runStops = try scopedEdits ? RunCancellationTransport.developmentEditCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
+            : tripDiscussions ? RunCancellationTransport.developmentTripCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
+            : travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})
             : RunCancellationTransport.developmentCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
-        let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes: 256, maximumTextBytes: 200000,
+        let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes:(tripDiscussions || scopedEdits) ? 16384 : 256, maximumTextBytes: 200000,
             credentials: { captured in
                 try lifetime.validate()
                 guard captured == operation, session.isCurrent(captured) else { throw RecoveryError.inactive }
@@ -522,6 +615,7 @@ import Observation
     }()
 
     init(environment: [String: String], shell: ShellState) throws {
+        _ = try DevelopmentTripEditingProfile.read(environment)
         guard environment["G2C_DEV_ACCOUNT_MODE"] == "1",
               let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment),
               let raw = (environment["G2C_DEV_ACCOUNTS"] ?? "{}").data(using: .utf8), raw.count <= 131072,

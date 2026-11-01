@@ -44,6 +44,7 @@ struct CJProbeApp: App {
                       memoryContainerHost: developmentAccounts?.trip?.memory?.host ?? development?.memory?.host,
                       typedMemoryContainerHost:developmentAccounts?.trip?.typedMemory?.host ?? development?.typedMemory?.host,
                       tripContainerHost: developmentAccounts?.trip?.trips ?? development?.trips,
+                      structuredTripHost: developmentAccounts?.trip?.structuredTrips ?? development?.structuredTrips,
                       needsContainerHost: developmentAccounts?.trip?.needs?.host ?? development?.needs?.host,
                       runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
                       developmentAccountHost: developmentAccounts?.accounts)

@@ -21,16 +21,21 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     let limit: Int
     let limits: MessageReadLimits
     let synthetic: Bool
+    let tripDiscussions: Bool
+    let scopedEdits: Bool
+    var versionedTripHistory:Bool { tripDiscussions || scopedEdits }
     let draftWriteCapability: ServerDraftWriteCapability?
     let isCurrent: @MainActor () -> Bool
     let selectForSending: (@MainActor (String) -> Bool)?
     public init(client: MessageHTTPClient, recovery: MessageRecovery, scope: StorageScope, lease: Lease,
                 generation: ShellGeneration, limit: Int, limits: MessageReadLimits, synthetic: Bool,
-                draftWriteCapability: ServerDraftWriteCapability? = nil, isCurrent: @escaping @MainActor () -> Bool,
+                draftWriteCapability: ServerDraftWriteCapability? = nil, tripDiscussions: Bool = false, scopedEdits:Bool = false, isCurrent: @escaping @MainActor () -> Bool,
                 selectForSending: (@MainActor (String) -> Bool)? = nil) {
         self.client = client; self.recovery = recovery; self.scope = scope; self.lease = lease
         self.generation = generation; self.limit = limit; self.limits = limits
         self.synthetic = synthetic; self.isCurrent = isCurrent
+        self.tripDiscussions = tripDiscussions
+        self.scopedEdits = scopedEdits
         self.draftWriteCapability = draftWriteCapability
         self.selectForSending = selectForSending
     }
@@ -78,6 +83,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     private var serverDraftState: ServerReadStatus = .unconfigured
     private var listPages: [MessageReadResult<[Components.Schemas.ConversationSummary]>] = []
     private var messagePages: [MessageReadResult<[Components.Schemas.MessageHistoryItem]>] = []
+    private var tripMessagePages: [MessageReadResult<[MessageTripHistoryItem]>] = []
     private var draftResult: MessageReadResult<Components.Schemas.MessageDraftSnapshot?>?
     private var selection: Components.Schemas.ConversationSummary?
     private var selectionEpoch = UUID()
@@ -105,7 +111,17 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     }
     public var messages: [Components.Schemas.MessageHistoryItem] {
         guard current, let binding, messagePages.allSatisfy({ (try? binding.client.validateRead($0, lease: binding.lease)) != nil }) else { return [] }
+        if binding.versionedTripHistory {
+            // Text-only rendering projection. Original references and bytes stay
+            // in their typed pages; this never enters canonical action recovery.
+            return tripMessages.map { .init(receipt:$0.receipt,original_utf8_base64:$0.originalUTF8.base64EncodedString(),text:$0.text) }
+        }
         return messagePages.flatMap(\.value)
+    }
+    public var tripMessages: [MessageTripHistoryItem] {
+        guard current,let binding,binding.versionedTripHistory,
+              tripMessagePages.allSatisfy({ (try? binding.client.validateRead($0,lease:binding.lease)) != nil }) else { return [] }
+        return tripMessagePages.flatMap(\.value)
     }
     public var serverDraft: Components.Schemas.MessageDraftSnapshot? {
         guard current, let binding, let draftResult,
@@ -113,7 +129,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         return draftResult.value
     }
     public var hasMoreConversations: Bool { current && listState == .ready && listPages.last?.next != nil }
-    public var hasMoreMessages: Bool { current && messagesState == .ready && messagePages.last?.next != nil }
+    public var hasMoreMessages: Bool { current && messagesState == .ready && (binding?.versionedTripHistory == true ? tripMessagePages.last?.next : messagePages.last?.next) != nil }
     public init(shell: ShellState) {
         self.shell = shell
         shell.serverHistoryHost?.invalidate()
@@ -121,7 +137,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     }
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
     @discardableResult public func bind(_ candidate: ServerHistoryBinding) -> Bool {
-        guard binding == nil, !shell.messageBindingBlocked, candidate.generation == shell.generation,
+        guard binding == nil, !(candidate.tripDiscussions && candidate.scopedEdits), !shell.messageBindingBlocked, candidate.generation == shell.generation,
               candidate.isCurrent(), candidate.generation == shell.generation,
               (1...candidate.limits.maximumPageItems).contains(candidate.limit),
               (try? candidate.recovery.validateScope(candidate.scope, lease: candidate.lease)) != nil else { return false }
@@ -142,7 +158,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         writeState = .ready; writeCancelled = false; queryState = .idle
         selectionEpoch = UUID()
         binding = nil; listRequest = UUID(); historyRequest = UUID(); draftRequest = UUID()
-        listPages = []; messagePages = []; draftResult = nil; selection = nil
+        listPages = []; messagePages = []; tripMessagePages = []; draftResult = nil; selection = nil
         listState = .unconfigured; messagesState = .unconfigured; serverDraftState = .unconfigured
         // Retire all state before cancellation can invoke external completion handlers.
         pendingWrite?.cancel()
@@ -151,7 +167,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         guard current, let binding else { return nil }
         return ServerReadContext(binding: binding, selectionEpoch: selectionEpoch,
             listRequest: listRequest, historyRequest: historyRequest, draftRequest: draftRequest,
-            selected: selection, listCursor: listPages.last?.next, historyCursor: messagePages.last?.next)
+            selected: selection, listCursor: listPages.last?.next, historyCursor: binding.versionedTripHistory ? tripMessagePages.last?.next : messagePages.last?.next)
     }
     private func accepts(_ context: ServerReadContext) -> Bool {
         current(context.binding) && selectionEpoch == context.selectionEpoch
@@ -167,7 +183,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
             guard writeState != .saving && queryState != .loading else { return }
             resetWriteSelection()
             selectionEpoch = UUID()
-            listPages = []; selection = nil; messagePages = []; draftResult = nil
+            listPages = []; selection = nil; messagePages = []; tripMessagePages = []; draftResult = nil
             historyRequest = UUID(); draftRequest = UUID(); messagesState = .idle; serverDraftState = .idle
         }
         let resultSelectionEpoch = selectionEpoch
@@ -181,7 +197,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         } catch {
             guard current(original), listRequest == request, selectionEpoch == resultSelectionEpoch else { return }
             selectionEpoch = UUID()
-            listPages = []; selection = nil; messagePages = []; draftResult = nil
+            listPages = []; selection = nil; messagePages = []; tripMessagePages = []; draftResult = nil
             historyRequest = UUID(); draftRequest = UUID(); messagesState = .idle; serverDraftState = .idle
             listState = status(for: error)
         }
@@ -197,7 +213,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         selectionEpoch = UUID()
         listRequest = UUID() // retire a list read issued under the previous selected context
         if listState == .loading { listState = listPages.isEmpty ? .idle : .ready }
-        selection = row; messagePages = []; draftResult = nil
+        selection = row; messagePages = []; tripMessagePages = []; draftResult = nil
         historyRequest = UUID(); draftRequest = UUID(); messagesState = .idle; serverDraftState = .idle
         return true
     }
@@ -207,9 +223,17 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
               !more || hasMoreMessages else { return }
         let original = context.binding
         let cursor = more ? context.historyCursor : nil
-        if !more { messagePages = [] }
+        if !more { messagePages = []; tripMessagePages = [] }
         let request = UUID(); historyRequest = request; messagesState = .loading
         do {
+            if original.versionedTripHistory {
+                let result=try await original.scopedEdits ? original.client.tripEditHistory(conversationID:selected.conversation_id,limit:original.limit,after:cursor,limits:original.limits,lease:original.lease) : original.client.tripDiscussionHistory(conversationID:selected.conversation_id,limit:original.limit,after:cursor,limits:original.limits,lease:original.lease)
+                try original.client.validateRead(result,lease:original.lease)
+                guard current(original),selectionEpoch == context.selectionEpoch,historyRequest == request else { return }
+                guard result.value.allSatisfy({ Data($0.receipt.generation.utf8)==Data(selected.generation.utf8) }) else { throw MessageReadFailure.resyncRequired }
+                tripMessagePages.append(result);messagesState=tripMessagePages.flatMap(\.value).isEmpty ? .empty : .ready
+                return
+            }
             let result = try await original.client.history(conversationID: selected.conversation_id, limit: original.limit,
                 after: cursor, limits: original.limits, lease: original.lease)
             try original.client.validateRead(result, lease: original.lease)
@@ -220,7 +244,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
             messagePages.append(result); messagesState = messagePages.flatMap(\.value).isEmpty ? .empty : .ready
         } catch {
             guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
-            messagePages = []; messagesState = status(for: error)
+            messagePages = []; tripMessagePages = []; messagesState = status(for: error)
         }
     }
     public func loadServerDraft(context: ServerReadContext?) async {

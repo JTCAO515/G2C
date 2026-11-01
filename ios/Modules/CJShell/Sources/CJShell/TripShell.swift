@@ -10,7 +10,16 @@ private extension ShellLanguage {
 struct TripShell: View {
     @Bindable var state: ShellState
     let host: TripContainerHost
-    @State private var manualEntry: ManualPreviewEntry?
+    let onClose: (() -> Void)?
+    let openTimeline: (() -> Void)?
+    init(state: ShellState, host: TripContainerHost, onClose: (() -> Void)? = nil, openTimeline: (() -> Void)? = nil) {
+        self.state = state; self.host = host; self.onClose = onClose; self.openTimeline = openTimeline
+    }
+    private enum Sheet: Identifiable {
+        case manual(ManualPreviewEntry), timeline(UUID,TripTimelineHost)
+        var id: UUID { switch self { case .manual(let value): value.id;case .timeline(let id,_): id } }
+    }
+    @State private var sheet: Sheet?
     @Environment(\.scenePhase) private var scenePhase
     private var language: ShellLanguage { state.language }
     var body: some View {
@@ -19,6 +28,10 @@ struct TripShell: View {
             List {
                 if let presentation = host.presentation {
                     Section(language.text("Formal trips", "正式行程")) {
+                        Button(language.text("Read destination-local timeline", "读取目的地当地时间线")) {
+                            if let openTimeline { openTimeline() }
+                            else if let reader=host.makeTimelineReader() { sheet = .timeline(UUID(),reader) }
+                        }.disabled(action == nil).accessibilityIdentifier("trips.timeline.open")
                         TripContainerLoadLabel(state: presentation.listState, language: language)
                         if presentation.listState == .loaded && presentation.trips.isEmpty {
                             Text(language.text("No trips returned", "暂无行程"))
@@ -93,13 +106,28 @@ struct TripShell: View {
                 } header: { ShellSectionHeading(title: language.text("Map", "地图")) }
             }
             .navigationTitle(ShellTab.trips.title(language))
-            .sheet(item: $manualEntry) { entry in
-                ManualPreviewContainerView(host: host, entry: entry, language: language)
+            .toolbar {
+                if let onClose {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(language.text("Done", "完成"), action: onClose).accessibilityIdentifier("trip.browse.done")
+                    }
+                }
+            }
+            .sheet(item: $sheet) { value in
+                switch value {
+                case .manual(let entry): ManualPreviewContainerView(host: host, entry: entry, language: language)
+                case .timeline(_,let reader):
+                    let messages=state.messageHost
+                    TripTimelineView(host:reader,language:language,onDiscuss:messages?.supportsTripMessages == true ? { entry in
+                        guard state.messageHost === messages,messages?.selectTripDiscussion(entry)==true else { return false }
+                        sheet=nil;state.selectedTab = .assistant;return true
+                    } : nil)
+                }
             }
             .onAppear { host.setManualForeground(scenePhase == .active) }
             .onChange(of: scenePhase) { _, phase in host.setManualForeground(phase == .active) }
             .onChange(of: host.manualPreviewIdentity) { _, id in
-                if id == nil, host.manualPreviewIdentity == nil { manualEntry = nil }
+                if id == nil, host.manualPreviewIdentity == nil,case .manual = sheet { sheet = nil }
             }
             .onDisappear { host.setManualForeground(false) }
             .navigationDestination(for: TripRoute.self) { route in
@@ -108,7 +136,7 @@ struct TripShell: View {
                     guard host.manualEditor(for: entry) != nil, state.tripPath.last == .detail else {
                         host.retireManualPreview(entry); return
                     }
-                    manualEntry = entry
+                    sheet = .manual(entry)
                 })
                 case .proposal: TripContainerProposal(host: host, language: language, original: false)
                 case .originalAction: TripContainerProposal(host: host, language: language, original: true)

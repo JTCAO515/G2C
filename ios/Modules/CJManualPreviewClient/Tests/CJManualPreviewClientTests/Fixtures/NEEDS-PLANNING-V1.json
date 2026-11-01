@@ -1,0 +1,294 @@
+{
+  "fixture": "SYNTHETIC local wire sample only; not a write permit or App acceptance",
+  "reference": {
+    "version": "MESSAGE-travel-reference.1",
+    "conversation_id": "source",
+    "generation": "5ba7007cea2e4663a121db24e177f963",
+    "message_id": "original",
+    "run_id": "48b39a81-0731-4a3f-8187-1a761a5797d2",
+    "sequence": 1,
+    "input_sha256": "7ce9b683caca74a4d2f7944bc6660c83b2286743bd473df85c35e46f909e7b76",
+    "message_version": "MESSAGE-send.2",
+    "context_kind": "travel",
+    "context_id": "680783e7d5a64d1f981514dc564e1b32",
+    "context_version": 1,
+    "selection_epoch": 1
+  },
+  "needs_id": "visit",
+  "needs_version": 1,
+  "discovery": {
+    "version": "TRIP-needs-discovery.1",
+    "request_id": "f68cc19c-c745-4cc1-8c28-ff63d44ca99f",
+    "discovery": {
+      "state": "published",
+      "reference": {
+        "version": "MESSAGE-travel-reference.1",
+        "conversation_id": "source",
+        "generation": "5ba7007cea2e4663a121db24e177f963",
+        "message_id": "original",
+        "run_id": "48b39a81-0731-4a3f-8187-1a761a5797d2",
+        "sequence": 1,
+        "input_sha256": "7ce9b683caca74a4d2f7944bc6660c83b2286743bd473df85c35e46f909e7b76",
+        "message_version": "MESSAGE-send.2",
+        "context_kind": "travel",
+        "context_id": "680783e7d5a64d1f981514dc564e1b32",
+        "context_version": 1,
+        "selection_epoch": 1
+      },
+      "run_status": "completed",
+      "draft_outcome": null,
+      "needs_reference": {
+        "id": "visit",
+        "expected_version": 1
+      },
+      "source_profile": "TRIP-source-input.1",
+      "planning_context": null,
+      "proposal": {
+        "proposal_id": "p-48b39a81-0731-4a3f-8187-1a761a5797d2",
+        "trip_id": "trip-48b39a81-0731-4a3f-8187-1a761a5797d2",
+        "expected_version": 0,
+        "candidate_hash": "191f0718c54c38c81efaddd9179a77c2686beb78a730d3b35b2c1c0aa4b316c8",
+        "status": "pending",
+        "expires_at": 1794109251,
+        "content": {
+          "content_version": "structured.2",
+          "items": [
+            {
+              "evidence": [],
+              "fixed": {
+                "state": "known",
+                "value": true
+              },
+              "id": "a",
+              "schedule": {
+                "end": {
+                  "date": {
+                    "state": "known",
+                    "value": "2026-11-02"
+                  },
+                  "time": {
+                    "state": "known",
+                    "value": "10:00"
+                  },
+                  "timezone": {
+                    "state": "known",
+                    "value": "Asia/Shanghai"
+                  },
+                  "utc_offset": {
+                    "state": "unknown"
+                  }
+                },
+                "start": {
+                  "date": {
+                    "state": "known",
+                    "value": "2026-11-02"
+                  },
+                  "time": {
+                    "state": "known",
+                    "value": "09:00"
+                  },
+                  "timezone": {
+                    "state": "known",
+                    "value": "Asia/Shanghai"
+                  },
+                  "utc_offset": {
+                    "state": "unknown"
+                  }
+                }
+              },
+              "source_category": "user_provided",
+              "source_refs": [],
+              "text": "SYNTHETIC declared a",
+              "verification": "pending"
+            },
+            {
+              "evidence": [],
+              "fixed": {
+                "state": "known",
+                "value": false
+              },
+              "id": "b",
+              "schedule": {
+                "end": {
+                  "date": {
+                    "state": "known",
+                    "value": "2026-11-02"
+                  },
+                  "time": {
+                    "state": "known",
+                    "value": "12:00"
+                  },
+                  "timezone": {
+                    "state": "known",
+                    "value": "Asia/Shanghai"
+                  },
+                  "utc_offset": {
+                    "state": "unknown"
+                  }
+                },
+                "start": {
+                  "date": {
+                    "state": "known",
+                    "value": "2026-11-02"
+                  },
+                  "time": {
+                    "state": "known",
+                    "value": "11:00"
+                  },
+                  "timezone": {
+                    "state": "known",
+                    "value": "Asia/Shanghai"
+                  },
+                  "utc_offset": {
+                    "state": "unknown"
+                  }
+                }
+              },
+              "source_category": "user_provided",
+              "source_refs": [],
+              "text": "SYNTHETIC declared b",
+              "verification": "pending"
+            }
+          ],
+          "sources": [],
+          "title": "本地合成来源行程 / synthetic sourced plan"
+        }
+      }
+    }
+  },
+  "action": {
+    "version": "TRIP-needs-action.1",
+    "action_id": "original-source-accept",
+    "kind": "accept",
+    "proposal_id": "p-48b39a81-0731-4a3f-8187-1a761a5797d2",
+    "candidate_hash": "191f0718c54c38c81efaddd9179a77c2686beb78a730d3b35b2c1c0aa4b316c8"
+  },
+  "receipt": {
+    "version": "TRIP-needs-result.1",
+    "request_id": "f68cc19c-c745-4cc1-8c28-ff63d44ca99f",
+    "receipt": {
+      "action_id": "original-source-accept",
+      "kind": "accept",
+      "proposal_id": "p-48b39a81-0731-4a3f-8187-1a761a5797d2",
+      "candidate_hash": "191f0718c54c38c81efaddd9179a77c2686beb78a730d3b35b2c1c0aa4b316c8",
+      "trip_id": "trip-48b39a81-0731-4a3f-8187-1a761a5797d2",
+      "committed_version": 1
+    }
+  },
+  "formal": {
+    "trip_id": "trip-48b39a81-0731-4a3f-8187-1a761a5797d2",
+    "version": 1,
+    "content_sha256": "0d699a928ba6a509c2362bcf67993ec1162da3198a043c37ff3d9b9215c47676",
+    "content": {
+      "content_version": "structured.2",
+      "items": [
+        {
+          "evidence": [],
+          "fixed": {
+            "state": "known",
+            "value": true
+          },
+          "id": "a",
+          "schedule": {
+            "end": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "10:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            },
+            "start": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "09:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            }
+          },
+          "source_category": "user_provided",
+          "source_refs": [],
+          "text": "SYNTHETIC declared a",
+          "verification": "pending"
+        },
+        {
+          "evidence": [],
+          "fixed": {
+            "state": "known",
+            "value": false
+          },
+          "id": "b",
+          "schedule": {
+            "end": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "12:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            },
+            "start": {
+              "date": {
+                "state": "known",
+                "value": "2026-11-02"
+              },
+              "time": {
+                "state": "known",
+                "value": "11:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            }
+          },
+          "source_category": "user_provided",
+          "source_refs": [],
+          "text": "SYNTHETIC declared b",
+          "verification": "pending"
+        }
+      ],
+      "sources": [],
+      "title": "本地合成来源行程 / synthetic sourced plan"
+    }
+  },
+  "message_receipt": {
+    "message_id": "original",
+    "conversation_id": "source",
+    "generation": "5ba7007cea2e4663a121db24e177f963",
+    "sequence": 1,
+    "run_id": "48b39a81-0731-4a3f-8187-1a761a5797d2",
+    "input_sha256": "7ce9b683caca74a4d2f7944bc6660c83b2286743bd473df85c35e46f909e7b76"
+  }
+}

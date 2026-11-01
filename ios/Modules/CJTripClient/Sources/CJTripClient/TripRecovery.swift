@@ -66,10 +66,11 @@ extension TripClient {
         return try await submit(original, binding: binding, now: now)
     }
     private func requireNoUnsettled(_ store: TripPendingStore, _ binding: TripBinding, _ token: UUID, proposalID: String) throws {
+        try store.requireLegacyWritesAllowed()
         let existing = try store.pending(); try check(binding, token)
         // Every frozen action gets one dispatch attempt; earlier ones must be reconciled first.
         guard !existing.contains(where: { same($0.proposal.proposal_id, proposalID) }),
-              existing.allSatisfy({ confirmed.contains(Data($0.actionID.utf8)) }) else { throw TripFailure.pendingRequiresQuery }
+              existing.allSatisfy({ confirmed[Data($0.actionID.utf8)] == digest($0.originalUTF8) }) else { throw TripFailure.pendingRequiresQuery }
     }
     private func submit(_ original: TripPending, binding: TripBinding, now: Int) async throws -> TripActionResult {
         let token = try capture(binding)
@@ -108,7 +109,7 @@ extension TripClient {
                 // Signed confirmations cannot commit after expiry, so a missing receipt is then final.
                 if let expiry = original.confirmationExpiry, now > expiry + confirmationClockMargin {
                     try check(binding, token)
-                    confirmed.insert(Data(original.actionID.utf8))
+                    confirmed[Data(original.actionID.utf8)] = digest(original.originalUTF8)
                     return .expiredUncommitted
                 }
                 return .notObserved
@@ -123,7 +124,7 @@ extension TripClient {
         guard let store else { throw TripFailure.unconfigured }
         let proof = try store.requireOriginal(original); try check(binding, token)
         try store.validateDurability(proof)
-        confirmed.insert(Data(original.actionID.utf8))
+        confirmed[Data(original.actionID.utf8)] = digest(original.originalUTF8)
         return .confirmed(receipt)
     }
 }
