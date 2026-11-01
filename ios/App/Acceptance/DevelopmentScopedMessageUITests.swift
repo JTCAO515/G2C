@@ -5,6 +5,7 @@ import Foundation
     private let bundle="space.go2china.scoped.acceptance"
     private let control="__FIXTURE_URL__"
     private var app:XCUIApplication!
+    private var largestFont=false
     private struct Fixture:Decodable {
         let case_id,endpoint,conversation,namespace:String
         let accounts,subjects:[String:String]
@@ -12,6 +13,7 @@ import Foundation
         let manual_profile:Bool?
         let manual_only:Bool?
         let needs_planning:Bool?
+        let largest_recovery:Bool?
     }
     private struct FormalTrip:Decodable {
         let id,title,content_sha256:String
@@ -58,12 +60,13 @@ import Foundation
                 top=max(top,header.frame.maxY+8);bottom=min(bottom,composer.frame.minY)
             }
             let frame=element.exists ? element.frame : .zero
+            if id.hasPrefix("planning.") && attempt % 10 == 0 { print("PLANNING_VIEWPORT",id,element.identifier,frame,top,bottom,element.exists,element.isHittable,navigation.exists) }
             if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { return element }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
             let down=located ? frame.midY<=top : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
-            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.85,dy:middle+(down ? -step : step)))
-            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.85,dy:middle+(down ? step : -step)))
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? -step : step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id)
@@ -103,6 +106,7 @@ import Foundation
         XCTAssertEqual(issues,0)
     }
     private func launch(_ f:Fixture,language:String,large:Bool=false,restore:Bool=false,timezone:String?=nil) throws {
+        largestFont=large
         app?.terminate();app=XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments=["-cj.ui.language.v1",language]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
@@ -431,7 +435,8 @@ import Foundation
             }
             _ = try await call("/planning-decision-proof",caseID:name)
             if !interrupted { capture(name+"-original-decision");try audit(name+"-decision") }
-            try launch(f,language:"en",restore:true)
+            let recoveredChinese=f.largest_recovery==true
+            try launch(f,language:recoveredChinese ? "zh-Hans" : "en",large:recoveredChinese,restore:true)
             tap("planning.originals")
             let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).firstMatch},id:"planning.original.query")
             XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
@@ -440,7 +445,7 @@ import Foundation
                 XCTAssertFalse(textElement("planning.receipt").exists)
                 XCTAssertFalse(textElement("planning.formal.version").exists)
             } else {
-                text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
+                text("planning.receipt",contains:recoveredChinese ? "原采用动作已确认" : decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
                 if decision=="accept" { text("planning.receipt.version",contains:"1");text("planning.formal.version",contains:" · 1") }
                 else { XCTAssertFalse(textElement("planning.formal.version").exists) }
             }
