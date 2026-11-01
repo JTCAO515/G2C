@@ -327,7 +327,7 @@ import Foundation
     func testNeedsPlanningInterruptedAccept() async throws { try await planningScenario("testNeedsPlanningInterruptedAccept",decision:"accept",interrupted:true) }
     func testNeedsPlanningManualComposition() async throws { try await planningScenario("testNeedsPlanningManualComposition",decision:"accept",composition:true) }
     func testNeedsPlanningCurrentFixedAccept() async throws { try await planningScenario("testNeedsPlanningCurrentFixedAccept",decision:"accept",composition:true,currentDecision:"accept") }
-    func testNeedsPlanningCurrentFixedReject() async throws { try await planningScenario("testNeedsPlanningCurrentFixedReject",decision:"accept",composition:true,currentDecision:"reject") }
+    func testNeedsPlanningCurrentUnlockedReject() async throws { try await planningScenario("testNeedsPlanningCurrentUnlockedReject",decision:"accept",composition:true,currentDecision:"reject") }
     private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false,composition:Bool=false,currentDecision:String?=nil) async throws {
         let f=try await prepare(name)
         defer { app?.terminate() }
@@ -465,11 +465,17 @@ import Foundation
     }
     private func currentPlanningAfterManual(_ f:Fixture,name:String,tripID:String,decision:String) async throws {
         try launch(f,language:"en",restore:true)
-        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+tripID);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
-        let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.b").firstMatch},id:"trip.manual.item.open.b")
-        XCTAssertTrue(item.isEnabled && item.isHittable);item.tap()
-        let selected=visible({app.switches.matching(identifier:"trip.manual.selected.b").firstMatch},id:"trip.manual.selected.b")
-        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();tap("trip.manual.fixed.true.b")
+        let sourceVersion=decision=="reject" ? 5 : 3
+        func beginBEdit(replaceBasis:Bool) {
+            if replaceBasis { tap("trip.manual.replaceBasis") }
+            tap("trip.manual.needs.read");tap("trip.manual.edit.open")
+            let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.b").firstMatch},id:"trip.manual.item.open.b")
+            XCTAssertTrue(item.isEnabled && item.isHittable);item.tap()
+            let selected=visible({app.switches.matching(identifier:"trip.manual.selected.b").firstMatch},id:"trip.manual.selected.b")
+            XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();XCTAssertEqual(selected.value as? String,"1")
+        }
+        tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+tripID)
+        beginBEdit(replaceBasis:false);tap("trip.manual.fixed.true.b")
         tap("trip.manual.prepare");text("trip.manual.issue",contains:"Reconcile retained original actions before another write")
         text("trip.manual.fixed.input.b",contains:"Selected change: fixed")
         _ = try await call("/current-planning-blocked",caseID:name)
@@ -483,6 +489,23 @@ import Foundation
         text("trip.manual.original.result",contains:" · 2");text("trip.manual.fixed.input.b",contains:"Selected change: fixed")
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared");tap("trip.manual.save");text("trip.manual.receipt",contains:"3")
         tap("trip.manual.current");text("trip.manual.current.version",contains:"3")
+        if decision=="reject" {
+            beginBEdit(replaceBasis:true);tap("trip.manual.fixed.false.b")
+            tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared");tap("trip.manual.save");text("trip.manual.receipt",contains:"4")
+            tap("trip.manual.current");text("trip.manual.current.version",contains:"4")
+            beginBEdit(replaceBasis:true)
+            let textChange=visible({app.switches.matching(identifier:"trip.manual.text.selected.b").firstMatch},id:"trip.manual.text.selected.b")
+            XCTAssertTrue(textChange.isEnabled && textChange.isHittable);textChange.tap()
+            replaceManualText("trip.manual.text.value.b","SYNTHETIC current replan edit / 后续规划手改")
+            let schedule=visible({app.switches.matching(identifier:"trip.manual.schedule.selected.b").firstMatch},id:"trip.manual.schedule.selected.b")
+            XCTAssertTrue(schedule.isEnabled && schedule.isHittable);schedule.tap()
+            replaceManualText("trip.manual.start.b.time.value","11:15");replaceManualText("trip.manual.end.b.time.value","12:15")
+            tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
+            text("trip.manual.after.item.b",contains:"SYNTHETIC current replan edit / 后续规划手改")
+            text("trip.manual.after.schedule.b",contains:"11:15");text("trip.manual.after.schedule.b",contains:"12:15")
+            tap("trip.manual.save");text("trip.manual.receipt",contains:"5")
+            tap("trip.manual.current");text("trip.manual.current.version",contains:"5")
+        }
         _ = try await call("/current-planning-source",caseID:name)
         tap("Assistant");conversation(f)
         tap("assistant.travelContext");tap("travel.selection."+f.namespace);tap("assistant.panel.done")
@@ -494,7 +517,7 @@ import Foundation
         tap("assistant.send");_ = try await call("/current-planning-published",caseID:name)
         tap("run.snapshot.read");text("run.display.status",contains:"Completed")
         tap("planning.discover");text("planning.discovery.state",contains:"Original planning candidate recorded")
-        text("planning.context",contains:tripID);text("planning.context",contains:" · 3")
+        text("planning.context",contains:tripID);text("planning.context",contains:" · "+String(sourceVersion))
         tap("planning."+decision)
         text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
         struct CurrentProof:Decodable { let original_action_id,proposed_trip_id,source_content_sha256:String }
@@ -505,7 +528,7 @@ import Foundation
         capture(name+"-source2-decision");try audit(name+"-source2")
         try launch(f,language:"zh-Hans",large:decision=="reject",restore:true);tap("planning.originals");tap("planning.query."+proof.original_action_id)
         text("planning.receipt",contains:decision=="accept" ? "原采用动作已确认" : "原拒绝动作已确认")
-        text("planning.context",contains:tripID);text("planning.context",contains:" · 3")
+        text("planning.context",contains:tripID);text("planning.context",contains:" · "+String(sourceVersion))
         if decision=="accept" { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }
         _ = try await call("/current-planning-proof",caseID:name)
         capture(name+"-source2-original-recovery");try audit(name+"-source2-restart")

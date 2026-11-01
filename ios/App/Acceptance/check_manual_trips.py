@@ -13,9 +13,9 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition','testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentFixedReject'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition','testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case;PLANNING_PREFIX=CASE.startswith('testNeedsPlanning')
-CURRENT_REPLAN=CASE in ('testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentFixedReject')
+CURRENT_REPLAN=CASE in ('testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject')
 PLANNING_DECISION=CURRENT_REPLAN or CASE in ('testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition')
 PLANNING_NO_DECISION=CASE in ('testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningLateAccount')
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
@@ -351,11 +351,15 @@ try:
     assert any(x['method']=='GET' and x['path']=='/v1/trip-needs-action-receipts' and x['query']==dict(action_id=[first_save['original_id']]) and x['status']==200 and x['receipt_present'] for x in audit)
     tid=planning_discoveries[0]['proposal']['trip_id']
     with TestClient(structured) as client:source=check(client.get('/v5/trip-structured',params=dict(trip_id=tid),headers=headers),'source2-current-trip')['trip']
-    assert source['version']==3 and source['content']['title']=='SYNTHETIC manual after App adoption / 采用后手改'
-    original=planning_discoveries[0]['proposal']['content'];expected=json.loads(json.dumps(original));expected['title']=source['content']['title'];expected['items'][1]['fixed']=known(True)
+    source_version=5 if CASE.endswith('Reject') else 3
+    assert source['version']==source_version and source['content']['title']=='SYNTHETIC manual after App adoption / 采用后手改'
+    original=planning_discoveries[0]['proposal']['content'];expected=json.loads(json.dumps(original));expected['title']=source['content']['title'];expected['items'][1]['fixed']=known(not CASE.endswith('Reject'))
+    if CASE.endswith('Reject'):
+     expected['items'][1]['text']='SYNTHETIC current replan edit / 后续规划手改'
+     expected['items'][1]['schedule']['start']['time']=known('11:15');expected['items'][1]['schedule']['end']['time']=known('12:15')
     assert source['content']==expected
-    assert len([x for x in audit if x['method']=='POST' and x['path']=='/v1/trip-needs-saves'])==2
-    current_source.update(source);r['source2_current_trip']=source;save();return dict(trip_id=tid,version=3,content_sha256=source['content_sha256'])
+    assert len([x for x in audit if x['method']=='POST' and x['path']=='/v1/trip-needs-saves'])==source_version-1
+    current_source.update(source);r['source2_current_trip']=source;save();return dict(trip_id=tid,version=source_version,content_sha256=source['content_sha256'])
    def current_planning_published():
     assert CURRENT_REPLAN and current_done.wait(30) and not current_errors and len(current_outcomes)==1 and current_outcomes[0].status=='completed'
     assert len(message_receipts)==2 and model.calls==current_model.calls==2
@@ -363,11 +367,12 @@ try:
    def current_planning_proof():
     current_planning_published();assert len(planning_discoveries)==2
     discovery=planning_discoveries[1];candidate=discovery['proposal'];source=current_source
-    assert discovery['source_profile']=='TRIP-source-input.2' and discovery['planning_context']==dict(trip_id=source['trip_id'],version=3,content_sha256=source['content_sha256'])
+    assert discovery['source_profile']=='TRIP-source-input.2' and discovery['planning_context']==dict(trip_id=source['trip_id'],version=source['version'],content_sha256=source['content_sha256'])
     assert candidate['trip_id']!=source['trip_id'] and candidate['expected_version']==0 and candidate['content']==source['content']
     original=message_receipts[1];reads=[x for x in audit if x['path']=='/v1/trip-needs-discovery'];assert reads[-1]['query']==dict(message_id=[original['message_id']],run_id=[original['run_id']])
     posts=[x for x in audit if x['method']=='POST'];messages=[x for x in posts if x['path']=='/v2/messages'];acts=[x for x in posts if x['path']=='/v1/trip-needs-actions'];prepares=[x for x in posts if x['path']=='/v1/trip-needs-edits'];saves=[x for x in posts if x['path']=='/v1/trip-needs-saves']
-    assert len(messages)==len(acts)==len(prepares)==len(saves)==2 and len(posts)==8 and all(x['status']==200 for x in posts)
+    manual_count=source['version']-1
+    assert len(messages)==len(acts)==2 and len(prepares)==len(saves)==manual_count and len(posts)==4+2*manual_count and all(x['status']==200 for x in posts)
     kind='reject' if CASE.endswith('Reject') else 'accept';action=acts[1];assert acts[0]['decision']=='accept' and action['decision']==kind and action['proposal_id']==candidate['proposal_id'] and action['candidate_hash']==candidate['candidate_hash']
     assert acts[0]['original_id']!=action['original_id']
     with TestClient(needs_app) as client:receipt=check(client.get('/v1/trip-needs-action-receipts',params=dict(action_id=action['original_id']),headers=headers),'source2-original-receipt')['receipt']
@@ -377,11 +382,12 @@ try:
     with database.connect(scope_for(ISSUER,subject)) as conn:
      role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall();count=conn.execute('SELECT count(*) FROM cj_message_receipt WHERE conversation_id=%s',('source',)).fetchone()[0];ops=conn.execute('SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m ON (m.scope,m.run_id)=(o.scope,o.run_id) WHERE m.conversation_id=%s',('source',)).fetchone()[0]
     assert role=='cj_m1_runtime' and count==2 and ops==4
-    records={x[0]:(x[1],json.loads(bytes(x[2]))) for x in trips};assert records[source['trip_id']]==(3,source['content'])
+    records={x[0]:(x[1],bytes(x[2])) for x in trips};assert records[source['trip_id']]==(source['version'],packed(source['content']))
+    assert hashlib.sha256(records[source['trip_id']][1]).hexdigest()==source['content_sha256']
     assert len(records)==(1 if kind=='reject' else 2)
-    if kind=='accept':assert records[candidate['trip_id']]==(1,candidate['content'])
+    if kind=='accept':assert records[candidate['trip_id']]==(1,packed(candidate['content']))
     queries=[x for x in audit if x['path']=='/v1/trip-needs-action-receipts' and x['query']==dict(action_id=[action['original_id']])];assert all(x['status']==200 and x['receipt_present'] for x in queries)
-    value=dict(runtime_role=role,message_posts=2,model_calls=4,registered_operations=4,planning_posts=2,manual_prepares=2,manual_saves=2,source_trip_id=source['trip_id'],source_version=3,source_content_sha256=source['content_sha256'],source_unchanged=True,proposed_trip_id=candidate['trip_id'],original_action_id=action['original_id'],original_action_sha256=action['input_sha256'],kind=kind,formal_count=len(records),receipt_queries=len(queries),canonical_needs_unchanged=True,trip_local_fixed_preserved=True)
+    value=dict(runtime_role=role,message_posts=2,model_calls=4,registered_operations=4,planning_posts=2,manual_prepares=manual_count,manual_saves=manual_count,source_trip_id=source['trip_id'],source_version=source['version'],source_content_sha256=source['content_sha256'],source_unchanged=True,source_bytes_unchanged=True,proposed_trip_id=candidate['trip_id'],original_action_id=action['original_id'],original_action_sha256=action['input_sha256'],kind=kind,formal_count=len(records),receipt_queries=len(queries),canonical_needs_unchanged=True,trip_local_fixed_preserved=True)
     r['current_planning_proof']=value;save();return value
    class Control(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
