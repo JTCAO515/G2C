@@ -62,7 +62,9 @@ import Foundation
             let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
-        capture("not-visible-"+id);XCTFail("Expected visible control: "+id);return lookup()
+        capture("not-visible-"+id)
+        let tree=XCTAttachment(string:app.debugDescription);tree.name="not-visible-tree-"+id;tree.lifetime = .keepAlways;add(tree)
+        XCTFail("Expected visible control: "+id);return lookup()
     }
     private func tap(_ id:String) {
         let target:XCUIElement
@@ -286,7 +288,7 @@ import Foundation
         XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.prepare").firstMatch.isEnabled)
         func queryRetained() {
             tap("trip.manual.originals.read")
-            let row=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.")).firstMatch},id:"manual.original.open")
+            let row=visible({app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.open.")).firstMatch},id:"manual.original.open")
             XCTAssertTrue(row.isEnabled && row.isHittable);row.tap()
             let raw=visible({
                 let predicate=NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.input.")
