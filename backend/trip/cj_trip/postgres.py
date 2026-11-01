@@ -86,6 +86,10 @@ class Repository:
         from .needs_discovery import NeedsDiscovery
         return NeedsDiscovery(self.needs_actions).read(self,query,encode)
 
+    def scoped_result(self,result_id,encode):
+        from .scoped_result_read import read
+        return read(self.scoped_actions,self,result_id,encode)
+
     def _content(self, content, *, validated=False):
         document = json.loads(content)
         if type(document) is dict and document.get('content_version') in ('structured.1','structured.2'):
