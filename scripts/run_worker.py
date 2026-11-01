@@ -84,7 +84,7 @@ def require_memory_configuration(database, scope, configuration):
 
 
 def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None):
-    if draft_profile not in (None,'needs-structured.1'):
+    if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     database.require_execution(scope)
     editing=database.edit_profile(scope)
@@ -152,8 +152,12 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     else:
         if editing or tools_configuration is not None or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None:
             raise CompositionUnavailable('NEEDS draft profile requires registered M2/travel creation host')
-        from cj_draft.needs_local import publisher
-        drafts=publisher(database,checker,message_context,token,scope)
+        if draft_profile=='needs-structured.1':
+            from cj_draft.needs_local import publisher
+            drafts=publisher(database,checker,message_context,token,scope)
+        else:
+            from cj_api.local_current_plan import publisher
+            drafts=publisher(database,checker,message_context,token,scope)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,
         message_context=message_context,
@@ -188,7 +192,7 @@ def main():
     parser.add_argument('--travel-context',choices=['message-travel.1'],default=os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT'))
     parser.add_argument('--trip-context',choices=['message-trip.1'],default=os.environ.get('CJ_LOCAL_TRIP_CONTEXT'))
     parser.add_argument('--tools-profile',choices=['synthetic-v1','synthetic-fact-v1','synthetic-needs-v1'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
-    parser.add_argument('--draft-profile',choices=['needs-structured.1'])
+    parser.add_argument('--draft-profile',choices=['needs-structured.1','needs-current-trip.1'])
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
     parser.add_argument('--interval', type=float, default=0.5)
@@ -226,6 +230,9 @@ def main():
         if args.draft_profile=='needs-structured.1':
             from cj_api.local_plan_model import NeedsPlanFakeProvider
             model=NeedsPlanFakeProvider()
+        elif args.draft_profile=='needs-current-trip.1':
+            from cj_api.local_plan_model import CurrentTripPlanFakeProvider
+            model=CurrentTripPlanFakeProvider()
         else:model=provider(args.real)
     else:raise CompositionUnavailable('unknown tools profile')
     while True:

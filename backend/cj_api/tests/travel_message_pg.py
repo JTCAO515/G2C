@@ -592,6 +592,11 @@ if __name__=='__main__':
                 harness.exercise=edit_exercise
                 harness.main()
             finally:
-                from needs_creation_pg import exercise as creation_exercise
-                harness.exercise=creation_exercise
-                harness.main()
+                try:
+                    from needs_creation_pg import exercise as creation_exercise
+                    harness.exercise=creation_exercise
+                    harness.main()
+                finally:
+                    from needs_replanning_pg import exercise as replanning_exercise
+                    harness.exercise=replanning_exercise
+                    harness.main()
