@@ -23,7 +23,10 @@ struct ManualTripForm: View {
                 let item=draft.original.document.items.first { $0.id==id }!
                 let selected=draft.selectedIDs.contains(id), contentAllowed=selected && item.fixed == .known(false) && draft.fixed[id] == nil
                 DisclosureGroup {
-                    Toggle(language.text("Select this item","选中此条目"),isOn:Binding(get:{selected},set:{value in edit { try $0.selectItem(id,selected:value) } }))
+                    Toggle(isOn:Binding(get:{selected},set:{value in edit { try $0.selectItem(id,selected:value) } })) {
+                        RunReadableText(text:language.text("Select this item","选中此条目"))
+                    }
+                        .accessibilityLabel(language.text("Select this item","选中此条目"))
                         .accessibilityIdentifier("trip.manual.selected."+id)
                     Toggle(language.text("Change text","修改文字"),isOn:Binding(get:{draft.texts[id] != nil},set:{value in
                         edit { if value { try $0.setText(item.text,itemID:id) } else { try $0.leaveUnchanged(.text,itemID:id) } }
