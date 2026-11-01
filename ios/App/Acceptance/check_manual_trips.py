@@ -109,7 +109,7 @@ try:
      assert current['items'][0]==formal['content']['items'][0]
      original_item=dict(formal['content']['items'][1]);original_item['fixed']=known(stage=='locked')
      assert current['items'][1]==original_item
-     with TestClient(api) as client:needs=check(client.get('/v1/needs',params=dict(needs_id='visit'),headers=headers),'current-needs')['snapshot']
+     with TestClient(api) as client:needs=check(client.get('/v1/needs',params=dict(needs_id='visit'),headers=headers),'current-needs')['needs']
      assert needs['version']==1 and needs['fields']['fixed_items'][1]['locked']==known(False)
     else:
      assert current['title']=='SYNTHETIC manual saved title / 手动保存标题' and current['items']==formal['content']['items'] and current['sources']==formal['content']['sources']
