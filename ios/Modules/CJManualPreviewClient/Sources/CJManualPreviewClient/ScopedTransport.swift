@@ -6,7 +6,7 @@ import HTTPTypes
 
 /// Exact C routes only, explicitly activated by the DEBUG simulator root.
 /// Ordinary NoRedirectTransport remains read-only. No MESSAGE/model operation.
-enum TripCandidateTransportProfile: Sendable { case scoped,needsPlanning }
+enum TripCandidateTransportProfile: Sendable { case scoped,needsPlanning,scopedDisplay }
 final class ScopedTransport: ClientTransport, Sendable {
     private let session: URLSession
     private let transport: URLSessionTransport
@@ -39,6 +39,12 @@ final class ScopedTransport: ClientTransport, Sendable {
               (request.method == .get && body == nil && request.path?.hasPrefix("/v1/trip-scoped-action-receipts?") == true && operationID == "readScopedTripReceiptV1") ||
               (request.method == .get && body == nil && request.path?.hasPrefix("/v5/trip-structured?") == true && operationID == "readScopedFormalTripV1") ||
               (request.method == .post && body != nil && request.path == "/v1/trip-scoped-actions" && operationID == "actOnScopedTripV1")
+        case .scopedDisplay:
+            if request.method == .get,body == nil,operationID == "readScopedDisplayV1",let path=request.path,
+               let parts=URLComponents(string:path),parts.path == "/v1/trip-scoped-results",parts.scheme == nil,parts.host == nil,parts.fragment == nil,
+               let query=parts.queryItems,query.count == 1,query[0].name == "result_id",let id=query[0].value,
+               id.range(of:"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",options:.regularExpression) == id.startIndex..<id.endIndex { permitted=true }
+            else { permitted=false }
         case .needsPlanning:
             permitted =
               (request.method == .get && body == nil && request.path?.hasPrefix("/v1/trip-needs-discovery?") == true && operationID == "discoverNeedsPlanningV1") ||
