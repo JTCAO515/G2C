@@ -226,6 +226,14 @@
       "down": "backend/migrations/down/0028_trip_scoped_edit.down.sql",
       "sha256": "ffb9ab944b9b08b69860a64e1e0a9efa47a40364a7e9d80dbdeac6345d150d0f",
       "down_sha256": "d790b1b789327c4dac1e9b0fadfb431b64954680ccc06fc569f5a652e196e2b6"
+    },
+    {
+      "version": 29,
+      "name": "message_edit_result",
+      "file": "backend/migrations/0029_message_edit_result.sql",
+      "down": "backend/migrations/down/0029_message_edit_result.down.sql",
+      "sha256": "4f4d7e150ab0694711e6580771c7e906101c78602dfc32046b75dec9b9aea2b1",
+      "down_sha256": "c47088b0eaf0b29b7e6a6a8ee17306bd77b247d9e6979375f7aec62e4bde19e4"
     }
   ]
 }
