@@ -1,11 +1,11 @@
 """#378 source2 through unpatched formal run_once/CLI and original signed APIs."""
-import json,os,sys,subprocess
+import base64,json,os,sys,subprocess
 from pathlib import Path
 from fastapi.testclient import TestClient
 import local_history_pg as harness
 from registered_host_support import RegisteredHost
 from needs_creation_pg import fixed
-from cj_api.local_app import LocalDatabase,create_local_app,load_confirmation_signer
+from cj_api.local_app import LocalDatabase,create_local_app,load_confirmation_signer,load_history_configuration,scope_for,ISSUER
 from cj_api.local_plan_model import NeedsPlanFakeProvider,CurrentTripPlanFakeProvider
 from cj_trip.local_needs_app import create_local_needs_app
 from cj_trip.domain import packed
@@ -15,10 +15,10 @@ import dev_auth,run_worker
 
 
 def exercise(auth,conninfo):
-    subjects=['program','cli','invalid','stale','absent','foreign','unknown'];host=RegisteredHost(auth,conninfo,{s:(30,2,30000) for s in subjects})
+    subjects=['program','cli','invalid','stale','absent','foreign','unknown','changed-needs','changed-selection','cancel-queued','cancel-flight'];host=RegisteredHost(auth,conninfo,{s:(30,2,30000) for s in subjects})
     for s in subjects:dev_auth.activate_travel(conninfo,s,host.profiles[s][1],'MESSAGE-TRAVEL-CONSUMER@1')
     signer=load_confirmation_signer(auth)
-    def app(s):return create_local_app(conninfo_path=conninfo,auth_dir=auth,run_context=host.profiles[s][1],travel_context=True,needs_profile='manual-v1',confirmation_signer=signer)
+    def app(s):return create_local_app(conninfo_path=conninfo,auth_dir=auth,run_context=host.profiles[s][1],travel_context=True,needs_profile='manual-v1',confirmation_signer=signer,history_configuration=load_history_configuration(auth))
     def db(s):return LocalDatabase(conninfo,run_context=host.profiles[s][1],travel_context=True)
     def needs(s):return create_local_needs_app(conninfo_path=conninfo,auth_dir=auth,run_context=host.profiles[s][1],confirmation_signer=signer)
     def post(c,s,path,raw):return c.post(path,content=raw,headers={**host.headers[s],'Content-Type':'application/octet-stream'})
@@ -40,6 +40,21 @@ def exercise(auth,conninfo):
         harness.expect(post(c,'foreign','/v1/trip-needs-actions',raw),503)
         return r
     def read(c,s,tid):return harness.expect(c.get('/v4/trip-structured',params=dict(trip_id=tid),headers=host.headers[s]))['trip']
+    def original(s,receipt,raw):
+        with TestClient(app(s)) as c:
+            status=harness.expect(c.get('/v2/message-send-status',params=dict(conversation_id=receipt['conversation_id'],message_id=receipt['message_id']),headers=host.headers[s]))
+            assert status['receipt']==receipt and status['reference']['input_sha256']==receipt['input_sha256']
+            page=harness.expect(c.get('/v2/message-history',params=dict(conversation_id=receipt['conversation_id'],limit=10),headers=host.headers[s]))
+            assert page['messages'][0]['receipt']==receipt and base64.b64decode(page['messages'][0]['original_utf8_base64'])==raw
+            assert harness.expect(post(c,s,'/v2/messages',raw))['receipt']==receipt
+    def no_basis(s,receipt):
+        with db(s).connect(scope_for(ISSUER,s)) as c:
+            assert c.execute('SELECT count(*) FROM cj_trip_needs_basis WHERE run_id=%s',(receipt['run_id'],)).fetchone()[0]==0
+    def cancel(s,receipt):
+        with TestClient(app(s)) as c:
+            value=harness.expect(c.post('/v2/run-cancellations',json=dict(version='RUN-cancel.2',message_id=receipt['message_id']),headers=host.headers[s]))
+            assert value['status']=='cancelled' and value['run_id']==receipt['run_id']
+            return value
     def save(c,s,trip,key,*,fix=False,text=False):
         import hashlib
         changes=[dict(item_id='b',field='fixed',value=dict(state='known',value=True))] if fix else [dict(item_id='b',field='text',value='Explicit manually fixed choice')] if text else []
@@ -76,6 +91,7 @@ def exercise(auth,conninfo):
             assert read(c,s,old['trip_id'])==old
             assert read(c,s,accepted['trip_id'])['content']['items'][1]==old['content']['items'][1]
             recovered=harness.expect(c.get('/v1/trip-needs-action-receipts',params=dict(action_id='adopt-replan'),headers=host.headers[s]))['receipt'];assert recovered==accepted
+        original(s,r,raw)
         assert run_worker.run_once(db(s),CurrentTripPlanFakeProvider(),auth,draft_profile='needs-current-trip.1')==[]
     source('absent');send('absent','no-current')
     model=CurrentTripPlanFakeProvider();outcome=run_worker.run_once(db('absent'),model,auth,draft_profile='needs-current-trip.1')[0]
@@ -111,6 +127,50 @@ def exercise(auth,conninfo):
     assert outcome.proposal_id is None and model.calls==2
     with TestClient(needs('unknown')) as c:assert discover(c,'unknown',r)['state']=='unknown' and read(c,'unknown',old['trip_id'])==old
     assert run_worker.run_once(db('unknown'),model,auth,draft_profile='needs-current-trip.1')==[] and model.calls==2
-    print('PASS378 actual signed API/restricted PG/unpatched run_once+CLI/Meter/C source2, original discovery/Signer/act/receipt, local fixed retention/new Trip vs original context; missing/stale/fixed/owner negatives')
+    old=setup('changed-needs');r,raw=send('changed-needs','needs-currentness')
+    class ChangedNeeds(CurrentTripPlanFakeProvider):
+        def stream(self,messages,system=None):
+            for chunk in super().stream(messages,system):
+                if system==SYSTEM:
+                    yield ''
+                    with TestClient(app('changed-needs')) as c:
+                        harness.expect(post(c,'changed-needs','/v1/needs-actions',packed(dict(action_id='correct-needs',needs_id='visit',expected_version=1,source=dict(kind='manual',text='Explicit correction'),changes=dict(party_size=dict(state='known',value=2))))))
+                yield chunk
+    model=ChangedNeeds();outcome=run_worker.run_once(db('changed-needs'),model,auth,draft_profile='needs-current-trip.1')[0]
+    assert outcome.proposal_id is None and outcome.status in ('unknown','context_invalid') and model.calls==2
+    no_basis('changed-needs',r);original('changed-needs',r,raw)
+    with TestClient(needs('changed-needs')) as c:assert read(c,'changed-needs',old['trip_id'])==old
+    old=setup('changed-selection');first,_=send('changed-selection','selection-candidate')
+    assert run_worker.run_once(db('changed-selection'),CurrentTripPlanFakeProvider(),auth,draft_profile='needs-current-trip.1')[0].proposal_id
+    with TestClient(needs('changed-selection')) as c:pending=discover(c,'changed-selection',first)
+    r,raw=send('changed-selection','selection-currentness')
+    class ChangedSelection(CurrentTripPlanFakeProvider):
+        def stream(self,messages,system=None):
+            for chunk in super().stream(messages,system):
+                if system==SYSTEM:
+                    yield ''
+                    with TestClient(needs('changed-selection')) as c:
+                        selected=accept(c,'changed-selection',pending,'select-new-plan')
+                        assert selected['trip_id']!=old['trip_id'] and read(c,'changed-selection',old['trip_id'])==old
+                yield chunk
+    model=ChangedSelection();outcome=run_worker.run_once(db('changed-selection'),model,auth,draft_profile='needs-current-trip.1')[0]
+    assert outcome.proposal_id is None and outcome.status in ('unknown','context_invalid') and model.calls==2
+    no_basis('changed-selection',r);original('changed-selection',r,raw)
+    for s in ('cancel-queued','cancel-flight'):
+        old=setup(s);r,raw=send(s,'cancel-original')
+        class Cancelling(CurrentTripPlanFakeProvider):
+            def stream(self,messages,system=None):
+                for chunk in super().stream(messages,system):
+                    if system==SYSTEM:
+                        yield '';cancel(s,r)
+                    yield chunk
+        model=Cancelling()
+        if s=='cancel-queued':cancel(s,r)
+        outcome=run_worker.run_once(db(s),model,auth,draft_profile='needs-current-trip.1')[0]
+        assert outcome.status=='cancelled' and outcome.proposal_id is None and model.calls==(0 if s=='cancel-queued' else 2)
+        before=model.calls;assert run_worker.run_once(db(s),model,auth,draft_profile='needs-current-trip.1')==[] and model.calls==before
+        no_basis(s,r);original(s,r,raw)
+        with TestClient(needs(s)) as c:assert read(c,s,old['trip_id'])==old
+    print('PASS378 actual signed API/restricted PG/unpatched run_once+CLI/Meter/C source2, original discovery/Signer/act/receipt/bytes, local fixed retention/new Trip vs original context; missing/stale/fixed/owner/NEEDS/selection/cancel/UNKNOWN negatives')
 
 if __name__=='__main__':harness.exercise=exercise;harness.main()

@@ -36,6 +36,8 @@ unpatched run_once and actual CLI/Fake/Meter, original C discovery/confirmation/
 acceptance/receipt. Its original source is created with needs-structured.1, then
 manually edited and separately fixed through C's exact API before source2. It
 checks new Trip adoption, unchanged original Trip, local fixed preservation,
-missing context, current Trip change during model, fixed violation, wrong owner
-and original UNKNOWN without redispatch. No SQL seeds a Trip or disables guards.
+missing context, actual Trip/NEEDS/selection changes during model, fixed violation,
+wrong owner, queued/in-flight cancellation and original UNKNOWN without redispatch.
+Original status/history/replay retain the exact accepted receipt and UTF8 bytes.
+No SQL seeds a Trip or disables guards.
 Real models/API/fees/cloud/production and App/device acceptance remain UNRUN.
