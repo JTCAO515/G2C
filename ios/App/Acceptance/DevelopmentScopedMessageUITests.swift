@@ -336,6 +336,7 @@ import Foundation
         capture(name+"-visible-originals");try audit(name+"-largest")
     }
     func testNeedsPlanningCurrentFixedAccept() async throws { try await planningScenario("testNeedsPlanningCurrentFixedAccept",decision:"accept",composition:true,currentDecision:"accept") }
+    func testNeedsPlanningCurrentFixedACKLoss() async throws { try await planningScenario("testNeedsPlanningCurrentFixedACKLoss",decision:"accept",composition:true,currentDecision:"accept") }
     func testNeedsPlanningCurrentUnlockedReject() async throws { try await planningScenario("testNeedsPlanningCurrentUnlockedReject",decision:"accept",composition:true,currentDecision:"reject") }
     private func planningScenario(_ name:String,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,discoveryUnavailable:Bool=false,lateAccount:Bool=false,interrupted:Bool=false,composition:Bool=false,currentDecision:String?=nil) async throws {
         let f=try await prepare(name)
@@ -527,12 +528,18 @@ import Foundation
         tap("run.snapshot.read");text("run.display.status",contains:"Completed")
         tap("planning.discover");text("planning.discovery.state",contains:"Original planning candidate recorded")
         text("planning.context",contains:tripID);text("planning.context",contains:" · "+String(sourceVersion))
+        let ackLoss=name.hasSuffix("ACKLoss")
         tap("planning."+decision)
-        text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed")
+        if ackLoss {
+            text("planning.activity",contains:"UNKNOWN")
+            XCTAssertFalse(textElement("planning.receipt").exists)
+            XCTAssertFalse(textElement("planning.formal.version").exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"planning.accept").firstMatch.isEnabled)
+        } else { text("planning.receipt",contains:decision=="accept" ? "Original acceptance confirmed" : "Original rejection confirmed") }
         struct CurrentProof:Decodable { let original_action_id,proposed_trip_id,source_content_sha256:String }
         let proof=try JSONDecoder().decode(CurrentProof.self,from:await call("/current-planning-proof",caseID:name))
         text("planning.context.hash",contains:proof.source_content_sha256)
-        if decision=="accept" { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }
+        if decision=="accept" && !ackLoss { text("planning.formal.version",contains:proof.proposed_trip_id+" · 1") }
         else { XCTAssertFalse(textElement("planning.formal.version").exists) }
         capture(name+"-source2-decision");try audit(name+"-source2")
         try launch(f,language:"zh-Hans",large:decision=="reject",restore:true);tap("planning.originals");tap("planning.query."+proof.original_action_id)

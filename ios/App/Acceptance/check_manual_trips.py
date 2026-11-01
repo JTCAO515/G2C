@@ -13,10 +13,10 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition','testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject','testNeedsPlanningOriginalsLargest'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition','testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject','testNeedsPlanningOriginalsLargest','testNeedsPlanningCurrentFixedACKLoss'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case;PLANNING_PREFIX=CASE.startswith('testNeedsPlanning')
 HISTORY_LARGEST=CASE=='testNeedsPlanningOriginalsLargest'
-CURRENT_REPLAN=CASE in ('testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject')
+CURRENT_REPLAN=CASE in ('testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject','testNeedsPlanningCurrentFixedACKLoss')
 PLANNING_DECISION=CURRENT_REPLAN or CASE in ('testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition')
 PLANNING_NO_DECISION=CASE in ('testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningLateAccount')
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
@@ -111,6 +111,7 @@ try:
     if scope.get('type')!='http':return await api(scope,receive,send)
     path=scope['path'];authorization=dict(scope['headers']).get(b'authorization',b'').decode('ascii');label=next((label for label,value in tokens.items() if authorization=='Bearer '+value),None);entry=dict(method=scope['method'],path=path,account=label);audit.append(entry);parts=[];actual_reply=[];reply_parts=[]
     drop_ack=scope['method']=='POST' and ((CASE=='testNeedsManualSaveACKLoss' and path=='/v1/trip-needs-saves') or (CASE=='testNeedsPlanningACKLoss' and path=='/v1/trip-needs-actions'))
+    if CASE=='testNeedsPlanningCurrentFixedACKLoss' and scope['method']=='POST' and path=='/v1/trip-needs-actions' and len(message_receipts)==2:drop_ack=True
     hold_prepare=CASE in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation') and path=='/v1/trip-needs-edits' and scope['method']=='POST'
     hold_planning=(CASE=='testNeedsPlanningLateAccount' and path=='/v1/trip-needs-discovery') or (CASE=='testNeedsPlanningInterruptedAccept' and path=='/v1/trip-needs-actions' and scope['method']=='POST')
     if scope.get('query_string'):entry['query']=parse_qs(scope['query_string'].decode('ascii'))
@@ -379,6 +380,7 @@ try:
     assert len(messages)==len(acts)==2 and len(prepares)==len(saves)==manual_count and len(posts)==4+2*manual_count and all(x['status']==200 for x in posts)
     kind='reject' if CASE.endswith('Reject') else 'accept';action=acts[1];assert acts[0]['decision']=='accept' and action['decision']==kind and action['proposal_id']==candidate['proposal_id'] and action['candidate_hash']==candidate['candidate_hash']
     assert acts[0]['original_id']!=action['original_id']
+    if CASE=='testNeedsPlanningCurrentFixedACKLoss':assert action['committed_response_suppressed'] and action['delivered_status']==503
     with TestClient(needs_app) as client:receipt=check(client.get('/v1/trip-needs-action-receipts',params=dict(action_id=action['original_id']),headers=headers),'source2-original-receipt')['receipt']
     assert receipt['trip_id']==candidate['trip_id'] and receipt['committed_version']==(None if kind=='reject' else 1)
     with TestClient(api) as client:needs=check(client.get('/v1/needs',params=dict(needs_id='visit'),headers=headers),'source2-canonical-needs')['needs']
@@ -391,7 +393,7 @@ try:
     assert len(records)==(1 if kind=='reject' else 2)
     if kind=='accept':assert records[candidate['trip_id']]==(1,packed(candidate['content']))
     queries=[x for x in audit if x['path']=='/v1/trip-needs-action-receipts' and x['query']==dict(action_id=[action['original_id']])];assert all(x['status']==200 and x['receipt_present'] for x in queries)
-    value=dict(runtime_role=role,message_posts=2,model_calls=4,registered_operations=4,planning_posts=2,manual_prepares=manual_count,manual_saves=manual_count,source_trip_id=source['trip_id'],source_version=source['version'],source_content_sha256=source['content_sha256'],source_unchanged=True,source_bytes_unchanged=True,proposed_trip_id=candidate['trip_id'],original_action_id=action['original_id'],original_action_sha256=action['input_sha256'],kind=kind,formal_count=len(records),receipt_queries=len(queries),canonical_needs_unchanged=True,trip_local_fixed_preserved=True)
+    value=dict(runtime_role=role,message_posts=2,model_calls=4,registered_operations=4,planning_posts=2,manual_prepares=manual_count,manual_saves=manual_count,source_trip_id=source['trip_id'],source_version=source['version'],source_content_sha256=source['content_sha256'],source_unchanged=True,source_bytes_unchanged=True,proposed_trip_id=candidate['trip_id'],original_action_id=action['original_id'],original_action_sha256=action['input_sha256'],kind=kind,formal_count=len(records),receipt_queries=len(queries),canonical_needs_unchanged=True,trip_local_fixed_preserved=True,commit_ack_suppressed=CASE=='testNeedsPlanningCurrentFixedACKLoss')
     r['current_planning_proof']=value;save();return value
    class Control(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
