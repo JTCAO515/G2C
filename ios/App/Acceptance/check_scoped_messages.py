@@ -277,8 +277,8 @@ try:
     assert not any(x['path']=='/v1/trip-scoped-actions' for x in audit)
     value.update(body_reads=len(reads),body_statuses=[x['status'] for x in reads],same_original_result=True,no_trip_action=True,late_original=dict(late_state) if late else None)
     r['result_unavailable_proof']=value;r['observed_requests']=list(audit);save();return value
-   def followup_proof(committed=False):
-    assert CASE=='testScopedResultExpansionReselection' and len(actual_message_receipts)==2 and len(finished)==2
+   def followup_proof(committed=False,rejected=False):
+    assert CASE in ('testScopedResultExpansionReselection','testScopedResultWithdrawal') and len(actual_message_receipts)==2 and len(finished)==2
     with edit_db.connect(scope_for(ISSUER,subject)) as conn:
      role=conn.execute('SELECT current_user').fetchone()[0]
      rows=conn.execute('SELECT message_id,raw_input,run_id FROM cj_message_receipt WHERE conversation_id=%s ORDER BY sequence',(cid,)).fetchall()
@@ -309,14 +309,24 @@ try:
       if old['id']==spec['item_ids'][2]:
        assert new['text']=='SYNTHETIC lighter choice / 本次轻松一点' and {k:v for k,v in new.items() if k!='text'}=={k:v for k,v in old.items() if k!='text'}
       else:assert old==new
+    elif rejected:
+     assert CASE=='testScopedResultWithdrawal' and trips[0][1]==2 and bytes(trips[0][2])==packed(formal['content'])
+     assert len(writes)==len(actions)==1 and writes[0]['status']==200 and actions[0][0]==writes[0]['original_action_id']
+     assert hashlib.sha256(bytes(actions[0][1])).hexdigest()==writes[0]['input_sha256'] and json.loads(bytes(actions[0][1]))['kind']=='reject'
     else:assert trips[0][1]==2 and bytes(trips[0][2])==packed(formal['content']) and not writes and not actions
     queries=[x for x in audit if x['path']=='/v1/trip-scoped-action-receipts']
     if queries:assert all(q['original_query']==dict(action_id=[writes[0]['original_action_id']]) for q in queries)
     result_reads=[x for x in audit if x['path']=='/v1/trip-scoped-results']
-    assert all(x['method']=='GET' and x['status']==200 and x['original_query']==dict(result_id=[results[0][0]]) for x in result_reads)
-    if result_reads[-1].get('result_state')=='stale':assert result_reads[-1]['result_present'] is False and result_reads[-1]['expected_version']==2 and result_reads[-1]['current_version']==3
-    assert any(x['path']=='/v4/message-history' and x['status']==200 for x in audit)
-    value=dict(runtime_role=role,messages=2,message_posts=2,model_calls=fake.calls,registered_operations=operations,formal_version=trips[0][1],formal_count=1,actions=len(actions),original_result_preserved=True,new_explicit_item_ids=commands[1]['trip_context']['item_ids'],message_ids=[row[0] for row in rows],run_ids=[row[2] for row in rows],original_input_sha256=[hashlib.sha256(bytes(row[1])).hexdigest() for row in rows],result_reads=len(result_reads),last_result_state=result_reads[-1]['result_state'],receipt_queries=len(queries),unselected_exact=True)
+    assert all(x['method']=='GET' and x['original_query']==dict(result_id=[results[0][0]]) for x in result_reads)
+    if CASE=='testScopedResultWithdrawal':
+     assert [x['status'] for x in result_reads]==[200,503,503]
+     first_input=json.dumps(fake.inputs[0],ensure_ascii=False);last_input=json.dumps(fake.inputs[1],ensure_ascii=False)
+     assert 'SYNTHETIC LONG' in first_input and 'SYNTHETIC LONG' not in last_input and 'SYNTHETIC CURRENT' in last_input and 'SYNTHETIC OTHER' not in last_input
+    else:
+     assert all(x['status']==200 for x in result_reads)
+     if result_reads[-1].get('result_state')=='stale':assert result_reads[-1]['result_present'] is False and result_reads[-1]['expected_version']==2 and result_reads[-1]['current_version']==3
+     assert any(x['path']=='/v4/message-history' and x['status']==200 for x in audit)
+    value=dict(runtime_role=role,messages=2,message_posts=2,model_calls=fake.calls,registered_operations=operations,formal_version=trips[0][1],formal_count=1,actions=len(actions),original_result_preserved=True,new_explicit_item_ids=commands[1]['trip_context']['item_ids'],message_ids=[row[0] for row in rows],run_ids=[row[2] for row in rows],original_input_sha256=[hashlib.sha256(bytes(row[1])).hexdigest() for row in rows],result_reads=len(result_reads),last_result_state=result_reads[-1].get('result_state','unavailable'),withdrawn_memory_absent_from_new_model=CASE=='testScopedResultWithdrawal',receipt_queries=len(queries),unselected_exact=True)
     r['followup_proof']=value;r['observed_requests']=list(audit);save();return value
    def manual_unknown_proof():
     assert CASE=='testManualProtectedPrepareUnknownRestart' and ARGS.manual_trip_profile
@@ -440,6 +450,13 @@ try:
         time.sleep(.05)
        value=followup_proof()
       elif path.path=='/followup-proof':value=followup_proof(committed=True)
+      elif path.path=='/wait-memory-followup':
+       deadline=time.monotonic()+90
+       while len(finished)<2:
+        if worker_errors or time.monotonic()>deadline:raise TimeoutError('fresh memory followup completion')
+        time.sleep(.05)
+       value=followup_proof()
+      elif path.path=='/memory-followup-proof':value=followup_proof(rejected=True)
       elif path.path=='/manual-unknown-proof':value=manual_unknown_proof()
       elif path.path=='/discovery-refusal-proof':value=discovery_refusal_proof()
       elif path.path=='/late-proof':value=late_proof()
@@ -481,7 +498,9 @@ try:
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     if CASE=='testScopedResultExpansionReselection':
      final=followup_proof(committed=True);assert final['last_result_state']=='stale' and final['receipt_queries']>=1
-    elif CASE in ('testScopedResultWithdrawal','testScopedResultLateAccount'):result_unavailable_proof(late=CASE=='testScopedResultLateAccount')
+    elif CASE=='testScopedResultWithdrawal':
+     final=followup_proof(rejected=True);assert final['receipt_queries']>=1 and final['withdrawn_memory_absent_from_new_model']
+    elif CASE=='testScopedResultLateAccount':result_unavailable_proof(late=True)
     elif RESULT_PROFILE:result_proof()
     elif CASE=='testManualProtectedPrepareUnknownRestart':manual_unknown_proof()
     else:
