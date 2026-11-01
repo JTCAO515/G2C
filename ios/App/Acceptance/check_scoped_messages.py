@@ -134,11 +134,10 @@ try:
    credentials={scope_for(ISSUER,subject):headers['Authorization'][7:]}
    limits=Limits(datetime(2026,11,1,tzinfo=timezone.utc),7*86400,1,10_000_000,60,120,128,.05,.05,100)
    edit_db,configuration=local_configuration(conninfo_path=connection,auth_dir=auth,run_context=context,memory=memory,credentials=credentials.__getitem__,confirmation=signer,limits=limits,language='en')
+   message_edit_profile.activate(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
    if RESULT_PROFILE:
     from cj_api.edit_result_profile import activate as activate_result
     activate_result(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
-   else:
-    message_edit_profile.activate(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
    edit_api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,edit_configuration=configuration,needs_profile='manual-v1',history_configuration=load_history_configuration(auth))
    if CASE=='testScopedCandidateLateAccount':
     other_headers={'Authorization':'Bearer '+native_tokens['B']}
