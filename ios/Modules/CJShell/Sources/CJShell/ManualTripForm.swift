@@ -111,7 +111,7 @@ private struct ManualTripObservationForm: View {
     var body: some View {
         VStack(alignment:.leading,spacing:6) {
             RunReadableText(text:label)
-            Picker(language.text("Observation state","观察状态"),selection:Binding(get:{state},set:setState)) {
+            Picker(language.text("Observation state","观察状态"),selection:Binding(get:{state},set:{setState($0)})) {
                 ForEach(State.allCases,id:\.self) { value in Text(stateLabel(value)).tag(value) }
             }.accessibilityIdentifier(prefix+".state")
             switch value {
