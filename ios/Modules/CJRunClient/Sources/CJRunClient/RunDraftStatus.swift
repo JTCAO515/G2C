@@ -4,7 +4,7 @@ import CJMessageHTTP
 import OpenAPIRuntime
 import HTTPTypes
 
-public enum RunDraftStatusVersion: Sendable { case v1, v2, v3, v4, v5 }
+public enum RunDraftStatusVersion: Sendable { case v1, v2, v3, v4, v5, v6 }
 
 public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     case unread, loading, unavailable, loaded(Components.Schemas.RunDraftStatusResponse)
@@ -12,6 +12,7 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
     case loadedTravel(Components.Schemas.RunDraftStatusV3Response)
     case loadedTrip(RunTripDraftStatus)
     case loadedEdit(RunEditDraftStatus)
+    case loadedScoped(RunScopedDraftStatus)
     public var description: String { "<redacted draft read state>" }
     public var debugDescription: String { description }
     public var customMirror: Mirror { Mirror(self, children: [:]) }
@@ -25,6 +26,7 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         case .loadedTravel(let value): outcomeLabel(value.draft_outcome.rawValue, language)
         case .loadedTrip(let value): outcomeLabel(value.draftOutcome.rawValue, language)
         case .loadedEdit(let value): outcomeLabel(value.draftOutcome.rawValue, language)
+        case .loadedScoped(let value): outcomeLabel(value.draftOutcome.rawValue, language)
         }
     }
     public var runStatus: Components.Schemas.RunDisplaySnapshot.statusPayload? {
@@ -34,6 +36,7 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         case .loadedTravel(let value): Components.Schemas.RunDisplaySnapshot.statusPayload(rawValue:value.run_status.rawValue)
         case .loadedTrip(let value): Components.Schemas.RunDisplaySnapshot.statusPayload(rawValue:value.runStatus.rawValue)
         case .loadedEdit(let value): Components.Schemas.RunDisplaySnapshot.statusPayload(rawValue:value.runStatus.rawValue)
+        case .loadedScoped(let value): Components.Schemas.RunDisplaySnapshot.statusPayload(rawValue:value.runStatus.rawValue)
         case .unread, .loading, .unavailable: nil
         }
     }
@@ -45,6 +48,7 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         case .loadedTravel(let value):stage = value.budget_exhausted_stage.rawValue
         case .loadedTrip(let value):stage = value.budgetStage.rawValue
         case .loadedEdit(let value):stage = value.budgetStage.rawValue
+        case .loadedScoped(let value):stage = value.budgetStage.rawValue
         case .unread,.loading,.unavailable,.loaded:return nil
         }
         switch stage {
@@ -60,6 +64,8 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         case "not_requested":language.text("No draft was requested for this message", "此消息未请求草稿")
         case "not_recorded":language.text("No draft result recorded; outcome unknown", "尚无草稿结果记录，结果未知")
         case "published":language.text("Draft candidate recorded; not a saved trip", "已记录草稿候选，尚非正式行程")
+        case "clarification_required":language.text("Clarification needed; no formal Trip change", "需要澄清；尚未修改正式行程")
+        case "expansion_required":language.text("A wider selection is needed; no formal Trip change", "需要扩大选区；尚未修改正式行程")
         case "validation_failed":language.text("Draft failed validation; no candidate published", "草稿校验失败，未发布候选")
         case "provider_failed":language.text("Draft generation failed; no candidate published", "草稿生成失败，未发布候选")
         case "provider_unknown":language.text("Draft generation result unknown; do not generate again", "草稿生成结果未知，请勿再次生成")
@@ -73,9 +79,9 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
 @MainActor func readOriginalDraftStatus(endpoint: MessageEndpoint, transport: any ClientTransport,
     bearer: String, receipt: Components.Schemas.MessageReceipt, snapshot: Components.Schemas.RunDisplaySnapshot,
     version: RunDraftStatusVersion = .v1, reference: RunTravelReference? = nil, tripReference: MessageTripReference? = nil, editReference: MessageEditReference? = nil, validate: @MainActor @Sendable () throws -> Void) async throws -> RunDraftReadState {
-    guard (version == .v3) == (reference != nil), (version == .v4) == (tripReference != nil), (version == .v5) == (editReference != nil) else { throw RunDisplayFailure.invalidReference }
+    guard (version == .v3) == (reference != nil), (version == .v4) == (tripReference != nil), (version == .v5 || version == .v6) == (editReference != nil) else { throw RunDisplayFailure.invalidReference }
     var url = URLComponents()
-    url.path = version == .v1 ? "/v1/run-draft-status" : version == .v2 ? "/v2/run-draft-status" : version == .v3 ? "/v3/run-draft-status" : version == .v4 ? "/v4/run-draft-status" : "/v5/run-draft-status"
+    url.path = version == .v1 ? "/v1/run-draft-status" : version == .v2 ? "/v2/run-draft-status" : version == .v3 ? "/v3/run-draft-status" : version == .v4 ? "/v4/run-draft-status" : version == .v5 ? "/v5/run-draft-status" : "/v6/run-draft-status"
     url.queryItems = [URLQueryItem(name: "message_id", value: receipt.message_id)]
     url.percentEncodedQuery = url.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
     guard let path = url.string else { throw RunDisplayFailure.invalidReference }
@@ -83,7 +89,7 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
     request.headerFields[.authorization] = "Bearer " + bearer
     request.headerFields[.accept] = "application/json"
     try validate()
-    let (response, body) = try await transport.send(request, body: nil, baseURL: endpoint.url, operationID: version == .v1 ? "getRunDraftStatus" : version == .v2 ? "getRunDraftStatusV2" : version == .v3 ? "getTravelRunDraftStatus" : version == .v4 ? "getTripRunDraftStatusV4" : "getTripEditRunDraftStatusV5")
+    let (response, body) = try await transport.send(request, body: nil, baseURL: endpoint.url, operationID: version == .v1 ? "getRunDraftStatus" : version == .v2 ? "getRunDraftStatusV2" : version == .v3 ? "getTravelRunDraftStatus" : version == .v4 ? "getTripRunDraftStatusV4" : version == .v5 ? "getTripEditRunDraftStatusV5" : "getTripEditRunDraftStatusV6")
     try validate()
     guard response.status.code == 200 else { throw RunDisplayFailure.rejected(status: response.status.code) }
     let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
@@ -124,6 +130,10 @@ public enum RunDraftReadState: Sendable, CustomStringConvertible, CustomDebugStr
         guard let editReference else { throw RunDisplayFailure.invalidReference }
         let (value,fields)=try decodeEditDraftStatus(bytes,reference:editReference)
         references=fields;result = .loadedEdit(value)
+    case .v6:
+        guard let editReference else { throw RunDisplayFailure.invalidReference }
+        let (value,fields)=try decodeScopedDraftStatus(bytes,reference:editReference)
+        references=fields;result = .loadedScoped(value)
     }
     guard exact(references.requestID, traces[0].value), exact(references.message, receipt.message_id),
           exact(references.conversation, receipt.conversation_id), exact(references.generation, receipt.generation),
