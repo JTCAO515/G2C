@@ -65,7 +65,7 @@
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
 | A App | 文档 PR（M1 交接 + 本次规划修订）→ #244 → #228 → #21（App 部分）；#194、#159 等 JT 文案 | 整个 `ios/**`、`docs/ui.md`；包括从原 C 线移入的 `CJMemoryClient`、`CJTripClient` 等全部 iOS 模块；#228 整体归 A | #244 等 #242 关闭，复用 #167 预算呈现，M2 新消费边界单独实测；#242 未关闭时先做 #228 框 1–3（只依赖 #226），框 4 等 C 线 #227 当前上下文冻结；#21 App 等 B 线 #13 PLACE 契约冻结 |
-| B 后端消息与运行 | 本轮 [#343](https://github.com/JTCAO515/G2C/issues/343)四框与#327已交付关闭（PR349/350）；C接线缺口优先响应343，#315按JT保持OPEN不再投入 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | send.4/message-trip.2与CJ-MESSAGE-EDIT/MEMORY/PUBLISHER@1供C336/C344和A337；同RUN/Trip cursor，不授替代确认权，真实独立namespace/实际C能力缺失拒绝。C生产/App仍按其票验收，P2已记录C344，旧profiles/frozen不改 |
+| B 后端消息与运行 | 本轮[#354](https://github.com/JTCAO515/G2C/issues/354)/[#360](https://github.com/JTCAO515/G2C/issues/360)/[#378](https://github.com/JTCAO515/G2C/issues/378)均CLOSED（PR359/379/380/382）；goal结束仅B交接，C实际B接口缺口优先响应360/343；315按JT保持OPEN不投入 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | source1 needs-structured.1与source2 needs-current-trip.1独立正式入口；publisher@2/M29同cursor结果与新读版本供C336/A337。C381/M30生产交付由C负责，A App/真实资源按各owner验，不由B probe/后端验收代称全M2完成；业务锁已释放 |
 | C M2后端记忆、草稿与可行性 | M2持续推进；优先366已闭/PR368已合并，原消息→候选HTTP发现已通知A337；接336阶段二，不能以旧四票或本线暂交将M2标complete | backend/trip/**、backend/draft/**、backend/feasibility/**、backend/agent/cj_agent/draft.py、backend/memory/**、backend/memory_management/**、backend/memory_jobs/**、backend/memory_withdrawal/**、backend/manual_edit/**；只做后端 | 336阶段二缺B360在336的L0新结果ABI冻结（C已记缺口，非冻结），收到即做，不等整票关闭；A286等B354/PR359，A337消费新发现。持续优先处理真实转给C的联调缺口；无其他独立C项才记录依赖停点，M2仍未完成，不抢写A/B或猜接口。 |
 
 - 未列出的目录由 JT 指定归属；本线只改拥有且获准的文件。A 同时只推进一张父票（#244 属 #9，#228 属 #12）；当前票剩余框全部被前置卡住时，先记停点再换另一张。
@@ -141,3 +141,9 @@
 - 旧交接“不再开业务PR/无JT指令不接队列”不适用于本轮明确指派343。336/337/343/344已补入M2，均为25子票。343四框经契约PR349/e107eda/96808a4b和运行PR350/74fa0bc2/1e3af625完成，精确CI/独立红线通过，每次合并均已通知四个消费票，不等回执/main CI。
 - 新修改意图、Trip/version/hash/day或item、实际独立travel namespace/NEEDS与原message/run关联；Memory/publisher显式新ABI/实际依赖。publication按RUN→M→TRAVEL→MEMORY/NEEDS→Trip UPDATE，用同cursor写C唯一Proposal与RUNeffect，不另写版本/范围/资格引擎。C336/344生产模块、A337与真实服务仍另验；C344捕获短source检查和并发P2记录保留。
 - 327已按支持history.2实际原bytes/hash/text/ref/分页/owner/auth/损坏拒绝证据关闭，旧v1拒typed与原13PASS1FAIL保留。315按JT不再投入，等下次真实失败；本轮不自主扩展其他业务，C真实接口缺口按343优先响应。
+
+### B线入口与结果恢复本轮交付（JT 2026-11-01）
+
+- #354由PR359锁head490ecaf合ae417da6：显式needs-structured.1复用C source-input.1，未patch正式run_once/实际CLI＋签名API/受限PG/Fake/Meter→原确认/structured2/NEEDS basis；默认legacy保持，C来源INITIALIZE另见361/362。精确CI全绿，已通知286/21/22/373/C。
+- #360（parent25）L0 PR379锁19332a15合35fb4b3f，先冻结publisher@2/configCJ-MESSAGE-EDIT-RESULT@1/profile message-edit-result.1、两类非可接受结果/独立effect、新status/history/display及正负例并立即通知336/337；L1 PR380锁37b95f0f合c138fced交M29与同cursor结果/原ID恢复，精确CI全绿/PG33、一次独立P1返修后APPROVE。B桥接真实C函数/lease不冒称C生产；C381/M30及336随后由C交付。原FAIL与schema关联P2保留，无新权限或第二版本引擎。
+- #378（parent22）PR382锁2bb54fed合2d0a1011：独立needs-current-trip.1/C source-input.2正式run_once+CLI，实际registered输入Trip/proposed_fields、手动文本/独立fixed后的原Trip v3→不同新Trip v1、原bytes/receipt/status/history及NEEDS/selection/owner/cancel/UNKNOWN均PASS。六类CI全绿；含C M30实际合并树复验PASS，通知22/286/373/21/C，不等main CI/回执。B业务/共享锁释放，最后B-only handoff与本节合一文档PR。
