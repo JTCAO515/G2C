@@ -49,6 +49,8 @@ import Foundation
             let element=lookup(),navigation=app.navigationBars.firstMatch
             var top=navigation.exists ? navigation.frame.maxY+4 : app.frame.minY+60
             var bottom=navigation.exists ? app.frame.maxY-24 : app.tabBars.firstMatch.frame.minY
+            let tabBar=app.tabBars.firstMatch
+            if tabBar.exists && tabBar.isHittable { bottom=min(bottom,tabBar.frame.minY) }
             let header=app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer=app.otherElements.matching(identifier:"assistant.composer").firstMatch
             if !navigation.exists && !["assistant.draft","assistant.send"].contains(id) && header.exists && composer.exists {

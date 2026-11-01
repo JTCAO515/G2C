@@ -49,7 +49,7 @@ struct StructuredTripHome: View {
                             }
                             DisclosureGroup(isExpanded:Binding(get:{panel == .record},set:{ if $0 { panel = .record } })) {
                                 StructuredTripDocumentView(document:record.document,language:language,prefix:"trip.manual.record")
-                            } label: { Text(language.text("Read record","已读记录")).accessibilityIdentifier("trip.manual.record.open") }
+                            } label: { RunReadableText(text:language.text("Read record","已读记录")).accessibilityIdentifier("trip.manual.record.open") }
                             if record.document.version == .needsBound {
                                 RunReadableText(text:needsLabel()).accessibilityIdentifier("trip.manual.needs.status")
                                 button("trip.manual.needs.read",language.text("Read explicitly selected requirements","读取明确选定的需求"),disabled:display.busy) { run { try host.needs() } }
@@ -63,7 +63,7 @@ struct StructuredTripHome: View {
                             RunReadableText(text:editorMessage(edit)).accessibilityIdentifier("trip.manual.editor.state")
                             DisclosureGroup(isExpanded:Binding(get:{panel == .editor},set:{ if $0 { panel = .editor } })) {
                                 ManualTripForm(draft:edit.draft,language:language,change:{ value in act { try host.updateDraft(value) } })
-                            } label: { Text(language.text("Unsaved input","未保存输入")).accessibilityIdentifier("trip.manual.input.open") }
+                            } label: { RunReadableText(text:language.text("Unsaved input","未保存输入")).accessibilityIdentifier("trip.manual.input.open") }
                             button("trip.manual.prepare",language.text("Prepare selected changes","准备选定修改"),disabled:display.busy || !edit.canPrepare) { run { try host.prepare(save:false) } }
                             if let prepared=edit.preparation {
                                 DisclosureGroup(isExpanded:Binding(get:{panel == .diff},set:{ if $0 { panel = .diff } })) {
@@ -82,7 +82,7 @@ struct StructuredTripHome: View {
                                     DisclosureGroup(language.text("Original server diff","服务器原始差异")) {
                                         RunSelectableText(text:String(decoding:prepared.originalDiffUTF8,as:UTF8.self)).accessibilityIdentifier("trip.manual.diff.raw")
                                     }
-                                } label: { Text(language.text("Review exact server changes","核对服务器准确改动")).accessibilityIdentifier("trip.manual.diff.open") }
+                                } label: { RunReadableText(text:language.text("Review exact server changes","核对服务器准确改动")).accessibilityIdentifier("trip.manual.diff.open") }
                             }
                             button("trip.manual.save",language.text("Save this reviewed diff","保存这份已核对的差异"),disabled:display.busy || !edit.canSave) { run { try host.prepare(save:true) } }
                             if let receipt=edit.receipt {
