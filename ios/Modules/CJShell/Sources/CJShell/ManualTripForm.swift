@@ -55,7 +55,7 @@ struct ManualTripForm: View {
                     }
                     rowButton("trip.manual.up."+id,language.text("Move up","上移"),disabled:!selected || item.fixed != .known(false)) { move(id,-1) }
                     rowButton("trip.manual.down."+id,language.text("Move down","下移"),disabled:!selected || item.fixed != .known(false)) { move(id,1) }
-                } label: { Text(item.id+" · "+item.text).fixedSize(horizontal:false,vertical:true).accessibilityIdentifier("trip.manual.item.open."+id) }
+                } label: { RunReadableText(text:item.id+" · "+item.text).accessibilityIdentifier("trip.manual.item.open."+id) }
             }
             if draft.order != nil {
                 rowButton("trip.manual.order.clear",language.text("Keep the original order","保留原顺序")) { edit { try $0.setOrder(nil) } }
