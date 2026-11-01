@@ -13,7 +13,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case;PLANNING_PREFIX=CASE.startswith('testNeedsPlanning')
 PLANNING_DECISION=CASE in ('testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition')
 PLANNING_NO_DECISION=CASE in ('testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningLateAccount')
@@ -138,6 +138,7 @@ try:
      await send(dict(type='http.response.body',body=failure))
     if scope['method']=='POST':
      raw=b''.join(parts);entry['input_sha256']=hashlib.sha256(raw).hexdigest();value=json.loads(raw);entry['original_id']=value.get('action_id') or value.get('edit',{}).get('request_id')
+     if CASE=='testNeedsManualInvalidWindow' and path=='/v1/trip-needs-edits':entry['original_edit']=value
      if path=='/v1/trip-needs-actions':entry['decision']=value['kind'];entry['proposal_id']=value['proposal_id'];entry['candidate_hash']=value['candidate_hash']
      if PLANNING_PREFIX and path=='/v2/messages' and entry['status']==200:
       entry['message_id']=value['message_id'];message_receipt['value']=json.loads(b''.join(reply_parts))['receipt'];message_ready.set()
@@ -211,9 +212,15 @@ try:
      role,version,current=current_formal();assert version==1 and current==formal['content']
      value=dict(late_state,runtime_role=role,formal_version=1,formal_unchanged=True,prepare_posts=1,original_queries=len(queries),same_original_id=True,saves=0,edit_model_calls=0)
      r['proof']=value;save();return value
-    if CASE=='testNeedsManualCanonicalFixedRefusal':
+    if CASE in ('testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow'):
      prepares=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='POST'];queries=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='GET']
      assert len(prepares)==1 and prepares[0]['status']==409
+     if CASE=='testNeedsManualInvalidWindow':
+      original=prepares[0]['original_edit'];edit=original['edit'];schedule=json.loads(json.dumps(formal['content']['items'][1]['schedule']))
+      schedule['start']['time']=known('11:15');schedule['end']['time']=known('10:30')
+      assert original['version']=='TRIP-needs-edit.1' and original['needs_reference']==dict(id='visit',expected_version=1)
+      assert edit['trip_id']==tid and edit['expected_version']==1 and edit['title'] is None and edit['order'] is None
+      assert edit['changes']==[dict(item_id='b',field='schedule',value=schedule)]
      assert len(queries)>=1 and all(q['query']==dict(request_id=[prepares[0]['original_id']]) and q['status']==200 and q['preparation_present'] is False for q in queries)
      assert not any(x['method']=='POST' and x['path']!='/v1/trip-needs-edits' for x in audit) and model.calls==r['source_provider_calls']
      role,version,current=current_formal();assert version==1 and current==formal['content']
@@ -373,7 +380,7 @@ try:
     verified=planning_composition_proof() if CASE=='testNeedsPlanningManualComposition' else planning_decision_proof() if PLANNING_DECISION else planning_no_decision_proof() if PLANNING_NO_DECISION else proof()
     if CASE=='testNeedsPlanningManualComposition':assert verified['planning_receipt_queries']>=2
     elif PLANNING_DECISION:assert verified['receipt_queries']>=1
-    if not PLANNING_PREFIX and CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal'):assert verified['receipt_queries']>=1
+    if not PLANNING_PREFIX and CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow'):assert verified['receipt_queries']>=1
     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',a.simulator,bundle,'data'],text=True).strip())
     for f in container.rglob('*'):
      if f.is_file() and not f.is_symlink():assert all(secret.encode() not in f.read_bytes() for secret in tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in f.read_bytes()

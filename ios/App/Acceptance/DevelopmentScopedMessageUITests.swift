@@ -461,19 +461,39 @@ import Foundation
         }
     }
     func testNeedsManualCanonicalFixedRefusal() async throws {
-        let name="testNeedsManualCanonicalFixedRefusal",f=try await prepare(name)
+        try await manualRejectedPreparation("testNeedsManualCanonicalFixedRefusal",invalidWindow:false)
+    }
+    func testNeedsManualInvalidWindow() async throws {
+        try await manualRejectedPreparation("testNeedsManualInvalidWindow",invalidWindow:true)
+    }
+    private func manualRejectedPreparation(_ name:String,invalidWindow:Bool) async throws {
+        let f=try await prepare(name)
         defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:"en")
         tap("Trips");tap("trip.structured.refresh");tap("trip.structured.item."+trip.id);tap("trip.manual.needs.read");tap("trip.manual.edit.open")
-        let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open.a").firstMatch},id:"trip.manual.item.open.a")
+        let itemID=invalidWindow ? "b" : "a"
+        let item=visible({app.descendants(matching:.any).matching(identifier:"trip.manual.item.open."+itemID).firstMatch},id:"trip.manual.item.open."+itemID)
         XCTAssertTrue(item.isEnabled && item.isHittable);item.tap()
-        let selected=visible({app.switches.matching(identifier:"trip.manual.selected.a").firstMatch},id:"trip.manual.selected.a")
-        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap();tap("trip.manual.fixed.false.a")
-        text("trip.manual.fixed.input.a",contains:"Selected change: unlocked")
+        let selected=visible({app.switches.matching(identifier:"trip.manual.selected."+itemID).firstMatch},id:"trip.manual.selected."+itemID)
+        XCTAssertTrue(selected.isEnabled && selected.isHittable);selected.tap()
+        if invalidWindow {
+            let schedule=visible({app.switches.matching(identifier:"trip.manual.schedule.selected.b").firstMatch},id:"trip.manual.schedule.selected.b")
+            XCTAssertTrue(schedule.isEnabled && schedule.isHittable);schedule.tap()
+            replaceManualText("trip.manual.start.b.time.value","11:15")
+            replaceManualText("trip.manual.end.b.time.value","10:30")
+        } else {
+            tap("trip.manual.fixed.false.a")
+            text("trip.manual.fixed.input.a",contains:"Selected change: unlocked")
+        }
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Original request refused")
         text("trip.manual.refusal",contains:"Save conflict");text("trip.manual.refusal",contains:"409")
-        text("trip.manual.fixed.input.a",contains:"Selected change: unlocked")
+        if invalidWindow {
+            for (id,value) in [("trip.manual.start.b.time.value","11:15"),("trip.manual.end.b.time.value","10:30")] {
+                let field=visible({app.textFields.matching(identifier:id).firstMatch},id:id)
+                XCTAssertEqual(field.value as? String,value)
+            }
+        } else { text("trip.manual.fixed.input.a",contains:"Selected change: unlocked") }
         XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
         XCTAssertFalse(textElement("trip.manual.receipt").exists)
         tap("trip.manual.current");text("trip.manual.current.version",contains:"1")
