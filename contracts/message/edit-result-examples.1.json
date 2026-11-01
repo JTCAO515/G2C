@@ -1,0 +1,880 @@
+{
+  "version": "RUN-scoped-result-examples.1",
+  "positive": [
+    {
+      "version": "RUN-scoped-result.1",
+      "kind": "clarification_required",
+      "result_id": "result-original",
+      "message_id": "message-original",
+      "run_id": "run-original",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "version": "RUN-scoped-result.1",
+      "kind": "expansion_required",
+      "result_id": "result-original",
+      "message_id": "message-original",
+      "run_id": "run-original",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "negative": [
+    {
+      "version": "RUN-scoped-result.1",
+      "kind": "validation_failed",
+      "result_id": "result-original",
+      "message_id": "message-original",
+      "run_id": "run-original",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "version": "RUN-scoped-result.1",
+      "kind": "trip_proposal",
+      "result_id": "result-original",
+      "message_id": "message-original",
+      "run_id": "run-original",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "version": "RUN-scoped-result.1",
+      "kind": "clarification_required",
+      "result_id": "result-original",
+      "message_id": "message-original",
+      "run_id": "run-original",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "owner": "caller"
+    },
+    {
+      "version": "RUN-scoped-result.1",
+      "kind": "clarification_required",
+      "result_id": "path/invalid",
+      "message_id": "message-original",
+      "run_id": "run-original",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "version": "RUN-scoped-result.1",
+      "kind": "clarification_required",
+      "result_id": "result-original",
+      "message_id": "message-original",
+      "run_id": "run-original",
+      "input_sha256": "latest"
+    }
+  ],
+  "flows": [
+    {
+      "phase": "before_model",
+      "resolver": "CLARIFICATION_REQUIRED",
+      "model_calls": 0,
+      "outcome": "clarification_required",
+      "proposal_count": 0
+    },
+    {
+      "phase": "after_model",
+      "preview": "EXPANSION_REQUIRED",
+      "model_calls": 1,
+      "outcome": "expansion_required",
+      "proposal_count": 0
+    },
+    {
+      "phase": "invalid",
+      "preview": "fixed/invariant/parse violation",
+      "outcome": "validation_failed",
+      "result_count": 0
+    }
+  ],
+  "read_positive": [
+    {
+      "schema": "RunDraftStatus6",
+      "value": {
+        "request_id": "request",
+        "version": "RUN-draft-status.6",
+        "conversation_id": "chat",
+        "generation": "g",
+        "message_id": "edit-original",
+        "run_id": "run-original",
+        "message_sequence": 1,
+        "event_highwater": 3,
+        "run_status": "completed",
+        "draft_outcome": "clarification_required",
+        "budget_exhausted_stage": "none",
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "clarification_required",
+          "result_id": "result-clarification_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        }
+      }
+    },
+    {
+      "schema": "RunDisplay5",
+      "value": {
+        "request_id": "request",
+        "version": "RUN-display.5",
+        "snapshot": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "message_sequence": 1,
+          "status": "completed",
+          "event_highwater": 3,
+          "text": "",
+          "text_state": "complete"
+        },
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "clarification_required",
+          "result_id": "result-clarification_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        }
+      }
+    },
+    {
+      "schema": "MessageStatus5",
+      "value": {
+        "request_id": "request",
+        "version": "MESSAGE-send-status.5",
+        "receipt": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        },
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "head": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "last_sequence": 1
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "clarification_required",
+          "result_id": "result-clarification_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        }
+      }
+    },
+    {
+      "schema": "MessageHistory4",
+      "value": {
+        "request_id": "request",
+        "version": "MESSAGE-history.4",
+        "messages": [
+          {
+            "receipt": {
+              "conversation_id": "chat",
+              "generation": "g",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "sequence": 1,
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+            },
+            "reference": {
+              "version": "MESSAGE-edit-reference.1",
+              "message_version": "MESSAGE-send.4",
+              "conversation_id": "chat",
+              "generation": "g",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "sequence": 1,
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+              "selection_epoch": 1,
+              "modification_intent": "propose_scoped_edit",
+              "trip_context": {
+                "id": "formal-trip",
+                "expected_version": 3,
+                "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "day": {
+                  "date": "2026-11-02",
+                  "timezone": "Asia/Shanghai"
+                },
+                "item_ids": []
+              },
+              "resolved_item_ids": [
+                "a"
+              ],
+              "content_version": "structured.2",
+              "namespace": {
+                "kind": "travel",
+                "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "version": 1
+              },
+              "needs_reference": {
+                "id": "needs",
+                "expected_version": 2
+              }
+            },
+            "original_utf8_base64": "eyJ2ZXJzaW9uIjoiTUVTU0FHRS1zZW5kLjQiLCJjb252ZXJzYXRpb25faWQiOiJjaGF0IiwibWVzc2FnZV9pZCI6ImVkaXQtb3JpZ2luYWwiLCJ0ZXh0Ijoi56ys5LqM5aSp6L275p2+5LiA54K5IiwidHJpcF9pZCI6bnVsbCwiY3JlYXRpb25faW50ZW50Ijoibm9uZSIsImV4cGVjdGVkX2dlbmVyYXRpb24iOiJnIiwiZXhwZWN0ZWRfc2VxdWVuY2UiOjAsIm1vZGlmaWNhdGlvbl9pbnRlbnQiOiJwcm9wb3NlX3Njb3BlZF9lZGl0IiwidHJpcF9jb250ZXh0Ijp7ImlkIjoiZm9ybWFsLXRyaXAiLCJleHBlY3RlZF92ZXJzaW9uIjozLCJjb250ZW50X3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJkYXkiOnsiZGF0ZSI6IjIwMjYtMTEtMDIiLCJ0aW1lem9uZSI6IkFzaWEvU2hhbmdoYWkifSwiaXRlbV9pZHMiOltdfSwidHJhdmVsX2NvbnRleHQiOnsiaWQiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImV4cGVjdGVkX3ZlcnNpb24iOjF9LCJuZWVkc19yZWZlcmVuY2UiOnsiaWQiOiJuZWVkcyIsImV4cGVjdGVkX3ZlcnNpb24iOjJ9fQ==",
+            "text": "第二天轻松一点",
+            "scoped_result": {
+              "version": "RUN-scoped-result.1",
+              "kind": "clarification_required",
+              "result_id": "result-clarification_required",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+            }
+          }
+        ],
+        "next_cursor": null
+      }
+    },
+    {
+      "schema": "RunDraftStatus6",
+      "value": {
+        "request_id": "request",
+        "version": "RUN-draft-status.6",
+        "conversation_id": "chat",
+        "generation": "g",
+        "message_id": "edit-original",
+        "run_id": "run-original",
+        "message_sequence": 1,
+        "event_highwater": 3,
+        "run_status": "completed",
+        "draft_outcome": "expansion_required",
+        "budget_exhausted_stage": "none",
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "expansion_required",
+          "result_id": "result-expansion_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        }
+      }
+    },
+    {
+      "schema": "RunDisplay5",
+      "value": {
+        "request_id": "request",
+        "version": "RUN-display.5",
+        "snapshot": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "message_sequence": 1,
+          "status": "completed",
+          "event_highwater": 3,
+          "text": "",
+          "text_state": "complete"
+        },
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "expansion_required",
+          "result_id": "result-expansion_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        }
+      }
+    },
+    {
+      "schema": "MessageStatus5",
+      "value": {
+        "request_id": "request",
+        "version": "MESSAGE-send-status.5",
+        "receipt": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        },
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "head": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "last_sequence": 1
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "expansion_required",
+          "result_id": "result-expansion_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        }
+      }
+    },
+    {
+      "schema": "MessageHistory4",
+      "value": {
+        "request_id": "request",
+        "version": "MESSAGE-history.4",
+        "messages": [
+          {
+            "receipt": {
+              "conversation_id": "chat",
+              "generation": "g",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "sequence": 1,
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+            },
+            "reference": {
+              "version": "MESSAGE-edit-reference.1",
+              "message_version": "MESSAGE-send.4",
+              "conversation_id": "chat",
+              "generation": "g",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "sequence": 1,
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+              "selection_epoch": 1,
+              "modification_intent": "propose_scoped_edit",
+              "trip_context": {
+                "id": "formal-trip",
+                "expected_version": 3,
+                "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "day": {
+                  "date": "2026-11-02",
+                  "timezone": "Asia/Shanghai"
+                },
+                "item_ids": []
+              },
+              "resolved_item_ids": [
+                "a"
+              ],
+              "content_version": "structured.2",
+              "namespace": {
+                "kind": "travel",
+                "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "version": 1
+              },
+              "needs_reference": {
+                "id": "needs",
+                "expected_version": 2
+              }
+            },
+            "original_utf8_base64": "eyJ2ZXJzaW9uIjoiTUVTU0FHRS1zZW5kLjQiLCJjb252ZXJzYXRpb25faWQiOiJjaGF0IiwibWVzc2FnZV9pZCI6ImVkaXQtb3JpZ2luYWwiLCJ0ZXh0Ijoi56ys5LqM5aSp6L275p2+5LiA54K5IiwidHJpcF9pZCI6bnVsbCwiY3JlYXRpb25faW50ZW50Ijoibm9uZSIsImV4cGVjdGVkX2dlbmVyYXRpb24iOiJnIiwiZXhwZWN0ZWRfc2VxdWVuY2UiOjAsIm1vZGlmaWNhdGlvbl9pbnRlbnQiOiJwcm9wb3NlX3Njb3BlZF9lZGl0IiwidHJpcF9jb250ZXh0Ijp7ImlkIjoiZm9ybWFsLXRyaXAiLCJleHBlY3RlZF92ZXJzaW9uIjozLCJjb250ZW50X3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJkYXkiOnsiZGF0ZSI6IjIwMjYtMTEtMDIiLCJ0aW1lem9uZSI6IkFzaWEvU2hhbmdoYWkifSwiaXRlbV9pZHMiOltdfSwidHJhdmVsX2NvbnRleHQiOnsiaWQiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImV4cGVjdGVkX3ZlcnNpb24iOjF9LCJuZWVkc19yZWZlcmVuY2UiOnsiaWQiOiJuZWVkcyIsImV4cGVjdGVkX3ZlcnNpb24iOjJ9fQ==",
+            "text": "第二天轻松一点",
+            "scoped_result": {
+              "version": "RUN-scoped-result.1",
+              "kind": "expansion_required",
+              "result_id": "result-expansion_required",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+            }
+          }
+        ],
+        "next_cursor": null
+      }
+    }
+  ],
+  "read_negative": [
+    {
+      "schema": "RunDraftStatus6",
+      "value": {
+        "request_id": "request",
+        "version": "RUN-draft-status.6",
+        "conversation_id": "chat",
+        "generation": "g",
+        "message_id": "edit-original",
+        "run_id": "run-original",
+        "message_sequence": 1,
+        "event_highwater": 3,
+        "run_status": "completed",
+        "draft_outcome": "clarification_required",
+        "budget_exhausted_stage": "none",
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "clarification_required",
+          "result_id": "result-clarification_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        },
+        "permission": "accept"
+      }
+    },
+    {
+      "schema": "RunDisplay5",
+      "value": {
+        "request_id": "request",
+        "version": "RUN-display.5",
+        "snapshot": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "message_sequence": 1,
+          "status": "completed",
+          "event_highwater": 3,
+          "text": "",
+          "text_state": "complete"
+        },
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "clarification_required",
+          "result_id": "result-clarification_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        },
+        "permission": "accept"
+      }
+    },
+    {
+      "schema": "MessageStatus5",
+      "value": {
+        "request_id": "request",
+        "version": "MESSAGE-send-status.5",
+        "receipt": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        },
+        "reference": {
+          "version": "MESSAGE-edit-reference.1",
+          "message_version": "MESSAGE-send.4",
+          "conversation_id": "chat",
+          "generation": "g",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "sequence": 1,
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+          "selection_epoch": 1,
+          "modification_intent": "propose_scoped_edit",
+          "trip_context": {
+            "id": "formal-trip",
+            "expected_version": 3,
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "day": {
+              "date": "2026-11-02",
+              "timezone": "Asia/Shanghai"
+            },
+            "item_ids": []
+          },
+          "resolved_item_ids": [
+            "a"
+          ],
+          "content_version": "structured.2",
+          "namespace": {
+            "kind": "travel",
+            "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "version": 1
+          },
+          "needs_reference": {
+            "id": "needs",
+            "expected_version": 2
+          }
+        },
+        "head": {
+          "conversation_id": "chat",
+          "generation": "g",
+          "last_sequence": 1
+        },
+        "scoped_result": {
+          "version": "RUN-scoped-result.1",
+          "kind": "clarification_required",
+          "result_id": "result-clarification_required",
+          "message_id": "edit-original",
+          "run_id": "run-original",
+          "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+        },
+        "permission": "accept"
+      }
+    },
+    {
+      "schema": "MessageHistory4",
+      "value": {
+        "request_id": "request",
+        "version": "MESSAGE-history.4",
+        "messages": [
+          {
+            "receipt": {
+              "conversation_id": "chat",
+              "generation": "g",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "sequence": 1,
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+            },
+            "reference": {
+              "version": "MESSAGE-edit-reference.1",
+              "message_version": "MESSAGE-send.4",
+              "conversation_id": "chat",
+              "generation": "g",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "sequence": 1,
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701",
+              "selection_epoch": 1,
+              "modification_intent": "propose_scoped_edit",
+              "trip_context": {
+                "id": "formal-trip",
+                "expected_version": 3,
+                "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "day": {
+                  "date": "2026-11-02",
+                  "timezone": "Asia/Shanghai"
+                },
+                "item_ids": []
+              },
+              "resolved_item_ids": [
+                "a"
+              ],
+              "content_version": "structured.2",
+              "namespace": {
+                "kind": "travel",
+                "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "version": 1
+              },
+              "needs_reference": {
+                "id": "needs",
+                "expected_version": 2
+              }
+            },
+            "original_utf8_base64": "eyJ2ZXJzaW9uIjoiTUVTU0FHRS1zZW5kLjQiLCJjb252ZXJzYXRpb25faWQiOiJjaGF0IiwibWVzc2FnZV9pZCI6ImVkaXQtb3JpZ2luYWwiLCJ0ZXh0Ijoi56ys5LqM5aSp6L275p2+5LiA54K5IiwidHJpcF9pZCI6bnVsbCwiY3JlYXRpb25faW50ZW50Ijoibm9uZSIsImV4cGVjdGVkX2dlbmVyYXRpb24iOiJnIiwiZXhwZWN0ZWRfc2VxdWVuY2UiOjAsIm1vZGlmaWNhdGlvbl9pbnRlbnQiOiJwcm9wb3NlX3Njb3BlZF9lZGl0IiwidHJpcF9jb250ZXh0Ijp7ImlkIjoiZm9ybWFsLXRyaXAiLCJleHBlY3RlZF92ZXJzaW9uIjozLCJjb250ZW50X3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJkYXkiOnsiZGF0ZSI6IjIwMjYtMTEtMDIiLCJ0aW1lem9uZSI6IkFzaWEvU2hhbmdoYWkifSwiaXRlbV9pZHMiOltdfSwidHJhdmVsX2NvbnRleHQiOnsiaWQiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImV4cGVjdGVkX3ZlcnNpb24iOjF9LCJuZWVkc19yZWZlcmVuY2UiOnsiaWQiOiJuZWVkcyIsImV4cGVjdGVkX3ZlcnNpb24iOjJ9fQ==",
+            "text": "第二天轻松一点",
+            "scoped_result": {
+              "version": "RUN-scoped-result.1",
+              "kind": "clarification_required",
+              "result_id": "result-clarification_required",
+              "message_id": "edit-original",
+              "run_id": "run-original",
+              "input_sha256": "356b71ecf1c0d6be913b9fbb41d7213c743971b5e998aeb65074f4d020c54701"
+            }
+          }
+        ],
+        "next_cursor": null,
+        "permission": "accept"
+      }
+    }
+  ],
+  "runtime_negative": [
+    {
+      "case": "Trip version/hash changed",
+      "new_result_count": 0
+    },
+    {
+      "case": "selection ABA",
+      "new_result_count": 0
+    },
+    {
+      "case": "owner replaced",
+      "new_result_count": 0
+    },
+    {
+      "case": "Memory withdrawn or changed",
+      "new_result_count": 0
+    },
+    {
+      "case": "NEEDS changed",
+      "new_result_count": 0
+    },
+    {
+      "case": "namespace stale",
+      "new_result_count": 0
+    },
+    {
+      "case": "deadline before_write",
+      "new_result_count": 0
+    },
+    {
+      "case": "cancel ordered first",
+      "new_result_count": 0
+    },
+    {
+      "case": "original UNKNOWN",
+      "new_result_count": 0
+    },
+    {
+      "case": "parse/fixed/invariant violation",
+      "new_result_count": 0
+    }
+  ]
+}

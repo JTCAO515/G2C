@@ -130,6 +130,12 @@ class HistoryReadContext:
                 raise Unavailable()
         return result
 
+    def edit_send_status(self,conversation_id,message_id=None):
+        self._check()
+        value=self._service.send_status_v4(conversation_id,message_id)
+        self._check()
+        return value
+
     def message_history(self, conversation_id, cursor=None, limit=20):
         self._check()
         return self._service.message_history(conversation_id, cursor, limit)
