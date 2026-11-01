@@ -328,9 +328,9 @@ import Foundation
         replace("trip.manual.start.b.time.value","11:15")
         replace("trip.manual.end.b.time.value","12:15")
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
-        text("trip.manual.after.text.b",contains:input)
-        text("trip.manual.after.start.b.time",contains:"11:15")
-        text("trip.manual.after.end.b.time",contains:"12:15")
+        text("trip.manual.after.item.b",contains:input)
+        text("trip.manual.after.schedule.b",contains:"11:15")
+        text("trip.manual.after.schedule.b",contains:"12:15")
         text("trip.manual.after.fixed.a",contains:"Explicitly fixed")
         tap("trip.manual.save");text("trip.manual.receipt",contains:"2")
         _ = try await call("/manual-save-proof",caseID:name)
@@ -342,9 +342,9 @@ import Foundation
         let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.s:")).firstMatch},id:"manual.time.query")
         XCTAssertTrue(query.isEnabled && query.isHittable);query.tap();text("trip.manual.original.result",contains:"原回执已核对")
         tap("trip.structured.refresh");tap("trip.structured.item."+trip.id)
-        text("trip.manual.record.text.b",contains:input)
-        text("trip.manual.record.start.b.time",contains:"11:15")
-        text("trip.manual.record.end.b.time",contains:"12:15")
+        text("trip.manual.record.item.b",contains:input)
+        text("trip.manual.record.schedule.b",contains:"11:15")
+        text("trip.manual.record.schedule.b",contains:"12:15")
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-restart");try audit(name+"-restart")
     }
@@ -374,12 +374,12 @@ import Foundation
         text("trip.manual.after.title",contains:input)
         tap("trip.manual.save")
         if ackLoss {
-            text("trip.manual.editor.state",contains:"UNKNOWN")
+            text("trip.manual.editor.state",contains:"Result unknown")
             XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
             XCTAssertFalse(textElement("trip.manual.receipt").exists)
         } else { text("trip.manual.receipt",contains:"2") }
         tap("trip.manual.current");text("trip.manual.current.version",contains:"2")
-        if ackLoss { text("trip.manual.editor.state",contains:"UNKNOWN");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
+        if ackLoss { text("trip.manual.editor.state",contains:"Result unknown");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-saved-original");try audit(name+"-saved")
         try launch(f,language:"zh-Hans",restore:true)
