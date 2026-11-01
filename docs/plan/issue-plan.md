@@ -64,7 +64,7 @@
 
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
-| A App | 文档 PR（M1 交接 + 本次规划修订）→ #244 → #228 → #21（App 部分）；#194、#159 等 JT 文案 | 整个 `ios/**`、`docs/ui.md`；包括从原 C 线移入的 `CJMemoryClient`、`CJTripClient` 等全部 iOS 模块；#228 整体归 A | #244 等 #242 关闭，复用 #167 预算呈现，M2 新消费边界单独实测；#242 未关闭时先做 #228 框 1–3（只依赖 #226），框 4 等 C 线 #227 当前上下文冻结；#21 App 等 B 线 #13 PLACE 契约冻结 |
+| A App | M2持续goal；#244/#271/#266/#228、#286/#22/#373、#337/#25均CLOSED；#21仅地图综合余项OPEN；#194/#159跳过 | 整个 `ios/**`、`docs/ui.md`；唯一A承接线程，不恢复OldA并行写入 | PR367/370/371/372/376/377/384及原生/精确CI已收口；B/C正式契约及source2前置已解除。JT原指令地图暂缓UNRUN，SDK/Key/许可/实际点位/坐标/权限组合待明确恢复该授权；不接真实服务、不重复请求同一授权，不把未实现App转记L1完成。M2/goal未完成；L2/L3已回链#32/#29。 |
 | B 后端消息与运行 | 本轮[#354](https://github.com/JTCAO515/G2C/issues/354)/[#360](https://github.com/JTCAO515/G2C/issues/360)/[#378](https://github.com/JTCAO515/G2C/issues/378)均CLOSED（PR359/379/380/382）；goal结束仅B交接，C实际B接口缺口优先响应360/343；315按JT保持OPEN不投入 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | source1 needs-structured.1与source2 needs-current-trip.1独立正式入口；publisher@2/M29同cursor结果与新读版本供C336/A337。C381/M30生产交付由C负责，A App/真实资源按各owner验，不由B probe/后端验收代称全M2完成；业务锁已释放 |
 | C M2后端记忆、草稿与可行性 | M2持续推进；优先366已闭/PR368已合并，原消息→候选HTTP发现已通知A337；接336阶段二，不能以旧四票或本线暂交将M2标complete | backend/trip/**、backend/draft/**、backend/feasibility/**、backend/agent/cj_agent/draft.py、backend/memory/**、backend/memory_management/**、backend/memory_jobs/**、backend/memory_withdrawal/**、backend/manual_edit/**；只做后端 | 336阶段二缺B360在336的L0新结果ABI冻结（C已记缺口，非冻结），收到即做，不等整票关闭；A286等B354/PR359，A337消费新发现。持续优先处理真实转给C的联调缺口；无其他独立C项才记录依赖停点，M2仍未完成，不抢写A/B或猜接口。 |
 
