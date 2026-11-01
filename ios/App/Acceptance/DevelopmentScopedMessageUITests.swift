@@ -162,7 +162,9 @@ import Foundation
     func testScopedResultClarification() async throws { try await scenario("testScopedResultClarification",language:"en",item:true,resultKind:"clarification_required") }
     func testScopedResultExpansionKeep() async throws { try await scenario("testScopedResultExpansionKeep",language:"en",item:true,resultKind:"expansion_required") }
     func testScopedResultExpansionReselection() async throws { try await scenario("testScopedResultExpansionReselection",language:"en",item:true,resultKind:"expansion_required",resultFollowup:true) }
-    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false,resultKind:String?=nil,resultFollowup:Bool=false) async throws {
+    func testScopedResultWithdrawal() async throws { try await scenario("testScopedResultWithdrawal",language:"en",item:true,resultKind:"expansion_required",resultWithdrawal:true) }
+    func testScopedResultLateAccount() async throws { try await scenario("testScopedResultLateAccount",language:"en",item:true,resultKind:"expansion_required",resultLate:true) }
+    private func scenario(_ name:String,language:String,large:Bool=false,item:Bool=false,switchLanguage:Bool=false,undetermined:Bool=false,decision:String?=nil,ackLoss:Bool=false,invalidation:String?=nil,lateAccount:Bool=false,discoveryUnavailable:Bool=false,fixedReorder:Bool=false,resultKind:String?=nil,resultFollowup:Bool=false,resultWithdrawal:Bool=false,resultLate:Bool=false) async throws {
         let f=try await prepare(name);defer { app?.terminate() }
         let trip=try XCTUnwrap(f.formal_trips.first)
         try launch(f,language:language,large:large);conversation(f)
@@ -224,6 +226,20 @@ import Foundation
         else if undetermined { text("run.draft.status",contains:activeLanguage=="en" ? "no candidate published" : "未发布候选") }
         else { text("run.draft.status",contains:activeLanguage=="en" ? "not a saved trip" : "尚非正式行程") }
         capture(name+"-published-not-adopted");try audit(name+"-original-run")
+        if resultLate {
+            tap("scope.result.read");_ = try await call("/wait-result-response",caseID:name)
+            tap("Memory")
+            if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
+            tap("account.development.signin.B");text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+            _ = try await call("/release-result-response",caseID:name)
+            tap("Assistant")
+            XCTAssertFalse(textElement("scope.result.kind").exists)
+            XCTAssertFalse(textElement("scope.result.reason").exists)
+            XCTAssertFalse(app.buttons.matching(identifier:"scope.result.read").firstMatch.isEnabled)
+            _ = try await call("/late-result-proof",caseID:name)
+            capture(name+"-late-A-withheld-from-B");try audit(name+"-late-result")
+            return
+        }
         if let resultKind {
             tap("scope.result.read");text("scope.result.activity",contains:"Original result read")
             text("scope.result.kind",contains:resultKind=="clarification_required" ? "Clarification needed" : "wider selection")
@@ -236,6 +252,19 @@ import Foundation
             } else { text("scope.result.no.inferred.scope",contains:"No replacement selection") }
             _ = try await call("/result-proof",caseID:name)
             capture(name+"-protected-result");try audit(name+"-result")
+            if resultWithdrawal {
+                _ = try await call("/invalidate-candidate",caseID:name)
+                for _ in 0..<2 {
+                    tap("scope.result.read");text("scope.result.activity",contains:"Original result unavailable")
+                    XCTAssertFalse(textElement("scope.result.kind").exists)
+                    XCTAssertFalse(textElement("scope.result.change.after.0").exists)
+                    XCTAssertFalse(app.buttons.matching(identifier:"scope.result.keep.original").firstMatch.exists)
+                    XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
+                }
+                _ = try await call("/result-unavailable-proof",caseID:name)
+                capture(name+"-withdrawn-original-unavailable");try audit(name+"-withdrawal")
+                return
+            }
             tap("Memory")
             for _ in 0..<3 {
                 if app.buttons.matching(identifier:"memory.language").firstMatch.exists { break }
