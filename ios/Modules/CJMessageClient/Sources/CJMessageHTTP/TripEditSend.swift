@@ -22,7 +22,7 @@ extension MessageHTTPClient {
     private func editStatusPath(conversation: String, message: String?) throws -> String {
         guard !conversation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               conversation.utf8.count <= 256, !conversation.utf8.contains(0) else { throw RecoveryError.invalidInput }
-        var parts = URLComponents(); parts.path = "/v4/message-send-status"
+        var parts = URLComponents(); parts.path = "/v\(tripEditStatusVersion)/message-send-status"
         parts.queryItems = [.init(name: "conversation_id", value: conversation)]
         if let message { parts.queryItems!.append(.init(name: "message_id", value: message)) }
         guard let value = parts.string else { throw RecoveryError.invalidInput }
@@ -35,12 +35,12 @@ extension MessageHTTPClient {
         let key = Data(conversationID.utf8), request = UUID()
         tripEditPermitState.reads[key] = request
         tripEditPermitState.heads.removeValue(forKey: key)
-        let (status, bytes, trace) = try await versionedMessageExchange(path: editStatusPath(conversation: conversationID, message: nil), operation: "readTripEditStatusV4", raw: nil, lease: lease)
+        let (status, bytes, trace) = try await versionedMessageExchange(path: editStatusPath(conversation: conversationID, message: nil), operation: tripEditStatusOperation, raw: nil, lease: lease)
         guard tripEditPermitState.reads[key] == request else { throw RecoveryError.staleOperation }
         guard status == 200 else {
             throw MessageReadFailure.rejected(status: status, error: try editError(bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace))
         }
-        let result = try TripEditStatus(raw: bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, conversationID: conversationID, original: nil)
+        let result = try TripEditStatus(raw: bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, conversationID: conversationID, original: nil, scopedResults: readsScopedEditResults)
         if let head = result.head { tripEditPermitState.heads[key] = head }
         return result.head
     }
@@ -150,9 +150,9 @@ extension MessageHTTPClient {
         tripEditPermitState.decisions.removeValue(forKey: key); tripEditPermitState.prepared.removeValue(forKey: key); tripEditPermitState.heads.removeValue(forKey: conversation)
         let operation = try recovery.beginQuery(messageID: messageID, lease: lease)
         do {
-            let (status, bytes, trace) = try await versionedMessageExchange(path: editStatusPath(conversation: original.head.conversation_id, message: messageID), operation: "readTripEditStatusV4", raw: nil, lease: lease)
+            let (status, bytes, trace) = try await versionedMessageExchange(path: editStatusPath(conversation: original.head.conversation_id, message: messageID), operation: tripEditStatusOperation, raw: nil, lease: lease)
             guard status == 200 else { throw MessageHTTPFailure.exchangeUnknown }
-            let result = try TripEditStatus(raw: bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, conversationID: original.head.conversation_id, original: original)
+            let result = try TripEditStatus(raw: bytes, maximumBytes: endpoint.maximumResponseBytes, requestID: trace, conversationID: original.head.conversation_id, original: original, scopedResults: readsScopedEditResults)
             let decision: MessageSendDecision
             if let accepted = result.acceptance, let receiptBytes = result.acceptedUTF8 {
                 try tripEditSources[key]?.validate(accepted.reference)
