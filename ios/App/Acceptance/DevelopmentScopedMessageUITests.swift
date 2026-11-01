@@ -280,7 +280,9 @@ import Foundation
         XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Result unknown")
         XCTAssertEqual(titleField().value as? String,input)
-        XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.exists)
+        let save=app.buttons.matching(identifier:"trip.manual.save").firstMatch
+        XCTAssertTrue(save.exists,"The retained editor explains the blocked save")
+        XCTAssertFalse(save.isEnabled,"Unknown preparation cannot be saved")
         XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.prepare").firstMatch.isEnabled)
         func queryRetained() {
             tap("trip.manual.originals.read")
