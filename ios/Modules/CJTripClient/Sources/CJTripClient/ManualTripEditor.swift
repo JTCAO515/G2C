@@ -2,11 +2,16 @@ import Foundation
 import Observation
 
 public enum ManualTripEditorState: Sendable { case editing, preparing, prepared, saving, saved, rejected, unknown }
+public struct ManualTripRefusal: Sendable {
+    public let status: Int
+    public let code: String
+}
 public struct ManualTripDisplay: Sendable {
     public let draft: ManualTripDraft
     public let state: ManualTripEditorState
     public let preparation: ManualTripPreparation?
     public let receipt: ManualTripReceipt?
+    public let refusal: ManualTripRefusal?
     public let canPrepare: Bool
     public let canSave: Bool
     public let busy: Bool
@@ -35,6 +40,7 @@ public struct ManualTripDisplay: Sendable {
     @ObservationIgnored private var preparedResponse: Data?
     @ObservationIgnored private var preparedRevision: UUID?
     @ObservationIgnored private var receipt: ManualTripReceipt?
+    @ObservationIgnored private var refusal: ManualTripRefusal?
     /// Notification only. Private state is settled first, so synchronous
     /// Observation reentry cannot make an older publication overwrite new data.
     public private(set) var displayRevision = UUID()
@@ -64,7 +70,7 @@ public struct ManualTripDisplay: Sendable {
             let committed = preparedInput.map(runtime.wasCommitted) ?? false
             let save = !busy && state == .prepared && prepared?.status == .pending && preparedRevision == draft.revision && !committed
                 && (prepared?.expiresAt.map { $0 > Int(Date().timeIntervalSince1970) } ?? true)
-            let result=ManualTripDisplay(draft:draft,state:state,preparation:prepared,receipt:receipt,
+            let result=ManualTripDisplay(draft:draft,state:state,preparation:prepared,receipt:receipt,refusal:refusal,
                 canPrepare:!busy && valid && state != .saved && state != .unknown && !committed,canSave:save,busy:busy)
             try check(nonce:current);return result
         } catch { return nil }
@@ -73,10 +79,10 @@ public struct ManualTripDisplay: Sendable {
         let current=nonce;try check(nonce:current)
         guard let original=draft, value.editorID==original.editorID else { throw TripFailure.invalidInput }
         nonce=UUID();draft=value;prepared=nil;preparedInput=nil;preparedResponse=nil;preparedRevision=nil
-        state = .editing;busy=false;displayRevision=UUID()
+        refusal=nil;state = .editing;busy=false;displayRevision=UUID()
     }
     public func retire() {
-        retired=true;nonce=UUID();draft=nil;prepared=nil;preparedInput=nil;preparedResponse=nil;preparedRevision=nil;receipt=nil;busy=false
+        retired=true;nonce=UUID();draft=nil;prepared=nil;preparedInput=nil;preparedResponse=nil;preparedRevision=nil;receipt=nil;refusal=nil;busy=false
         displayRevision=UUID()
     }
     public func prepareReview() throws -> ManualTripWork {
@@ -92,7 +98,7 @@ public struct ManualTripDisplay: Sendable {
         guard !runtime.wasCommitted(input) else { throw TripFailure.staleBinding }
         let work=runtime.makeWrite(editor:owner,nonce:current,binding:binding,generation:generation,
             original:.init(prepare:input),prefix:prefix,linkedPrepare:nil)
-        preparedInput=input;prepared=nil;preparedResponse=nil;preparedRevision=nil;activeDraftRevision=revision;state = .preparing;busy=true
+        preparedInput=input;prepared=nil;preparedResponse=nil;preparedRevision=nil;activeDraftRevision=revision;refusal=nil;state = .preparing;busy=true
         displayRevision=UUID();return work
     }
     /// One explicit save confirms precisely the currently reviewed diff. There
@@ -125,7 +131,7 @@ public struct ManualTripDisplay: Sendable {
             switch outcome {
             case .prepared(let value): prepared=value;preparedResponse=response;preparedRevision=revision;state = .prepared
             case .saved(let value): receipt=value;state = .saved
-            case .rejected: state = .rejected
+            case .rejected(let status,let code): refusal = .init(status:status,code:code);state = .rejected
             case .notObserved: state = .unknown
             }
             busy=false;displayRevision=UUID();return outcome

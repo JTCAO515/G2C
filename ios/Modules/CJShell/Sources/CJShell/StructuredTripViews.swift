@@ -61,6 +61,12 @@ struct StructuredTripHome: View {
                         }
                         if let edit {
                             RunReadableText(text:editorMessage(edit)).accessibilityIdentifier("trip.manual.editor.state")
+                            if let refusal=edit.refusal {
+                                RunReadableText(text:(refusal.status == 409
+                                    ? language.text("Version conflict. Input retained; read the current version and explicitly choose a new basis. ","版本冲突。输入已保留；请读取当前版本并明确选择新基准。")
+                                    : language.text("Original request refused; input retained. ","原请求被拒；输入已保留。"))+String(refusal.status)+" · "+refusal.code)
+                                    .accessibilityIdentifier("trip.manual.refusal")
+                            }
                             DisclosureGroup(isExpanded:Binding(get:{panel == .editor},set:{ if $0 { panel = .editor } })) {
                                 ManualTripForm(draft:edit.draft,language:language,change:{ value in act { try host.updateDraft(value) } })
                             } label: { RunReadableText(text:language.text("Unsaved input","未保存输入")).accessibilityIdentifier("trip.manual.input.open") }

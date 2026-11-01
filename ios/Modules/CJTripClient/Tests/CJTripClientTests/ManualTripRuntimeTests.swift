@@ -145,6 +145,8 @@ private struct ManualValidatedFixture: ClientTransport {
         let (h,client,server,_,editor)=try await setup();defer { h.clean() }
         await server.configure(rejectPrepare:true)
         guard case .rejected(status:409,code:"TRIP_CONFLICT")=try await editor.perform(editor.prepareReview()) else { Issue.record("missing canonical conflict");return }
+        #expect(editor.display()?.refusal?.status==409 && editor.display()?.refusal?.code=="TRIP_CONFLICT")
+        #expect(editor.display()?.draft.texts["item-1"] != nil && editor.display()?.canSave==false)
         #expect(throws: TripFailure.pendingRequiresQuery) { try editor.prepareReview() }
         let pending=try client.pendingManualActions(binding:h.binding), original=try #require(pending.first)
         let query=try client.prepareManualQuery(storageID:original.storageID,binding:h.binding)

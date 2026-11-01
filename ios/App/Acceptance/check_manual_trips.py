@@ -13,7 +13,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
 p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss'],required=True)
+p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case
 if OUT.is_relative_to(APP) or BUILD.is_relative_to(APP):raise ValueError('external evidence required')
 head=lambda root:subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
@@ -78,10 +78,10 @@ try:
    with TestClient(structured) as client:formal=check(client.get('/v5/trip-structured',params=dict(trip_id=tid),headers=headers),'formal')['trip']
    assert formal['content']['content_version']=='structured.2' and formal['version']==1
    r['source_formal']=formal;r['source_message']=original['receipt'];save()
-   audit=[]
+   audit=[];latest_preparation={}
    async def observed(scope,receive,send):
     if scope.get('type')!='http':return await api(scope,receive,send)
-    path=scope['path'];entry=dict(method=scope['method'],path=path);audit.append(entry);parts=[];actual_reply=[]
+    path=scope['path'];entry=dict(method=scope['method'],path=path);audit.append(entry);parts=[];actual_reply=[];reply_parts=[]
     drop_ack=CASE=='testNeedsManualSaveACKLoss' and path=='/v1/trip-needs-saves' and scope['method']=='POST'
     if scope.get('query_string'):entry['query']=parse_qs(scope['query_string'].decode('ascii'))
     async def received():
@@ -90,10 +90,13 @@ try:
      return value
     async def sent(value):
      if value['type']=='http.response.start':entry['status']=value['status']
+     if value['type']=='http.response.body':reply_parts.append(value.get('body',b''))
      if drop_ack:actual_reply.append(value)
      else:await send(value)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else needs_app if path.startswith('/v1/trip-needs-') else api
     await target(scope,received,sent)
+    if path=='/v1/trip-needs-edits' and scope['method']=='POST' and entry['status']==200:latest_preparation['value']=json.loads(b''.join(reply_parts))['preparation']
+    if path=='/v1/trip-needs-action-receipts' and entry['status']==200:entry['receipt_present']=json.loads(b''.join(reply_parts))['receipt'] is not None
     if drop_ack:
      # Explicit proxy response loss after the original C transaction returned 200.
      assert entry['status']==200
@@ -130,7 +133,9 @@ try:
     else:
      assert current['title']=='SYNTHETIC manual saved title / 手动保存标题' and current['items']==formal['content']['items'] and current['sources']==formal['content']['sources']
     prepares=[x for x in audit if x['path']=='/v1/trip-needs-edits' and x['method']=='POST'];saves=[x for x in audit if x['path']=='/v1/trip-needs-saves' and x['method']=='POST'];queries=[x for x in audit if x['path']=='/v1/trip-needs-action-receipts']
-    assert len(prepares)==len(saves)==expected_count and all(x['status']==200 for x in prepares+saves)
+    assert len(prepares)==len(saves)==expected_count and all(x['status']==200 for x in prepares)
+    assert all(x['status']==(409 if CASE=='testNeedsManualSaveConflict' else 200) for x in saves)
+    if CASE=='testNeedsManualSaveConflict':assert r['competing_receipt']['committed_version']==2 and all(q['receipt_present'] is False for q in queries)
     if CASE=='testNeedsManualSaveACKLoss':assert saves[0].get('committed_response_suppressed') and saves[0]['delivered_status']==503
     ids={x['original_id'] for x in saves};assert all(q['query'].get('action_id',[None])[0] in ids and q['status']==200 for q in queries)
     assert model.calls==r['source_provider_calls'] and not any(x['method']=='POST' and x['path'] not in ('/v1/trip-needs-edits','/v1/trip-needs-saves') for x in audit)
@@ -142,6 +147,11 @@ try:
      try:
       url=urlparse(self.path);assert parse_qs(url.query).get('case')==[CASE]
       if url.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts=dict(A=token),subjects=dict(A=subject),formal_trips=[dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=True)
+      elif url.path=='/manual-compete':
+       assert CASE=='testNeedsManualSaveConflict' and 'competing_receipt' not in r
+       original=latest_preparation['value'];raw=packed(dict(version='TRIP-needs-save.1',action_id='competing-original-save',proposal_id=original['proposal_id'],candidate_hash=original['candidate_hash']))
+       with TestClient(needs_app) as client:value=check(client.post('/v1/trip-needs-saves',content=raw,headers=binary),'competing-save')
+       r['competing_receipt']=value['receipt'];save()
       elif url.path=='/manual-save-proof':value=proof()
       elif url.path=='/manual-fixed-on-proof':value=proof('locked')
       else:raise ValueError('unknown control')

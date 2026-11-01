@@ -350,7 +350,8 @@ import Foundation
     }
     func testNeedsManualTitleSave() async throws { try await manualTitleSave("testNeedsManualTitleSave",ackLoss:false) }
     func testNeedsManualSaveACKLoss() async throws { try await manualTitleSave("testNeedsManualSaveACKLoss",ackLoss:true) }
-    private func manualTitleSave(_ name:String,ackLoss:Bool) async throws {
+    func testNeedsManualSaveConflict() async throws { try await manualTitleSave("testNeedsManualSaveConflict",ackLoss:false,conflict:true) }
+    private func manualTitleSave(_ name:String,ackLoss:Bool,conflict:Bool=false) async throws {
         let f=try await prepare(name)
         defer { app?.terminate() }
         XCTAssertEqual(f.manual_profile,true);XCTAssertEqual(f.manual_only,true)
@@ -372,14 +373,23 @@ import Foundation
         XCTAssertEqual(titleField().value as? String,input);tap("trip.manual.keyboard.done")
         tap("trip.manual.prepare");text("trip.manual.editor.state",contains:"Exact diff prepared")
         text("trip.manual.after.title",contains:input)
+        if conflict { _ = try await call("/manual-compete",caseID:name) }
         tap("trip.manual.save")
-        if ackLoss {
+        if conflict {
+            text("trip.manual.editor.state",contains:"Original request refused")
+            text("trip.manual.refusal",contains:"Version conflict")
+            text("trip.manual.refusal",contains:"409")
+            XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
+            XCTAssertFalse(textElement("trip.manual.receipt").exists)
+            text("trip.manual.after.title",contains:input)
+        } else if ackLoss {
             text("trip.manual.editor.state",contains:"Result unknown")
             XCTAssertFalse(app.buttons.matching(identifier:"trip.manual.save").firstMatch.isEnabled)
             XCTAssertFalse(textElement("trip.manual.receipt").exists)
         } else { text("trip.manual.receipt",contains:"2") }
         tap("trip.manual.current");text("trip.manual.current.version",contains:"2")
         if ackLoss { text("trip.manual.editor.state",contains:"Result unknown");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
+        if conflict { text("trip.manual.refusal",contains:"Version conflict");XCTAssertFalse(textElement("trip.manual.receipt").exists) }
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-saved-original");try audit(name+"-saved")
         try launch(f,language:"zh-Hans",restore:true)
@@ -388,7 +398,7 @@ import Foundation
         XCTAssertTrue(row.isEnabled && row.isHittable);row.tap()
         let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.manual.original.query.s:")).firstMatch},id:"manual.saved.query")
         XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
-        text("trip.manual.original.result",contains:"原回执已核对")
+        text("trip.manual.original.result",contains:conflict ? "原拒绝已核对" : "原回执已核对")
         _ = try await call("/manual-save-proof",caseID:name)
         capture(name+"-restart-original-only");try audit(name+"-restart")
     }
