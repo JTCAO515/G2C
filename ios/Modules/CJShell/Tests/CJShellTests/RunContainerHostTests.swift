@@ -8,6 +8,7 @@ import CJMessageHTTP
 import OpenAPIRuntime
 import HTTPTypes
 @testable import CJRunClient
+@testable import CJFeedbackClient
 @testable import CJShell
 
 private let runTrace = "00000000-0000-4000-8000-000000000001"
@@ -143,6 +144,38 @@ private actor RunHostWire: ClientTransport {
         f.host.retireSelection()
         #expect(!source.isCurrent(session: f.session, operation: f.operation, generation: f.shell.generation))
         #expect(await f.wire.calls.count == 1) // MESSAGE query only; capture never creates a read/write.
+    }
+    @Test func answerFeedbackReopenPreservesDraftAndFinalSourceCallbackCannotReviveEntry() async throws {
+        let f = try RunHostFixture(shell: shell())
+        try await f.accept("A"); try f.bind("A")
+        #expect(f.host.selectAcceptedMessage(from: f.messages))
+        let binding = FeedbackBinding(environment: UUID(), account: UUID(), generation: UUID(), selection: UUID())
+        var armed = false
+        var feedback: FeedbackContainerHost!
+        let current: @MainActor () -> FeedbackBinding? = {
+            if armed { f.admissionCallback = { feedback.invalidate() } }
+            return binding
+        }
+        let client = FeedbackClient(endpoint: try FeedbackEndpoint(url: #require(URL(string: "https://synthetic.invalid")),
+            maximumRequestBytes: 16384, maximumResponseBytes: 65536), credentials: { _ in "SYNTHETIC" }, currentBinding: current,
+            session: f.session, sessionOperation: f.operation, pendingStore: nil,
+            liveReadTransport: try NoRedirectTransport(requestTimeout: 1, resourceTimeout: 1))
+        feedback = FeedbackContainerHost(shell: f.shell, surface: .answer, answerBinding: { source in
+            FeedbackContainerBinding(client: client, feedback: binding, shellGeneration: f.shell.generation,
+                session: f.session, sessionOperation: f.operation, context: source.context, runSource: source,
+                synthetic: true, currentBinding: current)
+        })
+        let first = try #require(try feedback.prepareAnswer(from: f.host))
+        let model = try #require(feedback.presentation(for: first))
+        model.edit(problem: "Keep this voluntary draft", expectation: "")
+        #expect(try feedback.prepareAnswer(from: f.host) == first)
+        #expect(feedback.presentation(for: first) === model && model.problem == "Keep this voluntary draft")
+        armed = true
+        #expect(feedback.captureEntry() == nil)
+        #expect(feedback.presentation(for: first) == nil)
+        f.host.retireSelection()
+        #expect(try feedback.prepareAnswer(from: f.host) == nil)
+        #expect(await f.wire.calls.count == 1)
     }
     @Test func defaultsAndUnacceptedRecordsCannotCreateSource() async throws {
         let s = try shell(), h = RunContainerHost(shell: s), messages = AssistantMessageHost(shell: s)

@@ -89,6 +89,7 @@ public struct FeedbackContainerEntry: Hashable, Sendable {
     /// Called only by an explicit answer feedback action, never while rendering.
     public func prepareAnswer(from runs: RunContainerHost) throws -> FeedbackContainerEntry? {
         guard surface == .answer, runs.belongs(to: shell), let answerBinding else { return nil }
+        if let entry = captureEntry() { return entry }
         invalidate()
         guard let source = try runs.captureFeedbackSource() else { return nil }
         let value = try answerBinding(source)

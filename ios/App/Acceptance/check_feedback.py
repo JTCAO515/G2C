@@ -284,6 +284,8 @@ def main():
                             assert b'-----BEGIN PRIVATE KEY-----' not in raw
                             if path.is_relative_to(container): assert b'PRIVATE_TRANSCRIPT_NOT_FEEDBACK' not in raw
                     assert not errors
+                    assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in report['source_hashes'].items()), 'App source changed during native execution'
+                    report['checks']['source_hashes_unchanged'] = 'PASS'
                     report['checks']['token_private_key_and_app_plaintext_scan'] = 'PASS'
                     report['status'] = 'PARTIAL_PASS' if args.case else 'PASS'
                 finally:

@@ -74,9 +74,11 @@ import Foundation
     }
     func fill(_ problem: String, expectation: String) {
         let field = app.textViews["feedback.problem"]
-        XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText(problem)
+        XCTAssertTrue(field.waitForExistence(timeout: 10)); XCTAssertTrue(field.isEnabled && field.isHittable)
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.15)).tap(); field.typeText(problem)
         let next = app.textViews["feedback.expectation"]
-        XCTAssertTrue(next.exists); next.tap(); next.typeText(expectation)
+        XCTAssertTrue(next.exists); XCTAssertTrue(next.isEnabled && next.isHittable)
+        next.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.15)).tap(); next.typeText(expectation)
         app.swipeUp() // Form interactive keyboard dismissal; no business action.
     }
     func capture(_ name: String) {
@@ -104,6 +106,7 @@ import Foundation
         association.switches.element.tap(); XCTAssertEqual(association.value as? String, "1")
         XCTAssertEqual(app.textViews["feedback.problem"].value as? String, language == "en" ? "Problem" : "问题")
         fill("站名有误 e\u{301} 🌏", expectation: "请核对站名")
+        XCTAssertEqual(association.value as? String, "1")
         try audit("answer-editor-" + language)
         tap("feedback.submit"); status(language == "en" ? "Feedback submitted." : "反馈已提交。")
         XCTAssertTrue(app.staticTexts["feedback.disclaimer"].exists)
