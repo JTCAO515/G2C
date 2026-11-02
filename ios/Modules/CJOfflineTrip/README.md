@@ -82,3 +82,22 @@ all source, identity, encryption, time, unknown-write and file checks remain.
 Historical compile/assertion/Observation failures stay in external evidence.
 Native acceptance and exact-head CI remain pending until their actual reports.
 Physical device/VoiceOver and actual lock-state behavior remain L3 #29 UNRUN.
+
+
+## Known temporary-write erasure (#447)
+
+`AtomicSnapshotStore.clearLocalTemporaryWrites()` clears only canonical
+`.write-<UUID>` regular single-link files in the store's already held private
+account directory. Empty/partial/unreadable owned ciphertext can be erased without
+key lookup or a read-protection downgrade. The separate `snapshot.aesgcm` entry
+is retained. Unknown names/subdirectories/links and replaced directory identities
+refuse before the first unlink; each original file inode is checked again and the
+directory is fsynced/verified after removal. It never recurses or scans siblings.
+
+A pending uncertain write still requires its original reconciliation and cannot
+be bypassed by this cleanup API. The host remains responsible for retiring every
+writer, validating the original device call/namespace/state/key, invoking the
+fixed and residue targets, verifying all stores empty before exact-key erasure,
+and recording/reconciling its original result. The primitive grants no read,
+renews no 14-day deadline and manufactures no device receipt. Device/lock/full App
+composition remains #27/#29; this method alone does not close #24 box4.

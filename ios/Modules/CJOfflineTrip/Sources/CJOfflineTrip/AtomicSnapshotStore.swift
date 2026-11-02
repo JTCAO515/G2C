@@ -137,6 +137,44 @@ public final class AtomicSnapshotStore {
         } catch { return .unknown }
         return .unknown
     }
+    /// Exact known-writer temporary ciphertext only. The trusted host must fence
+    /// all writers first; this is neither an offline read grant nor a device receipt.
+    public func clearLocalTemporaryWrites() throws {
+        try requireNoPendingWrite()
+        try checkRoot()
+        let names = try FileManager.default.contentsOfDirectory(atPath: root)
+        var entries: [(name: String, device: dev_t, inode: ino_t)] = []
+        for filename in names {
+            if filename == name { continue } // Separate fixed-snapshot target.
+            let prefix = ".write-"
+            guard filename.hasPrefix(prefix) else { throw OfflineFailure.invalidPath }
+            let suffix = String(filename.dropFirst(prefix.count))
+            guard let id = UUID(uuidString: suffix), id.uuidString == suffix else { throw OfflineFailure.invalidPath }
+            var entry = stat()
+            guard fstatat(directory, filename, &entry, AT_SYMLINK_NOFOLLOW) == 0,
+                  entry.st_mode & S_IFMT == S_IFREG, entry.st_uid == getuid(), entry.st_nlink == 1 else {
+                throw OfflineFailure.invalidPath
+            }
+            entries.append((filename, entry.st_dev, entry.st_ino))
+        }
+        // Complete preflight before the first unlink; no provider/caller callback
+        // or await may run between these original identity checks and erasure.
+        try checkRoot()
+        for original in entries {
+            var entry = stat()
+            guard fstatat(directory, original.name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
+                  entry.st_dev == original.device, entry.st_ino == original.inode,
+                  entry.st_mode & S_IFMT == S_IFREG, entry.st_uid == getuid(), entry.st_nlink == 1 else {
+                throw OfflineFailure.storageFailure
+            }
+            guard unlinkat(directory, original.name, 0) == 0 else { throw OfflineFailure.storageFailure }
+        }
+        guard fsync(directory) == 0 else { throw OfflineFailure.storageFailure }
+        try checkRoot()
+        guard try FileManager.default.contentsOfDirectory(atPath: root).allSatisfy({ $0 == name }) else {
+            throw OfflineFailure.storageFailure
+        }
+    }
     /// Only this directory's fixed cache entry; no recursive or device-wide cleanup claim.
     public func clearLocalEntry() throws {
         guard pending == nil else { throw OfflineFailure.writeUnknown }
