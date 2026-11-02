@@ -1,7 +1,6 @@
 """Protected checkpoint/publication and explicit user confirmation, no model exit."""
 from contextlib import nullcontext
 from hashlib import sha256
-import json
 
 from cj_message.auth_boundary import AccessBlocked,IdentityChanged
 from cj_message.domain import CommitUnknown as MessageCommitUnknown
@@ -66,16 +65,22 @@ class CollectionService(Service):
 
     def prepare_model_input(self,token,job_id,attempt_id,*,max_payload_bytes):
         """Protected data preparation only; not a Meter/dispatch capability."""
-        from .model_input import prepare
+        from .model_input import encoded
         def project(tx,snapshot,principal):
             row,output=tx.output(job_id,attempt_id)
             if row[0].state!='inflight' or row[7]!=tx.epoch or output is not None:
                 raise Conflict('original extraction input phase changed')
             extraction,_,_=self.resolve_collection(principal)
-            system,messages=prepare(snapshot,extraction,row[5],max_payload_bytes=max_payload_bytes)
-            return json.dumps(dict(system=system,messages=messages),ensure_ascii=False,
-                              sort_keys=True,separators=(',',':')).encode('utf-8')
+            return encoded(snapshot,extraction,row[5],max_payload_bytes=max_payload_bytes)
         return self._with_job(token,job_id,attempt_id,project)
+
+    def processing_policy(self,context,token,job_id,attempt_id,original_input,input_sha256,*,max_payload_bytes):
+        """Compose inside B's outer protected context; never opens a Boundary."""
+        from .processing import ProcessingSourcePolicy
+        repository,principal,guard=self._binding(context,token)
+        extraction,_,_=self.resolve_collection(principal)
+        return ProcessingSourcePolicy(repository,principal,guard,job_id,attempt_id,original_input,input_sha256,
+                                      extraction,max_payload_bytes=max_payload_bytes)
 
     def publish_output(self,token,job_id,attempt_id):
         def publish(tx,snapshot,principal):
