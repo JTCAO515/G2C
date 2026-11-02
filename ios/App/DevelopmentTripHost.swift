@@ -271,7 +271,9 @@ import Observation
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
         let root = legacy.appendingPathExtension("history-v1")
-        try files.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        if !files.fileExists(atPath: root.path) {
+            try files.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        }
         let store = try MemoryHistoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
             binding: binding, expectedKeyID: key.id, provider: keys)
         let current: @MainActor () -> MemoryBinding? = {
