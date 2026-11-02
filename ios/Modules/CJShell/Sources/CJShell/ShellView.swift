@@ -20,17 +20,19 @@ public struct ShellView: View {
     @State private var structuredTripHost: StructuredTripHost?
     @State private var memoryContainerHost: MemoryContainerHost
     @State private var memoryHistoryContainerHost: MemoryHistoryContainerHost
+    @State private var memoryCandidateContainerHost: MemoryCandidateContainerHost
     @State private var typedMemoryContainerHost: TypedMemoryContainerHost?
     @State private var offlineTripController: OfflineTripController?
     @Environment(\.scenePhase) private var scenePhase
 
-    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, typedMemoryContainerHost: TypedMemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, structuredTripHost: StructuredTripHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil, offlineTripController: OfflineTripController? = nil, memoryHistoryContainerHost: MemoryHistoryContainerHost? = nil) {
+    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, typedMemoryContainerHost: TypedMemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, structuredTripHost: StructuredTripHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil, offlineTripController: OfflineTripController? = nil, memoryHistoryContainerHost: MemoryHistoryContainerHost? = nil, memoryCandidateContainerHost: MemoryCandidateContainerHost? = nil) {
         if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
         if let developmentAccountHost { precondition(developmentAccountHost.belongs(to: state)) }
         if let messageHost { precondition(messageHost.belongs(to: state), "Message host must own the same ShellState") }
         if let serverHistoryHost { precondition(serverHistoryHost.belongs(to: state)) }
         if let memoryContainerHost { precondition(memoryContainerHost.belongs(to: state)) }
         if let memoryHistoryContainerHost { precondition(memoryHistoryContainerHost.belongs(to: state)) }
+        if let memoryCandidateContainerHost { precondition(memoryCandidateContainerHost.belongs(to: state)) }
         if let typedMemoryContainerHost { precondition(typedMemoryContainerHost.belongs(to: state)) }
         if let tripContainerHost { precondition(tripContainerHost.belongs(to: state)) }
         if let structuredTripHost { precondition(structuredTripHost.belongs(to: state)) }
@@ -58,6 +60,7 @@ public struct ShellView: View {
         // Typed consumption is explicit; a stale weak host is never activation.
         self._typedMemoryContainerHost = State(initialValue: typedMemoryContainerHost)
         self._memoryHistoryContainerHost = State(initialValue: memoryHistoryContainerHost ?? state.memoryHistoryContainerHost ?? MemoryHistoryContainerHost(shell: state))
+        self._memoryCandidateContainerHost = State(initialValue: memoryCandidateContainerHost ?? state.memoryCandidateContainerHost ?? MemoryCandidateContainerHost(shell: state))
     }
 
     public var body: some View {
@@ -82,7 +85,7 @@ public struct ShellView: View {
             }
             .tabItem { Label(ShellTab.plugins.title(state.language), systemImage: "square.grid.2x2") }
             .tag(ShellTab.plugins)
-            MemoryShell(state: state, accountHost: accountHost, memoryHost: memoryContainerHost, typedMemoryHost: typedMemoryContainerHost, feedbackHost: generalFeedbackHost, developmentAccountHost: developmentAccountHost, historyHost: memoryHistoryContainerHost)
+            MemoryShell(state: state, accountHost: accountHost, memoryHost: memoryContainerHost, typedMemoryHost: typedMemoryContainerHost, feedbackHost: generalFeedbackHost, developmentAccountHost: developmentAccountHost, historyHost: memoryHistoryContainerHost, candidateHost: memoryCandidateContainerHost)
                 .tabItem { Label(ShellTab.memory.title(state.language), systemImage: "tray") }
                 .tag(ShellTab.memory)
         }
@@ -96,6 +99,7 @@ public struct ShellView: View {
                 answerFeedbackHost.suspendForBackground()
                 generalFeedbackHost.suspendForBackground()
                 memoryHistoryContainerHost.retirePresentation()
+                memoryCandidateContainerHost.retirePresentation()
                 needsContainerHost.suspendForBackground()
                 tripContainerHost.suspendForBackground()
                 memoryContainerHost.suspendForBackground()

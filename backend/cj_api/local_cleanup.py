@@ -37,7 +37,7 @@ class Configuration:
 
 def load_configuration(path):
     value=json.loads(Path(path).read_text())
-    if set(value)!={'version','key_file','key_id','lifetime_seconds','inventory'} or value['version']!='CJ-LOCAL-CLEANUP@1':
+    if set(value)!={'version','key_file','key_id','lifetime_seconds','inventory'} or value['version'] not in ('CJ-LOCAL-CLEANUP@1','CJ-LOCAL-CLEANUP@2'):
         raise ValueError('explicit local cleanup configuration required')
     fd=os.open(value['key_file'],os.O_RDONLY|os.O_NOFOLLOW)
     try:
@@ -47,8 +47,12 @@ def load_configuration(path):
         key=os.read(fd,4097)
     finally:os.close(fd)
     if len(key)!=32:raise ValueError('32-byte local cleanup key required')
+    extra_hooks=None
+    if value['version']=='CJ-LOCAL-CLEANUP@2':
+        from cj_memory_withdrawal.account_cleanup import account_hooks
+        extra_hooks=account_hooks
     return Configuration({value['key_id']:key},value['key_id'],value['lifetime_seconds'],tuple(value['inventory']),
-                         Path(__file__).resolve().parents[1]/'storage-registry.json')
+                         Path(__file__).resolve().parents[1]/'storage-registry.json',extra_hooks=extra_hooks)
 
 
 class Runtime:
