@@ -83,9 +83,16 @@ def require_memory_configuration(database, scope, configuration):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
+    if place_draft_configuration is not None:
+        from cj_place.draft_source import PlaceDraftConfiguration,ABI,PUBLISHER_ABI
+        from cj_api.local_place_draft import LocalPlaceDraftTools
+        if (type(place_draft_configuration) is not PlaceDraftConfiguration or place_draft_configuration.abi!=ABI
+                or place_draft_configuration.publisher is None or place_draft_configuration.publisher.abi!=PUBLISHER_ABI
+                or type(tools_configuration) is not LocalPlaceDraftTools or draft_profile is not None):
+            raise CompositionUnavailable('explicit compatible PLACE-source tools and C producer required')
     database.require_execution(scope)
     editing=database.edit_profile(scope)
     edit_config=None
@@ -152,7 +159,15 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         if last.status is AdmissionStatus.UNKNOWN: raise LeaseUnavailable('worker admission unknown')
         return original is True and last.status is AdmissionStatus.ALLOWED and last.principal==first.principal
     runs = RunService(database.run_repository(scope),valid=valid)
-    if draft_profile is None:
+    place_sources=None
+    if place_draft_configuration is not None:
+        if editing or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None:
+            raise CompositionUnavailable('PLACE-source producer requires registered M2/travel creation host')
+        place_sources=tools_configuration.source_for(scope)
+        drafts=place_draft_configuration.publisher.bind(database,checker,message_context,token,scope,place_sources=place_sources)
+        if drafts.content_version not in ('structured.1','structured.2'):
+            raise CompositionUnavailable('new PLACE producer must explicitly support structured.1 or structured.2')
+    elif draft_profile is None:
         drafts=DraftPublisher(database.trip_repository(scope))
     else:
         if editing or tools_configuration is not None or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None:
@@ -166,14 +181,14 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         message_context=message_context,
-        tools=tools_configuration,
+        tools=tools_configuration,place_sources=place_sources,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
         needs_lease=needs_lease_for(database,checker,token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None):
     pending_scopes=scopes(database,auth_dir)
     if not pending_scopes: return []
     if database.run_context is None:
@@ -184,7 +199,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,tools_confi
     results = []
     for scope in pending_scopes:
         results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                     memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile).process()
+                                     memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration).process()
     return results
 
 

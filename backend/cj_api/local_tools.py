@@ -47,6 +47,9 @@ class LocalTools:
             'tool.place':Registration('tool',place_input)})
         self.names=frozenset({'place'})
 
+    def _tool_input(self,binding,key,query,request_ref):
+        return ToolInput(query,request_ref)
+
     def answer(self,worker,binding,messages):
         messages=list(messages)
         round_index=0
@@ -62,7 +65,7 @@ class LocalTools:
             for index,call in enumerate(turn.calls):
                 key='tool.'+str(round_index)+'.'+str(index)
                 request_ref='op-'+hashlib.sha256((binding.run_id+'\0'+key).encode()).hexdigest()
-                argument=ToolInput(call.arguments,request_ref)
+                argument=self._tool_input(binding,key,call.arguments,request_ref)
                 try:
                     result=''.join(worker._registered_stream(binding,key,'tool.'+call.name,argument))
                 except ValueError:raise ProviderUnknown('tool input unavailable') from None
