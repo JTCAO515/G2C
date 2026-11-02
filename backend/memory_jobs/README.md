@@ -55,6 +55,12 @@ uv run --locked python -B scripts/pg_suites.py memory_history
 原注销确认已提交但权威 Memory 尚未物理删除时，同 token 即被拒绝；
 准入查询不确定返回 UNKNOWN。该组件验证不代表完整账号/设备清理完成。
 
+`prepare_model_input` 在原 inflight 任务的当前受保护来源里编码有界请求；
+固定 system 不插入历史文本，原文只在单条 user JSON 资料消息内。
+结束整理保留 B 的真实稳定 end_id；已存输出、完成或旧 Memory basis
+不能重新准备输入。这些 bytes 不保留来源租约，也不授权模型调用或重发；
+实际 worker 仍须在唯一 Meter 出口做新鲜准入与来源检查。
+
 ## 保留的 SQLite 隔离候选
 
 本模块仅处理已提交聊天来源的增量整理与会话结束补充摘要的本地队列状态。

@@ -1,6 +1,7 @@
 """Protected checkpoint/publication and explicit user confirmation, no model exit."""
 from contextlib import nullcontext
 from hashlib import sha256
+import json
 
 from cj_message.auth_boundary import AccessBlocked,IdentityChanged
 from cj_message.domain import CommitUnknown as MessageCommitUnknown
@@ -62,6 +63,19 @@ class CollectionService(Service):
         return self._with_job(token,job_id,attempt_id,
             lambda tx,snapshot,principal:encode(dict(job_id=job_id,attempt_id=attempt_id,
                 output_sha256=sha256(tx.checkpoint_output(job_id,attempt_id,raw)).hexdigest())))
+
+    def prepare_model_input(self,token,job_id,attempt_id,*,max_payload_bytes):
+        """Protected data preparation only; not a Meter/dispatch capability."""
+        from .model_input import prepare
+        def project(tx,snapshot,principal):
+            row,output=tx.output(job_id,attempt_id)
+            if row[0].state!='inflight' or row[7]!=tx.epoch or output is not None:
+                raise Conflict('original extraction input phase changed')
+            extraction,_,_=self.resolve_collection(principal)
+            system,messages=prepare(snapshot,extraction,row[5],max_payload_bytes=max_payload_bytes)
+            return json.dumps(dict(system=system,messages=messages),ensure_ascii=False,
+                              sort_keys=True,separators=(',',':')).encode('utf-8')
+        return self._with_job(token,job_id,attempt_id,project)
 
     def publish_output(self,token,job_id,attempt_id):
         def publish(tx,snapshot,principal):
