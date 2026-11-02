@@ -1,6 +1,6 @@
 """CLEANUP@1.0 own metadata erasure; minimal opaque progress and fences remain."""
 from .core import Denied, digest
-from .store import original_result, record_result, receipt_for
+from .store import original_result, record_result, receipt_for, require_intent
 
 
 class MetadataHook:
@@ -13,9 +13,10 @@ class MetadataHook:
         if request.subject_digest!=self.store.subject_digest or request.domain_scope!=self.store.subject_digest:
             raise Denied('cleanup metadata unavailable')
         with self.store.transaction(request.operation_id) as cur:
+            _,manifest,blocked,_,targets=self.store._load(cur,request.operation_id,lock=True)
             old=original_result(cur,request)
             if old is not None:return old
-            _,manifest,blocked,_,targets=self.store._load(cur,request.operation_id,lock=True)
+            require_intent(cur,request)
             cur.execute('SELECT target,state FROM cj_cleanup_step WHERE subject_digest=%s AND operation_id=%s',
                         (self.store.subject_digest,request.operation_id))
             states=dict(cur.fetchall())

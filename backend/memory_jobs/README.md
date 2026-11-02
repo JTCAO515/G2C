@@ -4,6 +4,11 @@
 不依赖正式 Trip，不调用模型，不检索/生成有效资料，不保存 CJ011 条目，
 不创建来源授权。`production_queue()` 无条件拒绝；未注册 API、worker 或部署。
 
+M3 C 从 #409–#413 推进 PG 受控路线，设计见 [M3-DESIGN.md](M3-DESIGN.md)。
+`history.read_committed_batch` 通过 MESSAGE 公开 `with_history_context` 读取
+并编码一个精确的已提交区间，编码在最终 AUTH 检查前完成。它没有新存储，
+所得 bytes 不是历史整理授权或派发许可；#402/#403 未接通前生产入口仍关闭。
+
 ## 运行限定检查
 
 在仓库根目录执行，无第三方依赖、网络或既有数据库：

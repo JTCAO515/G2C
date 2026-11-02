@@ -16,6 +16,13 @@ existing intent, and exposes only same-original `reconcile`. `Store.recover` mar
 lost in-flight work unknown or imports the actual atomic owner result, never calls
 a hook. `original_result`/`record_result` are public owner helpers inside the same
 PG transaction as deletion/fencing; absence is not retry permission.
+Owner hooks first query `original_result(cursor, request)` for a committed result;
+before a new deletion they call public `require_intent(cursor, request)` in the same
+dedicated-role transaction. This only reads and holds operation/step SHARE locks:
+it checks the persisted original bytes/digest/invocation, exact target/selection/
+protocol and unblocked frozen plan, requiring `in_progress`. It never creates an
+intent or changes state; UNKNOWN/confirmed/foreign/missing intents grant no fresh
+execution. C need not call `_load` or derive cleanup authorization with cross-domain SQL.
 
 Migration 0032 is local runtime only. `cj_local_cleanup` is a dedicated local LOGIN,
 not a runtime membership; no SUPERUSER, CREATEDB, CREATEROLE, INHERIT, REPLICATION,
