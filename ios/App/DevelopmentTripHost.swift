@@ -68,11 +68,14 @@ import Observation
     let needs: DevelopmentNeedsHost?
     let structuredTrips: StructuredTripHost?
     let feedback: DevelopmentFeedbackHost?
+    let memoryHistory: DevelopmentMemoryHistoryHost?
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil, offline: OfflineTripController? = nil) throws {
         let environment = ProcessInfo.processInfo.environment
+        let historyProfile = try DevelopmentMemoryHistoryProfile.read(environment)
+        guard historyProfile == nil || lease != nil else { throw MemoryFailure.unconfigured }
         let feedbackProfile = try DevelopmentFeedbackProfile.read(environment)
         let messageProfile=try DevelopmentMessageProfile.read(environment)
         let typedMode = try DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
@@ -205,6 +208,11 @@ import Observation
                     await needsHost.perform(work)
                 }, offline: offline)
         } else { structuredTrips = nil }
+        let historyMessages = messages.messages
+        memoryHistory = try historyProfile.map { _ in
+            try DevelopmentMemoryHistoryHost(configuration: configuration, shell: shell, messages: historyMessages,
+                session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
+        }
         feedback = try feedbackProfile.map { _ in
             try DevelopmentFeedbackHost(configuration: configuration, shell: shell, session: lifetime.session,
                 operation: lifetime.operation, isCurrent: { lifetime.current != nil })
@@ -221,6 +229,7 @@ import Observation
 
     func invalidate() {
         lifetime.active = false
+        memoryHistory?.invalidate()
         feedback?.invalidate()
         messages.invalidate()
         memory?.invalidate()
@@ -231,6 +240,55 @@ import Observation
         keys.invalidate()
         if lifetime.ownsSession { _ = lifetime.session.clearWithSettlement() }
     }
+}
+
+/// Current account and real selected MESSAGE conversation, with a separate
+/// history journal domain in the existing canonical Memory key namespace.
+@MainActor final class DevelopmentMemoryHistoryHost {
+    let host: MemoryHistoryContainerHost
+    private let keys: ScopedMessageKeyProvider
+    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, messages: AssistantMessageHost,
+         session: SessionLifecycle, operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
+        let binding = MemoryBinding(environment: configuration.environmentID, account: configuration.accountID,
+                                    generation: UUID(), selection: UUID())
+        let generation = shell.generation
+        let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localMemoryPendingV1)
+        guard let applicationID = Bundle.main.bundleIdentifier else { throw MemoryFailure.unconfigured }
+        let keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
+                                                protection: .whenUnlockedThisDeviceOnly)
+        let files = FileManager.default
+        let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let legacy = support.appendingPathComponent("G2CDevelopmentMemory", isDirectory: true)
+            .appendingPathComponent(binding.environment.uuidString, isDirectory: true)
+            .appendingPathComponent(binding.account.uuidString, isDirectory: true)
+        try files.createDirectory(at: legacy, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let key: MessageEncryptionKey
+        if let existing = try keys.existing(expectedID: nil, for: keys.begin(.lookup)) { key = existing }
+        else {
+            // This accepted helper checks every account-owned sibling journal,
+            // including history-v1, before any new canonical key is created.
+            guard try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot: legacy, files: files) else { throw MemoryFailure.keyUnavailable }
+            key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
+        }
+        let root = legacy.appendingPathExtension("history-v1")
+        try files.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let store = try MemoryHistoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
+            binding: binding, expectedKeyID: key.id, provider: keys)
+        let current: @MainActor () -> MemoryBinding? = {
+            isCurrent() && session.isCurrent(operation) && shell.generation == generation && !shell.messageBindingBlocked ? binding : nil
+        }
+        let endpoint = try MemoryEndpoint(url: configuration.endpoint, maximumRequestBytes: 32768, maximumResponseBytes: 65536, allowLoopbackHTTP: true)
+        let client = try MemoryHistoryClient(development: endpoint, credentials: { captured in
+            guard current() == captured else { return nil }; return configuration.token
+        }, currentBinding: current, currentConversation: { [weak messages] in
+            guard current() != nil else { return nil }; return messages?.selectedConversation
+        }, session: session, sessionOperation: operation, pendingStore: store, requestTimeout: 10, resourceTimeout: 20)
+        host = MemoryHistoryContainerHost(shell: shell)
+        guard host.bind(MemoryHistoryContainerBinding(client: client, memory: binding, shellGeneration: generation,
+            messages: messages, session: session, sessionOperation: operation, currentBinding: current)) else { throw MemoryFailure.staleBinding }
+        self.keys = keys
+    }
+    func invalidate() { host.invalidate(); keys.invalidate() }
 }
 
 /// Two independent feedback surfaces, sharing only the canonical account-scoped key.

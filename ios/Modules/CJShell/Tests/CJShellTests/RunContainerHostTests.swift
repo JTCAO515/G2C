@@ -9,6 +9,8 @@ import OpenAPIRuntime
 import HTTPTypes
 @testable import CJRunClient
 @testable import CJFeedbackClient
+@testable import CJMemoryClient
+import Observation
 @testable import CJShell
 
 private let runTrace = "00000000-0000-4000-8000-000000000001"
@@ -123,10 +125,73 @@ private actor RunHostWire: ClientTransport {
     }
     func read() async { let work = model.prepareRead(); await model.perform(work) }
 }
+private struct HistoryHostNeverTransport: ClientTransport {
+    func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        Issue.record("History host selection tests must not issue HTTP")
+        throw URLError(.unsupportedURL)
+    }
+}
+@MainActor private final class HistoryHostCurrent {
+    let value = MemoryBinding(environment: UUID(), account: UUID(), generation: UUID(), selection: UUID())
+    var callback: (() -> Void)?
+    func current() -> MemoryBinding? { let run=callback; callback=nil; run?(); return value }
+}
+
 @Suite @MainActor struct RunContainerHostTests {
     private func shell() throws -> ShellState { ShellState(preferences: try #require(UserDefaults(suiteName: UUID().uuidString))) }
     private func wait(_ wire: RunHostWire) async {
         for _ in 0..<10000 { if await wire.held { return }; await Task.yield() }; Issue.record("Run request not held")
+    }
+    private func history(_ f: RunHostFixture, current: HistoryHostCurrent, directory: URL) throws -> (MemoryHistoryContainerHost, MemoryHistoryContainerBinding) {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let key = SymmetricKey(size: .bits256)
+        let store = try MemoryHistoryPendingStore(directory: directory, maximumBytes: 100_000, maximumRecords: 10,
+            namespace: .init(environment: current.value.environment, account: current.value.account, purpose: .localMemoryPendingV1), keyID: UUID(), key: { key })
+        let client = MemoryHistoryClient(endpoint: try MemoryEndpoint(url: #require(URL(string: "https://synthetic.invalid")), maximumRequestBytes: 32768, maximumResponseBytes: 65536),
+            credentials: { _ in "SYNTHETIC" }, currentBinding: { current.current() }, currentConversation: { f.messages.selectedConversation },
+            pendingStore: store, interceptedTransport: HistoryHostNeverTransport())
+        let host = MemoryHistoryContainerHost(shell: f.shell)
+        let value = MemoryHistoryContainerBinding(client: client, memory: current.value, shellGeneration: f.shell.generation,
+            messages: f.messages, session: f.session, sessionOperation: f.operation, currentBinding: { current.current() })
+        #expect(host.bind(value))
+        return (host, value)
+    }
+    @Test func historyUsesActualMessageConversationAndRetiresOnIdentityChange() throws {
+        let f = try RunHostFixture(shell: shell()); try f.bind(nil)
+        let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (host, _) = try history(f, current: HistoryHostCurrent(), directory: dir)
+        #expect(host.presentation == nil)
+        #expect(f.shell.apply(.init(context: .init(conversationReference: "forged UI context")), for: f.shell.generation))
+        host.synchronizeConversation()
+        let model = try #require(host.presentation)
+        #expect(model.conversationID == "chat-e\u{301}" && model.state == .unread)
+        #expect(host.selectedConversation == f.messages.selectedConversation)
+        f.shell.invalidateIdentity()
+        #expect(host.presentation == nil && model.conversationID == nil && model.original == nil)
+    }
+    @Test func historyLastBindingCallbackCannotReturnRetiredPresentation() throws {
+        let f = try RunHostFixture(shell: shell()); try f.bind(nil)
+        let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let current = HistoryHostCurrent(), pair = try history(f, current: current, directory: dir)
+        pair.0.synchronizeConversation(); let old = try #require(pair.0.presentation)
+        current.callback = { pair.0.invalidate() }
+        #expect(pair.0.presentation == nil && old.state == .unconfigured)
+    }
+    @Test func historyOldInvalidationCannotClearReentrantNewBinding() throws {
+        let f = try RunHostFixture(shell: shell()); try f.bind(nil)
+        let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let pair = try history(f, current: HistoryHostCurrent(), directory: dir)
+        pair.0.synchronizeConversation(); let old = try #require(pair.0.presentation)
+        withObservationTracking { _ = old.state } onChange: {
+            MainActor.assumeIsolated { #expect(pair.0.bind(pair.1)) }
+        }
+        pair.0.invalidate(); pair.0.synchronizeConversation()
+        let fresh = try #require(pair.0.presentation)
+        #expect(fresh !== old && fresh.conversationID == "chat-e\u{301}" && fresh.state == .unread)
+        #expect(old.conversationID == nil && old.state == .unconfigured)
     }
     @Test func feedbackSourceUsesSealedAcceptedReceiptAndRetiresWithOriginal() async throws {
         let f = try RunHostFixture(shell: shell())

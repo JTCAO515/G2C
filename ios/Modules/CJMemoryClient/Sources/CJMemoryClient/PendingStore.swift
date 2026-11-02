@@ -175,6 +175,48 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
               observed.originalUTF8 == expected.originalUTF8, same(observed.expectedSHA256, expected.expectedSHA256) else { throw MemoryFailure.storageUnavailable }
         try validateDirectory()
     }
+    /// Additive proof for the history consumer's final callback-free outflow fence.
+    /// Existing journal formats and pending()/rejection behavior stay unchanged.
+    struct Durability: Sendable {
+        fileprivate let filename: String
+        fileprivate let ciphertext: Data
+    }
+    private func readProofCiphertext(_ filename: String) throws -> Data {
+        let fd = openat(directory, filename, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { throw MemoryFailure.storageUnavailable }
+        defer { close(fd) }
+        var st = stat()
+        guard fstat(fd, &st) == 0, st.st_mode & S_IFMT == S_IFREG, st.st_nlink == 1,
+              st.st_uid == getuid(), st.st_mode & 0o077 == 0, st.st_size > 28,
+              st.st_size <= maximumBytes + 28 else { throw MemoryFailure.storageUnavailable }
+        var bytes = Data(count: Int(st.st_size))
+        let count = bytes.withUnsafeMutableBytes { read(fd, $0.baseAddress, $0.count) }
+        guard count == bytes.count else { throw MemoryFailure.storageUnavailable }
+        return bytes
+    }
+    func proveOriginal(_ expected: Record) throws -> Durability {
+        try validateDirectory()
+        let filename = try name(expected.journalID)
+        let bytes = try readProofCiphertext(filename)
+        let material = try key()
+        try validateDirectory()
+        let plain = try AES.GCM.open(AES.GCM.SealedBox(combined: bytes), using: material, authenticating: ad)
+        let observed = try JSONDecoder().decode(Record.self, from: plain)
+        try observed.validate()
+        guard same(observed.journalID, expected.journalID), observed.originalUTF8 == expected.originalUTF8,
+              same(observed.expectedSHA256, expected.expectedSHA256) else { throw MemoryFailure.storageUnavailable }
+        return Durability(filename: filename, ciphertext: bytes)
+    }
+    func validateDurability(_ proof: Durability) throws {
+        try validateDirectory()
+        guard try readProofCiphertext(proof.filename) == proof.ciphertext else { throw MemoryFailure.storageUnavailable }
+    }
+    func validateInventory(_ records: [Record]) throws {
+        try validateDirectory()
+        let expected = try Set(records.map { try name($0.journalID) })
+        let actual = try Set(FileManager.default.contentsOfDirectory(atPath: root.path))
+        guard expected == actual else { throw MemoryFailure.storageUnavailable }
+    }
     func pending() throws -> [Record] {
         try validateDirectory()
         let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
