@@ -170,3 +170,20 @@ private func privateRoot() throws -> URL {
     record["document"] = doc; raw["trip"] = record
     #expect(throws:(any Error).self) { try snapshot(ns,data:JSONSerialization.data(withJSONObject:raw)) }
 }
+
+@Test func localCleanupRemovesOnlySnapshotAndRetainsUnknownWriteFence() throws {
+    let root = try privateRoot(), other = try privateRoot()
+    defer { try? FileManager.default.removeItem(at: root); try? FileManager.default.removeItem(at: other) }
+    let store = try AtomicSnapshotStore(existingPrivateDirectory: root)
+    let retained = try AtomicSnapshotStore(existingPrivateDirectory: other)
+    let sealed = try SnapshotCodec.seal(snapshot(namespace()), key: SymmetricKey(size: .bits256))
+    try store.write(sealed); try retained.write(sealed)
+    try store.clearLocalEntry(); try store.clearLocalEntry()
+    #expect(try AtomicSnapshotStore(existingPrivateDirectory: root).read() == nil)
+    #expect(try retained.read() == sealed)
+    try store.write(sealed)
+    store.afterRename = { throw OfflineFailure.storageFailure }
+    #expect(throws: OfflineFailure.writeUnknown) { try store.write(sealed) }
+    #expect(throws: OfflineFailure.writeUnknown) { try store.clearLocalEntry() }
+    #expect(FileManager.default.fileExists(atPath: root.appendingPathComponent("snapshot.aesgcm").path))
+}

@@ -74,6 +74,29 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
         try validateDirectory()
         guard try ids.map(name).sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else { throw TripFailure.storageUnavailable }
     }
+    /// Exact local journal only; do not decrypt, create keys or recurse into unknown entries.
+    func clearLocalRecords() throws {
+        try validateDirectory()
+        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        for name in names {
+            let stem = name.dropLast(5)
+            var entry = stat()
+            guard name.hasSuffix(".trip"), stem.count == 64,
+                  stem.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+                  fstatat(directory, name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
+                  entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1,
+                  entry.st_uid == getuid() else { throw TripFailure.storageUnavailable }
+        }
+        try validateDirectory()
+        for name in names {
+            guard unlinkat(directory, name, 0) == 0 else { throw TripFailure.exchangeUnknown }
+        }
+        guard fsync(directory) == 0 else { throw TripFailure.exchangeUnknown }
+        try validateDirectory()
+        guard try FileManager.default.contentsOfDirectory(atPath: root.path).isEmpty else {
+            throw TripFailure.exchangeUnknown
+        }
+    }
     func adjacent<Other: TripJournalRecord>(suffix: String, domain: String, maximumBytes: Int, maximumRecords: Int, create: Bool) throws -> TripEncryptedRecords<Other>? {
         try validateDirectory()
         let target = root.appendingPathExtension(suffix)
@@ -182,6 +205,17 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
         try storage.append(pending) { try validateBinding(); try self.storage.requireLegacyWritesAllowed() }
     }
     public func pending() throws -> [TripPending] { try storage.pending() }
+    /// Physical removal for this store and its two manual-action journals only.
+    /// The cleanup host must retire all bound clients before calling. This is not a
+    /// CLEANUP receipt; scoped/planning journals have separate owning stores.
+    public func clearLocalFiles() throws {
+        try storage.clearLocalRecords()
+        for suffix in ["CJTripManual", "CJTripManual.CJTripManualRejections"] {
+            let adjacent: TripEncryptedRecords<TripPending>? = try storage.adjacent(
+                suffix: suffix, domain: suffix, maximumBytes: 1, maximumRecords: 1, create: false)
+            try adjacent?.clearLocalRecords()
+        }
+    }
     func validateDirectory() throws { try storage.validateDirectory() }
     func requireOriginal(_ expected: TripPending) throws -> Durability { try storage.requireOriginal(expected) }
     func validateDurability(_ proof: Durability) throws { try storage.validateDurability(proof) }
