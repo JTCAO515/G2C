@@ -165,15 +165,18 @@ class Store:
 
     def query(self,operation_id):
         with self.transaction(operation_id,writing=False) as cur:
-            _,manifest,blocked,_,targets=self._load(cur,operation_id)
-            cur.execute('SELECT target,state FROM cj_cleanup_step WHERE subject_digest=%s AND operation_id=%s',(self.subject_digest,operation_id))
-            states=dict(cur.fetchall())
-            if any(k not in targets or v not in ('in_progress','unknown','failed','confirmed') for k,v in states.items()):
-                raise Unavailable('cleanup state unavailable')
-            steps=tuple(dict(target=target,state=states.get(target,'pending')) for target in targets)
-            status=('blocked' if blocked else 'unknown' if 'unknown' in states.values() else 'failed' if 'failed' in states.values()
-                    else 'complete' if len(states)==len(steps) and all(v=='confirmed' for v in states.values()) else 'in_progress')
-            value=dict(operation_id=operation_id,status=status,steps=steps)
+            return self.read_progress(cur,operation_id)
+
+    def read_progress(self,cur,operation_id):
+        _,manifest,blocked,_,targets=self._load(cur,operation_id)
+        cur.execute('SELECT target,state FROM cj_cleanup_step WHERE subject_digest=%s AND operation_id=%s',(self.subject_digest,operation_id))
+        states=dict(cur.fetchall())
+        if any(k not in targets or v not in ('in_progress','unknown','failed','confirmed') for k,v in states.items()):
+            raise Unavailable('cleanup state unavailable')
+        steps=tuple(dict(target=target,state=states.get(target,'pending')) for target in targets)
+        status=('blocked' if blocked else 'unknown' if 'unknown' in states.values() else 'failed' if 'failed' in states.values()
+                else 'complete' if len(states)==len(steps) and all(v=='confirmed' for v in states.values()) else 'in_progress')
+        value=dict(operation_id=operation_id,status=status,steps=steps)
         return value
 
     def intent(self,request:HookRequest):
