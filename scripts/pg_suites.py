@@ -406,7 +406,9 @@ def group_memory_history():
 
 def group_memory_publication():
     # #410: signed candidate review and original publication on restricted PG.
-    return script('backend/memory_jobs/tests/publication_pg.py')
+    status=script('backend/memory_jobs/tests/publication_pg.py')
+    status|=script('backend/memory_jobs/tests/current_result_pg.py')
+    return status
 
 
 def group_account_gateway():

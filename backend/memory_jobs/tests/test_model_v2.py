@@ -11,7 +11,7 @@ from test_extraction_boundary import source_message
 
 class OpaqueModelOutput(unittest.TestCase):
     def test_versioned_positive_negative_examples(self):
-        values=json.loads((Path(__file__).resolve().parents[1]/'v2-examples.json').read_bytes())
+        values=json.loads((Path(__file__).resolve().parents[3]/'contracts/memory-jobs/processing-v2-examples.json').read_bytes())
         messages=(source_message(values['source_text']),)
         policy=CollectionPolicy(frozenset({'self'}),frozenset({'diet.spicy'}),5,4096,
             lambda entry:True,lambda entry,rows:False)
