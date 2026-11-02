@@ -4,7 +4,6 @@ from hashlib import sha256
 import json,os,stat,time
 from pathlib import Path
 import psycopg
-from cj_auth.interfaces import Fact
 from cj_auth.admission import AdmissionChecker
 from cj_auth.jwt_adapter import PyJWTVerifier
 from cj_auth.account_revocation import AccountRevocationAccess
@@ -22,6 +21,7 @@ from cj_message.needs_binding import needs_scope_for
 from cj_agent.draft import trip_scope_for
 from cj_run.step_usage import ledger_scope_for
 from cj_run.account_stop import stop_scope
+from .local_account_admission_v2 import retired_for,subject_digest
 
 
 @dataclass(frozen=True,repr=False)
@@ -54,6 +54,7 @@ def load_configuration(path):
 class Runtime:
     def __init__(self,database,configuration,scope_for):
         self.database,self.configuration,self.scope_for=database,configuration,scope_for
+        self._retired=retired_for(database)
         self.issuer=Issuer(keys=configuration.keys,active_key_id=configuration.key_id,
                            lifetime_seconds=configuration.lifetime_seconds,clock=configuration.clock)
 
@@ -65,14 +66,10 @@ class Runtime:
         options=dict(self.database.conninfo,user='cj_local_cleanup')
         return psycopg.connect(**options)
 
-    def subject(self,principal):return digest(encode(asdict(Scope.from_principal('local',principal))))
+    def subject(self,principal):return subject_digest(principal)
 
     def retired(self,principal):
-        subject=self.subject(principal)
-        with self.connect() as conn:
-            conn.execute("SELECT set_config('cj.cleanup_subject',%s,true)",(subject,))
-            row=conn.execute('SELECT 1 FROM cj_account_fence WHERE subject_digest=%s',(subject,)).fetchone()
-        return Fact.YES if row is not None else Fact.NO
+        return self._retired(principal)
 
     def bind(self,principal):
         binding=self._binding(self.subject(principal),self.scope_for(principal.issuer,principal.subject))
