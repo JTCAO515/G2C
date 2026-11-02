@@ -1,0 +1,199 @@
+{
+  "scope": "scope",
+  "source_text": "不吃辣 / no spicy food",
+  "positive": [
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:d34074daec9e916c3d993b7aee43cb6695470f08fe0a4696395796513f4e6cd3",
+              "quote": "不吃辣"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": []
+    },
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "inference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:d34074daec9e916c3d993b7aee43cb6695470f08fe0a4696395796513f4e6cd3",
+              "quote": "不吃辣"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "version": "MEMORY-EXTRACT@1",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:d34074daec9e916c3d993b7aee43cb6695470f08fe0a4696395796513f4e6cd3",
+              "quote": "不吃辣"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:d34074daec9e916c3d993b7aee43cb6695470f08fe0a4696395796513f4e6cd3",
+              "quote": "不吃辣"
+            }
+          ],
+          "owner": "other"
+        }
+      ]
+    },
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:d34074daec9e916c3d993b7aee43cb6695470f08fe0a4696395796513f4e6cd3",
+              "quote": "不吃辣"
+            }
+          ],
+          "confirmed": true
+        }
+      ]
+    },
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "message_id": "m1",
+              "quote": "不吃辣"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:0000000000000000000000000000000000000000000000000000000000000000",
+              "quote": "不吃辣"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:d34074daec9e916c3d993b7aee43cb6695470f08fe0a4696395796513f4e6cd3",
+              "quote": "forged"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "MEMORY-EXTRACT@2",
+      "entries": [
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:d34074daec9e916c3d993b7aee43cb6695470f08fe0a4696395796513f4e6cd3",
+              "quote": "不吃辣"
+            }
+          ]
+        },
+        {
+          "subject": "self",
+          "slot": "diet.spicy",
+          "kind": "preference",
+          "text": "不吃辣",
+          "extent": "long_term",
+          "occurred_at": "date unknown",
+          "evidence": [
+            {
+              "ref": "message-v2:d34074daec9e916c3d993b7aee43cb6695470f08fe0a4696395796513f4e6cd3",
+              "quote": "不吃辣"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
