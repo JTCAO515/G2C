@@ -57,6 +57,14 @@ def exercise(root,conninfo):
         post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'),'bob',403)
         result=post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'))
         assert result['business_access']=='revoked' and result['online_status']=='complete' and result['status']!='complete'
+        from cj_api.local_worker_context import account_checker_for
+        from cj_auth.interfaces import AdmissionStatus
+        from unittest.mock import patch
+        independent=account_checker_for(auth,LocalDatabase(conninfo))
+        assert independent.check(tokens['alice']).status is AdmissionStatus.DENIED
+        assert independent.check(tokens['bob']).status is AdmissionStatus.ALLOWED
+        with patch('cj_api.local_account_admission.psycopg.connect',side_effect=RuntimeError('injected storage uncertainty')):
+            assert independent.check(tokens['bob']).status is AdmissionStatus.UNKNOWN
         expect(client.get('/v1/feedback-action-receipts?action_id=feedback',headers=headers['alice']),503)
         post('/v1/feedback',dict(action_id='late',problem='late',expectation='',references=[]),code=503)
         post('/v1/cleanup-devices',dict(version='CLEANUP-DEVICE@1',action_id='new-device',device_id='late',state_ref='0'*64),code=403)

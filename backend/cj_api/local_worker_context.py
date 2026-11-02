@@ -15,10 +15,24 @@ from cj_usage.registered_exit import RegisteredExit, MODEL_REGISTRY
 from .local_app import ISSUER, AUDIENCE, KEY_ID, scope_for, InvitedSubjects
 
 
-def checker_for(auth_dir):
+def checker_for(auth_dir,*,account_retired=None):
+    access=InvitedSubjects(auth_dir/'invited.json')
+    if account_retired is not None:
+        from cj_auth.account_revocation import AccountRevocationAccess
+        access=AccountRevocationAccess(access,account_retired)
     return AdmissionChecker(PyJWTVerifier(JWTConfiguration(ISSUER,AUDIENCE,'RS256',0),
         StaticPublicKeys({KEY_ID:VerificationKey('RS256',(auth_dir/'public.pem').read_bytes())})),
-        InvitedSubjects(auth_dir/'invited.json'))
+        access)
+
+
+def account_checker_for(auth_dir,database):
+    """Current local business admission, including the committed retirement gate.
+
+    C history/collection hosts use this factory at every protected boundary.
+    Original-operation system maintenance deliberately remains separate.
+    """
+    from .local_account_admission import retired_for
+    return checker_for(auth_dir,account_retired=retired_for(database))
 
 
 class LocalBudgetRouter:
