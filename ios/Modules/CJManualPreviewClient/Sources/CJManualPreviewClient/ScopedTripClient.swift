@@ -45,6 +45,7 @@ public typealias ScopedDecisionResult = CandidateDecision<ScopedActionReceipt>
     private let settlements: ScopedJournal<ScopedSettlement>
     private let owner = UUID()
     private var staging = UUID()
+    private var active = true
     public convenience init(endpoint: MessageEndpoint, binding: TripBinding, credentials: @escaping TripCredentialCallback,
         validate: @escaping @MainActor () throws -> Void, directory: URL, receiptDirectory: URL,
         expectedKeyID: UUID, provider: any MessageEncryptionKeyProvider) throws {
@@ -70,7 +71,22 @@ public typealias ScopedDecisionResult = CandidateDecision<ScopedActionReceipt>
         self.transportFactory = transportFactory; self.originals = originals; self.settlements = settlements
         try check()
     }
-    private func check() throws { try validate(); try Task.checkCancellation() }
+    private func check() throws {
+        guard active, !originals.retiredForCleanup, !settlements.retiredForCleanup else { throw PreviewFailure.retired }
+        try validate()
+        guard active, !originals.retiredForCleanup, !settlements.retiredForCleanup else { throw PreviewFailure.retired }
+        try Task.checkCancellation()
+    }
+    /// Exact local pair only. The host first fences the original account/session
+    /// and authorizes this target; this method creates no server receipt.
+    public func clearLocalFiles() throws {
+        active = false; staging = UUID()
+        originals.retireForCleanup(); settlements.retireForCleanup()
+        let originalFiles = try originals.prepareCleanup()
+        let settlementFiles = try settlements.prepareCleanup()
+        try originals.finishCleanup(originalFiles)
+        try settlements.finishCleanup(settlementFiles)
+    }
     public func discover(original: MessageEditReference, validateOriginal: @escaping @MainActor () throws -> Void) async throws -> ScopedCandidateRead {
         try check(); try validateOriginal(); try check()
         let (bytes, trace) = try await exchange(path: "/v1/trip-scoped-discovery", query: [
@@ -117,6 +133,7 @@ public typealias ScopedDecisionResult = CandidateDecision<ScopedActionReceipt>
         return .init(owner: owner, original: original, read: read, proof: proof)
     }
     public func perform(_ work: ScopedDecisionWork) async throws -> ScopedDecisionResult {
+        try check()
         guard work.owner == owner, !work.started else { throw PreviewFailure.unknown }
         try validateRead(work.read)
         try originals.validateDurability(work.proof)

@@ -148,3 +148,30 @@ Trip's existing internal transport initializer (`@testable import CJTripClient`)
 and this module's internal interceptor initializer. No fake accepted handle or
 parallel wire decoder is injected. Synthetic session persistence is memory-only.
 Producer algorithm, Trip boundary and existing Auth tests are reused, not rerun.
+
+
+## M3 account-cleanup primitives (#441)
+
+`ScopedTripClient.clearLocalFiles()` and `NeedsPlanningClient.clearLocalFiles()`
+retire their original client, staged work and both held journals before physical
+cleanup. Both original/settlement directories are fully preflighted before the
+first unlink. Each phase rechecks the original directory and exact filename/inode;
+unknown names, soft/hard links and replacement directories refuse. Failure keeps
+the client retired, and explicit cleanup retry uses only the same original pair.
+No plaintext decoding, key lookup, credential callback, network request, recursive
+cleanup or sibling scan occurs. Existing action bytes, ciphertext and unknown-ACK
+rules remain unchanged until this explicit local operation.
+
+The four existing App roots are `G2CDevelopmentTrip/<environment>/<account>` plus
+`.ScopedOriginals`, `.ScopedReceipts`, `.NeedsPlanningOriginals` and
+`.NeedsPlanningReceipts` (the four suffixed roots, not the `.trip` base journal).
+They share canonical `localTripPendingV1`. The host must retain and invoke each
+provided client, first fence all old session/client writers, prevent replacement
+writer construction and clear the exact key only after all stores sharing it are
+verified empty. This is not persistent/global revocation or a server receipt.
+
+B's existing registry describes `trip-pending-file` as the `.trip` base journal;
+explicit device target coverage for these `.scoped` roots and dedicated key
+purposes was requested on #27. This local API does not expand a frozen target or
+invent operation/invocation IDs. Original account/device HTTP composition and
+native physical cleanup evidence remain #27; true devices remain #29 UNRUN.
