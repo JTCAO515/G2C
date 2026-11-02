@@ -112,8 +112,9 @@ import Foundation
         tap("account.cleanup.confirm")
     }
     func audit(_ name: String, target: String) throws {
-        let item = app.buttons[target].exists ? app.buttons[target] : app.staticTexts[target]
-        XCTAssertTrue(item.waitForExistence(timeout: 20)); reveal(item)
+        let query = app.buttons.matching(identifier: target)
+        let item = query.element
+        reveal(item); XCTAssertEqual(query.count, 1, target); XCTAssertTrue(item.isHittable, target)
         continueAfterFailure = true
         var count = 0
         try app.performAccessibilityAudit(for: .all) { issue in
