@@ -25,16 +25,34 @@ import Foundation
         let tabs = ["Assistant", "助手", "Trips", "行程", "Plugins", "插件", "Memory", "记忆"]
         let query = tabs.contains(id) ? app.tabBars.buttons.matching(identifier: id) : app.buttons.matching(identifier: id)
         let target = query.element
-        let isTab = tabs.contains(id)
-        for _ in 0..<30 {
+        let isChrome = tabs.contains(id) || app.navigationBars.buttons.matching(identifier: id).count == 1
+        func viewport() -> (CGFloat, CGFloat) {
             let bar = app.navigationBars.firstMatch, tabs = app.tabBars.firstMatch
-            let top = bar.exists ? bar.frame.maxY : app.frame.minY
-            let bottom = tabs.exists ? tabs.frame.minY : app.frame.maxY
-            if target.exists && target.isHittable && (isTab || (target.frame.minY > top + 8 && target.frame.maxY < bottom - 8)) { break }
-            if target.exists && target.frame.minY < top + 8 { app.swipeDown() }
-            else { app.swipeUp() }
+            var top = bar.exists ? bar.frame.maxY : app.frame.minY + 60
+            var bottom = tabs.exists ? tabs.frame.minY : app.frame.maxY - 20
+            if !bar.exists && !["assistant.draft", "assistant.send", "assistant.intent"].contains(id) {
+                let header = app.otherElements["assistant.header"], composer = app.otherElements["assistant.composer"]
+                if header.exists { top = max(top, header.frame.maxY + 8) }
+                if composer.exists { bottom = min(bottom, composer.frame.minY) }
+            }
+            return (top + 8, bottom - 8)
+        }
+        // Reuse the accepted typed-memory bounded-drag pattern. Full-window
+        // flicks overshoot tall English rows and can land on navigation chrome.
+        for attempt in 0..<40 {
+            let (top, bottom) = viewport()
+            let frame = target.exists ? target.frame : .zero
+            if target.exists && target.isHittable && (isChrome || (frame.minY >= top && frame.maxY <= bottom)) { break }
+            let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
+            let down = located ? frame.minY < top : (attempt / 6) % 2 == 1
+            let middle = (top + bottom) / 2, halfStep = min(100, (bottom - top) * 0.15)
+            let start = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: app.frame.width * 0.85, dy: middle + (down ? -halfStep : halfStep)))
+            let end = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: app.frame.width * 0.85, dy: middle + (down ? halfStep : -halfStep)))
+            start.press(forDuration: 0.05, thenDragTo: end)
         }
         XCTAssertEqual(query.count, 1, id); XCTAssertTrue(target.isHittable, id)
+        let (top, bottom) = viewport()
+        XCTAssertTrue(isChrome || (target.frame.minY >= top && target.frame.maxY <= bottom), id)
         print("feedback tap", id, target.frame)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id)
