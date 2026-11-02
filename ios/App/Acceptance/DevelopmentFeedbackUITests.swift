@@ -22,7 +22,9 @@ import Foundation
     }
     func proof(_ f: Fixture) async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof", f.case_id)) }
     func tap(_ id: String) {
-        let query = app.buttons.matching(identifier: id), target = app.buttons.matching(identifier: id).element
+        let tabs = ["Assistant", "助手", "Trips", "行程", "Plugins", "插件", "Memory", "记忆"]
+        let query = tabs.contains(id) ? app.tabBars.buttons.matching(identifier: id) : app.buttons.matching(identifier: id)
+        let target = query.element
         for _ in 0..<30 {
             if target.exists && target.isHittable { break }
             let bar = app.navigationBars.firstMatch
@@ -32,6 +34,21 @@ import Foundation
         XCTAssertEqual(query.count, 1, id); XCTAssertTrue(target.isHittable, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id); target.tap()
+    }
+    func revealEditor(_ id: String) -> XCUIElement {
+        let field = app.textViews[id]
+        // General feedback's native Form virtualizes offscreen editors after a
+        // completed receipt or pending selection. Read the same editor after scrolling.
+        for _ in 0..<6 {
+            if field.exists && field.isHittable { break }
+            app.swipeDown()
+        }
+        for _ in 0..<10 {
+            if field.exists && field.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(field.exists && field.isHittable, id)
+        return field
     }
     func launch(_ f: Fixture, language: String = "en") throws {
         app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.feedback.acceptance")
@@ -163,7 +180,7 @@ import Foundation
         XCTAssertEqual(second.feedback_posts, first.feedback_posts + 1)
         _ = try await call("/validate", f.case_id)
         tap("feedback.another")
-        XCTAssertTrue(app.textViews["feedback.problem"].isEnabled)
+        XCTAssertTrue(revealEditor("feedback.problem").isEnabled)
         status(language == "en" ? "Ready to describe" : "请填写反馈")
         _ = try await call("/size", f.case_id, ["value": "large"])
     }
@@ -182,7 +199,7 @@ import Foundation
         try launch(f, language: "zh-Hans"); restore(f, language: "zh-Hans")
         general("zh-Hans", backFromAccount: true)
         tap("feedback.loadPending"); tap("feedback.pending." + original.action_id)
-        XCTAssertEqual(app.textViews["feedback.problem"].value as? String, "回执丢失后保留原反馈")
+        XCTAssertEqual(revealEditor("feedback.problem").value as? String, "回执丢失后保留原反馈")
         XCTAssertFalse(app.textViews["feedback.problem"].isEnabled)
         status("提交结果尚未确认")
         tap("feedback.query"); status("反馈已提交。")
