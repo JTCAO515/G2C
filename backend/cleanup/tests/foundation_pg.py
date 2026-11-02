@@ -47,6 +47,7 @@ def main():
     host=Coordinator(store,lambda:current[0],{target:Probe()})
     with psycopg.connect(**config) as conn:
         for scope in ('alice','bob'):
+            conn.execute('INSERT INTO cj_feedback_scope(scope_digest) VALUES(%s)',(digest(scope.encode()),))
             conn.execute("INSERT INTO cj_feedback_action(scope,operation,action_id,original_input,input_sha256) VALUES(%s,'submit','a',%s,%s)",(scope,b'fixture',digest(b'fixture')))
     assert host.create('op1',digest(b'confirm'),'account',plan)['status']=='in_progress'
     request=host.request('op1',target,'alice',Selection('account'))
