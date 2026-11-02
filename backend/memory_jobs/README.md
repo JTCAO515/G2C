@@ -28,6 +28,41 @@ uv run --locked python -B scripts/pg_suites.py memory_history
 本地 M3 API 的显式入口为 `cj_memory_jobs.local_app:app_from_environment`。
 它沿用已有 `CJ_LOCAL_CONNINFO` / `CJ_LOCAL_AUTH_DIR`，并保留旧 app 入口。
 
+## 增量发布与候选确认（#410）
+
+协议及可执行正负例见 [CANDIDATE-V1](../../contracts/memory-jobs/CANDIDATE-V1.md)。
+
+`collection_app.create_collection_app` 显式注入服务端提取/保存策略；没有默认
+宽松策略，也没有接收模型输出的 HTTP 入口。受保护原来源下的输出检查点、
+正式 Memory 原动作、来源关联、任务完成及游标推进使用同一 Memory 事务。
+同源 ID 取自原消息版本和 canonical subject/slot/extent/context，不取模型措辞、
+语言、job 或输出顺序；同源不同值冲突，不能另造 ID 覆盖用户更正。
+
+事实、经历、偏好经原文本独立判定为直接陈述后才能生效；推断保持候选。
+用户确认必须给出候选版本、Memory epoch 和审核后的具体 kind/text；当前范围
+还须 B 的真实 Travel 租约。确认产生新来源，原自动操作回执仍是历史候选。
+拒绝不生效，过期候选仍可拒绝；重放不重新授权或激活来源/行程。
+
+实际签名 API、受限 PG、输出/发布/确认 COMMIT ACK 丢失、跨账号、过期拒绝、
+实例重建、当前 Travel 版本及同域清理在 `tests/publication_pg.py` 验证。
+这些测试提供固定输出，不代表实际 worker、FakeProvider 或 Meter 已接通。
+自动 current 发布需要 #403 的 MESSAGE→Travel→Memory 联合租约；实际模型出口
+和后台任务绑定仍由 #410–#413 后续交付，不能从测试的手工来源关联推导完成。
+
+公开 `CleanupHook` 同时清除输出检查点、用户决策及原消息引用；只保留既有
+不含账号明文的擦除屏障。单条删除/旧聊天重提取防复活仍由 #26 交付。
+
+历史和 collection 独立宿主均消费 B 的 `ACCOUNT-ADMISSION@2` 公开工厂，
+每次以运行角色重新读取原账号 fence，不取清理角色或回退到旧邀请检查。
+原注销确认已提交但权威 Memory 尚未物理删除时，同 token 即被拒绝；
+准入查询不确定返回 UNKNOWN。该组件验证不代表完整账号/设备清理完成。
+
+`prepare_model_input` 在原 inflight 任务的当前受保护来源里编码有界请求；
+固定 system 不插入历史文本，原文只在单条 user JSON 资料消息内。
+结束整理保留 B 的真实稳定 end_id；已存输出、完成或旧 Memory basis
+不能重新准备输入。这些 bytes 不保留来源租约，也不授权模型调用或重发；
+实际 worker 仍须在唯一 Meter 出口做新鲜准入与来源检查。
+
 ## 保留的 SQLite 隔离候选
 
 本模块仅处理已提交聊天来源的增量整理与会话结束补充摘要的本地队列状态。

@@ -13,6 +13,8 @@ class SourcePolicy:
     HistoryReadContext principal/scope. MESSAGE holds its lock before entering.
     Collection consumers use this transaction only during the protected callback.
     """
+    transaction_type=Transaction
+
     def __init__(self, repository, principal, guard):
         self.repository, self.principal = repository, principal
         self.guard = guard
@@ -26,7 +28,7 @@ class SourcePolicy:
             raise Unavailable('history source unavailable')
         self.guard('source_entry')
         with self.repository.transaction() as memory:
-            tx = Transaction(memory)
+            tx = self.transaction_type(memory)
             tx.require_live()
             tx.require_source(query)
             self.transaction = tx

@@ -348,10 +348,11 @@
         "Exact original consent/job UTF8 and committed message batches",
         "Conversation/generation/epoch/source and withdrawal versions; task/attempt IDs",
         "Derived candidate bytes and processing cursors",
-        "Erasure fence retains scope SHA256 and erased flag only, without account scope plaintext"
+        "Erasure fence retains scope SHA256 and erased flag only, without account scope plaintext",
+        "Immutable original model output checkpoints, reviewed candidate action/receipt bytes, and exact original-message metadata associated with canonical Memory sources/items"
       ],
       "retention": "User content until user deletion or account closure; no automatic age/capacity erasure; minimal opaque non-resurrection fence remains",
-      "cleanup_hook": "cj_memory_jobs.cleanup.CleanupHook: account-domain fence and physical deletion with same-transaction B original result; item selection fails closed pending producer mapping in #410/#26",
+      "cleanup_hook": "cj_memory_jobs.cleanup.CleanupHook: account-domain fence and physical deletion of jobs/output checkpoints, candidate decisions, origin map, cursors and consent with same-transaction B original result; item selection fails closed pending #26",
       "restore_fence": "cj_memory_history_fence stores only SHA256(scope)/erased; canonical entry and runtime INSERT/UPDATE RLS reject after erasure; restore must replay this fence before reads/writes",
       "owner_line": "C",
       "retention_category": "user_content",
@@ -360,9 +361,11 @@
         "cj_memory_history_consent",
         "cj_memory_history_action",
         "cj_memory_history_job",
-        "cj_memory_history_cursor"
+        "cj_memory_history_cursor",
+        "cj_memory_history_candidate_action",
+        "cj_memory_history_origin"
       ],
-      "source": "backend/migrations/0034_memory_history.sql; #409",
+      "source": "backend/migrations/0034_memory_history.sql; backend/migrations/0037_memory_publication.sql; #409/#410",
       "cleanup_protocol": "CLEANUP@1.1"
     },
     {
