@@ -177,10 +177,10 @@ def main():
                             pid=proposal_id_for(response.json()['receipt']['run_id'])
                             proposal=client.get('/v1/trip-proposals',params={'proposal_id':pid},headers=headers)
                             if proposal.status_code != 200:
-                                snapshot=client.get('/v1/runs',params={'run_id':response.json()['receipt']['run_id']},headers=headers)
+                                snapshot=client.get('/v2/run-draft-status',params={'message_id':command['message_id']},headers=headers)
                                 report.setdefault('source_diagnostics', {})[case] = dict(proposal_status=proposal.status_code,
                                     error_code=proposal.json().get('error',{}).get('code'),run_status=snapshot.status_code,
-                                    run_fields={key:value for key,value in snapshot.json().get('run',{}).items() if key in {'status','draft_outcome','failure_stage'}})
+                                    run_fields={key:value for key,value in snapshot.json().items() if key in {'run_status','status','draft_outcome','budget_exhausted_stage','limit_reason'}})
                                 save()
                             proposal.raise_for_status();proposal=proposal.json()['proposal']
                             action_id=uuid.uuid4().hex
