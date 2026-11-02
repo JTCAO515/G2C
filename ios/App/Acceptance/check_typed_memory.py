@@ -284,9 +284,11 @@ def main():
                     assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and not errors and iterations[0]>0
                     posts=[event for event in audit if event['host']=='memory' and event['method']=='POST' and not event.get('fixture',False)]
                     if collection_questions:
+                        expected=['SYNTHETIC questions preference / 问题偏好 e\u0301']
                         assert len(value['items'])==1 and value['message_count']==model.calls==1 and len(posts)==1
                         assert dict(value['registered_operations']).get('model')==1 and len(report['collection_zero_write_proofs'])==2
                         command=value['items'][0]['command'];assert command['slot']=='preference' and command['kind']=='preference' and command['subject']=='self'
+                        assert command['text']==expected[0]
                         assert command['context']==(dict(kind='travel',id=travels[0],expected_version=1) if chinese else None)
                         assert [row['text'] for row in model.memory_inputs[0]['items']]==[command['text']]
                         assert posts[0]['path']=='/v2/memories' and posts[0]['status']==200
