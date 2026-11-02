@@ -11,6 +11,7 @@
   "ios/Modules/CJNeedsClient",
   "ios/Modules/CJOfflineTrip",
   "ios/Modules/CJRunClient",
+  "ios/Modules/CJStrictJSON",
   "ios/Modules/CJShell/Tests/FeasibilityHostHarness",
   "ios/Modules/CJTripClient",
   "ios/Modules/CJUsageClient",
