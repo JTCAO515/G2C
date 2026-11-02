@@ -507,6 +507,14 @@ def group_memory_account_cleanup():
 GROUPS.update(memory_account_cleanup=group_memory_account_cleanup)
 
 
+def group_local_cleanup_host():
+    return _fresh_runtime_check('local_cleanup_host',55804,'cj27_host_hooks',
+        f'/tmp/cj-host-hooks-{os.getpid()}','backend/cj_api/tests/local_cleanup_host_pg.py')
+
+
+GROUPS.update(local_cleanup_host=group_local_cleanup_host)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
