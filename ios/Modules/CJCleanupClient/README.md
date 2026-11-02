@@ -116,3 +116,47 @@ evidence stays in `evidence/sdk20aa/**`. Original f87
 the original `file-manifest.json` belongs to that old fixed snapshot. Independent review,
 Testing, CI, host App wiring/rendering, real account/API/database/device/cleanup,
 postlogout restricted query and Issue #27 closure remain separate gates.
+
+
+## M3 CLEANUP-API@1 account workflow (#443)
+
+The old current-ALLOWED GET/view remains unchanged. `AccountCleanupClient` adds
+explicit DEBUG iOS Simulator loopback-only device registration, original account
+preparation, explicit confirmation, preparation query and restricted progress.
+Release/unconfigured roots remain closed. The default App is not activated by
+this module; the component acceptance app is a separate bundle, not CJProbeApp.
+
+The actual verified SDK `SessionLifecycle`/operation and host-owned
+`AccountCleanupLifetime` authorize ordinary actions. The host supplies a separate
+WhenUnlockedThisDeviceOnly `SessionPersistence` slot for original bytes and
+restricted capabilities. Never use the ordinary SDK slot, UserDefaults, raw files
+or a bearer fallback for this journal. Native record namespace is checked against
+the expected environment/account; a new in-memory generation may only query the
+same persisted original. The lifetime must be invalidated when the selected
+account/progress scope changes. Restricted reads do not regain ordinary rights.
+
+Each explicit action captures opaque work synchronously. Request bytes are
+saved/read back before the POST; only the actual bound service response creates
+an operation or capability. Quiesce all business writers in `beforeConfirmation`
+without retiring the original SDK operation before the sealed POST exit. After a
+possible confirmation exits, the host reads `requiresRestrictedProgress` and
+clears/blocks the ordinary SDK. A verified prepared/blocked ACK does not claim
+revocation. All later reads use `Cleanup <original progress token>`, never that
+token as Bearer. Last current GET and the historical confirmation ACK remain
+separate. Ordinary credential or transport failures are returned as safe typed
+failures rather than header/body-bearing exceptions.
+
+Only a staged confirmation whose durable marker proves no HTTP dispatch can be
+explicitly resumed with the same original bytes. A possible dispatch is query-only
+forever in this client; no automatic retry/new operation exists. Unknown preparation
+uses its original action GET; null does not unlock another POST. DEVICE@1/V2
+currently have no read-by-action registration discovery, so registration ACK loss
+stays UNKNOWN without a replacement ID or repeated POST. This and the initial
+unknown device-call discovery gap were notified to B on #27 for an additive version.
+
+No native erasure, device receipt or all-account completion is implied by these
+APIs. The native component harness selects actual B-owned domains from the real
+registry for a component positive, and separately checks the full real inventory's
+missing-owner hooks remain blocked/prepared. It never supplies an operation ID or
+progress capability to the App. Complete App UI/AX, all provided device storage and
+key erasure, original device call/receipt and physical devices remain #27/#29.
