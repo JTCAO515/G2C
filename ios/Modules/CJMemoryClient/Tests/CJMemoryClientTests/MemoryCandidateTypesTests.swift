@@ -1,4 +1,6 @@
 import Foundation
+import CryptoKit
+import CJMessageKeys
 import Testing
 @testable import CJMemoryClient
 
@@ -150,4 +152,65 @@ func aCurrentNoncandidateProjectionCannotCreateAnotherReview(status: String) thr
     value["input_sha256"] = action.inputSHA256
     value["receipt"] = ["item_id": action.candidateID, "version": 2, "status": "rejected"]
     #expect(throws: MemoryFailure.invalidResponse) { try parse(value) }
+}
+
+@MainActor private final class CandidateJournalFixture {
+    let parent = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent("candidate-" + UUID().uuidString)
+    let key = SymmetricKey(size: .bits256)
+    let keyID = UUID()
+    let namespace = MessageKeyNamespace(environment: UUID(), account: UUID(), purpose: .localMemoryPendingV1)
+    var root: URL { parent.appendingPathComponent("account-A") }
+    init() throws { try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700]) }
+    func dispose() { try? FileManager.default.removeItem(at: parent) }
+    func store(at path: URL? = nil, namespace: MessageKeyNamespace? = nil, key: (() throws -> SymmetricKey)? = nil) throws -> MemoryCandidatePendingStore {
+        let material = self.key
+        return try MemoryCandidatePendingStore(directory: path ?? root, maximumBytes: 100000, maximumRecords: 100,
+            namespace: namespace ?? self.namespace, keyID: keyID, key: key ?? { material })
+    }
+    func original() throws -> MemoryCandidatePending {
+        let page = try candidatePage()
+        return try MemoryCandidatePending(MemoryCandidateAction(page: page, candidateID: "history-item-v1:偏好", review: .confirm(kind: .preference, text: "仅本候选明确确认，不授权全部历史", occurredAt: "时间不详", travel: nil)))
+    }
+}
+@Test @MainActor func candidateJournalRestoresOriginalBytesAndErasesOwnFamilyWithoutKey() throws {
+    let fixture = try CandidateJournalFixture(); defer { fixture.dispose() }
+    var keyAvailable = true, keyCalls = 0
+    let store = try fixture.store { keyCalls += 1; guard keyAvailable else { throw MemoryFailure.keyUnavailable }; return fixture.key }
+    let original = try fixture.original(); try store.append(original, validate: {})
+    try store.recordRejection(original, status: 409, code: "MEMORY_CONFLICT", validate: {})
+    let restored = try fixture.store()
+    let record = try #require(try restored.records().first)
+    #expect(record.originalUTF8 == original.originalUTF8 && record.expectedSHA256 == original.expectedSHA256)
+    #expect(try restored.rejection(for: record)?.record.status == 409)
+    let files = try FileManager.default.contentsOfDirectory(at: fixture.root, includingPropertiesForKeys: nil)
+    for file in files { #expect(!(try Data(contentsOf: file)).contains(Data("仅本候选".utf8))) }
+    let other = fixture.parent.appendingPathComponent("account-B")
+    try FileManager.default.createDirectory(at: other, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+    let namespace = MessageKeyNamespace(environment: fixture.namespace.environment, account: UUID(), purpose: .localMemoryPendingV1)
+    let otherStore = try fixture.store(at: other, namespace: namespace); try otherStore.append(original, validate: {})
+    let otherFile = try #require(FileManager.default.contentsOfDirectory(at: other, includingPropertiesForKeys: nil).first)
+    let otherBytes = try Data(contentsOf: otherFile)
+    keyAvailable = false; let calls = keyCalls
+    try store.clearLocalFiles()
+    #expect(keyCalls == calls)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: fixture.root.path).isEmpty)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: fixture.root.appendingPathExtension("CJMemoryCandidateRejectionsV1").path).isEmpty)
+    #expect(try Data(contentsOf: otherFile) == otherBytes)
+    #expect(throws: MemoryFailure.storageUnavailable) { try store.append(original, validate: {}) }
+}
+@Test @MainActor func candidateSidecarUnknownEntryRefusesBeforeAnyUnlinkThenRetriesOriginalTargets() throws {
+    let fixture = try CandidateJournalFixture(); defer { fixture.dispose() }
+    let store = try fixture.store(), original = try fixture.original()
+    try store.append(original, validate: {})
+    try store.recordRejection(original, status: 409, code: "MEMORY_CONFLICT", validate: {})
+    let file = try #require(FileManager.default.contentsOfDirectory(at: fixture.root, includingPropertiesForKeys: nil).first)
+    let originalCipher = try Data(contentsOf: file)
+    let unknown = fixture.root.appendingPathExtension("CJMemoryCandidateRejectionsV1").appendingPathComponent("unrecognized")
+    try Data("unknown".utf8).write(to: unknown)
+    #expect(throws: MemoryFailure.storageUnavailable) { try store.clearLocalFiles() }
+    #expect(try Data(contentsOf: file) == originalCipher)
+    #expect(throws: MemoryFailure.storageUnavailable) { try store.records() }
+    try FileManager.default.removeItem(at: unknown)
+    try store.clearLocalFiles()
+    #expect(try FileManager.default.contentsOfDirectory(atPath: fixture.root.path).isEmpty)
 }
