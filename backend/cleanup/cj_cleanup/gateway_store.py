@@ -110,6 +110,16 @@ class GatewayStore:
             result=dict(binding_id=row[0],device_id=row[1],state_ref=row[2],scope_digest=row[3],protocol=row[4])
         return result
 
+    def registration_by_action(self,action_id,input_digest,protocol):
+        with self.store.transaction('device-registration-read',writing=False) as cur:
+            cur.execute('SELECT binding_id,input_digest,device_id,state_ref,scope_digest,protocol FROM cj_cleanup_device_binding '
+                'WHERE subject_digest=%s AND action_id=%s',(self.store.subject_digest,action_id))
+            row=cur.fetchone()
+        if row is None:return None
+        if row[5]!=protocol:raise Denied('original device protocol required')
+        if row[1]!=input_digest:raise Conflict('original registration digest required')
+        return dict(binding_id=row[0],device_id=row[2],state_ref=row[3],scope_digest=row[4])
+
     def devices(self):
         with self.store.transaction('device-list',writing=False) as cur:
             cur.execute('SELECT binding_id FROM cj_cleanup_device_binding WHERE subject_digest=%s ORDER BY binding_id',(self.store.subject_digest,))

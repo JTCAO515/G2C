@@ -106,7 +106,9 @@ def exercise(root,conninfo):
             'device-cache/trip-pending-file','device-cache/offline-trip','device-cache/feedback-pending',
             'device-cache/feedback-key-keychain','device-cache/memory-manual-pending','device-cache/memory-lifecycle-pending',
             'device-cache/memory-typed-pending','device-cache/memory-key-keychain','device-cache/needs-pending',
-            'device-cache/needs-key-keychain','external-processing')
+            'device-cache/needs-key-keychain','device-cache/memory-history-pending','device-cache/trip-scoped-pending',
+            'device-cache/needs-planning-pending','device-cache/trip-key-keychain','device-cache/offline-key-keychain',
+            'device-cache/offline-write-residue','external-processing')
         from dataclasses import replace
         full=create_local_app(conninfo_path=conninfo,auth_dir=auth,cleanup_configuration=replace(options,
             inventory=inventory,registry_path=ROOT/'backend/storage-registry.json'))
@@ -124,7 +126,9 @@ def exercise(root,conninfo):
             'device-cache/message-key-keychain','device-cache/trip-pending-file','device-cache/offline-trip',
             'device-cache/feedback-pending','device-cache/feedback-key-keychain')
         from cj_cleanup.device_v2 import TARGETS as V2_TARGETS
-        assert set(V2_TARGETS)=={'device-cache/'+entry['id'] for entry in entries} and len(V2_TARGETS)==13
+        assert set(V2_TARGETS)=={'device-cache/'+entry['id'] for entry in entries if 'CLEANUP-DEVICE@2' in entry['device_versions']} and len(V2_TARGETS)==13
+        from cj_cleanup.device_v3 import TARGETS as V3_TARGETS
+        assert set(V3_TARGETS)=={'device-cache/'+entry['id'] for entry in entries} and len(V3_TARGETS)==19
         print('PASS corrupted original plan rejects; actual full inventory missing owner hooks blocks before retirement; all device call targets registered')
         # Actual HTTP metadata finalization after the original device report:
         # erase the private scope plan, retain only bounded progress/fences.
