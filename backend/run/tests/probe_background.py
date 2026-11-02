@@ -22,7 +22,7 @@ def main():
                 conn.execute((ROOT/'backend/run/tests/background_schema_fixture.sql').read_text())
             path=root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600)
             env=dict(pg_suites.clean_env(),CJ_E2E_CONNINFO=str(path),PYTHONPATH=pg_suites.pythonpath())
-            for name in ('background_jobs_pg.py','background_inflight_pg.py','background_current_pg.py'):
+            for name in ('background_jobs_pg.py','background_inflight_pg.py','background_current_pg.py','background_limits_pg.py'):
                 result=subprocess.run([sys.executable,'-B',str(ROOT/'backend/cj_api/tests'/name)],cwd=ROOT,env=env)
                 if result.returncode:return result.returncode
         assert not (root/'pg/data/postmaster.pid').exists()

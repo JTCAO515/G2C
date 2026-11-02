@@ -216,7 +216,7 @@ class BackgroundJobs:
                 return result.summary()
             except BudgetExceeded:
                 self._metadata(token,record,'failed')
-                result=store.transition(record,('queued','running'),'budget_exhausted')
+                result=store.transition(record,('queued','running','publishing'),'budget_exhausted')
                 meter=self._meter(record)
                 with meter.repo.transaction() as ledger:exists=record.binding.run_id in ledger.runs
                 if exists:meter.cancel(record.binding.run_id)
