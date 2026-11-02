@@ -489,7 +489,13 @@ def group_memory_incremental_worker():
         f'/tmp/cj-memory-incremental-{os.getpid()}','backend/memory_jobs/tests/producer_background_pg.py')
 
 
-GROUPS.update(memory_ending_worker=group_memory_ending_worker,memory_incremental_worker=group_memory_incremental_worker)
+def group_memory_auto_ending():
+    return _fresh_runtime_check('memory_auto_ending',55523,'cj_memory_auto_end',
+        f'/tmp/cj-memory-auto-end-{os.getpid()}','backend/memory_jobs/tests/auto_ending_worker_pg.py')
+
+
+GROUPS.update(memory_ending_worker=group_memory_ending_worker,memory_incremental_worker=group_memory_incremental_worker,
+              memory_auto_ending=group_memory_auto_ending)
 
 
 def group_memory_account_cleanup():
