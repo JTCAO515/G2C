@@ -10,7 +10,7 @@ let package = Package(name: "CJFeedbackClient", platforms: [.iOS(.v17), .macOS(.
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")
     ],
     targets: [
-        .target(name: "CJFeedbackClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"), 
+        .target(name: "CJFeedbackClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"),
             .product(name: "CJAPI", package: "ios"),
             .product(name: "CJMessageHTTP", package: "CJMessageClient"),
             .product(name: "CJSession", package: "CJAuth"),

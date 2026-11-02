@@ -8,7 +8,7 @@ let package = Package(name: "CJManualPreviewClient", platforms: [.iOS(.v17), .ma
         .package(url: "https://github.com/apple/swift-openapi-urlsession", exact: "1.3.2"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")],
-    targets: [.target(name: "CJManualPreviewClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"), 
+    targets: [.target(name: "CJManualPreviewClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"),
         .product(name: "CJAPI", package: "ios"), .product(name: "CJTripClient", package: "CJTripClient"),
         .product(name: "CJMessageHTTP", package: "CJMessageClient"), .product(name: "CJSession", package: "CJAuth"), .product(name: "CJMessageKeys", package: "CJAuth"),
         .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),

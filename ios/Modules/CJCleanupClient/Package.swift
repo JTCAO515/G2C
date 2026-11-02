@@ -11,7 +11,7 @@ let package = Package(name: "CJCleanupClient", platforms: [.iOS(.v17), .macOS(.v
         .package(path: "\(modules)/CJAuth"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")],
-    targets: [.target(name: "CJCleanupClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"), 
+    targets: [.target(name: "CJCleanupClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"),
         .product(name: "CJAPI", package: "ios"),
         .product(name: "CJMessageHTTP", package: "CJMessageClient"),
         .product(name: "CJSession", package: "CJAuth"),
