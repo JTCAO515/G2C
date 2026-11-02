@@ -1,9 +1,9 @@
 import Foundation
 import Darwin
 
-/// Isolated file primitive, intentionally module-internal until key/session/CLEANUP are fixed.
+/// Physical-cleanup constructor only; ciphertext read/write stay module-internal.
 /// One synchronous owner; no automatic retry, migration, key creation, or old-version fallback.
-final class AtomicSnapshotStore {
+public final class AtomicSnapshotStore {
     enum Settlement: Equatable { case committed, originalRetained, unknown }
     private let root: String
     private let directory: Int32
@@ -13,7 +13,7 @@ final class AtomicSnapshotStore {
     // Fault injection for isolated tests only. Called after rename, before directory fsync.
     var afterRename: (() throws -> Void)?
 
-    init(existingPrivateDirectory url: URL) throws {
+    public init(existingPrivateDirectory url: URL) throws {
         guard url.isFileURL, url.path.hasPrefix("/"), !url.path.contains("/../") else { throw OfflineFailure.invalidPath }
         root = url.path
         directory = try Self.walk(root)
@@ -125,7 +125,7 @@ final class AtomicSnapshotStore {
         return .unknown
     }
     /// Only this directory's fixed cache entry; no recursive or device-wide cleanup claim.
-    func clearLocalEntry() throws {
+    public func clearLocalEntry() throws {
         guard pending == nil else { throw OfflineFailure.writeUnknown }
         _ = try read(); try checkRoot()
         guard unlinkat(directory, name, 0) == 0 || errno == ENOENT, fsync(directory) == 0 else {

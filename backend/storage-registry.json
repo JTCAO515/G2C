@@ -1,5 +1,5 @@
 {
-  "version": "1.13.0",
+  "version": "1.14.0",
   "stores": [
     {
       "id": "business",
@@ -23,7 +23,18 @@
             "cj_travel_context",
             "cj_travel_context_action",
             "cj_message_context_profile",
-            "cj_message_travel_reference"
+            "cj_message_travel_reference",
+            "cj_message_needs_selection",
+            "cj_message_needs_binding",
+            "cj_local_run_requirement",
+            "cj_local_run_protection",
+            "cj_local_metered_profile",
+            "cj_message_metered_requirement",
+            "cj_message_trip_profile",
+            "cj_message_trip_reference",
+            "cj_message_edit_profile",
+            "cj_message_edit_reference",
+            "cj_message_edit_result_profile"
           ],
           "source": "backend/message/sql/candidate.sql@b722281001f57cc7bc1c7df8dd38f2543e7dc250",
           "status": "candidate_or_local_only; production_not_provisioned",
@@ -37,7 +48,7 @@
             "travel context identity/version/active and original action/receipt bytes",
             "per-conversation selection_epoch and explicit travel/none reference; no Trip or Memory facts"
           ],
-          "retention": "UNDECIDED; activation blocked",
+          "retention": "Chat, drafts, travel context and action/association evidence until user/account deletion; profile/fence rows remain non-recyclable through cleanup",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/TTL API; future cleanup must serialize the scope lock",
           "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
           "travel_context_local": {
@@ -52,7 +63,9 @@
             "principal_binding": "canonical MESSAGE owner scope; fresh AUTH plus original binding; LOCAL consumer ABI is not authorization",
             "cleanup_hook": "UNIMPLEMENTED #27; no DELETE/TRUNCATE grants, no real-user activation",
             "restore_fence": "UNIMPLEMENTED #27; retain original action/ref/profile, reject nonempty down; no identity recycling"
-          }
+          },
+          "owner_line": "B",
+          "retention_category": "user_content"
         },
         {
           "id": "usage",
@@ -68,7 +81,7 @@
             "attempt and reservation identifiers",
             "charges and usage ledger JSON"
           ],
-          "retention": "UNDECIDED; activation blocked",
+          "retention": "Account reconciliation until account deletion; not diagnostic logs; no 90-day TTL",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; USAGE cancel releases reservations only",
           "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
           "read_consumers": [
@@ -80,7 +93,9 @@
               "scope": "Original attempt under trusted environment/issuer/subject/audience and authorized historical period; opaque unit and confirmed receipt are not current balance/charge",
               "projection": "Minimum original attempt/status/units/receipt only, exact integer strings or null; no whole ledger/input digest/prompt"
             }
-          ]
+          ],
+          "owner_line": "B",
+          "retention_category": "account_reconciliation"
         },
         {
           "id": "memory-authoritative",
@@ -100,9 +115,11 @@
             "subject/slot/context/operation/item IDs",
             "content/types/status/version/record and occurrence times"
           ],
-          "retention": "UNDECIDED; source expiry is not content retention; activation blocked",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "UNIMPLEMENTED; no physical cleanup API; source/item revocation and scope epoch lifecycle must be provided by domain owners; no derived ReMe store added",
-          "restore_fence": "UNIMPLEMENTED; source/revocation/tombstone replay must precede reads; no resurrection promise"
+          "restore_fence": "UNIMPLEMENTED; source/revocation/tombstone replay must precede reads; no resurrection promise",
+          "owner_line": "C",
+          "retention_category": "user_content"
         },
         {
           "id": "trip-authoritative",
@@ -111,7 +128,17 @@
             "cj_trip_scope",
             "cj_trip_proposal",
             "cj_trip_record",
-            "cj_trip_receipt"
+            "cj_trip_receipt",
+            "cj_trip_manual_basis",
+            "cj_trip_manual_intent",
+            "cj_trip_needs_basis",
+            "cj_trip_needs_action",
+            "cj_trip_needs_current",
+            "cj_trip_needs_edit",
+            "cj_trip_needs_plan_context",
+            "cj_trip_scoped_basis",
+            "cj_trip_scoped_action",
+            "cj_trip_scoped_result"
           ],
           "source": "backend/trip/sql/candidate.sql@5fd115fc97e542bc8776a445d8245fd272000e56",
           "status": "candidate/local_only; production_not_provisioned",
@@ -121,7 +148,7 @@
             "scope/trip/proposal/action identifiers, basis/version/expiry/status and scoped candidate digest",
             "canonical original action bytes including confirmation_ref and historical receipt"
           ],
-          "retention": "UNDECIDED; candidate deadline is not physical retention; activation blocked",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "UNIMPLEMENTED; no deletion of proposal/action receipts or formal records; dedupe only while retained; generation cancellation is not candidate rejection",
           "restore_fence": "UNIMPLEMENTED; scope/confirmation/candidate/version revocations and deletion replay must precede reads; no backup restoration acceptance",
           "read_consumers": [
@@ -131,7 +158,9 @@
               "persistence": "NONE; explicit original/after/diff transient only, no server draft/Proposal/receipt/action/lock or Memory write",
               "scope": "Actual own current formal Trip inside existing public TRIP lifetime; caller base is exact comparison only; protection UNKNOWN/save unavailable"
             }
-          ]
+          ],
+          "owner_line": "C",
+          "retention_category": "user_content"
         },
         {
           "id": "needs-current-planning",
@@ -149,7 +178,7 @@
             "full current and historical planning snapshots including budget, dates/zones, party/companion labels, fixed intent and temporary conditions",
             "scope/version/record times and action receipts"
           ],
-          "retention": "UNDECIDED; revisions/receipts retained by candidate, not an infinite dedupe promise; activation blocked",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "UNIMPLEMENTED; no cleanup/deletion API for current records, revisions or original source bytes; no automatic Memory/Trip promotion",
           "restore_fence": "UNIMPLEMENTED; source/scope/account revocations and deletion replay required before restored reads",
           "feasibility_current_candidate": {
@@ -161,7 +190,9 @@
             "private_output": "Current content hash plus exact original input UTF8/revision/action hashes and declarations; authenticated private read only",
             "status": "factory_hard_closed_pending_consumer_gates; old c821 pin unchanged; no cohost approval",
             "authority": "NEEDS-only local CONFLICT/UNKNOWN, overall always UNKNOWN; INVALID input withheld; no solver/routes/provider/write permission"
-          }
+          },
+          "owner_line": "B",
+          "retention_category": "user_content"
         },
         {
           "id": "feedback-private-actions",
@@ -177,9 +208,11 @@
             "scope/action ID/input digest/database submission time",
             "nullable minimal verified message/run binding, message input hash, read-time status/event highwater; no source transcript/tool payload copied"
           ],
-          "retention": "UNDECIDED; dedupe only while row retained; no infinite or supplier-retention promise",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "UNIMPLEMENTED; accepted account cleanup must cover retired scope records, backups/exported artifacts and in-flight resubmission; no queue or secondary ledger",
-          "restore_fence": "UNIMPLEMENTED; no retired-scope recycling or stale writer resurrection; source reads and feedback write are not cross-domain atomic"
+          "restore_fence": "UNIMPLEMENTED; no retired-scope recycling or stale writer resurrection; source reads and feedback write are not cross-domain atomic",
+          "owner_line": "B",
+          "retention_category": "user_content"
         },
         {
           "id": "cleanup-metadata",
@@ -195,10 +228,12 @@
             "Confirmation digest, invocation IDs, frozen registry and gap details",
             "Environment/issuer/subject/audience scope and original operation ID"
           ],
-          "retention": "UNDECIDED; activation blocked; retain original reconciliation metadata until explicit policy exists",
+          "retention": "Account reconciliation until account deletion; not diagnostic logs; no 90-day TTL",
           "cleanup_hook": "UNIMPLEMENTED; current-account progress SELECT never deletes, creates, recovers, retries or restores access",
           "restore_fence": "UNIMPLEMENTED; backups/offline/external retention remain explicit original barriers",
-          "read_consumer": "GET /v1/account-cleanup-progress; current ALLOWED account and original operation only; five-field progress whitelist; no private journal or post-logout capability"
+          "read_consumer": "GET /v1/account-cleanup-progress; current ALLOWED account and original operation only; five-field progress whitelist; no private journal or post-logout capability",
+          "owner_line": "B",
+          "retention_category": "account_reconciliation"
         },
         {
           "id": "memory-management-actions",
@@ -213,13 +248,17 @@
             "Exact original action UTF8 bytes and action/item IDs",
             "Historical resulting version/status and stored original-input SHA256"
           ],
-          "retention": "UNDECIDED; original reconciliation receipt retention/tombstone policy unresolved; no unlimited dedupe guarantee",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "UNIMPLEMENTED; register this action ledger alongside original source/item/save ledgers; pause is not deletion",
           "restore_fence": "UNIMPLEMENTED; backups/offline copies/unknown-action recovery require original IDs and exact bytes",
           "read_consumer": "Original action receipt query only; null is absence observation, not proof of noncommit or retry authorization",
-          "candidate_sql_registration": "Documentation only; no migration manifest or application to old/production database"
+          "candidate_sql_registration": "Documentation only; no migration manifest or application to old/production database",
+          "owner_line": "C",
+          "retention_category": "user_content"
         }
-      ]
+      ],
+      "owner_line": "B / domain owners",
+      "retention_category": "domain_specific"
     },
     {
       "id": "checkpoints",
@@ -237,7 +276,10 @@
           "objects": [
             "cj_run_scope",
             "cj_run_record",
-            "cj_run_event"
+            "cj_run_event",
+            "cj_run_step_usage",
+            "cj_run_metered_binding",
+            "cj_run_metered_operation"
           ],
           "source": "backend/run/sql/candidate.sql@25e8e1b6c7384164d706e8108512bd74d11e4fd6",
           "status": "candidate_or_local_only; production_not_provisioned",
@@ -248,7 +290,7 @@
             "exact usage command/input bytes",
             "status and expiry"
           ],
-          "retention": "UNDECIDED; activation blocked",
+          "retention": "Retained answer/output content until user/account deletion; diagnostic-only events/checkpoints 90 days; no blanket run deletion",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; expiry is not deletion",
           "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
           "read_consumers": [
@@ -264,9 +306,18 @@
               "persistence": "NONE; original stored RUN usage association only, no backfill/attempt mint/USAGE read or write",
               "output": "Original message/run/attempt/operation references only; not reservation/status/execution/fee/dispatch proof; no command/input bytes/digest/reserve"
             }
-          ]
+          ],
+          "owner_line": "B",
+          "retention_category": "mixed_content_diagnostics",
+          "retention_details": {
+            "content": "Persisted user-visible answer/effects and source associations: until user/account deletion",
+            "diagnostic_90d": "Diagnostic-only events/checkpoints, once separated from answer/reconciliation state",
+            "account_reconciliation": "Metered binding/operation, exact original command/input and unknown settlement: no 90-day TTL"
+          }
         }
-      ]
+      ],
+      "owner_line": "B",
+      "retention_category": "domain_specific"
     },
     {
       "id": "memory-derived",
@@ -276,7 +327,9 @@
       "sensitive_fields": "Domain owner must enumerate before activation",
       "retention": "UNDECIDED; activation blocked",
       "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
-      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
+      "owner_line": "C",
+      "retention_category": "user_content"
     },
     {
       "id": "device-cache",
@@ -302,9 +355,11 @@
             "draft bytes",
             "pending edits/save revisions"
           ],
-          "retention": "UNDECIDED; activation blocked",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "UNIMPLEMENTED physical-file deletion; invalidate() clears memory/leases only; load/save are not erase",
-          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
+          "owner_line": "A",
+          "retention_category": "user_content"
         },
         {
           "id": "sdk-session-keychain",
@@ -318,9 +373,11 @@
           "sensitive_fields": [
             "SDK session bytes"
           ],
-          "retention": "UNDECIDED; activation blocked",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "clearAndBlock() replaces secret with durable nonsecret blocked marker; no broad physical deletion or server revocation",
-          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
+          "owner_line": "A",
+          "retention_category": "user_content"
         },
         {
           "id": "message-key-keychain",
@@ -334,9 +391,11 @@
           "sensitive_fields": [
             "message encryption key bytes and identifier"
           ],
-          "retention": "UNDECIDED; activation blocked",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "clear(expectedID:storageState:for:) -> remove(expectedID:) exact SecItemDelete after reconciliation permit; invalidate() does not delete; not automatic with encrypted data present",
-          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required"
+          "restore_fence": "UNIMPLEMENTED; revocation replay and backup restore acceptance required",
+          "owner_line": "A",
+          "retention_category": "user_content"
         },
         {
           "id": "trip-pending-file",
@@ -351,11 +410,15 @@
             "Exact original action UTF8 and confirmation reference",
             "Proposal snapshot/content hash and action/proposal IDs"
           ],
-          "retention": "UNDECIDED for production; local original records retained for restart reconciliation; no TTL API",
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "UNIMPLEMENTED; no resend/delete/TTL API; reopening grants original-action query only; missing keys or invalid storage fail closed without erasure",
-          "restore_fence": "UNIMPLEMENTED; backup restoration and revocation replay remain unaccepted; local restart reconciliation is not backup recovery"
+          "restore_fence": "UNIMPLEMENTED; backup restoration and revocation replay remain unaccepted; local restart reconciliation is not backup recovery",
+          "owner_line": "A",
+          "retention_category": "user_content"
         }
-      ]
+      ],
+      "owner_line": "A",
+      "retention_category": "user_content"
     },
     {
       "id": "external-processing",
@@ -365,7 +428,9 @@
       "sensitive_fields": "Domain owner must enumerate before activation",
       "retention": "UNDECIDED; activation blocked",
       "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
-      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads"
+      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
+      "owner_line": "B / provider owners",
+      "retention_category": "external_unprovisioned"
     }
   ],
   "evidence_tree": "3c52f72daf1d8e2304c0c569b47e68d92a4b323e",

@@ -1,0 +1,93 @@
+[
+  {
+    "reason": "caller-owner",
+    "request": {
+      "protocol": "CLEANUP@1.0",
+      "operation_id": "cleanup-1",
+      "invocation_id": "memory-1",
+      "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "registry_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "entry_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target": "business/memory-authoritative",
+      "domain_scope": "synthetic-scope",
+      "selection": {
+        "kind": "memory",
+        "item_id": "item-1",
+        "item_version": 2,
+        "scope_epoch": 3
+      },
+      "owner": "another-user"
+    }
+  },
+  {
+    "reason": "wrong-version",
+    "request": {
+      "protocol": "CJ-CLEANUP-INTERNAL@0.1.0-rc.1",
+      "operation_id": "cleanup-1",
+      "invocation_id": "memory-1",
+      "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "registry_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "entry_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target": "business/memory-authoritative",
+      "domain_scope": "synthetic-scope",
+      "selection": {
+        "kind": "memory",
+        "item_id": "item-1",
+        "item_version": 2,
+        "scope_epoch": 3
+      }
+    }
+  },
+  {
+    "reason": "implicit-entire-history",
+    "request": {
+      "protocol": "CLEANUP@1.0",
+      "operation_id": "cleanup-1",
+      "invocation_id": "memory-1",
+      "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "registry_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "entry_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target": "business/memory-authoritative",
+      "domain_scope": "synthetic-scope",
+      "selection": {
+        "kind": "memory",
+        "item_id": "item-1"
+      }
+    }
+  },
+  {
+    "reason": "boolean-epoch",
+    "request": {
+      "protocol": "CLEANUP@1.0",
+      "operation_id": "cleanup-1",
+      "invocation_id": "memory-1",
+      "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "registry_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "entry_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target": "business/memory-authoritative",
+      "domain_scope": "synthetic-scope",
+      "selection": {
+        "kind": "memory",
+        "item_id": "item-1",
+        "item_version": 1,
+        "scope_epoch": true
+      }
+    }
+  },
+  {
+    "reason": "unbounded-delete",
+    "request": {
+      "protocol": "CLEANUP@1.0",
+      "operation_id": "cleanup-1",
+      "invocation_id": "memory-1",
+      "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "registry_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "entry_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target": "business/memory-authoritative",
+      "domain_scope": "synthetic-scope",
+      "selection": {
+        "kind": "all"
+      }
+    }
+  }
+]

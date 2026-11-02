@@ -1,6 +1,8 @@
 // Only referenced by the external acceptance project, never the shipping App target.
 import SwiftUI
+import UIKit
 import CJShell
+import CJRunClient
 import CJMemoryClient
 import CJMessageHTTP
 import CJTripClient
@@ -83,6 +85,7 @@ struct ShellFixtureApp: App {
             "trip": shell.context.tripReference ?? "", "draft": shell.draft,
             "draftRevision": shell.draftRevision.uuidString,
             "generation": String(describing: shell.generation),
+            "contentSizeCategory": UIApplication.shared.preferredContentSizeCategory.rawValue,
             "memoryPath": String(describing: shell.memoryPath),
             "tripPath": String(describing: shell.tripPath),
             "tab": shell.selectedTab.rawValue, "language": shell.language.rawValue
@@ -93,15 +96,14 @@ struct ShellFixtureApp: App {
     var body: some Scene {
         WindowGroup {
             ShellView(state: shell, memoryContainerHost: memory, tripContainerHost: trips?.host)
+                .safeAreaInset(edge: .top) {
+                    RunReadableText(text: "SYNTHETIC / 合成", style: .caption)
+                        .accessibilityIdentifier("shell.fixture.observation")
+                        .accessibilityValue(observation)
+                }
                 .transformEnvironment(\.dynamicTypeSize) { size in
                     if textSize == "maximum" { size = .accessibility5 }
                     else if textSize == "large" { size = .accessibility3 }
-                }
-                .safeAreaInset(edge: .top) {
-                    Text("SYNTHETIC / 合成")
-                        .font(.caption2)
-                        .accessibilityIdentifier("shell.fixture.observation")
-                        .accessibilityValue(observation)
                 }
                 .task {
                     if mode != "unconfigured" { await memory.loadGroups(context: memory.captureAction()) }

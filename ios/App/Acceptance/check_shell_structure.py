@@ -22,7 +22,7 @@ BUNDLE = "space.go2china.shell.acceptance"
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=["structure", "accessibility"], default="structure")
+    parser.add_argument("--suite", choices=["structure", "accessibility", "account-deletion"], default="structure")
     parser.add_argument("--simulator", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--build-dir", type=Path, help="Reusable external build cache; evidence remains separate")
@@ -37,6 +37,7 @@ def main():
     if (output / "report.json").exists():
         raise ValueError("Use a new output directory; preserve prior evidence")
     env = {k: v for k, v in os.environ.items() if not k.startswith(("SIMCTL_CHILD_", "G2C_DEV_"))}
+    env["OS_ACTIVITY_MODE"] = "disable"
     env["DEVELOPER_DIR"] = "/Applications/Xcode.app/Contents/Developer"
     devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "-j"], env=env))
     assert any("iOS-17-5" in runtime and d["udid"] == args.simulator
@@ -90,12 +91,17 @@ def main():
     threading.Thread(target=server.serve_forever, daemon=True).start()
     spec = importlib.util.spec_from_file_location("trip_acceptance", ROOT / "scripts/check_ios_trip_confirm.py")
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    original_content_size = None
     try:
         test_class = "ShellStructureUITests" if args.suite == "structure" else "ShellAccessibilityUITests"
         variants = {
             "ordinary": ["testOrdinaryAppTabsLanguageAndDraft", "testOrdinaryHelpPrivacySupportInBothLanguages"],
             "fixture": ["testMemoryStatesKeepSettingsReachable", "testLanguagePreservesReferencesAndDoesNotRepeatRequests", "testPluginsAreInertInBothLanguages"]
         } if args.suite == "structure" else {"fixture": ["testMaximumTextLayout", "testAssistantStateSamplesInBothLanguages", "testTripAndMemoryReadStatesInBothLanguages", "testLongTextKeyboardAndUnavailableControls"], "ordinary": ["testOrdinaryAppAccessibilityAudits"]}
+        if args.suite == "account-deletion":
+            test_class = "AccountDeletionUITests"
+            variants = {"ordinary": ["testOrdinaryEntryAndAccountInBothLanguages"],
+                        "fixture": ["testEmptyAndFailedMemoryEntry", "testMaximumTextAndFullAccessibilityAudit"]}
         for variant, tests in variants.items():
             # Reuse only the existing external Xcode project generator, not its Trip
             # API/PG setup or polling driver. Our XCTest source drives UI directly.
@@ -120,6 +126,13 @@ def main():
                        "-collect-test-diagnostics", "never",
                        "ARCHS=arm64", "ONLY_ACTIVE_ARCH=YES", "CODE_SIGNING_ALLOWED=YES", "CODE_SIGN_IDENTITY=-"]
             command += ["-only-testing:G2CControl/" + test_class + "/" + test for test in tests]
+            if args.suite == "account-deletion" and variant == "fixture":
+                original_content_size = subprocess.check_output(
+                    ["xcrun", "simctl", "ui", args.simulator, "content_size"], env=env, text=True).strip()
+                if original_content_size in {"unknown", "unsupported"}:
+                    raise ValueError("Boot the simulator before configuring native text size")
+                subprocess.run(["xcrun", "simctl", "ui", args.simulator, "content_size",
+                                "accessibility-extra-extra-extra-large"], env=env, check=True)
             with (output / (variant + ".log")).open("w") as log:
                 subprocess.run(command + ["test"], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=900)
             summary = json.loads(subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)], env=env))
@@ -131,6 +144,9 @@ def main():
         report["status"] = "FAIL"; report["error"] = type(error).__name__
         raise
     finally:
+        if original_content_size is not None and original_content_size not in {"unknown", "unsupported"}:
+            subprocess.run(["xcrun", "simctl", "ui", args.simulator, "content_size", original_content_size],
+                           env=env, check=True)
         report_path.write_text(json.dumps(report, indent=2))
         with lock:
             for released in releases.values(): released.set()
