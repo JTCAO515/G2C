@@ -1,4 +1,4 @@
-"""Internal CJ020 candidate. No production source, model or MEMORY write factory."""
+"""CJ020: legacy closed candidate; M3 uses the explicit local_app/Service host."""
 
 
 def production_queue(*args, **kwargs):
