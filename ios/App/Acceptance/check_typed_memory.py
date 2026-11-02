@@ -80,7 +80,7 @@ def main():
                         cwd=ROOT,check=True,capture_output=True)
                     dev_auth.activate_travel(conn,subject,context,ABI)
                 slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)}
-                if collection_questions:
+                if collection_questions and chinese:
                     slots.update(a_fact=dict(kind='fact',collection_allowed=True,semantic_resolved=True),b_experience=dict(kind='experience',collection_allowed=True,semantic_resolved=True))
                 if reverse:slots['legacy.read']=dict(kind='preference',collection_allowed=True,semantic_resolved=True)
                 legacy_profile=dict(subjects=['self'],slots=slots,extents=['long_term'],context_ids=[])
@@ -199,7 +199,7 @@ def main():
                             parsed=urlparse(self.path)
                             if parsed.path=='/prepare':value=dict(endpoint=endpoints[0],memory_endpoint=endpoints[1],accounts=tokens,subjects=subjects,travel_ids=travels,
                                 travel_profile=json.dumps(dict(version='app-travel.1',travel_ids=travels)),
-                                legacy_profile=json.dumps(legacy_profile),memory_profile=json.dumps(dict(version='app-memory.2',subjects=['self'],slots=slots,extents=['long_term','current'])))
+                                question_count=(3 if chinese else 2) if collection_questions else None,legacy_profile=json.dumps(legacy_profile),memory_profile=json.dumps(dict(version='app-memory.2',subjects=['self'],slots=slots,extents=['long_term','current'])))
                             elif parsed.path=='/collection-no-write':
                                 assert collection_questions and not items() and model.calls==0
                                 assert not any(x['method']=='POST' for x in audit)

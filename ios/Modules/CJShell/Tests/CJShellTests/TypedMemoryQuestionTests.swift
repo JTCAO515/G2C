@@ -27,4 +27,11 @@ struct TypedMemoryQuestionTests {
         let i = TypedMemoryManualOption(label:"Inference",subject:"self",slot:"inference",kind:.inference,scope:.longTerm)
         #expect(TypedMemoryQuestion.choices([i]).isEmpty)
     }
+    @Test func singleFieldStillOffersTwoOptionalAnswersWithoutNewWriterChoices() {
+        let p = TypedMemoryManualOption(label:"Preference",subject:"self",slot:"preference",kind:.preference,scope:.longTerm)
+        let questions = TypedMemoryQuestion.choices([p])
+        #expect(questions.count == 2 && questions[0].id != questions[1].id && questions[1].followUp)
+        #expect(questions.allSatisfy { $0.optionIDs == [p.id] && $0.kind == "preference" })
+        #expect(questions.map(\.id) == TypedMemoryQuestion.choices([p]).map(\.id))
+    }
 }

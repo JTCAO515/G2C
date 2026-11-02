@@ -88,7 +88,9 @@ struct TypedMemoryItems: View {
                             TypedMemoryText(text:item.command.subject + " · " + item.command.slot + " · " + typedMemoryStatus(item.status.rawValue,language),id:"memory2.item.status." + item.command.item_id)
                             TypedMemoryText(text:typedMemoryScope(read.item.scope,language),id:"memory2.item.scope." + item.command.item_id)
                         }.frame(minHeight:44).contentShape(Rectangle())
-                    }.buttonStyle(ShellReadableButtonStyle()).disabled(host.busy).accessibilityIdentifier("memory2.item." + item.command.item_id)
+                    }.buttonStyle(ShellReadableButtonStyle()).disabled(host.busy)
+                        .accessibilityLabel(item.command.text + " · " + typedMemoryKind(item.command.kind.rawValue,language) + " · " + item.command.subject + " · " + item.command.slot + " · " + typedMemoryStatus(item.status.rawValue,language) + " · " + typedMemoryScope(read.item.scope,language))
+                        .accessibilityIdentifier("memory2.item." + item.command.item_id)
                     }
                   } header: { RunReadableText(text:typedMemoryKind(kind,language),style:.headline).accessibilityAddTraits(.isHeader).textCase(nil) }
                 }

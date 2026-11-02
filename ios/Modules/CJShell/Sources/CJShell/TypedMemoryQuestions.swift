@@ -2,7 +2,8 @@ import Foundation
 
 struct TypedMemoryQuestion: Identifiable {
     let options: [TypedMemoryManualOption]
-    var id: UUID { options[0].id }
+    var followUp = false
+    var id: String { options[0].id.uuidString + (followUp ? ":additional" : ":first") }
     var kind: String { options[0].kind.rawValue }
     var optionIDs: Set<UUID> { Set(options.map(\.id)) }
 
@@ -18,7 +19,9 @@ struct TypedMemoryQuestion: Identifiable {
         var selected: [Key] = [], kinds = Set<String>()
         for key in order where kinds.insert(key.kind).inserted { selected.append(key) }
         for key in order where !selected.contains(key) { selected.append(key) }
-        return selected.prefix(3).map { .init(options: groups[$0]!) }
+        var result: [Self] = selected.prefix(3).map { .init(options: groups[$0]!) }
+        if result.count == 1 { result.append(.init(options: result[0].options, followUp: true)) }
+        return result
     }
 }
 

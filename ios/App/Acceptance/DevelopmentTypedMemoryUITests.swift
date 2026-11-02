@@ -9,6 +9,7 @@ import Foundation
     private func localized(_ english: String,_ zh: String) -> String {chinese ? zh : english}
     private struct Fixture: Decodable {
         let endpoint: String;let memory_endpoint: String;let accounts: [String:String];let subjects: [String:String]
+        let question_count:Int?
         let travel_ids: [String];let travel_profile: String;let memory_profile: String;let legacy_profile: String
     }
     private func reveal(_ element: XCUIElement,id: String,fixed: Bool = false) {
@@ -175,14 +176,15 @@ import Foundation
         continueAfterFailure=false;executionTimeAllowance=900;chinese=large
         let fixture=try await prepare();defer { app?.terminate() }
         try launch(fixture,restore:false)
-        tap("memory2.collection.open");text("memory2.collection.progress",contains:"1/3")
-        tap("memory2.collection.next");text("memory2.collection.progress",contains:"2/3")
-        tap("memory2.collection.next");text("memory2.collection.progress",contains:"3/3")
+        let count=try XCTUnwrap(fixture.question_count);XCTAssertTrue((2...3).contains(count))
+        tap("memory2.collection.open");text("memory2.collection.progress",contains:"1/"+String(count))
+        for step in 1..<count { tap("memory2.collection.next");text("memory2.collection.progress",contains:String(step+1)+"/"+String(count)) }
         _ = try await call("/collection-no-write")
         tap("memory2.collection.skip")
         XCTAssertTrue(app.tabBars.buttons.matching(identifier:localized("Assistant","助手")).firstMatch.isSelected)
         chooseTravel(fixture.travel_ids[0]);tap("Memory")
-        tap("memory2.collection.open");tap("memory2.collection.next");tap("memory2.collection.next")
+        tap("memory2.collection.open")
+        for _ in 1..<count { tap("memory2.collection.next") }
         let value="SYNTHETIC questions preference / 问题偏好 e\u{301}"
         tap("memory2.manual.option");tap("self · preference · "+(large ? "Selected travel / 所选旅行" : "Long term / 长期"))
         input("memory2.manual.text",value);input("memory2.manual.time","time unknown / 时间不详");dismissKeyboard()
@@ -200,7 +202,9 @@ import Foundation
         text("memory2.group.empty.fact",contains:localized("pages read so far","已读取页面"))
         let ids=try JSONDecoder().decode([String:String].self,from:await call("/items"))
         let id=try XCTUnwrap(ids[large ? "travel" : "long_term"])
-        text("memory2.item.text."+id,contains:value)
+        let row=app.buttons.matching(identifier:"memory2.item."+id).firstMatch
+        reveal(row,id:"memory2.item."+id)
+        XCTAssertTrue(row.label.contains(value) && row.label.contains("self") && row.label.contains("preference"),"Actual saved row identity, text and kind must remain readable")
         issues=0;continueAfterFailure=true
         try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_QUESTIONS_GROUPS",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
         continueAfterFailure=false;XCTAssertEqual(issues,0)
