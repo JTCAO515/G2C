@@ -33,17 +33,17 @@ def register_account_cleanup_routes(app,gateway):
             if len(raw)>65536:raise Invalid('cleanup response too large')
             return raw
         return encode
-    async def invoke(request,callback,*,write,scheme,fields=(),version='CLEANUP-API@1'):
+    async def invoke(request,callback,*,write,scheme,fields=(),version='CLEANUP-API@1',query_fields=()):
         if gateway is None:return _error(request,503,'CLEANUP_UNAVAILABLE','dependency','unknown','do_not_retry')
         credential=_token(request) if scheme=='Bearer' else _credential(request,scheme)
         if credential is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
         try:
-            if request.scope['query_string']:raise Invalid('unexpected cleanup query')
+            if request.scope['query_string'] and not query_fields:raise Invalid('unexpected cleanup query')
             raw=await _read_body(request,16384) if write else b''
-            value=_parse(raw,version,fields) if write else {}
+            value=_parse(raw,version,fields) if write else _query(request,query_fields) if query_fields else {}
             for key in ('action_id','binding_id','device_id','operation_id','invocation_id'):
                 if key in value:identifier(value[key])
-            for key in ('state_ref','registry_digest','request_digest'):
+            for key in ('state_ref','registry_digest','request_digest','input_sha256'):
                 if key in value:hash_value(value[key])
             encoded=await run_in_threadpool(callback,credential,value,raw,project(request))
             return Response(encoded,media_type='application/json')
@@ -88,8 +88,10 @@ def register_account_cleanup_routes(app,gateway):
 
         @app.post(prefix+'/cleanup-device-calls')
         async def device_call(request:Request):
-            return await invoke(request,lambda cap,v,raw,p:gateway.device_call(cap,v['binding_id'],v['reason'],p,device_version=version),write=True,
-                scheme='Device',version=version,fields=('binding_id','reason'))
+            v3=version=='CLEANUP-DEVICE@3'
+            return await invoke(request,lambda cap,v,raw,p:gateway.device_call(cap,v['binding_id'],v['reason'],p,device_version=version,
+                action_id=v['action_id'] if v3 else None,input_digest=digest(raw) if v3 else None),write=True,
+                scheme='Device',version=version,fields=('action_id','binding_id','reason') if v3 else ('binding_id','reason'))
 
         @app.post(prefix+'/cleanup-device-receipts')
         async def device_receipt(request:Request):
@@ -103,3 +105,14 @@ def register_account_cleanup_routes(app,gateway):
 
     device_routes('/v1','CLEANUP-DEVICE@1')
     device_routes('/v2','CLEANUP-DEVICE@2')
+    device_routes('/v3','CLEANUP-DEVICE@3')
+
+    @app.get('/v3/cleanup-device-registrations')
+    async def original_registration(request:Request):
+        return await invoke(request,lambda token,v,raw,p:gateway.device_registration_query(token,v['action_id'],v['input_sha256'],p),
+            write=False,scheme='Bearer',query_fields=('action_id','input_sha256'))
+
+    @app.get('/v3/cleanup-device-call-actions')
+    async def original_device_action(request:Request):
+        return await invoke(request,lambda token,v,raw,p:gateway.device_action_query(token,v['action_id'],v['input_sha256'],p),
+            write=False,scheme='Device',query_fields=('action_id','input_sha256'))
