@@ -33,9 +33,7 @@ public struct NeedsPlanningOriginalDisplay: Identifiable, Sendable {
     public let candidate: NeedsPlanningCandidate
     public let discovery: NeedsPlanningDiscovery
 }
-public enum NeedsPlanningResult: Sendable {
-    case confirmed(NeedsPlanningReceipt), unknown, rejected(Int)
-}
+public typealias NeedsPlanningResult = CandidateDecision<NeedsPlanningReceipt>
 
 /// One account/session lifetime. New writes require an actual protected read,
 /// one explicit choice and durable bytes. Existing originals expose GET only.

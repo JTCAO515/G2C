@@ -31,9 +31,7 @@ public struct ScopedOriginalDisplay: Identifiable, Sendable {
     public let kind: ScopedAction.Kind
     public let candidate: ScopedCandidate
 }
-public enum ScopedDecisionResult: Sendable {
-    case confirmed(ScopedActionReceipt), unknown, rejected(Int)
-}
+public typealias ScopedDecisionResult = CandidateDecision<ScopedActionReceipt>
 
 /// One account/session lifetime. New writes require an actual protected read,
 /// one explicit choice and durable bytes. Existing originals expose GET only.
