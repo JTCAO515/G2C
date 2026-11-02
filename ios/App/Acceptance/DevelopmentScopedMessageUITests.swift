@@ -213,8 +213,10 @@ import Foundation
                 for point in located {
                     let marker=visible({app.descendants(matching:.any).matching(identifier:"trip.map.marker."+point.id).firstMatch},id:"trip.map.marker."+point.id)
                     let coordinate=try XCTUnwrap(point.coordinate)
-                    XCTAssertTrue(marker.label.contains(point.provider_id) && marker.label.contains(coordinate.raw) && marker.label.contains("GCJ-02"))
-                    let actual=try XCTUnwrap(marker.value as? String).split(separator:",").map(String.init)
+                    XCTAssertTrue(marker.label.contains(point.name_zh))
+                    let fields=try XCTUnwrap(marker.value as? String).components(separatedBy:"|")
+                    XCTAssertEqual(fields.count,4);XCTAssertEqual(fields[0],point.provider_id);XCTAssertEqual(fields[1],coordinate.raw);XCTAssertEqual(fields[2],"GCJ-02")
+                    let actual=fields[3].split(separator:",").map(String.init)
                     XCTAssertEqual(actual.count,2)
                     XCTAssertEqual(Double(actual[0]),Double(coordinate.longitude));XCTAssertEqual(Double(actual[1]),Double(coordinate.latitude))
                 }
