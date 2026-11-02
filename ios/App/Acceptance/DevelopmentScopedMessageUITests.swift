@@ -173,6 +173,23 @@ import Foundation
     func testFormalPlaceMapChineseLargest() async throws { try await formalPlaceMap("testFormalPlaceMapChineseLargest",large:true) }
     func testFormalPlaceMapMissing() async throws { try await formalPlaceMap("testFormalPlaceMapMissing",large:false) }
     func testFormalPlaceMapUnavailable() async throws { try await formalPlaceMap("testFormalPlaceMapUnavailable",large:false) }
+    func testFormalPlaceMapLateAccount() async throws {
+        let name="testFormalPlaceMapLateAccount",f=try await prepare(name);defer { app?.terminate() };mapViewport=true
+        let trip=try XCTUnwrap(f.formal_trips.first)
+        try launch(f,language:"en");tap("Trips");tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
+        _ = try await call("/wait-discovery",caseID:name)
+        tap("timeline.done");tap("Memory")
+        if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
+        tap("account.development.signin.B");text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+        _ = try await call("/release-discovery",caseID:name)
+        tap("Trips");tap("trips.timeline.open");tap("timeline.refresh")
+        XCTAssertFalse(textElement("timeline.record.id").exists)
+        XCTAssertFalse(app.buttons.matching(identifier:"timeline.trip."+trip.id).firstMatch.exists)
+        XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
+        XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.identity.")).count,0)
+        _ = try await call("/map-source-proof",caseID:name)
+        capture(name+"-B-withholds-late-A");try audit(name+"-late")
+    }
     private func formalPlaceMap(_ name:String,large:Bool) async throws {
         let f=try await prepare(name);defer { app?.terminate() };mapViewport=true
         let trip=try XCTUnwrap(f.formal_trips.first),points=try XCTUnwrap(f.map_points)

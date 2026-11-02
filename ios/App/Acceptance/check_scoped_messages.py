@@ -12,7 +12,7 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--manual-trip-profile',action='store_true')
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources','testFormalPlaceMapEnglish','testFormalPlaceMapChineseLargest','testFormalPlaceMapMissing','testFormalPlaceMapUnavailable'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources','testFormalPlaceMapEnglish','testFormalPlaceMapChineseLargest','testFormalPlaceMapMissing','testFormalPlaceMapUnavailable','testFormalPlaceMapLateAccount'],required=True)
 ARGS=parser.parse_args();PLACE_MAP=ARGS.case.startswith('testFormalPlaceMap');RESULT_PROFILE=ARGS.case.startswith('testScopedResult');OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -57,17 +57,17 @@ try:
     chain=migrate.load();migrate.up(conn,chain,chain[-1]['version'])
    connection=root/'connection.json';connection.write_text(json.dumps(config));connection.chmod(0o600)
    auth=root/'auth';subject='cj21-source-'+uuid.uuid4().hex;other_subject='cj337-other-'+uuid.uuid4().hex
-   dev_auth.init(auth,[subject,other_subject] if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') else [subject])
+   dev_auth.init(auth,[subject,other_subject] if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') else [subject])
    path=ARGS.run_context.resolve();context=load_run_context(path);assert context.version=='CJ-LOCAL-RUN@2';r['run_context']=json.loads(path.read_text());save()
    os.environ.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_RUN_CONTEXT=str(path))
-   for budget_subject in ([subject,other_subject] if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') else [subject]):
+   for budget_subject in ([subject,other_subject] if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') else [subject]):
     subprocess.run([sys.executable,'-B',str(ROOT/'scripts/local_run_context.py'),'--conninfo-json',str(connection),'--auth-dir',str(auth),'--run-context',str(path),'--subject',budget_subject,'init-budget'],cwd=ROOT,check=True,capture_output=True)
    dev_auth.activate_travel(connection,subject,context,'MESSAGE-TRAVEL-CONSUMER@1')
    signer=ConfirmationSigner(b'synthetic-source-init-app-only-signing-123456789')
    api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,needs_profile='manual-v1',confirmation_signer=signer)
    headers={'Authorization':'Bearer '+dev_auth.token(auth,subject,120)};binary={**headers,'Content-Type':'application/octet-stream'}
    native_tokens=dict(A=headers['Authorization'][7:])
-   if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount'):native_tokens['B']=dev_auth.token(auth,other_subject,120)
+   if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount'):native_tokens['B']=dev_auth.token(auth,other_subject,120)
    def fixed(key,start,end):
     def edge(clock):return dict(date=known('2026-11-02'),time=known(clock),timezone=known('Asia/Shanghai'),place=dict(state='unknown'))
     return dict(item_id=key,kind='appointment',description='SYNTHETIC declared source '+key,applies_to=['self'],locked=known(False),booking_status=dict(state='unknown'),start=edge(start),end=edge(end))
@@ -185,7 +185,7 @@ try:
     from cj_api.edit_result_profile import activate as activate_result
     activate_result(connection,subject,context,configuration,Selection(selected_namespace['id'],selected_namespace['version']))
    edit_api=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,edit_configuration=configuration,needs_profile='manual-v1',history_configuration=load_history_configuration(auth))
-   if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount'):
+   if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount'):
     other_headers={'Authorization':'Bearer '+native_tokens['B']}
     with TestClient(edit_api) as client:expect(client.get('/v1/message-receipts',params=dict(message_id='synthetic-session-probe'),headers=other_headers),'actual-B-session-readiness')
    class ScopedFake(FakeProvider):
@@ -228,7 +228,7 @@ try:
      if message['type']=='http.request':chunks.append(message.get('body',b''))
      return message
     drop_ack=CASE=='testScopedCandidateACKLoss' and path=='/v1/trip-scoped-actions' and scope['method']=='POST'
-    hold_discovery=(CASE=='testScopedCandidateLateAccount' and path=='/v1/trip-scoped-discovery') or (CASE=='testScopedResultLateAccount' and path=='/v1/trip-scoped-results')
+    hold_discovery=(CASE=='testScopedCandidateLateAccount' and path=='/v1/trip-scoped-discovery') or (CASE=='testScopedResultLateAccount' and path=='/v1/trip-scoped-results') or (CASE=='testFormalPlaceMapLateAccount' and path=='/v5/trip-structured' and not late_captured.is_set())
     actual_reply=[]
     async def sent(message):
      if message['type']=='http.response.start':entry['status']=message['status']
@@ -309,7 +309,10 @@ try:
     assert role=='cj_m1_runtime' and len(rows)==1 and rows[0][0]==tid and rows[0][1]==1 and bytes(rows[0][2])==packed(formal['content'])
     assert messages==fake.calls==len(finished)==0 and all(x['method']=='GET' for x in audit) and not worker_errors
     assert any(x['path']=='/v5/trip-structured' and x.get('status')==200 for x in audit)
+    if CASE=='testFormalPlaceMapLateAccount':
+     assert late_state.get('original_response_delivered') and late_state['release_elapsed_seconds']<14
     value=dict(runtime_role=role,formal_trip_id=tid,formal_version=1,content_sha256=formal['content_sha256'],source_message_receipt=r['source_message_receipt'],source_message_sha256=r['source_message_sha256'],points=map_points,app_writes=0,app_models=0,app_messages=0,setup_models=model.calls,setup_place_calls=source_tools.place.invocations,source_unchanged=True)
+    value['late_original']=dict(late_state) if CASE=='testFormalPlaceMapLateAccount' else None
     r['map_source_proof']=value;r['observed_requests']=list(audit);save();return value
    def map_no_place_proof():
     assert CASE=='testFormalMapNoPlaceSources'
@@ -508,11 +511,11 @@ try:
     def do_GET(self):
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
-      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') else {})),formal_trips=[spec],map_points=map_points if PLACE_MAP else None,map_loading_failure=CASE=='testFormalPlaceMapUnavailable',manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE)
+      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') else {})),formal_trips=[spec],map_points=map_points if PLACE_MAP else None,map_loading_failure=CASE=='testFormalPlaceMapUnavailable',manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE)
       elif path.path=='/wait-discovery':
-       assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') and late_captured.wait(20);value=dict(status='original protected 200 held')
+       assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
-       assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') and late_captured.is_set();late_release.set();value=dict(status='release requested')
+       assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') and late_captured.is_set();late_release.set();value=dict(status='release requested')
       elif path.path=='/map-source-proof':value=map_source_proof()
       elif path.path=='/map-no-place-proof':value=map_no_place_proof()
       elif path.path=='/result-proof':value=result_proof()
@@ -585,7 +588,7 @@ try:
     elif RESULT_PROFILE:result_proof()
     elif CASE=='testManualProtectedPrepareUnknownRestart':manual_unknown_proof()
     else:
-     if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount'):late_proof()
+     if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount'):late_proof()
      if CASE=='testScopedCandidateDiscoveryUnavailable':discovery_refusal_proof()
      verified=r['proof'] if CASE=='testScopedCandidateDiscoveryUnavailable' or CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest') else proof()
      if CASE in ('testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateStaleAcceptance','testScopedFixedReorderChineseLargest'):assert decision_proof()['receipt_queries']>=1
