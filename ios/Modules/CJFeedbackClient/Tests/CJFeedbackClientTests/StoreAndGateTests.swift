@@ -97,6 +97,22 @@ import CJMessageHTTP
         let model = FeedbackPresentation(client: client); model.replace(binding: h.binding); model.edit(problem: "draft", expectation: "")
         #expect(model.state == .unavailable); #expect(model.prepareSubmit() == nil); #expect(model.problem == "draft")
     }
+    @Test func developmentFactoryRejectsNonSimulatorAndStaleSession() throws {
+        let h = try Harness(); defer { h.clean() }
+        let session = SessionLifecycle(persistence: SyntheticSessionPersistence(), restorePolicy: .userInitiatedOnly)
+        let operation = try session.beginTrustedSDKSave()
+        #if !DEBUG || !targetEnvironment(simulator)
+        #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+            try FeedbackClient(development: h.endpoint, credentials: { _ in "SYNTHETIC" }, currentBinding: { h.binding },
+                session: session, sessionOperation: operation, pendingStore: h.store(), requestTimeout: 1, resourceTimeout: 1)
+        }
+        #endif
+        _ = session.clearWithSettlement()
+        #expect(throws: FeedbackFailure.staleBinding) {
+            try FeedbackClient(development: h.endpoint, credentials: { _ in "SYNTHETIC" }, currentBinding: { h.binding },
+                session: session, sessionOperation: operation, pendingStore: h.store(), requestTimeout: 1, resourceTimeout: 1)
+        }
+    }
     @Test func privateTransportExceptionIsSanitized() async throws {
         let h = try Harness(); defer { h.clean() }
         let privateError = NSError(domain: "PRIVATE_BODY_TOKEN_URL", code: 1, userInfo: [NSLocalizedDescriptionKey:"private secret"])

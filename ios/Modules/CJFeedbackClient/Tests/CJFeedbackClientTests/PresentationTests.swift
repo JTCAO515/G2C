@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 import CJAPI
+import Observation
 @testable import CJFeedbackClient
 
 @MainActor struct PresentationTests {
@@ -72,7 +73,31 @@ import CJAPI
         let bytes = try #require(model.original?.originalUTF8)
         await model.perform(try #require(model.prepareQuery()))
         #expect(model.state == .unknown); #expect(model.original?.originalUTF8 == bytes)
+        model.startAnother()
+        #expect(model.state == .unknown && model.original?.originalUTF8 == bytes)
         #expect(model.prepareSubmit() == nil); #expect(try h.store().pending().count == 1)
+    }
+    @Test func newFeedbackResetCannotDispatchOldDraftThroughObservation() async throws {
+        let h = try Harness(); defer { h.clean() }
+        let wire = Interceptor { _, bytes, _ in
+            let action = try JSONDecoder().decode(Components.Schemas.FeedbackAction.self, from: bytes)
+            return Reply(text: try receiptJSON(FeedbackPending(problem: action.problem, expectation: action.expectation,
+                context: nil, actionID: action.action_id)))
+        }
+        let model = FeedbackPresentation(client: try h.client(wire)); model.replace(binding: h.binding)
+        model.edit(problem: "Old submitted feedback", expectation: "Old expectation")
+        await model.perform(try #require(model.prepareSubmit()))
+        withObservationTracking { _ = model.problem } onChange: {
+            MainActor.assumeIsolated {
+                #expect(model.prepareSubmit() == nil)
+                #expect(model.prepareReload() == nil)
+                model.startAnother() // Must not recursively start/reset while publishing the first reset.
+            }
+        }
+        model.startAnother()
+        #expect(model.problem.isEmpty && model.expectation.isEmpty && model.original == nil && model.state == .editing)
+        #expect(await wire.calls.count == 1)
+        #expect(try h.store().pending().count == 1)
     }
     @Test func confirmationComesOnlyFromReceipt() async throws {
         let h = try Harness(); defer { h.clean() }
@@ -84,5 +109,14 @@ import CJAPI
         let model = FeedbackPresentation(client: try h.client(wire)); model.replace(binding: h.binding); model.edit(problem: "private", expectation: "")
         await model.perform(try #require(model.prepareSubmit()))
         #expect(model.state == .submitted); #expect(model.receipt != nil); #expect(model.original != nil)
+        let first = try #require(model.original)
+        model.startAnother()
+        #expect(model.state == .editing && model.original == nil && model.problem.isEmpty && model.expectation.isEmpty)
+        #expect(try h.store().pending().first?.originalUTF8 == first.originalUTF8)
+        model.edit(problem: "Second voluntary feedback", expectation: "")
+        await model.perform(try #require(model.prepareSubmit()))
+        #expect(model.state == .submitted && model.original?.actionID != first.actionID)
+        #expect(try h.store().pending().count == 2)
+        #expect(await wire.calls.count == 2)
     }
 }

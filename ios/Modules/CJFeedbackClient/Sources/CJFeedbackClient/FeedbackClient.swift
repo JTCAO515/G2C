@@ -19,7 +19,8 @@ public struct FeedbackOperation: Sendable {
     let store: FeedbackPendingStore?
     private let session: SessionLifecycle?
     private let sessionOperation: SessionOperation?
-    let testWrites: Bool
+    let allowsWrites: Bool
+    private let intercepted: Bool
     private let owner = UUID()
     private var generation = UUID()
     private var confirmed = Set<Data>()
@@ -30,20 +31,37 @@ public struct FeedbackOperation: Sendable {
                 sessionOperation: SessionOperation, pendingStore: FeedbackPendingStore?, liveReadTransport: NoRedirectTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
-        transport = liveReadTransport; testWrites = false
+        transport = liveReadTransport; allowsWrites = false; intercepted = false
+    }
+    /// Explicit signed local API composition; ordinary construction remains read-only.
+    /// Release and non-loopback activation are rejected by the canonical transport.
+    public init(development endpoint: FeedbackEndpoint, credentials: @escaping FeedbackCredentialCallback,
+                currentBinding: @escaping @MainActor () -> FeedbackBinding?, session: SessionLifecycle,
+                sessionOperation: SessionOperation, pendingStore: FeedbackPendingStore,
+                requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
+        guard session.isCurrent(sessionOperation), let binding = currentBinding(),
+              session.isCurrent(sessionOperation) else { throw FeedbackFailure.staleBinding }
+        self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
+        self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
+        transport = try NoRedirectTransport.developmentFeedback(endpoint: endpoint,
+            requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: {
+                let observed = currentBinding()
+                guard observed == binding, session.isCurrent(sessionOperation) else { throw FeedbackFailure.staleBinding }
+            })
+        allowsWrites = true; intercepted = false
     }
     /// Test-only intercepted transport; never a public write activation switch.
     init(endpoint: FeedbackEndpoint, credentials: @escaping FeedbackCredentialCallback,
          currentBinding: @escaping @MainActor () -> FeedbackBinding?, pendingStore: FeedbackPendingStore?, interceptedTransport: any ClientTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
-        store = pendingStore; transport = interceptedTransport; session = nil; sessionOperation = nil; testWrites = true
+        store = pendingStore; transport = interceptedTransport; session = nil; sessionOperation = nil; allowsWrites = true; intercepted = true
     }
-    public var acceptsSubmissions: Bool { testWrites && store != nil }
+    public var acceptsSubmissions: Bool { allowsWrites && store != nil }
     // Confirmed originals remain tied to this immutable store namespace; cancellation is not unconfirmation.
     public func invalidate() { generation = UUID() }
     private var sessionIsCurrent: Bool {
         if let session, let sessionOperation { return session.isCurrent(sessionOperation) }
-        return testWrites && session == nil && sessionOperation == nil
+        return intercepted && session == nil && sessionOperation == nil
     }
     func owns(_ operation: FeedbackOperation) -> Bool {
         guard operation.owner == owner, operation.generation == generation else { return false }
@@ -82,6 +100,10 @@ public struct FeedbackOperation: Sendable {
         try store.validateInventory(records)
         return records
     }
+    func canStartAnother(operation: FeedbackOperation) throws -> Bool {
+        let originals = try pending(operation: operation)
+        return !uncertainCreation && originals.allSatisfy { confirmed.contains(Data($0.actionID.utf8)) }
+    }
     func api(_ original: FeedbackPending, _ operation: FeedbackOperation) async throws -> Client {
         try check(operation)
         let bearer: String?
@@ -90,7 +112,7 @@ public struct FeedbackOperation: Sendable {
         try check(operation)
         guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw FeedbackFailure.unconfigured }
         return Client(serverURL: endpoint.url, configuration: .memory,
-                      transport: FeedbackTransport(underlying: transport, endpoint: endpoint, bearer: bearer, testWrites: testWrites,
+                      transport: FeedbackTransport(underlying: transport, endpoint: endpoint, bearer: bearer, allowsWrites: allowsWrites,
                         validate: { [self] in try verify(original, operation: operation) }))
     }
     func exchange<T>(_ operation: FeedbackOperation, _ work: () async throws -> T) async throws -> T {
@@ -103,7 +125,7 @@ public struct FeedbackOperation: Sendable {
     }
     public func submit(_ original: FeedbackPending, operation: FeedbackOperation) async throws -> FeedbackResult {
         let store = try requireStore(operation)
-        guard testWrites else { throw FeedbackFailure.liveWriteUnavailable }
+        guard allowsWrites else { throw FeedbackFailure.liveWriteUnavailable }
         try original.validate()
         guard original.originalUTF8.count <= endpoint.maximumRequestBytes else { throw FeedbackFailure.invalidInput }
         let existing = try pending(operation: operation)

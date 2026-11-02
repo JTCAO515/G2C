@@ -9,6 +9,19 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func feedbackProfileIsExplicitAndReleaseClosed() throws {
+        #if DEBUG
+        #expect(try DevelopmentFeedbackProfile.read([:]) == nil)
+        #expect(try DevelopmentFeedbackProfile.read(["G2C_DEV_FEEDBACK_PROFILE": "feedback-v1"]) != nil)
+        for value in ["", "true", "live", "feedback-v2"] {
+            #expect(throws: DevelopmentFeedbackProfile.Failure.invalidProfile) {
+                try DevelopmentFeedbackProfile.read(["G2C_DEV_FEEDBACK_PROFILE": value])
+            }
+        }
+        #else
+        #expect(try DevelopmentFeedbackProfile.read(["G2C_DEV_FEEDBACK_PROFILE": "feedback-v1"]) == nil)
+        #endif
+    }
     @Test func offlineProfileIsExplicitBoundedAndDoesNotGrantReleaseAccess() throws {
         let base = ["G2C_DEV_OFFLINE_TRIP": "last-sync-v1", "G2C_DEV_ACCOUNT_MODE": "1"]
         #if DEBUG
