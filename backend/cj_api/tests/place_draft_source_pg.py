@@ -1,7 +1,8 @@
 """B388 actual source seam; test C adapter bridge is not the C map producer."""
 import base64,json,os,sys,time
 from pathlib import Path
-from datetime import timedelta
+from datetime import datetime,timedelta
+from zoneinfo import ZoneInfo
 from fastapi.testclient import TestClient
 import local_history_pg as harness
 from registered_host_support import RegisteredHost
@@ -60,7 +61,7 @@ class Model(SyntheticToolModel):
 
 
 def exercise(auth,conninfo):
-    subjects=['one','two','stale','clock','config','copy','timeout','foreign','old','changed-needs','cancelled','no-coordinate','no-results','no-capture']
+    subjects=['one','two','stale','clock','config','copy','timeout','foreign','old','changed-needs','cancelled','no-coordinate','no-results','no-capture','fold-stale','fold-regress']
     host=RegisteredHost(auth,conninfo,{s:(12,2,30000) for s in subjects})
     for s in subjects:dev_auth.activate_travel(conninfo,s,host.profiles[s][1],'MESSAGE-TRAVEL-CONSUMER@1')
     def db(s):return LocalDatabase(conninfo,run_context=host.profiles[s][1],travel_context=True)
@@ -101,11 +102,15 @@ def exercise(auth,conninfo):
         except PlaceSourceUnavailable:pass
         else:raise AssertionError('expired publication handle accepted')
         assert run(s,tools,adapter,model)==[] and model.calls==3 and tools.place.invocations==1
-    for s in ('stale','clock','config','copy','changed-needs','cancelled','no-capture'):
+    for s in ('stale','clock','config','copy','changed-needs','cancelled','no-capture','fold-stale','fold-regress'):
         receipt,raw=setup(s);tools=LocalPlaceDraftTools();clock=tools.place.clock
+        if s.startswith('fold-'):
+            instant=[datetime(2026,11,1,1,30,tzinfo=ZoneInfo('America/New_York'),fold=0 if s=='fold-stale' else 1)]
+            tools.place.clock=lambda:instant[0]
         def mutate():
             if s=='stale':tools.place.clock=lambda:clock()+timedelta(seconds=120)
             elif s=='clock':tools.place.clock=lambda:clock()-timedelta(seconds=1)
+            elif s.startswith('fold-'):instant[0]=datetime(2026,11,1,1,30,2,tzinfo=ZoneInfo('America/New_York'),fold=1 if s=='fold-stale' else 0)
             elif s=='config':
                 from dataclasses import replace
                 tools.place.config=replace(tools.place.config,max_age_seconds=61)

@@ -1,5 +1,6 @@
 """Actual registered PLACE observations for an explicitly negotiated C producer."""
 from dataclasses import dataclass,field
+from datetime import timezone
 import base64,hashlib,json
 from types import MappingProxyType
 from cj_place.contract_v1 import decode_query
@@ -44,7 +45,7 @@ class _PlaceSources:
                 raise PlaceSourceUnavailable('original PLACE config changed')
             source=observation.result.source
             started=observation.started_at if source is None else source.query_started_at
-            age=(now-started).total_seconds()
+            age=(now.astimezone(timezone.utc)-started.astimezone(timezone.utc)).total_seconds()
             if not 0<=age<=observation.config.max_age_seconds:
                 raise PlaceSourceUnavailable('original PLACE observation stale')
 
@@ -80,7 +81,8 @@ class LocalPlaceDraftTools(LocalTools):
         now=self.place.clock()
         try:aware(now)
         except (ValueError,TypeError):raise PlaceSourceUnavailable('PLACE clock unavailable') from None
-        if (state.last_time is not None and now<state.last_time) or (floor is not None and now<floor):
+        instant=now.astimezone(timezone.utc)
+        if (state.last_time is not None and instant<state.last_time.astimezone(timezone.utc)) or (floor is not None and instant<floor.astimezone(timezone.utc)):
             raise PlaceSourceUnavailable('PLACE clock regressed')
         state.last_time=now
         return now
