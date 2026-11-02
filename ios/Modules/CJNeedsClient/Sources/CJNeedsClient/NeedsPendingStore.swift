@@ -30,8 +30,9 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
     }
 }
 
-/// Immutable, exclusive encrypted records. Reopening grants query only; no resend/delete API.
+/// Immutable, exclusive encrypted records. Reopening grants query only; no resend API. Explicit account cleanup is separate.
 @MainActor final class NeedsEncryptedRecords<Record: NeedsJournalRecord> {
+    private let cleanup: NeedsLocalJournalCleanup
     private let root: URL
     private let domain: String
     private let directory: Int32
@@ -43,13 +44,19 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
     private var ad: Data { Data("\(domain)|1|\(namespace.environment.uuidString)|\(namespace.account.uuidString)|\(namespace.purpose.rawValue)|\(keyID.uuidString)".utf8) }
     // Package-only test seam; no public raw key initializer and no platform key calls in tests.
     init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID,
-         domain: String = "CJNeedsPending", key: @escaping () throws -> SymmetricKey) throws {
+         domain: String = "CJNeedsPending", cleanup: NeedsLocalJournalCleanup? = nil, key: @escaping () throws -> SymmetricKey) throws {
         guard maximumBytes > 0, maximumBytes <= Int.max - 28, maximumRecords > 0, directory.isFileURL,
               directory.standardizedFileURL.path == directory.resolvingSymlinksInPath().path else { throw NeedsFailure.storageUnavailable }
         let fd = open(directory.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
         guard fd >= 0 else { throw NeedsFailure.storageUnavailable }
         var st = stat()
         guard fstat(fd, &st) == 0, st.st_uid == getuid(), st.st_mode & 0o077 == 0 else { close(fd); throw NeedsFailure.storageUnavailable }
+        do {
+            let owner = try cleanup ?? NeedsLocalJournalCleanup(root: directory,
+                suffixes: domain == "CJNeedsPending" ? ["CJNeedsRejections"] : [])
+            try owner.validateRegistered(directory)
+            self.cleanup = owner
+        } catch { close(fd); throw error }
         root = directory; self.domain = domain; self.directory = fd; self.maximumBytes = maximumBytes; self.maximumRecords = maximumRecords
         self.namespace = namespace; self.keyID = keyID; self.key = key
     }
@@ -57,14 +64,12 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
     func adjacentRejections(create: Bool) throws -> NeedsEncryptedRecords<NeedsRejectedOriginal>? {
         try validateDirectory()
         let target = root.appendingPathExtension("CJNeedsRejections")
-        if !FileManager.default.fileExists(atPath: target.path) {
-            guard create else { return nil }
-            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false,
-                                                    attributes: [.posixPermissions: 0o700])
-        }
+        guard try cleanup.openAdjacent(target, create: create) else { return nil }
         return try NeedsEncryptedRecords<NeedsRejectedOriginal>(directory: target, maximumBytes: maximumBytes,
-            maximumRecords: maximumRecords, namespace: namespace, keyID: keyID, domain: "CJNeedsRejections", key: key)
+            maximumRecords: maximumRecords, namespace: namespace, keyID: keyID, domain: "CJNeedsRejections", cleanup: cleanup, key: key)
     }
+    func clearLocalFiles() throws { try cleanup.clear() }
+
     func validate(_ binding: NeedsBinding) throws {
         guard namespace.environment == binding.environment, namespace.account == binding.account,
               namespace.purpose == .localNeedsPendingV1 else { throw NeedsFailure.staleBinding }
@@ -92,6 +97,7 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
         try validateDirectory()
     }
     func validateDirectory() throws {
+        try cleanup.checkReadable()
         // Callback/await boundary checks, not a claim of protection against arbitrary same-UID races.
         var current = stat(); var original = stat()
         guard lstat(root.path, &current) == 0, fstat(directory, &original) == 0,
@@ -195,6 +201,8 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
     func requireOriginal(_ original: NeedsPending) throws -> Durability { try storage.requireOriginal(original) }
     func validateDurability(_ proof: Durability) throws { try storage.validateDurability(proof) }
     func validateInventory(_ ids: [String]) throws { try storage.validateInventory(ids) }
+    /// Exact pending journal and its original rejection sidecar; no key access.
+    public func clearLocalFiles() throws { try storage.clearLocalFiles() }
     public func pending() throws -> [NeedsPending] { try storage.pending() }
     @MainActor struct RejectionProof {
         let record: NeedsRejectedOriginal

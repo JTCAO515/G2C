@@ -74,8 +74,9 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     }
 }
 
-/// Immutable, exclusive encrypted records. Reopening grants query only; no resend/delete API.
+/// Immutable, exclusive encrypted records. Reopening grants query only; no resend API. Explicit account cleanup is separate.
 @MainActor final class MemoryEncryptedRecords<Record: MemoryJournalRecord> {
+    private let cleanup: MemoryLocalJournalCleanup
     private let root: URL
     private let directory: Int32
     private let maximumBytes: Int
@@ -99,13 +100,18 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     }
     // Package-only test seam; no public raw key initializer and no platform key calls in tests.
     init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID, domain: String,
-         key: @escaping () throws -> SymmetricKey) throws {
+         cleanup: MemoryLocalJournalCleanup? = nil, key: @escaping () throws -> SymmetricKey) throws {
         guard maximumBytes > 0, maximumBytes <= Int.max - 28, maximumRecords > 0, directory.isFileURL,
               directory.standardizedFileURL.path == directory.resolvingSymlinksInPath().path else { throw MemoryFailure.storageUnavailable }
         let fd = open(directory.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
         guard fd >= 0 else { throw MemoryFailure.storageUnavailable }
         var st = stat()
         guard fstat(fd, &st) == 0, st.st_uid == getuid(), st.st_mode & 0o077 == 0 else { close(fd); throw MemoryFailure.storageUnavailable }
+        do {
+            let owner = try cleanup ?? MemoryLocalJournalCleanup(root: directory, suffixes: Self.cleanupSuffixes(domain))
+            try owner.validateRegistered(directory)
+            self.cleanup = owner
+        } catch { close(fd); throw error }
         root = directory; self.directory = fd; self.maximumBytes = maximumBytes; self.maximumRecords = maximumRecords
         self.namespace = namespace; self.keyID = keyID; self.key = key; self.domain = domain
     }
@@ -113,14 +119,22 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     func adjacentRecords<Other: MemoryJournalRecord>(domain: String, create: Bool) throws -> MemoryEncryptedRecords<Other>? {
         try validateDirectory()
         let target = root.appendingPathExtension(domain)
-        if !FileManager.default.fileExists(atPath: target.path) {
-            guard create else { return nil }
-            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false,
-                                                    attributes: [.posixPermissions: 0o700])
-        }
+        guard try cleanup.openAdjacent(target, create: create) else { return nil }
         return try MemoryEncryptedRecords<Other>(directory: target, maximumBytes: maximumBytes,
-            maximumRecords: maximumRecords, namespace: namespace, keyID: keyID, domain: domain, key: key)
+            maximumRecords: maximumRecords, namespace: namespace, keyID: keyID, domain: domain, cleanup: cleanup, key: key)
     }
+    private static func cleanupSuffixes(_ domain: String) -> [String] {
+        switch domain {
+        case "CJMemoryPending": ["CJMemoryRejections"]
+        case "CJMemoryManagementPending": ["CJMemoryManagementRejections"]
+        case "CJMemoryTypedPendingV2": ["CJMemoryTypedRejectionsV2", "CJMemoryTypedManagementV2",
+            "CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2"]
+        case "CJMemoryHistoryPendingV1": ["CJMemoryHistoryRejectionsV1"]
+        default: []
+        }
+    }
+    func clearLocalFiles() throws { try cleanup.clear() }
+
     func rejection(for original: Record, domain: String) throws -> MemoryRejectedOperation<Record>? {
         let records: MemoryEncryptedRecords<MemoryRejectedOperation<Record>>? = try adjacentRecords(domain: domain, create: false)
         guard let record = try records?.pending().first(where: { same($0.journalID, original.journalID) }) else { return nil }
@@ -163,6 +177,7 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
         try validateDirectory()
     }
     func validateDirectory() throws {
+        try cleanup.checkReadable()
         // Callback/await boundary checks, not a claim of protection against arbitrary same-UID races.
         var current = stat(); var original = stat()
         guard lstat(root.path, &current) == 0, fstat(directory, &original) == 0,
@@ -272,5 +287,7 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     func recordRejection(_ original: MemoryPending, status: Int, code: String, validateBinding: () throws -> Void) throws {
         try storage.recordRejection(original, status: status, code: code, domain: "CJMemoryRejections", validateBinding: validateBinding)
     }
+    /// Exact manual journal and its known rejection sidecar; no key access.
+    public func clearLocalFiles() throws { try storage.clearLocalFiles() }
     public func pending() throws -> [MemoryPending] { try storage.pending() }
 }
