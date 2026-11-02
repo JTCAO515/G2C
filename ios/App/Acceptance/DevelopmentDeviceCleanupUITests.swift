@@ -85,7 +85,11 @@ import Foundation
     func consentAndConfirm() {
         let toggle = app.switches["account.cleanup.consent"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 25)); reveal(toggle)
-        if toggle.value as? String != "1" { toggle.tap() }
+        if toggle.value as? String != "1" {
+            toggle.coordinate(withNormalizedOffset: .init(dx: 0.9, dy: 0.5)).tap()
+        }
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: toggle)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed, "consent switch must actually turn on")
         tap("account.cleanup.confirm")
     }
     func audit(_ name: String, target: String) throws {

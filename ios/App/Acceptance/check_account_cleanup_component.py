@@ -5,7 +5,7 @@ it is explicitly NOT whole-App/device completion. The second host uses the full
 actual registry and must preserve real missing-owner-hook blocked/prepared state.
 No account operation, binding, receipt or progress token is injected into the App.
 """
-import argparse, asyncio, hashlib, importlib.util, json, os, plistlib, socket, subprocess, sys, tempfile, threading, time, uuid
+import argparse, asyncio, base64, hashlib, importlib.util, json, os, plistlib, socket, subprocess, sys, tempfile, threading, time, uuid
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs
@@ -172,6 +172,10 @@ def main():
                         status=next(m['status'] for m in messages if m['type']=='http.response.start')
                         raw=b''.join(m.get('body',b'') for m in messages if m['type']=='http.response.body')
                         response=json.loads(raw) if raw else {}
+                        if 'action_utf8_base64' in response:
+                            original_trip=json.loads(base64.b64decode(response['action_utf8_base64']))
+                            if len(original_trip)==5 and isinstance(original_trip[-1],str) and original_trip[-1].startswith('tc1.'):
+                                secrets.extend([original_trip[-1],response['action_utf8_base64']])
                         for field in ('device_token','progress_token'):
                             if field in response: secrets.append(response[field])
                         if isinstance(response.get('preparation'),dict):secrets.append(response['preparation']['progress_token'])
@@ -181,7 +185,12 @@ def main():
                                     if name in payload:secrets.append(payload[name])
                         entry=dict(mode=mode,case=current['case'],actor=None if who is None else who[1],method=scope['method'],path=scope['path'],http_status=status,
                             authorization_scheme=authorization.partition(' ')[0],request_sha256=hashlib.sha256(body).hexdigest())
-                        if body: entry['action']=json.loads(body)
+                        if body:
+                            command=json.loads(body)
+                            if scope['path']=='/v1/trip-actions':
+                                assert isinstance(command,list) and len(command)==5
+                                entry['action']=dict(action_id=command[0],kind=command[1],proposal_id=command[2],candidate_hash=command[3],confirmation_ref_sha256=hashlib.sha256(command[4].encode()).hexdigest())
+                            else:entry['action']=command
                         if isinstance(response.get('error'),dict):entry['error_code']=response['error'].get('code')
                         for name in ('operation_id','binding_id','registry_digest','phase','status','business_access'):
                             if name in response:entry[name]=response[name]
