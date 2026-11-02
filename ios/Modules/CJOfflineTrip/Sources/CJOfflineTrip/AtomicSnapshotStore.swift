@@ -9,6 +9,11 @@ public final class AtomicSnapshotStore {
     private let directory: Int32
     private let identity: stat
     private let name = "snapshot.aesgcm"
+    #if os(iOS)
+    // Darwin's public F_*PROTECTIONCLASS commands use XNU class A=1 (Complete).
+    // https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/content_protection.h
+    private static let completeProtectionClass: CInt = 1
+    #endif
     private var pending: (original: Data?, attempted: Data)?
     // Fault injection for isolated tests only. Called after rename, before directory fsync.
     var afterRename: (() throws -> Void)?
@@ -43,7 +48,7 @@ public final class AtomicSnapshotStore {
         guard fstat(fd, &info) == 0, info.st_dev == identity.st_dev, info.st_ino == identity.st_ino,
               info.st_uid == getuid(), info.st_mode & 0o777 == 0o700 else { throw OfflineFailure.invalidPath }
     }
-    func read() throws -> Data? {
+    func read(checkProtection: Bool = true) throws -> Data? {
         try checkRoot()
         let fd = openat(directory, name, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         if fd < 0 {
@@ -55,6 +60,11 @@ public final class AtomicSnapshotStore {
         guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG, info.st_mode & 0o777 == 0o600,
               info.st_uid == getuid(), info.st_nlink == 1,
               info.st_size > 0, info.st_size <= SnapshotCodec.maximumBytes else { throw OfflineFailure.corrupt }
+        #if os(iOS)
+        if checkProtection {
+            guard fcntl(fd, F_GETPROTECTIONCLASS) == Self.completeProtectionClass else { throw OfflineFailure.storageFailure }
+        }
+        #endif
         var data = Data(count: Int(info.st_size))
         let expected = data.count
         let count = data.withUnsafeMutableBytes { buffer -> Int in
@@ -89,6 +99,9 @@ public final class AtomicSnapshotStore {
         let fd = openat(directory, temporary, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
         guard fd >= 0 else { throw OfflineFailure.storageFailure }
         defer { close(fd); unlinkat(directory, temporary, 0) }
+        #if os(iOS)
+        guard fcntl(fd, F_SETPROTECTIONCLASS, Self.completeProtectionClass) == 0 else { throw OfflineFailure.storageFailure }
+        #endif
         guard fchmod(fd, 0o600) == 0 else { throw OfflineFailure.storageFailure }
         let count = sealed.withUnsafeBytes { buffer -> Int in
             var offset = 0
@@ -127,7 +140,9 @@ public final class AtomicSnapshotStore {
     /// Only this directory's fixed cache entry; no recursive or device-wide cleanup claim.
     public func clearLocalEntry() throws {
         guard pending == nil else { throw OfflineFailure.writeUnknown }
-        _ = try read(); try checkRoot()
+        // Erasing this exact owned entry does not need its protection class to be readable.
+        // All link/owner/mode/root/pending-write guards remain in force.
+        _ = try read(checkProtection: false); try checkRoot()
         guard unlinkat(directory, name, 0) == 0 || errno == ENOENT, fsync(directory) == 0 else {
             throw OfflineFailure.storageFailure
         }

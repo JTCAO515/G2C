@@ -195,3 +195,25 @@ the simulator first so post-test container scans can run. Existing default lifec
 and Release suites are unchanged. Both harnesses retain `OS_ACTIVITY_MODE=disable`.
 No account-deletion request, physical cleanup, real identity, model, cloud or device
 acceptance is implied by these entry tests; those remain in #27/#32/#29.
+
+## Formal-trip offline acceptance (#24)
+
+`check_offline_trips.py` requires a booted iOS 17.5 simulator, an explicit
+`CJ-LOCAL-RUN@2` context, external output/build directories and a committed head.
+It creates formal records through signed MESSAGE → unmodified worker/FakeProvider
+→ signed Trip confirmation/act, then lets the actual App synchronize them.
+Four cases cover reopen/bilingual/system-maximum-font/full AX, expiry/rollback/
+untrusted clocks and fresh renewal, local switch/logout, and temporary failures
+versus actual server invitation denial. App requests after setup must stay GET/HEAD;
+provider calls, original response hashes, unchanged/removed ciphertext and runtime
+PG role are checked. 503/UNKNOWN are labelled post-auth fault injections; physical
+network loss stops the real local server. No cache or accepted record is supplied
+to the App by the control service. Native input uses exact selectors and
+`OS_ACTIVITY_MODE=disable`; reports keep prior FAILs and skipped/unrun cases explicit.
+
+The opt-in is `G2C_DEV_OFFLINE_TRIP=last-sync-v1` with account mode. Test-only
+`G2C_DEV_OFFLINE_WALL_OFFSET`, `G2C_DEV_OFFLINE_UPTIME_OFFSET` and
+`G2C_DEV_OFFLINE_TIME_TRUSTED=0` inject clocks without a network clock source.
+They do not activate Release/real-device roots. The original account-cleanup
+operation/device receipt in box 4 stays UNRUN pending B; real device offline and
+VoiceOver remain #29. No handoff update is performed for this follow-up.

@@ -89,7 +89,7 @@ private actor DetailWire: ClientTransport {
         #expect(throws:OfflineFailure.unavailable) { try cache.writeOnce() }
         #expect(try h.store.read() == cipher)
         #expect(await d.wire.calls == ["getTrip"])
-        #expect(h.storage.adds == 0 && h.storage.removes == 0 && !SnapshotCodec.appFactoryAvailable)
+        #expect(h.storage.adds == 0 && h.storage.removes == 0 && SnapshotCodec.appFactoryAvailable)
     }
     @Test func originalHandleRetiredAcrossAwaitCannotCapture() async throws {
         let h = try KeyHarness(); defer { h.cleanup() }; let d = try DetailHarness(h)

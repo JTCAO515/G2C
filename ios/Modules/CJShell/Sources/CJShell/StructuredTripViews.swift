@@ -3,11 +3,13 @@ import SwiftUI
 import UIKit
 import CJTripClient
 import CJRunClient
+import CJOfflineTrip
 
 struct StructuredTripHome: View {
     let host: StructuredTripHost
     let legacy: TripContainerHost
     @Bindable var state: ShellState
+    var offline: OfflineTripController? = nil
     @State private var issue: String?
     @State private var task: Task<Void,Never>?
     @State private var panel: Panel = .record
@@ -23,6 +25,7 @@ struct StructuredTripHome: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment:.leading,spacing:18) {
+                    if let offline { OfflineTripEntry(controller: offline, language: language) }
                     RunReadableText(text:language.text("Local synthetic test data", "本地合成测试数据"),style:.caption).accessibilityIdentifier("trip.manual.synthetic")
                     RunReadableText(text:language.text("Only your explicit selected edits are submitted. Saving confirms that exact server diff once; it does not update Memory or requirements.","只提交你明确选中的修改。保存仅确认这份服务器差异，不修改记忆或需求。"))
                     if let display=host.display() {
@@ -38,6 +41,12 @@ struct StructuredTripHome: View {
                         }
                         if let record=display.selected {
                             Divider()
+                            if let offline {
+                                button("offline.sync", language.text("Synchronize for offline reading", "同步用于离线读取"), disabled: display.busy || host.editor != nil) {
+                                    run { try host.synchronizeOffline() }
+                                }
+                                OfflineSyncLabel(controller: offline, language: language)
+                            }
                             RunReadableText(text:record.tripID+" · "+language.text("Read version ","读取版本 ")+String(record.version)).accessibilityIdentifier("trip.manual.basis")
                             button("trip.manual.current",language.text("Read current version (keep input)","读取当前版本（保留输入）"),disabled:display.busy) { run { try host.currentRecord() } }
                             if let observed=display.currentObservation {
