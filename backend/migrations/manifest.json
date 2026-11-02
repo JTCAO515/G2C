@@ -274,6 +274,14 @@
       "sha256": "15795d2198fbaeefdd1a43f35f2fb946d08aa12b3c38ffadbffce1895da1553d",
       "down": "backend/migrations/down/0034_memory_history.down.sql",
       "down_sha256": "d46e958b8a9a40742fd641f07c14bf426ff29f9f4e07c7f366b51406d94182c2"
+    },
+    {
+      "version": 35,
+      "name": "account_cleanup",
+      "file": "backend/migrations/0035_account_cleanup.sql",
+      "sha256": "3b99dbda5673b9795e69023c4544db6920014073d740514eeee64c0e54a33fab",
+      "down": "backend/migrations/down/0035_account_cleanup.down.sql",
+      "down_sha256": "8d5d5f97dee33d9dad26a35daf8afc6c6392b7176d9c61981c06aa1c750d00e5"
     }
   ]
 }
