@@ -115,7 +115,9 @@ def main():
                             kind,slot=('fact','a_fact') if index<10 else ('experience','b_experience') if index<20 else ('preference','preference')
                             command=dict(version='MEMORY-manual.2',operation_id='group-save-'+str(index),item_id='group-'+str(index).zfill(2),subject='self',slot=slot,kind=kind,text='SYNTHETIC grouped '+kind+' '+str(index),extent='long_term',context=None,occurred_at='SYNTHETIC time unknown')
                             raw=json.dumps(command,ensure_ascii=False,separators=(',',':')).encode()
-                            response=client.post('/v2/memories',content=raw,headers={**headers['A'],'Content-Type':'application/octet-stream'});response.raise_for_status()
+                            response=client.post('/v2/memories',content=raw,headers={**headers['A'],'Content-Type':'application/octet-stream'})
+                            report.setdefault('group_seed_attempts',[]).append(dict(index=index,status=response.status_code,error=response.json().get('error'),input_sha256=hashlib.sha256(raw).hexdigest()))
+                            save();response.raise_for_status()
                             group_seeds.append(dict(command=command,input_sha256=hashlib.sha256(raw).hexdigest(),receipt=response.json()))
                     report['group_seed_receipts']=group_seeds;save()
                 audit=[];errors=[];iterations=[0];outcomes=[];stop=threading.Event();fixture_actions=[]
