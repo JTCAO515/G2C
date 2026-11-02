@@ -95,6 +95,12 @@ def exercise(conninfo,auth):
                     source_version=1,withdrawal_epoch=1,mode='incremental')
         post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='job',attempt_id='attempt',source=source))
         service.transition(tokens['alice'],'job','attempt','inflight')
+        prepared_input=json.loads(service.prepare_model_input(tokens['alice'],'job','attempt',max_payload_bytes=262144))
+        system,input_messages=prepared_input['system'],prepared_input['messages']
+        source_data=json.loads(input_messages[0]['content'])
+        assert [m['role'] for m in input_messages]==['user']
+        assert [m['message_id'] for m in source_data['messages']]==['m0','m1']
+        assert source_data['end'] is None and 'Historical text' in system
         # Supplied synthetic output tests this boundary; no provider or metering claim.
         output=json.dumps(dict(version='MEMORY-EXTRACT@1',entries=[
             dict(subject='self',slot='diet.spicy',kind='preference',text=texts[0],extent='long_term',
@@ -285,6 +291,52 @@ def exercise(conninfo,auth):
         assert post('/v3/memory-candidate-actions',reviewed)['result']==typed_saved
         post('/v3/memory-candidate-actions',dict(reviewed,action_id='typed-again'),status=503)
         print('PASS actual typed current user confirmation: stale travel refused, real M/T lease version accepted, original replay never reactivates retired travel; automatic current extraction UNRUN')
+        # An actual immutable end signal selects a separate summary cursor. The
+        # same source entries reuse their canonical receipts, preserving review.
+        ending=dict(version='MESSAGE-SOURCE@1',conversation_id='chat',generation=head['generation'],
+                    epoch=0,through=4,conversation_type='travel')
+        ended=post('/internal/v1/conversation-end',ending)['end']
+        assert post('/internal/v1/conversation-end',ending)['end']==ended
+        end_source=dict(source,through=4,mode='conversation_end')
+        post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='end-job',attempt_id='end-attempt',source=end_source))
+        service.transition(tokens['alice'],'end-job','end-attempt','inflight')
+        summary_input=json.loads(service.prepare_model_input(tokens['alice'],'end-job','end-attempt',max_payload_bytes=262144))
+        summary_messages=summary_input['messages']
+        summary_data=json.loads(summary_messages[0]['content'])
+        assert summary_data['purpose']=='conversation_end' and summary_data['end']==ended
+        # Already-reviewed candidates are deliberately not re-proposed by this
+        # supplied summary. New attempts including them conflict, never replace.
+        end_output=json.dumps(dict(version='MEMORY-EXTRACT@1',entries=[json.loads(output)['entries'][0]]),ensure_ascii=False).encode()
+        service.record_output(tokens['alice'],'end-job','end-attempt',end_output)
+        end_result=json.loads(service.publish_output(tokens['alice'],'end-job','end-attempt'))
+        assert end_result['receipts']==result['receipts'][:1]
+        with repository.transaction() as memory:
+            assert memory.detail(pending['candidate_id']).command.text==decision['text']
+            assert memory.detail(pending['candidate_id']).status=='active'
+        try:service.prepare_model_input(tokens['alice'],'end-job','end-attempt',max_payload_bytes=262144)
+        except Conflict:pass
+        else:raise AssertionError('completed summary granted a new input phase')
+        print('PASS actual protected model-data preparation and stable end ID; separate summary cursor reuses same-source receipts and cannot overwrite reviewed memory; actual summary worker/Meter UNRUN')
+        # Renewing history consent is not permission to undo a user's review.
+        post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='summary-disable',operation='disable',
+            conversation_id='chat',expected_generation=head['generation'],expected_epoch=0,expected_source_version=1))
+        renewed=post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='summary-enable',operation='enable',
+            conversation_id='chat',expected_generation=head['generation'],expected_epoch=0,expected_source_version=2))['result']
+        late_source=dict(end_source,source_version=renewed['source_version'],withdrawal_epoch=renewed['withdrawal_epoch'])
+        post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='late-summary',attempt_id='late-attempt',source=late_source))
+        service.transition(tokens['alice'],'late-summary','late-attempt','inflight')
+        service.record_output(tokens['alice'],'late-summary','late-attempt',output)
+        try:service.publish_output(tokens['alice'],'late-summary','late-attempt')
+        except Conflict:pass
+        else:raise AssertionError('fresh consent undid the explicit candidate review')
+        with repository.transaction() as memory:
+            tx=PublicationTransaction(memory);tx.require_live()
+            assert tx.output('late-summary','late-attempt')[1]==output
+            assert memory.detail(pending['candidate_id']).command.text==decision['text']
+        try:service.prepare_model_input(tokens['alice'],'late-summary','late-attempt',max_payload_bytes=262144)
+        except Conflict:pass
+        else:raise AssertionError('stored late output granted a new input phase')
+        print('PASS same-source summary after fresh consent cannot replace explicit user review; original output remains reconcilable without a new input/provider attempt')
         # Populate the other owner through the same public producer/review path.
         bob_scope=scope_for(ISSUER,'bob')
         bob_head=expected(client.put('/v1/conversations',params={'conversation_id':'chat'},headers=headers['bob']))
