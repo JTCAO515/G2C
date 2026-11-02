@@ -290,6 +290,14 @@
       "sha256": "96d9beb6e9321a2af5687c85b14c534e78185c963276fb277d6a32637d90f107",
       "down": "backend/migrations/down/0036_account_cleanup_gate.down.sql",
       "down_sha256": "050d45ad44241b71f4b5fbe66029c46f625c9b04ab1e6de2608e6ac8b318ef2e"
+    },
+    {
+      "version": 37,
+      "name": "memory_publication",
+      "file": "backend/migrations/0037_memory_publication.sql",
+      "sha256": "2c06aa9105a5043968c491bcacddb75fe963861e645eca84019d369f71688c3d",
+      "down": "backend/migrations/down/0037_memory_publication.down.sql",
+      "down_sha256": "ddf0d3cedc67180aecb9d00e70ba40efac8717cdebe7792c828504748fbe2628"
     }
   ]
 }

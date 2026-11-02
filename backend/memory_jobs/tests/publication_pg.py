@@ -331,7 +331,7 @@ def exercise(conninfo,auth):
         config=json.loads(conninfo.read_bytes())
         try:
             with psycopg.connect(**config,autocommit=True) as conn:
-                conn.execute((ROOT/'backend/memory_jobs/publication_schema.down.sql').read_text())
+                conn.execute((ROOT/'backend/migrations/down/0037_memory_publication.down.sql').read_text())
         except psycopg.errors.RaiseException:
             with repository.transaction() as memory:
                 tx=PublicationTransaction(memory);tx.require_live()
@@ -378,14 +378,14 @@ if __name__=='__main__':
     with patch.dict(os.environ,{'CJ_ENV':'local'}),tempfile.TemporaryDirectory(prefix='g2c-pub-auth-') as temp:
         with pg_suites.cluster('publication_candidate',port=55510,role='cj_pub_init',socket=f'/tmp/cj-pub-{os.getpid()}') as config:
             with psycopg.connect(**config,autocommit=True) as conn:
-                migrate.up(conn,migrate.load(),migrate.load()[-1]['version'])
-                conn.execute((ROOT/'backend/memory_jobs/publication_schema.sql').read_text())
-                conn.execute((ROOT/'backend/memory_jobs/publication_schema.down.sql').read_text())
-                conn.execute((ROOT/'backend/memory_jobs/publication_schema.sql').read_text())
+                migrations=migrate.load()
+                migrate.up(conn,migrations,migrations[-1]['version'])
+                migrate.down(conn,migrations,36)
+                migrate.up(conn,migrations,migrations[-1]['version'])
             path=Path(temp)/'conninfo.json';path.write_text(json.dumps(config))
             exercise(path,Path(temp)/'auth')
             with psycopg.connect(**config,autocommit=True) as conn:
-                conn.execute((ROOT/'backend/memory_jobs/publication_schema.down.sql').read_text())
+                migrate.down(conn,migrations,36)
                 assert conn.execute('SELECT count(*) FROM cj_memory_history_fence WHERE erased').fetchone()==(2,)
-                conn.execute((ROOT/'backend/memory_jobs/publication_schema.sql').read_text())
+                migrate.up(conn,migrations,migrations[-1]['version'])
             print('PASS nonempty down refusal; post-erasure empty publication rollback preserves the existing opaque erasure fence')

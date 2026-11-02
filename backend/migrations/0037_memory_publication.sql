@@ -1,5 +1,4 @@
 -- local runtime only: #410 output checkpoints, user decisions and exact origin map.
--- Candidate SQL; register in the next available append-only migration with its hook.
 ALTER TABLE cj_memory_history_job ADD COLUMN result_bytes bytea
  CHECK(result_bytes IS NULL OR octet_length(result_bytes) BETWEEN 1 AND 16384);
 GRANT UPDATE(result_bytes) ON cj_memory_history_job TO cj_m1_runtime;
@@ -43,6 +42,10 @@ CREATE POLICY own ON cj_memory_history_origin TO cj_m1_runtime
   SELECT 1 FROM cj_memory_history_fence f
    WHERE f.scope_digest=encode(sha256(convert_to(cj_memory_history_origin.scope,'UTF8')),'hex') AND NOT f.erased));
 GRANT SELECT,INSERT ON cj_memory_history_candidate_action,cj_memory_history_origin TO cj_m1_runtime;
+CREATE POLICY account_retired ON cj_memory_history_candidate_action AS RESTRICTIVE TO cj_m1_runtime
+ USING(public.cj_account_scope_current(scope)) WITH CHECK(public.cj_account_scope_current(scope));
+CREATE POLICY account_retired ON cj_memory_history_origin AS RESTRICTIVE TO cj_m1_runtime
+ USING(public.cj_account_scope_current(scope)) WITH CHECK(public.cj_account_scope_current(scope));
 DO $publication_acl$
 DECLARE object_name text;
  guard text := $condition$
