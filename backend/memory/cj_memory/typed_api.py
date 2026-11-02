@@ -13,7 +13,7 @@ from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import (LocalDatabase,scope_for,ISSUER,AUDIENCE,KEY_ID,InvitedSubjects)
 from cj_api.memory_boundary import (MemoryBoundary,MemoryBinding,MemoryAccessBlocked,
                                     MemorySourceRejected,build_memory_boundary)
-from cj_api.message_routes import _error,_token
+from cj_api.message_routes import BodyError,_body_error,_error,_require_octets,_stream_octets,_token
 from cj_auth.interfaces import AdmissionStatus,AdmissionReason
 from cj_auth.jwt_adapter import JWTConfiguration,StaticPublicKeys,VerificationKey
 from cj_message.travel_reference import MessageContextAuthority
@@ -148,18 +148,11 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
         except Exception as error:return failure(request,kind in ('save','manage','withdraw'),error)
 
     async def write(request,kind):
-        media=request.headers.getlist('content-type')
-        if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream'
-                or request.headers.get('content-encoding','identity').lower()!='identity'):
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
         try:
-            query(request,());chunks=[];size=0
-            async for chunk in request.stream():
-                size+=len(chunk)
-                if size>max_body_bytes:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-                chunks.append(chunk)
+            _require_octets(request);query(request,());raw=await _stream_octets(request,max_body_bytes)
+        except BodyError as exc:return _body_error(request,exc)
         except (InvalidInput,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
-        return await invoke(request,kind,b''.join(chunks))
+        return await invoke(request,kind,raw)
 
     @app.post('/v2/memories')
     async def save(request:Request):return await write(request,'save')

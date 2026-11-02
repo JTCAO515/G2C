@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
-from cj_api.message_routes import _token,_error
+from cj_api.message_routes import BodyError,_body_error,_error,_read_octets,_token
 from cj_api.local_app import scope_for
 from .auth_boundary import Boundary
 from .scoped_actions import ScopedAction,ScopedActions
@@ -88,13 +88,8 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
     async def original(request:Request):return await read(request,'receipt','action_id')
     @app.post('/v1/trip-scoped-actions')
     async def action(request:Request):
-        media=request.headers.getlist('content-type')
-        if request.query_params or len(media)!=1 or media[0].split(';')[0].strip().lower()!='application/octet-stream' or request.headers.get('content-encoding','identity').lower()!='identity':
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
-        chunks=[];size=0
-        async for value in request.stream():
-            size+=len(value)
-            if size>32768:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-            chunks.append(value)
-        return await invoke(request,'action',b''.join(chunks))
+        if request.query_params:return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
+        try:raw=await _read_octets(request,32768)
+        except BodyError as exc:return _body_error(request,exc)
+        return await invoke(request,'action',raw)
     return app

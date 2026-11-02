@@ -10,7 +10,7 @@ from cj_api.app import create_app
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import LocalDatabase, scope_for
 from cj_api.local_worker_context import checker_for
-from cj_api.message_routes import _token, _error
+from cj_api.message_routes import BodyError, _body_error, _error, _require_octets, _stream_octets, _token
 from cj_agent.draft import trip_scope_for
 
 from .auth_boundary import Boundary
@@ -116,19 +116,12 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
                 'dependency','unknown','reconcile_original' if write else 'retry_safe_read')
 
     async def write(request,kind):
-        media=request.headers.getlist('content-type')
-        if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream'
-                or request.headers.get('content-encoding','identity').lower()!='identity'):
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
         try:
-            query(request,());parts=[];size=0
-            async for part in request.stream():
-                size+=len(part)
-                if size>(1_000_000 if kind in ('prepare','initialize') else 32768):
-                    return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-                parts.append(part)
+            _require_octets(request);query(request,())
+            raw=await _stream_octets(request,1_000_000 if kind in ('prepare','initialize') else 32768)
+        except BodyError as exc:return _body_error(request,exc)
         except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
-        return await invoke(request,kind,b''.join(parts))
+        return await invoke(request,kind,raw)
 
     @app.post('/v1/trip-manual-preparations')
     async def prepare(request:Request):return await write(request,'prepare')
