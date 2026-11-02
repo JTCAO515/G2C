@@ -1,0 +1,140 @@
+"""#402 dedicated-role PG checks. Synthetic feedback deletion probe, not real hook."""
+import json
+import os
+from pathlib import Path
+import sys
+import psycopg
+from cj_cleanup.core import Conflict, Denied, digest, encode
+from cj_cleanup.hooks import Selection, make_receipt
+from cj_cleanup.registry import freeze
+from cj_cleanup.store import Store, original_result, record_result
+from cj_cleanup.coordinator import Coordinator
+from cj_cleanup.metadata_hook import MetadataHook
+
+ROOT=Path(__file__).resolve().parents[3]
+sys.path.insert(0,str(ROOT/'scripts'))
+import migrate
+
+
+def main():
+    config=json.loads(Path(os.environ['CJ_E2E_CONNINFO']).read_text())
+    subject=digest(b'synthetic original principal')
+    def connect():return psycopg.connect(**dict(config,user='cj_local_cleanup'))
+    store=Store(connect,subject,lambda stage:None)
+    raw=encode(dict(version='fixture1',stores=[dict(id='business',objects=[dict(id='feedback',cleanup_protocol='CLEANUP@1.0',objects=['cj_feedback_action'])])]))
+    inventory=('business/feedback',)
+    current=[freeze(raw,inventory)]
+    target=inventory[0]
+    plan={target:{'domain_scope':'alice','selection':{'kind':'account'}}}
+    calls=[]
+    class Probe:
+        def execute(self,request):
+            calls.append(request.digest)
+            with store.transaction(request.operation_id) as cur:
+                cur.execute("SELECT set_config('cj.cleanup_scope',%s,true),set_config('cj.cleanup_purpose','account',true)",(request.domain_scope,))
+                old=original_result(cur,request)
+                if old is not None:return old
+                cur.execute('DELETE FROM cj_feedback_action WHERE scope=%s',(request.domain_scope,))
+                assert cur.execute('SELECT count(*) FROM cj_feedback_action').fetchone()[0]==0
+                value=record_result(cur,request,'confirmed')
+            return value
+        def reconcile(self,request):
+            with store.transaction(request.operation_id,writing=False) as cur:
+                result=original_result(cur,request)
+            return result if result is not None else make_receipt(request,'unknown')
+    host=Coordinator(store,lambda:current[0],{target:Probe()})
+    with psycopg.connect(**config) as conn:
+        for scope in ('alice','bob'):
+            conn.execute("INSERT INTO cj_feedback_action(scope,operation,action_id,original_input,input_sha256) VALUES(%s,'submit','a',%s,%s)",(scope,b'fixture',digest(b'fixture')))
+    assert host.create('op1',digest(b'confirm'),'account',plan)['status']=='in_progress'
+    request=host.request('op1',target,'alice',Selection('account'))
+    # Wrong domain selection cannot expand the confirmed plan, even in same account.
+    try:host.advance(host.request('op1',target,'bob',Selection('account')))
+    except Conflict:pass
+    else:raise AssertionError('confirmed selection changed')
+    assert host.advance(request)['status']=='complete'
+    assert host.advance(request)['status']=='complete' and len(calls)==1
+    with psycopg.connect(**config) as conn:
+        assert conn.execute('SELECT scope FROM cj_feedback_action').fetchall()==[('bob',)]
+        role=conn.execute("SELECT rolsuper,rolcreatedb,rolcreaterole,rolinherit,rolreplication,rolbypassrls FROM pg_roles WHERE rolname='cj_local_cleanup'").fetchone()
+        assert role==(False,)*6
+        assert not conn.execute("SELECT pg_has_role('cj_m1_runtime','cj_local_cleanup','MEMBER')").fetchone()[0]
+        assert conn.execute("SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='cj_m1_runtime' AND privilege_type IN ('DELETE','TRUNCATE')").fetchone()[0]==0
+    print('PASS dedicated role/least DELETE, actual row erasure, other-owner preserved, immutable confirmed selection, no repeated execute')
+
+    # Read and delete queries with another owner predicate see nothing under RLS.
+    with store.transaction('op1') as cur:
+        cur.execute("SELECT set_config('cj.cleanup_scope','alice',true),set_config('cj.cleanup_purpose','account',true)")
+        assert cur.execute("SELECT scope FROM cj_feedback_action WHERE scope='bob'").fetchall()==[]
+        assert cur.execute("DELETE FROM cj_feedback_action WHERE scope='bob' RETURNING scope").fetchall()==[]
+    with psycopg.connect(**dict(config,user='cj_m1_runtime')) as conn:
+        for sql in ('DELETE FROM cj_message_receipt','TRUNCATE cj_message_receipt','SET ROLE cj_local_cleanup'):
+            try:conn.execute(sql)
+            except psycopg.Error:conn.rollback()
+            else:raise AssertionError('runtime acquired destructive privilege')
+    for foreign_id in ('op1','absent'):
+        try:Store(connect,digest(b'other principal'),lambda stage:None).query(foreign_id)
+        except Denied as error:assert str(error)=='operation unavailable'
+        else:raise AssertionError('foreign progress visible')
+    print('PASS forced RLS owner negatives, runtime DELETE/TRUNCATE/SET ROLE rejected, foreign and absent progress indistinguishable')
+
+    # Registry bytes changing in either direction latch blocked; no actual hook call.
+    changed=json.loads(raw);changed['stores'][0]['objects'].append(dict(id='new',cleanup_hook='UNIMPLEMENTED'))
+    current[0]=freeze(encode(changed),inventory)
+    assert host.query('op1')['status']=='blocked'
+    current[0]=freeze(raw,inventory)
+    assert host.query('op1')['status']=='blocked'
+    bad=freeze(encode(changed),('business/feedback','business/new'))
+    store.create('gap',digest(b'gap'),bad,'account',(target,),plan)
+    assert store.query('gap')['status']=='blocked'
+    try:host.advance(request)
+    except Denied:pass
+    else:raise AssertionError('blocked operation dispatched')
+    print('PASS real PG registry added/missing-hook and changed-byte gaps latch blocked without widening/omitting original targets')
+
+    # Restart after durable intent never claims completion. Original actual result recovers.
+    host.create('interrupted',digest(b'confirm2'),'account',plan)
+    second=host.request('interrupted',target,'alice',Selection('account'))
+    assert store.intent(second)
+    reopened=Store(connect,subject,lambda stage:None)
+    reopened.recover('interrupted')
+    assert reopened.query('interrupted')['status']=='unknown'
+    assert not store.intent(second) and len(calls)==1
+    Probe().execute(second)  # explicit test action simulating the original in-flight call, not redispatch
+    assert reopened.query('interrupted')['status']=='unknown'
+    reopened.recover('interrupted')
+    assert reopened.query('interrupted')['status']=='complete'
+    assert len(calls)==2
+    # The newly provided metadata store ships its own erasure in this same slice.
+    legacy=b'synthetic original principal'
+    metadata='business/cleanup-metadata'
+    raw2=encode(dict(version='fixture2',stores=[dict(id='business',objects=[
+        dict(id='feedback',cleanup_protocol='CLEANUP@1.0'),
+        dict(id='cleanup-metadata',cleanup_protocol='CLEANUP@1.0')])]))
+    current[0]=freeze(raw2,(target,metadata))
+    meta=MetadataHook(store,legacy)
+    host2=Coordinator(store,lambda:current[0],{target:Probe(),metadata:meta})
+    plan2={**plan,metadata:{'domain_scope':subject,'selection':{'kind':'account'}}}
+    host2.create('metadata-erasure',digest(b'confirm3'),'account',plan2)
+    with psycopg.connect(**config) as conn:
+        conn.execute('INSERT INTO cj_cleanup_journal_candidate VALUES(%s,%s,0,%s,%s)',(legacy,'old-op',b'private old journal',b'private old state'))
+    host2.advance(host2.request('metadata-erasure',target,'alice',Selection('account')))
+    meta_request=host2.request('metadata-erasure',metadata,subject,Selection('account'))
+    store.intent(meta_request)
+    meta.execute(meta_request)  # original hook finishes; coordinator import is interrupted
+    reopened.recover('metadata-erasure')
+    assert reopened.query('metadata-erasure')['status']=='complete'
+    assert host2.advance(meta_request)['status']=='complete'
+    with psycopg.connect(**config) as conn:
+        assert conn.execute('SELECT count(*) FROM cj_cleanup_journal_candidate WHERE scope_bytes=%s',(legacy,)).fetchone()[0]==0
+        assert conn.execute('SELECT count(*) FROM cj_cleanup_operation WHERE plan_bytes IS NOT NULL').fetchone()[0]==0
+        assert conn.execute('SELECT count(*) FROM cj_cleanup_step WHERE request_bytes IS NOT NULL').fetchone()[0]==0
+    print('PASS own metadata hook physically erases legacy private journal, clears selection/request bytes, retains bounded original progress/result; interruption recovers actual receipt')
+    try:
+        with psycopg.connect(**config,autocommit=True) as conn:migrate.down(conn,migrate.load(),31)
+    except psycopg.Error:pass
+    else:raise AssertionError('down dropped retained operation')
+    print('PASS lost-writer original-operation recovery, no silent completion/retry, actual atomic result recovered, populated down refused')
+
+
+if __name__=='__main__':main()

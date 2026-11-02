@@ -1,5 +1,5 @@
 {
-  "version": "1.15.0",
+  "version": "1.16.0",
   "stores": [
     {
       "id": "business",
@@ -219,7 +219,10 @@
           "id": "cleanup-metadata",
           "owner": "CJ-024 / CJ-005",
           "objects": [
-            "cj_cleanup_journal_candidate"
+            "cj_cleanup_journal_candidate",
+            "cj_cleanup_operation",
+            "cj_cleanup_step",
+            "cj_cleanup_domain_result"
           ],
           "source": "backend/cleanup/cj_cleanup/postgres.py@514aba717dd0e0a7f7783b6d9072d347cdb0a623",
           "status": "candidate_or_local_only; production_not_provisioned",
@@ -227,14 +230,16 @@
           "sensitive_fields": [
             "Full original journal and receipt bytes",
             "Confirmation digest, invocation IDs, frozen registry and gap details",
-            "Environment/issuer/subject/audience scope and original operation ID"
+            "Environment/issuer/subject/audience scope and original operation ID",
+            "Frozen original domain scope/selection plan and exact hook request bytes (cleared by the final metadata hook); bounded opaque operation/target/digest/result only remain"
           ],
           "retention": "Account reconciliation until account deletion; not diagnostic logs; no 90-day TTL",
-          "cleanup_hook": "UNIMPLEMENTED; current-account progress SELECT never deletes, creates, recovers, retries or restores access",
+          "cleanup_hook": "cj_cleanup.metadata_hook.MetadataHook; after every other original domain result is confirmed, erase legacy private journal and all original scope/selection/request bytes; retain bounded opaque progress and irreversible fences only",
           "restore_fence": "UNIMPLEMENTED; backups/offline/external retention remain explicit original barriers",
           "read_consumer": "GET /v1/account-cleanup-progress; current ALLOWED account and original operation only; five-field progress whitelist; no private journal or post-logout capability",
           "owner_line": "B",
-          "retention_category": "account_reconciliation"
+          "retention_category": "account_reconciliation",
+          "cleanup_protocol": "CLEANUP@1.0"
         },
         {
           "id": "memory-management-actions",

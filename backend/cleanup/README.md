@@ -1,5 +1,43 @@
 # CJ024 注销清理核心
 
+## M3 CLEANUP@1.0 local foundation (#402)
+
+Additive `hooks`, `registry`, `store`, `coordinator`, `metadata_hook` implement the
+[frozen domain ABI](../../contracts/cleanup/V1.md); the historical rc reducer and
+progress-reader semantics below are unchanged. Explicit host-injected connections,
+current independent inventory, actual domain hooks and guards are required.
+
+`registry.freeze(raw, independent_inventory)` freezes exact bytes and leaf entries.
+`Coordinator.create(operation_id, exact_confirmation_digest, purpose, plan)` binds
+the exact per-target canonical scope and selection before dispatch. Registry drift
+latches blocked, including after a previous completion; changed confirmation/plan
+conflicts. The coordinator commits intent before `execute`, never redispatches an
+existing intent, and exposes only same-original `reconcile`. `Store.recover` marks
+lost in-flight work unknown or imports the actual atomic owner result, never calls
+a hook. `original_result`/`record_result` are public owner helpers inside the same
+PG transaction as deletion/fencing; absence is not retry permission.
+
+Migration 0032 is local runtime only. `cj_local_cleanup` is a dedicated local LOGIN,
+not a runtime membership; no SUPERUSER, CREATEDB, CREATEROLE, INHERIT, REPLICATION,
+BYPASSRLS, TRUNCATE or SECURITY DEFINER. Each registered table has an explicit
+SELECT/DELETE policy bound to original operation, subject, purpose and canonical
+domain scope. MESSAGE/NEEDS bridge tables use `message_scope`, USAGE uses `scope_id`,
+legacy cleanup journal uses exact scope bytes. Runtime privileges are unchanged.
+
+The new operation/step/domain-result tables are included in `cleanup-metadata` and
+ship `MetadataHook` in the same PR. After all other original target results are
+confirmed, it erases the old private journal and clears all account selection-plan
+and original hook-request bytes. Only bounded opaque IDs/digests/outcomes remain
+for restricted original-progress reconciliation and irreversible fences; no principal,
+transcript or domain scope plaintext is retained in those new tables after the hook.
+Final-result import still recovers after that redaction using the original digest.
+
+This foundation does not authorize an HTTP caller, revoke an account, stop tasks,
+activate C/A hooks or prove backup/device/provider erasure. #27 supplies account
+confirmation, canonical admission/fences, dependency ordering and API orchestration;
+#15 supplies feedback's real domain hook. The PG foundation test uses synthetic
+feedback rows and a clearly labelled deletion probe, not that future domain hook.
+
 可运行纯状态机、CAS 内存 repository 与 metadata journal。后置新增 PostgreSQL 事务 repository 候选见下节；真实 hook、生产接入与公开查询仍未实现。原纯序列化切片不承诺进程崩溃自动落盘。
 
 ```sh
