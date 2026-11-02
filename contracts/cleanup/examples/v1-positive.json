@@ -1,0 +1,51 @@
+[
+  {
+    "request": {
+      "protocol": "CLEANUP@1.0",
+      "operation_id": "cleanup-1",
+      "invocation_id": "memory-1",
+      "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "registry_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "entry_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target": "business/memory-authoritative",
+      "domain_scope": "synthetic-scope",
+      "selection": {
+        "kind": "memory",
+        "item_id": "item-1",
+        "item_version": 2,
+        "scope_epoch": 3
+      }
+    }
+  },
+  {
+    "request": {
+      "protocol": "CLEANUP@1.0",
+      "operation_id": "cleanup-1",
+      "invocation_id": "memory-1",
+      "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "registry_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "entry_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target": "business/memory-authoritative",
+      "domain_scope": "synthetic-scope",
+      "selection": {
+        "kind": "account"
+      }
+    }
+  },
+  {
+    "request": {
+      "protocol": "CLEANUP@1.0",
+      "operation_id": "cleanup-1",
+      "invocation_id": "memory-1",
+      "subject_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "registry_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "entry_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target": "checkpoints/run",
+      "domain_scope": "synthetic-scope",
+      "selection": {
+        "kind": "diagnostics",
+        "before_unix": 1790000000
+      }
+    }
+  }
+]
