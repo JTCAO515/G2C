@@ -2,16 +2,12 @@
 from dataclasses import dataclass
 from datetime import datetime
 import json
+from cj_strict_json import reject_duplicates
 
 class InvalidInput(ValueError): pass
 
 
-def unique_fields(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result: raise InvalidInput('duplicate field')
-        result[key] = value
-    return result
+unique_fields = reject_duplicates(InvalidInput, 'duplicate field')
 
 
 def strict_object(raw):

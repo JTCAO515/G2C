@@ -47,6 +47,7 @@ dev-mode-dirs = [
     "backend/needs",
     "backend/place",
     "backend/run",
+    "backend/strict_json",
     "backend/trip",
     "backend/usage",
 ]
@@ -71,6 +72,7 @@ packages = [
     "backend/needs/cj_needs",
     "backend/place/cj_place",
     "backend/run/cj_run",
+    "backend/strict_json/cj_strict_json",
     "backend/trip/cj_trip",
     "backend/usage/cj_usage",
 ]

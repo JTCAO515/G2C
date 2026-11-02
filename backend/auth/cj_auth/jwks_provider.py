@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 import jwt
 from cryptography.hazmat.primitives import serialization
 from .jwt_adapter import JWTConfiguration, VerificationKey
+from cj_strict_json import reject_duplicates
 
 JWKS_PROVIDER_VERSION = 'CJ-JWKS-PROVIDER@0.1.0-rc.1'
 
@@ -162,13 +163,7 @@ class BoundedJWKSProvider:
             if response is not None: response.close()
 
     def _parse(self, data):
-        def unique(pairs):
-            result = {}
-            for key, value in pairs:
-                if key in result: raise ValueError('duplicate JWKS member')
-                result[key] = value
-            return result
-        document = json.loads(data.decode('utf-8'), object_pairs_hook=unique)
+        document = json.loads(data.decode('utf-8'), object_pairs_hook=reject_duplicates(ValueError, 'duplicate JWKS member'))
         if (not isinstance(document, dict) or set(document) != {'keys'} or
                 not isinstance(document['keys'], list) or len(document['keys']) > self._config.max_keys):
             raise ValueError('bounded JWKS object required')

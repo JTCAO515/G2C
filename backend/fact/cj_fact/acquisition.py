@@ -14,6 +14,7 @@ from urllib.parse import urljoin, urlsplit
 
 from .model import Document, aware
 from .policy import FactFailure, SourcePolicy, canonical_url, public_addresses
+from cj_strict_json import reject_duplicates
 
 
 @dataclass(frozen=True, repr=False)
@@ -75,17 +76,10 @@ def _json_bounds(text: str, policy: SourcePolicy):
                 raise FactFailure('json_depth_limit')
         elif char in ']}':
             depth -= 1
-    def pairs(items):
-        result = {}
-        for key, value in items:
-            if key in result:
-                raise FactFailure('duplicate_json_key')
-            result[key] = value
-        return result
     def constant(_):
         raise FactFailure('invalid_json_number')
     try:
-        value = json.loads(text, object_pairs_hook=pairs, parse_constant=constant)
+        value = json.loads(text, object_pairs_hook=reject_duplicates(FactFailure, 'duplicate_json_key'), parse_constant=constant)
         stack = [value]
         count = 0
         while stack:

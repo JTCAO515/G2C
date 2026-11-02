@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import time
 
 from cj_trip.domain import Proposal, packed
+from cj_strict_json import reject_duplicates
 
 DRAFT_SYSTEM = (
     'You draft a Beijing itinerary for a foreign visitor. Reply with ONLY one JSON object, '
@@ -30,6 +31,9 @@ class DraftRejected(ValueError):
     """Model output did not form a valid draft; nothing is published."""
 
 
+_model_object = reject_duplicates(DraftRejected, 'duplicate JSON field')
+
+
 def proposal_id_for(run_id):
     return 'p-' + run_id
 
@@ -37,15 +41,6 @@ def proposal_id_for(run_id):
 def trip_scope_for(message_scope):
     # TRIP identifiers are restricted; derive a stable opaque scope from the server scope.
     return 't' + hashlib.sha256(message_scope.encode('utf-8')).hexdigest()[:40]
-
-
-def _model_object(pairs):
-    value = {}
-    for key, item in pairs:
-        if key in value:
-            raise DraftRejected('duplicate JSON field')
-        value[key] = item
-    return value
 
 
 def document_from_model(text):

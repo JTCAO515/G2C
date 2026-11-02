@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 from .interfaces import TrustedPrincipal, VerificationResult, VerificationStatus as V
 from .session_binding import VerifiedSessionBinding, SessionVerificationResult
+from cj_strict_json import reject_duplicates
 
 
 class JWTProfile(Enum):
@@ -80,15 +81,8 @@ class StaticPublicKeys:
 
 
 def _object(segment: str) -> dict:
-    def unique(pairs):
-        result = {}
-        for key, value in pairs:
-            if key in result:
-                raise ValueError('duplicate JSON member')
-            result[key] = value
-        return result
     raw = base64.urlsafe_b64decode(segment + '=' * (-len(segment) % 4))
-    value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique,
+    value = json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(ValueError, 'duplicate JSON member'),
                        parse_constant=lambda _: (_ for _ in ()).throw(ValueError('nonfinite JSON')))
     if not isinstance(value, dict):
         raise ValueError('JWT object required')

@@ -1,6 +1,7 @@
 """MODEL-TOOL-TURN@1: untrusted model data, never owner/budget authority."""
 from dataclasses import dataclass
 import json
+from cj_strict_json import reject_duplicates
 
 
 @dataclass(frozen=True)
@@ -17,15 +18,9 @@ class ToolTurn:
 
 
 def parse_turn(raw:bytes,allowed_tools):
-    def pairs(items):
-        value={}
-        for key,item in items:
-            if key in value:raise ValueError('duplicate_tool_turn_field')
-            value[key]=item
-        return value
     def constant(value):raise ValueError('non_json_number')
     if type(raw) is not bytes or len(raw)>65536:raise ValueError('bounded_tool_turn_required')
-    try:value=json.loads(raw.decode('utf8'),object_pairs_hook=pairs,parse_constant=constant)
+    try:value=json.loads(raw.decode('utf8'),object_pairs_hook=reject_duplicates(ValueError, 'duplicate_tool_turn_field'),parse_constant=constant)
     except (ValueError,UnicodeError,RecursionError):raise ValueError('invalid_tool_turn') from None
     if (type(value) is not dict or set(value)!={'version','kind','answer','calls'}
             or value['version']!='MODEL-tool-turn.1'):

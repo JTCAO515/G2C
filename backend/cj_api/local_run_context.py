@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 from types import MappingProxyType
 from cj_usage.core import Config, Blocked
+from cj_strict_json import reject_duplicates
 
 
 class LocalContextUnavailable(ValueError):
@@ -27,14 +28,6 @@ class LocalRunContext:
     def profiles(self): return (self.current,*self.history)
 
 
-def _unique(pairs):
-    result={}
-    for key,value in pairs:
-        if key in result: raise LocalContextUnavailable('duplicate context field')
-        result[key]=value
-    return result
-
-
 def _profile(value, version):
     if type(value) is not dict or set(value)!={'meter','output_limits'}:
         raise LocalContextUnavailable('explicit meter and output limits required')
@@ -52,7 +45,7 @@ def load_run_context(path, *, clock=time.time, require_active=True):
         if not str(path).strip(): raise LocalContextUnavailable('explicit context path required')
         with Path(path).open('rb') as source: raw=source.read(1_048_577)
         if len(raw)>1_048_576: raise LocalContextUnavailable('context file too large')
-        value=json.loads(raw,object_pairs_hook=_unique)
+        value=json.loads(raw,object_pairs_hook=reject_duplicates(LocalContextUnavailable, 'duplicate context field'))
         if (type(value) is not dict or set(value)!={'version','current','history'}
                 or value['version'] not in ('CJ-LOCAL-RUN@1','CJ-LOCAL-RUN@2') or type(value['history']) is not list):
             raise LocalContextUnavailable('explicit versioned local context required')

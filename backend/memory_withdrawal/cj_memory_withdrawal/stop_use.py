@@ -4,23 +4,17 @@ import json
 
 from cj_memory.domain import Command, Conflict, InvalidInput, Unavailable
 from .domain import Action, SourceReference, check_history
+from cj_strict_json import reject_duplicates
 
 
 @dataclass(frozen=True, repr=False)
 class StopUse(Action):
     @classmethod
     def parse(cls, raw):
-        def unique(pairs):
-            result = {}
-            for key, value in pairs:
-                if key in result:
-                    raise InvalidInput('duplicate field')
-                result[key] = value
-            return result
         if type(raw) is not bytes or len(raw) > 32768:
             raise InvalidInput('original UTF8 bytes required')
         try:
-            value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
+            value = json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(InvalidInput, 'duplicate field'))
         except (ValueError, UnicodeError):
             raise InvalidInput('invalid JSON') from None
         if type(value) is not dict or value.pop('version', None) != 'MEMORY-STOP-USE@1':

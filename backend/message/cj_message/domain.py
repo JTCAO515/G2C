@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import hashlib
 import json
 import uuid
+from cj_strict_json import reject_duplicates
 
 if TYPE_CHECKING:
     from .travel import Selection
@@ -16,13 +17,7 @@ class InvalidInput(ValueError):
     pass
 
 
-def unique_fields(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise InvalidInput('duplicate field')
-        result[key] = value
-    return result
+unique_fields = reject_duplicates(InvalidInput, 'duplicate field')
 
 
 class InputConflict(Exception):

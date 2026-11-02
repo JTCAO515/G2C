@@ -6,6 +6,7 @@ import json
 import re
 from threading import RLock
 from cj_auth.interfaces import TrustedPrincipal
+from cj_strict_json import reject_duplicates
 
 VERSION = 'CJ-CLEANUP-INTERNAL@0.1.0-rc.1'
 BARRIERS = ('auth_revocation', 'tasks_stopped', 'restore_fence',
@@ -152,21 +153,13 @@ def intent(op: Operation, target: str, invocation: str) -> Operation:
     return replace(op, steps=tuple(steps), revision=op.revision+1)
 
 
-def _unique_object(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result: raise Invalid('duplicate receipt key')
-        result[key] = value
-    return result
-
-
 def receipt(op: Operation, target: str, raw: bytes) -> Operation:
     """Only trusted host importer calls this. Metadata whitelist; no provider/body payload."""
     try:
         if not isinstance(raw, bytes) or len(raw) > 4096: raise Invalid('invalid receipt')
         # bytes auto-detection accepts UTF16/32; decode explicitly and keep raw intact.
         # object_pairs_hook rejects duplicates at every depth before consuming values.
-        data = json.loads(raw.decode('utf-8', errors='strict'), object_pairs_hook=_unique_object)
+        data = json.loads(raw.decode('utf-8', errors='strict'), object_pairs_hook=reject_duplicates(Invalid, 'duplicate receipt key'))
         if not isinstance(data, dict): raise Invalid('invalid receipt')
         if set(data) != {'protocol','scope_digest','operation_id','target','version','invocation','outcome'}:
             raise Invalid('invalid receipt fields')

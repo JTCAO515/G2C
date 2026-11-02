@@ -8,6 +8,7 @@ from .domain import Service, InvalidInput
 from .local import LocalMemoryConfiguration, read_private_policy
 from .postgres import Repository
 from .runtime import RuntimeMemory, RuntimeDenied, Selection
+from cj_strict_json import reject_duplicates
 
 
 @dataclass(frozen=True)
@@ -17,17 +18,10 @@ class RuntimeConfiguration:
 
     @classmethod
     def from_bytes(cls, raw):
-        def unique(pairs):
-            result = {}
-            for key, value in pairs:
-                if key in result:
-                    raise InvalidInput('duplicate runtime policy field')
-                result[key] = value
-            return result
         try:
             if type(raw) is not bytes or not 0 < len(raw) <= 262144:
                 raise InvalidInput('bounded runtime policy required')
-            value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
+            value = json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(InvalidInput, 'duplicate runtime policy field'))
             if (type(value) is not dict or set(value) != {'version', 'collection', 'selections'}
                     or value['version'] != 'local-memory-run.1'
                     or type(value['selections']) is not dict or not value['selections']):
