@@ -20,10 +20,12 @@ provided until its physical implementation, fence and same-PR registry land.
   not an exact reverse item mapping. Initial erasure must explicitly use a
   conservative derived range and disclose it. It must preserve unrelated owners
   and formal user-accepted Trips; no claim of precise result deletion is valid.
-- The standalone typed Memory app still constructs invitation-only admission.
-  Account cleanup must consume ACCOUNT-ADMISSION@2 and retain a hashed retirement
-  barrier before physically removing C authority. Deleting the scope row alone
-  would permit recreation through an older writer and is insufficient.
+- Main's standalone typed Memory and several C local factories still construct
+  invitation-only admission. M35 already supplies the shared hashed account fence
+  and restrictive runtime policies for C tables, including scope INSERT checks.
+  Reuse that fence; do not invent a duplicate C account-retirement store. C hosts
+  should also consume ACCOUNT-ADMISSION@2 so retirement/uncertainty is explicit
+  admission, rather than a misleading empty RLS projection or generic DB failure.
 
 ## Required order
 
