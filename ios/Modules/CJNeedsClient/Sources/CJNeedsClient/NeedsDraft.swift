@@ -239,7 +239,35 @@ public struct NeedsDraft: Sendable {
     }
 }
 
+/// Non-value cases every generated NEEDS observation shares.
+protocol NeedsObservationCases {
+    static func NeedsMissingObservation(_ value: NeedsSchema.NeedsMissingObservation) -> Self
+    static func NeedsUnknownObservation(_ value: NeedsSchema.NeedsUnknownObservation) -> Self
+    static func NeedsUncertainObservation(_ value: NeedsSchema.NeedsUncertainObservation) -> Self
+}
+extension NeedsSchema.NeedsPartySizeObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsTimezoneObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsCurrencyObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsMoneyObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsBudgetBasisObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsCoverageObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsTextObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsLocalDateObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsLocalTimeObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsLockedObservation: NeedsObservationCases {}
+extension NeedsSchema.NeedsBookingObservation: NeedsObservationCases {}
+
 extension NeedsObservationInput {
+    /// Shared non-value states; `known` builds the type's own value case.
+    private func encoded<Observation: NeedsObservationCases>(known: () throws -> Observation) throws -> Observation {
+        switch state {
+        case .absent: throw NeedsFailure.invalidInput
+        case .missing: return .NeedsMissingObservation(.init(state: .missing))
+        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
+        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
+        case .known: return try known()
+        }
+    }
     init(_ value: NeedsSchema.NeedsPartySizeObservation?) {
         self.init()
         guard let value else { return }
@@ -251,12 +279,7 @@ extension NeedsObservationInput {
         }
     }
     func partySize() throws -> NeedsSchema.NeedsPartySizeObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
+        try encoded {
             guard matches(value, "[0-9]+"), let known = Int(value) else { throw NeedsFailure.invalidInput }
             return .NeedsPartySizeObservationKnown(.init(state: .known, value: known))
         }
@@ -272,13 +295,7 @@ extension NeedsObservationInput {
         }
     }
     func timezone() throws -> NeedsSchema.NeedsTimezoneObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
-
+        try encoded {
             return .NeedsTimezoneObservationKnown(.init(state: .known, value: value))
         }
     }
@@ -293,13 +310,7 @@ extension NeedsObservationInput {
         }
     }
     func currency() throws -> NeedsSchema.NeedsCurrencyObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
-
+        try encoded {
             return .NeedsCurrencyObservationKnown(.init(state: .known, value: value))
         }
     }
@@ -314,13 +325,7 @@ extension NeedsObservationInput {
         }
     }
     func money() throws -> NeedsSchema.NeedsMoneyObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
-
+        try encoded {
             return .NeedsMoneyObservationKnown(.init(state: .known, value: value))
         }
     }
@@ -335,12 +340,7 @@ extension NeedsObservationInput {
         }
     }
     func budgetBasis() throws -> NeedsSchema.NeedsBudgetBasisObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
+        try encoded {
             guard let known = NeedsSchema.NeedsBudgetBasisObservationKnown.valuePayload(rawValue: value) else { throw NeedsFailure.invalidInput }
             return .NeedsBudgetBasisObservationKnown(.init(state: .known, value: known))
         }
@@ -356,13 +356,7 @@ extension NeedsObservationInput {
         }
     }
     func coverage() throws -> NeedsSchema.NeedsCoverageObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
-
+        try encoded {
             return .NeedsCoverageObservationKnown(.init(state: .known, value: items ?? value.components(separatedBy: "\n")))
         }
     }
@@ -377,13 +371,7 @@ extension NeedsObservationInput {
         }
     }
     func text() throws -> NeedsSchema.NeedsTextObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
-
+        try encoded {
             return .NeedsTextObservationKnown(.init(state: .known, value: value))
         }
     }
@@ -398,13 +386,7 @@ extension NeedsObservationInput {
         }
     }
     func localDate() throws -> NeedsSchema.NeedsLocalDateObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
-
+        try encoded {
             return .NeedsLocalDateObservationKnown(.init(state: .known, value: value))
         }
     }
@@ -419,13 +401,7 @@ extension NeedsObservationInput {
         }
     }
     func localTime() throws -> NeedsSchema.NeedsLocalTimeObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
-
+        try encoded {
             return .NeedsLocalTimeObservationKnown(.init(state: .known, value: value))
         }
     }
@@ -440,12 +416,7 @@ extension NeedsObservationInput {
         }
     }
     func locked() throws -> NeedsSchema.NeedsLockedObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
+        try encoded {
             guard value == "true" || value == "false" else { throw NeedsFailure.invalidInput }
             return .NeedsLockedObservationKnown(.init(state: .known, value: value == "true"))
         }
@@ -461,12 +432,7 @@ extension NeedsObservationInput {
         }
     }
     func booking() throws -> NeedsSchema.NeedsBookingObservation {
-        switch state {
-        case .absent: throw NeedsFailure.invalidInput
-        case .missing: return .NeedsMissingObservation(.init(state: .missing))
-        case .unknown: return .NeedsUnknownObservation(.init(state: .unknown))
-        case .uncertain: return .NeedsUncertainObservation(.init(state: .uncertain, note: note))
-        case .known:
+        try encoded {
             guard let known = NeedsSchema.NeedsBookingObservationKnown.valuePayload(rawValue: value) else { throw NeedsFailure.invalidInput }
             return .NeedsBookingObservationKnown(.init(state: .known, value: known))
         }
