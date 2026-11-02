@@ -6,8 +6,9 @@ import CJMessageKeys
 
 func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 
-/// Immutable, exclusive encrypted records. Reopening grants query only; no resend/delete API.
+/// Immutable, exclusive encrypted records. Reopening grants query only; no resend API. Explicit account cleanup is separate.
 @MainActor public final class FeedbackPendingStore {
+    private let cleanup: FeedbackLocalJournalCleanup
     private let root: URL
     private let directory: Int32
     private let maximumBytes: Int
@@ -37,6 +38,7 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         guard fd >= 0 else { throw FeedbackFailure.storageUnavailable }
         var st = stat()
         guard fstat(fd, &st) == 0, st.st_uid == getuid(), st.st_mode & 0o077 == 0 else { close(fd); throw FeedbackFailure.storageUnavailable }
+        do { cleanup = try FeedbackLocalJournalCleanup(root: directory, suffixes: []) } catch { close(fd); throw error }
         root = directory; self.directory = fd; self.maximumBytes = maximumBytes; self.maximumRecords = maximumRecords
         self.namespace = namespace; self.keyID = keyID; self.key = key
     }
@@ -67,7 +69,10 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         guard count == bytes.count, fsync(fd) == 0, fsync(directory) == 0 else { throw FeedbackFailure.storageUnavailable }
         try validateDirectory()
     }
+    /// Retires this store before exact local erasure. No server receipt is implied.
+    public func clearLocalFiles() throws { try cleanup.clear() }
     func validateDirectory() throws {
+        try cleanup.checkReadable()
         // Callback/await boundary checks, not a claim of protection against arbitrary same-UID races.
         var current = stat(); var original = stat()
         guard lstat(root.path, &current) == 0, fstat(directory, &original) == 0,

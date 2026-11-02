@@ -134,4 +134,53 @@ private actor ScopedWire: ClientTransport {
         #expect(throws: (any Error).self) { try client.originalActions() }
         #expect(await h.wire.requests.allSatisfy { !$0.0.hasPrefix("/v1/trip-scoped-actions") })
     }
+    @Test func accountCleanupPreflightsBothJournalsThenRetiresAllOriginalWork() async throws {
+        let h = try ScopedHarness(); defer { try? FileManager.default.removeItem(at: h.root) }
+        let client = try h.client(), read = try await h.read(client), work = try client.stage(.accept, read: read)
+        _ = try await client.perform(work)
+        #expect(try h.originals.pending().count == 1 && h.settlements.pending().count == 1)
+        let bad = h.root.appendingPathComponent("settlements/unknown")
+        try Data("unprovided".utf8).write(to: bad)
+        #expect(throws: TripFailure.storageUnavailable) { try client.clearLocalFiles() }
+        // Failed complete preflight has not erased the valid original or receipt.
+        #expect(try FileManager.default.contentsOfDirectory(atPath: h.root.appendingPathComponent("originals").path).count == 1)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: h.root.appendingPathComponent("settlements").path).count == 2)
+        #expect(throws: PreviewFailure.retired) { try client.originalActions() }
+        #expect(throws: PreviewFailure.retired) { try h.client() }
+        let requests = await h.wire.requests.count
+        await #expect(throws: PreviewFailure.retired) { try await client.queryOriginal(work.actionID) }
+        await #expect(throws: PreviewFailure.retired) { try await client.perform(work) }
+        #expect(await h.wire.requests.count == requests)
+        try FileManager.default.removeItem(at: bad)
+        h.current = false // local erasure must not require a live bearer/session/key callback
+        try client.clearLocalFiles()
+        try client.clearLocalFiles()
+        for name in ["originals", "settlements"] {
+            #expect(try FileManager.default.contentsOfDirectory(atPath: h.root.appendingPathComponent(name).path).isEmpty)
+        }
+        #expect(throws: TripFailure.storageUnavailable) { try h.originals.pending() }
+        #expect(throws: TripFailure.storageUnavailable) { try h.settlements.pending() }
+    }
+    @Test(arguments: ["discovery", "ack"])
+    func cleanupDuringNetworkOutflowCannotPublishOrRestoreReceipt(stage: String) async throws {
+        let h = try ScopedHarness(); defer { try? FileManager.default.removeItem(at: h.root) }
+        let client = try h.client()
+        if stage == "discovery" {
+            await h.wire.configure(callback: {
+                do { try client.clearLocalFiles() } catch { Issue.record("local cleanup unexpectedly failed") }
+            })
+            await #expect(throws: PreviewFailure.retired) { try await h.read(client) }
+        } else {
+            let read = try await h.read(client), work = try client.stage(.accept, read: read)
+            await h.wire.configure(callback: {
+                do { try client.clearLocalFiles() } catch { Issue.record("local cleanup unexpectedly failed") }
+            })
+            await #expect(throws: PreviewFailure.retired) { try await client.perform(work) }
+        }
+        for name in ["originals", "settlements"] {
+            #expect(try FileManager.default.contentsOfDirectory(atPath: h.root.appendingPathComponent(name).path).isEmpty)
+        }
+        #expect(throws: PreviewFailure.retired) { try client.originalActions() }
+    }
+
 }

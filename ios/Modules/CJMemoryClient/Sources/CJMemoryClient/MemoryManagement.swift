@@ -110,6 +110,8 @@ public struct MemoryManagementPending: Codable, Sendable, MemoryJournalRecord {
         storage = try MemoryEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
             namespace: namespace, keyID: keyID, domain: "CJMemoryManagementPending", key: key)
     }
+    /// Retire and erase this journal with its exact known sidecars; not a server receipt.
+    public func clearLocalFiles() throws { try storage.clearLocalFiles() }
     func validate(_ binding: MemoryBinding) throws { try storage.validate(binding) }
     func validateDirectory() throws { try storage.validateDirectory() }
     func append(_ record: MemoryManagementPending, validateBinding: () throws -> Void) throws { try storage.append(record, validateBinding: validateBinding) }

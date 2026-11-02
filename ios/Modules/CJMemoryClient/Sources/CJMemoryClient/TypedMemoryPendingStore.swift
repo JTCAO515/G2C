@@ -30,6 +30,8 @@ import CJMessageKeys
     func managementRecords(create: Bool) throws -> MemoryEncryptedRecords<TypedMemoryManagementPending>? {
         try storage.adjacentRecords(domain:"CJMemoryTypedManagementV2",create:create)
     }
+    /// Retire and erase this journal with its exact known sidecars; not a server receipt.
+    public func clearLocalFiles() throws { try storage.clearLocalFiles() }
     public func pending() throws -> [TypedMemoryCommand] {
         try storage.pending().map { try TypedMemoryCommand(originalUTF8:$0.originalUTF8) }
     }
