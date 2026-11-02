@@ -305,7 +305,7 @@
       "file": "backend/migrations/0038_device_bridge_v2.sql",
       "sha256": "06e1c6c6d8d0f754cbbe8b8759df6ca7bd2b648873ddd87cb450b49a818e6e1c",
       "down": "backend/migrations/down/0038_device_bridge_v2.down.sql",
-      "down_sha256": "397963f3ba8e04bcad4dc96773d43ba9adde23a9b2528786d5c773895987f13c"
+      "down_sha256": "87b2354b3d4303919de69bf8deb5706dce0798aa605d4f149738899f261b9cb0"
     }
   ]
 }

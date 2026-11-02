@@ -13,8 +13,8 @@ import dev_auth,migrate
 
 
 def exercise(root,conninfo):
-    auth=root/'auth';dev_auth.init(auth,['device-owner','device-other'])
-    tokens={s:dev_auth.token(auth,s,30) for s in ('device-owner','device-other')}
+    auth=root/'auth';dev_auth.init(auth,['device-owner','device-other','legacy-down'])
+    tokens={s:dev_auth.token(auth,s,30) for s in ('device-owner','device-other','legacy-down')}
     inventory=('business/feedback-private-actions','business/cleanup-metadata',*TARGETS)
     raw=encode(dict(version='device-v2-transport-component',stores=[dict(id='business',objects=[
         dict(id='feedback-private-actions',cleanup_protocol='CLEANUP@1.1'),dict(id='cleanup-metadata',cleanup_protocol='CLEANUP@1.1')]),
@@ -29,6 +29,24 @@ def exercise(root,conninfo):
         def post(path,value,*,scheme='Bearer',credential=tokens['device-owner'],status=200):
             return expect(client.post(path,content=encode(value),headers={'Authorization':scheme+' '+credential,'Content-Type':'application/octet-stream'}),status)
         def query(path,scheme,credential):return expect(client.get(path,headers={'Authorization':scheme+' '+credential}))
+        # V1 is the inherited schema, not new V2 data. Dropping a constant-V1
+        # protocol column must preserve every legacy byte, including lost ACKs.
+        legacy=post('/v1/cleanup-devices',dict(version='CLEANUP-DEVICE@1',action_id='legacy-register',device_id='legacy',state_ref=digest(b'legacy-state')),
+                    credential=tokens['legacy-down'])
+        legacy_call=post('/v1/cleanup-device-calls',dict(version='CLEANUP-DEVICE@1',binding_id=legacy['binding_id'],reason='offline_expired'),
+                         scheme='Device',credential=legacy['device_token'])
+        options=json.loads(conninfo.read_text())
+        def inherited(conn):
+            return (conn.execute('SELECT binding_id,subject_digest,action_id,input_digest,device_id,state_ref,scope_digest,created_at FROM cj_cleanup_device_binding ORDER BY binding_id').fetchall(),
+                    conn.execute('SELECT * FROM cj_cleanup_device_call ORDER BY invocation_id').fetchall())
+        with psycopg.connect(**options,autocommit=True) as conn:
+            before=inherited(conn);assert before[0] and before[1]
+            migrate.down(conn,migrate.load(),37)
+            assert inherited(conn)==before
+            migrate.up(conn,migrate.load(),38)
+            assert inherited(conn)==before
+            assert conn.execute('SELECT DISTINCT protocol FROM cj_cleanup_device_binding').fetchall()==[('CLEANUP-DEVICE@1',)]
+        assert query('/v1/cleanup-device-calls/'+legacy_call['call']['invocation_id'],'Device',legacy['device_token'])['call']==legacy_call['call']
         old,new=[],[]
         for index in range(2):
             body=dict(action_id='register-v1-'+str(index),device_id='device-'+str(index),state_ref=digest(('state-'+str(index)).encode()))
@@ -100,7 +118,7 @@ def exercise(root,conninfo):
         else:raise AssertionError('M38 down discarded original device version/state')
         with psycopg.connect(**json.loads(conninfo.read_text())) as conn:
             assert conn.execute('SELECT binding_id,protocol FROM cj_cleanup_device_binding ORDER BY binding_id').fetchall()==retained
-        print('PASS actual V2 version enrollment/original bytes, cross-version/extra-target denial, V1 cannot confirm new targets, same-device/state reports and other-device pending, UNKNOWN original report recovery, final metadata redaction; native erasure UNRUN')
+        print('PASS actual V2 version enrollment/original bytes, inherited V1 data down/up unchanged, V2 data down refusal, cross-version/extra-target denial, V1 cannot confirm new targets, same-device/state reports and other-device pending, UNKNOWN original report recovery, final metadata redaction; native erasure UNRUN')
 
 
 if __name__=='__main__':
