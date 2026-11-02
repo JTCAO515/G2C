@@ -85,6 +85,10 @@ def main():
                 slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)}
                 if (collection_questions and chinese) or collection_groups:
                     slots.update(a_fact=dict(kind='fact',collection_allowed=True,semantic_resolved=True),b_experience=dict(kind='experience',collection_allowed=True,semantic_resolved=True))
+                if collection_groups:
+                    for index in range(22):
+                        kind='fact' if index<10 else 'experience' if index<20 else 'preference'
+                        slots['group_slot_'+str(index).zfill(2)]=dict(kind=kind,collection_allowed=True,semantic_resolved=True)
                 if reverse:slots['legacy.read']=dict(kind='preference',collection_allowed=True,semantic_resolved=True)
                 legacy_profile=dict(subjects=['self'],slots=slots,extents=['long_term'],context_ids=[])
                 legacy_policy=dict(version='local-memory-policy.1',expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={subject:legacy_profile for subject in subjects.values()})
@@ -112,7 +116,8 @@ def main():
                 if collection_groups:
                     with TestClient(memory) as client:
                         for index in range(22):
-                            kind,slot=('fact','a_fact') if index<10 else ('experience','b_experience') if index<20 else ('preference','preference')
+                            kind='fact' if index<10 else 'experience' if index<20 else 'preference'
+                            slot='group_slot_'+str(index).zfill(2)
                             command=dict(version='MEMORY-manual.2',operation_id='group-save-'+str(index),item_id='group-'+str(index).zfill(2),subject='self',slot=slot,kind=kind,text='SYNTHETIC grouped '+kind+' '+str(index),extent='long_term',context=None,occurred_at='SYNTHETIC time unknown')
                             raw=json.dumps(command,ensure_ascii=False,separators=(',',':')).encode()
                             response=client.post('/v2/memories',content=raw,headers={**headers['A'],'Content-Type':'application/octet-stream'})
