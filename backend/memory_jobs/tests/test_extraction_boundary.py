@@ -4,7 +4,7 @@ import hashlib
 import json
 import unittest
 
-from cj_memory_jobs.extraction import (CollectionPolicy,CollectionUnavailable,InvalidExtraction,
+from cj_memory_jobs.extraction import (CollectionPolicy,CollectionUnavailable,Evidence,InvalidExtraction,
                                       parse_output,publication_identity)
 from test_jobs import message
 
@@ -114,3 +114,14 @@ class ExtractionBoundary(unittest.TestCase):
         first=publication_identity('scope-a',entry,self.messages,None)
         newer=(source_message('不吃辣 / I do not eat spicy food; new explicit source'),)
         self.assertNotEqual(first,publication_identity('scope-a',entry,newer,None))
+
+    def test_evidence_order_and_unrelated_batch_messages_do_not_rekey(self):
+        entry=parse_output(self.raw(),self.messages,self.policy)[0].entry
+        second=message(2)
+        evidence=entry.evidence+(Evidence(second.receipt.message_id,second.text),)
+        source=self.messages+(second,)
+        merged=replace(entry,evidence=evidence)
+        first=publication_identity('scope-a',merged,source,None)
+        self.assertEqual(first,publication_identity('scope-a',replace(merged,evidence=tuple(reversed(evidence))),source,None))
+        self.assertEqual(publication_identity('scope-a',entry,self.messages,None),
+                         publication_identity('scope-a',entry,source,None))
