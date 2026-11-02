@@ -188,9 +188,9 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None):
     pending_scopes=scopes(database,auth_dir)
-    if not pending_scopes: return []
+    if not pending_scopes and background_jobs is None: return []
     if database.run_context is None:
         raise CompositionUnavailable('explicit run context required before execution')
     if not isinstance(model,FakeProvider):
@@ -200,6 +200,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,tools_confi
     for scope in pending_scopes:
         results += _worker_for_scope(database,model,auth_dir,scope,checker,
                                      memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration).process()
+    if background_jobs is not None:results+=background_jobs.run_once(model)
     return results
 
 
