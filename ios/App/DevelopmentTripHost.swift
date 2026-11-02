@@ -1186,7 +1186,9 @@ private func developmentCleanupHash(_ value: Data) -> String {
         if let bytes = executionBytes {
             guard bytes.count <= 32768 else { throw CleanupFailure.unavailable }
             let restored = try JSONDecoder().decode(DevelopmentNativeExecution.self, from: bytes)
-            guard restored.version == "NativeDeviceExecution@1", restored.stateRef == stateRef,
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+            guard try encoder.encode(restored) == bytes,
+                  restored.version == "NativeDeviceExecution@1", restored.stateRef == stateRef,
                   Set(restored.steps.keys).isSubset(of: Set(DeviceCleanupTarget.allCases.map(\.rawValue))) else { throw CleanupFailure.stale }
             execution = restored
         }

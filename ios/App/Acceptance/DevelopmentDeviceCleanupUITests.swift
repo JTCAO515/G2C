@@ -32,7 +32,9 @@ import Foundation
     }
     func reveal(_ element: XCUIElement) {
         for attempt in 0..<45 {
-            let top = app.navigationBars.element.frame.maxY + 4, bottom = app.tabBars.element.exists ? app.tabBars.element.frame.minY - 4 : app.frame.maxY - 40
+            let bar = app.navigationBars.firstMatch
+            let top = bar.exists ? bar.frame.maxY + 4 : app.frame.minY + 48
+            let bottom = app.tabBars.element.exists ? app.tabBars.element.frame.minY - 4 : app.frame.maxY - 40
             let frame = element.exists ? element.frame : .zero
             if element.exists && element.isHittable && frame.minY >= top && frame.maxY <= bottom { return }
             let down = frame.isEmpty ? (attempt / 10) % 2 == 1 : frame.midY < top
@@ -88,6 +90,8 @@ import Foundation
             tap("assistant.panel.done")
             let editor = app.textViews["assistant.draft"].exists ? app.textViews["assistant.draft"] : app.textFields["assistant.draft"]
             XCTAssertTrue(editor.waitForExistence(timeout: 20)); editor.tap(); editor.typeText("本机原始中文草稿，未发送。")
+            let keyboardDone = app.toolbars.buttons.matching(identifier: "Done")
+            if keyboardDone.count == 1 { keyboardDone.element.tap() }
             account(); try await call("/native-files", f.case_id, ["stage": "before"])
         }
         deletion(); tap("account.cleanup.review")
