@@ -10,16 +10,16 @@ class FeedbackWireConfiguration:
         for value,maximum in [(self.max_body_bytes,16384),(self.max_private_response_bytes,(1<<31)-1)]:
             if type(value) is not int or not 1<=value<=maximum:raise CompositionUnavailable('Explicit bounded FEEDBACK limits required')
 
-def _feedback_with_shared_message(message,resolve,resolve_run=None):
+def _feedback_with_shared_message(message,resolve,resolve_run=None,*,scope_binder=None,scope_current=None):
     """Internal same-app assembly. The existing MESSAGE checker is reused exactly."""
     modules=_internal_modules('feedback')
     if type(message) is not modules['cj_message.auth_boundary'].Boundary or resolve is None:
         raise CompositionUnavailable('Trusted shared MESSAGE boundary and feedback resolver required')
     sources=None if resolve_run is None else modules['cj_feedback.sources'].Sources(message,resolve_run)
-    return modules['cj_feedback.boundary'].Boundary(message.checker,resolve,sources=sources),modules
+    return modules['cj_feedback.boundary'].Boundary(message.checker,resolve,sources=sources,scope_binder=scope_binder,scope_current=scope_current),modules
 
 def build_feedback_boundary(*,environment,jwt_configuration,verification_keys,access_provider,resolve,
-                            resolve_message_repository=None,resolve_run=None):
+                            resolve_message_repository=None,resolve_run=None,scope_binder=None,scope_current=None):
     if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local FEEDBACK AUTH/resolver required')
     modules=_internal_modules('feedback');auth=modules['cj_auth.jwt_adapter']
@@ -33,7 +33,7 @@ def build_feedback_boundary(*,environment,jwt_configuration,verification_keys,ac
         # Public read context does not create a RUN: no write ID factory is supplied.
         message=modules['cj_message.auth_boundary'].Boundary(checker,resolve_message_repository,None)
         sources=modules['cj_feedback.sources'].Sources(message,resolve_run)
-    return modules['cj_feedback.boundary'].Boundary(checker,resolve,sources=sources),modules
+    return modules['cj_feedback.boundary'].Boundary(checker,resolve,sources=sources,scope_binder=scope_binder,scope_current=scope_current),modules
 
 def create_feedback_composed_app(*,configuration,**dependencies):
     if type(configuration) is not FeedbackWireConfiguration:raise CompositionUnavailable('Explicit FEEDBACK wire configuration required')

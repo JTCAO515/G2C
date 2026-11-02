@@ -258,6 +258,14 @@
       "sha256": "b90e8eda7a9acc897ccb2b6bcdc588dbe181f3a00189ee4d465bb720c00c232f",
       "down": "backend/migrations/down/0032_local_cleanup.down.sql",
       "down_sha256": "76c129c16670df77c30f216e337e5d792e9e13eb85954b62cb32ce5b33fbdf38"
+    },
+    {
+      "version": 33,
+      "name": "feedback_lifecycle",
+      "file": "backend/migrations/0033_feedback_lifecycle.sql",
+      "sha256": "f445368b0c717a938ed74469f5b7248728bb8fdb4dc9155034f539999e91ad0b",
+      "down": "backend/migrations/down/0033_feedback_lifecycle.down.sql",
+      "down_sha256": "7bc041ecf78e2509a3137a3569182a3cf9975ffe2834639468930b07593e57a2"
     }
   ]
 }

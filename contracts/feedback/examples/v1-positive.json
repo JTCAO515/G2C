@@ -1,0 +1,23 @@
+[
+  {
+    "action_id": "original-1",
+    "problem": "车站名称不正确 / Wrong station name.",
+    "expectation": "请核对名称 / Check the name.",
+    "references": []
+  },
+  {
+    "action_id": "answer-1",
+    "problem": "车站名称不正确 / Wrong station name.",
+    "expectation": "请核对名称 / Check the name.",
+    "references": [
+      {
+        "kind": "message",
+        "id": "own-message"
+      },
+      {
+        "kind": "run",
+        "id": "own-run"
+      }
+    ]
+  }
+]
