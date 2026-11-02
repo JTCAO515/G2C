@@ -101,6 +101,7 @@ struct TypedMemoryItems: View {
                 }
             }
         }.navigationTitle(language.text("Saved memories", "已保存记忆"))
+            .navigationBarTitleDisplayMode(.inline)
             .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface))
     }
     private func rowLabel(_ read: TypedMemoryRead) -> String {
