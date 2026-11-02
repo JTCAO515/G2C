@@ -29,6 +29,7 @@ struct TripTimelineView: View {
                                 .accessibilityValue(record.tripID).accessibilityIdentifier("timeline.record.id")
                             RunReadableText(text:language.text("Read version ","读取版本 ")+String(record.version)).accessibilityIdentifier("timeline.record.version")
                             RunSelectableText(text:record.document.title).accessibilityIdentifier("timeline.record.title")
+                            TripPlaceMapView(document:record.document,language:language).id(record.document.contentSHA256)
                             if onDiscuss != nil {
                                 button("timeline.discuss.trip",language.text("Discuss this whole Trip","讨论整个行程"),disabled:display.busy) { discuss(context:display.discussion,day:nil,itemID:nil) }
                             }

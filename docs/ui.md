@@ -132,6 +132,12 @@ NEEDS-PREVIEW@1 必须属于当前已接受原消息与原 RUN；核对的是实
 新增本地加密快照版本 2 保存聊天创建记录，旧版本 1 的字段与读写仍保留；旧二进制拒绝版本 2，避免丢弃未知创建后另造 ID。新二进制保留旧消息、草稿与原动作恢复，读取本地可用记录不授发送许可，仍需同账号／会话的新聊天头读取。时间线讨论按钮同时固定所显示读取的上下文；刷新或相同 ID 的重新读取后，旧按钮不能静默切到新版本。
 
 
+### 正式行程地图（#21，JT 2026-11-02 MapKit 授权）
+
+地图仅消费正式结构化 Trip 的 `sources[kind=place]` 原快照；文本和标记共享原 provider ID、名称、中文地址、坐标字符串及来源 hash。只有明确 GCJ-02 坐标产生标记，不转换坐标；其他 CRS、UNKNOWN、无来源和估算路线不补点，原始字符串保持不变。地图底图不构成真实点位对齐证据，该项继续由 #32/#29 承接。
+
+Apple MapKit 无 API Key、无高德 SDK、无新增第三方依赖。用户明确展开地图后才加载底图；不申请定位权限、不显示用户位置、不添加定位用途声明。加载失败只影响地图，来源文字和正式时间线保留。MapKit 会把查看区域发送给 Apple，此数据流已通知 #34/#225 纳入隐私说明和合规评估；没有宣称隐私/合规或真实点位验收 PASS。参考 Apple 的 [MKMapView](https://developer.apple.com/documentation/mapkit/mkmapview) 与 [加载失败回调](https://developer.apple.com/documentation/mapkit/mkmapviewdelegate)；本轮仅使用系统 MapKit。
+
 ### 明确选区的局部请求前缀（#337）
 
 DEBUG 模拟器可显式选择 `G2C_DEV_MESSAGE_PROFILE=trip-edit-v1`，消费冻结的 MESSAGE-send.4、message-trip.2 与 RUN-display.4 / draft-status.5 / cancel.4。此模式必须同时配置实际 typed-memory、独立 TRAVEL 选择和已保存 NEEDS 读取；不会升级旧讨论模式、沿用 Trip ID 作为记忆 namespace，或在缺少来源时退成仅长期记忆。
