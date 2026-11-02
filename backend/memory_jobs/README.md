@@ -50,6 +50,11 @@ uv run --locked python -B scripts/pg_suites.py memory_history
 公开 `CleanupHook` 同时清除输出检查点、用户决策及原消息引用；只保留既有
 不含账号明文的擦除屏障。单条删除/旧聊天重提取防复活仍由 #26 交付。
 
+历史和 collection 独立宿主均消费 B 的 `ACCOUNT-ADMISSION@2` 公开工厂，
+每次以运行角色重新读取原账号 fence，不取清理角色或回退到旧邀请检查。
+原注销确认已提交但权威 Memory 尚未物理删除时，同 token 即被拒绝；
+准入查询不确定返回 UNKNOWN。该组件验证不代表完整账号/设备清理完成。
+
 ## 保留的 SQLite 隔离候选
 
 本模块仅处理已提交聊天来源的增量整理与会话结束补充摘要的本地队列状态。

@@ -372,6 +372,31 @@ def exercise(conninfo,auth):
         bob_request=bob_coordinator.request('erase-bob-publication',TARGET,bob_scope,Selection('account'))
         assert bob_coordinator.advance(bob_request)['status']=='complete'
         print('PASS same-domain actual cleanup erases new output checkpoints, origin map and candidate-action bytes with existing task data; hashed fence retained')
+        # Actual B prepare/confirmation persists retirement before any canonical
+        # Memory hook. This is a consumer gate check, not whole-account cleanup.
+        from cj_cleanup.gateway_store import GatewayStore
+        captured=Store(lambda:psycopg.connect(**dict(config,user='cj_local_cleanup')),subject,lambda stage:None)
+        metadata=GatewayStore(captured)
+        device=metadata.register_device('retire-device',digest(b'retire-device'),'local-device',digest(b'local-state'))
+        prepared=metadata.prepare('retire-prepare',digest(b'retire-prepare'),manifest,plan,device['binding_id'])
+        confirmation=digest(b'explicit-fixture-account-confirmation')
+        captured_coordinator=Coordinator(captured,lambda:manifest,{TARGET:CleanupHook(captured,scope)})
+        captured_coordinator.create(prepared.operation_id,confirmation,'account',plan)
+        metadata.confirm(prepared.operation_id,confirmation,manifest,owner_scope=scope,namespaces=(scope,),
+                         check_admission=lambda:cleanup_guard('account_confirmation'))
+        with psycopg.connect(**config) as conn:
+            assert conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(scope,)).fetchone()[0]>0
+        denied=expected(client.get('/v3/memory-candidates',params={'job_id':'job','attempt_id':'attempt'},headers=headers['alice']),403)
+        assert denied['error']['code']=='ACCESS_DENIED'
+        post('/v3/memory-candidate-actions',raw,status=403)
+        from cj_memory_jobs.local_app import create_local_history_app
+        with TestClient(create_local_history_app(conninfo_path=conninfo,auth_dir=auth)) as history_client:
+            expected(history_client.get('/v3/memory-history-settings',params={'conversation_id':'chat'},headers=headers['alice']),403)
+        assert host.boundary.checker.check(tokens['bob']).status is AdmissionStatus.ALLOWED
+        with patch.object(host.database,'connect',side_effect=RuntimeError('synthetic account lookup unavailable')):
+            unknown=expected(client.get('/v3/memory-history-settings',params={'conversation_id':'chat'},headers=headers['bob']),503)
+            assert unknown['error']['code']=='ACCESS_UNKNOWN' and unknown['error']['outcome']=='unknown'
+        print('PASS C collection uses runtime-only ACCOUNT-ADMISSION@2: actual original retirement denies the same token before canonical erasure; other owner allowed and lookup failure UNKNOWN, without fallback')
 
 
 if __name__=='__main__':
