@@ -15,6 +15,11 @@ struct MemoryShell: View {
         NavigationStack(path: $state.memoryPath) {
             List {
                 Section {
+                    if let typedMemoryHost,typedMemoryHost.collectionQuestions.count >= 2 {
+                        NavigationLink { TypedMemoryCollectionView(host:typedMemoryHost,shell:state) } label: {
+                            Text(language.text("Optional travel questions", "可跳过的旅行问题"))
+                        }.accessibilityIdentifier("memory2.collection.open")
+                    }
                     if typedMemoryHost == nil && memoryHost.canSubmitManual && memoryHost.collectionOptions.count >= 2 {
                         NavigationLink {
                             MemoryCollectionView(host: memoryHost, shell: state)

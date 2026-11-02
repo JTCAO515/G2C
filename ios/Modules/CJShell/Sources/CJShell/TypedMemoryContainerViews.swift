@@ -72,7 +72,12 @@ struct TypedMemoryItems: View {
             case .failed:TypedMemoryText(text:language.text("Memories could not be read. No empty or successful result is assumed.", "无法读取记忆，不能据此视为空列表或读取成功。"),id:"memory2.items.status")
             case .loaded(let rows):
                 if rows.isEmpty { TypedMemoryText(text:language.text("No memories found.", "暂无记忆。"),id:"memory2.items.status") }
-                ForEach(rows.indices,id:\.self) { index in
+                TypedMemoryText(text:language.text("Grouped from the pages read so far. These are not account-wide totals; read the next page to continue.", "按已读取页面分类，不代表账号全量统计；可继续读取下一页。"),id:"memory2.items.coverage")
+                ForEach(["fact","experience","preference","inference"],id:\.self) { kind in
+                  Section {
+                    let indices = rows.indices.filter { rows[$0].item.value.command.kind.rawValue == kind }
+                    if indices.isEmpty { TypedMemoryText(text:language.text("No entries of this kind in the pages read so far.", "已读取页面中未见此类条目。"),id:"memory2.group.empty."+kind) }
+                    ForEach(indices,id:\.self) { index in
                     let read = rows[index],item = read.item.value
                     Button {
                         guard let route = host.detailRoute(for:read,surface:surface) else { return }
@@ -83,7 +88,11 @@ struct TypedMemoryItems: View {
                             TypedMemoryText(text:item.command.subject + " · " + item.command.slot + " · " + typedMemoryStatus(item.status.rawValue,language),id:"memory2.item.status." + item.command.item_id)
                             TypedMemoryText(text:typedMemoryScope(read.item.scope,language),id:"memory2.item.scope." + item.command.item_id)
                         }.frame(minHeight:44).contentShape(Rectangle())
-                    }.buttonStyle(ShellReadableButtonStyle()).disabled(host.busy).accessibilityIdentifier("memory2.item." + item.command.item_id)
+                    }.buttonStyle(ShellReadableButtonStyle()).disabled(host.busy)
+                        .accessibilityLabel(rowLabel(read))
+                        .accessibilityIdentifier("memory2.item." + item.command.item_id)
+                    }
+                  } header: { RunReadableText(text:typedMemoryKind(kind,language),style:.headline).accessibilityAddTraits(.isHeader).textCase(nil) }
                 }
             }
             if host.hasMore {
@@ -92,13 +101,27 @@ struct TypedMemoryItems: View {
                 }
             }
         }.navigationTitle(language.text("Saved memories", "已保存记忆"))
+            .navigationBarTitleDisplayMode(.inline)
             .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface))
     }
+    private func rowLabel(_ read: TypedMemoryRead) -> String {
+        let item = read.item.value
+        return [item.command.text,typedMemoryKind(item.command.kind.rawValue,language),
+                item.command.subject,item.command.slot,typedMemoryStatus(item.status.rawValue,language),
+                typedMemoryScope(read.item.scope,language)].joined(separator:" · ")
+    }
+}
+
+struct TypedMemoryQuestionControls {
+    let progress, prompt: String
+    let next, skip: () -> Void
 }
 
 struct TypedMemoryManual: View {
     let host: TypedMemoryContainerHost
     let language: ShellLanguage
+    var allowedOptionIDs: Set<UUID>? = nil
+    var questionControls: TypedMemoryQuestionControls? = nil
     @State private var surface: TypedMemorySurface?
     @State private var optionID: UUID?
     @State private var text = ""
@@ -107,15 +130,26 @@ struct TypedMemoryManual: View {
     @State private var reviewFailed = false
     private enum Input: Hashable { case text,time }
     @FocusState private var focusedInput: Input?
+    private var options: [TypedMemoryManualOption] { host.options.filter { allowedOptionIDs?.contains($0.id) ?? true } }
     var body: some View {
         Form {
+            if let questionControls {
+                Section {
+                    TypedMemoryText(text:questionControls.progress,id:"memory2.collection.progress")
+                    TypedMemoryText(text:questionControls.prompt,id:"memory2.collection.question")
+                    TypedMemoryText(text:language.text("Questions are optional. Browsing and skipping save nothing; review the exact subject, field and scope before each submission.","这些问题均可跳过，浏览和跳过不会保存；每次提交前须核对对象、字段及范围。"),id:"memory2.collection.disclosure")
+                    TypedMemoryButton(title:language.text("Next question (optional)","继续下一问（可跳过）"),id:"memory2.collection.next",enabled:!host.busy,action:questionControls.next)
+                    TypedMemoryButton(title:language.text("Skip for now and chat","暂时跳过，开始聊天"),id:"memory2.collection.skip",enabled:true,action:questionControls.skip)
+                    TypedMemoryText(text:language.text("If saving is unknown, check its original operation. Skipping does not cancel or resend it.","保存结果未知时请核对原操作；跳过不会取消或重发。"),id:"memory2.collection.recovery")
+                }
+            }
             Section {
-                if host.options.isEmpty {
+                if options.isEmpty {
                     TypedMemoryText(text:language.text("No subject or scope is available for saving.", "当前没有可保存的对象或范围。"),id:"memory2.manual.unavailable")
                 }
                 Picker(language.text("Subject and scope", "对象与范围"),selection:$optionID) {
                     Text(language.text("Choose explicitly", "请明确选择")).tag(UUID?.none)
-                    ForEach(host.options) { option in Text(option.label).tag(Optional(option.id)) }
+                    ForEach(options) { option in Text(option.label).tag(Optional(option.id)) }
                 }.accessibilityIdentifier("memory2.manual.option")
                 if let travel = host.travelSelection {
                     NavigationLink { TravelSelectionView(model:travel,language:language) } label: {
@@ -150,13 +184,13 @@ struct TypedMemoryManual: View {
                         guard let captured = review else { return };review = nil
                         Task { await host.performSave(captured) }
                     }
-                } header: { ShellSectionHeading(title:language.text("Review exact input", "核对本次原输入")) }
+                } header: { RunReadableText(text:language.text("Review exact input", "核对本次原输入"),style:.headline).accessibilityAddTraits(.isHeader).textCase(nil) }
             }
             TypedMemorySaveOutcome(host:host,surface:surface,language:language)
             NavigationLink { TypedMemoryOriginals(host:host,language:language) } label: {
                 RunReadableText(text:language.text("Previous operations", "此前的原操作"))
             }.accessibilityIdentifier("memory2.originals.open")
-        }.navigationTitle(language.text("Add memory", "新增记忆"))
+        }.navigationTitle(questionControls == nil ? language.text("Add memory", "新增记忆") : language.text("Optional questions","可选问题"))
             .scrollDismissesKeyboard(.interactively)
             .toolbar { ToolbarItemGroup(placement:.keyboard) {
                 Spacer();Button(language.text("Done", "完成")) { focusedInput = nil }
