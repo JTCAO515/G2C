@@ -4,7 +4,7 @@ from unittest.mock import patch
 import json,os,sys,tempfile,time
 import psycopg
 from fastapi.testclient import TestClient
-from cj_api.local_app import create_local_app
+from cj_api.local_app import create_local_app,LocalDatabase,scope_for,ISSUER
 from cj_api.local_cleanup import Configuration,Runtime
 from cj_cleanup.core import encode,digest
 from cj_cleanup.device_v3 import VERSION,TARGETS
@@ -112,6 +112,20 @@ def exercise(root,path):
         post('/v3/cleanup-device-receipts',receipt,scheme='Cleanup',credential=current['receipt_token'])
         observed=get('/v3/cleanup-device-calls/'+current['call']['invocation_id'],{},scheme='Device',credential=original['device_token'])
         assert observed['state']=='unknown' and observed['request_digest']==current['request_digest']
+        try:
+            with LocalDatabase(path).connect(scope_for(ISSUER,'ack-b')) as conn:conn.execute('SELECT * FROM cj_cleanup_device_action')
+        except psycopg.errors.InsufficientPrivilege:pass
+        else:raise AssertionError('runtime acquired private action metadata privilege')
+        with psycopg.connect(**dict(config,user='cj_local_cleanup')) as conn:
+            conn.execute("SELECT set_config('cj.cleanup_subject',%s,true)",(foreign['scope_digest'],))
+            assert conn.execute("SELECT action_id FROM cj_cleanup_device_action WHERE subject_digest=%s",(original['scope_digest'],)).fetchall()==[]
+        try:
+            with psycopg.connect(**dict(config,user='cj_local_cleanup')) as conn:
+                conn.execute("SELECT set_config('cj.cleanup_subject',%s,true)",(foreign['scope_digest'],))
+                conn.execute('INSERT INTO cj_cleanup_device_action VALUES(%s,%s,%s,%s,%s)',
+                    (original['scope_digest'],'foreign-write','0'*64,original['binding_id'],current['call']['invocation_id']))
+        except psycopg.errors.InsufficientPrivilege:pass
+        else:raise AssertionError('private role crossed its bound subject on write')
         try:
             with psycopg.connect(**config,autocommit=True) as conn:migrate.down(conn,migrate.load(),38)
         except psycopg.errors.RaiseException as error:assert 'original V3 device action evidence retained' in str(error)
