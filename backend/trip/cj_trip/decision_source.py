@@ -38,19 +38,24 @@ def read(repository,query,project,max_source_bytes,max_result_bytes):
             or type(max_result_bytes) is not int or not 1<=max_result_bytes<=1_000_000):
         raise ValueError('explicit bounded decision source and response required')
     with repository.transaction() as cur:
-        cur.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s',
-                    (repository.scope,query.trip_id))
-        row=cur.fetchone()
-        if row is None:raise Denied('accepted Trip unavailable')
-        raw=bytes(row[1])
-        if len(raw)>max_source_bytes:raise Denied('accepted Trip source exceeds bound')
-        if row[0]!=query.expected_version or sha256(raw).hexdigest()!=query.content_sha256:
-            raise Conflict('accepted Trip source version or content changed')
-        trip=Trip(query.trip_id,row[0],repository._content(raw))
-        proposal,action,_=accepted_origin(cur,repository.scope,trip,max_source_bytes)
-        value=AcceptedDecision(trip.trip_id,trip.version,query.content_sha256,action.action_id,
-            proposal.proposal_id,action.candidate_hash,trip.content)
+        value=current(repository,cur,query,max_source_bytes)
         result=project(value)
         if type(result) is not bytes or len(result)>max_result_bytes:
             raise Denied('bounded materialized decision source required')
         return result
+
+
+def current(repository,cur,query,max_source_bytes):
+    """Private current-row projection; caller already holds canonical Trip scope."""
+    cur.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s',
+                (repository.scope,query.trip_id))
+    row=cur.fetchone()
+    if row is None:raise Denied('accepted Trip unavailable')
+    raw=bytes(row[1])
+    if len(raw)>max_source_bytes:raise Denied('accepted Trip source exceeds bound')
+    if row[0]!=query.expected_version or sha256(raw).hexdigest()!=query.content_sha256:
+        raise Conflict('accepted Trip source version or content changed')
+    trip=Trip(query.trip_id,row[0],repository._content(raw))
+    proposal,action,_=accepted_origin(cur,repository.scope,trip,max_source_bytes)
+    return AcceptedDecision(trip.trip_id,trip.version,query.content_sha256,action.action_id,
+        proposal.proposal_id,action.candidate_hash,trip.content)

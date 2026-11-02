@@ -149,6 +149,54 @@ class ManualChecks(Harness):
         finally:invitation.write_bytes(original)
         self.assertEqual(json.loads(self.read_decision(boundary,updated))['version'],current.version)
 
+    def test_memory_decision_lease_is_actual_owned_bounded_and_non_escaping(self):
+        from cj_trip.decision_lease import DecisionAuthority
+        from cj_trip.decision_source import DecisionQuery
+        from cj_trip.domain import Denied
+        from threading import Thread
+        boundary=self.decision_reader();token=self.headers('alice')['Authorization'][7:]
+        principal=boundary.checker.check(token).principal
+        query=DecisionQuery(self.trip_id,self.base_version,sha256(self.content).hexdigest())
+        authority=DecisionAuthority(boundary,token)
+        with authority.hold(principal,query,max_source_bytes=4000000) as lease:
+            self.assertEqual((lease.principal,lease.scope),(principal,self.scope))
+            self.assertEqual(lease.decision.content,self.content)
+            self.assertEqual(lease.decision.action_id,'fixture-save-'+self.tag)
+            with self.assertRaises(Denied):
+                with authority.hold(principal,query,max_source_bytes=4000000):pass
+            denied=[]
+            def foreign_thread():
+                try:lease.check()
+                except Denied:denied.append(True)
+            thread=Thread(target=foreign_thread);thread.start();thread.join(5)
+            self.assertFalse(thread.is_alive());self.assertEqual(denied,[True]);lease.check()
+        with self.assertRaises(Denied):lease.check()
+        bob=self.headers('bob')['Authorization'][7:];bob_principal=boundary.checker.check(bob).principal
+        with self.assertRaises(Denied):
+            with authority.hold(bob_principal,query,max_source_bytes=4000000):pass
+        with self.assertRaises(Denied):
+            with DecisionAuthority(boundary,bob).hold(bob_principal,query,max_source_bytes=4000000):pass
+        with self.assertRaises(Denied):
+            with authority.hold(principal,query,max_source_bytes=1):pass
+
+    def test_memory_decision_lease_admission_loss_is_sticky(self):
+        from cj_trip.decision_lease import DecisionAuthority
+        from cj_trip.decision_source import DecisionQuery
+        from cj_trip.domain import Denied
+        boundary=self.decision_reader();token=self.headers('alice')['Authorization'][7:]
+        principal=boundary.checker.check(token).principal
+        query=DecisionQuery(self.trip_id,self.base_version,sha256(self.content).hexdigest())
+        invitation=self.auth/'invited.json';original=invitation.read_bytes()
+        try:
+            with self.assertRaises(Denied):
+                with DecisionAuthority(boundary,token).hold(principal,query,max_source_bytes=4000000) as lease:
+                    invitation.write_text(json.dumps(['bob']))
+                    with self.assertRaises(Denied):lease.check()
+                    invitation.write_bytes(original)
+                    with self.assertRaises(Denied):lease.check()
+        finally:invitation.write_bytes(original)
+        self.assertEqual(self.repository.detail(self.trip_id).version,self.base_version)
+
     def prepare(self,client):
         response=self.write(client,'/v1/trip-manual-preparations',self.edit)
         self.assertEqual(response.status_code,200,response.text)
