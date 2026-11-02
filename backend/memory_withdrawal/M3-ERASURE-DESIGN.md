@@ -22,6 +22,14 @@ registry land.
   not an exact reverse item mapping. Initial erasure must explicitly use a
   conservative derived range and disclose it. It must preserve unrelated owners
   and formal user-accepted Trips; no claim of precise result deletion is valid.
+- M37 history_origin has foreign keys to canonical source/item, not to a job.
+  Existing CandidateAction1 confirmation reads the canonical candidate/source and
+  immutable origin's original job/attempt; it does not read the job payload.
+  Therefore overlapping private job batches can be erased without deleting an
+  unrelated candidate's origin or inventing a new confirmation protocol. The
+  old V3 candidate list and V4 publication-items readers do require that payload;
+  a new explicit current-candidate projection is needed for those retained
+  candidates after shared-job erasure. Keep Action1's user-confirmation semantics.
 - Main's standalone typed Memory and several C local factories still construct
   invitation-only admission. M35 already supplies the shared hashed account fence
   and restrictive runtime policies for C tables, including scope INSERT checks.
