@@ -30,6 +30,8 @@ uv run --locked python -B scripts/pg_suites.py memory_history
 
 ## 增量发布与候选确认（#410）
 
+协议及可执行正负例见 [CANDIDATE-V1](../../contracts/memory-jobs/CANDIDATE-V1.md)。
+
 `collection_app.create_collection_app` 显式注入服务端提取/保存策略；没有默认
 宽松策略，也没有接收模型输出的 HTTP 入口。受保护原来源下的输出检查点、
 正式 Memory 原动作、来源关联、任务完成及游标推进使用同一 Memory 事务。

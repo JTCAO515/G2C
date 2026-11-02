@@ -1,5 +1,6 @@
 """Decision codec only; no user/source authority is created by parsing."""
 import json
+from pathlib import Path
 import unittest
 
 from cj_memory_jobs.candidate import CandidateAction,VERSION
@@ -16,6 +17,16 @@ def decision(**changes):
 
 
 class CandidateActions(unittest.TestCase):
+    def test_frozen_positive_and_negative_examples(self):
+        root=Path(__file__).resolve().parents[3]
+        examples=json.loads((root/'contracts/memory-jobs/candidate-v1-examples.json').read_bytes())
+        for value in examples['positive']:
+            raw=json.dumps(value,ensure_ascii=False).encode()
+            with self.subTest(value=value):self.assertEqual(CandidateAction.parse(raw).raw,raw)
+        for value in examples['negative']:
+            with self.subTest(value=value),self.assertRaises(InvalidInput):
+                CandidateAction.parse(json.dumps(value).encode())
+
     def test_exact_original_confirm_and_reject(self):
         raw=decision()+b'\n';value=CandidateAction.parse(raw)
         self.assertEqual(value.raw,raw);self.assertEqual((value.kind,value.context),('preference',None))
