@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from cj_api.local_app import app_from_environment,LocalDatabase,scope_for,ISSUER
 from cj_api.local_cleanup import load_configuration,Runtime
 from cj_api.local_worker_context import checker_for
-from cj_auth.interfaces import AdmissionStatus
+from cj_auth.interfaces import AdmissionStatus,Fact
 from cj_cleanup.account_hooks import MESSAGE,RUN,NEEDS,DomainHook,UsageHook
 from cj_cleanup.core import encode,digest
 from cj_memory_withdrawal.account_cleanup import account_hooks
@@ -79,7 +79,8 @@ def exercise(root,path):
     database=LocalDatabase(path);principal=checker_for(auth).check(token).principal
     runtime=Runtime(database,loaded,scope_for);manifest=runtime.registry()
     assert not manifest.gaps and set(manifest.inventory)==set(INVENTORY)
-    verify_binding(runtime.bind(principal),INVENTORY)
+    binding=runtime.bind(principal);verify_binding(binding,INVENTORY)
+    assert {e.registry_id for e in manifest.entries if not e.hook_available or e.registry_id not in binding.hooks}=={'external-processing'}
     legacy_path=configuration_file(root/'legacy-config','CJ-LOCAL-CLEANUP@1',INVENTORY)
     legacy=load_configuration(legacy_path);assert legacy.extra_hooks is None and legacy.inventory==INVENTORY
     assert C_TARGETS.isdisjoint(Runtime(database,legacy,scope_for).bind(principal).hooks)
@@ -96,8 +97,9 @@ def exercise(root,path):
         operation=post('/v1/account-cleanup-operations',dict(version='CLEANUP-API@1',action_id='prepare',binding_id=device['binding_id']))
         progress=post('/v1/account-cleanup-operations/'+operation['operation_id']+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=operation['registry_digest'],confirmation='DELETE_ACCOUNT'))
         assert progress['status']=='blocked' and progress['business_access']=='unchanged'
-        assert {s['target'] for s in progress['steps'] if s['state']=='blocked'}=={'external-processing'},progress
-    assert runtime.retired(principal) is False
+        assert {s['target'] for s in progress['steps']}==set(INVENTORY)
+        assert all(s['state']=='pending' for s in progress['steps']) and progress['reason']=='domain_hooks_unavailable'
+    assert runtime.retired(principal) is Fact.NO
     print('PASS actual app_from_environment V2 installs all C/B hooks, preserves all30 independent targets; unavailable external proof blocks with no retirement; V1 remains uninstalled')
 
     # Run the original worker main/argparse/loader/PG path. The observation wrapper
