@@ -261,6 +261,43 @@ def exercise(conninfo,auth):
         assert post('/v3/memory-candidate-actions',reviewed)['result']==typed_saved
         post('/v3/memory-candidate-actions',dict(reviewed,action_id='typed-again'),status=503)
         print('PASS actual typed current user confirmation: stale travel refused, real M/T lease version accepted, original replay never reactivates retired travel; automatic current extraction UNRUN')
+        # Populate the other owner through the same public producer/review path.
+        bob_scope=scope_for(ISSUER,'bob')
+        bob_head=expected(client.put('/v1/conversations',params={'conversation_id':'chat'},headers=headers['bob']))
+        post('/v1/messages',dict(version='MESSAGE-send.1',conversation_id='chat',message_id='b0',text='Maybe walk slowly',
+            trip_id=None,creation_intent='none',expected_generation=bob_head['generation'],expected_sequence=0),actor='bob')
+        post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='enable',operation='enable',
+            conversation_id='chat',expected_generation=bob_head['generation'],expected_epoch=0,expected_source_version=0),actor='bob')
+        post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='job',attempt_id='attempt',
+            source=dict(source,generation=bob_head['generation'],through=1)),actor='bob')
+        service.transition(tokens['bob'],'job','attempt','inflight')
+        bob_output=json.dumps(dict(version='MEMORY-EXTRACT@1',entries=[dict(subject='self',slot='pace.inferred',kind='inference',
+            text='Maybe walk slowly',extent='long_term',occurred_at='date unknown',
+            evidence=[dict(message_id='b0',quote='Maybe walk slowly')])])).encode()
+        service.record_output(tokens['bob'],'job','attempt',bob_output)
+        service.publish_output(tokens['bob'],'job','attempt')
+        bob_view=expected(client.get('/v3/memory-candidates',params={'job_id':'job','attempt_id':'attempt'},headers=headers['bob']))['result']
+        bob_candidate=bob_view['candidates'][0]
+        bob_reject=dict(version='MEMORY-CANDIDATE@1',action_id='reject',job_id='job',attempt_id='attempt',
+            candidate_id=bob_candidate['candidate_id'],expected_candidate_version=1,
+            expected_memory_epoch=bob_view['memory_epoch'],operation='reject')
+        post('/v3/memory-candidate-actions',bob_reject,actor='bob')
+        with host.database.connect(bob_scope) as conn:
+            for table in ('cj_memory_history_candidate_action','cj_memory_history_origin'):
+                assert conn.execute(f'SELECT count(*) FROM {table} WHERE scope=%s',(scope,)).fetchone()==(0,)
+                assert conn.execute('SELECT has_table_privilege(current_user,%s,%s)',(table,'DELETE')).fetchone()==(False,)
+            conn.execute('UPDATE cj_memory_history_job SET result_bytes=%s WHERE scope=%s',(b'{}',scope))
+            assert conn.execute('SELECT result_bytes FROM cj_memory_history_job').fetchone()==(bob_output,)
+        for sql,values in (
+            ('INSERT INTO cj_memory_history_candidate_action(scope,action_id,candidate_id,job_id,attempt_id,operation,original_input,receipt,previous_source_id) '
+             'VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)',(scope,'forged','forged','job','attempt','reject',b'{}',b'{}','forged')),
+            ('INSERT INTO cj_memory_history_origin(scope,source_id,item_id,job_id,attempt_id,origin_refs) VALUES(%s,%s,%s,%s,%s,%s::jsonb)',
+             (scope,'forged','forged','job','attempt','[]'))):
+            try:
+                with host.database.connect(bob_scope) as conn:conn.execute(sql,values)
+            except psycopg.errors.InsufficientPrivilege:pass
+            else:raise AssertionError('runtime inserted another owner publication data')
+        print('PASS actual new-table RLS: other-owner reads/writes denied and producer has no physical deletion privilege')
         from cj_cleanup.core import Scope,encode,digest
         from cj_cleanup.coordinator import Coordinator
         from cj_cleanup.hooks_v1_1 import Selection
@@ -297,6 +334,19 @@ def exercise(conninfo,auth):
             for table in hook.content_tables:
                 assert conn.execute(f'SELECT count(*) FROM {table}').fetchone()==(0,)
             assert conn.execute('SELECT erased FROM cj_memory_history_fence').fetchone()==(True,)
+        with host.database.connect(bob_scope) as conn:
+            for table in ('cj_memory_history_candidate_action','cj_memory_history_origin'):
+                assert conn.execute(f'SELECT count(*) FROM {table}').fetchone()==(1,)
+            assert conn.execute('SELECT result_bytes FROM cj_memory_history_job').fetchone()==(bob_output,)
+        # Clean up the independently populated second owner using its own original intent.
+        bob_principal=host.boundary.checker.check(tokens['bob']).principal
+        bob_subject=digest(encode(asdict(Scope.from_principal('local',bob_principal))))
+        bob_store=Store(lambda:psycopg.connect(**dict(config,user='cj_local_cleanup')),bob_subject,lambda stage:None)
+        bob_coordinator=Coordinator(bob_store,lambda:manifest,{TARGET:CleanupHook(bob_store,bob_scope)})
+        bob_plan={TARGET:dict(domain_scope=bob_scope,selection={'kind':'account'})}
+        bob_coordinator.create('erase-bob-publication',digest(encode(bob_plan)),'account',bob_plan)
+        bob_request=bob_coordinator.request('erase-bob-publication',TARGET,bob_scope,Selection('account'))
+        assert bob_coordinator.advance(bob_request)['status']=='complete'
         print('PASS same-domain actual cleanup erases new output checkpoints, origin map and candidate-action bytes with existing task data; hashed fence retained')
 
 
@@ -312,6 +362,6 @@ if __name__=='__main__':
             exercise(path,Path(temp)/'auth')
             with psycopg.connect(**config,autocommit=True) as conn:
                 conn.execute((ROOT/'backend/memory_jobs/publication_schema.down.sql').read_text())
-                assert conn.execute('SELECT count(*) FROM cj_memory_history_fence WHERE erased').fetchone()==(1,)
+                assert conn.execute('SELECT count(*) FROM cj_memory_history_fence WHERE erased').fetchone()==(2,)
                 conn.execute((ROOT/'backend/memory_jobs/publication_schema.sql').read_text())
             print('PASS nonempty down refusal; post-erasure empty publication rollback preserves the existing opaque erasure fence')
