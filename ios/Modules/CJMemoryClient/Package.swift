@@ -3,11 +3,11 @@ import PackageDescription
 let package = Package(name: "CJMemoryClient", platforms: [.iOS(.v17), .macOS(.v14)],
     products: [.library(name: "CJMemoryClient", targets: ["CJMemoryClient"])],
     dependencies: [
-        .package(path: "../.."),
+        .package(path: "../.."), .package(path: "../CJStrictJSON"),
         .package(path: "../CJMessageClient"), .package(path: "../CJAuth"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")],
-    targets: [.target(name: "CJMemoryClient", dependencies: [
+    targets: [.target(name: "CJMemoryClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"),
         .product(name: "CJAPI", package: "ios"), .product(name: "CJMessageHTTP", package: "CJMessageClient"),
         .product(name: "CJMessageKeys", package: "CJAuth"),
         .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"), .product(name: "HTTPTypes", package: "swift-http-types")]),

@@ -9,7 +9,7 @@ from .output_check import verify_output
 from .solver import Problem,Verification
 
 
-def check(content,source,previous_fields,selected_ids,limits):
+def check(content,source,previous_fields,selected_ids,limits,*,retain_adopted=False):
     before,revisions=source.records();fields=deepcopy(before.fields)
     old={v['item_id']:v for v in fields.get('fixed_items',[])}
     previous={v['item_id']:v for v in previous_fields.get('fixed_items',[])}
@@ -25,6 +25,13 @@ def check(content,source,previous_fields,selected_ids,limits):
     represented={v['item_id'] for v in proposed};selected=frozenset(set(selected_ids)&represented)
     # Already adopted extra declarations are retained, not new source revisions.
     selected|=frozenset(represented-set(old))
+    if retain_adopted:
+        # The caller proves the accepted baseline uses this exact NEEDS snapshot.
+        # Only unchanged, already-adopted mutable declarations are retained;
+        # actual Trip unselected/fixed bytes remain guarded by the scoped preview.
+        selected|=frozenset(v['item_id'] for v in proposed if v['item_id'] in previous
+            and v==previous[v['item_id']] and v['item_id'] in old
+            and old[v['item_id']]['locked']==dict(state='known',value=False))
     report=evaluate(before,revisions,candidate,selected_fields=frozenset({'fixed_items'}),selected_item_ids=selected)
     if report.status in ('INVALID','CONFLICT'):raise Conflict('current NEEDS/protected constraints rejected')
     if represented<=set(old):
