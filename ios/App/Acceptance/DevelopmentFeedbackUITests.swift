@@ -84,9 +84,33 @@ import Foundation
     func capture(_ name: String) {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
-    func audit(_ name: String) throws {
-        capture(name)
-        try app.performAccessibilityAudit(for: .all)
+    func audit(_ name: String, receipt: Bool = false, linked: Bool = false) throws {
+        var ids = ["feedback.problem", "feedback.expectation", "feedback.submit", "feedback.status", "feedback.loadPending"]
+        if linked && !receipt { ids.append("feedback.associate") }
+        if receipt { ids += ["feedback.disclaimer", "feedback.another", "feedback.receipt.date", "feedback.receipt.time"] }
+        if linked && receipt { ids += ["feedback.originalref.message", "feedback.originalref.run", "feedback.source.status", "feedback.source.progress", "feedback.source.notice"] }
+        for id in ids {
+            let query: XCUIElementQuery
+            if id == "feedback.problem" || id == "feedback.expectation" { query = app.textViews.matching(identifier: id) }
+            else if id == "feedback.associate" { query = app.switches.matching(identifier: id) }
+            else if ["feedback.submit", "feedback.loadPending", "feedback.another"].contains(id) { query = app.buttons.matching(identifier: id) }
+            else { query = app.descendants(matching: .any).matching(identifier: id) }
+            let target = query.element
+            for _ in 0..<35 {
+                if target.exists && target.isHittable { break }
+                let bar = app.navigationBars.firstMatch
+                if target.exists && bar.exists && target.frame.midY < bar.frame.maxY { app.swipeDown() }
+                else { app.swipeUp() }
+            }
+            XCTAssertEqual(query.count, 1, id); XCTAssertTrue(target.isHittable, id)
+            capture(name + "-" + id)
+            continueAfterFailure = true
+            var issues = 0
+            try app.performAccessibilityAudit(for: .all) { issue in
+                issues += 1; print(name, id, issue.detailedDescription, issue.element?.label ?? "unavailable"); return false
+            }
+            continueAfterFailure = false; XCTAssertEqual(issues, 0)
+        }
     }
     func answer(_ f: Fixture, language: String) async throws {
         tap(language == "en" ? "Assistant" : "助手")
@@ -107,10 +131,10 @@ import Foundation
         XCTAssertEqual(app.textViews["feedback.problem"].value as? String, language == "en" ? "Problem" : "问题")
         fill("站名有误 e\u{301} 🌏", expectation: "请核对站名")
         XCTAssertEqual(association.value as? String, "1")
-        try audit("answer-editor-" + language)
+        try audit("answer-editor-" + language, linked: true)
         tap("feedback.submit"); status(language == "en" ? "Feedback submitted." : "反馈已提交。")
         XCTAssertTrue(app.staticTexts["feedback.disclaimer"].exists)
-        try audit("answer-receipt-" + language)
+        try audit("answer-receipt-" + language, receipt: true, linked: true)
     }
     func basic(_ name: String, language: String) async throws {
         let f = try await prepare(name); defer { app?.terminate() }
@@ -129,7 +153,7 @@ import Foundation
         _ = try await call("/size", f.case_id, ["value": "accessibility-extra-extra-extra-large"])
         try audit("general-max-editor-" + language)
         tap("feedback.submit"); status(language == "en" ? "Feedback submitted." : "反馈已提交。")
-        try audit("general-max-receipt-" + language)
+        try audit("general-max-receipt-" + language, receipt: true)
         let second = try await proof(f)
         XCTAssertEqual(second.accounts["A"]?.feedback.count, 2)
         XCTAssertEqual(second.accounts["A"]?.feedback.last?.references.count, 0)
@@ -164,7 +188,7 @@ import Foundation
         XCTAssertEqual(after.accounts["A"]?.feedback.first?.sha256, original.sha256)
         XCTAssertEqual(after.feedback_posts, before.feedback_posts)
         XCTAssertEqual(after.provider_calls, before.provider_calls)
-        try audit("reopened-original-confirmed-chinese")
+        try audit("reopened-original-confirmed-chinese", receipt: true)
         _ = try await call("/validate", f.case_id)
     }
     func testLateACKAccountSwitch() async throws {
