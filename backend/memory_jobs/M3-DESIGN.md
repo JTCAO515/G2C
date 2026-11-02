@@ -124,3 +124,30 @@ cleanup, account hooks and App behavior remain separate open acceptance boxes.
 The full `scripts/test.py` and `scripts/pg_suites.py` remain mandatory; new migration
 checks include empty up/down/up, nonempty down refusal and cross-owner negatives.
 Real model extraction quality is #32; no fixture proves it.
+
+## Accepted Trip intake preparation (not frozen/provided)
+
+`decision_input.prepared` is an unpublished Data-DRAFT3 preparation slice. It
+joins a retained, genuinely committed full MESSAGE-send.3 Trip discussion to the
+current C accepted-decision lease, under MESSAGE → Trip → Memory. The original
+worker/user accept/signed structured modification produced actual Trip version2
+in its private-PG test; only after the signed discussion was committed was that
+conversation enabled for organization. Data2 filtering runs first, and only a
+permitted opaque message anchor can attach the actual accepted document.
+
+The bounded data contains opaque decision/anchor references, not Trip/action/
+proposal authority. Accepted planning is neither a visited experience nor an
+automatically confirmed permanent preference. Day/item/scoped-edit selectors
+are explicitly unsupported by this first full-record projection; they need a
+real bounded projection before use, with no whole-Trip fallback. Expired leases
+and oversized data fail. The actual existing B ModelInput accepts the outer
+materialized data shape, but that parsing grants no dispatch or publication.
+
+No provider, extraction decoder, durable decision-job command, producer, original
+publication/reconciliation or cleanup integration is installed by this slice.
+The new version names are DRAFT, not a frozen contract or consumable B interface.
+Ordinary formal Trip discussion after a Memory scope exists remains rejected by
+the old MESSAGE-send.3 safety guard; C does not modify that frozen B path. Full
+intake needs an explicit compatible source/Memory composition, in addition to
+this actual retained-source preparation. #411 stays open until those real
+worker/Meter/candidate/context and #26 cleanup checks are complete.
