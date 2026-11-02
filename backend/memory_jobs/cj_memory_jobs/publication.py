@@ -1,4 +1,5 @@
 """Canonical Memory command preparation; no approval, write or execution permit."""
+from cj_memory.domain import Conflict, Unavailable
 from cj_memory.typed import STORED_VERSION, TypedCommand, packed
 from cj_message.domain import HistoryMessage
 from cj_message.travel import Selection
@@ -28,3 +29,40 @@ def build_command(scope: str, entry: Entry, messages: tuple[HistoryMessage, ...]
         context_id=identifier,context_kind=kind,context_version=version,
         source_id=identities.source_id,source_version=1,occurred_at=entry.occurred_at)
     return TypedCommand.parse(packed(value))
+
+
+def publish_command(memory_transaction, command: TypedCommand, collection_policy,
+                    *, direct_statement: bool, context_lease=None):
+    """Write on the caller's live canonical source/MEMORY transaction only.
+
+    The trusted producer has freshly parsed/classified the original result under
+    MESSAGE-SOURCE. This function does not open/commit a transaction or dispatch.
+    The exact generated command is the original MEMORY operation input; history
+    task/provider bytes remain in the original task ledger, never substituted.
+    """
+    tx=memory_transaction
+    old=tx.operation(command.operation_id)
+    if old is not None:
+        if old[0]!=command.raw:
+            raise Conflict('original history Memory operation differs')
+        return old[1]  # Historical data, not renewed approval or source activation.
+    if not tx.typed_context:
+        raise Unavailable('typed canonical Memory storage required')
+    if command.extent=='current':
+        if context_lease is None:
+            raise Unavailable('current history publication requires the real travel lease')
+        context_lease.check()
+        if context_lease.context!=Selection(command.context_id,command.context_version):
+            raise Unavailable('history publication travel selection differs')
+    resolved=collection_policy.evaluate(command,command.raw)
+    confirmed=direct_statement is True and command.kind!='inference'
+    tx.cur.execute('''INSERT INTO cj_memory_source
+        (scope,source_id,version,approved_input,authorized,confirmed,semantic_resolved,active,expires_at)
+        VALUES(%s,%s,1,%s,true,%s,%s,true,%s) ON CONFLICT(scope,source_id) DO NOTHING''',
+        (tx.scope,command.source_id,command.raw,confirmed,resolved,collection_policy.expires_at))
+    if tx.cur.rowcount!=1:
+        raise Conflict('history source exists without its original operation')
+    current=tx.source(command)
+    result=tx.insert(command,'active' if current and command.kind!='inference' else 'candidate')
+    if command.extent=='current':context_lease.check()
+    return result

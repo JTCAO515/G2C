@@ -11,6 +11,7 @@ CONTENT_TABLES = ('cj_memory_history_job','cj_memory_history_cursor',
 
 
 class CleanupHook:
+    content_tables=CONTENT_TABLES
     def __init__(self, store, domain_scope):
         self.store, self.domain_scope = store, domain_scope
 
@@ -41,7 +42,7 @@ class CleanupHook:
                 scope_digest=sha256(self.domain_scope.encode('utf-8')).hexdigest()
                 cur.execute('INSERT INTO cj_memory_history_fence(scope_digest,erased) VALUES(%s,true) '
                             'ON CONFLICT(scope_digest) DO UPDATE SET erased=true',(scope_digest,))
-                for table in CONTENT_TABLES:
+                for table in self.content_tables:
                     # Code-owned identifiers only; no request/registry table selection.
                     cur.execute(f'DELETE FROM {table} WHERE scope=%s',(self.domain_scope,))
                     cur.execute(f'SELECT count(*) FROM {table} WHERE scope=%s',(self.domain_scope,))
@@ -56,3 +57,7 @@ class CleanupHook:
         with self.store.transaction(request.operation_id,writing=False) as cur:
             result = original_result(cur,request)
         return result if result is not None else receipt_for(request,'unknown')
+
+
+class CollectionCleanupHook(CleanupHook):
+    content_tables=('cj_memory_history_candidate_action','cj_memory_history_origin')+CONTENT_TABLES

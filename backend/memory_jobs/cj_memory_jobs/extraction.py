@@ -67,6 +67,7 @@ def publication_identity(scope: str, entry: Entry,
 
 @dataclass(frozen=True)
 class CollectionPolicy:
+    """Trusted synchronous bounded policy checks; no provider/network work here."""
     subjects: frozenset[str]
     slots: frozenset[str]
     max_entries: int
