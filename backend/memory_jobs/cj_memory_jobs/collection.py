@@ -198,6 +198,16 @@ class CollectionService(Service):
             guard('original_transition')
         return result
 
+    def publication_policy_v3(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,
+                              model_output,model_output_sha256,*,max_payload_bytes,before_commit):
+        """Explicit trusted Meter deadline check at the actual C commit tail."""
+        from .policy_v3 import ResultSourcePolicyV3
+        repository,principal,guard=self._binding(context,token)
+        extraction,memory,_=self.resolve_collection(principal)
+        return ResultSourcePolicyV3(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
+            extraction,max_payload_bytes=max_payload_bytes,model_output=model_output,
+            model_output_sha256=model_output_sha256,memory_policy=memory,before_commit=before_commit)
+
     def query_publication_in_context(self,context,token,job_id,attempt_id):
         from .publication_result import VERSION
         return self._publication_receipt(context,token,job_id,attempt_id,VERSION)

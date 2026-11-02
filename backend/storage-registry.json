@@ -1,5 +1,5 @@
 {
-  "version": "1.22.0",
+  "version": "1.23.0",
   "stores": [
     {
       "id": "business",
@@ -233,7 +233,8 @@
             "cj_account_fence",
             "cj_cleanup_device_binding",
             "cj_cleanup_device_call",
-            "cj_cleanup_account_gate"
+            "cj_cleanup_account_gate",
+            "cj_cleanup_device_action"
           ],
           "source": "backend/cleanup/cj_cleanup/postgres.py@514aba717dd0e0a7f7783b6d9072d347cdb0a623",
           "status": "candidate_or_local_only; production_not_provisioned",
@@ -243,7 +244,8 @@
             "Confirmation digest, invocation IDs, frozen registry and gap details",
             "Environment/issuer/subject/audience scope and original operation ID",
             "Frozen original domain scope/selection plan and exact hook request bytes (cleared by the final metadata hook); bounded opaque operation/target/digest/result only remain",
-            "Prepared HTTP domain scope plan (cleared atomically by metadata hook); original action/operation/device invocation hashes and bounded purpose-bound progress metadata; credentials/signing keys are not stored here"
+            "Prepared HTTP domain scope plan (cleared atomically by metadata hook); original action/operation/device invocation hashes and bounded purpose-bound progress metadata; credentials/signing keys are not stored here",
+            "V3 exact original client action/input digest to original server binding/invocation; read-only recovery, no credentials stored"
           ],
           "retention": "Account reconciliation until account deletion; not diagnostic logs; no 90-day TTL",
           "cleanup_hook": "cj_cleanup.metadata_hook.MetadataHook with explicit same-transaction HTTP plan erasure; only bounded hashed identity/fence/original progress/device result metadata remain",
@@ -394,14 +396,15 @@
             "pending edits/save revisions"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1/@2/@3: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
             "CLEANUP-DEVICE@1",
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -417,14 +420,15 @@
             "SDK session bytes"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1/@2/@3: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
             "CLEANUP-DEVICE@1",
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -440,14 +444,15 @@
             "message encryption key bytes and identifier"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1/@2/@3: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
             "CLEANUP-DEVICE@1",
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -464,14 +469,15 @@
             "Proposal snapshot/content hash and action/proposal IDs"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1/@2/@3: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
             "CLEANUP-DEVICE@1",
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -496,7 +502,8 @@
           "restore_fence": "No read after session/account/key/state invalidation; no remote all-device erasure claim",
           "device_versions": [
             "CLEANUP-DEVICE@1",
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -512,14 +519,15 @@
             "Original feedback action UTF8/hash, voluntary fields, accepted receipt"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1/@2/@3: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
             "CLEANUP-DEVICE@1",
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -535,14 +543,15 @@
             "Device-only key material, exact environment/account/purpose/key ID"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1/@2/@3: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
             "CLEANUP-DEVICE@1",
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -564,7 +573,8 @@
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -586,7 +596,8 @@
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -608,7 +619,8 @@
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -630,7 +642,8 @@
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -652,7 +665,8 @@
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
           ]
         },
         {
@@ -674,7 +688,140 @@
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "device_versions": [
-            "CLEANUP-DEVICE@2"
+            "CLEANUP-DEVICE@2",
+            "CLEANUP-DEVICE@3"
+          ]
+        },
+        {
+          "id": "memory-history-pending",
+          "owner": "CJ-007 / CJ-020 / CJ-022; A native device owner",
+          "objects": [
+            "MemoryHistoryPendingStore .history-v1 encrypted originals and CJMemoryHistoryRejectionsV1"
+          ],
+          "source": "ios/Modules/CJMemoryClient/Sources/CJMemoryClient/MemoryHistoryPendingStore.swift",
+          "status": "provided/main_b398_storage; native_V3_erasure_consumer_pending_A_27",
+          "principal_binding": "M.history-v1 and M.history-v1.CJMemoryHistoryRejectionsV1; shared localMemoryPendingV1",
+          "sensitive_fields": [
+            "Original action/candidate/receipt ciphertext or exact purpose-scoped key material; no key bytes in server bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@3 original call; target must be present in actual native report, every own device/state group covered; unsupported residue stays unknown",
+          "restore_fence": "Recorded/current trusted SDK namespace/generation/key UUID/state, writer retirement and exact native original receipt; no broad key deletion or all-device/backup claim",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@3"
+          ]
+        },
+        {
+          "id": "trip-scoped-pending",
+          "owner": "CJ-007 / CJ-020 / CJ-022; A native device owner",
+          "objects": [
+            "ScopedTripClient paired originals and settlement .scoped journals"
+          ],
+          "source": "ios/Modules/CJManualPreviewClient/Sources/CJManualPreviewClient/ScopedTripClient.swift",
+          "status": "provided/main_b398_storage; native_V3_erasure_consumer_pending_A_27",
+          "principal_binding": "T.ScopedOriginals and T.ScopedReceipts; shared localTripPendingV1",
+          "sensitive_fields": [
+            "Original action/candidate/receipt ciphertext or exact purpose-scoped key material; no key bytes in server bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@3 original call; target must be present in actual native report, every own device/state group covered; unsupported residue stays unknown",
+          "restore_fence": "Recorded/current trusted SDK namespace/generation/key UUID/state, writer retirement and exact native original receipt; no broad key deletion or all-device/backup claim",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@3"
+          ]
+        },
+        {
+          "id": "needs-planning-pending",
+          "owner": "CJ-007 / CJ-020 / CJ-022; A native device owner",
+          "objects": [
+            "NeedsPlanningClient paired originals and settlement .scoped journals"
+          ],
+          "source": "ios/Modules/CJManualPreviewClient/Sources/CJManualPreviewClient/NeedsPlanningClient.swift",
+          "status": "provided/main_b398_storage; native_V3_erasure_consumer_pending_A_27",
+          "principal_binding": "T.NeedsPlanningOriginals and T.NeedsPlanningReceipts; shared localTripPendingV1",
+          "sensitive_fields": [
+            "Original action/candidate/receipt ciphertext or exact purpose-scoped key material; no key bytes in server bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@3 original call; target must be present in actual native report, every own device/state group covered; unsupported residue stays unknown",
+          "restore_fence": "Recorded/current trusted SDK namespace/generation/key UUID/state, writer retirement and exact native original receipt; no broad key deletion or all-device/backup claim",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@3"
+          ]
+        },
+        {
+          "id": "trip-key-keychain",
+          "owner": "CJ-007 / CJ-020 / CJ-022; A native device owner",
+          "objects": [
+            "ScopedMessageKeyProvider localTripPendingV1 exact scoped key UUID"
+          ],
+          "source": "ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift; KeychainMessageKeys.swift",
+          "status": "provided/main_b398_storage; native_V3_erasure_consumer_pending_A_27",
+          "principal_binding": "Exact environment/account/localTripPendingV1 service/slot/accessGroup; all base/manual/scoped/planning journals must verify empty",
+          "sensitive_fields": [
+            "Original action/candidate/receipt ciphertext or exact purpose-scoped key material; no key bytes in server bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@3 original call; target must be present in actual native report, every own device/state group covered; unsupported residue stays unknown",
+          "restore_fence": "Recorded/current trusted SDK namespace/generation/key UUID/state, writer retirement and exact native original receipt; no broad key deletion or all-device/backup claim",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@3"
+          ]
+        },
+        {
+          "id": "offline-key-keychain",
+          "owner": "CJ-007 / CJ-020 / CJ-022; A native device owner",
+          "objects": [
+            "ScopedMessageKeyProvider localOfflineTripSnapshotV1 exact scoped key UUID"
+          ],
+          "source": "ios/Modules/CJOfflineTrip/Sources/CJOfflineTrip/OfflineDeviceFactory.swift",
+          "status": "provided/main_b398_storage; native_V3_erasure_consumer_pending_A_27",
+          "principal_binding": "Exact environment/account/localOfflineTripSnapshotV1; snapshot and known temporary ciphertext must verify empty",
+          "sensitive_fields": [
+            "Original action/candidate/receipt ciphertext or exact purpose-scoped key material; no key bytes in server bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@3 original call; target must be present in actual native report, every own device/state group covered; unsupported residue stays unknown",
+          "restore_fence": "Recorded/current trusted SDK namespace/generation/key UUID/state, writer retirement and exact native original receipt; no broad key deletion or all-device/backup claim",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@3"
+          ]
+        },
+        {
+          "id": "offline-write-residue",
+          "owner": "CJ-007 / CJ-020 / CJ-022; A native device owner",
+          "objects": [
+            "AtomicSnapshotStore .write-UUID known writer temporary ciphertext state"
+          ],
+          "source": "ios/Modules/CJOfflineTrip/Sources/CJOfflineTrip/AtomicSnapshotStore.swift",
+          "status": "provided/main_b398_storage; native_V3_erasure_consumer_pending_A_27",
+          "principal_binding": "Only exact captured G2COfflineTrip/E/A directory/known writer UUID state; unknown entries/links/replacements remain unconfirmed",
+          "sensitive_fields": [
+            "Original action/candidate/receipt ciphertext or exact purpose-scoped key material; no key bytes in server bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@3 original call; target must be present in actual native report, every own device/state group covered; unsupported residue stays unknown",
+          "restore_fence": "Recorded/current trusted SDK namespace/generation/key UUID/state, writer retirement and exact native original receipt; no broad key deletion or all-device/backup claim",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@3"
           ]
         }
       ],

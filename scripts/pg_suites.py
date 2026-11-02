@@ -408,6 +408,7 @@ def group_memory_publication():
     # #410: signed candidate review and original publication on restricted PG.
     status=script('backend/memory_jobs/tests/publication_pg.py')
     status|=script('backend/memory_jobs/tests/current_result_pg.py')
+    status|=script('backend/memory_jobs/tests/publication_tail_pg.py')
     return status
 
 
@@ -442,6 +443,14 @@ def group_source_travel():
 
 
 GROUPS.update(device_v2=group_device_v2,source_travel=group_source_travel)
+
+
+def group_device_v3():
+    return _fresh_runtime_check('device_v3',55515,'cj27_device_v3',
+        f'/tmp/cj27-device-v3-{os.getpid()}','backend/cj_api/tests/device_v3_pg.py')
+
+
+GROUPS.update(device_v3=group_device_v3)
 
 
 def main(argv):
