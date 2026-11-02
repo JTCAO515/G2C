@@ -111,17 +111,19 @@ def main():
                     for mode,selected in [('component',options),('full',full_options)]}
                 runtime=cleanup.Runtime(database,options,local_app.scope_for)
                 bindings={case:{k:runtime.bind(checker_for(auth).check(tokens[case][k]).principal) for k in ('A','B')} for case in CASES}
-                model=provider.FakeProvider();provider_counts={}
+                model=provider.FakeProvider();provider_counts={};feedback_hashes={}
                 for case in CASES:
-                    before=model.calls
+                    before=model.calls;feedback_hashes[case]={}
                     with TestClient(apps['component']) as api:
                         for k,subject in subjects[case].items():
                             headers={'Authorization':'Bearer '+tokens[case][k],'Content-Type':'application/octet-stream'}
                             opened=api.put('/v1/conversations',params={'conversation_id':'native-cleanup'},headers=headers);opened.raise_for_status()
                             raw=json.dumps(dict(version='MESSAGE-send.1',conversation_id='native-cleanup',message_id='native-message',
-                                text='原生注销组件 中文输入与原操作',trip_id=None,creation_intent='none',expected_generation=opened.json()['generation'],expected_sequence=0)).encode()
+                                text='原生注销组件 中文输入与原操作 '+subject,trip_id=None,creation_intent='none',expected_generation=opened.json()['generation'],expected_sequence=0)).encode()
                             api.post('/v1/messages',content=raw,headers=headers).raise_for_status()
-                            api.post('/v1/feedback',content=json.dumps(dict(action_id='native-feedback',problem='中文组件反馈',expectation='',references=[])).encode(),headers=headers).raise_for_status()
+                            feedback_raw=json.dumps(dict(action_id='native-feedback',problem='中文组件反馈 '+subject,expectation='',references=[])).encode()
+                            api.post('/v1/feedback',content=feedback_raw,headers=headers).raise_for_status()
+                            feedback_hashes[case][k]=hashlib.sha256(feedback_raw).hexdigest()
                     run_worker.run_once(database,model,auth)
                     provider_counts[case]=model.calls-before
                     assert provider_counts[case]==2,'actual A/B original FakeProvider run did not complete'
@@ -169,17 +171,50 @@ def main():
                 def proof(case):
                     with lock: entries=[dict(e) for e in audits if e['case']==case]
                     result=dict(provider_calls=provider_counts[case],api=entries,accounts={})
+                    prepares=[e for e in entries if e['method']=='POST' and e['path']=='/v1/account-cleanup-operations']
+                    assert len(prepares)==1 and 'operation_id' in prepares[0]
+                    original_id=prepares[0]['operation_id'] # Actual API-produced ID, never a fabricated SQL context.
                     for k in ('A','B'):
                         binding=bindings[case][k]
-                        with binding.store.transaction('native-proof',writing=False) as cur:
+                        with binding.store.transaction(original_id,writing=False) as cur:
                             cur.execute('SELECT current_user');role=cur.fetchone()[0];assert role=='cj_local_cleanup'
-                            cur.execute("SELECT set_config('cj.cleanup_scope',%s,true),set_config('cj.cleanup_purpose','account',true)",(binding.owner_scope,))
                             cur.execute('SELECT operation_id,action_id,input_digest,phase FROM cj_cleanup_request WHERE subject_digest=%s ORDER BY action_id',(binding.store.subject_digest,));operations=cur.fetchall()
                             cur.execute('SELECT count(*) FROM cj_account_fence WHERE subject_digest=%s',(binding.store.subject_digest,));fences=cur.fetchone()[0]
-                            cur.execute('SELECT count(*) FROM cj_feedback_action WHERE scope=%s',(binding.owner_scope,));feedback=cur.fetchone()[0]
+                            counts={};cleanup_eligible=False
+                            if fences:
+                                assert len(operations)==1 and operations[0][0]==original_id
+                                cur.execute('SELECT purpose,blocked FROM cj_cleanup_operation WHERE subject_digest=%s AND operation_id=%s',(binding.store.subject_digest,original_id))
+                                assert cur.fetchone()==('account',False),'physical read requires actual unblocked original account operation'
+                                cleanup_eligible=True
+                                cur.execute("SELECT set_config('cj.cleanup_scope',%s,true),set_config('cj.cleanup_purpose','account',true)",(binding.owner_scope,))
+                                for table in ('cj_feedback_action','cj_message_receipt','cj_run_record'):
+                                    cur.execute('SELECT count(*) FROM '+table+' WHERE scope=%s',(binding.owner_scope,));counts[table]=cur.fetchone()[0]
+                                cur.execute("SELECT set_config('cj.cleanup_owner_scope',%s,true)",(binding.owner_scope,))
+                                usage=0
+                                for ledger in binding.namespaces[3:]:
+                                    cur.execute("SELECT set_config('cj.cleanup_scope',%s,true)",(ledger,))
+                                    cur.execute('SELECT count(*) FROM cj_usage_ledger_candidate WHERE scope_id=%s',(ledger,));usage+=cur.fetchone()[0]
+                                counts['cj_usage_ledger_candidate']=usage
                         with database.connect(binding.owner_scope) as conn:
                             runtime_role=conn.execute('SELECT current_user').fetchone()[0];assert runtime_role=='cj_m1_runtime'
-                        result['accounts'][k]=dict(cleanup_role=role,runtime_role=runtime_role,operations=[dict(operation_id=o,action_id=a,input_digest=d,phase=p) for o,a,d,p in operations],fences=fences,feedback=feedback)
+                            if not fences:
+                                # A blocked/prepared or B live account is NOT eligible
+                                # for cleanup-role private reads. Use its actual ordinary
+                                # role, with this original authenticated owner scope.
+                                conn.execute("SELECT set_config('cj.message_scope',%s,true)",(binding.owner_scope,))
+                                for table in ('cj_feedback_action','cj_message_receipt','cj_run_record'):
+                                    counts[table]=conn.execute('SELECT count(*) FROM '+table+' WHERE scope=%s',(binding.owner_scope,)).fetchone()[0]
+                                counts['cj_usage_ledger_candidate']=conn.execute('SELECT count(*) FROM cj_usage_ledger_candidate').fetchone()[0]
+                                observed=conn.execute('SELECT input_sha256 FROM cj_feedback_action WHERE scope=%s AND action_id=%s',(binding.owner_scope,'native-feedback')).fetchone()
+                                assert observed==(feedback_hashes[case][k],),'live other-owner original feedback bytes changed'
+                        if not fences:
+                            with TestClient(apps['full' if case=='testActualFullInventoryBlocked' else 'component']) as verifier:
+                                checked=verifier.get('/v1/feedback-action-receipts',params={'action_id':'native-feedback'},headers={'Authorization':'Bearer '+tokens[case][k]})
+                                assert checked.status_code==200 and checked.json()['receipt']['input_sha256']==feedback_hashes[case][k]
+                        result['accounts'][k]=dict(cleanup_role=role,runtime_role=runtime_role,cleanup_private_read_eligible=cleanup_eligible,
+                            physical_read_authority='original-confirmed-cleanup' if fences else 'current-ALLOWED-runtime-and-signed-receipt',
+                            operations=[dict(operation_id=o,action_id=a,input_digest=d,phase=p) for o,a,d,p in operations],
+                            fences=fences,feedback=counts['cj_feedback_action'],domain_rows=counts)
                     report['proofs'][case]=result;save();return result
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*args):pass
@@ -205,9 +240,9 @@ def main():
                                 prepares=[e for e in writes if e['path']=='/v1/account-cleanup-operations'];assert len(prepares)==1
                                 assert prepares[0]['request_sha256']==a['operations'][0]['input_digest']
                                 confirms=[e for e in writes if e['path'].endswith('/confirmation')];assert len(confirms)==(0 if case=='testActualPreparationUnknown' else 1)
-                                assert b['fences']==0 and b['feedback']==1
-                                if case=='testActualCommittedUnknownReopen':assert a['fences']==1 and a['feedback']==0 and a['operations'][0]['phase']=='confirmed'
-                                else:assert a['fences']==0 and a['feedback']==1 and a['operations'][0]['phase']=='prepared'
+                                assert b['fences']==0 and b['feedback']==1 and all(count==1 for count in b['domain_rows'].values())
+                                if case=='testActualCommittedUnknownReopen':assert a['fences']==1 and a['cleanup_private_read_eligible'] and all(count==0 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='confirmed'
+                                else:assert a['fences']==0 and all(count==1 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='prepared'
                                 assert not any(e['path'].startswith('/v1/cleanup-device-calls') or e['path'].startswith('/v1/cleanup-device-receipts') for e in value['api'])
                                 report.setdefault('checks',{})[case]=dict(real_server_original=True,exact_original_bytes=True,no_repeated_prepare_or_confirmation=True,other_actor_unchanged=True,device_hook_not_claimed=True);save()
                             else:raise ValueError('unknown control path')
