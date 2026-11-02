@@ -88,6 +88,67 @@ class ManualChecks(Harness):
     def write(self,client,path,raw,identity='alice'):
         return client.post(path,content=raw,headers={**self.headers(identity),'Content-Type':'application/octet-stream'})
 
+    def decision_reader(self):
+        from cj_api.local_account_admission_v2 import account_checker_for
+        from cj_trip.auth_boundary import Boundary
+        def resolve(principal):
+            owner=scope_for(principal.issuer,principal.subject)
+            return lambda:self.database.connect(owner),trip_scope_for(owner)
+        return Boundary(account_checker_for(self.auth,self.database),resolve,structured=True)
+
+    def read_decision(self,boundary,query,who='alice',project=None,maximum=1000000):
+        token=self.headers(who)['Authorization'].removeprefix('Bearer ')
+        def encode(value):
+            return packed(dict(trip_id=value.trip_id,version=value.version,content_sha256=value.content_sha256,
+                action_id=value.action_id,proposal_id=value.proposal_id,candidate_hash=value.candidate_hash,
+                content=json.loads(value.content)))
+        return boundary.with_operation(token,lambda context:context.read_decision_source(query,encode if project is None else project,
+            max_source_bytes=4000000,max_result_bytes=maximum))
+
+    def test_memory_decision_source_uses_actual_accepted_record_and_receipt(self):
+        from cj_trip.decision_source import DecisionQuery
+        from cj_trip.domain import Conflict,Denied
+        boundary=self.decision_reader()
+        query=DecisionQuery(self.trip_id,self.base_version,sha256(self.content).hexdigest())
+        first=self.read_decision(boundary,query)
+        value=json.loads(first)
+        self.assertEqual(value['content'],json.loads(self.content))
+        self.assertEqual(value['action_id'],'fixture-save-'+self.tag)
+        self.assertEqual(self.read_decision(boundary,query),first)
+        for bad in (DecisionQuery(self.trip_id,1,query.content_sha256),DecisionQuery(self.trip_id,self.base_version,'0'*64)):
+            with self.assertRaises(Conflict):self.read_decision(boundary,bad)
+        with self.assertRaises(Denied):self.read_decision(boundary,query,who='bob')
+        with self.assertRaises(Denied):self.read_decision(boundary,query,maximum=1)
+        with self.assertRaises(Denied):self.read_decision(boundary,query,project=lambda value:iter((b'deferred',)))
+        pending='pending-source-'+self.tag
+        self.repository.publish(Proposal(pending,pending,0,'synthetic-proposed-source',int(time.time())+60,self.content))
+        with self.assertRaises(Denied):
+            self.read_decision(boundary,DecisionQuery(pending,1,query.content_sha256))
+        self.assertEqual(self.repository.detail(self.trip_id).version,self.base_version)
+
+    def test_memory_decision_source_stale_update_and_late_admission(self):
+        from cj_trip.decision_source import DecisionQuery
+        from cj_trip.domain import Conflict,Denied
+        boundary=self.decision_reader()
+        query=DecisionQuery(self.trip_id,self.base_version,sha256(self.content).hexdigest())
+        with TestClient(self.app) as client:
+            prepared=self.prepare(client)
+            saved=self.write(client,'/v1/trip-manual-saves',self.save(prepared))
+            self.assertEqual(saved.status_code,200,saved.text)
+        current=self.repository.detail(self.trip_id)
+        with self.assertRaises(Conflict):self.read_decision(boundary,query)
+        updated=DecisionQuery(self.trip_id,current.version,sha256(current.content).hexdigest())
+        value=json.loads(self.read_decision(boundary,updated))
+        self.assertEqual(value['action_id'],'save-'+self.tag)
+        invitation=self.auth/'invited.json';original=invitation.read_bytes()
+        def revoke(value):
+            invitation.write_text(json.dumps([who for who in json.loads(original) if who!='alice']))
+            return b'private accepted content'
+        try:
+            with self.assertRaises(Denied):self.read_decision(boundary,updated,project=revoke)
+        finally:invitation.write_bytes(original)
+        self.assertEqual(json.loads(self.read_decision(boundary,updated))['version'],current.version)
+
     def prepare(self,client):
         response=self.write(client,'/v1/trip-manual-preparations',self.edit)
         self.assertEqual(response.status_code,200,response.text)
