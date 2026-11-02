@@ -1,0 +1,17 @@
+{
+  "positive": [
+    {"codec":"consent","value":{"version":"MEMORY-HISTORY@1","action_id":"enable-1","operation":"enable","conversation_id":"chat","expected_generation":"generation","expected_epoch":0,"expected_source_version":0}},
+    {"codec":"consent","value":{"version":"MEMORY-HISTORY@1","action_id":"disable-2","operation":"disable","conversation_id":"会话","expected_generation":"generation","expected_epoch":0,"expected_source_version":1}},
+    {"codec":"enqueue","value":{"version":"MEMORY-JOBS@1","job_id":"job-1","attempt_id":"attempt-1","source":{"conversation_id":"chat","generation":"generation","epoch":0,"after":0,"through":1,"source_version":1,"withdrawal_epoch":1,"mode":"incremental"}}},
+    {"codec":"enqueue","value":{"version":"MEMORY-JOBS@1","job_id":"end-job","attempt_id":"end-attempt","source":{"conversation_id":"chat","generation":"generation","epoch":0,"after":0,"through":2,"source_version":3,"withdrawal_epoch":1,"mode":"conversation_end"}}}
+  ],
+  "negative": [
+    {"codec":"consent","value":{"version":"MEMORY-HISTORY@1","action_id":"enable-1","operation":"enable","conversation_id":"chat","expected_generation":"generation","expected_epoch":0,"expected_source_version":0,"all_history":true}},
+    {"codec":"consent","value":{"version":"MEMORY-HISTORY@1","action_id":"enable-1","operation":"enable","conversation_id":"chat","expected_generation":"generation","expected_epoch":true,"expected_source_version":0}},
+    {"codec":"consent","value":{"version":"MEMORY-HISTORY@1","action_id":"enable-1","operation":"staff_proposed","conversation_id":"chat","expected_generation":"generation","expected_epoch":0,"expected_source_version":0}},
+    {"codec":"enqueue","value":{"version":"MEMORY-JOBS@1","job_id":"job-1","attempt_id":"attempt-1","owner":"other","source":{"conversation_id":"chat","generation":"generation","epoch":0,"after":0,"through":1,"source_version":1,"withdrawal_epoch":1,"mode":"incremental"}}},
+    {"codec":"enqueue","value":{"version":"MEMORY-JOBS@1","job_id":"job-1","attempt_id":"attempt-1","source":{"conversation_id":"chat","generation":"generation","epoch":0,"after":0,"through":101,"source_version":1,"withdrawal_epoch":1,"mode":"incremental"}}},
+    {"codec":"enqueue","value":{"version":"MEMORY-JOBS@1","job_id":"job-1","attempt_id":"attempt-1","source":{"conversation_id":"chat","generation":"generation","epoch":0,"after":0,"through":1,"source_version":1,"withdrawal_epoch":0,"mode":"incremental"}}},
+    {"codec":"enqueue","value":{"version":"MEMORY-JOBS@1","job_id":"job-1","attempt_id":"attempt-1","source":{"conversation_id":"chat","generation":"generation","epoch":0,"after":0,"through":1,"source_version":1,"withdrawal_epoch":1,"mode":"staff_proposed"}}}
+  ]
+}
