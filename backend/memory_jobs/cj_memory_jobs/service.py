@@ -124,11 +124,19 @@ class Service:
         command = EnqueueCommand.parse(original)
         return self._enqueue_command(token,command,request_id=request_id)
 
+    def enqueue_serialized(self, token, original):
+        """Trusted automatic intake; one current account basis at a time.
+
+        The existing JOBS@1 HTTP path keeps its original per-stream contract.
+        This adds no dispatcher, retry or permit to renew an original attempt.
+        """
+        return self._enqueue_command(token,EnqueueCommand.parse(original),request_id=None,serialized=True)
+
     def enqueue_ending(self, token, original, *, request_id=None):
         from .ending import EndingCommand
         return self._enqueue_command(token,EndingCommand.parse(original),request_id=request_id,ending=True)
 
-    def _enqueue_command(self, token, command, *, request_id, ending=False):
+    def _enqueue_command(self, token, command, *, request_id, ending=False,serialized=False):
         original=command.raw
         query,job_id,attempt_id = command.query,command.job_id,command.attempt_id
         policy = None
@@ -136,9 +144,24 @@ class Service:
         def apply(context):
             nonlocal policy
             repository, principal, guard = self._binding(context,token)
+            invalid_originals=set()
+            if serialized:
+                # Detached comparisons only; release MEMORY before public
+                # MESSAGE reads and the normal MESSAGE -> MEMORY acquisition.
+                with repository.transaction() as memory:
+                    tx=Transaction(memory);tx.require_live()
+                    originals=tx.current_unresolved()
+                for row in originals:
+                    cursor=row[3].cursor
+                    head=context.send_status(cursor.conversation_id).head
+                    if head is None or (head.generation,head.epoch)!=(cursor.generation,cursor.epoch):
+                        invalid_originals.add(row[0].job_id)
             policy = SourcePolicy(repository,principal,guard)
 
             def persist(snapshot):
+                if serialized and any(row[0].job_id!=job_id and row[0].job_id not in invalid_originals
+                                      for row in policy.transaction.current_unresolved()):
+                    raise Conflict('another original collection owns the current account basis')
                 source = SourceV2(snapshot.cursor,snapshot.source_version,snapshot.withdrawal_epoch)
                 return policy.transaction.enqueue(source,snapshot.messages,query.mode,
                     job_id,attempt_id,original).encode()
