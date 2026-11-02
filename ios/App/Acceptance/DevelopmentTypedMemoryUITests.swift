@@ -9,6 +9,7 @@ import Foundation
     private func localized(_ english: String,_ zh: String) -> String {chinese ? zh : english}
     private struct Fixture: Decodable {
         let endpoint: String;let memory_endpoint: String;let accounts: [String:String];let subjects: [String:String]
+        let question_count:Int?
         let travel_ids: [String];let travel_profile: String;let memory_profile: String;let legacy_profile: String
     }
     private func reveal(_ element: XCUIElement,id: String,fixed: Bool = false) {
@@ -168,6 +169,80 @@ import Foundation
     }
     private func dismissKeyboard() {
         if app.toolbars.buttons.matching(identifier:localized("Done","完成")).firstMatch.exists {tap("Done")}
+    }
+    func testTypedGroupsPaged() async throws {
+        continueAfterFailure=false;executionTimeAllowance=900
+        let f=try await prepare();defer { app?.terminate() };try launch(f,restore:false)
+        tap("memory2.items.open");tap("memory2.items.read")
+        text("memory2.items.coverage",contains:"not account-wide totals")
+        text("memory2.group.empty.preference",contains:"pages read so far")
+        XCTAssertFalse(app.buttons.matching(identifier:"memory2.item.group-21").firstMatch.exists)
+        tap("memory2.items.next")
+        let last=app.buttons.matching(identifier:"memory2.item.group-21").firstMatch;reveal(last,id:"last.group.record")
+        XCTAssertTrue(last.label.contains("SYNTHETIC grouped preference 21"))
+        tap("memory2.items.next")
+        XCTAssertFalse(app.buttons.matching(identifier:"memory2.items.next").firstMatch.exists)
+        let first=app.buttons.matching(identifier:"memory2.item.group-00").firstMatch;reveal(first,id:"first.group.record")
+        XCTAssertTrue(first.label.contains("SYNTHETIC grouped fact 0"))
+        _ = try await call("/groups-proof")
+        var issues=0;continueAfterFailure=true
+        try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_GROUPS",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
+        continueAfterFailure=false;XCTAssertEqual(issues,0)
+    }
+    func testTypedGroupsLateAccount() async throws {
+        continueAfterFailure=false;executionTimeAllowance=900
+        let f=try await prepare();defer { app?.terminate() };try launch(f,restore:false)
+        tap("memory2.items.open");_ = try await call("/arm-hold");tap("memory2.items.read");_ = try await call("/wait-held")
+        back();tap("memory.account");tap("account.development.signin.B")
+        text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+        _ = try await call("/release-held")
+        back();tap("memory2.items.open");tap("memory2.items.read")
+        text("memory2.items.status",contains:"No memories found")
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","memory2.item.group-")).count,0)
+        _ = try await call("/groups-proof")
+        var issues=0;continueAfterFailure=true
+        try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_GROUPS_LATE",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
+        continueAfterFailure=false;XCTAssertEqual(issues,0)
+    }
+    func testTypedQuestionsEnglish() async throws { try await questions(large:false) }
+    func testTypedQuestionsChineseLargest() async throws { try await questions(large:true) }
+    private func questions(large:Bool) async throws {
+        continueAfterFailure=false;executionTimeAllowance=900;chinese=large
+        let fixture=try await prepare();defer { app?.terminate() }
+        try launch(fixture,restore:false)
+        let count=try XCTUnwrap(fixture.question_count);XCTAssertTrue((2...3).contains(count))
+        tap("memory2.collection.open");text("memory2.collection.progress",contains:"1/"+String(count))
+        for step in 1..<count { tap("memory2.collection.next");text("memory2.collection.progress",contains:String(step+1)+"/"+String(count)) }
+        _ = try await call("/collection-no-write")
+        tap("memory2.collection.skip")
+        XCTAssertTrue(app.tabBars.buttons.matching(identifier:localized("Assistant","助手")).firstMatch.isSelected)
+        chooseTravel(fixture.travel_ids[0]);tap("Memory")
+        tap("memory2.collection.open")
+        for _ in 1..<count { tap("memory2.collection.next") }
+        let value="SYNTHETIC questions preference / 问题偏好 e\u{301}"
+        tap("memory2.manual.option");tap("self · preference · "+(large ? "Selected travel / 所选旅行" : "Long term / 长期"))
+        input("memory2.manual.text",value);input("memory2.manual.time","time unknown / 时间不详");dismissKeyboard()
+        tap("memory2.manual.review");text("memory2.review.text",contains:value)
+        text("memory2.review.subject",contains:"self · preference")
+        text("memory2.review.scope",contains:large ? fixture.travel_ids[0] : "Long-term")
+        _ = try await call("/collection-no-write")
+        var issues=0;continueAfterFailure=true
+        try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_QUESTIONS_REVIEW",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
+        continueAfterFailure=false;XCTAssertEqual(issues,0)
+        tap("memory2.manual.confirm");text("memory2.save.status",contains:localized("Saved.","已保存"))
+        _ = try await call("/collection-saved")
+        back();tap("memory2.items.open");tap("memory2.items.read")
+        text("memory2.items.coverage",contains:localized("pages read so far","已读取页面"))
+        text("memory2.group.empty.fact",contains:localized("pages read so far","已读取页面"))
+        let ids=try JSONDecoder().decode([String:String].self,from:await call("/items"))
+        let id=try XCTUnwrap(ids[large ? "travel" : "long_term"])
+        let row=app.buttons.matching(identifier:"memory2.item."+id).firstMatch
+        reveal(row,id:"memory2.item."+id)
+        XCTAssertTrue(row.label.contains(value) && row.label.contains("self") && row.label.contains("preference"),"Actual saved row identity, text and kind must remain readable")
+        issues=0;continueAfterFailure=true
+        try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_QUESTIONS_GROUPS",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
+        continueAfterFailure=false;XCTAssertEqual(issues,0)
+        tap("Assistant");openChat("typed-chat-1");try await ask("Use my saved preference",count:1,expected:value)
     }
     func testUnknownReopenAndLifecycleRecall() async throws {
         continueAfterFailure = false;executionTimeAllowance = 900
