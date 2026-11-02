@@ -15,6 +15,15 @@ HERE = Path(__file__).resolve().parent
 BUNDLE = 'space.go2china.cleanup.component'
 CASES = ['testActualCommittedUnknownReopen', 'testActualPreparationUnknown', 'testActualFullInventoryBlocked']
 B_DOMAINS = ('business/message', 'checkpoints/run', 'business/usage', 'business/feedback-private-actions')
+# Explicit operator inventory, independent of the registry under test. Its full
+# snapshot must include actual C/unimplemented and all DEVICE@2 domains.
+FULL_INVENTORY = ('business/message','business/usage','business/memory-authoritative','business/trip-authoritative',
+    'business/needs-current-planning','business/feedback-private-actions','business/cleanup-metadata',
+    'business/memory-management-actions','checkpoints/run','memory-derived',
+    'device-cache/encrypted-message-file','device-cache/sdk-session-keychain','device-cache/message-key-keychain',
+    'device-cache/trip-pending-file','device-cache/offline-trip','device-cache/feedback-pending','device-cache/feedback-key-keychain',
+    'device-cache/memory-manual-pending','device-cache/memory-lifecycle-pending','device-cache/memory-typed-pending',
+    'device-cache/memory-key-keychain','device-cache/needs-pending','device-cache/needs-key-keychain','external-processing')
 
 
 def main():
@@ -42,7 +51,8 @@ def main():
     import cj_agent.provider as provider
     from cj_api.local_run_context import load_run_context
     from cj_api.local_worker_context import checker_for
-    from cj_cleanup.gateway_store import GatewayStore
+    from cj_cleanup.registry import freeze
+    from cj_cleanup.core import encode
     from fastapi.testclient import TestClient
     from pg_suites import cluster
     import migrate, dev_auth, local_run_context, run_worker
@@ -75,14 +85,28 @@ def main():
                     for subject in pair.values(): local_run_context.provision_budget(connection,context,subject)
                 database=local_app.LocalDatabase(connection,run_context=context)
                 registry=backend/'backend/storage-registry.json';manifest=json.loads(registry.read_bytes())
-                full_inventory=[]
-                for store in manifest['stores']:
-                    if store.get('objects'):
-                        full_inventory.extend(store['id']+'/'+item['id'] for item in store['objects'])
-                    else: full_inventory.append(store['id'])
+                full=freeze(registry.read_bytes(),FULL_INVENTORY,versions=('CLEANUP@1.0','CLEANUP@1.1'))
+                assert not full.gaps,'explicit full inventory differs from actual main'
+                def project(node,parent=''):
+                    target=parent+node['id'];children=node.get('objects',[])
+                    nested=[child for child in children if isinstance(child,dict)]
+                    if nested:
+                        assert len(nested)==len(children),'mixed registry children'
+                        selected=[value for child in nested if (value:=project(child,target+'/')) is not None]
+                        return dict(node,objects=selected) if selected else None
+                    return node if target in B_DOMAINS else None
+                selected=[value for node in manifest['stores'] if (value:=project(node)) is not None]
+                component_registry=root/'component-registry.json'
+                component_registry.write_bytes(encode(dict(version='CJ443-B-COMPONENT-1',stores=selected)))
+                component=freeze(component_registry.read_bytes(),B_DOMAINS,versions=('CLEANUP@1.0','CLEANUP@1.1'))
+                actual={entry.registry_id:entry for entry in full.entries}
+                assert not component.gaps and all(entry==actual[entry.registry_id] for entry in component.entries)
+                report['component_registry']=dict(scope='B-owned component only; not full account/device',
+                    sha256=component.digest,full_main_sha256=full.digest,entry_digests={entry.registry_id:entry.version for entry in component.entries})
+                report['full_inventory']=list(FULL_INVENTORY);save()
                 key=os.urandom(32); secrets.append(key)
-                options=cleanup.Configuration({'native-local':key},'native-local',7200,B_DOMAINS,registry)
-                full_options=cleanup.Configuration({'native-local':key},'native-local',7200,tuple(full_inventory),registry)
+                options=cleanup.Configuration({'native-local':key},'native-local',7200,B_DOMAINS,component_registry)
+                full_options=cleanup.Configuration({'native-local':key},'native-local',7200,FULL_INVENTORY,registry)
                 apps={mode:local_app.create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,cleanup_configuration=selected)
                     for mode,selected in [('component',options),('full',full_options)]}
                 runtime=cleanup.Runtime(database,options,local_app.scope_for)
