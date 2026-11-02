@@ -12,8 +12,8 @@ import dev_auth,migrate
 
 
 def exercise(root,conninfo):
-    config=json.loads(conninfo.read_text());auth=root/'auth';dev_auth.init(auth,['alice','bob'])
-    tokens={s:dev_auth.token(auth,s,30) for s in ('alice','bob')}
+    config=json.loads(conninfo.read_text());auth=root/'auth';dev_auth.init(auth,['alice','bob','metadata-owner'])
+    tokens={s:dev_auth.token(auth,s,30) for s in ('alice','bob','metadata-owner')}
     headers={s:{'Authorization':'Bearer '+t,'Content-Type':'application/octet-stream'} for s,t in tokens.items()}
     # Component inventory is explicit: actual feedback domain only. This is not a
     # false whole-registry/C/A completion claim; the default full inventory blocks.
@@ -112,6 +112,43 @@ def exercise(root,conninfo):
         entries=next(store for store in actual['stores'] if store['id']=='device-cache')['objects']
         assert set(TARGETS)=={'device-cache/'+entry['id'] for entry in entries}
         print('PASS corrupted original plan rejects; actual full inventory missing owner hooks blocks before retirement; all device call targets registered')
+        # Actual HTTP metadata finalization after the original device report:
+        # erase the private scope plan, retain only bounded progress/fences.
+        meta_registry=root/'metadata-registry.json'
+        meta_inventory=(target,'business/cleanup-metadata',*TARGETS)
+        meta_registry.write_bytes(encode(dict(version='metadata-bridge-proof',stores=[
+            dict(id='business',objects=[dict(id=n.split('/')[1],cleanup_protocol='CLEANUP@1.1') for n in meta_inventory[:2]]),
+            dict(id='device-cache',objects=[dict(id=n.split('/')[1],cleanup_protocol='CLEANUP@1.1') for n in TARGETS])
+        ])))
+        meta_options=replace(options,inventory=meta_inventory,registry_path=meta_registry)
+        meta_app=create_local_app(conninfo_path=conninfo,auth_dir=auth,cleanup_configuration=meta_options)
+        with TestClient(meta_app) as mc:
+            def mp(url,body,scheme='Bearer',credential=tokens['metadata-owner']):
+                return expect(mc.post(url,content=encode(body),headers={'Authorization':scheme+' '+credential,'Content-Type':'application/octet-stream'}))
+            md=mp('/v1/cleanup-devices',dict(version='CLEANUP-DEVICE@1',action_id='register',device_id='meta-device',state_ref=digest(b'meta-state')))
+            mp('/v1/feedback',dict(action_id='meta-feedback',problem='private original',expectation='',references=[]))
+            prepared_meta=mp('/v1/account-cleanup-operations',dict(version='CLEANUP-API@1',action_id='meta-prepare',binding_id=md['binding_id']))
+            meta_op=prepared_meta['operation_id'];meta_url='/v1/account-cleanup-operations/'+meta_op
+            awaiting=mp(meta_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared_meta['registry_digest'],confirmation='DELETE_ACCOUNT'))
+            assert awaiting['online_status']=='unknown' and any(s['state']=='pending' for s in awaiting['steps'] if s['target']=='business/cleanup-metadata')
+            dc=mp('/v1/cleanup-device-calls',dict(version='CLEANUP-DEVICE@1',binding_id=md['binding_id'],reason='session_invalid'),'Device',md['device_token'])
+            assert set(dc['call']['targets'])==set(TARGETS)
+            dr=dict(version='CLEANUP-DEVICE@1',action_id='meta-report',operation_id=meta_op,invocation_id=dc['call']['invocation_id'],binding_id=md['binding_id'],request_digest=dc['request_digest'],outcome='confirmed')
+            assert mp('/v1/cleanup-device-receipts',dr,'Cleanup',dc['receipt_token'])['state']=='confirmed'
+            final_meta=expect(mc.get(meta_url,headers={'Authorization':'Cleanup '+prepared_meta['progress_token']}))
+            assert final_meta['online_status']=='complete' and final_meta['status']!='complete'
+            with psycopg.connect(**config) as conn:
+                assert conn.execute('SELECT plan_bytes FROM cj_cleanup_request WHERE operation_id=%s',(meta_op,)).fetchone()==(None,)
+                assert conn.execute('SELECT plan_bytes FROM cj_cleanup_operation WHERE operation_id=%s',(meta_op,)).fetchone()==(None,)
+                assert conn.execute('SELECT count(*) FROM cj_feedback_action WHERE scope=%s',(scope_for(ISSUER,'metadata-owner'),)).fetchone()[0]==0
+            from cj_api.local_cleanup import Runtime
+            from cj_api.local_worker_context import checker_for
+            runtime=Runtime(LocalDatabase(conninfo),meta_options,scope_for)
+            claims=runtime.issuer.verify(prepared_meta['progress_token'],purpose='progress',operation_id=meta_op)
+            resumed=runtime.host_gateway(checker_for(auth)).resume(claims.subject_digest,meta_op)
+            assert resumed['online_status']=='complete' and resumed['status']!='complete'
+            assert mp('/v1/cleanup-device-receipts',dr,'Cleanup',dc['receipt_token'])['state']=='confirmed'
+        print('PASS real original HTTP/device/metadata chain: all seven registered device report hooks, same-transaction private plan erasure, restricted progress and host recovery after redaction')
         try:
             with psycopg.connect(**config,autocommit=True) as conn:migrate.down(conn,migrate.load(),34)
         except psycopg.Error:pass
