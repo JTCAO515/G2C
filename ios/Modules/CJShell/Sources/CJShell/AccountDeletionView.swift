@@ -19,13 +19,15 @@ struct AccountDeletionLink: View {
 /// Opening this page does not create an operation, submit a request or erase a file.
 struct AccountDeletionView: View {
     let language: ShellLanguage
+    @Environment(\.accountCleanupHost) private var cleanup
     var body: some View {
         List {
-            section(language.text("Availability", "当前状态")) {
+            if let cleanup { AccountCleanupControls(host: cleanup, language: language) }
+            else { section(language.text("Availability", "当前状态")) {
                 paragraph(language.text(
                     "Account deletion is not available yet. No deletion request has been sent.",
                     "账号注销尚未开放，未发送注销请求。"), id: "account.deletion.unavailable")
-            }
+            } }
             section(language.text("Memory and account deletion", "删除记忆与注销账号")) {
                 paragraph(language.text(
                     "Deleting one memory stops its future use and cleans its related records. It keeps your account and original chat. Signing out on this device also keeps your account.",

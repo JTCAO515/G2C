@@ -29,11 +29,15 @@ FULL_INVENTORY = ('business/message','business/usage','business/memory-authorita
 
 
 def main():
+    global BUNDLE
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('simulator', 'backend-head'): parser.add_argument('--' + name, required=True)
     for name in ('backend-source', 'run-context', 'output', 'build-dir'): parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--case', choices=CASES)
-    args = parser.parse_args(); backend = args.backend_source.resolve(); output = args.output.resolve(); build = args.build_dir.resolve()
+    parser.add_argument('--native-device', action='store_true', help='Use actual CJProbeApp DEVICE@3 workflow; legacy component cases remain default')
+    args = parser.parse_args()
+    if args.native_device: BUNDLE='space.go2china.device-v3.acceptance'
+    backend = args.backend_source.resolve(); output = args.output.resolve(); build = args.build_dir.resolve()
     for path in (output, build):
         if path.is_relative_to(ROOT) or path.is_relative_to(backend): raise ValueError('external artifact/build root required')
     output.mkdir(parents=True)
@@ -62,12 +66,17 @@ def main():
         if not Path(module.__file__).resolve().is_relative_to(backend): raise ValueError('foreign backend import')
     context=load_run_context(args.run_context)
     report=dict(status='RUNNING',head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(), backend_head=head,
-        app_mode='native_component_harness_not_CJProbeApp',positive_inventory=list(B_DOMAINS),full_registry=str(Path('backend/storage-registry.json')),
+        app_mode='CJProbeApp_device_v3' if args.native_device else 'native_component_harness_not_CJProbeApp',positive_inventory=list(B_DOMAINS),full_registry=str(Path('backend/storage-registry.json')),
         cases={},proofs={},faults=[],run_context=json.loads(args.run_context.read_text()),
         unrun=['CJProbeApp account UI/full AX/localizations', 'complete device hook/key erasure/current-device receipt', 'C/all-domain full-account completion', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment'])
     sources=[Path(__file__),HERE/'AccountCleanupComponentApp.swift',HERE/'AccountCleanupComponentUITests.swift',ROOT/'ios/App/DevelopmentSessionConfiguration.swift']
     for module in ('CJCleanupClient','CJMessageClient'):
         sources+=list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
+    if args.native_device:
+        sources += [ROOT/'ios/App/CJProbeApp.swift', ROOT/'ios/App/DevelopmentTripHost.swift', HERE/'DevelopmentDeviceCleanupUITests.swift']
+        for module in ('CJShell','CJOfflineTrip','CJAuth','CJTripClient','CJManualPreviewClient','CJMemoryClient','CJNeedsClient','CJFeedbackClient'):
+            sources += list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
+        report['unrun']=['all C online cleanup domains', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment']
     report['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     report['backend_trees']={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=backend,text=True).strip() for name in ('backend','contracts','scripts')}
     def save(): (output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
@@ -129,6 +138,8 @@ def main():
                     run_worker.run_once(database,model,auth)
                     provider_counts[case]=model.calls-before
                     assert provider_counts[case]==2,'actual A/B original FakeProvider run did not complete'
+                original_size = subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
+                if args.native_device: subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size','accessibility-extra-extra-extra-large'],env=env,check=True)
                 endpoints={}
                 for mode,app in apps.items():
                     async def observed(scope,receive,send,app=app,mode=mode):
@@ -148,12 +159,22 @@ def main():
                         for field in ('device_token','progress_token'):
                             if field in response: secrets.append(response[field])
                         if isinstance(response.get('preparation'),dict):secrets.append(response['preparation']['progress_token'])
+                        for payload in (response,response.get('registration',{}),response.get('invocation',{})):
+                            if isinstance(payload,dict):
+                                for name in ('device_token','receipt_token'):
+                                    if name in payload:secrets.append(payload[name])
                         entry=dict(mode=mode,case=current['case'],actor=None if who is None else who[1],method=scope['method'],path=scope['path'],http_status=status,
                             authorization_scheme=authorization.partition(' ')[0],request_sha256=hashlib.sha256(body).hexdigest())
                         if body: entry['action']=json.loads(body)
                         for name in ('operation_id','binding_id','registry_digest','phase','status','business_access'):
                             if name in response:entry[name]=response[name]
                         if isinstance(response.get('preparation'),dict): entry['operation_id']=response['preparation']['operation_id']
+                        if isinstance(response.get('invocation'),dict):
+                            call=response['invocation']['call']
+                            entry['device_call']=call
+                            entry['device_state']=response['invocation']['state']
+                        if isinstance(response.get('call'),dict):
+                            entry['device_call']=response['call'];entry['device_state']=response['state']
                         with lock:audits.append(entry);drop=scope['method']=='POST' and fault['path']==scope['path'];fault['path']=None if drop else fault['path']
                         if drop:
                             report['faults'].append(dict(path=scope['path'],actual_status=status,actual_operation_id=response.get('operation_id')));save()
@@ -227,14 +248,32 @@ def main():
                             if case not in CASES:raise ValueError('unknown case')
                             if parsed.path=='/fixture':
                                 current['case']=case
-                                value=dict(endpoint=endpoints['full' if case=='testActualFullInventoryBlocked' else 'component'],accounts=tokens[case],case_id=case)
+                                value=dict(endpoint=endpoints['full' if case=='testActualFullInventoryBlocked' else 'component'],accounts=tokens[case],subjects=subjects[case],case_id=case)
                             elif parsed.path=='/fault':
                                 if query['kind']=='preparation':fault['path']='/v1/account-cleanup-operations'
                                 elif query['kind']=='confirmation':
                                     candidates=proof(case)['accounts']['A']['operations'];assert len(candidates)==1
                                     fault['path']='/v1/account-cleanup-operations/'+candidates[0]['operation_id']+'/confirmation'
+                                elif query['kind']=='device-receipt' and args.native_device:fault['path']='/v3/cleanup-device-receipts'
                                 else:raise ValueError('unknown fault')
                                 value={}
+                            elif parsed.path=='/native-files' and args.native_device:
+                                container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
+                                namespace=lambda value:str(uuid.UUID(bytes=hashlib.sha256(value.encode()).digest()[:16])).upper()
+                                environment=namespace('G2C.DEBUG.TRIP.environment|'+endpoints['component'])
+                                account=namespace('G2C.DEBUG.TRIP.account|https://local.g2c.invalid|'+subjects[case]['A'])
+                                support=container/'Library/Application Support'
+                                known=('G2CDevelopmentMessages','G2CDevelopmentTrip','G2CDevelopmentMemory','G2CDevelopmentNeeds','G2CDevelopmentFeedback','G2COfflineTrip')
+                                counts={}
+                                for folder in known:
+                                    base=support/folder/environment
+                                    candidates=[p for p in base.glob(account+'*')] if base.exists() else []
+                                    counts[folder]=sum(1 for parent in candidates for p in parent.rglob('*') if p.is_file())
+                                if query['stage']=='before':assert counts['G2CDevelopmentMessages']>0,'real App draft did not persist encrypted snapshot'
+                                elif query['stage']=='after':assert all(n==0 for n in counts.values()),'original App private files remain'
+                                else:raise ValueError('unknown native file stage')
+                                value=dict(stage=query['stage'],counts=counts)
+                                report.setdefault('native_files',{}).setdefault(case,{})[query['stage']]=value;save()
                             elif parsed.path=='/proof':value=proof(case)
                             elif parsed.path=='/validate':
                                 value=proof(case);a=value['accounts']['A'];b=value['accounts']['B'];assert len(a['operations'])==1 and not b['operations']
@@ -246,7 +285,19 @@ def main():
                                 if case=='testActualCommittedUnknownReopen':assert a['fences']==1 and a['cleanup_private_read_eligible'] and all(count==0 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='confirmed'
                                 else:assert a['fences']==0 and all(count==1 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='prepared'
                                 assert not any(e['path'].startswith('/v1/cleanup-device-calls') or e['path'].startswith('/v1/cleanup-device-receipts') for e in value['api'])
-                                report.setdefault('checks',{})[case]=dict(real_server_original=True,exact_original_bytes=True,no_repeated_prepare_or_confirmation=True,other_actor_unchanged=True,device_hook_not_claimed=True);save()
+                                if args.native_device:
+                                    registrations=[e for e in writes if e['path']=='/v3/cleanup-devices'];assert len(registrations)==1
+                                    calls=[e for e in writes if e['path']=='/v3/cleanup-device-calls']
+                                    receipts=[e for e in writes if e['path']=='/v3/cleanup-device-receipts']
+                                    if case=='testActualCommittedUnknownReopen':
+                                        assert len(calls)==len(receipts)==1
+                                        call=calls[0]['device_call'];assert call['operation_id']==a['operations'][0]['operation_id']
+                                        assert call['reason']=='account_cleanup' and len(call['targets'])==19
+                                        assert receipts[0]['device_state']=='confirmed' and receipts[0]['action']['outcome']=='confirmed'
+                                        original_reads=[e for e in value['api'] if e['method']=='GET' and e['path']=='/v3/cleanup-device-calls/'+call['invocation_id']]
+                                        assert original_reads and original_reads[-1]['device_state']=='confirmed'
+                                    else:assert not calls and not receipts
+                                report.setdefault('checks',{})[case]=dict(real_server_original=True,exact_original_bytes=True,no_repeated_prepare_or_confirmation=True,other_actor_unchanged=True,device_hook_not_claimed=not args.native_device);save()
                             else:raise ValueError('unknown control path')
                             raw=json.dumps(value).encode();self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw)
                         except Exception as error:
@@ -254,11 +305,12 @@ def main():
                 control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
                 spec=importlib.util.spec_from_file_location('cleanup_component_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
                 builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
-                (builder.directory/'G2CControl.swift').write_text((HERE/'AccountCleanupComponentUITests.swift').read_text().replace('__CONTROL_URL__','http://127.0.0.1:'+str(control.server_port)))
+                test_file='DevelopmentDeviceCleanupUITests.swift' if args.native_device else 'AccountCleanupComponentUITests.swift'
+                (builder.directory/'G2CControl.swift').write_text((HERE/test_file).read_text().replace('__CONTROL_URL__','http://127.0.0.1:'+str(control.server_port)))
                 project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';text=pbx.read_text()
                 original_entry=json.dumps(str(ROOT/'ios/App/CJProbeApp.swift'))
                 assert text.count(original_entry)==1,'component entry replacement missing or ambiguous'
-                text=text.replace(original_entry,json.dumps(str(HERE/'AccountCleanupComponentApp.swift')))
+                if not args.native_device:text=text.replace(original_entry,json.dumps(str(HERE/'AccountCleanupComponentApp.swift')))
                 text=text.replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
                 entitlement=builder.directory/'Component.entitlements';entitlement.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}))
                 pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlement))))
@@ -267,7 +319,7 @@ def main():
                     command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+args.simulator,
                         '-derivedDataPath',str(build),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO',
                         '-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-',
-                        '-only-testing:G2CControl/AccountCleanupComponentUITests/'+case,'test']
+                        '-only-testing:G2CControl/'+('DevelopmentDeviceCleanupUITests' if args.native_device else 'AccountCleanupComponentUITests')+'/'+case,'test']
                     run=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True,timeout=1200)
                     log=run.stdout+run.stderr
                     for secret in secrets:
@@ -289,6 +341,8 @@ def main():
     except Exception as error:
         report['status']='FAIL';report['error_type']=type(error).__name__;save();raise
     finally:
+        if args.native_device and 'original_size' in locals():
+            subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
         if control:control.shutdown();control.server_close()
         for server in servers:server.should_exit=True
         for thread in threads:thread.join(timeout=10)

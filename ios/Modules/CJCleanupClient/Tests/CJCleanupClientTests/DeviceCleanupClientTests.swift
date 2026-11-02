@@ -119,13 +119,15 @@ private struct V3Wire: ClientTransport {
     var executions = 0, reconciliations = 0
     var first: DeviceCleanupNativeOutcome = .unknown
     var recovered: DeviceCleanupNativeOutcome = .confirmed
+    var failReconciliation = false
     init(_ h: V3Harness) { scope=h.scope;store=h.secure }
     func executeOriginal(_ invocation:DeviceCleanupInvocation,intentID:UUID) throws -> DeviceCleanupNativeOutcome {
         #expect(try store.record().nativeIntentID == intentID)
         #expect(invocation.targets.count == 19); executions += 1;return first
     }
     func reconcileOriginal(_ invocation:DeviceCleanupInvocation,intentID:UUID) throws -> DeviceCleanupNativeOutcome {
-        #expect(try store.record().nativeIntentID == intentID);reconciliations += 1;return recovered
+        #expect(try store.record().nativeIntentID == intentID);reconciliations += 1
+        if failReconciliation { throw CleanupFailure.unavailable }; return recovered
     }
 }
 @MainActor struct DeviceCleanupClientTests {
@@ -178,6 +180,31 @@ private struct V3Wire: ClientTransport {
         #expect(final.state == .confirmed && native.executions==1 && native.reconciliations==1)
         #expect(h.server.requests.filter{$0.operation=="reportCleanupDeviceReceiptV3"}.count==2)
         #expect(throws:CleanupFailure.unavailable){try h.client.prepareReceipt()}
+    }
+    @Test func originalActionQueryCannotRetargetAnAlreadySealedNativeCall() async throws {
+        let h = try V3Harness(); try await h.refuse()
+        _ = try await h.client.perform(h.client.prepareSessionInvalidation())
+        let original = try h.secure.record().invocationReply
+        var result = try #require(h.server.invocation), call = try #require(result["call"] as? [String: Any])
+        call["operation_id"] = "another-valid-operation"
+        call["invocation_id"] = "another-valid-invocation"
+        result["call"] = call; result["request_digest"] = deviceCleanupSHA(try v3Encode(call))
+        h.server.invocation = result
+        await #expect(throws: CleanupFailure.invalidResponse) { try await h.client.perform(h.client.prepareOriginalCallQuery()) }
+        #expect(try h.secure.record().invocationReply == original)
+        #expect(try h.secure.record().nativeIntentID == nil)
+    }
+    @Test func throwingOriginalReconciliationRetainsIntentAndNeverRunsAnotherErase() async throws {
+        let h = try V3Harness(); try await h.refuse()
+        _ = try await h.client.perform(h.client.prepareSessionInvalidation())
+        let native = V3Native(h)
+        #expect(try h.client.executeNative(using: native) == .unknown)
+        let originalIntent = try h.secure.record().nativeIntentID
+        native.failReconciliation = true
+        #expect(throws: CleanupFailure.exchangeUnknown) { try h.client.executeNative(using: native) }
+        #expect(try h.secure.record().nativeIntentID == originalIntent)
+        #expect(try h.secure.record().nativeOutcome == .unknown)
+        #expect(native.executions == 1 && native.reconciliations == 1)
     }
     @Test func callbackAccountSwitchAndLateResponseCannotCommitAnotherScope() async throws {
         let h=try V3Harness(),work=try h.client.prepareRegistration(stateRef:v3State)

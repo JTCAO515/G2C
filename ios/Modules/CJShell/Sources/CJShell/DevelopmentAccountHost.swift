@@ -30,6 +30,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     @ObservationIgnored private let invalidate: () -> Void
     @ObservationIgnored private let clearOffline: (() throws -> Void)?
     @ObservationIgnored private let serverRejected: ((SessionMaterial) throws -> Void)?
+    @ObservationIgnored private let identityWillChange: (() -> Void)?
     @ObservationIgnored private var request = UUID()
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var active: (SessionMaterial, SessionOperation)?
@@ -40,11 +41,12 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                 activate: @escaping (SessionMaterial, SessionLifecycle, SessionOperation) throws -> Void,
                 invalidate: @escaping () -> Void,
                 clearOffline: (() throws -> Void)? = nil,
-                serverRejected: ((SessionMaterial) throws -> Void)? = nil) {
+                serverRejected: ((SessionMaterial) throws -> Void)? = nil,
+                identityWillChange: (() -> Void)? = nil) {
         self.shell = shell; self.choices = choices
         self.session = SessionLifecycle(persistence: persistence, restorePolicy: .userInitiatedOnly)
         self.material = material; self.verify = verify; self.activate = activate; self.invalidate = invalidate
-        self.clearOffline = clearOffline; self.serverRejected = serverRejected
+        self.clearOffline = clearOffline; self.serverRejected = serverRejected; self.identityWillChange = identityWillChange
     }
 
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
@@ -69,7 +71,9 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     }
 
     public func signIn(_ choiceID: String) {
-        guard choices.contains(where: { $0.id == choiceID }), let (id, generation) = begin() else { return }
+        guard choices.contains(where: { $0.id == choiceID }) else { return }
+        identityWillChange?()
+        guard let (id, generation) = begin() else { return }
         do {
             if let clearOffline {
                 var cacheFailure: (any Error)?
@@ -97,6 +101,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
 
     /// Called only by an explicit Restore button; no background/automatic Keychain restore.
     public func restore() {
+        identityWillChange?()
         guard let (id, generation) = begin() else { return }
         do {
             let operation = try session.beginUserRestore()
@@ -113,6 +118,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     }
 
     public func signOut() {
+        identityWillChange?()
         guard let (id, generation) = begin() else { return }
         var cacheFailed = false
         if let clearOffline { do { try clearOffline() } catch { cacheFailed = true } }
@@ -124,6 +130,16 @@ public enum DevelopmentAccountState: Equatable, Sendable {
         case .failed: state = .storageUnavailable
         case .replaced: break
         }
+    }
+
+    /// Original account-cleanup exit: retire in-memory SDK material as well as
+    /// its canonical secure slot. Does not clear another workflow's evidence.
+    public func clearForAccountCleanup() throws {
+        guard let (id, generation) = begin() else { throw SessionFailure.staleOperation }
+        let result = session.clearWithSettlement()
+        guard request == id, shell.generation == generation else { throw SessionFailure.staleOperation }
+        guard result == .cleared else { state = .storageUnavailable; throw SessionFailure.storageUnavailable }
+        state = .signedOut
     }
 
     /// Backgrounding fences visible data; it never clears the Keychain credential.

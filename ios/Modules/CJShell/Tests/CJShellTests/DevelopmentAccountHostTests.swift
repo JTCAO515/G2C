@@ -78,6 +78,22 @@ import CJSession
         #expect(shell.messageBindingBlocked)
     }
 
+    @Test func cleanupClearsCanonicalSDKAndCannotResumeRetainedActiveMaterial() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        var changes = 0, activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [.init(id: "A", label: "A")], persistence: store,
+            material: { try SessionMaterial(trustedSDKBytes: Data($0.utf8)) }, verify: { await checks.check($0) },
+            activate: { _,_,_ in activations += 1 }, invalidate: {}, identityWillChange: { changes += 1 })
+        host.signIn("A"); await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "A")); await wait { host.state == .signedIn("A") }
+        try host.clearForAccountCleanup()
+        #expect(store.blocked && store.value == nil && host.state == .signedOut && shell.messageBindingBlocked)
+        #expect(changes == 1) // The original restricted workflow is retained.
+        host.suspend(); host.resume()
+        for _ in 0..<20 { await Task.yield() }
+        #expect(checks.replies.count == 1 && activations == 1)
+        host.signOut(); #expect(changes == 2)
+    }
     @Test func foregroundRevalidatesMemoryWithoutAutomaticKeychainRestore() async throws {
         let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
         let host = make(shell, store, checks)

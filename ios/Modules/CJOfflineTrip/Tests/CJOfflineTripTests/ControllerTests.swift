@@ -122,6 +122,42 @@ private actor ControllerWire: ClientTransport {
         reopened.readCached()
         guard case .missing = reopened.state else { Issue.record("Cleared grant must remain absent"); return }
     }
+    @Test func deviceHookBindsExactAccountAndClearsOriginalResidueWithoutKeyReplacement() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("verified-sdk-device-original".utf8)))
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let directory = h.root.appendingPathComponent(h.ns.account.uuidString)
+        let snapshot = directory.appendingPathComponent("snapshot.aesgcm")
+        let bytes = try Data(contentsOf: snapshot), original = anchors.value?.withBytes { $0 }
+        #expect(throws: OfflineFailure.wrongNamespace) { try active.clearDeviceAccount(account: UUID()) }
+        #expect(throws: OfflineFailure.wrongNamespace) { try active.clearDeviceTemporaryWrites(account: UUID()) }
+        #expect(try Data(contentsOf: snapshot) == bytes && anchors.value?.withBytes { $0 } == original)
+        let temporary = directory.appendingPathComponent(".write-" + UUID().uuidString)
+        try Data([1,2,3]).write(to: temporary)
+        try active.clearDeviceAccount(account: h.ns.account)
+        try active.verifyDeviceAnchorCleared()
+        #expect(!FileManager.default.fileExists(atPath: snapshot.path))
+        #expect(FileManager.default.fileExists(atPath: temporary.path))
+        try active.clearDeviceTemporaryWrites(account: h.ns.account)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
+        let retained = try h.provider.existing(expectedID: h.expectedID, for: h.provider.begin(.lookup))
+        #expect(retained?.id == h.expectedID)
+    }
+    @Test func exactOrphanWithoutAnchorIsErasedButNeverRestoredReadable() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("verified-sdk-device-original".utf8)))
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        anchors.value = nil // Interruption lost the grant; the protected exact file is not a read source.
+        let reopened = try controller(h, anchors, clock, sdk: sdk)
+        reopened.readCached(); guard case .missing = reopened.state else { Issue.record("Orphan became readable"); return }
+        try reopened.clearDeviceAccount(account: h.ns.account)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: h.root.appendingPathComponent(h.ns.account.uuidString).path).isEmpty)
+        try reopened.verifyDeviceAnchorCleared()
+    }
     @Test func wrongRejectedIdentityDoesNotEraseTheCurrentGrant() async throws {
         let h = try KeyHarness(); defer { h.cleanup() }
         let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()

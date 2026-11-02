@@ -342,6 +342,29 @@ struct OfflineAnchor: Codable, Equatable {
         case .failure(let error): try anchors.clearAndBlock(); throw error
         }
     }
+    /// Exact account guard for the native device hook. Never clear an anchor
+    /// which now belongs to a different account; caller holds the original scope.
+    public func clearDeviceAccount(account: UUID) throws {
+        if let anchor = try loadAnchor() {
+            guard anchor.namespace.backend == environment, anchor.namespace.account == account else { throw OfflineFailure.wrongNamespace }
+        }
+        let unanchored = try loadAnchor() == nil
+        try clearLocally()
+        // An interrupted sync may leave an exact owned file without a grant.
+        // Reuse the cached store so its unresolved-write guard still applies.
+        if unanchored { try store(account, create: false).clearLocalEntry() }
+    }
+    public func verifyDeviceAnchorCleared() throws {
+        guard try loadAnchor() == nil else { throw OfflineFailure.unavailable }
+    }
+    /// Reuses this controller's existing store, preserving its original pending
+    /// write guard. No fresh store can bypass an unresolved original write.
+    public func clearDeviceTemporaryWrites(account: UUID) throws {
+        if let anchor = try loadAnchor() {
+            guard anchor.namespace.backend == environment, anchor.namespace.account == account else { throw OfflineFailure.wrongNamespace }
+        }
+        try store(account, create: false).clearLocalTemporaryWrites()
+    }
     public func prepareSynchronization() { syncState = .synchronizing }
     public func noteSyncReadFailure() { syncState = .failed }
     public func currentIdentityRejected() throws {

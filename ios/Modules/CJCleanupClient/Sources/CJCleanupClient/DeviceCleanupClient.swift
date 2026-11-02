@@ -209,7 +209,8 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         var next = journal.record
         let outcome: DeviceCleanupNativeOutcome
         if let intent = next.nativeIntentID {
-            outcome = try executor.reconcileOriginal(invocation, intentID: intent)
+            do { outcome = try executor.reconcileOriginal(invocation, intentID: intent) }
+            catch { try check(journal.bytes, ordinary: false); next = journal.record; next.nativeOutcome = .unknown; try save(next); throw CleanupFailure.exchangeUnknown }
         } else {
             guard invocation.state == .pending else { throw CleanupFailure.unavailable }
             let intent = UUID(); next.nativeIntentID = intent
@@ -293,8 +294,15 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
                 guard work.kind == .actionQuery else { throw CleanupFailure.invalidResponse }
                 return .notObserved
             }
+            // A second read may update state, never retarget the original call.
+            let priorInvocation = next.invocationReply == nil ? nil : try next.invocation()
             next.invocationReply = raw; next.invocationFromActionQuery = work.kind == .actionQuery
-            try save(next); return .invocation(try next.invocation())
+            let observed = try next.invocation()
+            if let priorInvocation {
+                guard priorInvocation.invocationID == observed.invocationID,
+                      priorInvocation.canonicalCallUTF8 == observed.canonicalCallUTF8 else { throw CleanupFailure.invalidResponse }
+            }
+            try save(next); return .invocation(observed)
         case .invocationQuery, .receipt:
             let original = try next.invocation()
             let observed = try DeviceCleanupInvocation(result: accountCleanupDocument(raw), enrollment: next.enrollment(), directQuery: true, expectedOperationID: original.operationID)

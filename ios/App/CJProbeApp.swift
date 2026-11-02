@@ -51,6 +51,7 @@ struct CJProbeApp: App {
                       runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
                       developmentAccountHost: developmentAccounts?.accounts, offlineTripController: developmentAccounts?.offline,
                       memoryHistoryContainerHost: developmentAccounts?.trip?.memoryHistory?.host ?? development?.memoryHistory?.host)
+                .environment(\.accountCleanupHost, developmentAccounts?.cleanup)
                 .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained
                 .safeAreaInset(edge: .top) {
                     if developmentFailed {
