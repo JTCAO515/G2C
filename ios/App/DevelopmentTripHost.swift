@@ -1,5 +1,6 @@
 #if DEBUG && targetEnvironment(simulator)
 import Foundation
+import Darwin
 import CJShell
 import CJTripClient
 import CJManualPreviewClient
@@ -10,6 +11,7 @@ import CJOfflineTrip
 import CJMemoryClient
 import CJNeedsClient
 import CJFeedbackClient
+import CJCleanupClient
 import CJMessageKeyBridge
 import CJMessageKeys
 import CJSession
@@ -846,4 +848,68 @@ private struct DevelopmentVerificationTransport: ClientTransport {
         return (response, HTTPBody(bytes))
     }
 }
+
+/// Fixed App-owned locations, captured only after normal writers are quiesced.
+/// Neither an HTTP field nor a target string is ever concatenated into a path.
+@MainActor private final class DevelopmentDeviceNativeLayout {
+    let scope: AccountCleanupScope
+    private let support: DeviceCleanupDirectory
+    private let roots: [DeviceCleanupTarget: [DeviceCleanupDirectory]]
+    init(scope: AccountCleanupScope) throws {
+        self.scope = scope
+        let supplied = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+            appropriateFor: nil, create: false)
+        guard let physical = realpath(supplied.path, nil) else { throw CleanupFailure.unavailable }
+        defer { free(physical) }
+        let base = try DeviceCleanupDirectory(existingOwnedAncestor: URL(fileURLWithPath: String(cString: physical)))
+        support = base
+        let environment = scope.environment.uuidString, account = scope.account.uuidString
+        func capture(_ folder: String, _ child: String, _ nested: String? = nil) throws -> DeviceCleanupDirectory {
+            let root = try base.child(folder).child(environment).child(child)
+            return try nested.map { try root.child($0) } ?? root
+        }
+        let trip = try capture("G2CDevelopmentTrip", account)
+        let manual = try capture("G2CDevelopmentTrip", account + ".CJTripManual")
+        let manualRejected = try capture("G2CDevelopmentTrip", account + ".CJTripManual.CJTripManualRejections")
+        let scoped = try [".ScopedOriginals", ".ScopedReceipts"].map { try capture("G2CDevelopmentTrip", account + $0) }
+        let planning = try [".NeedsPlanningOriginals", ".NeedsPlanningReceipts"].map { try capture("G2CDevelopmentTrip", account + $0) }
+        let memory = try ["", ".CJMemoryRejections"].map { try capture("G2CDevelopmentMemory", account + $0) }
+        let lifecycle = try [".lifecycle", ".lifecycle.CJMemoryManagementRejections"].map { try capture("G2CDevelopmentMemory", account + $0) }
+        let typed = try [".typed-v2", ".typed-v2.CJMemoryTypedRejectionsV2", ".typed-v2.CJMemoryTypedManagementV2", ".typed-v2.CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2"].map { try capture("G2CDevelopmentMemory", account + $0) }
+        let history = try [".history-v1", ".history-v1.CJMemoryHistoryRejectionsV1"].map { try capture("G2CDevelopmentMemory", account + $0) }
+        let needs = try ["", ".CJNeedsRejections"].map { try capture("G2CDevelopmentNeeds", account + $0) }
+        let feedback = try ["Answer", "General"].map { try capture("G2CDevelopmentFeedback", account, $0) }
+        let offline = try capture("G2COfflineTrip", account)
+        roots = [
+            .encryptedMessage: [try capture("G2CDevelopmentMessages", account)],
+            .tripPending: [trip, manual, manualRejected], .tripScoped: scoped, .needsPlanning: planning,
+            .memoryManual: memory, .memoryLifecycle: lifecycle, .memoryTyped: typed, .memoryHistory: history,
+            .needsPending: needs, .feedbackPending: feedback, .offlineTrip: [offline], .offlineWriteResidue: [offline],
+            .tripKey: [trip, manual, manualRejected] + scoped + planning,
+            .memoryKey: memory + lifecycle + typed + history, .needsKey: needs, .feedbackKey: feedback,
+            .offlineKey: [offline], .messageKey: [try capture("G2CDevelopmentMessages", account)]
+        ]
+    }
+    func directories(for target: DeviceCleanupTarget) throws -> [DeviceCleanupDirectory] {
+        try support.validateIdentity()
+        guard let result = roots[target] else { throw CleanupFailure.unavailable }
+        for directory in result { try directory.validateIdentity() }
+        return result
+    }
+    func requireEmpty(for target: DeviceCleanupTarget) throws {
+        for directory in try directories(for: target) { try directory.requireEmpty() }
+    }
+    func primaryURL(for target: DeviceCleanupTarget) throws -> URL? {
+        guard let first = try directories(for: target).first else { throw CleanupFailure.unavailable }
+        return try first.existingURLForTrustedHost()
+    }
+    func manifestReferences() throws -> [String: [String]] {
+        var result: [String: [String]] = [:]
+        for target in DeviceCleanupTarget.allCases where target != .sdkSession {
+            result[target.rawValue] = try directories(for: target).map { try $0.identityReference() }
+        }
+        return result
+    }
+}
+
 #endif
