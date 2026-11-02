@@ -53,11 +53,6 @@ def register_account_cleanup_routes(app,gateway):
         except (Denied,CapabilityUnavailable):return _error(request,403,'CLEANUP_ACCESS_UNAVAILABLE','access','failed','do_not_retry')
         except Exception:return _error(request,503,'CLEANUP_OUTCOME_UNKNOWN','dependency','unknown','reconcile_original' if write else 'retry_safe_read')
 
-    @app.post('/v1/cleanup-devices')
-    async def register_device(request:Request):
-        return await invoke(request,lambda token,v,raw,p:gateway.register_device(token,v['action_id'],digest(raw),v['device_id'],v['state_ref'],p),
-            write=True,scheme='Bearer',version='CLEANUP-DEVICE@1',fields=('action_id','device_id','state_ref'))
-
     @app.post('/v1/account-cleanup-operations')
     async def prepare(request:Request):
         return await invoke(request,lambda token,v,raw,p:gateway.prepare(token,v['action_id'],digest(raw),v['binding_id'],p),
@@ -85,17 +80,26 @@ def register_account_cleanup_routes(app,gateway):
     async def progress(operation_id:str,request:Request):
         return await invoke(request,lambda cap,v,raw,p:gateway.progress(cap,identifier(operation_id),p),write=False,scheme='Cleanup')
 
-    @app.post('/v1/cleanup-device-calls')
-    async def device_call(request:Request):
-        return await invoke(request,lambda cap,v,raw,p:gateway.device_call(cap,v['binding_id'],v['reason'],p),write=True,
-            scheme='Device',version='CLEANUP-DEVICE@1',fields=('binding_id','reason'))
+    def device_routes(prefix,version):
+        @app.post(prefix+'/cleanup-devices')
+        async def register_device(request:Request):
+            return await invoke(request,lambda token,v,raw,p:gateway.register_device(token,v['action_id'],digest(raw),v['device_id'],v['state_ref'],p,device_version=version),
+                write=True,scheme='Bearer',version=version,fields=('action_id','device_id','state_ref'))
 
-    @app.post('/v1/cleanup-device-receipts')
-    async def device_receipt(request:Request):
-        return await invoke(request,lambda cap,v,raw,p:gateway.device_receipt(cap,v['action_id'],v['operation_id'],v['invocation_id'],
-            v['binding_id'],v['request_digest'],v['outcome'],raw,p),write=True,scheme='Cleanup',version='CLEANUP-DEVICE@1',
-            fields=('action_id','operation_id','invocation_id','binding_id','request_digest','outcome'))
+        @app.post(prefix+'/cleanup-device-calls')
+        async def device_call(request:Request):
+            return await invoke(request,lambda cap,v,raw,p:gateway.device_call(cap,v['binding_id'],v['reason'],p,device_version=version),write=True,
+                scheme='Device',version=version,fields=('binding_id','reason'))
 
-    @app.get('/v1/cleanup-device-calls/{invocation_id}')
-    async def device_query(invocation_id:str,request:Request):
-        return await invoke(request,lambda cap,v,raw,p:gateway.device_query(cap,identifier(invocation_id),p),write=False,scheme='Device')
+        @app.post(prefix+'/cleanup-device-receipts')
+        async def device_receipt(request:Request):
+            return await invoke(request,lambda cap,v,raw,p:gateway.device_receipt(cap,v['action_id'],v['operation_id'],v['invocation_id'],
+                v['binding_id'],v['request_digest'],v['outcome'],raw,p,device_version=version),write=True,scheme='Cleanup',version=version,
+                fields=('action_id','operation_id','invocation_id','binding_id','request_digest','outcome'))
+
+        @app.get(prefix+'/cleanup-device-calls/{invocation_id}')
+        async def device_query(invocation_id:str,request:Request):
+            return await invoke(request,lambda cap,v,raw,p:gateway.device_query(cap,identifier(invocation_id),p,device_version=version),write=False,scheme='Device')
+
+    device_routes('/v1','CLEANUP-DEVICE@1')
+    device_routes('/v2','CLEANUP-DEVICE@2')

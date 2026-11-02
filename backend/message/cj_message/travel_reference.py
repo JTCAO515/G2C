@@ -224,6 +224,25 @@ class MessageContextAuthority:
         return ref
 
     @contextmanager
+    def _hold_current_locked(self,tx,principal,selection):
+        """B source V2 only: reuse its already-held MESSAGE transaction.
+
+        Open no second connection or MESSAGE lock. Acquire TRAVEL before the
+        source policy takes MEMORY, and keep the ordinary lifetime/admission
+        checks on the genuine CurrentTravelLease.
+        """
+        if tx.scope!=self.repository.scope or self.admit()!=principal:
+            raise Denied('current travel owner changed')
+        try:check_context(tx.cur,tx.scope,selection)
+        except ContextConflict as exc:raise Denied('current travel context changed') from exc
+        lease=CurrentTravelLease(self,principal,selection,_factory=_LEASE_FACTORY)
+        try:
+            lease.check()
+            yield lease
+            lease.check()
+        finally:lease._active=False
+
+    @contextmanager
     def hold_current(self,selection):
         """C typed manual-save entry: M/T before MEMORY, no message or fake Trip."""
         principal=self.admit()

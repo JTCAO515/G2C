@@ -85,35 +85,43 @@ class GatewayStore:
             row=cur.fetchone()
         return None if row is None else row[0]
 
-    def register_device(self,action_id,input_digest,device_id,state_ref):
+    def register_device(self,action_id,input_digest,device_id,state_ref,*,protocol='CLEANUP-DEVICE@1'):
         identifier(action_id);identifier(device_id)
         with self.store.transaction('device-'+action_id) as cur:
             self.lock_subject(cur)
             cur.execute('SELECT 1 FROM cj_account_fence WHERE subject_digest=%s',(self.store.subject_digest,))
             if cur.fetchone() is not None:raise Denied('ordinary device registration unavailable')
-            cur.execute('INSERT INTO cj_cleanup_device_binding(subject_digest,binding_id,action_id,input_digest,device_id,state_ref,scope_digest) '
-                'VALUES(%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(subject_digest,action_id) DO NOTHING',
-                (self.store.subject_digest,str(uuid.uuid4()),action_id,input_digest,device_id,state_ref,self.store.subject_digest))
-            cur.execute('SELECT binding_id,input_digest,device_id,state_ref,scope_digest FROM cj_cleanup_device_binding '
+            cur.execute('INSERT INTO cj_cleanup_device_binding(subject_digest,binding_id,action_id,input_digest,device_id,state_ref,scope_digest,protocol) '
+                'VALUES(%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(subject_digest,action_id) DO NOTHING',
+                (self.store.subject_digest,str(uuid.uuid4()),action_id,input_digest,device_id,state_ref,self.store.subject_digest,protocol))
+            cur.execute('SELECT binding_id,input_digest,device_id,state_ref,scope_digest,protocol FROM cj_cleanup_device_binding '
                         'WHERE subject_digest=%s AND action_id=%s',(self.store.subject_digest,action_id))
             row=cur.fetchone()
-            if row[1]!=input_digest:raise Conflict('original device registration required')
+            if row[1]!=input_digest or row[5]!=protocol:raise Conflict('original device registration required')
             result=dict(binding_id=row[0],device_id=row[2],state_ref=row[3],scope_digest=row[4])
         return result
 
     def device(self,binding_id):
         with self.store.transaction('device-read',writing=False) as cur:
-            cur.execute('SELECT binding_id,device_id,state_ref,scope_digest FROM cj_cleanup_device_binding WHERE subject_digest=%s AND binding_id=%s',
+            cur.execute('SELECT binding_id,device_id,state_ref,scope_digest,protocol FROM cj_cleanup_device_binding WHERE subject_digest=%s AND binding_id=%s',
                         (self.store.subject_digest,binding_id))
             row=cur.fetchone()
             if row is None:raise Denied('device binding unavailable')
-            result=dict(binding_id=row[0],device_id=row[1],state_ref=row[2],scope_digest=row[3])
+            result=dict(binding_id=row[0],device_id=row[1],state_ref=row[2],scope_digest=row[3],protocol=row[4])
         return result
 
     def devices(self):
         with self.store.transaction('device-list',writing=False) as cur:
             cur.execute('SELECT binding_id FROM cj_cleanup_device_binding WHERE subject_digest=%s ORDER BY binding_id',(self.store.subject_digest,))
             return tuple(row[0] for row in cur.fetchall())
+
+    def device_groups(self):
+        with self.store.transaction('device-groups',writing=False) as cur:
+            cur.execute('SELECT device_id,state_ref,binding_id FROM cj_cleanup_device_binding WHERE subject_digest=%s ORDER BY binding_id',
+                        (self.store.subject_digest,))
+            groups={}
+            for device,state,binding in cur.fetchall():groups.setdefault((device,state),set()).add(binding)
+        return tuple(groups.values())
 
     def prepare(self,action_id,input_digest,manifest,plan,binding_id):
         identifier(action_id)

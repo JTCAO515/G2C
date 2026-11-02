@@ -133,41 +133,42 @@ def finish(service, query: EndQuery):
 
 
 def with_source(service, principal, query: SourceQuery, policy: SourcePolicy, project):
-    """Encode/candidate-write callback within MESSAGE then C consent/MEMORY locks.
-
-    policy.hold must retain its lock through exit, checking current consent and
-    withdrawal before yielding and before release. No repository/tx escapes here.
-    """
-    if policy is None:
-        raise Unavailable("source unavailable")
+    """Original V1 entry: MESSAGE then C consent/MEMORY, materialized bytes only."""
+    if policy is None:raise Unavailable("source unavailable")
     with service.repository.transaction() as tx:
         tx.lock_scope()
-        chat = tx.chat(query.conversation_id, query.generation)
-        if chat.epoch != query.epoch or query.through > chat.last_sequence:
+        result=_with_locked_source(tx,principal,query,policy,project)
+    return result
+
+
+def _with_locked_source(tx,principal,query,policy,project):
+    """B package helper. Caller holds the canonical MESSAGE scope lock."""
+    chat = tx.chat(query.conversation_id, query.generation)
+    if chat.epoch != query.epoch or query.through > chat.last_sequence:
+        raise Unavailable("source unavailable")
+    tx.cur.execute("SELECT conversation_type::text FROM cj_message_chat WHERE scope=%s AND conversation_id=%s",
+                   (tx.scope, query.conversation_id))
+    if tx.cur.fetchone() != ("travel",):
+        raise Unavailable("source unavailable")
+    # The trusted policy, not these comparison DTOs or request fields, grants collection.
+    with policy.hold(principal, tx.scope, query) as permit:
+        cursor = Cursor(tx.scope, query.conversation_id, query.generation, query.epoch, query.through, query.after)
+        if (permit.cursor, permit.source_version, permit.withdrawal_epoch) != (cursor, query.source_version, query.withdrawal_epoch):
             raise Unavailable("source unavailable")
-        tx.cur.execute("SELECT conversation_type::text FROM cj_message_chat WHERE scope=%s AND conversation_id=%s",
-                       (tx.scope, query.conversation_id))
-        if tx.cur.fetchone() != ("travel",):
+        stored = tx.history(query.conversation_id, query.generation, query.after, query.through, 100)
+        if len(stored) != query.through - query.after:
             raise Unavailable("source unavailable")
-        # The trusted policy, not these comparison DTOs or request fields, grants collection.
-        with policy.hold(principal, tx.scope, query) as permit:
-            cursor = Cursor(tx.scope, query.conversation_id, query.generation, query.epoch, query.through, query.after)
-            if (permit.cursor, permit.source_version, permit.withdrawal_epoch) != (cursor, query.source_version, query.withdrawal_epoch):
+        rows = []
+        for sequence, item in enumerate(stored, query.after + 1):
+            command = Command.parse_original(item.raw)
+            r = item.receipt
+            if ((r.conversation_id, r.generation, r.sequence, r.message_id, r.input_sha256) !=
+                (query.conversation_id, query.generation, sequence, command.message_id, sha256(item.raw).hexdigest())
+                or command.conversation_id != query.conversation_id):
                 raise Unavailable("source unavailable")
-            stored = tx.history(query.conversation_id, query.generation, query.after, query.through, 100)
-            if len(stored) != query.through - query.after:
-                raise Unavailable("source unavailable")
-            rows = []
-            for sequence, item in enumerate(stored, query.after + 1):
-                command = Command.parse_original(item.raw)
-                r = item.receipt
-                if ((r.conversation_id, r.generation, r.sequence, r.message_id, r.input_sha256) !=
-                    (query.conversation_id, query.generation, sequence, command.message_id, sha256(item.raw).hexdigest())
-                    or command.conversation_id != query.conversation_id):
-                    raise Unavailable("source unavailable")
-                rows.append(HistoryMessage(r, item.raw, json.loads(item.raw)["text"]))
-            end = _end(tx, EndQuery(query.conversation_id, query.generation, query.epoch, query.through)) if query.mode == "conversation_end" else None
-            result = project(SourceSnapshot(tx.scope, cursor, permit.source_version, permit.withdrawal_epoch, tuple(rows), end))
-            if type(result) is not bytes or len(result) > 524288:
-                raise InvalidInput("bounded materialized source response required")
+            rows.append(HistoryMessage(r, item.raw, json.loads(item.raw)["text"]))
+        end = _end(tx, EndQuery(query.conversation_id, query.generation, query.epoch, query.through)) if query.mode == "conversation_end" else None
+        result = project(SourceSnapshot(tx.scope, cursor, permit.source_version, permit.withdrawal_epoch, tuple(rows), end))
+        if type(result) is not bytes or len(result) > 524288:
+            raise InvalidInput("bounded materialized source response required")
     return result
