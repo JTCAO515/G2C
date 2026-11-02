@@ -443,12 +443,12 @@ if __name__=='__main__':
     with patch.dict(os.environ,{'CJ_ENV':'local'}),tempfile.TemporaryDirectory(prefix='g2c-history-auth-') as temp:
         conninfo=Path(os.environ['CJ_E2E_CONNINFO'])
         config=json.loads(conninfo.read_bytes())
-        up=ROOT/'backend/migrations/0034_memory_history.sql'
         down=ROOT/'backend/migrations/down/0034_memory_history.down.sql'
         with psycopg.connect(**config,autocommit=True) as conn:
-            conn.execute(down.read_text())
-            conn.execute(up.read_text())
-        print('PASS registered M34 empty DDL down/up over the real MESSAGE/CLEANUP migration chain')
+            migrations=migrate.load()
+            migrate.down(conn,migrations,33)
+            migrate.up(conn,migrations,migrations[-1]['version'])
+        print('PASS registered M34 and dependent append migrations empty down/up over the real migration chain')
         exercise(conninfo,Path(temp)/'auth')
         try:
             with psycopg.connect(**config,autocommit=True) as conn:
