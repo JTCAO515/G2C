@@ -12,8 +12,8 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--manual-trip-profile',action='store_true')
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources'],required=True)
-ARGS=parser.parse_args();RESULT_PROFILE=ARGS.case.startswith('testScopedResult');OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources','testFormalPlaceMapEnglish','testFormalPlaceMapChineseLargest','testFormalPlaceMapMissing'],required=True)
+ARGS=parser.parse_args();PLACE_MAP=ARGS.case.startswith('testFormalPlaceMap');RESULT_PROFILE=ARGS.case.startswith('testScopedResult');OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
 os.umask(0o077);OUT.mkdir(parents=True,mode=0o700)
@@ -38,7 +38,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
 r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device/VoiceOver','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver'])}
-if CASE=='testFormalMapNoPlaceSources':r['unrun']=['positive formal PLACE production chain pending C notification','real point alignment L2/L3','real model/PLACE API/fees/cloud/production/device']
+if PLACE_MAP or CASE=='testFormalMapNoPlaceSources':r['unrun']=['positive formal PLACE production chain pending C notification','real point alignment L2/L3','real model/PLACE API/fees/cloud/production/device']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)
@@ -71,45 +71,90 @@ try:
    def fixed(key,start,end):
     def edge(clock):return dict(date=known('2026-11-02'),time=known(clock),timezone=known('Asia/Shanghai'),place=dict(state='unknown'))
     return dict(item_id=key,kind='appointment',description='SYNTHETIC declared source '+key,applies_to=['self'],locked=known(False),booking_status=dict(state='unknown'),start=edge(start),end=edge(end))
-   class SyntheticSource(FakeProvider):
-    def stream(self,messages,system=None):
-     for chunk in super().stream(messages,system):
-      if system is not None:
-       value=json.loads(chunk);value['title']='SYNTHETIC scoped source';yield json.dumps(value)
-      else:yield chunk
-   with TestClient(api) as client:
-    needs=dict(action_id='synthetic-source',needs_id='visit',expected_version=0,source=dict(kind='manual',text='SYNTHETIC explicit source'),changes=dict(party_size=known(1)))
-    expect(client.post('/v1/needs-actions',content=packed(needs),headers=binary),'actual-needs-save')
-    chat=expect(client.put('/v1/conversations',params={'conversation_id':'synthetic-source'},headers=headers),'actual-chat')
-    command=dict(version='MESSAGE-send.2',conversation_id='synthetic-source',message_id='synthetic-original',text='SYNTHETIC operator original planning request',trip_id=None,creation_intent='consider_trip',expected_generation=chat['generation'],expected_sequence=0,travel_context=None,needs_reference=dict(id='visit',expected_version=1))
-    receipt=expect(client.post('/v2/messages',content=packed(command),headers=binary),'actual-message')['receipt']
-    database=LocalDatabase(connection,run_context=context,travel_context=True,needs_context=True);model=SyntheticSource();outcomes=run_once(database,model,auth)
-    r['worker_outcomes']=[dict(status=x.status,proposal_id=x.proposal_id) for x in outcomes];r['provider_calls']=model.calls;save();assert len(outcomes)==1 and outcomes[0].status=='completed'
-    proposal=expect(client.get('/v1/trip-proposals',params={'proposal_id':outcomes[0].proposal_id},headers=headers),'actual-proposal')['proposal']
-    confirmation=expect(client.post('/v1/trip-confirmations',json=dict(action_id='synthetic-accept',kind='accept',proposal_id=outcomes[0].proposal_id,candidate_hash=proposal['candidate_hash']),headers=headers),'actual-confirmation')
-    action=base64.b64decode(confirmation['action_utf8_base64']);adopted=expect(client.post('/v1/trip-actions',content=action,headers=binary),'actual-legacy-adopt')['receipt'];tid=adopted['trip_id']
-   original=database.trip_repository(scope_for(ISSUER,subject)).detail(tid);doc=json.loads(original.content);r['original_version']=original.version
-   schedules=[(event('2026-11-02','23:30:00'),event('2026-11-03','00:30:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00'))]
-   if CASE in ('testScopedDayChineseLargest','testScopedFixedReorderChineseLargest'):
-    # Independent explicit synthetic declarations for the READY date positive.
-    # Unknown/cross-day scope is retained in its own real zero-model negative.
-    schedules=[(event('2026-11-02','09:00:00'),event('2026-11-02','10:00:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00')),(event('2026-11-05','09:00:00'),event('2026-11-05','10:00:00'))]
-   if CASE=='testScopedFixedReorderChineseLargest':schedules[3]=(event('2026-11-04','10:00:00'),event('2026-11-04','11:00:00'))
-   r['fixture_profile']='synthetic-fixed-selected-reorder-day-v1' if CASE=='testScopedFixedReorderChineseLargest' else ('synthetic-fully-known-day-v1' if CASE=='testScopedDayChineseLargest' else 'synthetic-undetermined-crossday-v1')
-   unknown={key:dict(state='unknown') for key in ('date','time','timezone','utc_offset')}
-   items=[]
-   for index,item in enumerate(doc['items']):
-    start,end=schedules[index] if index<len(schedules) else (unknown,unknown)
-    items.append(dict(id=item['id'],schedule=dict(start=start,end=end),fixed=known(CASE=='testScopedFixedReorderChineseLargest' and index==0)))
-   initialization=dict(version='TRIP-initialize.1',request_id='synthetic-initialize-source',trip_id=tid,expected_version=original.version,original_hash=hashlib.sha256(original.content).hexdigest(),items=items)
-   source=create_local_needs_app(conninfo_path=connection,auth_dir=auth,run_context=context,confirmation_signer=signer)
-   with TestClient(source) as client:
-    prep=expect(client.post('/v1/trip-source-initializations',content=packed(dict(version='TRIP-source-initialize.1',needs_reference=dict(id='visit',expected_version=1),initialization=initialization)),headers=binary),'source-aware-prepare')['preparation']
-    r['association']=prep['item_source_association'];assert r['association']['status']=='UNKNOWN'
-    saved=expect(client.post('/v1/trip-source-initialization-saves',content=packed(dict(version='TRIP-source-initialize-save.1',action_id='synthetic-source-save',proposal_id=prep['proposal_id'],candidate_hash=prep['candidate_hash'])),headers=binary),'source-aware-save')['receipt'];assert saved['trip_id']==tid and saved['committed_version']==2
+   if PLACE_MAP:
+    from copy import deepcopy
+    from cj_api.local_tools import SyntheticToolModel
+    from cj_api.local_place_draft import LocalPlaceDraftTools
+    from cj_place.draft_source import PlaceDraftConfiguration
+    from cj_draft.place_local import PlaceDraftAdapter,SYSTEM
+    from cj_draft.place_plan import MODEL_VERSION
+    from cj_trip.local_place_manual import create_local_place_manual_app
+    class ActualPlacePlanFake(SyntheticToolModel):
+     def stream(self,messages,system=None):
+      if system!=SYSTEM:yield from super().stream(messages,system);return
+      self.calls+=1;yield ''
+      source=json.loads(messages[-1]['content']);items=[];refs={}
+      for original in source['fields']['fixed_items']:
+       schedule={edge:{key:deepcopy(original[edge][key]) for key in ('date','time','timezone')} for edge in ('start','end')}
+       for value in schedule.values():value['utc_offset']=dict(state='unknown')
+       items.append(dict(id=original['item_id'],text=original['description'],verification='pending',evidence=[],schedule=schedule,fixed=original['locked'],source_category='user_provided',source_refs=[]))
+      for item,choice in zip([x for x in items if x['fixed']==known(False)],source['place_choices']):
+       item.update(text=choice['place']['name_zh'],source_category='unknown');refs[item['id']]=choice['choice_id']
+      yield packed(dict(version=MODEL_VERSION,title='SYNTHETIC formal PLACE sources',items=items,proposed_subjects={},place_refs=refs)).decode()
+    version='structured.1' if CASE.endswith('Largest') else 'structured.2'
+    source_tools=LocalPlaceDraftTools()
+    if CASE=='testFormalPlaceMapMissing':
+     from cj_place.local_draft_source import LocalDraftPlaceProducer
+     class MissingCoordinate(LocalDraftPlaceProducer):
+      def _response(self,query):return 200,dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(id='SYNTH_NO_COORD',name='合成未知坐标')])
+     source_tools.place=MissingCoordinate(source_tools.place.config,clock=source_tools.place.clock)
+    with TestClient(api) as client:
+     declarations=[]
+     for index,key in enumerate(('a','b','c')):
+      item=fixed(key,str(9+index*2).zfill(2)+':00:00',str(10+index*2).zfill(2)+':00:00');item['kind']='intent' if index else 'appointment';item['locked']=known(index==0);declarations.append(item)
+     expect(client.post('/v1/needs-actions',content=packed(dict(action_id='synthetic-place-needs',needs_id='visit',expected_version=0,source=dict(kind='manual',text='SYNTHETIC explicit formal PLACE constraints'),changes=dict(fixed_items=declarations))),headers=binary),'actual-place-needs')
+     namespace=expect(client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id='place-plan-namespace',operation='create',travel_context=None)),headers=binary),'actual-place-plan-namespace')['receipt']['travel_context']
+     chat=expect(client.put('/v1/conversations',params={'conversation_id':'actual-place-source'},headers=headers),'actual-place-chat')
+     raw=packed(dict(version='MESSAGE-send.2',conversation_id='actual-place-source',message_id='actual-place-original',text='查询合成酒店并安排 / synthetic hotel plan',trip_id=None,creation_intent='consider_trip',expected_generation=chat['generation'],expected_sequence=0,travel_context=dict(id=namespace['id'],expected_version=namespace['version']),needs_reference=dict(id='visit',expected_version=1)))
+     original_receipt=expect(client.post('/v2/messages',content=raw,headers=binary),'actual-place-message')['receipt']
+    database=LocalDatabase(connection,run_context=context,travel_context=True,needs_context=True);model=ActualPlacePlanFake()
+    completed=run_once(database,model,auth,tools_configuration=source_tools,place_draft_configuration=PlaceDraftConfiguration(PlaceDraftAdapter(version)))
+    assert len(completed)==1 and completed[0].status=='completed' and (model.calls,source_tools.place.invocations,source_tools.place.transport_calls)==(3,1,1)
+    with TestClient(create_local_place_manual_app(conninfo_path=connection,auth_dir=auth,run_context=context,confirmation_signer=signer)) as client:
+     discovery=expect(client.get('/v2/trip-needs-discovery',params=dict(message_id=original_receipt['message_id'],run_id=original_receipt['run_id']),headers=headers),'original-place-discovery')['discovery'];assert discovery['state']=='published';proposal=discovery['proposal']
+    with TestClient(create_local_needs_app(conninfo_path=connection,auth_dir=auth,run_context=context,confirmation_signer=signer)) as client:
+     receipt=expect(client.post('/v1/trip-needs-actions',content=packed(dict(version='TRIP-needs-action.1',action_id='actual-place-adopt',kind='accept',proposal_id=proposal['proposal_id'],candidate_hash=proposal['candidate_hash'])),headers=binary),'actual-place-adoption')['receipt'];tid=receipt['trip_id']
+    r.update(provider_calls=model.calls,place_calls=source_tools.place.invocations,place_transport_calls=source_tools.place.transport_calls,source_message_receipt=original_receipt,source_message_sha256=hashlib.sha256(raw).hexdigest(),original_version=1,fixture_profile='actual-registered-place-plan-'+version)
+   else:
+    class SyntheticSource(FakeProvider):
+     def stream(self,messages,system=None):
+      for chunk in super().stream(messages,system):
+       if system is not None:
+        value=json.loads(chunk);value['title']='SYNTHETIC scoped source';yield json.dumps(value)
+       else:yield chunk
+    with TestClient(api) as client:
+     needs=dict(action_id='synthetic-source',needs_id='visit',expected_version=0,source=dict(kind='manual',text='SYNTHETIC explicit source'),changes=dict(party_size=known(1)))
+     expect(client.post('/v1/needs-actions',content=packed(needs),headers=binary),'actual-needs-save')
+     chat=expect(client.put('/v1/conversations',params={'conversation_id':'synthetic-source'},headers=headers),'actual-chat')
+     command=dict(version='MESSAGE-send.2',conversation_id='synthetic-source',message_id='synthetic-original',text='SYNTHETIC operator original planning request',trip_id=None,creation_intent='consider_trip',expected_generation=chat['generation'],expected_sequence=0,travel_context=None,needs_reference=dict(id='visit',expected_version=1))
+     receipt=expect(client.post('/v2/messages',content=packed(command),headers=binary),'actual-message')['receipt']
+     database=LocalDatabase(connection,run_context=context,travel_context=True,needs_context=True);model=SyntheticSource();outcomes=run_once(database,model,auth)
+     r['worker_outcomes']=[dict(status=x.status,proposal_id=x.proposal_id) for x in outcomes];r['provider_calls']=model.calls;save();assert len(outcomes)==1 and outcomes[0].status=='completed'
+     proposal=expect(client.get('/v1/trip-proposals',params={'proposal_id':outcomes[0].proposal_id},headers=headers),'actual-proposal')['proposal']
+     confirmation=expect(client.post('/v1/trip-confirmations',json=dict(action_id='synthetic-accept',kind='accept',proposal_id=outcomes[0].proposal_id,candidate_hash=proposal['candidate_hash']),headers=headers),'actual-confirmation')
+     action=base64.b64decode(confirmation['action_utf8_base64']);adopted=expect(client.post('/v1/trip-actions',content=action,headers=binary),'actual-legacy-adopt')['receipt'];tid=adopted['trip_id']
+    original=database.trip_repository(scope_for(ISSUER,subject)).detail(tid);doc=json.loads(original.content);r['original_version']=original.version
+    schedules=[(event('2026-11-02','23:30:00'),event('2026-11-03','00:30:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00'))]
+    if CASE in ('testScopedDayChineseLargest','testScopedFixedReorderChineseLargest'):
+     # Independent explicit synthetic declarations for the READY date positive.
+     # Unknown/cross-day scope is retained in its own real zero-model negative.
+     schedules=[(event('2026-11-02','09:00:00'),event('2026-11-02','10:00:00')),(event('2026-11-03','09:15:00'),event('2026-11-03','10:00:00')),(event('2026-11-04','08:00:00'),event('2026-11-04','09:00:00')),(event('2026-11-05','09:00:00'),event('2026-11-05','10:00:00'))]
+    if CASE=='testScopedFixedReorderChineseLargest':schedules[3]=(event('2026-11-04','10:00:00'),event('2026-11-04','11:00:00'))
+    r['fixture_profile']='synthetic-fixed-selected-reorder-day-v1' if CASE=='testScopedFixedReorderChineseLargest' else ('synthetic-fully-known-day-v1' if CASE=='testScopedDayChineseLargest' else 'synthetic-undetermined-crossday-v1')
+    unknown={key:dict(state='unknown') for key in ('date','time','timezone','utc_offset')}
+    items=[]
+    for index,item in enumerate(doc['items']):
+     start,end=schedules[index] if index<len(schedules) else (unknown,unknown)
+     items.append(dict(id=item['id'],schedule=dict(start=start,end=end),fixed=known(CASE=='testScopedFixedReorderChineseLargest' and index==0)))
+    initialization=dict(version='TRIP-initialize.1',request_id='synthetic-initialize-source',trip_id=tid,expected_version=original.version,original_hash=hashlib.sha256(original.content).hexdigest(),items=items)
+    source=create_local_needs_app(conninfo_path=connection,auth_dir=auth,run_context=context,confirmation_signer=signer)
+    with TestClient(source) as client:
+     prep=expect(client.post('/v1/trip-source-initializations',content=packed(dict(version='TRIP-source-initialize.1',needs_reference=dict(id='visit',expected_version=1),initialization=initialization)),headers=binary),'source-aware-prepare')['preparation']
+     r['association']=prep['item_source_association'];assert r['association']['status']=='UNKNOWN'
+     saved=expect(client.post('/v1/trip-source-initialization-saves',content=packed(dict(version='TRIP-source-initialize-save.1',action_id='synthetic-source-save',proposal_id=prep['proposal_id'],candidate_hash=prep['candidate_hash'])),headers=binary),'source-aware-save')['receipt'];assert saved['trip_id']==tid and saved['committed_version']==2
    with TestClient(create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)) as client:
     listing=expect(client.get('/v1/trip-structured-list',headers=headers),'actual-structured-list');detail=expect(client.get('/v5/trip-structured',params={'trip_id':tid},headers=headers),'actual-structured-detail')
-    r['discovered']=listing['trips'];r['structured']=detail['trip'];assert detail['trip']['version']==2 and detail['trip']['content']['content_version']=='structured.1'
+    r['discovered']=listing['trips'];r['structured']=detail['trip'];assert detail['trip']['version']==(1 if PLACE_MAP else 2) and detail['trip']['content']['content_version']==(version if PLACE_MAP else 'structured.1')
    from cj_memory.typed_local import TypedConfiguration
    from cj_memory.typed_api import create_local_typed_app
    from cj_memory.edit_runtime import EditRuntimeConfiguration
@@ -155,6 +200,15 @@ try:
      changed=prompt['original_content']['items'][2]['id'] if RESULT_PROFILE else prompt['selected_item_ids'][0]
      yield packed(dict(version=prompt['edit_version'],request_id=prompt['request_id'],trip_id=prompt['trip_id'],expected_version=prompt['expected_version'],original_hash=prompt['original_hash'],title=None,order=order,changes=[dict(item_id=changed,field='text',value='SYNTHETIC lighter choice / 本次轻松一点')])).decode()
    formal=detail['trip'];spec=dict(id=tid,title=formal['content']['title'],version=formal['version'],content_sha256=formal['content_sha256'],item_ids=[item['id'] for item in formal['content']['items']])
+   map_points=[]
+   if PLACE_MAP:
+    for entry in formal['content']['sources']:
+     if entry['kind']!='place':continue
+     source_bytes=base64.b64decode(entry['snapshot_utf8_base64']);assert hashlib.sha256(source_bytes).hexdigest()==entry['snapshot_sha256']
+     place=json.loads(source_bytes)['record']['place'];coordinate=place['coordinate']
+     map_points.append(dict(id=entry['id'],provider_id=place['provider_id'],name_zh=place['name_zh'],address_zh=place['address_zh']['value'],state=coordinate['state'],coordinate=coordinate['value'],snapshot_sha256=entry['snapshot_sha256']))
+    assert len(map_points)==(1 if CASE=='testFormalPlaceMapMissing' else 2)
+    r['original_map_points']=map_points;save()
    cid=CASE
    with TestClient(edit_api) as client:expect(client.put('/v1/conversations',params=dict(conversation_id=cid),headers=headers),'native-original-chat')
    structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
@@ -248,6 +302,15 @@ try:
      status=display['snapshot']['status'],draft_outcome=draft['draft_outcome'],trip_id=reference['trip_context']['id'],content_sha256=reference['trip_context']['content_sha256'],namespace=reference['namespace']['id'],needs_version=reference['needs_reference']['expected_version'],item_ids=reference['trip_context']['item_ids'],day=None if reference['trip_context']['day'] is None else reference['trip_context']['day']['date'],
      memory_long='SYNTHETIC LONG' in inputs,memory_current='SYNTHETIC CURRENT' in inputs,memory_other='SYNTHETIC OTHER' in inputs)
     r['proof']=value;r['observed_requests']=list(audit);r['worker_outcomes']=list(finished);r['proposal_ids_are_backend_oracles_only']=True;save();return value
+   def map_source_proof():
+    assert PLACE_MAP
+    with edit_db.connect(scope_for(ISSUER,subject)) as conn:
+     role=conn.execute('SELECT current_user').fetchone()[0];rows=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall();messages=conn.execute('SELECT count(*) FROM cj_message_receipt WHERE conversation_id=%s',(cid,)).fetchone()[0]
+    assert role=='cj_m1_runtime' and len(rows)==1 and rows[0][0]==tid and rows[0][1]==1 and bytes(rows[0][2])==packed(formal['content'])
+    assert messages==fake.calls==len(finished)==0 and all(x['method']=='GET' for x in audit) and not worker_errors
+    assert any(x['path']=='/v5/trip-structured' and x.get('status')==200 for x in audit)
+    value=dict(runtime_role=role,formal_trip_id=tid,formal_version=1,content_sha256=formal['content_sha256'],source_message_receipt=r['source_message_receipt'],source_message_sha256=r['source_message_sha256'],points=map_points,app_writes=0,app_models=0,app_messages=0,setup_models=model.calls,setup_place_calls=source_tools.place.invocations,source_unchanged=True)
+    r['map_source_proof']=value;r['observed_requests']=list(audit);save();return value
    def map_no_place_proof():
     assert CASE=='testFormalMapNoPlaceSources'
     with edit_db.connect(scope_for(ISSUER,subject)) as conn:
@@ -445,11 +508,12 @@ try:
     def do_GET(self):
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
-      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') else {})),formal_trips=[spec],manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE)
+      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') else {})),formal_trips=[spec],map_points=map_points if PLACE_MAP else None,manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE)
       elif path.path=='/wait-discovery':
        assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
        assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') and late_captured.is_set();late_release.set();value=dict(status='release requested')
+      elif path.path=='/map-source-proof':value=map_source_proof()
       elif path.path=='/map-no-place-proof':value=map_no_place_proof()
       elif path.path=='/result-proof':value=result_proof()
       elif path.path=='/wait-result-response':
@@ -511,7 +575,8 @@ try:
     r['redacted_log_accounts']=sorted(native_tokens);r['token_scan_accounts']=sorted(native_tokens)
     (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    if CASE=='testFormalMapNoPlaceSources':map_no_place_proof()
+    if PLACE_MAP:map_source_proof()
+    elif CASE=='testFormalMapNoPlaceSources':map_no_place_proof()
     elif CASE=='testScopedResultExpansionReselection':
      final=followup_proof(committed=True);assert final['last_result_state']=='stale' and final['receipt_queries']>=1
     elif CASE=='testScopedResultWithdrawal':
