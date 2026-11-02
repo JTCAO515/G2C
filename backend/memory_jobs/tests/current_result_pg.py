@@ -217,6 +217,128 @@ def exercise(conninfo,auth):
         assert {i['slot']:i['text'] for i in data['items']}=={'pace':records[1][3]}
         with host.database.connect(scope) as conn:assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(7,)
         print('PASS reconstructed actual worker; item pause invalidates inflight completion, withdrawal removes current override, expiry filters next actual request while all seven records remain retained')
+        # New extraction uses Data2, not the old detached Data1 compatibility
+        # path. It must not send these invalid historical values to the model.
+        end_head=expect(client.put('/v1/conversations',params={'conversation_id':'source'},headers=headers['alice']))
+        end_request=dict(version='MESSAGE-SOURCE@1',conversation_id='source',generation=end_head['generation'],
+                         epoch=0,through=end_head['last_sequence'],conversation_type='travel')
+        end=post('/internal/v1/conversation-end',end_request)['end']
+        assert post('/internal/v1/conversation-end',end_request)['end']==end
+        end_source=dict(source,through=end_head['last_sequence'],mode='conversation_end')
+        post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='filtered-end',attempt_id='filtered-attempt',source=end_source))
+        service.transition(tokens['alice'],'filtered-end','filtered-attempt','inflight')
+        prepared2=service.prepare_model_input_v2(tokens['alice'],'filtered-end','filtered-attempt',max_payload_bytes=262144)
+        # A provided source graph disappearing is not permission to reread all
+        # history. Initialization-side corruption is restored after the refusal.
+        config=json.loads(conninfo.read_bytes())
+        with psycopg.connect(**config) as conn:
+            saved_origin=conn.execute('SELECT source_id,item_id,job_id,attempt_id,origin_refs FROM cj_memory_history_origin '
+                'WHERE scope=%s ORDER BY source_id LIMIT 1',(scope,)).fetchone()
+            conn.execute('DELETE FROM cj_memory_history_origin WHERE scope=%s AND source_id=%s',(scope,saved_origin[0]))
+        try:service.prepare_model_input_v2(tokens['alice'],'filtered-end','filtered-attempt',max_payload_bytes=262144)
+        except Unavailable:pass
+        else:raise AssertionError('missing source association became an unfiltered model grant')
+        with psycopg.connect(**config) as conn:
+            conn.execute('INSERT INTO cj_memory_history_origin(scope,source_id,item_id,job_id,attempt_id,origin_refs) '
+                'VALUES(%s,%s,%s,%s,%s,%s::jsonb)',(scope,*saved_origin[:4],json.dumps(saved_origin[4])))
+        assert service.prepare_model_input_v2(tokens['alice'],'filtered-end','filtered-attempt',max_payload_bytes=262144)==prepared2
+        body2=json.loads(json.loads(prepared2)['messages'][0]['content'])
+        assert body2['version']=='MEMORY-EXTRACT-DATA@2' and body2['omitted_count']==3
+        assert body2['end_ref']==end['end_id']
+        for index in (0,2,3):assert records[index][3] not in prepared2.decode()
+        for mid in ('seed-0','seed-1','seed-2','seed-3','seed-4','seed-5','seed-6','next-en'):
+            assert mid not in prepared2.decode()
+        assert 'conversation_id' not in body2 and 'source' not in body2
+        refs={row['text']:row['ref'] for row in body2['messages']}
+        remaining=[]
+        for index in (1,4,5,6):
+            entry=dict(entries[index],evidence=[dict(ref=refs[records[index][3]],quote=records[index][3])])
+            remaining.append(entry)
+        output2=json.dumps(dict(version='MEMORY-EXTRACT@2',entries=remaining),ensure_ascii=False).encode()
+        def filtered_publish(context):
+            policy=service.publication_policy_v2(context,tokens['alice'],'filtered-end','filtered-attempt',prepared2,
+                hashlib.sha256(prepared2).hexdigest(),output2,hashlib.sha256(output2).hexdigest(),max_payload_bytes=262144)
+            return context.with_enabled_source_and_travel(SourceQuery(**end_source),policy,Selection(travels[0]['id'],1),
+                lambda snapshot,lease:policy.apply_original_result(snapshot,lease))
+        result2=json.loads(host.boundary.with_history_context(tokens['alice'],filtered_publish))
+        assert result2['version']=='MEMORY-PUBLICATION-result@2'
+        assert result2['receipts']==[result['receipts'][index] for index in (1,4,5,6)]
+        assert json.loads(service.query_publication_v2(tokens['alice'],'filtered-end','filtered-attempt'))==result2
+        expect(client.get('/v3/memory-publication-receipts',params={'job_id':'filtered-end','attempt_id':'filtered-attempt'},headers=headers['alice']),503)
+        assert expect(client.get('/v4/memory-publication-receipts',params={'job_id':'filtered-end','attempt_id':'filtered-attempt'},headers=headers['alice']))['result']==result2
+        current_items=expect(client.get('/v4/memory-publication-items',params={'job_id':'filtered-end','attempt_id':'filtered-attempt'},headers=headers['alice']))['result']
+        candidate=next(i for i in current_items['items'] if i['status']=='candidate')
+        assert candidate['review']==dict(job_id='typed-job',attempt_id='typed-attempt')
+        reviewed=post('/v3/memory-candidate-actions',dict(version='MEMORY-CANDIDATE@1',action_id='review-reused-summary',
+            job_id=candidate['review']['job_id'],attempt_id=candidate['review']['attempt_id'],candidate_id=candidate['candidate_id'],
+            expected_candidate_version=candidate['version'],expected_memory_epoch=current_items['memory_epoch'],operation='confirm',
+            kind='preference',text='I enjoy art / 喜欢艺术',extent='long_term',context=None,occurred_at='date unknown'))['result']
+        assert reviewed['receipt']['status']=='active'
+        with host.database.connect(scope) as conn:assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(7,)
+        print('PASS actual Data2 ending model input withholds paused/withdrawn/expired original messages and raw IDs before model entry; opaque output reuses the same canonical operations without reviving or duplicating values')
+        print('PASS reused summary candidate projects its real original producer and accepts explicit review without inventing current summary job/attempt authority')
+        post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='filtered-disable',operation='disable',
+            conversation_id='source',expected_generation=end_head['generation'],expected_epoch=0,expected_source_version=1))
+        current=post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='filtered-enable',operation='enable',
+            conversation_id='source',expected_generation=end_head['generation'],expected_epoch=0,expected_source_version=2))['result']
+        no_source=dict(source,through=1,source_version=current['source_version'],withdrawal_epoch=current['withdrawal_epoch'])
+        post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='no-data',attempt_id='no-data-attempt',source=no_source))
+        service.transition(tokens['alice'],'no-data','no-data-attempt','inflight')
+        none_input=service.prepare_model_input_v2(tokens['alice'],'no-data','no-data-attempt',max_payload_bytes=262144)
+        assert json.loads(json.loads(none_input)['messages'][0]['content'])['messages']==[]
+        calls=[]
+        from cj_memory_jobs.model_v2 import NoEligibleSource
+        def empty_source(context):
+            policy=service.processing_policy_v2(context,tokens['alice'],'no-data','no-data-attempt',none_input,
+                hashlib.sha256(none_input).hexdigest(),max_payload_bytes=262144)
+            return context.with_enabled_source(SourceQuery(**no_source),policy,
+                lambda snapshot:policy.with_input(snapshot,lambda raw:calls.append(raw) or b'claim'))
+        try:host.boundary.with_history_context(tokens['alice'],empty_source)
+        except NoEligibleSource:pass
+        else:raise AssertionError('all-withheld source authorized a model claim')
+        assert calls==[]
+        host.boundary.with_history_context(tokens['alice'],lambda context:service.transition_original_in_context(
+            context,tokens['alice'],'no-data','no-data-attempt','cancelled'))
+        assert json.loads(service.query_original(tokens['alice'],'no-data','no-data-attempt'))['state']=='cancelled'
+        assert json.loads(service.query_publication_v2(tokens['alice'],'no-data','no-data-attempt')) is None
+        with host.database.connect(scope) as conn:
+            assert conn.execute('SELECT result_bytes,candidate FROM cj_memory_history_job WHERE job_id=%s',('no-data',)).fetchone()==(None,None)
+        print('PASS all-withheld Data2 source denies the local reserve/claim callback: zero model permission, original metadata stops without fabricating a provider output or publication receipt')
+        reviewed_source=dict(end_source,source_version=current['source_version'],withdrawal_epoch=current['withdrawal_epoch'])
+        post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='reviewed-source',attempt_id='reviewed-attempt',source=reviewed_source))
+        service.transition(tokens['alice'],'reviewed-source','reviewed-attempt','inflight')
+        reviewed_input=service.prepare_model_input_v2(tokens['alice'],'reviewed-source','reviewed-attempt',max_payload_bytes=262144)
+        reviewed_body=json.loads(json.loads(reviewed_input)['messages'][0]['content'])
+        assert reviewed_body['omitted_count']==4 and records[5][3] not in reviewed_input.decode()
+        host.boundary.with_history_context(tokens['alice'],lambda context:service.transition_original_in_context(
+            context,tokens['alice'],'reviewed-source','reviewed-attempt','cancelled'))
+        print('PASS missing immutable source association fails closed; explicit review also withholds its superseded raw statement before any later extraction')
+        expiring=dict(no_source,through=2)
+        post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='phase-expiry',attempt_id='phase-expiry-attempt',source=expiring))
+        service.transition(tokens['alice'],'phase-expiry','phase-expiry-attempt','inflight')
+        expiry_input=service.prepare_model_input_v2(tokens['alice'],'phase-expiry','phase-expiry-attempt',max_payload_bytes=262144)
+        with host.database.connect(scope) as conn:
+            pace_source=conn.execute('SELECT source_id FROM cj_memory_item WHERE item_id=%s',(result['receipts'][1]['item_id'],)).fetchone()[0]
+        def phase(context):
+            policy=service.processing_policy_v2(context,tokens['alice'],'phase-expiry','phase-expiry-attempt',expiry_input,
+                hashlib.sha256(expiry_input).hexdigest(),max_payload_bytes=262144)
+            def project(snapshot):
+                def clock_crosses(raw):
+                    # Initialization-side clock simulation only shortens validity;
+                    # it creates no source/owner grant and runs no provider.
+                    with psycopg.connect(**config) as conn:
+                        conn.execute("UPDATE cj_memory_source SET expires_at=clock_timestamp()-interval '1 second' WHERE scope=%s AND source_id=%s",
+                                     (scope,pace_source))
+                    return b'local-intent-only'
+                return policy.with_input(snapshot,clock_crosses)
+            return context.with_enabled_source(SourceQuery(**expiring),policy,project)
+        from cj_memory_jobs.codec import Conflict
+        try:host.boundary.with_history_context(tokens['alice'],phase)
+        except Conflict:pass
+        else:raise AssertionError('phase exit published a now-expired input permit')
+        host.boundary.with_history_context(tokens['alice'],lambda context:service.transition_original_in_context(
+            context,tokens['alice'],'phase-expiry','phase-expiry-attempt','cancelled'))
+        print('PASS filtered input is rechecked at short phase exit; expiry without an epoch change withholds the result before a provider grant')
 
 
 def main():

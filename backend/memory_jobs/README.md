@@ -63,6 +63,12 @@ uv run --locked python -B scripts/pg_suites.py memory_history
 不能重新准备输入。这些 bytes 不保留来源租约，也不授权模型调用或重发；
 实际 worker 仍须在唯一 Meter 出口做新鲜准入与来源检查。
 
+新的实际后台生产者显式消费 [PROCESSING-V2](PROCESSING-V2.md)：在模型前及
+阶段提交前按当前来源关联屏蔽暂停/撤回/过期和已明确审核的旧原文，模型只见
+opaque ref；V2 输出回映原证据，同源标识不变。全部原文被屏蔽时拒绝进入
+claim 回调，不伪造模型输出。V1 留作原独立兼容路径，不作失败后的 fallback。
+单条物理删除后的 noncontent tombstone、原聊天防复活与全部清理仍由 #26 交付。
+
 ## 保留的 SQLite 隔离候选
 
 本模块仅处理已提交聊天来源的增量整理与会话结束补充摘要的本地队列状态。

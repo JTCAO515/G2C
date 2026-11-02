@@ -15,6 +15,15 @@ from .service import Service,OperationWithheld
 from .source_policy import SourcePolicy
 
 
+def _candidate(item):
+    command=item.command
+    return dict(candidate_id=command.item_id,version=item.version,status=item.status,
+        subject=command.subject,slot=command.slot,kind=command.kind,text=command.text,
+        extent=command.extent,occurred_at=command.occurred_at,
+        context=None if command.extent=='long_term' else dict(kind=command.context_kind,
+            id=command.context_id,expected_version=command.context_version))
+
+
 class PublicationSourcePolicy(SourcePolicy):
     transaction_type=PublicationTransaction
 
@@ -74,6 +83,17 @@ class CollectionService(Service):
             return encoded(snapshot,extraction,row[5],max_payload_bytes=max_payload_bytes)
         return self._with_job(token,job_id,attempt_id,project)
 
+    def prepare_model_input_v2(self,token,job_id,attempt_id,*,max_payload_bytes):
+        """Explicit filtered input; Data1 remains the old separate contract."""
+        from .model_v2 import encoded
+        def project(tx,snapshot,principal):
+            row,output=tx.output(job_id,attempt_id)
+            if row[0].state!='inflight' or row[7]!=tx.epoch or output is not None:
+                raise Conflict('original extraction input phase changed')
+            extraction,_,_=self.resolve_collection(principal)
+            return encoded(tx,snapshot,extraction,row[5],max_payload_bytes=max_payload_bytes)
+        return self._with_job(token,job_id,attempt_id,project)
+
     def processing_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,*,max_payload_bytes):
         """Compose inside B's outer protected context; never opens a Boundary."""
         from .processing import ProcessingSourcePolicy
@@ -89,6 +109,22 @@ class CollectionService(Service):
         repository,principal,guard=self._binding(context,token)
         extraction,memory,_=self.resolve_collection(principal)
         return ResultSourcePolicy(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
+            extraction,max_payload_bytes=max_payload_bytes,model_output=model_output,
+            model_output_sha256=model_output_sha256,memory_policy=memory)
+
+    def processing_policy_v2(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,*,max_payload_bytes):
+        from .policy_v2 import ProcessingSourcePolicyV2
+        repository,principal,guard=self._binding(context,token)
+        extraction,_,_=self.resolve_collection(principal)
+        return ProcessingSourcePolicyV2(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
+                                        extraction,max_payload_bytes=max_payload_bytes)
+
+    def publication_policy_v2(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,
+                              model_output,model_output_sha256,*,max_payload_bytes):
+        from .policy_v2 import ResultSourcePolicyV2
+        repository,principal,guard=self._binding(context,token)
+        extraction,memory,_=self.resolve_collection(principal)
+        return ResultSourcePolicyV2(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
             extraction,max_payload_bytes=max_payload_bytes,model_output=model_output,
             model_output_sha256=model_output_sha256,memory_policy=memory)
 
@@ -109,18 +145,59 @@ class CollectionService(Service):
         return result
 
     def query_publication_in_context(self,context,token,job_id,attempt_id):
+        from .publication_result import VERSION
+        return self._publication_receipt(context,token,job_id,attempt_id,VERSION)
+
+    def query_publication_v2_in_context(self,context,token,job_id,attempt_id):
+        from .publication_result import VERSION_V2
+        return self._publication_receipt(context,token,job_id,attempt_id,VERSION_V2)
+
+    def _publication_receipt(self,context,token,job_id,attempt_id,version):
         from .publication_result import original_result
         job_identity(job_id);job_identity(attempt_id)
         repository,_,guard=self._binding(context,token)
         with repository.transaction() as memory:
             tx=PublicationTransaction(memory);tx.require_live()
-            result=original_result(tx,job_id,attempt_id)
+            result=original_result(tx,job_id,attempt_id,expected_version=version)
             guard('publication_receipt')
             return result if result is not None else b'null'
 
     def query_publication(self,token,job_id,attempt_id,*,request_id=None):
         return self._invoke(token,lambda context:self.query_publication_in_context(context,token,job_id,attempt_id),
                             request_id,'MEMORY-PUBLICATION-response@1')
+
+    def query_publication_v2(self,token,job_id,attempt_id,*,request_id=None):
+        return self._invoke(token,lambda context:self.query_publication_v2_in_context(context,token,job_id,attempt_id),
+                            request_id,'MEMORY-PUBLICATION-response@2')
+
+    def publication_items_v2(self,token,job_id,attempt_id,*,request_id=None):
+        """Current own items plus their original review producer, not renewed authority."""
+        from .publication_result import original_result,VERSION_V2
+        import json
+        job_identity(job_id);job_identity(attempt_id)
+        def query(context):
+            repository,_,guard=self._binding(context,token)
+            with repository.transaction() as memory:
+                tx=PublicationTransaction(memory);tx.require_live()
+                raw=original_result(tx,job_id,attempt_id,expected_version=VERSION_V2)
+                if raw is None:raise Unavailable('original publication unavailable')
+                values=[]
+                for receipt in json.loads(raw)['receipts']:
+                    item=memory.detail(receipt['item_id'])
+                    if item is None:raise Unavailable('current publication item unavailable')
+                    value=_candidate(item);value['review']=None
+                    if item.status=='candidate':
+                        tx.cur.execute('SELECT job_id,attempt_id FROM cj_memory_history_origin '
+                            'WHERE scope=%s AND source_id=%s AND item_id=%s',
+                            (tx.scope,item.command.source_id,item.command.item_id))
+                        origin=tx.cur.fetchone()
+                        if origin is not None:value['review']=dict(job_id=origin[0],attempt_id=origin[1])
+                    values.append(value)
+                result=encode(dict(job_id=job_id,attempt_id=attempt_id,memory_epoch=tx.epoch,items=values))
+                if len(result)>524288:raise Unavailable('publication item projection exceeds bound')
+                guard('publication_items')
+                return result
+        return self._invoke(token,query,request_id,'MEMORY-PUBLICATION-items@2')
 
     def publish_output(self,token,job_id,attempt_id):
         def publish(tx,snapshot,principal):
@@ -146,12 +223,7 @@ class CollectionService(Service):
                 for (item_id,) in tx.cur.fetchall():
                     item=memory.detail(item_id)
                     if item is None:raise Unavailable('collection item unavailable')
-                    command=item.command
-                    values.append(dict(candidate_id=item_id,version=item.version,status=item.status,
-                        subject=command.subject,slot=command.slot,kind=command.kind,text=command.text,
-                        extent=command.extent,occurred_at=command.occurred_at,
-                        context=None if command.extent=='long_term' else dict(kind=command.context_kind,
-                            id=command.context_id,expected_version=command.context_version)))
+                    values.append(_candidate(item))
                 guard('candidate_projection')
                 return encode(dict(job_id=job_id,attempt_id=attempt_id,memory_epoch=tx.epoch,candidates=values))
         return self._invoke(token,query,request_id,'MEMORY-CANDIDATE-list@1')

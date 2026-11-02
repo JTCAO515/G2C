@@ -7,10 +7,13 @@ from cj_message.domain import Command
 from .codec import Conflict,Unavailable
 from .processing import ProcessingSourcePolicy
 from .publication_result import encode_result,original_result
+from .publication_result import VERSION
 from .source_policy import SourcePolicy
+from .extraction import parse_output
 
 
 class ResultSourcePolicy(ProcessingSourcePolicy):
+    result_version=VERSION
     def __init__(self,*args,model_output,model_output_sha256,memory_policy,**kwargs):
         super().__init__(*args,**kwargs)
         if type(model_output) is not bytes or not 0<len(model_output)<=16384:
@@ -38,7 +41,7 @@ class ResultSourcePolicy(ProcessingSourcePolicy):
                 yield permit
                 if self.failed:raise Unavailable('original publication aborted')
                 if self.result is None:self._original(query)
-                elif original_result(self.transaction,self.job_id,self.attempt_id)!=self.result:
+                elif original_result(self.transaction,self.job_id,self.attempt_id,expected_version=self.result_version)!=self.result:
                     raise Unavailable('original publication result changed')
             finally:self.query=None;self.thread=None
 
@@ -71,12 +74,15 @@ class ResultSourcePolicy(ProcessingSourcePolicy):
                     raise Unavailable('original Travel source and current lease differ')
                 return selection,travel_lease
             def completed(receipts):
-                return encode_result(row[0],self.prepared_input_sha256,self.model_output_sha256,receipts)
+                return encode_result(row[0],self.prepared_input_sha256,self.model_output_sha256,receipts,version=self.result_version)
             tx.publish_output(self.job_id,self.attempt_id,snapshot.messages,self.extraction,self.memory_policy,
-                              context_for,completion=completed)
-            self.result=original_result(tx,self.job_id,self.attempt_id)
+                              context_for,completion=completed,decoder=self._entries)
+            self.result=original_result(tx,self.job_id,self.attempt_id,expected_version=self.result_version)
             self.guard('result_precommit')
             return self.result
         except BaseException:
             self.failed=True
             raise
+
+    def _entries(self,raw,messages,policy):
+        return parse_output(raw,messages,policy)

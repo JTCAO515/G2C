@@ -67,10 +67,13 @@ class ProcessingSourcePolicy(SourcePolicy):
         source=SourceV2(snapshot.cursor,snapshot.source_version,snapshot.withdrawal_epoch)
         if encode_v2(source,snapshot.messages,row[5])!=row[2]:
             raise Conflict('original processing messages differ')
-        current=encoded(snapshot,self.extraction,row[5],max_payload_bytes=self.max_payload_bytes)
+        current=self._render(snapshot,row[5])
         if current!=self.original_input:
             raise Conflict('original processing model input differs')
         return row
+
+    def _render(self,snapshot,mode):
+        return encoded(snapshot,self.extraction,mode,max_payload_bytes=self.max_payload_bytes)
 
     def with_input(self,snapshot,operation: Callable[[bytes],bytes]):
         """Enter bounded local claim/intent work; no provider/network wait here.

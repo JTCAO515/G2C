@@ -89,10 +89,10 @@ class PublicationTransaction(Transaction):
              action.operation,action.raw,encoded,previous_source,new_source))
         return self.decision(action.action_id)[1]
 
-    def publish_output(self,job_id,attempt_id,messages,extraction_policy,memory_policy,context_for,*,completion=None):
+    def publish_output(self,job_id,attempt_id,messages,extraction_policy,memory_policy,context_for,*,completion=None,decoder=None):
         row,raw=self.output(job_id,attempt_id)
         if raw is None:raise Unavailable('original extraction output unavailable')
-        entries=parse_output(raw,messages,extraction_policy)
+        entries=(parse_output if decoder is None else decoder)(raw,messages,extraction_policy)
         if row[0].state!='completed' and (row[0].state not in ('inflight','unknown') or row[7]!=self.epoch):
             raise Conflict('original extraction attempt or Memory basis changed')
         receipts=[]

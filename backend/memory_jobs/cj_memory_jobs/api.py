@@ -46,7 +46,9 @@ def register_routes(app, service, *, collection=False):
                          'settings':service.settings,'job_query':service.query_original}
                 if collection:
                     calls.update(candidates=service.candidates,candidate_receipt=service.query_candidate_action,
-                                 publication_receipt=service.query_publication)
+                                 publication_receipt=service.query_publication,
+                                 publication_receipt_v2=service.query_publication_v2,
+                                 publication_items_v2=service.publication_items_v2)
                 call = calls[operation]
                 encoded = await run_in_threadpool(call,token,**values,request_id=request.state.request_id)
             return Response(encoded,media_type='application/json')
@@ -108,3 +110,11 @@ def register_routes(app, service, *, collection=False):
         @app.get('/v3/memory-publication-receipts')
         async def publication_receipt(request: Request):
             return await invoke(request,'publication_receipt',('job_id','attempt_id'))
+
+        @app.get('/v4/memory-publication-receipts')
+        async def publication_receipt_v2(request: Request):
+            return await invoke(request,'publication_receipt_v2',('job_id','attempt_id'))
+
+        @app.get('/v4/memory-publication-items')
+        async def publication_items_v2(request: Request):
+            return await invoke(request,'publication_items_v2',('job_id','attempt_id'))
