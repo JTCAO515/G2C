@@ -1,6 +1,6 @@
 # ADR-0009 JT Agent 契约预留：在 V1 契约上留出 V2 后台的扩展口
 
-- 状态：proposed（Claude 起草，待 JT 批准后改为 accepted）
+- 状态：accepted（JT 批准，2026-11-02；Claude 起草）
 - 日期：2026-11-02
 - Issue：[#399](https://github.com/JTCAO515/G2C/issues/399)
 - 关联：[ADR-0003](0003-state-and-recovery.md)、[ADR-0005](0005-proactive-fulfillment.md)、[ADR-0006](0006-membership-and-memory-retention.md)、[ADR-0008](0008-message-send-permit.md)；M3 的 [#23](https://github.com/JTCAO515/G2C/issues/23)、[#26](https://github.com/JTCAO515/G2C/issues/26)、[#27](https://github.com/JTCAO515/G2C/issues/27)
