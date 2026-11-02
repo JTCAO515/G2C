@@ -251,6 +251,30 @@ def exercise(conninfo,auth):
             travel_context=dict(id=travel['id'],expected_version=1)))
         post('/v3/memory-candidate-actions',reviewed,status=503)
         reviewed['context']['expected_version']=2
+        class TravelLostAck:
+            def __init__(self,connection):self.connection=connection
+            @property
+            def autocommit(self):return self.connection.autocommit
+            def cursor(self):return self.connection.cursor()
+            def bind_scope(self,cursor):return self.connection.bind_scope(cursor)
+            def rollback(self):return self.connection.rollback()
+            def close(self):return self.connection.close()
+            def commit(self):
+                self.connection.commit()
+                raise OSError('synthetic outer Travel ACK loss after candidate commit')
+        lease_ack_app=create_collection_app(conninfo_path=conninfo,auth_dir=auth,resolve_collection=resolve)
+        lease_ack_host=lease_ack_app.state.memory_history
+        def lost_travel_repository(principal):
+            own=scope_for(principal.issuer,principal.subject)
+            repo=lease_ack_host.database.message_repository(own)
+            connect=repo.connect
+            repo.connect=lambda:TravelLostAck(connect())
+            return repo
+        lease_ack_host.boundary.resolve_repository=lost_travel_repository
+        with TestClient(lease_ack_app) as uncertain_client:
+            response=expected(uncertain_client.post('/v3/memory-candidate-actions',
+                content=json.dumps(reviewed).encode(),headers=headers['alice']),503)
+            assert response['error']['outcome']=='unknown' and response['error']['recovery']=='reconcile_original'
         typed_saved=post('/v3/memory-candidate-actions',reviewed)['result']
         assert typed_saved['receipt']['status']=='active'
         with repository.transaction() as memory:
