@@ -306,6 +306,14 @@
       "sha256": "06e1c6c6d8d0f754cbbe8b8759df6ca7bd2b648873ddd87cb450b49a818e6e1c",
       "down": "backend/migrations/down/0038_device_bridge_v2.down.sql",
       "down_sha256": "87b2354b3d4303919de69bf8deb5706dce0798aa605d4f149738899f261b9cb0"
+    },
+    {
+      "version": 39,
+      "name": "device_original_actions",
+      "file": "backend/migrations/0039_device_original_actions.sql",
+      "sha256": "4b1884ea25c10cba7daeabf4d84d03c77e3b262bc0b153258d5c184886553fa5",
+      "down": "backend/migrations/down/0039_device_original_actions.down.sql",
+      "down_sha256": "56802f2a45125e3a53889b53de016d2641ae22f2e8ce1c56986fa4376ddb13f8"
     }
   ]
 }

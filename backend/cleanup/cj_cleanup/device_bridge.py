@@ -8,39 +8,50 @@ TARGETS=('device-cache/encrypted-message-file','device-cache/sdk-session-keychai
          'device-cache/feedback-pending','device-cache/feedback-key-keychain')
 
 
+def original_call(binding,active,reason,operation_id=None):
+    """Pure server descriptor construction; no request supplies operation IDs."""
+    if reason not in ('account_cleanup','session_invalid','offline_expired'):raise Denied('device cleanup reason unavailable')
+    binding_id=binding['binding_id']
+    if active is not None:
+        if operation_id is not None and operation_id!=active:raise Denied('original operation required')
+        operation_id=active;reason='account_cleanup'
+    elif reason=='account_cleanup':raise Denied('account operation unavailable')
+    elif operation_id is not None:raise Denied('device operation ID is server-owned')
+    else:operation_id='device-'+digest(encode([binding_id,binding['state_ref'],reason]))
+    invocation='device-'+digest(encode([operation_id,binding_id,reason]));version=binding['protocol']
+    if version==VERSION:targets=TARGETS
+    elif version=='CLEANUP-DEVICE@2':
+        from .device_v2 import TARGETS as targets
+    elif version=='CLEANUP-DEVICE@3':
+        from .device_v3 import TARGETS as targets
+    else:raise Denied('device protocol unavailable')
+    if reason=='offline_expired':
+        targets=(('device-cache/offline-trip','device-cache/offline-write-residue','device-cache/offline-key-keychain')
+                 if version=='CLEANUP-DEVICE@3' else ('device-cache/offline-trip',))
+    return operation_id,invocation,encode(dict(version=version,operation_id=operation_id,invocation_id=invocation,
+        binding_id=binding_id,scope_digest=binding['scope_digest'],state_ref=binding['state_ref'],
+        reason=reason,targets=targets,business_access='not_granted'))
+
+
+def persist_call(cur,subject,operation,invocation,binding,reason,raw):
+    cur.execute('INSERT INTO cj_cleanup_device_call(subject_digest,operation_id,invocation_id,binding_id,reason,request_digest,request_bytes) '
+        'VALUES(%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(operation_id,binding_id,reason) DO NOTHING',
+        (subject,operation,invocation,binding,reason,digest(raw),raw))
+    cur.execute('SELECT request_bytes FROM cj_cleanup_device_call WHERE subject_digest=%s AND invocation_id=%s',(subject,invocation))
+    row=cur.fetchone()
+    if row is None or bytes(row[0])!=raw:raise Conflict('original device invocation conflict')
+
+
 class DeviceBridge:
     def __init__(self,gateway,issuer):self.gateway,self.store,self.issuer=gateway,gateway.store,issuer
 
     def call(self,binding_id,reason,*,operation_id=None):
-        if reason not in ('account_cleanup','session_invalid','offline_expired'):
-            raise Denied('device cleanup reason unavailable')
         binding=self.gateway.device(binding_id)
         active=self.gateway.active_operation()
-        if active is not None:
-            if operation_id is not None and operation_id!=active:raise Denied('original operation required')
-            operation_id=active;reason='account_cleanup'
-        elif reason=='account_cleanup':raise Denied('account operation unavailable')
-        elif operation_id is not None:raise Denied('device operation ID is server-owned')
-        elif operation_id is None:
-            # Stable invalidation operation for this binding/state/reason. No UI ID.
-            operation_id='device-'+digest(encode([binding_id,binding['state_ref'],reason]))
-        invocation='device-'+digest(encode([operation_id,binding_id,reason]))
-        version=binding['protocol']
-        if version==VERSION:targets=TARGETS
-        elif version=='CLEANUP-DEVICE@2':
-            from .device_v2 import TARGETS as targets
-        else:raise Denied('device protocol unavailable')
-        if reason=='offline_expired':targets=('device-cache/offline-trip',)
-        request=encode(dict(version=version,operation_id=operation_id,invocation_id=invocation,
-            binding_id=binding_id,scope_digest=binding['scope_digest'],state_ref=binding['state_ref'],
-            reason=reason,targets=targets,business_access='not_granted'))
+        operation_id,invocation,request=original_call(binding,active,reason,operation_id)
         with self.store.transaction(operation_id) as cur:
-            cur.execute('INSERT INTO cj_cleanup_device_call(subject_digest,operation_id,invocation_id,binding_id,reason,request_digest,request_bytes) '
-                'VALUES(%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(operation_id,binding_id,reason) DO NOTHING',
-                (self.store.subject_digest,operation_id,invocation,binding_id,reason,digest(request),request))
-            cur.execute('SELECT request_bytes FROM cj_cleanup_device_call WHERE subject_digest=%s AND invocation_id=%s',
-                        (self.store.subject_digest,invocation))
-            if bytes(cur.fetchone()[0])!=request:raise Conflict('original device invocation conflict')
+            actual_reason='account_cleanup' if active is not None else reason
+            persist_call(cur,self.store.subject_digest,operation_id,invocation,binding_id,actual_reason,request)
         return self.query(invocation,binding_id)
 
     def query(self,invocation_id,binding_id):
