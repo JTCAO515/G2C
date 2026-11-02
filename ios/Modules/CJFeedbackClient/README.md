@@ -140,3 +140,35 @@ before UI publication.
 See [evidence/REPORT.md](evidence/REPORT.md) for fixed sources, commands, failed runs,
 passed targeted scenarios and explicit UNRUN gates. Do not treat local tests or
 unsigned compilation as App/real-account/service/device acceptance.
+
+
+## M3 local account-cleanup primitive (#439)
+
+`clearLocalFiles()` retires the original store and physically erases only its
+pending journal family. Memory's four public store types each own
+their separately constructed root; callers must retain and invoke all provided
+stores. Feedback Answer and General are separate roots and both require cleanup.
+The method never queries/decrypts a record or accesses/creates/deletes a key.
+Existing ciphertext, action IDs, raw UTF-8, receipt/query and unknown-write rules
+are unchanged before explicit cleanup.
+
+Known adjacent directories are captured with retained descriptors at construction,
+or registered only when that store creates them. Renamed/replaced/missing captured
+directories, independently appearing sidecars, unknown filenames, subdirectories,
+symlinks and hardlinks refuse cleanup. Complete metadata preflight precedes the
+first unlink; failure retains a retired store and retry uses the same original
+targets. Regular account-owned ciphertext may be erased even when its content or
+read protection is unusable, as in #421; this does not make it readable.
+No recursive or sibling-prefix deletion exists. A successful retry verifies empty
+original directories and fsyncs them; it never reports server/backup/device-wide
+completion.
+
+The host still must fence every old client/SessionLifecycle before cleanup,
+prevent constructing replacement writers, then clear the exact key only after
+all its provided stores are verified empty. Other independent instances are not
+a global revocation mechanism. Original account operation/device-call/receipt,
+Keychain clearing, signed API/PG/native composition and physical-device behavior
+are separate #27 acceptance. In particular the history roots introduced by #437
+require B's additive device target version; DEVICE@2's frozen targets are not
+expanded by this local API. This primitive alone does not open an App factory or
+mark #24's original-account-operation box complete.

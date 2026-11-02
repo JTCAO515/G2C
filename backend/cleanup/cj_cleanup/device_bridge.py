@@ -25,8 +25,13 @@ class DeviceBridge:
             # Stable invalidation operation for this binding/state/reason. No UI ID.
             operation_id='device-'+digest(encode([binding_id,binding['state_ref'],reason]))
         invocation='device-'+digest(encode([operation_id,binding_id,reason]))
-        targets=TARGETS if reason!='offline_expired' else ('device-cache/offline-trip',)
-        request=encode(dict(version=VERSION,operation_id=operation_id,invocation_id=invocation,
+        version=binding['protocol']
+        if version==VERSION:targets=TARGETS
+        elif version=='CLEANUP-DEVICE@2':
+            from .device_v2 import TARGETS as targets
+        else:raise Denied('device protocol unavailable')
+        if reason=='offline_expired':targets=('device-cache/offline-trip',)
+        request=encode(dict(version=version,operation_id=operation_id,invocation_id=invocation,
             binding_id=binding_id,scope_digest=binding['scope_digest'],state_ref=binding['state_ref'],
             reason=reason,targets=targets,business_access='not_granted'))
         with self.store.transaction(operation_id) as cur:
@@ -83,6 +88,11 @@ class DeviceHook:
     """One frozen target across the account's registered original device bindings."""
     def __init__(self,gateway,issuer):self.gateway,self.issuer=gateway,issuer
 
+    def _covered(self,results,target):
+        groups=self.gateway.device_groups()
+        return bool(groups) and all(any(r['call']['binding_id'] in group and r['state']=='confirmed'
+            and target in r['call']['targets'] for r in results) for group in groups)
+
     def execute(self,request):
         from .store import require_intent,original_result,record_result,receipt_for
         if request.subject_digest!=self.gateway.store.subject_digest or request.domain_scope!=request.subject_digest or request.selection.kind!='account':
@@ -95,7 +105,7 @@ class DeviceHook:
         bindings=self.gateway.devices()
         if not bindings:raise Denied('actual device binding required')
         results=[bridge.call(binding,'account_cleanup',operation_id=request.operation_id) for binding in bindings]
-        if not all(r['state']=='confirmed' for r in results):return receipt_for(request,'unknown')
+        if not self._covered(results,request.target):return receipt_for(request,'unknown')
         with self.gateway.store.transaction(request.operation_id) as cur:
             # The accepted authenticated original reports are the owner's results,
             # not a claim of remote physical verification or any unregistered device.
@@ -107,8 +117,8 @@ class DeviceHook:
         with self.gateway.store.transaction(request.operation_id,writing=False) as cur:
             old=original_result(cur,request)
             if old is not None:return old
-        rows=DeviceBridge(self.gateway,self.issuer).summary(request.operation_id)
-        expected=set(self.gateway.devices())
-        if not expected or {r['binding_id'] for r in rows}!=expected or any(r['state']!='confirmed' for r in rows):
+        bridge=DeviceBridge(self.gateway,self.issuer)
+        results=[bridge.query(r['invocation_id'],r['binding_id']) for r in bridge.summary(request.operation_id)]
+        if not self._covered(results,request.target):
             return receipt_for(request,'unknown')
         with self.gateway.store.transaction(request.operation_id) as cur:return record_result(cur,request,'confirmed')

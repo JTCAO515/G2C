@@ -33,7 +33,7 @@ private enum MemoryLifecycleUIState {
     }
 }
 private enum MemoryLifecycleIntent { case pause, resume, edit, stopUse }
-private struct MemoryLifecycleButton: View {
+struct MemoryLifecycleButton: View {
     let title: String
     let identifier: String
     let enabled: Bool

@@ -21,6 +21,18 @@ struct DevelopmentTripEditingProfile {
         #endif
     }
 }
+struct DevelopmentMemoryHistoryProfile {
+    enum Failure: Error { case invalidProfile }
+    static func read(_ environment: [String: String]) throws -> Self? {
+        #if DEBUG
+        guard let value = environment["G2C_DEV_MEMORY_HISTORY_PROFILE"] else { return nil }
+        guard value == "history-v1", environment["G2C_DEV_ACCOUNT_MODE"] == "1" else { throw Failure.invalidProfile }
+        return Self()
+        #else
+        return nil
+        #endif
+    }
+}
 struct DevelopmentFeedbackProfile {
     enum Failure: Error { case invalidProfile }
     static func read(_ environment: [String: String]) throws -> Self? {

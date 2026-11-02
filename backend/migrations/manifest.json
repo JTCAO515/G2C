@@ -298,6 +298,14 @@
       "sha256": "2c06aa9105a5043968c491bcacddb75fe963861e645eca84019d369f71688c3d",
       "down": "backend/migrations/down/0037_memory_publication.down.sql",
       "down_sha256": "ddf0d3cedc67180aecb9d00e70ba40efac8717cdebe7792c828504748fbe2628"
+    },
+    {
+      "version": 38,
+      "name": "device_bridge_v2",
+      "file": "backend/migrations/0038_device_bridge_v2.sql",
+      "sha256": "06e1c6c6d8d0f754cbbe8b8759df6ca7bd2b648873ddd87cb450b49a818e6e1c",
+      "down": "backend/migrations/down/0038_device_bridge_v2.down.sql",
+      "down_sha256": "87b2354b3d4303919de69bf8deb5706dce0798aa605d4f149738899f261b9cb0"
     }
   ]
 }
