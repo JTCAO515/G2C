@@ -28,10 +28,12 @@ class Observed(FakeProvider):
             self.calls+=1
             data=json.loads(messages[0]['content']);self.extractions.append(data)
             assert data['version']=='MEMORY-EXTRACT-DATA@2' and data['purpose']=='incremental'
-            item=data['messages'][0]
-            assert item['text']=='No spicy food'
-            yield json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot='diet.spicy',kind='preference',
-                text=item['text'],extent='long_term',occurred_at='date unknown',evidence=[dict(ref=item['ref'],quote=item['text'])])]))
+            records=(('diet.spicy','preference','No spicy food'),('mobility.fact','fact','My height is 170 cm'),
+                     ('experience.visit','experience','I visited a synthetic museum'))
+            assert [item['text'] for item in data['messages']]==[text for slot,kind,text in records]
+            yield json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot=slot,kind=kind,
+                text=item['text'],extent='long_term',occurred_at='date unknown',evidence=[dict(ref=item['ref'],quote=item['text'])])
+                for item,(slot,kind,text) in zip(data['messages'],records)]))
         else:
             data=json.loads(messages[0]['content'].split('\n',1)[1]);self.answers.append(data)
             for chunk in super().stream(messages,system):yield json.dumps(data['items'])+chunk
@@ -46,7 +48,8 @@ def exercise(root,path):
     for who in subjects:local_run_context.provision_budget(path,run,who)
     tokens={who:dev_auth.token(auth,who,30) for who in subjects}
     headers={who:{'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'} for who,token in tokens.items()}
-    slots=frozenset({'diet.spicy'});deadline=datetime.now(timezone.utc)+timedelta(hours=1)
+    kinds={'diet.spicy':'preference','mobility.fact':'fact','experience.visit':'experience'}
+    slots=frozenset(kinds);deadline=datetime.now(timezone.utc)+timedelta(hours=1)
     extraction=CollectionPolicy(frozenset({'self'}),slots,5,4096,lambda entry:True,
         lambda entry,rows:all(entry.text==row.text for row in rows))
     memory=ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),deadline,
@@ -54,12 +57,13 @@ def exercise(root,path):
     app=create_collection_app(conninfo_path=path,auth_dir=auth,run_context=run,
         resolve_collection=lambda principal:(extraction,memory,lambda entry:(None,None)))
     host=app.state.memory_history;c=host.service
-    profile=dict(subjects=['self'],slots={'diet.spicy':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},
+    profile=dict(subjects=['self'],slots={slot:dict(kind=kind,collection_allowed=True,semantic_resolved=True) for slot,kind in kinds.items()},
         extents=['long_term'],context_ids=[])
-    config=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=dict(version='local-memory-typed.1',
+    definition=dict(version='local-memory-run.2',collection=dict(version='local-memory-typed.1',
         collection=dict(version='local-memory-policy.1',expires_at=deadline.isoformat(),profiles={who:profile for who in subjects}),
         travel_contexts={who:[] for who in subjects}),
-        selections={who:dict(subject='self',slots=['diet.spicy'],max_bytes=32768) for who in subjects})).encode())
+        selections={who:dict(subject='self',slots=['diet.spicy'],max_bytes=32768) for who in subjects})
+    config=TypedRuntimeConfiguration.from_bytes(json.dumps(definition).encode())
     jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=MemoryCollectionAdapterV2(c),max_payload_bytes=262144)
     originals=[]
     def submit(token,jid,attempt,query,prepared):
@@ -78,15 +82,17 @@ def exercise(root,path):
                 creation_intent='none',expected_generation=head['generation'],expected_sequence=head['last_sequence']),who)
             return head
         head=send('source','fact','No spicy food','poll-alice')
+        send('source','height','My height is 170 cm','poll-alice')
+        send('source','visit','I visited a synthetic museum','poll-alice')
         post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='enable',operation='enable',conversation_id='source',
             expected_generation=head['generation'],expected_epoch=0,expected_source_version=0),'poll-alice')
         results=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
-        assert len(results)==2 and all(result.status=='completed' for result in results),results
-        assert model.calls==2 and len(model.extractions)==1 and len(originals)==1
+        assert len(results)==4 and all(result.status=='completed' for result in results),results
+        assert model.calls==4 and len(model.extractions)==1 and len(originals)==1
         original=originals[0];jid,attempt=original['job_id'],original['attempt_id']
         assert jobs.query_original(tokens['poll-alice'],jid,attempt)['state']=='completed'
-        assert json.loads(c.query_original(tokens['poll-alice'],jid,attempt))['processed_through']==1
-        assert run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)==[] and model.calls==2
+        assert json.loads(c.query_original(tokens['poll-alice'],jid,attempt))['processed_through']==3
+        assert run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)==[] and model.calls==4
         for who,expected in (('poll-alice',{'diet.spicy':'No spicy food'}),('poll-bob',{})):
             send(who+'-new',who+'-question','饮食怎么安排？',who)
             results=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
@@ -94,12 +100,23 @@ def exercise(root,path):
             assert {item['slot']:item['text'] for item in model.answers[-1]['items']}==expected
             display=expect(client.get('/v1/run-display',params={'message_id':who+'-question'},headers=headers[who]))['snapshot']
             assert all(text in display['text'] for text in expected.values())
+        for slot,question,text in (('mobility.fact','What height have I saved?','My height is 170 cm'),
+                                   ('mobility.fact','我保存的身高是多少？','My height is 170 cm'),
+                                   ('experience.visit','Which museum did I visit?','I visited a synthetic museum')):
+            selected=json.loads(json.dumps(definition))
+            for value in selected['selections'].values():value['slots']=[slot]
+            chosen=TypedRuntimeConfiguration.from_bytes(json.dumps(selected).encode())
+            mid='question-'+str(len(model.answers))
+            send(mid,mid,question,'poll-alice')
+            results=run_worker.run_once(host.database,model,auth,memory_configuration=chosen,background_jobs=combined)
+            assert len(results)==1 and results[0].status=='completed'
+            assert {item['slot']:item['text'] for item in model.answers[-1]['items']}=={slot:text}
         assert len(model.extractions)==1 and len(originals)==1
     with host.database.connect(scope_for(ISSUER,'poll-alice')) as conn:
-        assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(1,)
+        assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(3,)
     with host.database.connect(scope_for(ISSUER,'poll-bob')) as conn:
         assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
-    print('PASS actual signed enabled source→automatic C incremental intake→original run_once/BG2/Fake/unique Meter→canonical preference→next Chinese chat actual model input and RUN display; Bob isolated, unenabled questions not extracted, repeat zero provider')
+    print('PASS actual signed enabled source→automatic C intake→original run_once/BG2/Fake/unique Meter→independent preference/fact/experience→bounded relevant new-chat English/Chinese actual model input and RUN display; Bob isolated, unenabled questions not extracted, repeat zero provider')
 
 
 if __name__=='__main__':
