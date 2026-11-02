@@ -12,7 +12,7 @@ from cj_memory_jobs.ending_source import EndingSegment,read_ending_segment
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_memory.manual import ManualPolicy
-from cj_memory_jobs.ending import EndingCollectionAdapter
+from cj_memory_jobs.ending import EndingCollectionAdapterV2
 
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
 import dev_auth,migrate,pg_suites
@@ -63,7 +63,8 @@ def exercise(conninfo,auth):
         # Original V1 cannot silently turn a prefix into the actual end.
         expected(client.post('/internal/v1/memory-history/jobs',content=json.dumps(dict(version='MEMORY-JOBS@1',
             job_id='legacy-prefix',attempt_id='legacy-attempt',source=query.__dict__)).encode(),headers=headers['alice']),503)
-        adapter=EndingCollectionAdapter(service)
+        adapter=EndingCollectionAdapterV2(service)
+        final_checks=[]
         def enqueue(segment,jid):
             value=dict(version='MEMORY-END-JOBS@1',job_id=jid,attempt_id=jid+'-attempt',
                 source=segment.source.__dict__,end=segment.end.__dict__)
@@ -80,7 +81,8 @@ def exercise(conninfo,auth):
             def enter(context):
                 args=(context,tokens['alice'],jid,jid+'-attempt',prepared,hashlib.sha256(prepared).hexdigest())
                 policy=(adapter.processing_policy(*args,max_payload_bytes=262144) if output is None else
-                    adapter.publication_policy(*args,output,hashlib.sha256(output).hexdigest(),max_payload_bytes=262144))
+                    adapter.publication_policy(*args,output,hashlib.sha256(output).hexdigest(),max_payload_bytes=262144,
+                        before_commit=lambda:final_checks.append(jid)))
                 actual=SourceQuery(**dict(segment.source.__dict__,mode='incremental')) if query_override is None else query_override
                 return context.with_enabled_source(actual,policy,
                     lambda snapshot:policy.with_input(snapshot,lambda raw:b'bounded-local-phase') if output is None else
@@ -109,6 +111,7 @@ def exercise(conninfo,auth):
         _,tail_prepared,tail_data=enqueue(tail,'ending-tail')
         tail_receipt=json.loads(phase(tail,'ending-tail',tail_prepared,output(tail_data,0,'pace','inference')))
         assert tail_receipt['receipts'][0]['status']=='candidate'
+        assert final_checks==['ending-first','ending-tail']
         def discover(actor='alice',after=''):
             return client.get('/v5/memory-candidate-jobs',params=dict(conversation_id='long',after_job_id=after),headers=headers[actor])
         discovered=expected(discover())['result']

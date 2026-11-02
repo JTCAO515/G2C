@@ -148,6 +148,14 @@ class CollectionService(Service):
             extraction,max_payload_bytes=max_payload_bytes,ending_command=command,actual_end=actual,
             model_output=model_output,model_output_sha256=model_output_sha256,memory_policy=memory_policy)
 
+    def ending_publication_policy_v3(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,
+                                     model_output,model_output_sha256,*,max_payload_bytes,before_commit):
+        from .ending import EndingPublicationPolicyV3
+        repository,principal,guard,command,actual,extraction,memory_policy=self._ending_binding(context,token,job_id,attempt_id)
+        return EndingPublicationPolicyV3(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
+            extraction,max_payload_bytes=max_payload_bytes,ending_command=command,actual_end=actual,
+            model_output=model_output,model_output_sha256=model_output_sha256,memory_policy=memory_policy,before_commit=before_commit)
+
     def processing_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,*,max_payload_bytes):
         """Compose inside B's outer protected context; never opens a Boundary."""
         from .processing import ProcessingSourcePolicy

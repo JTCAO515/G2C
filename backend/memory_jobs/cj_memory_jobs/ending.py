@@ -95,6 +95,13 @@ class EndingPublicationPolicy(_Ending,ResultSourcePolicyV2):
     pass
 
 
+from .policy_v3 import ResultSourcePolicyV3
+
+
+class EndingPublicationPolicyV3(_Ending,ResultSourcePolicyV3):
+    pass
+
+
 class EndingCollectionAdapter:
     """Explicit B bridge; its request uses the protected incremental reader.
 
@@ -116,3 +123,9 @@ class EndingCollectionAdapter:
 
     def transition_original_in_context(self,*args,**kwargs):
         return self.collection.transition_original_in_context(*args,**kwargs)
+
+
+class EndingCollectionAdapterV2(EndingCollectionAdapter):
+    """Explicit new B writer: required final original-budget check, no V2 fallback."""
+    def publication_policy(self,*args,before_commit,**kwargs):
+        return self.collection.ending_publication_policy_v3(*args,before_commit=before_commit,**kwargs)
