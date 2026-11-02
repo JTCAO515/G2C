@@ -9,6 +9,7 @@ import CJRunClient
 import CJOfflineTrip
 import CJMemoryClient
 import CJNeedsClient
+import CJFeedbackClient
 import CJMessageKeyBridge
 import CJMessageKeys
 import CJSession
@@ -66,11 +67,13 @@ import Observation
     let typedMemory: DevelopmentTypedMemoryHost?
     let needs: DevelopmentNeedsHost?
     let structuredTrips: StructuredTripHost?
+    let feedback: DevelopmentFeedbackHost?
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil, offline: OfflineTripController? = nil) throws {
         let environment = ProcessInfo.processInfo.environment
+        let feedbackProfile = try DevelopmentFeedbackProfile.read(environment)
         let messageProfile=try DevelopmentMessageProfile.read(environment)
         let typedMode = try DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
         let needsProfile = try DevelopmentNeedsProfile.read(environment)
@@ -202,6 +205,10 @@ import Observation
                     await needsHost.perform(work)
                 }, offline: offline)
         } else { structuredTrips = nil }
+        feedback = try feedbackProfile.map { _ in
+            try DevelopmentFeedbackHost(configuration: configuration, shell: shell, session: lifetime.session,
+                operation: lifetime.operation, isCurrent: { lifetime.current != nil })
+        }
         shell.selectedTab = .trips
         // Disk restoration only selects an original action for GET reconciliation;
         // it never prepares or submits another action, even while the API is offline.
@@ -214,6 +221,7 @@ import Observation
 
     func invalidate() {
         lifetime.active = false
+        feedback?.invalidate()
         messages.invalidate()
         memory?.invalidate()
         typedMemory?.invalidate()
@@ -223,6 +231,70 @@ import Observation
         keys.invalidate()
         if lifetime.ownsSession { _ = lifetime.session.clearWithSettlement() }
     }
+}
+
+/// Two independent feedback surfaces, sharing only the canonical account-scoped key.
+/// These files are original feedback attempts, not a second MESSAGE journal.
+@MainActor final class DevelopmentFeedbackHost {
+    let answer: FeedbackContainerHost
+    let general: FeedbackContainerHost
+    private let keys: ScopedMessageKeyProvider
+    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, session: SessionLifecycle,
+         operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
+        let namespace = MessageKeyNamespace(environment: configuration.environmentID, account: configuration.accountID,
+                                             purpose: .localFeedbackPendingV1)
+        guard let applicationID = Bundle.main.bundleIdentifier else { throw FeedbackFailure.unconfigured }
+        let keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
+                                                protection: .whenUnlockedThisDeviceOnly)
+        let files = FileManager.default
+        let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let root = support.appendingPathComponent("G2CDevelopmentFeedback", isDirectory: true)
+            .appendingPathComponent(namespace.environment.uuidString, isDirectory: true)
+            .appendingPathComponent(namespace.account.uuidString, isDirectory: true)
+        let answerDirectory = root.appendingPathComponent("Answer", isDirectory: true)
+        let generalDirectory = root.appendingPathComponent("General", isDirectory: true)
+        for directory in [answerDirectory, generalDirectory] {
+            try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        }
+        let key: MessageEncryptionKey
+        if let existing = try keys.existing(expectedID: nil, for: keys.begin(.lookup)) { key = existing }
+        else {
+            // Neither surface can replace a missing key while any encrypted original remains.
+            for directory in [answerDirectory, generalDirectory] {
+                guard try files.contentsOfDirectory(atPath: directory.path).isEmpty else { throw FeedbackFailure.keyUnavailable }
+            }
+            key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
+        }
+        let endpoint = try FeedbackEndpoint(url: configuration.endpoint, maximumRequestBytes: 16384,
+                                             maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
+        let generation = shell.generation
+        let makeBinding: @MainActor (FeedbackAnswerSource?) throws -> FeedbackContainerBinding = { source in
+            let feedback = FeedbackBinding(environment: namespace.environment, account: namespace.account,
+                                           generation: UUID(), selection: UUID())
+            let current: @MainActor () -> FeedbackBinding? = {
+                guard isCurrent(), session.isCurrent(operation), shell.generation == generation,
+                      !shell.messageBindingBlocked else { return nil }
+                if let source, !source.isCurrent(session: session, operation: operation, generation: generation) { return nil }
+                guard isCurrent(), session.isCurrent(operation), shell.generation == generation,
+                      !shell.messageBindingBlocked else { return nil }
+                return feedback
+            }
+            let store = try FeedbackPendingStore(directory: source == nil ? generalDirectory : answerDirectory,
+                maximumBytes: 32768, maximumRecords: 100, binding: feedback, expectedKeyID: key.id, provider: keys)
+            let client = try FeedbackClient(development: endpoint, credentials: { binding in
+                guard current() == binding else { return nil }; return configuration.token
+            }, currentBinding: current, session: session, sessionOperation: operation, pendingStore: store,
+                requestTimeout: 10, resourceTimeout: 20)
+            return FeedbackContainerBinding(client: client, feedback: feedback, shellGeneration: generation,
+                session: session, sessionOperation: operation, context: source?.context, runSource: source,
+                synthetic: false, currentBinding: current)
+        }
+        answer = FeedbackContainerHost(shell: shell, surface: .answer, answerBinding: { try makeBinding($0) })
+        general = FeedbackContainerHost(shell: shell, surface: .general)
+        guard general.bind(try makeBinding(nil)) else { throw FeedbackFailure.staleBinding }
+        self.keys = keys
+    }
+    func invalidate() { answer.invalidate(); general.invalidate(); keys.invalidate() }
 }
 
 /// Only an explicit DEBUG Simulator manual-v1 root activates these old HTTP

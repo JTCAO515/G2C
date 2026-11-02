@@ -72,6 +72,8 @@ import CJAPI
         let bytes = try #require(model.original?.originalUTF8)
         await model.perform(try #require(model.prepareQuery()))
         #expect(model.state == .unknown); #expect(model.original?.originalUTF8 == bytes)
+        model.startAnother()
+        #expect(model.state == .unknown && model.original?.originalUTF8 == bytes)
         #expect(model.prepareSubmit() == nil); #expect(try h.store().pending().count == 1)
     }
     @Test func confirmationComesOnlyFromReceipt() async throws {
@@ -84,5 +86,14 @@ import CJAPI
         let model = FeedbackPresentation(client: try h.client(wire)); model.replace(binding: h.binding); model.edit(problem: "private", expectation: "")
         await model.perform(try #require(model.prepareSubmit()))
         #expect(model.state == .submitted); #expect(model.receipt != nil); #expect(model.original != nil)
+        let first = try #require(model.original)
+        model.startAnother()
+        #expect(model.state == .editing && model.original == nil && model.problem.isEmpty && model.expectation.isEmpty)
+        #expect(try h.store().pending().first?.originalUTF8 == first.originalUTF8)
+        model.edit(problem: "Second voluntary feedback", expectation: "")
+        await model.perform(try #require(model.prepareSubmit()))
+        #expect(model.state == .submitted && model.original?.actionID != first.actionID)
+        #expect(try h.store().pending().count == 2)
+        #expect(await wire.calls.count == 2)
     }
 }

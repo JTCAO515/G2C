@@ -33,6 +33,12 @@ public struct FeedbackView: View {
             Section {
                 if model.state.isBusy { ProgressView() }
                 Text(status).accessibilityIdentifier("feedback.status")
+                if model.state == .submitted {
+                    Text(text("Submitting feedback does not mean the issue has been fixed or a model has been trained.", "提交反馈不代表问题已修复或模型已训练。"))
+                        .font(.footnote).accessibilityIdentifier("feedback.disclaimer")
+                    Button(text("Describe another problem", "反馈另一个问题")) { model.startAnother() }
+                        .accessibilityIdentifier("feedback.another")
+                }
                 if model.original != nil && model.state != .submitted {
                     Button(text("Check original submission", "查询原反馈")) {
                         if let work = model.prepareQuery() { Task { await model.perform(work) } }
@@ -40,10 +46,10 @@ public struct FeedbackView: View {
                 }
                 Button(text("Load pending feedback", "读取待核对反馈")) {
                     if let work = model.prepareReload() { Task { await model.perform(work) } }
-                }.disabled(model.state.isBusy || model.binding == nil)
+                }.disabled(model.state.isBusy || model.binding == nil).accessibilityIdentifier("feedback.loadPending")
                 ForEach(model.pendingActions, id: \.actionID) { pending in
                     Button(text("Review pending feedback", "查看待核对反馈")) { model.selectPending(actionID: pending.actionID) }
-                        .disabled(model.state.isBusy)
+                        .disabled(model.state.isBusy).accessibilityIdentifier("feedback.pending." + pending.actionID)
                 }
             }
             if let receipt = model.receipt {

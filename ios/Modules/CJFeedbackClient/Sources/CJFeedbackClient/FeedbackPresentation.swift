@@ -79,6 +79,23 @@ public struct FeedbackWork: Sendable {
             return work
         } catch { state = .invalidInput; return nil }
     }
+    /// Explicit new feedback after every durable original has a verified receipt.
+    /// UNKNOWN, null lookup and conflicts never unlock this action.
+    public func startAnother() {
+        guard state == .submitted, let client, let binding else { return }
+        let savedLifetime = lifetime, savedRequest = request
+        do {
+            let operation = try client.begin(binding: binding)
+            guard try client.canStartAnother(operation: operation),
+                  lifetime == savedLifetime, request == savedRequest else { return }
+            request = UUID(); started = nil; client.invalidate()
+            original = nil; receipt = nil; problem = ""; expectation = ""; includeContext = false
+            state = .editing
+        } catch {
+            guard lifetime == savedLifetime, request == savedRequest else { return }
+            state = .recoveryUnavailable
+        }
+    }
     public func prepareReload() -> FeedbackWork? {
         guard let work = prepare(.reload) else { return nil }; state = .loading; return work
     }

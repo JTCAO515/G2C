@@ -21,6 +21,18 @@ struct DevelopmentTripEditingProfile {
         #endif
     }
 }
+struct DevelopmentFeedbackProfile {
+    enum Failure: Error { case invalidProfile }
+    static func read(_ environment: [String: String]) throws -> Self? {
+        #if DEBUG
+        guard let value = environment["G2C_DEV_FEEDBACK_PROFILE"] else { return nil }
+        guard value == "feedback-v1" else { throw Failure.invalidProfile }
+        return Self()
+        #else
+        return nil
+        #endif
+    }
+}
 enum DevelopmentMessageProfile:String {
     case discussion="trip-discussion-v1",edit="trip-edit-v1",editResults="trip-edit-result-v1",planning="needs-planning-v1"
     static func read(_ environment:[String:String]) throws -> Self? {

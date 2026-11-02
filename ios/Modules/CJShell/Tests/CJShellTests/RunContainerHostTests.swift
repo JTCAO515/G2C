@@ -127,6 +127,23 @@ private actor RunHostWire: ClientTransport {
     private func wait(_ wire: RunHostWire) async {
         for _ in 0..<10000 { if await wire.held { return }; await Task.yield() }; Issue.record("Run request not held")
     }
+    @Test func feedbackSourceUsesSealedAcceptedReceiptAndRetiresWithOriginal() async throws {
+        let f = try RunHostFixture(shell: shell())
+        try await f.accept("中文e\u{301}"); try f.bind("中文e\u{301}")
+        #expect(try f.host.captureFeedbackSource() == nil)
+        #expect(f.host.selectAcceptedMessage(from: f.messages))
+        let source = try #require(try f.host.captureFeedbackSource())
+        #expect(Data(source.context.messageID.utf8) == Data("中文e\u{301}".utf8))
+        #expect(source.context.runID == "run-中文e\u{301}")
+        #expect(source.isCurrent(session: f.session, operation: f.operation, generation: f.shell.generation))
+        let other = SessionLifecycle(persistence: RunSessionStore(), restorePolicy: .userInitiatedOnly)
+        #expect(!source.isCurrent(session: other, operation: try other.beginTrustedSDKSave(), generation: f.shell.generation))
+        f.shell.selectLanguage(.chinese)
+        #expect(source.isCurrent(session: f.session, operation: f.operation, generation: f.shell.generation))
+        f.host.retireSelection()
+        #expect(!source.isCurrent(session: f.session, operation: f.operation, generation: f.shell.generation))
+        #expect(await f.wire.calls.count == 1) // MESSAGE query only; capture never creates a read/write.
+    }
     @Test func defaultsAndUnacceptedRecordsCannotCreateSource() async throws {
         let s = try shell(), h = RunContainerHost(shell: s), messages = AssistantMessageHost(shell: s)
         #expect(h.displayModel == nil && messages.captureAcceptedRunReceipt() == nil)
