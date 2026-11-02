@@ -147,12 +147,16 @@ def main():
     import cj_memory_jobs.collection_app as collection_module
     from cj_api.local_app import ISSUER, scope_for
     from cj_api.local_run_context import load_run_context
+    from cj_run.step_usage import ledger_scope_for
+    from cj_usage.codec import decode as decode_ledger
     if not Path(collection_module.__file__).resolve().is_relative_to(backend):
         raise ValueError('Wrong imported source')
     context = load_run_context(args.run_context)
     assert context.current.meter.budget == 2
     output.mkdir(parents=True)
-    report = dict(status='RUNNING', backend_head=args.backend_head, native='UNRUN', app='UNRUN',
+    report = dict(status='RUNNING', backend_head=args.backend_head,
+                  head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
+                  source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), native='UNRUN', app='UNRUN',
                   run_context=json.loads(args.run_context.read_text()), pg_stopped=False)
     report_path = output / 'report.json'
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2))
@@ -173,7 +177,23 @@ def main():
                     assert connection.execute('SELECT current_user').fetchone() == ('cj_m1_runtime',)
                     assert connection.execute("SELECT count(*) FROM cj_memory_item WHERE status='candidate'").fetchone() == (1,)
                     assert connection.execute('SELECT count(*) FROM cj_memory_history_candidate_action').fetchone() == (0,)
-                report.update(source=proof, runtime_role='cj_m1_runtime', status='PASS')
+                # Initializer is used only for this read-only ledger audit, not
+                # business dispatch or inserting candidate/publication records.
+                with psycopg.connect(**config) as connection:
+                    ledgers = []
+                    for subject in subjects:
+                        account = ledger_scope_for(scope_for(ISSUER, subject), context.current.meter)
+                        row = connection.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s', (account,)).fetchone()
+                        assert row is not None
+                        ledgers.append(decode_ledger(row[0]))
+                    active, other = ledgers
+                    assert active.config == context.current.meter and len(active.attempts) == 2
+                    assert not other.attempts
+                    assert all(a.state == 'settled' and a.receipt.actual == 1 for a in active.attempts.values())
+                    assert proof['meter_attempt_id'] in active.attempts
+                report.update(source=proof, runtime_role='cj_m1_runtime', status='PASS',
+                              meter=dict(attempts=2, settled=2, actual_units=2, budget=2, other_account_attempts=0,
+                                         audit_role='cj460_initializer (read-only)'))
             report['pg_stopped'] = True
         # Fresh signer files and credentials were confined to the removed temp tree.
         report['task_credentials_destroyed'] = True
