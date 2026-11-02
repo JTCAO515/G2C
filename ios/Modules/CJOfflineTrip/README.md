@@ -38,8 +38,13 @@ therefore cannot leave an untracked readable/orphan target; local cleanup keeps
 that denied target across reopen until physical removal succeeds.
 
 Files use 0700 account directories, exclusive 0600 ciphertext, AES-GCM AAD and
-atomic fsync/readback. iOS writes set Complete file protection and reads verify
-it. Dedicated canonical `localOfflineTripSnapshotV1` keys are created only after
+atomic fsync/readback. iOS sets and checks Complete protection through the
+opened descriptor's published Darwin F_SETPROTECTIONCLASS/F_GETPROTECTIONCLASS
+commands (class A=1). Native investigation found Foundation's protection attribute
+nil on iOS 17 Simulator, while these descriptor commands set/read class A correctly;
+no missing-attribute fallback or weaker read protection is used. Erasure still
+checks the exact root/owner/mode/links/pending state, but need not accept a weakly
+protected file for reading before deleting it. Dedicated canonical `localOfflineTripSnapshotV1` keys are created only after
 an actual accepted source and confirmed empty local storage; a missing key with
 existing files/anchor never triggers replacement.
 
