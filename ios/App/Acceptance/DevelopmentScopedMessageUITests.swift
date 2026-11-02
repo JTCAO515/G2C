@@ -6,6 +6,7 @@ import Foundation
     private let control="__FIXTURE_URL__"
     private var app:XCUIApplication!
     private var largestFont=false
+    private var mapViewport=false
     private struct Fixture:Decodable {
         let case_id,endpoint,conversation,namespace:String
         let accounts,subjects:[String:String]
@@ -15,7 +16,15 @@ import Foundation
         let needs_planning:Bool?
         let scoped_results:Bool?
         let largest_recovery:Bool?
+        let map_points:[MapPoint]?
+        let map_loading_failure:Bool?
     }
+    private struct MapPoint:Decodable {
+        let id,provider_id,name_zh,state,snapshot_sha256:String
+        let address_zh:String?
+        let coordinate:MapCoordinate?
+    }
+    private struct MapCoordinate:Decodable { let raw,longitude,latitude,crs:String }
     private struct FormalTrip:Decodable {
         let id,title,content_sha256:String
         let version:Int
@@ -66,8 +75,8 @@ import Foundation
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
             let down=located ? frame.midY<=top : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
-            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? -step : step)))
-            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? step : -step)))
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont && !mapViewport ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? -step : step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont && !mapViewport ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id)
@@ -126,6 +135,7 @@ import Foundation
             for key in ["G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
         }
         if f.scoped_results == true { app.launchEnvironment["G2C_DEV_MESSAGE_PROFILE"]="trip-edit-result-v1" }
+        if f.map_loading_failure == true { app.launchEnvironment["G2C_ACCEPTANCE_MAP_LOADING"]="synthetic-delegate-failure" }
         if let timezone { app.launchEnvironment["TZ"]=timezone }
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
@@ -158,6 +168,86 @@ import Foundation
         let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
         XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
         XCTAssertEqual(input().value as? String,value);tap("trip.manual.keyboard.done")
+    }
+    func testFormalPlaceMapEnglish() async throws { try await formalPlaceMap("testFormalPlaceMapEnglish",large:false) }
+    func testFormalPlaceMapChineseLargest() async throws { try await formalPlaceMap("testFormalPlaceMapChineseLargest",large:true) }
+    func testFormalPlaceMapMissing() async throws { try await formalPlaceMap("testFormalPlaceMapMissing",large:false) }
+    func testFormalPlaceMapUnavailable() async throws { try await formalPlaceMap("testFormalPlaceMapUnavailable",large:false) }
+    func testFormalPlaceMapLateAccount() async throws {
+        let name="testFormalPlaceMapLateAccount",f=try await prepare(name);defer { app?.terminate() };mapViewport=true
+        let trip=try XCTUnwrap(f.formal_trips.first)
+        try launch(f,language:"en");tap("Trips");tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
+        _ = try await call("/wait-discovery",caseID:name)
+        tap("timeline.done");tap("Memory")
+        if !app.buttons.matching(identifier:"account.development.signin.B").firstMatch.exists { tap("memory.account") }
+        tap("account.development.signin.B");text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+        _ = try await call("/release-discovery",caseID:name)
+        tap("Trips");tap("trips.timeline.open");tap("timeline.refresh")
+        XCTAssertFalse(textElement("timeline.record.id").exists)
+        XCTAssertFalse(app.buttons.matching(identifier:"timeline.trip."+trip.id).firstMatch.exists)
+        XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
+        XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.identity.")).count,0)
+        _ = try await call("/map-source-proof",caseID:name)
+        capture(name+"-B-withholds-late-A");try audit(name+"-late")
+    }
+    private func formalPlaceMap(_ name:String,large:Bool) async throws {
+        let f=try await prepare(name);defer { app?.terminate() };mapViewport=true
+        let trip=try XCTUnwrap(f.formal_trips.first),points=try XCTUnwrap(f.map_points)
+        for (index,language) in (large ? ["zh-Hans","en"] : ["en","zh-Hans"]).enumerated() {
+            try launch(f,language:language,large:large,restore:index>0)
+            tap(language=="en" ? "Trips" : "行程");tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
+            text("timeline.record.id",contains:trip.id);text("timeline.record.version",contains:String(trip.version))
+            for point in points {
+                text("trip.map.identity."+point.id,contains:point.provider_id)
+                text("trip.map.name."+point.id,contains:point.name_zh)
+                text("trip.map.address."+point.id,contains:point.address_zh ?? "UNKNOWN")
+                text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN")
+            }
+            let located=points.filter { $0.coordinate != nil }
+            if located.isEmpty {
+                XCTAssertFalse(app.buttons.matching(identifier:"trip.map.show").firstMatch.exists)
+                XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch.exists)
+                for point in points { text("trip.map.status."+point.id,contains:language=="en" ? "no marker" : "不画点") }
+            } else {
+                tap("trip.map.show")
+                if f.map_loading_failure == true {
+                    text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用")
+                    XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
+                } else {
+                for point in located {
+                    let marker=visible({app.descendants(matching:.any).matching(identifier:"trip.map.marker."+point.id).firstMatch},id:"trip.map.marker."+point.id)
+                    let coordinate=try XCTUnwrap(point.coordinate)
+                    XCTAssertTrue(marker.label.contains(point.name_zh))
+                    let fields=try XCTUnwrap(marker.value as? String).components(separatedBy:"|")
+                    XCTAssertEqual(fields.count,4);XCTAssertEqual(fields[0],point.provider_id);XCTAssertEqual(fields[1],coordinate.raw);XCTAssertEqual(fields[2],"GCJ-02")
+                    let actual=fields[3].split(separator:",").map(String.init)
+                    XCTAssertEqual(actual.count,2)
+                    XCTAssertEqual(Double(actual[0]),Double(coordinate.longitude));XCTAssertEqual(Double(actual[1]),Double(coordinate.latitude))
+                }
+                }
+            }
+            if f.map_loading_failure == true { text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用");for point in points { text("trip.map.name."+point.id,contains:point.name_zh);text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN") } }
+            _ = try await call("/map-source-proof",caseID:name)
+            capture(name+"-"+language);try audit(name+"-"+language)
+        }
+    }
+    func testFormalMapNoPlaceSources() async throws {
+        let name="testFormalMapNoPlaceSources",f=try await prepare(name)
+        defer { app?.terminate() }
+        let trip=try XCTUnwrap(f.formal_trips.first)
+        for language in ["en","zh-Hans"] {
+            try launch(f,language:language,large:language=="zh-Hans",restore:language=="zh-Hans")
+            tap(language=="en" ? "Trips" : "行程")
+            tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
+            text("timeline.record.id",contains:trip.id);text("timeline.record.version",contains:"2")
+            text("timeline.record.title",contains:trip.title)
+            text("trip.map.empty",contains:language=="en" ? "No recorded places" : "没有地点来源记录")
+            XCTAssertFalse(app.buttons.matching(identifier:"trip.map.show").firstMatch.exists)
+            XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch.exists)
+            XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
+            _ = try await call("/map-no-place-proof",caseID:name)
+            capture(name+"-"+language);try audit(name+"-"+language)
+        }
     }
     func testScopedResultClarification() async throws { try await scenario("testScopedResultClarification",language:"en",item:true,resultKind:"clarification_required") }
     func testScopedResultExpansionKeep() async throws { try await scenario("testScopedResultExpansionKeep",language:"en",item:true,resultKind:"expansion_required") }
