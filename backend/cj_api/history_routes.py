@@ -3,13 +3,12 @@ import base64
 from dataclasses import asdict
 import json
 import re
-from urllib.parse import parse_qsl
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from .history_config import CursorBinding, CursorResyncRequired, CursorUnavailable, HistoryWireConfiguration
-from .message_routes import BodyError, _body_error, _error, _read_octets, _token
+from .message_routes import BodyError, _body_error, _error, _query_pairs, _read_octets, _token
 from .generated import (MessageReceipt, ConversationSummary, MessageHistoryItem, MessageDraftSnapshot,
     ConversationPageResponse, MessageHistoryResponse, MessageDraftReadResponse, MessageDraftSaveResponse)
 
@@ -38,12 +37,8 @@ def _raw64(raw):
 
 
 def _query(request, required, optional=()):
-    raw = request.scope['query_string'].decode('ascii')
-    if re.search(r'%(?![0-9a-fA-F]{2})',raw):
-        raise ValueError('Invalid encoding')
-    pairs = parse_qsl(raw,keep_blank_values=True,strict_parsing=True,encoding='utf-8',errors='strict')
     result = {}
-    for key,value in pairs:
+    for key,value in _query_pairs(request):
         if key in result or key not in (*required,*optional) or not value:
             raise ValueError('Unsupported query')
         result[key] = value  # opaque strings preserved, exactly one decode
