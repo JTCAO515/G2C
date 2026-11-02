@@ -24,7 +24,7 @@ private struct CleanupComponentFixture: Decodable {
         var result = ""
     }
     @ObservationIgnored private var display = Display()
-    @ObservationIgnored private var signal = false
+    private var signal = false
     @ObservationIgnored private var notifying = false
     @ObservationIgnored private var epoch = UUID()
     @ObservationIgnored private var fixture: CleanupComponentFixture?
