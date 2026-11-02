@@ -409,6 +409,8 @@ def group_memory_publication():
     status=script('backend/memory_jobs/tests/publication_pg.py')
     status|=script('backend/memory_jobs/tests/current_result_pg.py')
     status|=script('backend/memory_jobs/tests/publication_tail_pg.py')
+    status|=script('backend/memory_jobs/tests/ending_source_pg.py')
+    status|=script('backend/memory_jobs/tests/producer_pg.py')
     return status
 
 
@@ -475,6 +477,19 @@ def group_background_limits():
 
 
 GROUPS.update(background_jobs=group_background_jobs,background_inflight=group_background_inflight,background_current=group_background_current,background_limits=group_background_limits)
+
+
+def group_memory_ending_worker():
+    return _fresh_runtime_check('memory_ending_worker',55521,'cj_memory_ending',
+        f'/tmp/cj-memory-ending-{os.getpid()}','backend/memory_jobs/tests/ending_background_pg.py')
+
+
+def group_memory_incremental_worker():
+    return _fresh_runtime_check('memory_incremental_worker',55522,'cj_memory_incremental',
+        f'/tmp/cj-memory-incremental-{os.getpid()}','backend/memory_jobs/tests/producer_background_pg.py')
+
+
+GROUPS.update(memory_ending_worker=group_memory_ending_worker,memory_incremental_worker=group_memory_incremental_worker)
 
 
 def main(argv):

@@ -296,6 +296,10 @@ class Repository:
             row = self._receipt(cur, identifier(action_id))
             return row[0] if row else None
 
+    def read_decision_source(self,query,project,max_source_bytes,max_result_bytes):
+        from .decision_source import read
+        return read(self,query,project,max_source_bytes,max_result_bytes)
+
     def detail(self, trip_id):
         with self.transaction() as cur:
             cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,identifier(trip_id)))
