@@ -314,6 +314,14 @@
       "sha256": "4b1884ea25c10cba7daeabf4d84d03c77e3b262bc0b153258d5c184886553fa5",
       "down": "backend/migrations/down/0039_device_original_actions.down.sql",
       "down_sha256": "56802f2a45125e3a53889b53de016d2641ae22f2e8ce1c56986fa4376ddb13f8"
+    },
+    {
+      "version": 40,
+      "name": "background_jobs",
+      "file": "backend/migrations/0040_background_jobs.sql",
+      "sha256": "480641a173c16335812668bf11d2a2a5bc144d2d4758f72902c83efcff780327",
+      "down": "backend/migrations/down/0040_background_jobs.down.sql",
+      "down_sha256": "08dcad286608992288b5dfecf38922a5e6457d95c1f342fa101d964557b2aa78"
     }
   ]
 }

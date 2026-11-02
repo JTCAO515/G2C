@@ -11,7 +11,7 @@ MESSAGE=(
  ('cj_local_run_requirement','scope'),('cj_message_delivery','scope'),('cj_message_draft','scope'),
  ('cj_message_receipt','scope'),('cj_travel_context','scope'),('cj_travel_context_action','scope'),
  ('cj_local_metered_profile','scope'),('cj_local_run_protection','scope'),('cj_message_chat','scope'),('cj_message_scope','scope'))
-RUN=(('cj_run_metered_operation','scope'),('cj_run_metered_binding','scope'),('cj_run_step_usage','scope'),
+RUN=(('cj_run_background_job','scope'),('cj_run_metered_operation','scope'),('cj_run_metered_binding','scope'),('cj_run_step_usage','scope'),
      ('cj_run_event','scope'),('cj_run_record','scope'),('cj_run_scope','scope'))
 NEEDS=(('cj_needs_revision','scope'),('cj_needs_record','scope'),('cj_needs_scope','scope'))
 

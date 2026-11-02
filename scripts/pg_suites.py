@@ -453,6 +453,30 @@ def group_device_v3():
 GROUPS.update(device_v3=group_device_v3)
 
 
+
+def group_background_jobs():
+    return _fresh_runtime_check('background_jobs',55517,'cj_bg_55517',
+        f'/tmp/cj-bg-55517-{os.getpid()}','backend/cj_api/tests/background_jobs_pg.py')
+
+
+def group_background_inflight():
+    return _fresh_runtime_check('background_inflight',55518,'cj_bg_55518',
+        f'/tmp/cj-bg-55518-{os.getpid()}','backend/cj_api/tests/background_inflight_pg.py')
+
+
+def group_background_current():
+    return _fresh_runtime_check('background_current',55519,'cj_bg_55519',
+        f'/tmp/cj-bg-55519-{os.getpid()}','backend/cj_api/tests/background_current_pg.py')
+
+
+def group_background_limits():
+    return _fresh_runtime_check('background_limits',55520,'cj_bg_55520',
+        f'/tmp/cj-bg-55520-{os.getpid()}','backend/cj_api/tests/background_limits_pg.py')
+
+
+GROUPS.update(background_jobs=group_background_jobs,background_inflight=group_background_inflight,background_current=group_background_current,background_limits=group_background_limits)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
