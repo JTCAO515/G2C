@@ -18,9 +18,10 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulator',required=True);parser.add_argument('--run-context',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--build-dir',type=Path,required=True)
-    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall','testUnknownReopenAndLifecycleRecall','testSwitchAccountAfterActualCommit','testReleaseTypedFlagsRemainClosed','testLegacyUnknownCannotBypassTypedMode','testRealConflictKeepsOriginalAndAllowsFreshSave','testTypedUnknownCannotReactivateLegacyWriter'],default='testEnglishSaveReadAndOwnedTravel')
+    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall','testUnknownReopenAndLifecycleRecall','testSwitchAccountAfterActualCommit','testReleaseTypedFlagsRemainClosed','testLegacyUnknownCannotBypassTypedMode','testRealConflictKeepsOriginalAndAllowsFreshSave','testTypedUnknownCannotReactivateLegacyWriter','testTypedQuestionsEnglish','testTypedQuestionsChineseLargest'],default='testEnglishSaveReadAndOwnedTravel')
     args=parser.parse_args();output=args.output.resolve();build=args.build_dir.resolve()
-    chinese=args.case=='testChineseLargeSaveReadAndRecall'
+    chinese=args.case in ('testChineseLargeSaveReadAndRecall','testTypedQuestionsChineseLargest')
+    collection_questions=args.case in ('testTypedQuestionsEnglish','testTypedQuestionsChineseLargest')
     unknown=args.case=='testUnknownReopenAndLifecycleRecall'
     switching=args.case=='testSwitchAccountAfterActualCommit'
     release=args.case=='testReleaseTypedFlagsRemainClosed'
@@ -79,6 +80,8 @@ def main():
                         cwd=ROOT,check=True,capture_output=True)
                     dev_auth.activate_travel(conn,subject,context,ABI)
                 slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)}
+                if collection_questions:
+                    slots.update(a_fact=dict(kind='fact',collection_allowed=True,semantic_resolved=True),b_experience=dict(kind='experience',collection_allowed=True,semantic_resolved=True))
                 if reverse:slots['legacy.read']=dict(kind='preference',collection_allowed=True,semantic_resolved=True)
                 legacy_profile=dict(subjects=['self'],slots=slots,extents=['long_term'],context_ids=[])
                 legacy_policy=dict(version='local-memory-policy.1',expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={subject:legacy_profile for subject in subjects.values()})
@@ -197,6 +200,18 @@ def main():
                             if parsed.path=='/prepare':value=dict(endpoint=endpoints[0],memory_endpoint=endpoints[1],accounts=tokens,subjects=subjects,travel_ids=travels,
                                 travel_profile=json.dumps(dict(version='app-travel.1',travel_ids=travels)),
                                 legacy_profile=json.dumps(legacy_profile),memory_profile=json.dumps(dict(version='app-memory.2',subjects=['self'],slots=slots,extents=['long_term','current'])))
+                            elif parsed.path=='/collection-no-write':
+                                assert collection_questions and not items() and model.calls==0
+                                assert not any(x['method']=='POST' for x in audit)
+                                value=dict(writes=0,model_calls=0,stage='browse/skip/review')
+                                report.setdefault('collection_zero_write_proofs',[]).append(value);save()
+                            elif parsed.path=='/collection-saved':
+                                assert collection_questions
+                                value=proof();assert len(value['items'])==1 and value['message_count']==model.calls==0
+                                command=value['items'][0]['command'];assert command['subject']=='self' and command['slot']=='preference' and command['kind']=='preference'
+                                assert command['context']==(dict(kind='travel',id=travels[0],expected_version=1) if chinese else None)
+                                writes=[x for x in audit if x['host']=='memory' and x['method']=='POST']
+                                assert len(writes)==1 and writes[0]['path']=='/v2/memories' and writes[0]['status']==200
                             elif parsed.path=='/arm-loss':
                                 kind=parse_qs(parsed.query)['kind'][0]
                                 if kind not in ('save','management','legacy'):raise ValueError('explicit loss kind required')
@@ -267,7 +282,14 @@ def main():
                     assert (summary['passedTests'],summary['failedTests'],summary['skippedTests'])==(1,0,0)
                     assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and not errors and iterations[0]>0
                     posts=[event for event in audit if event['host']=='memory' and event['method']=='POST' and not event.get('fixture',False)]
-                    if unknown:
+                    if collection_questions:
+                        assert len(value['items'])==1 and value['message_count']==model.calls==1 and len(posts)==1
+                        assert dict(value['registered_operations']).get('model')==1 and len(report['collection_zero_write_proofs'])==2
+                        command=value['items'][0]['command'];assert command['slot']=='preference' and command['kind']=='preference' and command['subject']=='self'
+                        assert command['context']==(dict(kind='travel',id=travels[0],expected_version=1) if chinese else None)
+                        assert [row['text'] for row in model.memory_inputs[0]['items']]==[command['text']]
+                        assert posts[0]['path']=='/v2/memories' and posts[0]['status']==200
+                    elif unknown:
                         expected=['Unknown original long term / 未知原文 e\u0301','Recovered travel current / 恢复本次原文','Unknown original long term / 未知原文 e\u0301']
                         assert len(value['items'])==2 and value['message_count']==model.calls==3
                         assert dict(value['registered_operations']).get('model')==3

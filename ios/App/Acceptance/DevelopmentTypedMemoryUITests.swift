@@ -169,6 +169,43 @@ import Foundation
     private func dismissKeyboard() {
         if app.toolbars.buttons.matching(identifier:localized("Done","完成")).firstMatch.exists {tap("Done")}
     }
+    func testTypedQuestionsEnglish() async throws { try await questions(large:false) }
+    func testTypedQuestionsChineseLargest() async throws { try await questions(large:true) }
+    private func questions(large:Bool) async throws {
+        continueAfterFailure=false;executionTimeAllowance=900;chinese=large
+        let fixture=try await prepare();defer { app?.terminate() }
+        try launch(fixture,restore:false)
+        tap("memory2.collection.open");text("memory2.collection.progress",contains:"1/3")
+        tap("memory2.collection.next");text("memory2.collection.progress",contains:"2/3")
+        tap("memory2.collection.next");text("memory2.collection.progress",contains:"3/3")
+        _ = try await call("/collection-no-write")
+        tap("memory2.collection.skip")
+        XCTAssertTrue(app.tabBars.buttons.matching(identifier:localized("Assistant","助手")).firstMatch.isSelected)
+        chooseTravel(fixture.travel_ids[0]);tap("Memory")
+        tap("memory2.collection.open");tap("memory2.collection.next");tap("memory2.collection.next")
+        let value="SYNTHETIC questions preference / 问题偏好 e\u{301}"
+        tap("memory2.manual.option");tap("self · preference · "+(large ? "Selected travel / 所选旅行" : "Long term / 长期"))
+        input("memory2.manual.text",value);input("memory2.manual.time","time unknown / 时间不详");dismissKeyboard()
+        tap("memory2.manual.review");text("memory2.review.text",contains:value)
+        text("memory2.review.subject",contains:"self · preference")
+        text("memory2.review.scope",contains:large ? fixture.travel_ids[0] : "Long-term")
+        _ = try await call("/collection-no-write")
+        var issues=0;continueAfterFailure=true
+        try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_QUESTIONS_REVIEW",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
+        continueAfterFailure=false;XCTAssertEqual(issues,0)
+        tap("memory2.manual.confirm");text("memory2.save.status",contains:localized("Saved.","已保存"))
+        _ = try await call("/collection-saved")
+        back();tap("memory2.items.open");tap("memory2.items.read")
+        text("memory2.items.coverage",contains:localized("pages read so far","已读取页面"))
+        text("memory2.group.empty.fact",contains:localized("pages read so far","已读取页面"))
+        let ids=try JSONDecoder().decode([String:String].self,from:await call("/items"))
+        let id=try XCTUnwrap(ids[large ? "travel" : "long_term"])
+        text("memory2.item.text."+id,contains:value)
+        issues=0;continueAfterFailure=true
+        try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_QUESTIONS_GROUPS",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
+        continueAfterFailure=false;XCTAssertEqual(issues,0)
+        tap("Assistant");openChat("typed-chat-1");try await ask("Use my saved preference",count:1,expected:value)
+    }
     func testUnknownReopenAndLifecycleRecall() async throws {
         continueAfterFailure = false;executionTimeAllowance = 900
         let f = try await prepare();defer {app?.terminate()}
