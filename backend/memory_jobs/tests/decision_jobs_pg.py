@@ -32,6 +32,7 @@ from cj_trip.decision_lease import DecisionAuthority
 from cj_trip.decision_source import DecisionQuery
 from cj_trip.domain import Denied,packed
 from cj_usage.background_exit import ModelInput
+from cj_auth.interfaces import AdmissionStatus
 from cj_memory_jobs.decision_service import DecisionCollectionAdapter
 from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
@@ -271,6 +272,7 @@ class DecisionInputChecks(manual.ManualChecks):
             def encoding(value,*args,**kwargs):
                 if type(value) is dict and value.get('version')=='MEMORY-DECISION-response@1' and not revoked:
                     invited.write_text(encode_json([name for name in json.loads(before) if name!='alice']))
+                    self.assertIs(service.boundary.checker.check(token).status,AdmissionStatus.DENIED)
                     revoked.append(True)
                 return encode_json(value,*args,**kwargs)
             try:
@@ -281,8 +283,9 @@ class DecisionInputChecks(manual.ManualChecks):
                         raw=packed(dict(version=JOB_VERSION,job_id='copy-job',attempt_id='copy-attempt',
                             source=asdict(copy_query),decision=asdict(selected),end=None))
                         response=client.post('/internal/v1/memory-decision/jobs',content=raw,headers=headers)
-                self.assertEqual(revoked,[True]);self.assertNotEqual(response.status_code,200,response.text)
+                self.assertEqual(revoked,[True]);self.assertEqual(response.status_code,403 if operation=='get' else 503,response.text)
                 self.assertNotIn('result',response.json());self.assertNotIn('receipts',response.text)
+                if operation=='post':self.assertEqual(response.json()['error']['outcome'],'unknown')
             finally:invited.write_bytes(before)
         candidates=json.loads(service.candidates(token,'decision-job','decision-attempt'))
         candidate=candidates['candidates'][0]
