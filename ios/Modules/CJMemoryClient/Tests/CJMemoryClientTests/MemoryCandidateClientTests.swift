@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import CryptoKit
 import Testing
 import CJSession
@@ -183,4 +184,107 @@ private struct CandidateWire: ClientTransport {
         await #expect(throws:MemoryFailure.invalidResponse){try await f.client.perform(again)}
         #expect(f.server.requests.filter{$0.0=="applyMemoryCandidateActionV1"}.count==2)
     }
+}
+
+@MainActor struct MemoryCandidatePresentationTests {
+    private func loaded(_ f: CandidateClientFixture) async throws -> MemoryCandidatePresentation {
+        let model = MemoryCandidatePresentation(client: f.client)
+        model.replace(binding: f.binding, conversationID: f.selected)
+        await model.perform(try #require(model.prepareDiscovery()))
+        let producer = try #require(model.jobs.first)
+        let selection = try #require(model.prepareCandidates(producer: producer))
+        await model.perform(selection)
+        #expect(model.state == .ready && model.candidates.first?.status == .candidate)
+        return model
+    }
+    @Test func originalReceiptAndFreshCurrentStateAreSeparate() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let model = try await loaded(f)
+        let work = try #require(model.prepareReview(candidateID: "candidate-中文", review: .confirm(kind: .preference, text: "少辣", occurredAt: "时间不详", travel: nil)))
+        #expect(model.original != nil && model.candidates.isEmpty && model.state == .changing)
+        await model.perform(work)
+        #expect(model.historicalReceipt?.active == true)
+        #expect(model.candidates.first?.status == .active && model.state == .ready)
+        #expect(!model.canReview(candidateID: "candidate-中文"))
+        #expect(f.server.requests.filter { $0.0 == "readMemoryCandidatesV1" }.count == 2)
+        #expect(f.server.requests.filter { $0.0 == "applyMemoryCandidateActionV1" }.count == 1)
+    }
+    @Test func successfulOriginalIsNotErasedByLaterCurrentReadFailure() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let model = try await loaded(f)
+        f.server.after = { f.server.serviceUnavailable = true }
+        let work = try #require(model.prepareReview(candidateID: "candidate-中文", review: .reject))
+        await model.perform(work)
+        #expect(model.historicalReceipt != nil && model.historicalReceipt?.active == false)
+        #expect(model.candidates.isEmpty && model.state == .unavailable && model.rejectionStatus == nil)
+        #expect(f.server.requests.filter { $0.0 == "applyMemoryCandidateActionV1" }.count == 1)
+    }
+    @Test func unknownOriginalQueriesWithoutPostingAgain() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let model = try await loaded(f); f.server.loseACK = true
+        await model.perform(try #require(model.prepareReview(candidateID: "candidate-中文", review: .reject)))
+        #expect(model.state == .unknown && model.original != nil && model.historicalReceipt == nil)
+        f.server.nullReceipt = true
+        await model.perform(try #require(model.prepareQuery()))
+        #expect(model.state == .unknown && !model.canReview(candidateID: "candidate-中文"))
+        f.server.nullReceipt = false
+        await model.perform(try #require(model.prepareQuery()))
+        #expect(model.historicalReceipt?.active == false && model.candidates.first?.status == .withdrawn)
+        #expect(f.server.requests.filter { $0.0 == "applyMemoryCandidateActionV1" }.count == 1)
+    }
+    @Test func replacementBeforeDispatchRetiresOldWorkAndLateResponseCannotOverwriteNewSlot() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let model = MemoryCandidatePresentation(client: f.client)
+        model.replace(binding: f.binding, conversationID: "chat-A")
+        let old = try #require(model.prepareDiscovery())
+        f.selected = "chat-B"; model.replace(binding: f.binding, conversationID: "chat-B")
+        await model.perform(old)
+        #expect(f.server.requests.isEmpty && model.conversationID == "chat-B" && model.state == .unread)
+        f.selected = "chat-A"; model.replace(binding: f.binding, conversationID: "chat-A")
+        let pending = try #require(model.prepareDiscovery())
+        f.server.after = { f.selected = "chat-B"; model.replace(binding: f.binding, conversationID: "chat-B") }
+        await model.perform(pending)
+        #expect(model.conversationID == "chat-B" && model.jobs.isEmpty && model.state == .unread)
+    }
+    @Test func synchronousObservationReplacementOwnsTheCompleteNewSlot() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let model = MemoryCandidatePresentation(client: f.client)
+        model.replace(binding: f.binding, conversationID: "chat-A")
+        var replaced = false
+        withObservationTracking { _ = model.state } onChange: {
+            MainActor.assumeIsolated {
+                guard !replaced else { return }; replaced = true
+                f.selected = "chat-B"; model.replace(binding: f.binding, conversationID: "chat-B")
+            }
+        }
+        let work = try #require(model.prepareDiscovery())
+        #expect(replaced && model.state == .unread && model.conversationID == "chat-B")
+        await model.perform(work)
+        #expect(f.server.requests.isEmpty && model.jobs.isEmpty && model.state == .unread)
+    }
+    @Test func editorEntryCannotSilentlyRetargetAfterFreshReadOrConversationChange() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let model = try await loaded(f)
+        let entry = try #require(model.captureReview(candidateID: "candidate-中文"))
+        let producer = try #require(model.jobs.first)
+        await model.perform(try #require(model.prepareCandidates(producer: producer)))
+        #expect(model.prepareReview(entry: entry, review: .reject) == nil)
+        #expect(try f.store.records().isEmpty)
+        let current = try #require(model.captureReview(candidateID: "candidate-中文"))
+        f.selected = "chat-B"; model.replace(binding: f.binding, conversationID: "chat-B")
+        #expect(model.prepareReview(entry: current, review: .reject) == nil)
+        #expect(try f.store.records().isEmpty)
+    }
+    @Test func invalidUserEditCanBeCorrectedWithoutLosingTheOriginalRead() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let model = try await loaded(f)
+        let entry = try #require(model.captureReview(candidateID: "candidate-中文"))
+        #expect(model.prepareReview(entry: entry, review: .confirm(kind: .preference, text: " ", occurredAt: "时间不详", travel: nil)) == nil)
+        #expect(model.state == .invalidReview && model.canReview(candidateID: "candidate-中文"))
+        #expect(try f.store.records().isEmpty)
+        let work = try #require(model.prepareReview(entry: entry, review: .confirm(kind: .preference, text: "少辣", occurredAt: "时间不详", travel: nil)))
+        await model.perform(work)
+        #expect(model.historicalReceipt?.active == true)
+    }
+
 }

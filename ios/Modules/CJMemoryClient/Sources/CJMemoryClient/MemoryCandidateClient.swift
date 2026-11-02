@@ -36,7 +36,7 @@ public struct MemoryCandidateOriginal: Sendable {
 }
 @MainActor public final class MemoryCandidateWork {
     fileprivate let scope: CandidateScope
-    fileprivate let original: MemoryCandidateOriginal
+    public let original: MemoryCandidateOriginal
     fileprivate var used = false
     fileprivate init(scope: CandidateScope, original: MemoryCandidateOriginal) { self.scope = scope; self.original = original }
 }
@@ -71,6 +71,10 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
         factory = { CandidateInterceptedTransport(underlying: interceptedTransport, validate: $0) }
     }
     public func invalidate() { generation = UUID(); discovery = [:]; candidateReads = [:] }
+    func retireReads() { discovery = [:]; candidateReads = [:] }
+    func isCurrent(binding: MemoryBinding, conversation: String?) -> Bool {
+        do { _ = try begin(binding, conversation: conversation); return true } catch { return false }
+    }
     private func begin(_ binding: MemoryBinding, conversation: String? = nil) throws -> CandidateScope {
         if let conversation {
             guard !conversation.contains("\0"), !conversation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
