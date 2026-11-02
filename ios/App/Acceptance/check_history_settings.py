@@ -251,7 +251,7 @@ def main():
                                             # intentionally returns unavailable, never an absence/permission claim.
                                             assert other.status_code==503 and 'result' not in other.json()
                                             assert other.json()['error']['code']=='MEMORY_HISTORY_UNAVAILABLE'
-                                            assert other.json()['error']['recovery']=='retry_safe_read' 
+                                            assert other.json()['error']['recovery']=='retry_safe_read'
                                         foreign={'Authorization':'Bearer '+tokens[case]['B']}
                                         denied=client.get('/v3/memory-history-settings',params={'conversation_id':records[case]['conversation']},headers=foreign)
                                         assert denied.status_code!=200 and 'result' not in denied.json()
