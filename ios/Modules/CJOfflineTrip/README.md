@@ -4,6 +4,11 @@ CJ-022 isolated Swift package. Production factory is closed (`SnapshotCodec.appF
 
 Contract, reproduction, limitations and evidence: [offline-trip](../../../contracts/offline-trip/README.md).
 
+M3 #418: the existing `AtomicSnapshotStore` constructor and `clearLocalEntry()` are
+public for physical local cleanup only. Ciphertext read/write and plaintext access
+stay internal; App factory remains closed. The same store must be retained by the
+future host so unresolved writes continue to block cleanup. No device-wide or
+server cleanup completion is implied.
 M3 #408: `OfflinePolicy.acceptedTrip` explicitly supplies JT's fourteen-day maximum
 (1,209,600 elapsed seconds). `deadline(syncedAt:)` derives a new deadline for each
 successful sync; overflow and invalid time fail closed. Missing policy still denies
