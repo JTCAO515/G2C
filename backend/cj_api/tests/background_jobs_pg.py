@@ -6,14 +6,14 @@ import psycopg
 from fastapi.testclient import TestClient
 from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
-from cj_api.local_background import LocalBackgroundHost,FilteredCollectionAdapter
+from cj_api.local_background import LocalBackgroundHost,GuardedCollectionAdapterV3
 from cj_agent.provider import FakeProvider,ProviderFailed
 from cj_memory.manual import ManualPolicy
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_message.source import SourceQuery
 from cj_run.background_store import JobRequest
-from cj_run.background import BackgroundJobs,JobOutcomeUnknown
+from cj_run.background import BackgroundJobsV2,JobOutcomeUnknown
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
 import dev_auth,local_run_context,run_worker,migrate
 
@@ -62,7 +62,7 @@ def exercise(root,conninfo):
         post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='job',attempt_id='attempt',source=source))
         collection.transition(token,'job','attempt','inflight')
         prepared=collection.prepare_model_input_v2(token,'job','attempt',max_payload_bytes=262144)
-        jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=FilteredCollectionAdapter(collection),max_payload_bytes=262144)
+        jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=GuardedCollectionAdapterV3(collection),max_payload_bytes=262144)
         request=JobRequest('job','attempt',SourceQuery(**source),None,prepared)
         original=jobs.prepare(token,request)
         assert original['state']=='queued'
@@ -118,7 +118,7 @@ def exercise(root,conninfo):
     collection.transition(token,'ack-job','ack-attempt','inflight')
     ack_input=collection.prepare_model_input_v2(token,'ack-job','ack-attempt',max_payload_bytes=262144)
     armed={'publication':False,'remaining':1}
-    class AckAdapter(FilteredCollectionAdapter):
+    class AckAdapter(GuardedCollectionAdapterV3):
         def __init__(self,c):
             super().__init__(c);self.actual=self.publication_policy;self.publication_policy=self.policy
         def policy(self,*args,**kwargs):
@@ -137,7 +137,7 @@ def exercise(root,conninfo):
             if armed['publication'] and armed['remaining']:
                 armed['remaining']-=1
                 raise OSError('synthetic known C result / lost outer MESSAGE ACK')
-    ack_jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=AckAdapter(collection),max_payload_bytes=262144)
+    ack_jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=AckAdapter(collection),max_payload_bytes=262144)
     ack_original=ack_jobs.prepare(token,JobRequest('ack-job','ack-attempt',SourceQuery(**ack_source),None,ack_input))
     original_resolve=host.boundary.resolve_repository
     def lost_repository(principal):
@@ -176,7 +176,7 @@ def exercise(root,conninfo):
     limit_collection.enqueue(limit_token,json.dumps(dict(version='MEMORY-JOBS@1',job_id='limit-job',attempt_id='limit-attempt',source=limit_source)).encode())
     limit_collection.transition(limit_token,'limit-job','limit-attempt','inflight')
     limit_input=limit_collection.prepare_model_input_v2(limit_token,'limit-job','limit-attempt',max_payload_bytes=262144)
-    limited_jobs=BackgroundJobs(database=limit_host.database,boundary=limit_host.boundary,collection=FilteredCollectionAdapter(limit_collection),max_payload_bytes=262144)
+    limited_jobs=BackgroundJobsV2(database=limit_host.database,boundary=limit_host.boundary,collection=GuardedCollectionAdapterV3(limit_collection),max_payload_bytes=262144)
     limit_original=limited_jobs.prepare(limit_token,JobRequest('limit-job','limit-attempt',SourceQuery(**limit_source),None,limit_input))
     forbidden=ExtractFake();limited_worker=LocalBackgroundHost(limited_jobs,auth)
     denied=run_worker.run_once(limit_database,forbidden,auth,background_jobs=limited_worker)

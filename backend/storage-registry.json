@@ -339,7 +339,7 @@
             "background_jobs": "Prepared input is user content until user/account deletion; immutable command/config and original/unknown Meter evidence are account reconciliation, never diagnostic logs or subject to a 90-day TTL. Only minimal irreversible original hashes/fences may survive content erasure."
           },
           "cleanup_protocol": "CLEANUP@1.1",
-          "background_contract": "RUN-BACKGROUND@1; explicit local host, C filtered DATA/EXTRACT/PUBLICATION@2, existing Meter; no MESSAGE receipt or terminal RUN reuse"
+          "background_contract": "RUN-BACKGROUND@2; explicit local host, C filtered DATA/EXTRACT/PUBLICATION@2 with public publication holder@3, existing Meter; no MESSAGE receipt or terminal RUN reuse"
         }
       ],
       "owner_line": "B",

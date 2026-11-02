@@ -1,4 +1,4 @@
-"""RUN-BACKGROUND@1 original job records; no MESSAGE receipt or RUN reuse."""
+"""RUN-BACKGROUND@2 original job records; no MESSAGE receipt or RUN reuse."""
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict,dataclass
@@ -11,7 +11,7 @@ from .core import Conflict,Denied
 from .step_usage import ledger_scope_for
 from .usage_binding import UsageBinding,_decode_command
 
-ABI='RUN-BACKGROUND@1'
+ABI='RUN-BACKGROUND@2'
 REGISTRATION='memory.history-extract.1'
 LEASE_NAMESPACE='background-job@1'
 TABLE='cj_run_background_job'

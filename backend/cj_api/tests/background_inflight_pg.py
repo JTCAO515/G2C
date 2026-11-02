@@ -8,14 +8,14 @@ from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER
 from cj_api.local_cleanup import Configuration,Runtime
 from cj_api.local_run_context import load_run_context
 from cj_api.local_worker_context import checker_for
-from cj_api.local_background import LocalBackgroundHost,FilteredCollectionAdapter
+from cj_api.local_background import LocalBackgroundHost,GuardedCollectionAdapterV3
 from cj_agent.provider import FakeProvider
 from cj_memory.manual import ManualPolicy
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_message.source import SourceQuery
 from cj_run.background_store import JobRequest
-from cj_run.background import BackgroundJobs
+from cj_run.background import BackgroundJobsV2
 from cj_cleanup.core import encode,digest
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
 sys.path.insert(0,str(Path(__file__).parent))
@@ -47,7 +47,7 @@ def exercise(root,path):
             entered.set()
             if not release.wait(30):raise AssertionError('prototype provider gate timed out')
             yield raw[half:]
-    model=Blocking();jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=FilteredCollectionAdapter(collection),max_payload_bytes=262144)
+    model=Blocking();jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=GuardedCollectionAdapterV3(collection),max_payload_bytes=262144)
     with TestClient(app) as client:
         def post(url,value,scheme='Bearer',credential=token):
             response=client.post(url,content=encode(value),headers={'Authorization':scheme+' '+credential,'Content-Type':'application/octet-stream'})

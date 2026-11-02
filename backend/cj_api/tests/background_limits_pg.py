@@ -6,13 +6,13 @@ import psycopg
 from fastapi.testclient import TestClient
 from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
-from cj_api.local_background import LocalBackgroundHost,FilteredCollectionAdapter
+from cj_api.local_background import LocalBackgroundHost,GuardedCollectionAdapterV3
 from cj_agent.provider import FakeProvider
 from cj_memory.manual import ManualPolicy
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_message.source import SourceQuery
-from cj_run.background import BackgroundJobs
+from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
 ROOT=Path(__file__).resolve().parents[3];sys.path[:0]=[str(ROOT/'scripts'),str(Path(__file__).parent)]
 from background_jobs_pg import ExtractFake
@@ -20,7 +20,7 @@ import dev_auth,local_run_context,run_worker
 
 
 def exercise(root,path):
-    for case in ('step','output','time','publication-time','publication-work'):
+    for case in ('step','output','time','publication-time','publication-work','publication-final-source'):
         work=root/case;work.mkdir();auth=work/'auth';subject='bg-limit-'+case;dev_auth.init(auth,[subject])
         now=int(time.time());document=dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(
             meter=dict(unit='provider_call',budget=10,period_start=now-60,period_end=now+3600,max_steps=1,max_tools=1,max_output=10000,max_seconds=10),
@@ -50,14 +50,23 @@ def exercise(root,path):
             def stream(self,messages,system=None):
                 if case=='time':tick[0]+=10
                 yield from super().stream(messages,system)
-        class Adapter(FilteredCollectionAdapter):
+        class Adapter(GuardedCollectionAdapterV3):
             def __init__(self,collection):
                 super().__init__(collection);self.actual_publish=self.publication_policy;self.publication_policy=self.publish
             def publish(self,*args,**kwargs):
                 policy=self.actual_publish(*args,**kwargs)
                 if case=='publication-time':tick[0]+=10
+                if case=='publication-final-source':
+                    # Test-only fault injection after the actual final C render;
+                    # product code must use C's public precommit extension.
+                    render=policy._render;calls=[0]
+                    def delayed_render(*args,**kwargs):
+                        result=render(*args,**kwargs);calls[0]+=1
+                        if calls[0]==2:tick[0]+=10
+                        return result
+                    policy._render=delayed_render
                 return policy
-        jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=Adapter(c),max_payload_bytes=262144,clock=lambda:tick[0])
+        jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=Adapter(c),max_payload_bytes=262144,clock=lambda:tick[0])
         original=jobs.prepare(token,JobRequest('job','attempt',SourceQuery(**source),None,prepared));model=Timed()
         results=run_worker.run_once(database,model,auth,background_jobs=LocalBackgroundHost(jobs,auth))
         wanted='completed' if case=='step' else 'budget_exhausted'
@@ -70,6 +79,8 @@ def exercise(root,path):
             else:assert attempt['state']=='settled' and attempt['receipt']['actual']==1
             owner=scope_for(ISSUER,subject)
             assert conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(owner,)).fetchone()[0]==(1 if case=='step' else 0)
+            assert conn.execute('SELECT count(*) FROM cj_memory_history_job WHERE scope=%s AND result_bytes IS NOT NULL',(owner,)).fetchone()[0]==(1 if case=='step' else 0)
+            assert conn.execute('SELECT coalesce(max(processed),0) FROM cj_memory_history_cursor WHERE scope=%s',(owner,)).fetchone()[0]==(1 if case=='step' else 0)
         assert run_worker.run_once(database,model,auth,background_jobs=LocalBackgroundHost(jobs,auth))==[] and model.calls==1
     print('PASS local component actual step=1/tools=0, memory output overrun, in-flight clock limit and source-preparation publication deadline; no canonical output past any limit, original UNKNOWN/settled financial states retained')
 

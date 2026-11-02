@@ -6,14 +6,14 @@ import psycopg
 from fastapi.testclient import TestClient
 from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
-from cj_api.local_background import LocalBackgroundHost,FilteredCollectionAdapter
+from cj_api.local_background import LocalBackgroundHost,GuardedCollectionAdapterV3
 from cj_agent.provider import FakeProvider
 from cj_memory.manual import ManualPolicy
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_message.source import SourceQuery
 from cj_message.travel import ABI as TRAVEL_ABI,Selection
-from cj_run.background import BackgroundJobs
+from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
 import dev_auth,local_run_context,run_worker
@@ -54,7 +54,7 @@ def exercise(root,path):
         c_app=create_collection_app(conninfo_path=path,auth_dir=auth,resolve_collection=lambda p:(policy,memory,lambda entry:(None,None)),run_context=context)
         host=c_app.state.memory_history;c=host.service
         c.apply_consent(token,json.dumps(dict(version='MEMORY-HISTORY@1',action_id='enable',operation='enable',conversation_id='current',expected_generation=head['generation'],expected_epoch=0,expected_source_version=0)).encode())
-        jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=FilteredCollectionAdapter(c),max_payload_bytes=262144)
+        jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=GuardedCollectionAdapterV3(c),max_payload_bytes=262144)
         source=dict(conversation_id='current',generation=head['generation'],epoch=0,after=0,through=1,source_version=1,withdrawal_epoch=1,mode='incremental')
         def prepare(jid,query):
             c.enqueue(token,json.dumps(dict(version='MEMORY-JOBS@1',job_id=jid,attempt_id=jid+'-attempt',source=query)).encode())

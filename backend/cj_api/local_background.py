@@ -2,7 +2,7 @@
 from pathlib import Path
 import os
 from cj_auth.interfaces import AdmissionStatus
-from cj_run.background import BackgroundJobs
+from cj_run.background import BackgroundJobsV2
 from .composition import CompositionUnavailable
 
 
@@ -17,8 +17,15 @@ class FilteredCollectionAdapter:
         self.no_eligible_error=NoEligibleSource
 
 
+class GuardedCollectionAdapterV3(FilteredCollectionAdapter):
+    """Explicit final-precommit C holder; no V2 publication fallback."""
+    def __init__(self,collection):
+        super().__init__(collection)
+        self.publication_policy=collection.publication_policy_v3
+
+
 class LocalBackgroundHost:
-    def __init__(self,jobs:BackgroundJobs,auth_dir):
+    def __init__(self,jobs:BackgroundJobsV2,auth_dir):
         if os.environ.get('CJ_ENV')!='local':raise CompositionUnavailable('local background host required')
         self.jobs,self.auth_dir=jobs,Path(auth_dir)
 
