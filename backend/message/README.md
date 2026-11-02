@@ -132,3 +132,10 @@ History/draft candidate: [HISTORY-DRAFT.md](HISTORY-DRAFT.md) adds internally ga
 list, exact message-body pagination and optimistic-version draft storage. New SQL was
 applied only in new task-private .local-pg-02, tested and safely stopped. No shared API or
 migration is introduced; earlier schema remains historical, not an upgrade path.
+
+## Source status metadata v1
+
+[MESSAGE-SOURCE-STATUS@1](SOURCE-STATUS-V1.md) adds the protected-context
+`source_status_v1(conversation_id)` read for one owned active head plus its genuine
+immutable end, or explicit open(None). It writes nothing and grants no collection
+authority; SOURCE1/2 and the service-write refusal retain their original semantics.
