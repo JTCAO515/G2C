@@ -19,6 +19,24 @@ class EndingSegment:
             raise InvalidInput('original ending head and contained segment required')
 
 
+def with_ending_source(context,segment,policy,project,*,probe_policy):
+    """Two sequential public reads, both inside the captured outer identity.
+
+    The genuine immutable end comes from B, never from the caller's DTO. The
+    second read reacquires current consent; no C holder spans another source read.
+    """
+    q,e=segment.source,segment.end
+    actual_end=None
+    probe=replace(q,after=max(0,e.through-100),through=e.through)
+    def capture(snapshot):
+        nonlocal actual_end
+        actual_end=snapshot.end
+        return encode(asdict(actual_end))
+    context.with_enabled_source(probe,probe_policy,capture)
+    return context.with_enabled_source(replace(q,mode='incremental'),policy,
+        lambda snapshot:project(replace(snapshot,end=actual_end)))
+
+
 def read_ending_segment(boundary,token,segment,policy_for_context):
     """Source artifact only; not model data, consent or later dispatch authority.
 
@@ -29,20 +47,14 @@ def read_ending_segment(boundary,token,segment,policy_for_context):
     """
     q,e=segment.source,segment.end
     def materialize(context):
-        actual_end=None
-        probe=replace(q,after=max(0,e.through-100),through=e.through)
-        def capture(snapshot):
-            nonlocal actual_end
-            actual_end=snapshot.end
-            return encode(asdict(actual_end))
-        context.with_enabled_source(probe,policy_for_context(context),capture)
         def project(snapshot):
             source=SourceV2(snapshot.cursor,snapshot.source_version,snapshot.withdrawal_epoch)
             batch=encode_v2(source,snapshot.messages,'conversation_end')
-            return encode(dict(version='CJ020-ending-segment.1',end=asdict(actual_end),
+            return encode(dict(version='CJ020-ending-segment.1',end=asdict(snapshot.end),
                                batch_utf8_base64=base64.b64encode(batch).decode('ascii')))
         # The purpose is explicitly a new ending-segment protocol. This maps its
         # bounded segment to the existing protected committed-range reader; it is
         # not a fallback on a failed end check or an inferred inactivity signal.
-        return context.with_enabled_source(replace(q,mode='incremental'),policy_for_context(context),project)
+        return with_ending_source(context,segment,policy_for_context(context),project,
+                                  probe_policy=policy_for_context(context))
     return boundary.with_history_context(token,materialize)

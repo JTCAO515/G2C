@@ -23,7 +23,7 @@ def register_routes(app, service, *, collection=False):
         token = _token(request)
         if token is None:
             return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
-        write = operation in ('consent','enqueue','candidate_action')
+        write = operation in ('consent','enqueue','enqueue_ending','candidate_action')
         try:
             if write:
                 if request.scope['query_string']:
@@ -31,6 +31,7 @@ def register_routes(app, service, *, collection=False):
                 raw = await _read_body(request,32768)
                 if operation=='consent':call=service.apply_consent
                 elif operation=='enqueue':call=service.enqueue
+                elif operation=='enqueue_ending':call=service.enqueue_ending
                 else:call=service.apply_candidate
                 encoded = await run_in_threadpool(call,token,raw,request_id=request.state.request_id)
             else:
@@ -93,6 +94,10 @@ def register_routes(app, service, *, collection=False):
     @app.get('/internal/v1/memory-history/jobs')
     async def original(request: Request):
         return await invoke(request,'job_query',('job_id','attempt_id'))
+
+    @app.post('/internal/v1/memory-ending/jobs')
+    async def enqueue_ending(request: Request):
+        return await invoke(request,'enqueue_ending')
 
     if collection:
         @app.get('/v3/memory-candidates')
