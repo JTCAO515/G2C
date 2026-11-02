@@ -177,3 +177,21 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B ios/App/Acceptance/
 
 `--case` runs one diagnostic and records PARTIAL_PASS only. Retain prior FAIL,
 original reports and xcresults; a matrix PASS requires the complete named set.
+
+## Account-deletion entry and scope (#415)
+
+Boot an iOS 17.5 simulator, then run `check_shell_structure.py --suite account-deletion`
+with its existing `--simulator`, `--output` and `--build-dir` arguments. The ordinary
+App checks both root/account entries and full AX in both languages. The labelled
+read-only fixture checks empty/failed memory and explanation content, then full
+`.all` AX at the actual system maximum content-size category. The harness restores
+the previous category afterward; it does not pin SwiftUI's size during the audit.
+Fixtures prove layout only and issue no business writes.
+
+`check_development_accounts.py --suite account-deletion` uses the actual signed
+local API, private PG, simulator Keychain and App to check the development-account
+entry in both languages, full AX, zero business writes and credential scans. Boot
+the simulator first so post-test container scans can run. Existing default lifecycle
+and Release suites are unchanged. Both harnesses retain `OS_ACTIVITY_MODE=disable`.
+No account-deletion request, physical cleanup, real identity, model, cloud or device
+acceptance is implied by these entry tests; those remain in #27/#32/#29.

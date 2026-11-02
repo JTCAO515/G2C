@@ -202,3 +202,9 @@ Next current NEEDS feasibility candidate: fixeddc29bb at the single
 checks pass; full UTF8/hash/decimal text and UNKNOWN limits retained. No solver or
 feasibility/write authority; factory hard CLOSED. Old exports and runtime preserved.
 See evidence/FEASIBILITY-CURRENT-API-PIN.md; current App/other consumers unchanged.
+
+M3 #418: `EncryptedFileStorage.clearLocalSnapshot(scope:)` physically unlinks only
+the exact local scope file, without key lookup. Directory replacement and linked
+entries fail closed; fsync and absence are checked before success. A trusted
+CLEANUP host must retire all readers/writers first. This primitive is not a server
+cleanup receipt or an integrated device-cache hook.
