@@ -356,7 +356,8 @@
         "Derived candidate bytes and processing cursors",
         "Erasure fence retains scope SHA256 and erased flag only, without account scope plaintext",
         "Immutable original model output checkpoints, reviewed candidate action/receipt bytes, and exact original-message metadata associated with canonical Memory sources/items",
-        "Original typed publication receipt in history_job.candidate; explicit V1/V2 discrimination, opaque model refs and immutable source associations for filtering before model entry"
+        "Original typed publication receipt in history_job.candidate; explicit V1/V2 discrimination, opaque model refs and immutable source associations for filtering before model entry",
+        "Exact complete end-head comparison and logical 1-100 message segment bounds in original history job input; candidate discovery is a transient canonical-origin projection with no new index/cache"
       ],
       "retention": "User content until user deletion or account closure; no automatic age/capacity erasure; minimal opaque non-resurrection fence remains",
       "cleanup_hook": "cj_memory_jobs.cleanup.CleanupHook: account-domain fence and physical deletion of jobs/output checkpoints/typed publication receipts, candidate decisions, origin map, cursors and consent with same-transaction B original result; item selection fails closed pending #26",
@@ -372,7 +373,7 @@
         "cj_memory_history_candidate_action",
         "cj_memory_history_origin"
       ],
-      "source": "backend/migrations/0034_memory_history.sql; backend/migrations/0037_memory_publication.sql; #409/#410",
+      "source": "backend/migrations/0034_memory_history.sql; backend/migrations/0037_memory_publication.sql; #409/#410/#411; existing tables only",
       "cleanup_protocol": "CLEANUP@1.1"
     },
     {
