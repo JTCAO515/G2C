@@ -49,9 +49,19 @@ private struct CleanupComponentFixture: Decodable {
         let stamp = epoch
         do {
             guard let raw = ProcessInfo.processInfo.environment["G2C_COMPONENT_CONTROL"],
-                  let endpoint = URL(string: raw), endpoint.scheme == "http", endpoint.host == "127.0.0.1" else { throw CleanupFailure.unavailable }
-            let (bytes, response) = try await URLSession.shared.data(from: endpoint.appendingPathComponent("fixture"))
-            guard epoch == stamp, (response as? HTTPURLResponse)?.statusCode == 200 else { throw CleanupFailure.unavailable }
+                  var target = URLComponents(string: raw), target.scheme == "http", target.host == "127.0.0.1",
+                  target.user == nil, target.password == nil, target.fragment == nil,
+                  let port = target.port, (1...65535).contains(port) else { throw CleanupFailure.unavailable }
+            var base = target; base.path = ""; base.query = nil
+            guard let endpoint = base.url else { throw CleanupFailure.unavailable }
+            target.path = "/fixture"
+            let path = target.percentEncodedPath + (target.percentEncodedQuery.map { "?" + $0 } ?? "")
+            let transport = try NoRedirectTransport(requestTimeout: 5, resourceTimeout: 10)
+            let request = HTTPRequest(method: .get, scheme: nil, authority: nil, path: path)
+            let (response, body) = try await transport.send(request, body: nil, baseURL: endpoint, operationID: "readCleanupComponentFixture")
+            guard epoch == stamp, response.status.code == 200, let body else { throw CleanupFailure.unavailable }
+            let bytes = try await Data(collecting: body, upTo: 131072)
+            guard epoch == stamp else { throw CleanupFailure.stale }
             fixture = try JSONDecoder().decode(CleanupComponentFixture.self, from: bytes)
             publish(stamp) { $0.status = "ready" }
         } catch { publish(stamp) { $0.status = "unavailable" } }
