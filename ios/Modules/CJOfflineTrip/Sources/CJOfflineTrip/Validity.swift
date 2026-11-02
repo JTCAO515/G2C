@@ -4,6 +4,16 @@ import Foundation
 public struct OfflinePolicy: Sendable {
     public let maximumAge: Int64
     public init(maximumAge: Int64) { self.maximumAge = maximumAge }
+
+    /// JT 2026-11-02: fourteen elapsed days from each successful formal-trip sync.
+    /// Hosts must explicitly supply this policy; it grants no session/clock authority.
+    public static let acceptedTrip = OfflinePolicy(maximumAge: 14 * 24 * 60 * 60)
+
+    public func deadline(syncedAt: Int64) throws -> Int64 {
+        let (deadline, overflow) = syncedAt.addingReportingOverflow(maximumAge)
+        guard syncedAt > 0, maximumAge > 0, !overflow else { throw OfflineFailure.unavailable }
+        return deadline
+    }
 }
 public struct OfflineClock: Sendable {
     public let trustedWallSeconds: Int64?

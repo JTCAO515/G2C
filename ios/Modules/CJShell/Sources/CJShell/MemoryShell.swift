@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJMemoryClient
+import CJRunClient
 
 struct MemoryShell: View {
     @Bindable var state: ShellState
@@ -36,23 +37,23 @@ struct MemoryShell: View {
                     }
                 } header: { ShellSectionHeading(title: language.text("Your memories", "你的记忆")) }
                 Section {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ShellSectionHeading(title: language.text("Me", "我的")).padding(.vertical, 8)
-                        route(language.text("Account", "账号"), to: .account, identifier: "memory.account")
-                        Divider()
-                        route(language.text("Language", "语言"), to: .language, identifier: "memory.language")
-                        ShellSectionHeading(title: language.text("Information", "说明")).padding(.top, 16).padding(.bottom, 8)
-                        route(language.text("Help", "帮助"), to: .help, identifier: "memory.help")
-                        Divider()
-                        route(language.text("Privacy notice (beta)", "隐私说明（内测版）"), to: .privacy, identifier: "memory.privacy")
-                        Divider()
-                        route(language.text("Support", "支持"), to: .support, identifier: "memory.support")
-                        Divider()
-                        route(language.text("Feedback", "问题反馈"), to: .feedback(feedbackHost.captureEntry()), identifier: "memory.feedback")
-                    }
-                }
+                    route(language.text("Account", "账号"), to: .account, identifier: "memory.account")
+                    route(language.text("Delete account", "注销账号"), to: .accountDeletion, identifier: "memory.accountDeletion")
+                    route(language.text("Language", "语言"), to: .language, identifier: "memory.language")
+                } header: { ShellSectionHeading(title: language.text("Me", "我的")) }
+                Section {
+                    route(language.text("Help", "帮助"), to: .help, identifier: "memory.help")
+                    route(language.text("Privacy notice (beta)", "隐私说明（内测版）"), to: .privacy, identifier: "memory.privacy")
+                    route(language.text("Support", "支持"), to: .support, identifier: "memory.support")
+                    route(language.text("Feedback", "问题反馈"), to: .feedback(feedbackHost.captureEntry()), identifier: "memory.feedback")
+                } header: { ShellSectionHeading(title: language.text("Information", "说明")) }
             }
+            .padding(.bottom, 8)
+            .clipped()
             .navigationTitle(ShellTab.memory.title(language))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color(uiColor: .systemBackground), for: .navigationBar, .tabBar)
+            .toolbarBackground(.visible, for: .navigationBar, .tabBar)
             .navigationDestination(for: MemoryRoute.self) { route in destination(route) }
         }
     }
@@ -60,8 +61,7 @@ struct MemoryShell: View {
     private func route(_ title: String, to destination: MemoryRoute, identifier: String) -> some View {
         Button { state.memoryPath.append(destination) } label: {
             HStack {
-                Text(title).font(.body).foregroundStyle(Color(uiColor: .label))
-                    .fixedSize(horizontal: false, vertical: true)
+                RunReadableText(text: title)
                     .accessibilityIdentifier(identifier + ".label")
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right").font(.caption.weight(.semibold))
@@ -116,6 +116,8 @@ struct MemoryShell: View {
             } else {
                 AccountView(host: accountHost, shell: state)
             }
+        case .accountDeletion:
+            AccountDeletionView(language: language)
         case .help:
             HelpView(language: language)
         case .privacy:
