@@ -1,10 +1,9 @@
 # M3 single-memory erasure preparation (#26 / C hooks #27)
 
 Memory-item implementation is pending. This document provides no approved item
-cleanup intent, immutable descriptor or registered store. Account-only hooks are
-now candidates described in ACCOUNT-CLEANUP-V1.md, not main/registry acceptance.
-Do not advertise a hook as provided until its implementation, fence and same-PR
-registry land.
+cleanup intent, immutable descriptor or registered item store. Account-only hooks
+are now main via PR461, described in ACCOUNT-CLEANUP-V1.md with their same-PR
+permissions/fences/registry. They do not authorize one-item erasure.
 
 ## Verified boundaries
 
@@ -30,11 +29,11 @@ registry land.
   old V3 candidate list and V4 publication-items readers do require that payload;
   a new explicit current-candidate projection is needed for those retained
   candidates after shared-job erasure. Keep Action1's user-confirmation semantics.
-- Main's standalone typed Memory and several C local factories still construct
-  invitation-only admission. M35 already supplies the shared hashed account fence
+- PR461 upgraded standalone typed Memory and the seven C local factories to
+  ACCOUNT-ADMISSION@2. M35 supplies the shared hashed account fence
   and restrictive runtime policies for C tables, including scope INSERT checks.
   Reuse that fence; do not invent a duplicate C account-retirement store. C hosts
-  should also consume ACCOUNT-ADMISSION@2 so retirement/uncertainty is explicit
+  consume ACCOUNT-ADMISSION@2 so retirement/uncertainty is explicit
   admission, rather than a misleading empty RLS projection or generic DB failure.
 
 ## Required order
