@@ -23,6 +23,10 @@ public struct MemoryCandidateView: View {
                 MemoryLifecycleButton(title: language.text("Read conversation suggestions", "读取本会话建议"), identifier: "memoryCandidate.discover", enabled: model.canRead) {
                     perform(model.prepareDiscovery())
                 }
+                if model.state == .ready && model.jobs.isEmpty && model.producer == nil {
+                    MemoryRowText(text: language.text("This conversation currently has no suggestions awaiting confirmation.", "这段会话当前没有待确认建议。"), style: .body)
+                        .accessibilityIdentifier("memoryCandidate.emptyDiscovery")
+                }
                 if model.state.isBusy { ProgressView().accessibilityLabel(language.text("Checking memory suggestions", "正在核验记忆建议")) }
                 MemoryRowText(text: status, style: .body).accessibilityIdentifier("memoryCandidate.status")
             }

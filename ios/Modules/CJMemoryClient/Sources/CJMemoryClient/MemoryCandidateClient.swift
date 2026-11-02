@@ -62,6 +62,23 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
     private var candidateReads: [MemoryCandidateJob: UUID] = [:]
     private var settled: Set<Data> = []
     private var uncertainCreation: Set<Data> = []
+    public init(development endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
+                currentBinding: @escaping @MainActor () -> MemoryBinding?, currentConversation: @escaping @MainActor () -> String?,
+                session: SessionLifecycle, sessionOperation: SessionOperation, pendingStore: MemoryCandidatePendingStore,
+                requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
+        #if DEBUG && targetEnvironment(simulator)
+        guard session.isCurrent(sessionOperation), currentBinding() != nil, session.isCurrent(sessionOperation) else { throw MemoryFailure.staleBinding }
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1", let port = endpoint.url.port,
+              (1...65535).contains(port), endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288,
+              requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else { throw MemoryFailure.unconfigured }
+        self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
+        self.currentConversation = currentConversation; self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
+        factory = { validate in try NoRedirectTransport.developmentMemoryCandidates(endpoint: endpoint,
+            requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
+        #else
+        throw MemoryFailure.liveWriteUnavailable
+        #endif
+    }
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
          currentBinding: @escaping @MainActor () -> MemoryBinding?, currentConversation: @escaping @MainActor () -> String?,
          session: SessionLifecycle, sessionOperation: SessionOperation, pendingStore: MemoryCandidatePendingStore,
@@ -218,7 +235,12 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
         try check(scope)
         guard let bearer, !bearer.isEmpty, bearer.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MemoryFailure.unconfigured }
         var components = URLComponents(); components.path = path
-        if !query.isEmpty { components.queryItems = query }
+        if !query.isEmpty {
+            components.queryItems = query
+            // Python's canonical query parser treats a literal plus as a space.
+            // Keep the original opaque IDs exact through that boundary.
+            components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        }
         guard let target = components.string else { throw MemoryFailure.invalidInput }
         var request = HTTPRequest(method: post ? .post : .get, scheme: nil, authority: nil, path: target)
         request.headerFields[.authorization] = "Bearer " + bearer; request.headerFields[.cacheControl] = "no-store"

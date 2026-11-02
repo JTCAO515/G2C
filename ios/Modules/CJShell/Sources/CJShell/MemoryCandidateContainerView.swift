@@ -6,6 +6,7 @@ import CJRunClient
 struct MemoryCandidateContainerView: View {
     let host: MemoryCandidateContainerHost
     let language: ShellLanguage
+    @Environment(\.scenePhase) private var scenePhase
     private func synchronizeAndRead() {
         host.synchronizeConversation()
         guard let model = host.presentation, model.state == .unread,
@@ -25,6 +26,7 @@ struct MemoryCandidateContainerView: View {
         }
         .onAppear { synchronizeAndRead() }
         .onChange(of: host.selectedConversation) { _, _ in synchronizeAndRead() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { synchronizeAndRead() } }
         .onDisappear { host.retirePresentation() }
     }
 }

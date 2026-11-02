@@ -31,13 +31,21 @@ import CJSession
     @ObservationIgnored private var core: Core?
     @ObservationIgnored private var notifying = false
     private var signal = UUID()
-    public init(shell: ShellState) { self.shell = shell }
+    public init(shell: ShellState) {
+        self.shell = shell
+        let original = shell.memoryCandidateContainerHost, generation = shell.generation
+        original?.invalidate()
+        if shell.memoryCandidateContainerHost === original, shell.generation == generation {
+            shell.memoryCandidateContainerHost = self
+        }
+    }
+    func belongs(to shell: ShellState) -> Bool { self.shell === shell }
     private func notify() {
         guard !notifying else { return }
         notifying = true; defer { notifying = false }; signal = UUID()
     }
     private func owns(_ binding: MemoryCandidateContainerBinding) -> Bool {
-        core?.binding.id == binding.id && !shell.messageBindingBlocked
+        shell.memoryCandidateContainerHost === self && core?.binding.id == binding.id && !shell.messageBindingBlocked
             && shell.generation == binding.generation && binding.session.isCurrent(binding.operation)
     }
     private func validCore() -> Core? {
@@ -60,9 +68,9 @@ import CJSession
         return captured.model
     }
     @discardableResult public func bind(_ value: MemoryCandidateContainerBinding) -> Bool {
-        guard core == nil, value.messages.belongs(to: shell), shell.generation == value.generation,
+        guard core == nil, shell.memoryCandidateContainerHost === self, value.messages.belongs(to: shell), shell.generation == value.generation,
               !shell.messageBindingBlocked, value.session.isCurrent(value.operation), value.current() == value.memory,
-              core == nil, shell.generation == value.generation, !shell.messageBindingBlocked,
+              core == nil, shell.memoryCandidateContainerHost === self, shell.generation == value.generation, !shell.messageBindingBlocked,
               value.session.isCurrent(value.operation) else { return false }
         let model = MemoryCandidatePresentation(client: value.client)
         model.replace(binding: value.memory, conversationID: nil)

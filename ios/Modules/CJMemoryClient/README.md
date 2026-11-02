@@ -239,3 +239,36 @@ are separate #27 acceptance. In particular the history roots introduced by #437
 require B's additive device target version; DEVICE@2's frozen targets are not
 expanded by this local API. This primitive alone does not open an App factory or
 mark #24's original-account-operation box complete.
+
+## M3 candidate review consumer (#460, parent #23)
+
+`MemoryCandidateClient` discovers actual first-producer references with
+MEMORY-CANDIDATE-JOBS@1, then reads the original V3 candidate projection. Only
+references sealed by that client's current discovery/read can prepare a review.
+The canonical SessionLifecycle, account binding and actual selected MESSAGE
+conversation are checked before and after credentials, HTTP and body collection.
+The explicit DEBUG Simulator loopback factory enables exactly four candidate
+routes through NoRedirectTransport; Release and ordinary write factories stay
+closed. Query encoding preserves literal plus signs and original Unicode bytes.
+
+Confirm/reject originals are encrypted and read back before their one POST.
+The separate CJMemoryCandidatePendingV1/CJMemoryCandidateRejectionsV1 domains use
+the canonical localMemoryPendingV1 key. Lost ACK, reopen and null receipt preserve
+the same original action and permit only receipt GET, never resend. A recorded
+result remains historical; a fresh protected candidate read separately establishes
+current status. Exact keyless file cleanup reuses the existing journal primitive.
+
+The bilingual review view captures an immutable editor entry. A newer read or
+account/conversation replacement retires that entry; editing cannot silently
+retarget another candidate. Inference requires an explicit fact/experience/
+preference choice. Text/time may be edited; original extent and Travel identity
+are retained and the server still verifies current Travel/version/source scope.
+No suggestion, history consent or historical receipt itself activates a memory.
+
+The Shell entry/host is provided, but actual App Root provisioning and native
+acceptance are still pending. Proposed exact roots are M.candidate-v1 and
+M.candidate-v1.CJMemoryCandidateRejectionsV1. Before either is provisioned, B must
+provide an additive device version and include both in the shared Memory-key
+empty-set rule. Frozen DEVICE@3 is not expanded and no WIP App root is registered
+by this module. Part 1 does not close #460 or the parent App frame; signed local
+API/private PG/FakeProvider/native maximum-type/all-AX proof belongs to Part 2.

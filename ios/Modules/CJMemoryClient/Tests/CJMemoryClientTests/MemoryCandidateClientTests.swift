@@ -19,6 +19,7 @@ private let ccTrace = "11111111-1111-4111-8111-111111111461"
 @MainActor private final class CandidateServer {
     var requests: [(String, String, Data?)] = []
     var receipt: [String: Any]?
+    var conversation = "chat-A", jobID = "producer-job", attemptID = "original-attempt"
     var loseACK = false, nullReceipt = false, nullAction = false
     var status = "candidate", wrongProducer = false, serviceUnavailable = false, conflict = false
     var beforePost: ((Data) throws -> Void)?
@@ -34,9 +35,9 @@ private let ccTrace = "11111111-1111-4111-8111-111111111461"
         } else {
             switch operation {
             case "readMemoryCandidateJobsV1":
-                value = ["version":"MEMORY-CANDIDATE-JOBS@1","request_id":ccTrace,"result":["conversation_id":"chat-A","jobs":[["job_id":"producer-job","attempt_id":"original-attempt"]],"next_after_job_id":NSNull()]]
+                value = ["version":"MEMORY-CANDIDATE-JOBS@1","request_id":ccTrace,"result":["conversation_id":conversation,"jobs":[["job_id":jobID,"attempt_id":attemptID]],"next_after_job_id":NSNull()]]
             case "readMemoryCandidatesV1":
-                value = ["version":"MEMORY-CANDIDATE-list@1","request_id":ccTrace,"result":["job_id":wrongProducer ? "other-job" : "producer-job","attempt_id":"original-attempt","memory_epoch":2,"candidates":[[
+                value = ["version":"MEMORY-CANDIDATE-list@1","request_id":ccTrace,"result":["job_id":wrongProducer ? "other-job" : jobID,"attempt_id":attemptID,"memory_epoch":2,"candidates":[[
                     "candidate_id":"candidate-中文","version":1,"status":status,"subject":"traveler","slot":"food","kind":status == "active" ? "preference" : "inference","text":"不吃辣","extent":"long_term","occurred_at":"时间不详","context":NSNull()]]]]
             case "applyMemoryCandidateActionV1":
                 let bytes = try #require(raw); try beforePost?(bytes)
@@ -108,6 +109,35 @@ private struct CandidateWire: ClientTransport {
     func dispose() { try? FileManager.default.removeItem(at:root) }
 }
 @MainActor struct MemoryCandidateClientTests {
+    @Test func queryIDsKeepLiteralPlusAndUnicodeThroughTheCanonicalQueryParser() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        f.selected = "chat+中文"; f.server.conversation = f.selected
+        f.server.jobID = "job+e\u{301}"; f.server.attemptID = "attempt+中文"
+        let read = try await f.read()
+        #expect(read.page.producer.jobID == f.server.jobID)
+        let requests = f.server.requests
+        #expect(requests.count == 2)
+        for (_, path, _) in requests {
+            #expect(!path.contains("+")); #expect(path.contains("%2B"))
+        }
+        let first = try #require(URLComponents(string: requests[0].1)?.queryItems)
+        let second = try #require(URLComponents(string: requests[1].1)?.queryItems)
+        #expect(first.first(where: { $0.name == "conversation_id" })?.value == f.selected)
+        #expect(second.first(where: { $0.name == "job_id" })?.value.map { Data($0.utf8) } == Data(f.server.jobID.utf8))
+        #expect(second.first(where: { $0.name == "attempt_id" })?.value == f.server.attemptID)
+        #expect(try f.store.records().isEmpty)
+    }
+    @Test func publicFactoryIsUnavailableOutsideExplicitDebugSimulator() throws {
+        #if !DEBUG || !targetEnvironment(simulator)
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let endpoint = try MemoryEndpoint(url: #require(URL(string: "http://127.0.0.1:9000")), maximumRequestBytes: 32768, maximumResponseBytes: 524288, allowLoopbackHTTP: true)
+        #expect(throws: MemoryFailure.liveWriteUnavailable) {
+            try MemoryCandidateClient(development: endpoint, credentials: { _ in "SYNTHETIC" }, currentBinding: { f.binding },
+                currentConversation: { f.selected }, session: f.session, sessionOperation: f.operation, pendingStore: f.store,
+                requestTimeout: 1, resourceTimeout: 1)
+        }
+        #endif
+    }
     @Test func genuineDiscoveryPrecedesReviewAndExactOriginalIsDurableBeforePost() async throws {
         let f=try CandidateClientFixture();defer{f.dispose()}
         let read=try await f.read()
