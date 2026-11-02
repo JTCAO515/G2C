@@ -159,6 +159,24 @@ import Foundation
         XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
         XCTAssertEqual(input().value as? String,value);tap("trip.manual.keyboard.done")
     }
+    func testFormalMapNoPlaceSources() async throws {
+        let name="testFormalMapNoPlaceSources",f=try await prepare(name)
+        defer { app?.terminate() }
+        let trip=try XCTUnwrap(f.formal_trips.first)
+        for language in ["en","zh-Hans"] {
+            try launch(f,language:language,large:language=="zh-Hans",restore:language=="zh-Hans")
+            tap(language=="en" ? "Trips" : "行程")
+            tap("trips.timeline.open");tap("timeline.refresh");tap("timeline.trip."+trip.id)
+            text("timeline.record.id",contains:trip.id);text("timeline.record.version",contains:"2")
+            text("timeline.record.title",contains:trip.title)
+            text("trip.map.empty",contains:language=="en" ? "No recorded places" : "没有地点来源记录")
+            XCTAssertFalse(app.buttons.matching(identifier:"trip.map.show").firstMatch.exists)
+            XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch.exists)
+            XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
+            _ = try await call("/map-no-place-proof",caseID:name)
+            capture(name+"-"+language);try audit(name+"-"+language)
+        }
+    }
     func testScopedResultClarification() async throws { try await scenario("testScopedResultClarification",language:"en",item:true,resultKind:"clarification_required") }
     func testScopedResultExpansionKeep() async throws { try await scenario("testScopedResultExpansionKeep",language:"en",item:true,resultKind:"expansion_required") }
     func testScopedResultExpansionReselection() async throws { try await scenario("testScopedResultExpansionReselection",language:"en",item:true,resultKind:"expansion_required",resultFollowup:true) }

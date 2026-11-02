@@ -12,7 +12,7 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--manual-trip-profile',action='store_true')
 parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources'],required=True)
 ARGS=parser.parse_args();RESULT_PROFILE=ARGS.case.startswith('testScopedResult');OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -38,6 +38,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
 r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device/VoiceOver','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver'])}
+if CASE=='testFormalMapNoPlaceSources':r['unrun']=['positive formal PLACE production chain pending C notification','real point alignment L2/L3','real model/PLACE API/fees/cloud/production/device']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)
@@ -247,6 +248,19 @@ try:
      status=display['snapshot']['status'],draft_outcome=draft['draft_outcome'],trip_id=reference['trip_context']['id'],content_sha256=reference['trip_context']['content_sha256'],namespace=reference['namespace']['id'],needs_version=reference['needs_reference']['expected_version'],item_ids=reference['trip_context']['item_ids'],day=None if reference['trip_context']['day'] is None else reference['trip_context']['day']['date'],
      memory_long='SYNTHETIC LONG' in inputs,memory_current='SYNTHETIC CURRENT' in inputs,memory_other='SYNTHETIC OTHER' in inputs)
     r['proof']=value;r['observed_requests']=list(audit);r['worker_outcomes']=list(finished);r['proposal_ids_are_backend_oracles_only']=True;save();return value
+   def map_no_place_proof():
+    assert CASE=='testFormalMapNoPlaceSources'
+    with edit_db.connect(scope_for(ISSUER,subject)) as conn:
+     role=conn.execute('SELECT current_user').fetchone()[0]
+     trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
+     messages=conn.execute('SELECT count(*) FROM cj_message_receipt WHERE conversation_id=%s',(cid,)).fetchone()[0]
+    assert role=='cj_m1_runtime' and len(trips)==1 and trips[0][0]==tid and trips[0][1]==2
+    assert bytes(trips[0][2])==packed(formal['content']) and not any(x['kind']=='place' for x in formal['content']['sources'])
+    assert messages==fake.calls==len(finished)==0 and not worker_errors
+    assert audit and all(x['method']=='GET' for x in audit)
+    assert any(x['path']=='/v5/trip-structured' and x.get('status')==200 for x in audit)
+    value=dict(runtime_role=role,formal_trip_id=tid,formal_version=2,formal_content_sha256=formal['content_sha256'],formal_unchanged=True,place_sources=0,app_messages=0,scoped_model_calls=0,app_writes=0,setup_provider_calls=r['provider_calls'])
+    r['map_no_place_proof']=value;r['observed_requests']=list(audit);save();return value
    def result_proof():
     assert RESULT_PROFILE
     value=proof();kind='clarification_required' if CASE=='testScopedResultClarification' else 'expansion_required'
@@ -436,6 +450,7 @@ try:
        assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
        assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount') and late_captured.is_set();late_release.set();value=dict(status='release requested')
+      elif path.path=='/map-no-place-proof':value=map_no_place_proof()
       elif path.path=='/result-proof':value=result_proof()
       elif path.path=='/wait-result-response':
        assert CASE=='testScopedResultLateAccount' and late_captured.wait(20);value=dict(status='original protected result 200 held')
@@ -496,7 +511,8 @@ try:
     r['redacted_log_accounts']=sorted(native_tokens);r['token_scan_accounts']=sorted(native_tokens)
     (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    if CASE=='testScopedResultExpansionReselection':
+    if CASE=='testFormalMapNoPlaceSources':map_no_place_proof()
+    elif CASE=='testScopedResultExpansionReselection':
      final=followup_proof(committed=True);assert final['last_result_state']=='stale' and final['receipt_queries']>=1
     elif CASE=='testScopedResultWithdrawal':
      final=followup_proof(rejected=True);assert final['receipt_queries']>=1 and final['withdrawn_memory_absent_from_new_model']
