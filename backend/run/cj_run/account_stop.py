@@ -22,4 +22,9 @@ def stop_scope(cursor,scope):
     for conversation,generation in cursor.fetchall():
         cursor.execute('SELECT pg_try_advisory_xact_lock(%s)',(worker_key((scope,conversation,generation)),))
         stopped=cursor.fetchone()[0] and stopped
+    from .background_store import LEASE_NAMESPACE
+    cursor.execute('SELECT run_id FROM cj_run_background_job WHERE scope=%s',(scope,))
+    for (run_id,) in cursor.fetchall():
+        cursor.execute('SELECT pg_try_advisory_xact_lock(%s)',(worker_key((scope,LEASE_NAMESPACE,run_id)),))
+        stopped=cursor.fetchone()[0] and stopped
     return stopped

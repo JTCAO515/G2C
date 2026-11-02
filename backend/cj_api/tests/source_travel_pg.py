@@ -98,13 +98,19 @@ def exercise(root,conninfo):
         renewed=json.loads(history.apply_consent(token,encode(action|dict(action_id='re-enable',expected_source_version=disabled['source_version']))))
         renewed_query=SourceQuery('history',heads['source-alice']['generation'],0,0,2,renewed['source_version'],renewed['withdrawal_epoch'])
         invited=auth/'invited.json';saved=invited.read_bytes()
+        immediate={'refused':False}
         def revoked(source,lease):
             invited.write_text(json.dumps(['source-bob']))
+            try:lease.check()
+            except AccessBlocked:
+                immediate['refused']=True
+                raise
             return b'PRIVATE_WITHHELD_SOURCE'
         try:
             try:run(renewed_query,selected,revoked)
             except AccessBlocked:pass
             else:raise AssertionError('late admission loss published joint source bytes')
+            assert immediate['refused'],'lease check did not perform fresh admission'
         finally:invited.write_bytes(saved)
         print('PASS actual signed MESSAGE/TRAVEL/C consent: MSG→T→MEMORY locks coexist without second MSG connection; default-off/foreign/stale/withdrawal/lifetime/late admission negatives; no model/job/Meter claim')
 
