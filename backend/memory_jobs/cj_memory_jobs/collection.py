@@ -43,6 +43,7 @@ class CollectionService(Service):
             with repository.transaction() as memory:
                 tx=PublicationTransaction(memory);tx.require_live()
                 row=tx.job(job_id,attempt_id)
+            mode=row[5]
             policy=PublicationSourcePolicy(repository,principal,guard)
             def project(snapshot):
                 current=SourceV2(snapshot.cursor,snapshot.source_version,snapshot.withdrawal_epoch)
