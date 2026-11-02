@@ -60,6 +60,39 @@ private actor ControllerWire: ClientTransport {
         }
         return value
     }
+    @Test func deniedIdentityCannotOverwriteReplacementAccountAnchor() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        let a = try SessionMaterial(trustedSDKBytes: Data("review453-account-a".utf8))
+        let b = try SessionMaterial(trustedSDKBytes: Data("review453-account-b".utf8))
+        try sdk.save(a)
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let original = try #require(anchors.value).withBytes { $0 }
+        var json = try #require(JSONSerialization.jsonObject(with: original) as? [String: Any])
+        var ns = try #require(json["namespace"] as? [String: Any])
+        ns["account"] = UUID().uuidString
+        json["namespace"] = ns
+        json["sessionHash"] = b.withBytes(CJOfflineTrip.digest)
+        let foreign = try JSONDecoder().decode(OfflineAnchor.self, from: JSONSerialization.data(withJSONObject: json))
+        let foreignBytes = try SnapshotCodec.encoder().encode(foreign)
+        var switched = false
+        withObservationTracking { _ = active.state } onChange: {
+            MainActor.assumeIsolated {
+                guard !switched else { return }
+                switched = true
+                do {
+                    try active.clearLocally()
+                    try sdk.save(b)
+                    try anchors.save(SessionMaterial(trustedSDKBytes: foreignBytes))
+                } catch { Issue.record(error) }
+            }
+        }
+        #expect(throws: OfflineFailure.unavailable) { try active.denyRejectedIdentity(material: a) }
+        #expect(switched)
+        let observed = try JSONDecoder().decode(OfflineAnchor.self, from: #require(anchors.value).withBytes { $0 })
+        #expect(observed.namespace.account == foreign.namespace.account, "Old A refusal overwrote B replacement anchor after observation account switch")
+    }
     @Test func acceptedSyncReopenExpiryClockRollbackAndFreshSync() async throws {
         let h = try KeyHarness(); defer { h.cleanup() }
         let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
@@ -121,6 +154,26 @@ private actor ControllerWire: ClientTransport {
         let reopened = try controller(h, anchors, clock, sdk: sdk)
         reopened.readCached()
         guard case .missing = reopened.state else { Issue.record("Cleared grant must remain absent"); return }
+    }
+    @Test func onlySuccessfulFormalSynchronizationProvidesStorageAndProofRetiresOnScopeChange() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("verified-sdk-provision".utf8)))
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        var provision: OfflineTripStorageProvision?
+        active.bindStorageProvision { value in provision = value }
+        #expect(throws: OfflineFailure.unavailable) { try active.captureStorageProvision() }
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let provided = try #require(provision)
+        #expect(provided.namespace == h.ns && provided.keyID == h.expectedID)
+        try active.validateStorageProvision(provided)
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("another-sdk".utf8)))
+        #expect(throws: OfflineFailure.unavailable) { try active.validateStorageProvision(provided) }
+        var bridged = 0
+        active.bindDeviceIdentityRejection { _ in bridged += 1 }
+        try await active.currentIdentityRejected()
+        #expect(bridged == 1)
+        #expect(FileManager.default.fileExists(atPath: h.root.appendingPathComponent(h.ns.account.uuidString).appendingPathComponent("snapshot.aesgcm").path))
     }
     @Test func deviceReconnectionReadFencePrecedesAuthorizedPhysicalErasure() async throws {
         let h = try KeyHarness(); defer { h.cleanup() }

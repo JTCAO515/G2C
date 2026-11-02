@@ -4,7 +4,7 @@ import Foundation
 @MainActor final class DevelopmentDeviceCleanupUITests: XCTestCase {
     let control = "__CONTROL_URL__"
     var app: XCUIApplication!
-    struct Fixture: Decodable { let endpoint: String; let accounts: [String: String]; let subjects: [String: String]; let case_id: String }
+    struct Fixture: Decodable { let endpoint: String; let accounts: [String: String]; let subjects: [String: String]; let case_id: String; let proposal_id: String?; let trip_id: String?; let provider_calls: Int }
     struct Operation: Decodable { let operation_id: String; let phase: String }
     struct Account: Decodable { let operations: [Operation]; let fences: Int; let feedback: Int }
     struct Proof: Decodable { let accounts: [String: Account]; let provider_calls: Int }
@@ -20,13 +20,14 @@ import Foundation
     }
     func fixture(_ name: String) async throws -> Fixture { try JSONDecoder().decode(Fixture.self, from: await call("/fixture", name)) }
     func proof(_ name: String) async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof", name)) }
-    func launch(_ f: Fixture, language: String = "en") throws {
+    func launch(_ f: Fixture, language: String = "en", proposal: Bool = false) throws {
         continueAfterFailure = false
         app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.device-v3.acceptance")
         app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = ["OS_ACTIVITY_MODE": "disable", "G2C_DEV_ACCOUNT_MODE": "1",
             "G2C_DEV_API_BASE_URL": f.endpoint, "G2C_DEV_OFFLINE_TRIP": "last-sync-v1", "G2C_DEV_CLEANUP_PROFILE": "device-v3",
             "G2C_DEV_ACCOUNTS": try XCTUnwrap(String(data: JSONEncoder().encode(f.accounts), encoding: .utf8))]
+        if proposal, let id = f.proposal_id { app.launchEnvironment["G2C_DEV_PROPOSAL_ID"] = id }
         app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 20))
         XCTAssertFalse(app.staticTexts["g2c.dev.error"].exists)
     }
@@ -47,7 +48,9 @@ import Foundation
         XCTFail("Exact element was not scroll reachable: " + (element.exists ? element.identifier : "not-materialized"))
     }
     func tap(_ id: String) {
-        let query = app.buttons.matching(identifier: id), button = query.element
+        let tabs = app.tabBars.buttons.matching(identifier: id)
+        let query = tabs.count == 1 ? tabs : app.buttons.matching(identifier: id)
+        let button = query.element
         let fixedControl = app.tabBars.buttons.matching(identifier: id).count == 1 || app.navigationBars.buttons.matching(identifier: id).count == 1
         if fixedControl { XCTAssertTrue(button.waitForExistence(timeout: 25), id) }
         else { reveal(button) }
@@ -62,14 +65,22 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 25), .completed, id)
     }
     func account(_ language: String = "en") {
-        tap(language == "en" ? "Memory" : "记忆")
-        if !app.staticTexts["account.development.status"].exists { tap("memory.account") }
+        let memory = language == "en" ? "Memory" : "记忆", account = language == "en" ? "Account" : "账号"
+        let deletion = language == "en" ? "Delete account" : "注销账号"
+        tap(memory)
+        let bar = app.navigationBars[deletion]
+        if bar.exists {
+            let accountBack = bar.buttons.matching(identifier: account)
+            let back = accountBack.count == 1 ? accountBack : bar.buttons.matching(identifier: memory)
+            XCTAssertEqual(back.count, 1); back.element.tap()
+        }
+        if !app.navigationBars[account].exists { tap("memory.account") }
     }
     func deletion(_ language: String = "en") {
         tap(language == "en" ? "Memory" : "记忆")
-        // A current account page and the Memory root expose the same workflow.
-        if app.buttons["account.deletion.open"].exists { tap("account.deletion.open") }
-        else if !app.buttons["account.cleanup.read"].exists && !app.buttons["account.cleanup.review"].exists { tap("memory.accountDeletion") }
+        if app.navigationBars[language == "en" ? "Delete account" : "注销账号"].exists { return }
+        if app.navigationBars[language == "en" ? "Account" : "账号"].exists { tap("account.deletion.open") }
+        else { tap("memory.accountDeletion") }
     }
     func consentAndConfirm() {
         let toggle = app.switches["account.cleanup.consent"]
@@ -97,22 +108,32 @@ import Foundation
         XCTAssertTrue(keyboardDone.element.waitForExistence(timeout: 5)); XCTAssertEqual(keyboardDone.count, 1)
         keyboardDone.element.tap()
     }
+    func acceptAndCacheFormalTrip(_ f: Fixture) {
+        tap("Trips"); tap("View current draft"); tap("Read current draft"); tap("Accept"); tap("Confirm")
+        XCTAssertTrue(app.staticTexts["Accepted"].waitForExistence(timeout: 25))
+        let back = app.navigationBars["Trip draft"].buttons.matching(identifier: "Trips")
+        XCTAssertEqual(back.count, 1); back.element.tap()
+        tap("trips.refresh"); tap("trips.item." + f.trip_id!)
+        tap("offline.sync")
+        contains("offline.sync.status", "Offline snapshot saved from this successful formal-trip read.")
+    }
     func initial(_ f: Fixture, seedPrivateDraft: Bool = false) async throws -> String {
         try launch(f); account()
         if seedPrivateDraft {
             tap("account.development.signin.B"); contains("account.development.status", f.subjects["B"]!)
             seedDraft("另一账号保留的中文草稿。")
-            account()
+            try launch(f, proposal: true); account()
         }
         tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
         if seedPrivateDraft {
             seedDraft("本机原始中文草稿，未发送。")
+            acceptAndCacheFormalTrip(f)
             account(); try await call("/native-files", f.case_id, ["stage": "before"])
         }
         try await call("/size", f.case_id, ["value": "max"])
         deletion(); tap("account.cleanup.review")
         XCTAssertTrue(app.buttons["account.cleanup.confirm"].waitForExistence(timeout: 25))
-        let p = try await proof(f.case_id); XCTAssertEqual(p.provider_calls, 2); XCTAssertEqual(p.accounts["A"]?.operations.count, 1)
+        let p = try await proof(f.case_id); XCTAssertEqual(p.provider_calls, f.provider_calls); XCTAssertEqual(p.accounts["A"]?.operations.count, 1)
         return try XCTUnwrap(p.accounts["A"]?.operations.first?.operation_id)
     }
     func testActualCommittedUnknownReopen() async throws {

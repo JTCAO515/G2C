@@ -21,6 +21,30 @@ import HTTPTypes
 import OpenAPIRuntime
 import Observation
 
+/// Provision only already-provided journal families before device enrollment.
+/// No ciphertext/key is fabricated, and the offline cache is excluded until a
+/// sealed formal sync provisions it. Old unconfigured roots retain their shape.
+@MainActor private func provisionJournalSiblings(of base: URL, suffixes: [String]) throws {
+    let environment = ProcessInfo.processInfo.environment
+    guard environment["G2C_DEV_ACCOUNT_MODE"] == "1", environment["G2C_DEV_CLEANUP_PROFILE"] == "device-v3" else { return }
+    let original = try DeviceCleanupDirectory(existingPrivateDirectory: base)
+    let parentURL = base.deletingLastPathComponent()
+    let parent = try DeviceCleanupDirectory(existingPrivateDirectory: parentURL)
+    let fd = open(parentURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+    guard fd >= 0 else { throw CleanupFailure.unavailable }; defer { close(fd) }
+    var entry = stat()
+    guard fstat(fd, &entry) == 0,
+          try parent.identityReference() == "directory:" + String(entry.st_dev) + ":" + String(entry.st_ino) else { throw CleanupFailure.stale }
+    for suffix in suffixes {
+        try original.validateIdentity(); try parent.validateIdentity()
+        let name = base.lastPathComponent + "." + suffix
+        guard mkdirat(fd, name, 0o700) == 0 || errno == EEXIST else { throw CleanupFailure.unavailable }
+        _ = try parent.child(name) // Exact private directory, never a link or unknown descendant.
+    }
+    guard fsync(fd) == 0 else { throw CleanupFailure.exchangeUnknown }
+    try original.validateIdentity(); try parent.validateIdentity()
+}
+
 @MainActor struct DevelopmentSessionLease {
     let session: SessionLifecycle
     let operation: SessionOperation
@@ -119,6 +143,7 @@ import Observation
             }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
+        try provisionJournalSiblings(of: root, suffixes: ["CJTripManual", "CJTripManual.CJTripManualRejections"])
         let store = try TripPendingStore(directory: root, maximumBytes: 1_000_000, maximumRecords: 100,
             binding: lifetime.trip, expectedKeyID: key.id, provider: keys)
         let transport = try NoRedirectTransport(requestTimeout: 10, resourceTimeout: 20)
@@ -277,6 +302,7 @@ import Observation
         if !files.fileExists(atPath: root.path) {
             try files.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
         }
+        try provisionJournalSiblings(of: root, suffixes: ["CJMemoryHistoryRejectionsV1"])
         let store = try MemoryHistoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
             binding: binding, expectedKeyID: key.id, provider: keys)
         let current: @MainActor () -> MemoryBinding? = {
@@ -390,6 +416,7 @@ import Observation
             guard try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot: directory, files: files) else { throw NeedsFailure.keyUnavailable }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
+        try provisionJournalSiblings(of: root, suffixes: ["CJNeedsRejections"])
         let store = try NeedsPendingStore(directory: root, maximumBytes: 1048576, maximumRecords: 100,
                                          binding: binding, expectedKeyID: key.id, provider: keys)
         let endpoint = try NeedsEndpoint(url: configuration.endpoint, maximumRequestBytes: 131072,
@@ -440,6 +467,7 @@ import Observation
             guard try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:directory,files:files) else { throw MemoryFailure.keyUnavailable }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
+        try provisionJournalSiblings(of: root, suffixes: ["CJMemoryRejections"])
         let store = try MemoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
                                            binding: binding, expectedKeyID: key.id, provider: keys)
         let endpoint = try MemoryEndpoint(url: configuration.endpoint, maximumRequestBytes: 32768,
@@ -468,6 +496,7 @@ import Observation
             if !files.fileExists(atPath: lifecycleRoot.path) {
                 try files.createDirectory(at: lifecycleRoot, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
             }
+            try provisionJournalSiblings(of: lifecycleRoot, suffixes: ["CJMemoryManagementRejections"])
             lifecycle = try MemoryManagementPendingStore(directory: lifecycleRoot, maximumBytes: 100_000,
                 maximumRecords: 100, binding: binding, expectedKeyID: key.id, provider: keys)
         } else { lifecycle = nil }
@@ -546,6 +575,9 @@ import Observation
         for root in [lifecycleRoot,typedRoot] where !files.fileExists(atPath:root.path) {
             try files.createDirectory(at:root,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
         }
+        try provisionJournalSiblings(of: legacyRoot, suffixes: ["CJMemoryRejections"])
+        try provisionJournalSiblings(of: lifecycleRoot, suffixes: ["CJMemoryManagementRejections"])
+        try provisionJournalSiblings(of: typedRoot, suffixes: ["CJMemoryTypedRejectionsV2", "CJMemoryTypedManagementV2", "CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2"])
         let oldStore = try MemoryPendingStore(directory:legacyRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
         let oldManagement = try MemoryManagementPendingStore(directory:lifecycleRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
         let store = try TypedMemoryPendingStore(directory:typedRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
@@ -834,6 +866,11 @@ import Observation
             quiesce: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.fenceCleanupBusiness() },
             clearSDK: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.clearCleanupSDK() })
         cleanupWorkflow = workflow; cleanup = workflow.host
+        offline.bindStorageProvision { [weak workflow] provision in workflow?.recordOfflineProvision(provision) }
+        offline.bindDeviceIdentityRejection { [weak workflow] material in
+            guard let workflow else { throw CleanupFailure.stale }
+            await workflow.reconnectIdentityRefused(material: material)
+        }
     }
     private func reconcileRejectedDevice(material: SessionMaterial, lease: DevelopmentSessionLease) async throws {
         // This callback runs only for the actual verification HTTP401/403. Deny
@@ -842,7 +879,7 @@ import Observation
         guard let configuration = configuration(material) else { throw CleanupFailure.unavailable }
         try attachCleanup(configuration: configuration, lease: lease)
         guard let workflow = cleanupWorkflow else { throw CleanupFailure.unavailable }
-        await workflow.reconnectIdentityRefused()
+        await workflow.reconnectIdentityRefused(material: material)
     }
     private func restoreCleanup() throws {
         guard let offline, let scope = try DevelopmentCleanupWorkflow.originalScope(environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint)) else { return }
@@ -1219,10 +1256,12 @@ private func developmentCleanupHash(_ value: Data) -> String {
             restored = value
         } else { restored = nil }
         let references = try layout.manifestReferences()
-        if let restored { guard restored.directories == references else { throw CleanupFailure.stale } }
-        stores = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint, originalKeyIDs: restored?.keyIDs)
+        guard references == manifest.directories else { throw CleanupFailure.stale }
+        if let restored { guard restored.directories == references, restored.keyIDs == manifest.keyIDs else { throw CleanupFailure.stale } }
+        stores = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint, originalKeyIDs: manifest.keyIDs)
         nativeDirectories = references
         nativeKeyIDs = Dictionary(uniqueKeysWithValues: stores.keyIDs.map { ($0.key.rawValue, $0.value) })
+        guard nativeKeyIDs == manifest.keyIDs else { throw CleanupFailure.stale }
         execution = restored
         try validateManifest()
     }
@@ -1455,8 +1494,47 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private func validateBeforeConfirmation() throws {
         try check()
         guard let manifest else { throw CleanupFailure.unavailable }
-        guard try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
+        let layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope)
+        guard try layout.manifestReferences() == manifest.directories,
+              try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
               try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
+        _ = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint.url, originalKeyIDs: manifest.keyIDs)
+    }
+    /// Only a sealed successful formal synchronization can provision the previously
+    /// absent offline directory/key. Existing objects/keys can never be replaced.
+    func recordOfflineProvision(_ provision: OfflineTripStorageProvision) {
+        do {
+            try check()
+            guard let original = manifest, let device else { return }
+            switch device.state { case .ready, .registrationUnknown, .enrolled: break; default: throw CleanupFailure.stale }
+            guard provision.namespace.backend == original.scope.environment, provision.namespace.account == original.scope.account else { throw CleanupFailure.stale }
+            try offline.validateStorageProvision(provision)
+            let layout = try DevelopmentDeviceNativeLayout(scope: original.scope)
+            let current = try layout.manifestReferences()
+            let offlineTargets: Set<String> = Set([DeviceCleanupTarget.offlineTrip, .offlineWriteResidue, .offlineKey].map(\.rawValue))
+            for (target, before) in original.directories {
+                guard let now = current[target], before.count == now.count else { throw CleanupFailure.stale }
+                for (old, new) in zip(before, now) {
+                    guard old == new || (offlineTargets.contains(target) && old.hasPrefix("absent:") && new.hasPrefix("directory:")) else { throw CleanupFailure.stale }
+                }
+            }
+            let stores = try DevelopmentDeviceNativeStores(scope: original.scope, layout: layout, endpoint: endpoint.url)
+            let actual = Dictionary(uniqueKeysWithValues: stores.keyIDs.map { ($0.key.rawValue, $0.value) })
+            let offlinePurpose = MessageKeyPurpose.localOfflineTripSnapshotV1.rawValue
+            guard actual[offlinePurpose] == provision.keyID else { throw CleanupFailure.stale }
+            for (purpose, id) in original.keyIDs { guard actual[purpose] == nil || actual[purpose] == id else { throw CleanupFailure.stale } }
+            for (purpose, _) in actual where original.keyIDs[purpose] == nil { guard purpose == offlinePurpose else { throw CleanupFailure.stale } }
+            var expected = original.keyIDs; expected[offlinePurpose] = provision.keyID
+            let next = DevelopmentNativeManifest(version: original.version, scope: original.scope, nonce: original.nonce,
+                sdkHash: original.sdkHash, directories: current, keyIDs: expected)
+            guard try next.stateRef == original.stateRef,
+                  try manifestStore.load()?.withBytes({ $0 }) == original.encoded() else { throw CleanupFailure.stale }
+            try check(); try offline.validateStorageProvision(provision)
+            let bytes = try next.encoded(); try manifestStore.save(SessionMaterial(trustedSDKBytes: bytes))
+            guard try manifestStore.load()?.withBytes({ $0 }) == bytes else { throw CleanupFailure.exchangeUnknown }
+            try check(); try offline.validateStorageProvision(provision)
+            manifest = next
+        } catch { if active { refresh(unknown: true) } }
     }
     private func settleRevocation() throws {
         guard let account, try account.requiresRestrictedProgress else { return }
@@ -1479,7 +1557,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
             enrolling = false; refresh()
         } catch { enrolling = false; if active { refresh(unknown: true) } }
     }
-    func reconnectIdentityRefused() async {
+    func reconnectIdentityRefused(material: SessionMaterial) async {
         guard active, !enrolling else { return }
         enrolling = true; refresh()
         var unknown = false
@@ -1487,8 +1565,12 @@ private func developmentCleanupHash(_ value: Data) -> String {
         do {
             try check()
             guard let device, let manifest, let ordinary,
+                  material.withBytes(developmentCleanupHash) == manifest.sdkHash,
                   developmentCleanupHash(Data(ordinary.configuration.token.utf8)) == manifest.sdkHash else { throw CleanupFailure.stale }
-            guard case .identityRefused = try await device.perform(device.prepareIdentityVerification()) else { throw CleanupFailure.unavailable }
+            let verified = try await device.perform(device.prepareIdentityVerification()); try check()
+            if case .identityAllowed = verified { return } // No clearing and no offline renewal.
+            guard case .identityRefused = verified else { throw CleanupFailure.unavailable }
+            try offline.denyRejectedIdentity(material: material)
             try check(); try quiesce()
             if case .enrolled = device.state {
                 _ = try await device.perform(device.prepareSessionInvalidation()); try check()

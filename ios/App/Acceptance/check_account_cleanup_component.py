@@ -119,26 +119,41 @@ def main():
                 options=cleanup.Configuration({'native-local':key},'native-local',7200,B_DOMAINS,component_registry)
                 full_options=cleanup.Configuration({'native-local':key},'native-local',7200,FULL_INVENTORY,registry)
                 apps={mode:local_app.create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,cleanup_configuration=selected,
-                    history_configuration=local_app.load_history_configuration(auth) if args.native_device else None)
+                    history_configuration=local_app.load_history_configuration(auth) if args.native_device else None,
+                    confirmation_signer=local_app.load_confirmation_signer(auth) if args.native_device else None)
                     for mode,selected in [('component',options),('full',full_options)]}
                 runtime=cleanup.Runtime(database,options,local_app.scope_for)
                 bindings={case:{k:runtime.bind(checker_for(auth).check(tokens[case][k]).principal) for k in ('A','B')} for case in CASES}
-                model=provider.FakeProvider();provider_counts={};feedback_hashes={}
+                model=provider.FakeProvider();provider_counts={};feedback_hashes={};proposals={};source_runs={}
                 for case in CASES:
                     before=model.calls;feedback_hashes[case]={}
                     with TestClient(apps['component']) as api:
                         for k,subject in subjects[case].items():
                             headers={'Authorization':'Bearer '+tokens[case][k],'Content-Type':'application/octet-stream'}
                             opened=api.put('/v1/conversations',params={'conversation_id':'native-cleanup'},headers=headers);opened.raise_for_status()
+                            formal=args.native_device and case=='testActualCommittedUnknownReopen' and k=='A'
+                            if formal:
+                                needs='native-needs-'+uuid.uuid4().hex
+                                command=dict(action_id=needs,needs_id=needs,expected_version=0,source={'kind':'manual','text':'Operator-supplied local native acceptance party size'},changes={'party_size':{'state':'known','value':1}})
+                                local_run_context.put_needs(connection,auth,subject,json.dumps(command).encode())
+                                local_run_context.bind_needs(connection,subject,'native-cleanup',needs)
                             raw=json.dumps(dict(version='MESSAGE-send.1',conversation_id='native-cleanup',message_id='native-message',
-                                text='原生注销组件 中文输入与原操作 '+subject,trip_id=None,creation_intent='none',expected_generation=opened.json()['generation'],expected_sequence=0)).encode()
-                            api.post('/v1/messages',content=raw,headers=headers).raise_for_status()
+                                text='请安排北京三日游，保留中文地点。本地原生清理验收 '+subject if formal else '原生注销组件 中文输入与原操作 '+subject,
+                                trip_id=None,creation_intent='consider_trip' if formal else 'none',expected_generation=opened.json()['generation'],expected_sequence=0)).encode()
+                            accepted=api.post('/v1/messages',content=raw,headers=headers);accepted.raise_for_status()
+                            if formal:source_runs[case]=accepted.json()['receipt']['run_id']
                             feedback_raw=json.dumps(dict(action_id='native-feedback',problem='中文组件反馈 '+subject,expectation='',references=[])).encode()
                             api.post('/v1/feedback',content=feedback_raw,headers=headers).raise_for_status()
                             feedback_hashes[case][k]=hashlib.sha256(feedback_raw).hexdigest()
                     run_worker.run_once(database,model,auth)
                     provider_counts[case]=model.calls-before
-                    assert provider_counts[case]==2,'actual A/B original FakeProvider run did not complete'
+                    assert provider_counts[case]==(3 if case in source_runs else 2),'actual A/B original FakeProvider run did not complete'
+                    if case in source_runs:
+                        from cj_agent.draft import proposal_id_for
+                        with TestClient(apps['component']) as api:
+                            observed=api.get('/v1/trip-proposals',params={'proposal_id':proposal_id_for(source_runs[case])},headers={'Authorization':'Bearer '+tokens[case]['A']})
+                            observed.raise_for_status();proposals[case]=observed.json()['proposal']
+                            assert '北京' in proposals[case]['document']['title']
                 original_size = subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
                 if args.native_device: subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size','large'],env=env,check=True)
                 endpoints={}
@@ -250,7 +265,9 @@ def main():
                             if case not in CASES:raise ValueError('unknown case')
                             if parsed.path=='/fixture':
                                 current['case']=case
-                                value=dict(endpoint=endpoints['full' if case=='testActualFullInventoryBlocked' else 'component'],accounts=tokens[case],subjects=subjects[case],case_id=case)
+                                value=dict(endpoint=endpoints['full' if case=='testActualFullInventoryBlocked' else 'component'],accounts=tokens[case],subjects=subjects[case],case_id=case,
+                                    proposal_id=proposals[case]['proposal_id'] if case in proposals else None,
+                                    trip_id=proposals[case]['trip_id'] if case in proposals else None,provider_calls=provider_counts[case])
                             elif parsed.path=='/fault':
                                 if query['kind']=='preparation':fault['path']='/v1/account-cleanup-operations'
                                 elif query['kind']=='confirmation':
@@ -275,7 +292,9 @@ def main():
                                     base=support/folder/environment
                                     candidates=[p for p in base.glob(account+'*')] if base.exists() else []
                                     counts[folder]=sum(1 for parent in candidates for p in parent.rglob('*') if p.is_file())
-                                if query['stage']=='before':assert counts['G2CDevelopmentMessages']>0,'real App draft did not persist encrypted snapshot'
+                                if query['stage']=='before':
+                                    assert counts['G2CDevelopmentMessages']>0,'real App draft did not persist encrypted snapshot'
+                                    assert counts['G2CDevelopmentTrip']>0 and counts['G2COfflineTrip']>0,'real accepted Trip action/offline snapshot not physically present'
                                 elif query['stage']=='after':assert all(n==0 for n in counts.values()),'original App private files remain'
                                 else:raise ValueError('unknown native file stage')
                                 other_account=namespace('G2C.DEBUG.TRIP.account|https://local.g2c.invalid|'+subjects[case]['B'])
