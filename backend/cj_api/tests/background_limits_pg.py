@@ -20,7 +20,7 @@ import dev_auth,local_run_context,run_worker
 
 
 def exercise(root,path):
-    for case in ('step','output','time','publication-time','publication-work','publication-final-source'):
+    for case in ('step','output','time','publication-time','publication-work','publication-final-source','tool-request'):
         work=root/case;work.mkdir();auth=work/'auth';subject='bg-limit-'+case;dev_auth.init(auth,[subject])
         now=int(time.time());document=dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(
             meter=dict(unit='provider_call',budget=10,period_start=now-60,period_end=now+3600,max_steps=1,max_tools=1,max_output=10000,max_seconds=10),
@@ -46,9 +46,23 @@ def exercise(root,path):
         source=dict(conversation_id='limit',generation=head['generation'],epoch=0,after=0,through=1,source_version=1,withdrawal_epoch=1,mode='incremental')
         c.enqueue(token,json.dumps(dict(version='MEMORY-JOBS@1',job_id='job',attempt_id='attempt',source=source)).encode());c.transition(token,'job','attempt','inflight')
         prepared=c.prepare_model_input_v2(token,'job','attempt',max_payload_bytes=262144);tick=[time.time()]
+        second=ExtractFake();nested=[]
         class Timed(ExtractFake):
             def stream(self,messages,system=None):
                 if case=='time':tick[0]+=10
+                if case=='step':
+                    # A real producer re-entry while its only original claim is
+                    # in flight must not create a second step/model invocation.
+                    nested.append(jobs.process_one(token,'job','attempt',second))
+                if case=='tool-request':
+                    self.calls+=1
+                    source_message=json.loads(messages[0]['content'])['messages'][0]
+                    value=dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot='diet.spicy',kind='preference',
+                        text=source_message['text'],extent='long_term',occurred_at='date unknown',
+                        evidence=[dict(ref=source_message['ref'],quote=source_message['text'])])])
+                    value['tool_calls']=[dict(name='place.search',arguments=dict(query='unapproved tool request'))]
+                    yield json.dumps(value)
+                    return
                 yield from super().stream(messages,system)
         class Adapter(GuardedCollectionAdapterV3):
             def __init__(self,collection):
@@ -69,12 +83,16 @@ def exercise(root,path):
         jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=Adapter(c),max_payload_bytes=262144,clock=lambda:tick[0])
         original=jobs.prepare(token,JobRequest('job','attempt',SourceQuery(**source),None,prepared));model=Timed()
         results=run_worker.run_once(database,model,auth,background_jobs=LocalBackgroundHost(jobs,auth))
-        wanted='completed' if case=='step' else 'budget_exhausted'
+        wanted='completed' if case=='step' else 'unknown' if case=='tool-request' else 'budget_exhausted'
         assert len(results)==1 and results[0].status==wanted and model.calls==1,(case,results)
+        if case=='step':
+            assert len(nested)==1 and nested[0]['state']=='running' and second.calls==0
+            assert jobs.process_one(token,'job','attempt',second)['state']=='completed' and second.calls==0
         with psycopg.connect(**json.loads(path.read_text())) as conn:
             ledger=conn.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=(SELECT ledger_scope FROM cj_run_background_job WHERE run_id=%s)',(original['run_id'],)).fetchone()[0]
             run=ledger['runs'][original['run_id']];attempt=ledger['attempts'][original['meter_attempt_id']]
             assert run['steps']==1 and run['tools']==0 and attempt['command']['kind']=='memory'
+            assert [key for key,a in ledger['attempts'].items() if a['command']['run_id']==original['run_id']]==[original['meter_attempt_id']]
             if case in ('output','time'):assert attempt['state']=='unknown' and attempt['receipt'] is None
             else:assert attempt['state']=='settled' and attempt['receipt']['actual']==1
             owner=scope_for(ISSUER,subject)
@@ -82,7 +100,7 @@ def exercise(root,path):
             assert conn.execute('SELECT count(*) FROM cj_memory_history_job WHERE scope=%s AND result_bytes IS NOT NULL',(owner,)).fetchone()[0]==(1 if case=='step' else 0)
             assert conn.execute('SELECT coalesce(max(processed),0) FROM cj_memory_history_cursor WHERE scope=%s',(owner,)).fetchone()[0]==(1 if case=='step' else 0)
         assert run_worker.run_once(database,model,auth,background_jobs=LocalBackgroundHost(jobs,auth))==[] and model.calls==1
-    print('PASS local component actual step=1/tools=0, memory output overrun, in-flight clock limit and source-preparation publication deadline; no canonical output past any limit, original UNKNOWN/settled financial states retained')
+    print('PASS actual one-step producer rejects in-flight/terminal second invocation; malicious tool_calls output refused with tools0/one original settled claim and no C publication; max_tools profile1 is not a zero quota. Output/time/final-source limits and original UNKNOWN/settled evidence preserved')
 
 
 if __name__=='__main__':
