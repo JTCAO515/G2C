@@ -68,6 +68,50 @@ def exercise(auth, conninfo):
                 return expect(client.post(path,content=json.dumps(value).encode(),headers=headers[subject]),status)
             head = expect(client.put('/v1/conversations',params={'conversation_id':'chat'},headers=headers['alice']))
             expect(client.put('/v1/conversations',params={'conversation_id':'other'},headers=headers['bob']))
+            def status(cid,subject='alice'):
+                found={}
+                def read(context):
+                    found['context']=context
+                    found['value']=context.source_status_v1(cid)
+                    return b'materialized-source-status'
+                boundary.with_history_context(tokens[subject],read)
+                return found['value'],found['context']
+            opened,expired_context=status('chat')
+            assert opened.cursor==Cursor(alice,'chat',head['generation'],0,0,0) and opened.end is None and opened.conversation_type=='travel'
+            try:expired_context.source_status_v1('chat')
+            except RuntimeError:pass
+            else:raise AssertionError('source status escaped its protected context')
+            for cid in ('chat','missing'):
+                try:status(cid,'bob')
+                except Unavailable:pass
+                else:raise AssertionError('foreign/absent conversation became open')
+            from cj_message import source_status_v1
+            actual_status=source_status_v1.SourceStatus
+            def locked(*args):
+                for sql in ('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE NOWAIT',
+                            "SELECT conversation_id FROM cj_message_chat WHERE scope=%s AND conversation_id='chat' FOR UPDATE NOWAIT"):
+                    try:
+                        with psycopg.connect(**config) as conn:conn.execute(sql,(alice,))
+                    except psycopg.errors.LockNotAvailable:pass
+                    else:raise AssertionError('source status did not retain canonical scope/chat locks')
+                return actual_status(*args)
+            with patch.object(source_status_v1,'SourceStatus',side_effect=locked):
+                assert status('chat')[0]==opened
+            with database.connect(alice) as conn:
+                assert conn.execute("SELECT end_id,end_generation,end_epoch,end_sequence FROM cj_message_chat WHERE conversation_id='chat'").fetchone()==(None,None,None,None)
+                assert conn.execute('SELECT count(*) FROM cj_message_receipt').fetchone()==(0,)
+            # A structurally valid but false persisted end must fail, not become open.
+            corrupt=expect(client.put('/v1/conversations',params={'conversation_id':'corrupt-end'},headers=headers['alice']))
+            update('UPDATE cj_message_chat SET end_id=%s,end_generation=%s,end_epoch=0,end_sequence=0 WHERE scope=%s AND conversation_id=%s',
+                   '0'*64,corrupt['generation'],alice,'corrupt-end')
+            try:status('corrupt-end')
+            except Unavailable:pass
+            else:raise AssertionError('corrupt persisted end became open or a genuine signal')
+            inactive=expect(client.put('/v1/conversations',params={'conversation_id':'inactive'},headers=headers['alice']))
+            update('UPDATE cj_message_chat SET active=false WHERE scope=%s AND conversation_id=%s',alice,'inactive')
+            try:status('inactive')
+            except Unavailable:pass
+            else:raise AssertionError('inactive conversation became open')
             originals = []
             for i in range(3):
                 raw=json.dumps(dict(version='MESSAGE-send.1',conversation_id='chat',message_id=f'm{i}',text=f'synthetic {i}',trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=i)).encode()
@@ -106,6 +150,22 @@ def exercise(auth, conninfo):
             end=dict(version=VERSION,conversation_id='chat',generation=head['generation'],epoch=1,through=3,conversation_type='travel')
             post(read,dict(query,mode='conversation_end'),status=503)
             signal=post('/internal/v1/conversation-end',end)['end']
+            ended,_=status('chat')
+            assert ended.cursor==Cursor(alice,'chat',head['generation'],1,3,0)
+            assert ended.end is not None and ended.end.end_id==signal['end_id']
+            assert status('chat')[0]==ended
+            invited_for_status=auth/'invited.json';saved_for_status=invited_for_status.read_bytes()
+            def revoke_after_read(*args):
+                invited_for_status.write_text(json.dumps(['bob']))
+                return actual_status(*args)
+            from cj_message.auth_boundary import AccessBlocked
+            try:
+                with patch.object(source_status_v1,'SourceStatus',side_effect=revoke_after_read):
+                    try:status('chat')
+                    except AccessBlocked:pass
+                    else:raise AssertionError('source status escaped final fresh admission')
+            finally:invited_for_status.write_bytes(saved_for_status)
+            print('PASS source-status-v1 atomic owned head/explicit open/genuine end, no finish/write, current epoch, foreign/absent/inactive/corrupt denial, M/chat locks, callback lifetime and final fresh AUTH')
             assert post('/internal/v1/conversation-end',end)['end']==signal
             assert post(read,dict(query,mode='conversation_end'))['end']==signal
             post('/internal/v1/conversation-end',end,'bob',503)
