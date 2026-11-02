@@ -151,6 +151,17 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def with_enabled_source_and_travel(self,query,policy,selection,project):
+        """MESSAGE-SOURCE@2. No nested public hold_current/repository escape."""
+        from .source_v2 import with_source_and_travel
+        self._check()
+        def admit():
+            self._check()
+            return self._principal
+        result=with_source_and_travel(self._service,self._principal,query,policy,selection,admit,project)
+        self._check()
+        return result
+
 
 class Boundary:
     """Server composition only. resolve_repository is a server-owned mapping.
