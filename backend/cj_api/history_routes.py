@@ -3,13 +3,12 @@ import base64
 from dataclasses import asdict
 import json
 import re
-from urllib.parse import parse_qsl
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from .history_config import CursorBinding, CursorResyncRequired, CursorUnavailable, HistoryWireConfiguration
-from .message_routes import _error, _token
+from .message_routes import BodyError, _body_error, _error, _query_pairs, _read_octets, _token
 from .generated import (MessageReceipt, ConversationSummary, MessageHistoryItem, MessageDraftSnapshot,
     ConversationPageResponse, MessageHistoryResponse, MessageDraftReadResponse, MessageDraftSaveResponse)
 
@@ -38,18 +37,27 @@ def _raw64(raw):
 
 
 def _query(request, required, optional=()):
-    raw = request.scope['query_string'].decode('ascii')
-    if re.search(r'%(?![0-9a-fA-F]{2})',raw):
-        raise ValueError('Invalid encoding')
-    pairs = parse_qsl(raw,keep_blank_values=True,strict_parsing=True,encoding='utf-8',errors='strict')
     result = {}
-    for key,value in pairs:
+    for key,value in _query_pairs(request):
         if key in result or key not in (*required,*optional) or not value:
             raise ValueError('Unsupported query')
         result[key] = value  # opaque strings preserved, exactly one decode
     if not set(required) <= set(result):
         raise ValueError('Required query missing')
     return result
+
+
+def _message_id_query(request, max_bytes):
+    """One original message ID, or the fixed input-failure response."""
+    try:
+        mid = _query(request,('message_id',))['message_id']
+        if not mid.strip() or '\x00' in mid:
+            raise ValueError('Invalid original message ID')
+        if len(mid.encode('utf-8')) > max_bytes:
+            return _error(request,413,'MESSAGE_ID_TOO_LARGE','input','failed','do_not_retry')
+    except (ValueError,UnicodeError):
+        return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
+    return mid
 
 
 def _number(raw, minimum, maximum):
@@ -199,19 +207,10 @@ def register_history_routes(app, boundary=None, configuration=None, environment=
         prepared = prepare(request,('conversation_id','generation','expected_revision'))
         if isinstance(prepared,JSONResponse):return prepared
         token,query = prepared
-        media=request.headers.getlist('content-type')
-        if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream'
-                or request.headers.get('content-encoding','identity').lower()!='identity'):
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
-        chunks=[];size=0
         try:
-            async for chunk in request.stream():
-                size+=len(chunk)
-                if size>configuration.max_draft_bytes:
-                    return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-                chunks.append(chunk)
-            raw=b''.join(chunks)
+            raw=await _read_octets(request,configuration.max_draft_bytes)
             raw.decode('utf-8')
+        except BodyError as exc:return _body_error(request,exc)
         except UnicodeError:return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         except Exception:return failure(request,True)
         def write_and_project():

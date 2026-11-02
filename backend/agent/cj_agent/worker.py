@@ -22,6 +22,7 @@ from cj_needs.domain import Denied as NeedsDenied
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_usage.local_provider_exit import BudgetExceeded, BudgetUnknown
 from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
+from cj_place.draft_source import PlaceSourceUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
 from .provider import FakeProvider, ProviderFailed, ProviderUnknown
@@ -101,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -118,6 +119,7 @@ class RunWorker:
         self.edit_publisher=edit_publisher
         self.edit_results=edit_results
         self.tools=tools
+        self.place_sources=place_sources
 
     def process(self, limit=20):
         outcomes = []
@@ -202,7 +204,7 @@ class RunWorker:
                     if draft and state.draft_outcome is not None:
                         raise Conflict('draft result already recorded before invocation')
                     check_needs=None
-                    if draft and effect is not None and self.drafts.content_version=='structured.2':
+                    if draft and effect is not None and (self.drafts.content_version=='structured.2' or self.place_sources is not None):
                         check_needs=leases.enter_context(self.drafts.hold_for_publication(binding))
                         check_needs()
                     elif draft and self.needs_lease is not None:
@@ -225,6 +227,7 @@ class RunWorker:
                         if context is not None:context.check(binding)
                         if check_memory is not None:check_memory()
                         if check_needs is not None:check_needs()
+                        if draft and effect is not None and self.place_sources is not None:self.place_sources.check_data(binding)
                         if deadline is not None:deadline()
                     previous_check=self._publication_check
                     if self.message_context is not None and effect is not None:
@@ -241,7 +244,7 @@ class RunWorker:
                             raise Conflict('state changed during publication')
                         tx.put(updated)
                         state = updated
-        except (NeedsDenied, LeaseUnavailable, Denied, RuntimeDenied, RuntimeUnknown) as error:
+        except (NeedsDenied, LeaseUnavailable, Denied, RuntimeDenied, RuntimeUnknown,PlaceSourceUnavailable) as error:
             if publication_started:
                 raise _PublicationUncertain() from error
             raise
@@ -302,7 +305,7 @@ class RunWorker:
             messages = ([{'role': 'user', 'content': text}] if self.memory_run is None
                         else self.memory_run.messages(text))
             sources=None
-            structured=self.drafts.content_version=='structured.2'
+            structured=self.drafts.content_version=='structured.2' or self.place_sources is not None
             if structured:
                 if self.message_context is None:raise DraftRejected('canonical original message context required')
                 _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)
@@ -354,7 +357,7 @@ class RunWorker:
                               needs_lease=self.needs_lease, budget_exit=self.budget_exit,
                               memory=self.memory,
                               message_context=self.message_context,
-                              tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,
+                              tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -375,7 +378,7 @@ class RunWorker:
                 raise
             current = self._event(binding, current, 'unknown')
             return self._finish(receipt, current)
-        except (LeaseUnavailable, _PublicationUncertain, RuntimeUnknown):
+        except (LeaseUnavailable, _PublicationUncertain, RuntimeUnknown,PlaceSourceUnavailable):
             current = self.runs.snapshot(binding)
             if self.message_context is not None and current.status=='queued':
                 raise

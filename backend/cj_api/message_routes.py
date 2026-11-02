@@ -28,28 +28,67 @@ def _token(request):
     return token
 
 
+def _query_pairs(request):
+    raw = request.scope['query_string'].decode('ascii')
+    if re.search(r'%(?![0-9a-fA-F]{2})', raw):
+        raise ValueError('Invalid query encoding')
+    return parse_qsl(raw, keep_blank_values=True, strict_parsing=True, encoding='utf-8', errors='strict')
+
+
 class BodyError(Exception):
     def __init__(self,status,code):
         self.status,self.code=status,code
 
 
-async def _read_body(request,max_body_bytes):
+def _require_octets(request):
     media=request.headers.getlist('content-type')
     if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream'
             or request.headers.get('content-encoding','identity').lower()!='identity'):
         raise BodyError(415,'UNSUPPORTED_MEDIA_TYPE')
+
+
+async def _stream_octets(request,max_body_bytes):
+    """Bounded body bytes. Stream faults stay with the caller's own mapping."""
     chunks,total=[],0
+    async for chunk in request.stream():
+        total+=len(chunk)
+        if total>max_body_bytes:
+            raise BodyError(413,'BODY_TOO_LARGE')
+        chunks.append(chunk)
+    return b''.join(chunks)
+
+
+async def _read_octets(request,max_body_bytes):
+    _require_octets(request)
+    return await _stream_octets(request,max_body_bytes)
+
+
+async def _read_body(request,max_body_bytes):
     try:
-        async for chunk in request.stream():
-            total+=len(chunk)
-            if total>max_body_bytes:
-                raise BodyError(413,'BODY_TOO_LARGE')
-            chunks.append(chunk)
+        return await _read_octets(request,max_body_bytes)
     except BodyError:
         raise
     except Exception as exc:
         raise BodyError(503,'BODY_UNAVAILABLE') from exc
-    return b''.join(chunks)
+
+
+def _body_error(request,exc):
+    return _error(request,exc.status,exc.code,'input','failed','do_not_retry')
+
+
+class ReadInterrupted(Exception):
+    pass
+
+
+def _sanitized_read(read):
+    # Only interruptions originating inside the synchronous reader are
+    # sanitized. Cancellation of the outer HTTP await still propagates.
+    try:
+        return read()
+    except BaseException as exc:
+        if isinstance(exc,Exception):
+            raise
+        raise ReadInterrupted() from None
 
 
 def register_message_routes(app, boundary=None, max_body_bytes=None):
@@ -156,11 +195,7 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
         if token is None:
             return _error(request, 401, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
         try:
-            raw_query = request.scope['query_string'].decode('ascii')
-            if re.search(r'%(?![0-9a-fA-F]{2})', raw_query):
-                raise ValueError('Invalid query encoding')
-            pairs = parse_qsl(raw_query, keep_blank_values=True, strict_parsing=True,
-                              encoding='utf-8', errors='strict')
+            pairs = _query_pairs(request)
             if (len(pairs) != 1 or pairs[0][0] != 'message_id' or not pairs[0][1].strip()):
                 raise ValueError('One original message ID required')
             message_id = pairs[0][1]  # decoded exactly once, never normalized or stripped
@@ -176,11 +211,7 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
         if token is None:
             return _error(request, 401, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
         try:
-            raw_query = request.scope['query_string'].decode('ascii')
-            if re.search(r'%(?![0-9a-fA-F]{2})', raw_query):
-                raise ValueError('Invalid query encoding')
-            pairs = parse_qsl(raw_query, keep_blank_values=True, strict_parsing=True,
-                              encoding='utf-8', errors='strict')
+            pairs = _query_pairs(request)
             query = dict(pairs)
             if (len(query) != len(pairs) or not {'conversation_id'} <= query.keys()
                     or not query.keys() <= {'conversation_id', 'message_id'}

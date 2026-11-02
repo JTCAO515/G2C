@@ -4,23 +4,12 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from typing import Callable
-from .domain import Command, InvalidInput, Unavailable
+from .domain import Command, InvalidInput, Unavailable, strict_object
 
 
 def parse_manual(raw):
     # Reuse the strict Command decoder after adding ONLY server-derived source fields.
-    if type(raw) is not bytes or len(raw) > 32768:
-        raise InvalidInput('bytes required')
-    def unique(pairs):
-        result = {}
-        for k, v in pairs:
-            if k in result: raise InvalidInput('duplicate field')
-            result[k] = v
-        return result
-    try:
-        obj = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
-    except (ValueError, UnicodeError):
-        raise InvalidInput('invalid JSON') from None
+    obj = strict_object(raw)
     fields = set(Command.__dataclass_fields__) - {'raw', 'source_id', 'source_version'}
     if type(obj) is not dict or set(obj) != fields:
         raise InvalidInput('manual fields only; source and approval are server-owned')

@@ -4,11 +4,9 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from .generated import FeasibilityCurrentResponse
 from .history_routes import _query
-from .message_routes import _error,_token
+from .message_routes import _error,_sanitized_read,_token
 from .feasibility_composition import CandidateDependencies
 from .feasibility_projection import encode_response
-
-class EvaluationInterrupted(Exception):pass
 
 def register_feasibility(app,dependencies=None):
     if dependencies is not None and type(dependencies) is not CandidateDependencies:
@@ -32,11 +30,8 @@ def register_feasibility(app,dependencies=None):
             def project(operation,context):
                 raw=modules['cj_feasibility.current_read'].project_current(operation,context,needs_id,limits=d.limits)
                 return encode_response(raw,request_id,needs_id,d.configuration.max_response_bytes)
-            try:return reader.read(token,project)
-            except BaseException as exc:
-                if isinstance(exc,Exception):raise
-                raise EvaluationInterrupted() from None
-        try:return Response(content=await run_in_threadpool(invoke),media_type='application/json')
+            return reader.read(token,project)
+        try:return Response(content=await run_in_threadpool(_sanitized_read,invoke),media_type='application/json')
         except modules['cj_auth.read_context'].ReadAdmissionFailure as exc:
             auth=modules['cj_auth.interfaces']
             if exc.status is auth.AdmissionStatus.DENIED:

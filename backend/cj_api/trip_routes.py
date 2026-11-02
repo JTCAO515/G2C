@@ -5,7 +5,7 @@ from starlette.concurrency import run_in_threadpool
 from .generated import (TripActionResponse,TripActionQueryResponse,TripDetailResponse,TripListResponse,TripProposalResponse,
                         SourceTripDetailResponse,SourceTripListResponse,SourceTripProposalResponse)
 from .history_routes import _query,_number,PrivateOutputTooLarge
-from .message_routes import _error,_token
+from .message_routes import BodyError,_body_error,_error,_read_octets,_token
 from .trip_composition import TripWireConfiguration
 from .trip_projection import parse_action,receipt_projection,trip_projection,proposal_projection,source_representation
 
@@ -89,17 +89,9 @@ def register_trip_routes(app,boundary=None,configuration=None,modules=None):
         prepared=prepare(request)
         if isinstance(prepared,JSONResponse):return prepared
         token,_,source_view=prepared
-        media=request.headers.getlist('content-type')
-        if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream'
-                or request.headers.get('content-encoding','identity').lower()!='identity'):
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
-        chunks=[];size=0
         try:
-            async for chunk in request.stream():
-                size+=len(chunk)
-                if size>configuration.max_action_bytes:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-                chunks.append(chunk)
-            action=parse_action(b''.join(chunks),domain)
+            action=parse_action(await _read_octets(request,configuration.max_action_bytes),domain)
+        except BodyError as exc:return _body_error(request,exc)
         except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         except Exception:return failure(request,True)
         return await invoke(request,token,'act',action,source_view)

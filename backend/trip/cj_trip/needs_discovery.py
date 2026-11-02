@@ -7,6 +7,7 @@ from .domain import Denied,ProposalDetail,packed
 
 
 class NeedsDiscovery:
+    content_versions=('structured.2',)
     def __init__(self,actions):self.actions=actions
 
     def read(self,repository,query,encode):
@@ -63,7 +64,7 @@ class NeedsDiscovery:
                 cur=tx.cur;repository._lock_scope(cur)
                 detail=ProposalDetail(*repository._proposal(cur,pid));p=detail.proposal
                 if (p.basis_version!='needs-run-'+binding.run_id or p.expected_version!=0
-                        or json.loads(p.content).get('content_version')!='structured.2'):raise Denied('original structured planning candidate required')
+                        or json.loads(p.content).get('content_version') not in self.content_versions):raise Denied('original structured planning candidate required')
                 retained=json.loads(raw)
                 if packed(retained)!=raw:raise Denied('canonical planning source required')
                 profile,context=actions.planning_context(cur,repository,pid,retained)
@@ -74,3 +75,8 @@ class NeedsDiscovery:
                     planning_context=identity,proposal=detail))
                 check();repository.guard('needs_discovery')
                 return encoded
+
+
+class PlaceNeedsDiscovery(NeedsDiscovery):
+    """Explicit appended reader; the old discovery keeps its format gate."""
+    content_versions=('structured.1','structured.2')

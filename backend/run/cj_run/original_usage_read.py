@@ -7,8 +7,8 @@ from dataclasses import dataclass
 import inspect
 import json
 from cj_message.auth_boundary import Boundary, HistoryReadContext
-from .core import Binding, Cursor, State
-from .postgres import Repository, Recovery
+from .core import Binding
+from .postgres import Repository
 from .usage_binding import UsageBinding
 
 
@@ -49,11 +49,9 @@ def _association(repository, binding):
     # Use the canonical public recovery implementation with explicit strict close.
     # The default legacy recovery behavior remains compatible for old consumers.
     result = Repository.recover(repository, binding, require_clean_close=True)
-    if (type(result) is not Recovery or type(result.state) is not State or type(result.cursor) is not Cursor
-            or result.state.binding != binding or result.cursor.binding != binding
-            or type(result.cursor.epoch) is not str or not result.cursor.epoch
-            or type(result.cursor.after) is not int or result.cursor.after != 0
-            or type(result.cursor.through) is not int or result.cursor.through != result.state.sequence):
+    if (result.state.binding != binding or result.cursor.binding != binding
+            or not result.cursor.epoch or result.cursor.after != 0
+            or result.cursor.through != result.state.sequence):
         raise UsageAssociationUnavailable('original RUN recovery unavailable')
     usage = result.state.usage
     if type(usage) is not UsageBinding:
