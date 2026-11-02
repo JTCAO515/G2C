@@ -15,7 +15,7 @@ from .model_v2 import NoEligibleSource
 
 
 class IncrementalProducer:
-    def __init__(self,collection,submit,*,max_payload_bytes,max_conversations=100):
+    def __init__(self,collection,submit,*,max_payload_bytes,max_conversations):
         if submit is None or type(max_conversations) is not int or not 1<=max_conversations<=100:
             raise ValueError('explicit bounded producer composition required')
         if type(max_payload_bytes) is not int or not 1<=max_payload_bytes<=262144:

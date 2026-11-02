@@ -18,7 +18,9 @@ for the actual host's supplied signed tokens, then invokes the original B local
 background host. It is passed through the existing run_once background_jobs seam.
 There is no new default worker, daemon, environment secret or public dispatch API.
 
-One poll handles at most 100 enabled conversations and one 1–100-message range
+The host must explicitly inject max_payload_bytes and max_conversations (1–100);
+neither has an implicit default. One poll handles at most that configured number
+of enabled conversations and one 1–100-message range
 per conversation. The source's actual persisted cursor determines after. Job and
 attempt IDs are deterministic hashes of the captured scope and exact source
 query; enqueue retains the original bytes. Known pending C work can begin once,

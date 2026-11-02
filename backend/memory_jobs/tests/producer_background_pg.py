@@ -68,7 +68,7 @@ def exercise(root,path):
     originals=[]
     def submit(token,jid,attempt,query,prepared):
         result=jobs.prepare(token,JobRequest(jid,attempt,query,None,prepared));originals.append(result);return result
-    intake=IncrementalProducer(c,submit,max_payload_bytes=262144)
+    intake=IncrementalProducer(c,submit,max_payload_bytes=262144,max_conversations=100)
     combined=ProducerHost(intake,lambda:[dev_auth.token(auth,who,5) for who in subjects],LocalBackgroundHost(jobs,auth))
     model=Observed()
     def expect(response):

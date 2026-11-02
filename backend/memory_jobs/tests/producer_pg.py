@@ -30,7 +30,7 @@ def exercise(conninfo,auth):
     def submit(token,jid,attempt,query,prepared):
         submissions.append((jid,attempt,query,prepared))
         return dict(job_id=jid,attempt_id=attempt)
-    producer=IncrementalProducer(c,submit,max_payload_bytes=262144)
+    producer=IncrementalProducer(c,submit,max_payload_bytes=262144,max_conversations=100)
     alice=tokens['producer-alice'];bob=tokens['producer-bob']
     assert producer.poll(alice)==() and producer.poll(bob)==() and submissions==[]
     # An existing Memory scope without history consent is still default off;
@@ -62,7 +62,7 @@ def exercise(conninfo,auth):
         assert producer.poll(alice)==() and len(submissions)==1
         c.transition(alice,jid,attempt,'unknown')
         fresh=create_collection_app(conninfo_path=conninfo,auth_dir=auth,resolve_collection=resolve).state.memory_history.service
-        rebuilt=IncrementalProducer(fresh,submit,max_payload_bytes=262144)
+        rebuilt=IncrementalProducer(fresh,submit,max_payload_bytes=262144,max_conversations=100)
         assert rebuilt.poll(alice)==() and len(submissions)==1
         assert json.loads(fresh.query_original(alice,jid,attempt))['state']=='unknown'
         post('/v3/memory-history-actions',dict(action,action_id='disable',operation='disable',expected_source_version=1))
