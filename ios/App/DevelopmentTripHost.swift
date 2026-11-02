@@ -912,4 +912,135 @@ private struct DevelopmentVerificationTransport: ClientTransport {
     }
 }
 
+
+/// Actual keyless domain erasure, using each domain's accepted primitive. Key IDs
+/// are captured from existing canonical Keychain records; missing keys are never
+/// replaced or fabricated to construct a readable store.
+@MainActor private final class DevelopmentDeviceNativeStores {
+    let scope: AccountCleanupScope
+    let layout: DevelopmentDeviceNativeLayout
+    private let applicationID: String
+    private let keys: [MessageKeyPurpose: ScopedMessageKeyProvider]
+    let keyIDs: [MessageKeyPurpose: UUID]
+    init(scope: AccountCleanupScope, layout: DevelopmentDeviceNativeLayout) throws {
+        guard let applicationID = Bundle.main.bundleIdentifier else { throw CleanupFailure.unavailable }
+        self.scope = scope; self.layout = layout; self.applicationID = applicationID
+        var keys: [MessageKeyPurpose: ScopedMessageKeyProvider] = [:], ids: [MessageKeyPurpose: UUID] = [:]
+        for purpose in [MessageKeyPurpose.localMessageStorageV1, .localTripPendingV1, .localMemoryPendingV1,
+                        .localNeedsPendingV1, .localFeedbackPendingV1, .localOfflineTripSnapshotV1] {
+            let provider = try ScopedMessageKeyProvider(namespace: .init(environment: scope.environment, account: scope.account, purpose: purpose),
+                applicationIdentifier: applicationID, protection: .whenUnlockedThisDeviceOnly)
+            if let key = try provider.existing(expectedID: nil, for: provider.begin(.lookup)) { ids[purpose] = key.id }
+            keys[purpose] = provider
+        }
+        self.keys = keys; keyIDs = ids
+    }
+    private func provider(_ purpose: MessageKeyPurpose) throws -> (ScopedMessageKeyProvider, UUID) {
+        guard let provider = keys[purpose], let id = keyIDs[purpose] else { throw CleanupFailure.unavailable }
+        return (provider, id)
+    }
+    private var memoryBinding: MemoryBinding { .init(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation) }
+    private var tripBinding: TripBinding { .init(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation) }
+    func eraseFiles(for target: DeviceCleanupTarget) throws {
+        let captured = try layout.directories(for: target)
+        let firstPhysical = try layout.primaryURL(for: target)
+        if firstPhysical == nil && target != .feedbackPending { try layout.requireEmpty(for: target); return }
+        let url = firstPhysical?.resolvingSymlinksInPath() // Domain ctors retain their original root checks.
+        switch target {
+        case .encryptedMessage:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, _) = try provider(.localMessageStorageV1)
+            let scope = try StorageScope(environment: self.scope.environment.uuidString, account: self.scope.account.uuidString)
+            let adapter = try ExistingMessageKeyAdapter(provider: provider, scope: scope, namespace: provider.namespace)
+            let store = try EncryptedFileStorage(directory: url, keys: adapter)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalSnapshot(scope: scope)
+        case .tripPending:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localTripPendingV1)
+            let store = try TripPendingStore(directory: url, maximumBytes: 1_000_000, maximumRecords: 100,
+                binding: tripBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .memoryManual:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            let store = try MemoryPendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                binding: memoryBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .memoryLifecycle:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            let store = try MemoryManagementPendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                binding: memoryBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .memoryTyped:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            let store = try TypedMemoryPendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                binding: memoryBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .memoryHistory:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            let store = try MemoryHistoryPendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                binding: memoryBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .needsPending:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localNeedsPendingV1)
+            let binding = NeedsBinding(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation)
+            let store = try NeedsPendingStore(directory: url, maximumBytes: 1_048_576, maximumRecords: 100,
+                binding: binding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .feedbackPending:
+            let (provider, id) = try provider(.localFeedbackPendingV1)
+            let binding = FeedbackBinding(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation)
+            for directory in captured {
+                guard let physical = try directory.existingURLForTrustedHost() else { continue }
+                let store = try FeedbackPendingStore(directory: physical.resolvingSymlinksInPath(), maximumBytes: 100_000,
+                    maximumRecords: 100, binding: binding, expectedKeyID: id, provider: provider)
+                try directory.validateIdentity(); try store.clearLocalFiles()
+            }
+        default: throw CleanupFailure.unavailable // SDK/offline/paired handlers are explicitly supplied separately.
+        }
+        try layout.requireEmpty(for: target)
+    }
+    private func purpose(for target: DeviceCleanupTarget) throws -> MessageKeyPurpose {
+        let purpose: MessageKeyPurpose
+        switch target {
+        case .messageKey: purpose = .localMessageStorageV1
+        case .tripKey: purpose = .localTripPendingV1
+        case .memoryKey: purpose = .localMemoryPendingV1
+        case .needsKey: purpose = .localNeedsPendingV1
+        case .feedbackKey: purpose = .localFeedbackPendingV1
+        case .offlineKey: purpose = .localOfflineTripSnapshotV1
+        default: throw CleanupFailure.unavailable
+        }
+        return purpose
+    }
+    func eraseKey(for target: DeviceCleanupTarget) throws {
+        let purpose = try purpose(for: target)
+        try layout.requireEmpty(for: target) // Every shared sibling, not only the base journal.
+        guard let provider = keys[purpose] else { throw CleanupFailure.unavailable }
+        guard let id = keyIDs[purpose] else {
+            guard try provider.existing(expectedID: nil, for: provider.begin(.lookup)) == nil else { throw CleanupFailure.stale }
+            return
+        }
+        try provider.clear(expectedID: id, storageState: .confirmedEmpty, for: provider.begin(.clear))
+        guard try provider.existing(expectedID: nil, for: provider.begin(.lookup)) == nil else { throw CleanupFailure.exchangeUnknown }
+        try layout.requireEmpty(for: target)
+    }
+    func verifyKeyAbsent(for target: DeviceCleanupTarget) throws {
+        let purpose = try purpose(for: target)
+        try layout.requireEmpty(for: target)
+        guard let provider = keys[purpose], try provider.existing(expectedID: nil, for: provider.begin(.lookup)) == nil else { throw CleanupFailure.unavailable }
+    }
+}
+
 #endif
