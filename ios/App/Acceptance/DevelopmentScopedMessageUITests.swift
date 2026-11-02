@@ -210,6 +210,10 @@ import Foundation
                 for point in points { text("trip.map.status."+point.id,contains:language=="en" ? "no marker" : "不画点") }
             } else {
                 tap("trip.map.show")
+                if f.map_loading_failure == true {
+                    text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用")
+                    XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
+                } else {
                 for point in located {
                     let marker=visible({app.descendants(matching:.any).matching(identifier:"trip.map.marker."+point.id).firstMatch},id:"trip.map.marker."+point.id)
                     let coordinate=try XCTUnwrap(point.coordinate)
@@ -219,6 +223,7 @@ import Foundation
                     let actual=fields[3].split(separator:",").map(String.init)
                     XCTAssertEqual(actual.count,2)
                     XCTAssertEqual(Double(actual[0]),Double(coordinate.longitude));XCTAssertEqual(Double(actual[1]),Double(coordinate.latitude))
+                }
                 }
             }
             if f.map_loading_failure == true { text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用");for point in points { text("trip.map.name."+point.id,contains:point.name_zh);text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN") } }
