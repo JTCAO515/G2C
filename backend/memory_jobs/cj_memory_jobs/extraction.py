@@ -97,26 +97,23 @@ def _text(value, limit):
     return value
 
 
-def parse_output(raw: bytes, messages: tuple[HistoryMessage, ...],
-                 policy: CollectionPolicy) -> tuple[ParsedEntry, ...]:
-    """Validate a bounded response against the already-authorized source snapshot.
-
-    SourceSnapshot/Policy authorization and revalidation belong to the live
-    MESSAGE-SOURCE and publisher transaction; this pure function cannot enable
-    history, choose an owner, create a source, dispatch, confirm or save Memory.
-    """
+def _model_value(raw):
     if type(raw) is not bytes or not 0<len(raw)<=16384:
         raise InvalidExtraction('bounded original model bytes required')
     try:
         value=strict_object(raw)
     except (MemoryInvalidInput,RecursionError):
         raise InvalidExtraction('invalid extraction JSON') from None
+    return value
+
+
+def _value_entries(value,messages,max_entries,max_text_bytes,selector):
     if (type(value) is not dict or set(value)!={'version','entries'}
             or value['version']!='MEMORY-EXTRACT@1' or type(value['entries']) is not list
-            or len(value['entries'])>policy.max_entries):
+            or len(value['entries'])>max_entries):
         raise InvalidExtraction('explicit extraction envelope required')
     source={row.receipt.message_id:row for row in messages}
-    result=[];seen=set()
+    seen=set()
     for item in value['entries']:
         fields={'subject','slot','kind','text','extent','occurred_at','evidence'}
         if type(item) is not dict or set(item)!=fields:
@@ -125,8 +122,7 @@ def parse_output(raw: bytes, messages: tuple[HistoryMessage, ...],
         kind=_text(item['kind'],32);extent=_text(item['extent'],32)
         if kind not in ('fact','experience','preference','inference') or extent not in ('long_term','current'):
             raise InvalidExtraction('unsupported extraction kind or extent')
-        if subject not in policy.subjects or slot not in policy.slots:
-            raise CollectionUnavailable('canonical collection scope unavailable')
+        if selector is not None:selector(subject,slot)
         key=subject,slot,extent
         if key in seen:
             raise InvalidExtraction('duplicate canonical extraction slot')
@@ -139,17 +135,46 @@ def parse_output(raw: bytes, messages: tuple[HistoryMessage, ...],
             if type(ref) is not dict or set(ref)!={'message_id','quote'}:
                 raise InvalidExtraction('exact evidence reference required')
             mid=_text(ref['message_id'],32768)
-            quote=_text(ref['quote'],policy.max_text_bytes)
+            quote=_text(ref['quote'],max_text_bytes)
             if mid in used or mid not in source or quote not in source[mid].text:
                 raise InvalidExtraction('evidence does not match original source')
             used.add(mid);evidence.append(Evidence(mid,quote))
-        entry=Entry(subject,slot,kind,_text(item['text'],policy.max_text_bytes),extent,
+        entry=Entry(subject,slot,kind,_text(item['text'],max_text_bytes),extent,
                     _text(item['occurred_at'],4096),tuple(evidence))
+        yield entry
+
+
+def decode_output(raw: bytes, messages: tuple[HistoryMessage, ...]) -> tuple[Entry,...]:
+    """Intrinsic stored-data decoding only; never approval or directness.
+
+    Historical receipt reads compare these data to actual canonical operations;
+    every new publication still uses parse_output with its explicit live policy.
+    """
+    return _decode_value(_model_value(raw),messages)
+
+
+def _decode_value(value,messages):
+    return tuple(_value_entries(value,messages,100,4096,None))
+
+
+def parse_output(raw: bytes, messages: tuple[HistoryMessage, ...],
+                 policy: CollectionPolicy) -> tuple[ParsedEntry, ...]:
+    """Classify under explicit policy, without creating a collection/save permit."""
+    return _parse_value(_model_value(raw),messages,policy)
+
+
+def _parse_value(value,messages,policy):
+    source={row.receipt.message_id:row for row in messages}
+    def selector(subject,slot):
+        if subject not in policy.subjects or slot not in policy.slots:
+            raise CollectionUnavailable('canonical collection scope unavailable')
+    result=[]
+    for entry in _value_entries(value,messages,policy.max_entries,policy.max_text_bytes,selector):
         if policy.content_allowed(entry) is not True:
             raise CollectionUnavailable('content collection unavailable')
         # Model kind/quote cannot certify explicit consent. A trusted policy must
         # independently classify source statements, and inference never promotes.
-        direct=(kind!='inference' and policy.direct_statement(entry,
-                tuple(source[e.message_id] for e in evidence)) is True)
+        direct=(entry.kind!='inference' and policy.direct_statement(entry,
+                tuple(source[e.message_id] for e in entry.evidence)) is True)
         result.append(ParsedEntry(entry,direct))
     return tuple(result)
