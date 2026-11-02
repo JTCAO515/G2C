@@ -9,3 +9,10 @@ public for physical local cleanup only. Ciphertext read/write and plaintext acce
 stay internal; App factory remains closed. The same store must be retained by the
 future host so unresolved writes continue to block cleanup. No device-wide or
 server cleanup completion is implied.
+M3 #408: `OfflinePolicy.acceptedTrip` explicitly supplies JT's fourteen-day maximum
+(1,209,600 elapsed seconds). `deadline(syncedAt:)` derives a new deadline for each
+successful sync; overflow and invalid time fail closed. Missing policy still denies
+reads and a larger later policy cannot extend an old authenticated deadline.
+Injected-clock tests cover the exact boundary and renewal. This policy alone does
+not enable the App factory: CLEANUP@1.0 and trusted session/clock host integration
+remain required by #24. Device offline evidence stays in #29.
