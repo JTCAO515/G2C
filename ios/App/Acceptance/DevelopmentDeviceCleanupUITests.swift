@@ -60,8 +60,14 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 25), .completed, id)
         button.tap()
     }
-    func contains(_ id: String, _ expected: String) {
-        let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: app.staticTexts[id])
+    func contains(_ id: String, _ expected: String, towardTop: Bool = true) {
+        let target = app.staticTexts[id]
+        for _ in 0..<30 {
+            if target.exists { break }
+            if towardTop { app.swipeDown() } else { app.swipeUp() }
+        }
+        XCTAssertTrue(target.exists, id)
+        let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 25), .completed, id)
     }
     func account(_ language: String = "en") {
@@ -119,7 +125,7 @@ import Foundation
         XCTAssertEqual(back.count, 1); back.element.tap()
         tap("trips.refresh"); tap("trips.item." + f.trip_id!)
         tap("offline.sync")
-        contains("offline.sync.status", "Offline snapshot saved from this successful formal-trip read.")
+        contains("offline.sync.status", "Offline snapshot saved from this successful formal-trip read.", towardTop: false)
     }
     func initial(_ f: Fixture, seedPrivateDraft: Bool = false) async throws -> String {
         try launch(f); account()
