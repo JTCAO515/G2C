@@ -1,5 +1,7 @@
 """Untrusted model-output boundary. Parsed data is never a collection/save permit."""
 from dataclasses import dataclass
+from hashlib import sha256
+import json
 from typing import Callable
 
 from cj_memory.domain import InvalidInput as MemoryInvalidInput, strict_object
@@ -33,6 +35,34 @@ class ParsedEntry:
     direct_statement: bool
     # Classification data only: publisher must reacquire current source/Memory
     # fences and commit a real MEMORY receipt before reporting saved/active.
+
+
+@dataclass(frozen=True)
+class PublicationIdentity:
+    operation_id: str
+    item_id: str
+    source_id: str
+
+
+def publication_identity(scope: str, entry: Entry,
+                         messages: tuple[HistoryMessage, ...],
+                         context_key: tuple[str,str] | None) -> PublicationIdentity:
+    """Stable data keys, independent of task, mode, output wording and language.
+
+    The accepted original message revisions and canonical subject/slot/context
+    determine identity. A changed model value/kind must conflict on original bytes,
+    not mint another item to evade the same-source rule. No key grants authority.
+    """
+    source={row.receipt.message_id:row.receipt for row in messages}
+    references=[]
+    for evidence in entry.evidence:
+        row=source[evidence.message_id]
+        references.append((row.conversation_id,row.generation,row.sequence,row.message_id,row.input_sha256))
+    value=dict(version='MEMORY-PUBLICATION-IDENTITY@1',scope_digest=sha256(scope.encode('utf-8')).hexdigest(),
+               references=sorted(references),subject=entry.subject,slot=entry.slot,
+               extent=entry.extent,context=context_key)
+    digest=sha256(json.dumps(value,ensure_ascii=True,sort_keys=True,separators=(',',':')).encode('ascii')).hexdigest()
+    return PublicationIdentity('history-op-v1:'+digest,'history-item-v1:'+digest,'history-v1:'+digest)
 
 
 @dataclass(frozen=True)

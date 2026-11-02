@@ -4,7 +4,8 @@ import hashlib
 import json
 import unittest
 
-from cj_memory_jobs.extraction import CollectionPolicy,CollectionUnavailable,InvalidExtraction,parse_output
+from cj_memory_jobs.extraction import (CollectionPolicy,CollectionUnavailable,InvalidExtraction,
+                                      parse_output,publication_identity)
 from test_jobs import message
 
 
@@ -91,3 +92,25 @@ class ExtractionBoundary(unittest.TestCase):
         for change in ({'subjects':frozenset()},{'slots':{'diet.spicy'}},{'max_entries':True},
                        {'max_text_bytes':0},{'content_allowed':None},{'direct_statement':None}):
             with self.assertRaises(ValueError):replace(self.policy,**change)
+
+    def test_same_source_canonical_slot_does_not_rekey_model_rewording_or_kind(self):
+        entry=parse_output(self.raw(),self.messages,self.policy)[0].entry
+        first=publication_identity('scope-a',entry,self.messages,None)
+        for change in ({'text':'I do not eat spicy food'},{'kind':'inference'},
+                       {'occurred_at':'another display value'},
+                       {'evidence':(replace(entry.evidence[0],quote='I do not eat spicy food'),)}):
+            self.assertEqual(first,publication_identity('scope-a',replace(entry,**change),self.messages,None))
+
+    def test_identity_keeps_actor_and_context_isolation(self):
+        entry=parse_output(self.raw(),self.messages,self.policy)[0].entry
+        first=publication_identity('scope-a',entry,self.messages,None)
+        self.assertNotEqual(first,publication_identity('scope-b',entry,self.messages,None))
+        current=replace(entry,extent='current')
+        self.assertNotEqual(publication_identity('scope-a',current,self.messages,('travel','one')),
+                            publication_identity('scope-a',current,self.messages,('travel','two')))
+
+    def test_original_message_revision_participates_in_stable_source_identity(self):
+        entry=parse_output(self.raw(),self.messages,self.policy)[0].entry
+        first=publication_identity('scope-a',entry,self.messages,None)
+        newer=(source_message('不吃辣 / I do not eat spicy food; new explicit source'),)
+        self.assertNotEqual(first,publication_identity('scope-a',entry,newer,None))
