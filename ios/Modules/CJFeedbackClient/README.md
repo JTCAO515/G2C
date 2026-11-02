@@ -5,11 +5,30 @@ Accepted callback edits now retire frozen preparation before any dispatch. Origi
 69d evidence and its independent FAIL remain historical; independent re-review is pending.
 
 Embeddable iOS 17 / macOS 14 Feedback domain client and English/Chinese SwiftUI
-form for Issue15/CJ023. Public live **POST is disabled**. No shell integration,
-second SDK, handwritten wire/date parser, key provider, service worker or customer
-support workbench is introduced.
+form for Issue15/CJ023. Ordinary construction remains read-only. The explicit
+`FeedbackClient(development:...)` factory supports FEEDBACK@1.0 only on a DEBUG
+Simulator loopback endpoint, with the current canonical SDK session and encrypted
+pending store. Release/remote activation is rejected. No second SDK or wire/date
+parser is introduced.
 
-## Fixed inputs and isolated preparation
+## Current App composition (#430)
+
+The account root opts in with `G2C_DEV_FEEDBACK_PROFILE=feedback-v1`. The real Run
+entry captures its sealed accepted MESSAGE receipt and same session operation;
+only the user's association toggle adds message/run refs. Memory uses general
+`references=[]`. Both editors start empty and own distinct clients/presentations
+and pending directories, with the canonical `localFeedbackPendingV1` device key.
+Account/selection changes fence old work; a language change preserves the original.
+Only a verified receipt for every durable pending action enables the explicit
+“Describe another problem” action. UNKNOWN and null queries never unlock it.
+
+The protected server-only locator is developer evidence, not a new diagnostic
+input field. App receipts show the historical source observation; missing external
+model/rule/tool details remain unavailable. Successful submission does not claim
+repair or training. Account cleanup of feedback pending files is tracked in #27;
+this connection does not claim the original cleanup operation/device bridge.
+
+## Historical isolated inputs and preparation
 
 - Clone base: `eeb9b9cdf11ff619494a7afd5cbef2833501df7d` from read-only cj-publish/Go2China.
 - Shared SDK consumer: `514e0e3a80bd9a3e34248122915d52c86ee46230`, imported unchanged
@@ -61,12 +80,13 @@ the presentation. Reentrant host callbacks are checked after returning; stale wo
 cannot select/query/clear the new UI state. Cancellation settles busy to unknown or
 unavailable while retaining frozen text and recovery information.
 
-The public client constructor cannot enable POST. Its UI shows submission unavailable
-and retains voluntary editing. Tests use an internal intercepted transport initializer
-with synthetic binding and credentials; that seam is not a production authorization.
-Original reads require explicit configured resources and existing encrypted pending.
-CJ006 owns eventual Answer/Memory integration and coordinated single-SDK App pinning.
-Do not combine this 201156 graph with an active d688/9dc graph in the same App.
+The ordinary public constructor cannot enable POST and retains voluntary editing.
+The explicit development factory above uses the canonical no-redirect bounded
+transport, permitting only the official feedback POST at its exact endpoint.
+Internal intercepted transports remain non-network test seams. Original reads
+require configured resources and existing encrypted pending. Current App builds
+use the accepted canonical sibling API/SDK graph; the isolated 201156 inputs above
+are historical and are not a second live SDK.
 
 ## Original action and recovery
 

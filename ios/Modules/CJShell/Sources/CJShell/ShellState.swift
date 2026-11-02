@@ -93,7 +93,7 @@ public final class ShellState {
     public var memoryPath: [MemoryRoute] = []
     public private(set) var draftRevision = UUID()
     public var draft = "" { didSet { draftRevision = UUID() } }
-    var messageBindingBlocked = false
+    public internal(set) var messageBindingBlocked = false
     @ObservationIgnored weak var originalUsageContainerHost: OriginalUsageContainerHost?
     @ObservationIgnored weak var usageContainerHost: UsageContainerHost?
     @ObservationIgnored weak var runContainerHost: RunContainerHost?
