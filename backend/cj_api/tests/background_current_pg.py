@@ -104,8 +104,8 @@ def exercise(root,path):
             assert conn.execute("SELECT count(*) FROM cj_run_background_job WHERE scope=%s AND job_id='no-eligible'",(owner,)).fetchone()==(0,)
             ledger=conn.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=(SELECT ledger_scope FROM cj_run_background_job WHERE run_id=%s)',(original['run_id'],)).fetchone()[0]
             assert len(ledger['attempts'])==3  # two real MESSAGE calls and one actual BG call only
-        print('PASS PROTOTYPE actual paused-origin NoEligibleSource before B prepare/reserve/claim, zero new B job/Meter attempt, no fabricated empty model result')
-        print('PASS PROTOTYPE actual send.2/current Travel→joint source→one filtered Fake/Meter→canonical current Memory; stale Travel prevents even first model/claim and cannot redispatch; main acceptance UNRUN')
+        print('PASS local component actual paused-origin NoEligibleSource before B prepare/reserve/claim, zero new B job/Meter attempt, no fabricated empty model result')
+        print('PASS local component actual send.2/current Travel→joint source→one filtered Fake/Meter→canonical current Memory; stale Travel prevents even first model/claim and cannot redispatch; main acceptance UNRUN')
 
 
 if __name__=='__main__':

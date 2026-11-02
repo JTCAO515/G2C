@@ -71,7 +71,7 @@ def exercise(root,path):
             owner=scope_for(ISSUER,subject)
             assert conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(owner,)).fetchone()[0]==(1 if case=='step' else 0)
         assert run_worker.run_once(database,model,auth,background_jobs=LocalBackgroundHost(jobs,auth))==[] and model.calls==1
-    print('PASS PROTOTYPE actual step=1/tools=0, memory output overrun, in-flight clock limit and source-preparation publication deadline; no canonical output past any limit, original UNKNOWN/settled financial states retained')
+    print('PASS local component actual step=1/tools=0, memory output overrun, in-flight clock limit and source-preparation publication deadline; no canonical output past any limit, original UNKNOWN/settled financial states retained')
 
 
 if __name__=='__main__':

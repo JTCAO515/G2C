@@ -1,4 +1,4 @@
-"""Prototype actual background ownership/revocation, no real account/provider."""
+"""Actual local background ownership/revocation; real account/provider UNRUN."""
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
 import json,os,sys,tempfile,threading,time
@@ -87,7 +87,7 @@ def exercise(root,path):
             progress=runtime.host_gateway(checker_for(auth)).resume(claims.subject_digest,operation['operation_id'])
             assert progress['status']=='unknown' and progress['reason']=='original_usage_outcome_unresolved'
             assert retained()==(1,1,0)
-            print('PASS PROTOTYPE actual BG physical lease blocks cleanup/device continuation; fence rejects late output; original unknown billing/data retained after worker exits')
+            print('PASS local component actual BG physical lease blocks cleanup/device continuation; fence rejects late output; original unknown billing/data retained after worker exits')
         finally:
             release.set();thread.join(20);assert not thread.is_alive()
 

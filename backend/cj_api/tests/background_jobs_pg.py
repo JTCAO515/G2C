@@ -1,4 +1,4 @@
-"""Prototype integration; final acceptance must use C's filtered processing V2."""
+"""Registered-chain integration using C's actual filtered processing V2."""
 from datetime import datetime,timedelta,timezone
 import hashlib,json,os,sys,tempfile,time,subprocess
 from pathlib import Path
@@ -107,7 +107,7 @@ def exercise(root,conninfo):
         attempt=next(a for row in ledgers for key,a in row[0]['attempts'].items() if key==unknown['meter_attempt_id'])
         assert attempt['state']=='unknown' and attempt['receipt'] is None and attempt['cancelled'] is True
     assert failing.calls==1
-    print('PASS PROTOTYPE original unknown claim retained, zero redispatch, source-independent status and cancel after consent withdrawal without financial release')
+    print('PASS local component original unknown claim retained, zero redispatch, source-independent status and cancel after consent withdrawal without financial release')
     # C commits an actual typed result, then its outer MESSAGE ACK is lost.
     # Reconciliation after withdrawal confirms that receipt without republishing.
     from unittest.mock import patch
@@ -154,7 +154,7 @@ def exercise(root,conninfo):
         expected_generation=head['generation'],expected_epoch=0,expected_source_version=3)).encode())
     actual=ack_jobs.reconcile(token,'ack-job','ack-attempt')
     assert actual['state']=='completed' and actual['meter_attempt_id']==ack_original['meter_attempt_id'] and ack_model.calls==1
-    print('PASS PROTOTYPE C actual typed publication committed/outer ACK lost; original receipt reconciliation after withdrawal confirms completion with zero provider/publication resend')
+    print('PASS local component C actual typed publication committed/outer ACK lost; original receipt reconciliation after withdrawal confirms completion with zero provider/publication resend')
     # A separate real quota has exactly one call, consumed by the accepted
     # normal MESSAGE worker. The new job must be denied before any model call.
     limit_document=json.loads(path.read_text());limit_document['current']['meter']['budget']=1
@@ -184,7 +184,7 @@ def exercise(root,conninfo):
     with psycopg.connect(**json.loads(conninfo.read_text())) as conn:
         ledgers=conn.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchall()
         assert all(limit_original['meter_attempt_id'] not in row[0]['attempts'] for row in ledgers)
-    print('PASS PROTOTYPE actual shared quota exhausted by MESSAGE prevents background model outflow, no second Meter or forged reserve/receipt')
+    print('PASS local component actual shared quota exhausted by MESSAGE prevents background model outflow, no second Meter or forged reserve/receipt')
     # New process: original metadata remains readable without a model adapter,
     # C source grant, or current quota context. No new attempt can be claimed.
     child = """import sys,json,uuid
@@ -202,7 +202,7 @@ print(json.dumps({key:value[key] for key in ('run_id','meter_attempt_id','operat
     actual=subprocess.check_output([sys.executable,'-B','-c',child,str(conninfo),str(auth)],env=dict(os.environ,PYTHONPATH=os.environ['PYTHONPATH']+os.pathsep+str(ROOT/'scripts')),text=True)
     child_value=json.loads(actual)
     assert child_value['run_id']==unknown['run_id'] and child_value['meter_attempt_id']==unknown['meter_attempt_id']
-    print('PASS PROTOTYPE fresh-process original metadata without C source or current quota; same original run/attempt/hash, no dispatch capability')
+    print('PASS local component fresh-process original metadata without C source or current quota; same original run/attempt/hash, no dispatch capability')
     # The registered schema itself is a trust boundary, independent of Python.
     owner=scope_for(ISSUER,'bg-a');other=scope_for(ISSUER,'bg-limit')
     config=json.loads(conninfo.read_text())
@@ -256,7 +256,7 @@ print(json.dumps({key:value[key] for key in ('run_id','meter_attempt_id','operat
         assert conn.execute('SELECT count(*) FROM cj_run_background_job WHERE scope=%s',(other,)).fetchone()==(0,)
         assert conn.execute('SELECT count(*) FROM cj_run_background_job WHERE scope=%s',(owner,)).fetchone()==(3,)
     print('PASS registered background schema: nonempty down refusal, cross-owner read/write, immutable original/no redispatch, runtime no DELETE/TRUNCATE, dedicated cleanup no-intent denial and actual original account RUN erasure with other owner unchanged')
-    print('PASS PROTOTYPE actual signed source/C policy + original run_once/one new Fake model/one same-Meter attempt/C typed publication; no fake MESSAGE or terminal RUN reuse; filtered-v2 candidate tested; registered-migration/main acceptance UNRUN')
+    print('PASS local component actual signed source/C policy + original run_once/one new Fake model/one same-Meter attempt/C typed publication; no fake MESSAGE or terminal RUN reuse; registered chain / actual C filtered V2; real provider/cloud/device UNRUN')
 
 
 if __name__=='__main__':
