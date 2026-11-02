@@ -16,14 +16,16 @@ BUNDLE = 'space.go2china.cleanup.component'
 CASES = ['testActualCommittedUnknownReopen', 'testActualPreparationUnknown', 'testActualFullInventoryBlocked']
 B_DOMAINS = ('business/message', 'checkpoints/run', 'business/usage', 'business/feedback-private-actions')
 # Explicit operator inventory, independent of the registry under test. Its full
-# snapshot must include actual C/unimplemented and all DEVICE@2 domains.
+# snapshot must include actual C/unimplemented and all DEVICE@3 domains.
 FULL_INVENTORY = ('business/message','business/usage','business/memory-authoritative','business/trip-authoritative',
     'business/needs-current-planning','business/feedback-private-actions','business/cleanup-metadata',
     'business/memory-management-actions','checkpoints/run','memory-derived',
     'device-cache/encrypted-message-file','device-cache/sdk-session-keychain','device-cache/message-key-keychain',
     'device-cache/trip-pending-file','device-cache/offline-trip','device-cache/feedback-pending','device-cache/feedback-key-keychain',
     'device-cache/memory-manual-pending','device-cache/memory-lifecycle-pending','device-cache/memory-typed-pending',
-    'device-cache/memory-key-keychain','device-cache/needs-pending','device-cache/needs-key-keychain','external-processing')
+    'device-cache/memory-key-keychain','device-cache/needs-pending','device-cache/needs-key-keychain',
+    'device-cache/memory-history-pending','device-cache/trip-scoped-pending','device-cache/needs-planning-pending',
+    'device-cache/trip-key-keychain','device-cache/offline-key-keychain','device-cache/offline-write-residue','external-processing')
 
 
 def main():
