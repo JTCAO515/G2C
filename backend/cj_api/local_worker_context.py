@@ -25,16 +25,6 @@ def checker_for(auth_dir,*,account_retired=None):
         access)
 
 
-def account_checker_for(auth_dir,database):
-    """Current local business admission, including the committed retirement gate.
-
-    C history/collection hosts use this factory at every protected boundary.
-    Original-operation system maintenance deliberately remains separate.
-    """
-    from .local_account_admission import retired_for
-    return checker_for(auth_dir,account_retired=retired_for(database))
-
-
 class LocalBudgetRouter:
     def __init__(self, database, *, registrations=None):
         self.database=database

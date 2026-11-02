@@ -21,7 +21,7 @@ from cj_message.needs_binding import needs_scope_for
 from cj_agent.draft import trip_scope_for
 from cj_run.step_usage import ledger_scope_for
 from cj_run.account_stop import stop_scope
-from .local_account_admission import retired_for,subject_digest
+from .local_account_admission_v2 import retired_for,subject_digest
 
 
 @dataclass(frozen=True,repr=False)

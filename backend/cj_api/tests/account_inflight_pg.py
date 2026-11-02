@@ -7,7 +7,8 @@ from fastapi.testclient import TestClient
 from cj_api.local_app import create_local_app,LocalDatabase,ISSUER,scope_for
 from cj_api.local_cleanup import Configuration,Runtime
 from cj_api.local_run_context import load_run_context
-from cj_api.local_worker_context import checker_for,account_checker_for
+from cj_api.local_worker_context import checker_for
+from cj_api.local_account_admission_v2 import account_checker_for
 from cj_auth.interfaces import AdmissionStatus
 from cj_cleanup.core import encode,digest,Scope
 from cj_agent.provider import FakeProvider
