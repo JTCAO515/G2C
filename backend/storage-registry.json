@@ -1,5 +1,5 @@
 {
-  "version": "1.16.0",
+  "version": "1.17.0",
   "stores": [
     {
       "id": "business",
@@ -199,7 +199,8 @@
           "id": "feedback-private-actions",
           "owner": "CJ-023; cleanup CJ-024",
           "objects": [
-            "cj_feedback_action"
+            "cj_feedback_action",
+            "cj_feedback_scope"
           ],
           "source": "backend/feedback/sql/candidate.sql@cf48196e5eb5012630603172951d5c75a46adec4",
           "status": "candidate/local_only; production_not_provisioned",
@@ -207,13 +208,15 @@
           "sensitive_fields": [
             "sole exact original voluntary problem/expectation UTF8 and requested message/run IDs",
             "scope/action ID/input digest/database submission time",
-            "nullable minimal verified message/run binding, message input hash, read-time status/event highwater; no source transcript/tool payload copied"
+            "nullable minimal verified message/run binding, message input hash, read-time status/event highwater; no source transcript/tool payload copied",
+            "Irreversible nonsecret scope digest/retired fence; no plaintext identity in the fence"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "UNIMPLEMENTED; accepted account cleanup must cover retired scope records, backups/exported artifacts and in-flight resubmission; no queue or secondary ledger",
-          "restore_fence": "UNIMPLEMENTED; no retired-scope recycling or stale writer resurrection; source reads and feedback write are not cross-domain atomic",
+          "cleanup_hook": "cj_feedback.lifecycle.FeedbackHook: same original account operation, scope-lock/irreversible fence then actual action erasure and atomic original result; no revived writer",
+          "restore_fence": "Replay retired scope digest before any feedback read/write; trigger/row lock reject retired insertion",
           "owner_line": "B",
-          "retention_category": "user_content"
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
         },
         {
           "id": "cleanup-metadata",
@@ -294,7 +297,8 @@
             "private event text/effect values",
             "message/run association",
             "exact usage command/input bytes",
-            "status and expiry"
+            "status and expiry",
+            "diagnostic_at for newly persisted run events only (no historical backfill); 90-day diagnostic timing, separate from answer/event/accounting retention"
           ],
           "retention": "Retained answer/output content until user/account deletion; diagnostic-only events/checkpoints 90 days; no blanket run deletion",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; expiry is not deletion",

@@ -1,0 +1,73 @@
+[
+  {
+    "reason": "caller owner",
+    "action": {
+      "action_id": "original-1",
+      "problem": "车站名称不正确 / Wrong station name.",
+      "expectation": "请核对名称 / Check the name.",
+      "references": [],
+      "owner": "other"
+    }
+  },
+  {
+    "reason": "caller diagnostics",
+    "action": {
+      "action_id": "original-1",
+      "problem": "车站名称不正确 / Wrong station name.",
+      "expectation": "请核对名称 / Check the name.",
+      "references": [],
+      "model_version": "invented"
+    }
+  },
+  {
+    "reason": "run only",
+    "action": {
+      "action_id": "original-1",
+      "problem": "车站名称不正确 / Wrong station name.",
+      "expectation": "请核对名称 / Check the name.",
+      "references": [
+        {
+          "kind": "run",
+          "id": "x"
+        }
+      ]
+    }
+  },
+  {
+    "reason": "unsupported memory",
+    "action": {
+      "action_id": "original-1",
+      "problem": "车站名称不正确 / Wrong station name.",
+      "expectation": "请核对名称 / Check the name.",
+      "references": [
+        {
+          "kind": "memory",
+          "id": "x"
+        }
+      ]
+    }
+  },
+  {
+    "reason": "unsupported trip",
+    "action": {
+      "action_id": "original-1",
+      "problem": "车站名称不正确 / Wrong station name.",
+      "expectation": "请核对名称 / Check the name.",
+      "references": [
+        {
+          "kind": "trip",
+          "id": "x"
+        }
+      ]
+    }
+  },
+  {
+    "reason": "empty problem",
+    "action": {
+      "action_id": "original-1",
+      "problem": " ",
+      "expectation": "请核对名称 / Check the name.",
+      "references": []
+    }
+  }
+]

@@ -90,7 +90,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         memory_configuration=None, resolve_memory_binding=None, memory_source_policy=None,
                         trip_configuration=None, resolve_trip=None, trip_confirmation_validator=None, trip_confirmation_signer=None,
                         needs_configuration=None, resolve_needs=None, needs_repository_factory=None,
-                        feedback_configuration=None, resolve_feedback=None, resolve_feedback_run=None,
+                        feedback_configuration=None, resolve_feedback=None, resolve_feedback_run=None,feedback_scope_binder=None,feedback_scope_current=None,
                         run_display_configuration=None, resolve_run_display=None,manual_preview_configuration=None,
                         usage_status_configuration=None,resolve_usage_status=None,
                         original_usage_configuration=None,resolve_original_usage_run=None,
@@ -145,11 +145,11 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
             verification_keys=verification_keys,access_provider=access_provider,resolve=resolve_needs,
             repository_factory=needs_repository_factory)
     feedback_boundary = feedback_modules = None
-    if any(value is not None for value in (feedback_configuration,resolve_feedback,resolve_feedback_run)):
+    if any(value is not None for value in (feedback_configuration,resolve_feedback,resolve_feedback_run,feedback_scope_binder,feedback_scope_current)):
         from .feedback_composition import FeedbackWireConfiguration, _feedback_with_shared_message
         if type(feedback_configuration) is not FeedbackWireConfiguration:
             raise CompositionUnavailable('Explicit FEEDBACK configuration/resolver required')
-        feedback_boundary,feedback_modules = _feedback_with_shared_message(boundary,resolve_feedback,resolve_feedback_run)
+        feedback_boundary,feedback_modules = _feedback_with_shared_message(boundary,resolve_feedback,resolve_feedback_run,scope_binder=feedback_scope_binder,scope_current=feedback_scope_current)
     run_display_reader = run_display_modules = None
     if run_display_configuration is not None or resolve_run_display is not None:
         from .run_display_composition import _attach_run_display
@@ -174,7 +174,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
         cleanup_progress_dependencies = _cleanup_progress_from_checker(boundary.checker,resolve_cleanup_progress,cleanup_progress_configuration,
             environment=environment,issuer=jwt_configuration.issuer,audience=jwt_configuration.audience)
     from .app import create_app
-    return create_app(_message_boundary=boundary, _max_body_bytes=max_body_bytes,
+    app=create_app(_message_boundary=boundary, _max_body_bytes=max_body_bytes,
                       _history_configuration=history_configuration, _history_environment=environment,
                       _memory_boundary=memory_boundary, _memory_configuration=memory_configuration,
                       _trip_boundary=trip_boundary, _trip_configuration=trip_configuration, _trip_modules=trip_modules,
@@ -187,6 +187,11 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                       _original_usage_reader=original_usage_reader,_original_usage_configuration=original_usage_configuration,_original_usage_modules=original_usage_modules,
                       _cleanup_progress_configuration=cleanup_progress_configuration,_cleanup_progress_dependencies=cleanup_progress_dependencies,
                       _run_events_configuration=run_events_configuration)
+    if feedback_scope_binder is not None:
+        from cj_feedback.diagnostics import DiagnosticReader
+        from .feedback_diagnostic_routes import register_feedback_diagnostic_routes
+        register_feedback_diagnostic_routes(app,DiagnosticReader(feedback_boundary,boundary,resolve_feedback_run))
+    return app
 
 
 def build_verified_session_checker(*, environment, jwt_configuration, verification_keys,

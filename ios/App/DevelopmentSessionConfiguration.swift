@@ -287,3 +287,37 @@ struct DevelopmentMemoryProfile: Decodable {
     enum ConfigurationFailure: Error { case invalidMemoryProfile, invalidManagementEndpoint }
 }
 #endif
+
+/// Explicit DEBUG-only local offline integration; clock offsets are native-test inputs,
+/// never a server time claim or a Release permission.
+struct DevelopmentOfflineProfile {
+    let wallOffset: Int64
+    let uptimeOffset: Int64
+    let trusted: Bool
+    enum Failure: Error { case invalidConfiguration }
+    static func read(_ environment: [String: String]) throws -> Self? {
+        #if DEBUG
+        let keys = ["G2C_DEV_OFFLINE_TRIP", "G2C_DEV_OFFLINE_WALL_OFFSET", "G2C_DEV_OFFLINE_UPTIME_OFFSET", "G2C_DEV_OFFLINE_TIME_TRUSTED"]
+        guard keys.contains(where: { environment[$0] != nil }) else { return nil }
+        guard environment["G2C_DEV_OFFLINE_TRIP"] == "last-sync-v1", environment["G2C_DEV_ACCOUNT_MODE"] == "1" else {
+            throw Failure.invalidConfiguration
+        }
+        func offset(_ name: String) throws -> Int64 {
+            guard let raw = environment[name] else { return 0 }
+            guard let value = Int64(raw), String(value) == raw, (-315_360_000...315_360_000).contains(value) else {
+                throw Failure.invalidConfiguration
+            }
+            return value
+        }
+        let trusted: Bool
+        switch environment["G2C_DEV_OFFLINE_TIME_TRUSTED"] {
+        case nil, "1": trusted = true
+        case "0": trusted = false
+        default: throw Failure.invalidConfiguration
+        }
+        return try .init(wallOffset: offset(keys[1]), uptimeOffset: offset(keys[2]), trusted: trusted)
+        #else
+        return nil
+        #endif
+    }
+}

@@ -10,7 +10,7 @@ public struct DevelopmentAccountChoice: Identifiable, Equatable, Sendable {
 }
 
 public enum DevelopmentSessionCheck: Equatable, Sendable {
-    case accepted(account: String), rejected, expired, networkUnknown
+    case accepted(account: String), rejected, serverRejected, expired, networkUnknown
 }
 
 public enum DevelopmentAccountState: Equatable, Sendable {
@@ -28,6 +28,8 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     @ObservationIgnored private let verify: (SessionMaterial) async -> DevelopmentSessionCheck
     @ObservationIgnored private let activate: (SessionMaterial, SessionLifecycle, SessionOperation) throws -> Void
     @ObservationIgnored private let invalidate: () -> Void
+    @ObservationIgnored private let clearOffline: (() throws -> Void)?
+    @ObservationIgnored private let serverRejected: ((SessionMaterial) throws -> Void)?
     @ObservationIgnored private var request = UUID()
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var active: (SessionMaterial, SessionOperation)?
@@ -36,10 +38,13 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                 material: @escaping (String) throws -> SessionMaterial,
                 verify: @escaping (SessionMaterial) async -> DevelopmentSessionCheck,
                 activate: @escaping (SessionMaterial, SessionLifecycle, SessionOperation) throws -> Void,
-                invalidate: @escaping () -> Void) {
+                invalidate: @escaping () -> Void,
+                clearOffline: (() throws -> Void)? = nil,
+                serverRejected: ((SessionMaterial) throws -> Void)? = nil) {
         self.shell = shell; self.choices = choices
         self.session = SessionLifecycle(persistence: persistence, restorePolicy: .userInitiatedOnly)
         self.material = material; self.verify = verify; self.activate = activate; self.invalidate = invalidate
+        self.clearOffline = clearOffline; self.serverRejected = serverRejected
     }
 
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
@@ -66,6 +71,15 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     public func signIn(_ choiceID: String) {
         guard choices.contains(where: { $0.id == choiceID }), let (id, generation) = begin() else { return }
         do {
+            if let clearOffline {
+                var cacheFailure: (any Error)?
+                do { try clearOffline() } catch { cacheFailure = error }
+                guard request == id, shell.generation == generation else { return }
+                let result = session.clearWithSettlement()
+                guard request == id, shell.generation == generation else { return }
+                guard result == .cleared else { throw SessionFailure.storageUnavailable }
+                if let cacheFailure { throw cacheFailure }
+            }
             // A persisted logout marker can only be replaced by this explicit new login.
             if session.state == .blocked(.restorationBlocked) {
                 guard session.clearWithSettlement() == .cleared else { throw SessionFailure.storageUnavailable }
@@ -100,10 +114,13 @@ public enum DevelopmentAccountState: Equatable, Sendable {
 
     public func signOut() {
         guard let (id, generation) = begin() else { return }
+        var cacheFailed = false
+        if let clearOffline { do { try clearOffline() } catch { cacheFailed = true } }
+        guard request == id, shell.generation == generation else { return }
         let result = session.clearWithSettlement()
         guard request == id, shell.generation == generation else { return }
         switch result {
-        case .cleared: state = .signedOut
+        case .cleared: state = cacheFailed ? .storageUnavailable : .signedOut
         case .failed: state = .storageUnavailable
         case .replaced: break
         }
@@ -155,6 +172,15 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                     self.state = .storageUnavailable
                 }
             case .rejected: self.state = .rejected
+            case .serverRejected:
+                do {
+                    try self.serverRejected?(candidate)
+                    guard self.current(id, generation, operation) else { return }
+                    self.state = .rejected
+                } catch {
+                    guard self.current(id, generation, operation) else { return }
+                    self.state = .storageUnavailable
+                }
             case .expired: self.state = .expired
             case .networkUnknown:
                 self.session.noteNetworkUnknown()
