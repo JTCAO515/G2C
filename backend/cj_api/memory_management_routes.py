@@ -7,7 +7,7 @@ from .generated import (MemoryManagementAction,MemoryManagementReceipt,
     MemoryManagementApplyResponse,MemoryManagementReceiptResponse,MemoryManagementEditAction,
     MemoryStopUseAction,MemoryStopUseReceipt,MemoryStopUseApplyResponse,MemoryStopUseReceiptResponse)
 from .history_routes import _query,PrivateOutputTooLarge
-from .message_routes import _error,_token
+from .message_routes import BodyError,_body_error,_error,_read_octets,_token
 from .memory_boundary import MemoryAccessBlocked
 from .memory_management_boundary import MemoryManagementBoundary,MemoryManagementConfiguration
 
@@ -63,16 +63,8 @@ def register_memory_management(app,boundary=None,configuration=None):
         prepared=prepare(request,())
         if isinstance(prepared,JSONResponse):return prepared
         token,_=prepared
-        media=request.headers.getlist('content-type')
-        if len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream' or request.headers.get('content-encoding','identity').lower()!='identity':
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
         try:
-            chunks=[];size=0
-            async for chunk in request.stream():
-                size+=len(chunk)
-                if size>configuration.max_body_bytes:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-                chunks.append(chunk)
-            raw=b''.join(chunks)
+            raw=await _read_octets(request,configuration.max_body_bytes)
             if stop_use:
                 from cj_memory_withdrawal.stop_use import StopUse
                 action=StopUse.parse(raw)
@@ -86,6 +78,7 @@ def register_memory_management(app,boundary=None,configuration=None):
                 action=boundary.modules['cj_memory_management.domain'].Action.parse(raw)
                 MemoryManagementAction.model_validate_json(raw,strict=True)
             action.action_id.encode('utf-8');action.item_id.encode('utf-8')
+        except BodyError as exc:return _body_error(request,exc)
         except (ValueError,UnicodeError,domain.InvalidInput):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         except Exception:return failure(request,True)
         return await invoke(request,token,'save',raw,stop_use=stop_use)

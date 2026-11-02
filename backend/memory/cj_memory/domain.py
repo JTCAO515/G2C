@@ -4,6 +4,20 @@ from datetime import datetime
 import json
 
 class InvalidInput(ValueError): pass
+
+
+def unique_fields(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result: raise InvalidInput('duplicate field')
+        result[key] = value
+    return result
+
+
+def strict_object(raw):
+    if type(raw) is not bytes or len(raw) > 32768: raise InvalidInput('bytes required')
+    try: return json.loads(raw.decode('utf-8'), object_pairs_hook=unique_fields)
+    except (ValueError, UnicodeError): raise InvalidInput('invalid JSON') from None
 class Conflict(Exception): pass
 class Unavailable(Exception): pass
 class CommitUnknown(Exception): pass
@@ -33,15 +47,7 @@ class Command:
 
     @classmethod
     def parse(cls, raw):
-        def unique(pairs):
-            obj = {}
-            for k, v in pairs:
-                if k in obj: raise InvalidInput('duplicate field')
-                obj[k] = v
-            return obj
-        if type(raw) is not bytes or len(raw) > 32768: raise InvalidInput('bytes required')
-        try: obj = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
-        except (ValueError, UnicodeError): raise InvalidInput('invalid JSON') from None
+        obj = strict_object(raw)
         fields = set(cls.__dataclass_fields__) - {'raw'}
         if type(obj) is not dict or set(obj) != fields: raise InvalidInput('unsupported fields')
         for k in fields - {'source_version', 'context_id'}:

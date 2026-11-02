@@ -10,24 +10,17 @@ import json
 import re
 import uuid
 
-from .domain import InputConflict, InvalidInput, SequenceConflict, Unavailable
+from .domain import unique_fields, InputConflict, InvalidInput, SequenceConflict, Unavailable
 
 ABI = 'MESSAGE-TRAVEL-CONSUMER@1'
 PROFILE = 'message-travel.1'
 
 
 def decode(raw):
-    def pairs(items):
-        result = {}
-        for key, value in items:
-            if key in result:
-                raise InvalidInput('duplicate field')
-            result[key] = value
-        return result
     if type(raw) is not bytes or len(raw) > 65536:
         raise InvalidInput('bounded immutable UTF8 required')
     try:
-        return json.loads(raw.decode('utf8'), object_pairs_hook=pairs)
+        return json.loads(raw.decode('utf8'), object_pairs_hook=unique_fields)
     except (ValueError, UnicodeError) as exc:
         raise InvalidInput('invalid JSON') from exc
 

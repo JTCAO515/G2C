@@ -1,14 +1,12 @@
 """One original message association GET; no attempt query/login/mint or mutation."""
 from fastapi import Request
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse,Response
 from starlette.concurrency import run_in_threadpool
 from .generated import OriginalUsageAssociationResponse
-from .history_routes import _query
-from .message_routes import _error,_token
+from .history_routes import _message_id_query
+from .message_routes import _error,_sanitized_read,_token
 from .original_usage_composition import OriginalUsageWireConfiguration
 from .original_usage_projection import encode_response
-
-class AssociationReadInterrupted(Exception):pass
 
 def register_original_usage(app,reader=None,configuration=None,modules=None):
     if reader is None:
@@ -21,19 +19,12 @@ def register_original_usage(app,reader=None,configuration=None,modules=None):
         if reader is None:return unavailable(request)
         token=_token(request)
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
-        try:
-            mid=_query(request,('message_id',))['message_id']
-            if not mid.strip() or '\x00' in mid:raise ValueError('Invalid original message ID')
-            if len(mid.encode('utf-8'))>configuration.max_message_id_bytes:
-                return _error(request,413,'MESSAGE_ID_TOO_LARGE','input','failed','do_not_retry')
-        except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
+        mid=_message_id_query(request,configuration.max_message_id_bytes)
+        if isinstance(mid,JSONResponse):return mid
         request_id=request.state.request_id
         def invoke():
-            try:return reader.read_projected(token,mid,lambda raw:encode_response(raw,request_id,mid))
-            except BaseException as exc:
-                if isinstance(exc,Exception):raise
-                raise AssociationReadInterrupted() from None
-        try:return Response(content=await run_in_threadpool(invoke),media_type='application/json')
+            return reader.read_projected(token,mid,lambda raw:encode_response(raw,request_id,mid))
+        try:return Response(content=await run_in_threadpool(_sanitized_read,invoke),media_type='application/json')
         except modules['cj_run.original_usage_read'].UsageAssociationTooLarge:
             return _error(request,413,'ASSOCIATION_TOO_LARGE','input','failed','retry_safe_read')
         except Exception:return unavailable(request)
