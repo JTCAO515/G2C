@@ -1,6 +1,7 @@
 """Explicitly injected CLEANUP@1.0 host. Account authorization/barriers are #27."""
 from .core import Denied, digest
-from .hooks import HookRequest, Selection, make_request
+from .hooks import HookRequest, Selection
+from .store import CODECS
 
 
 class Coordinator:
@@ -21,10 +22,10 @@ class Coordinator:
     def request(self,operation_id,target,domain_scope,selection):
         manifest=self.current_registry()
         entry=next((e for e in manifest.entries if e.registry_id==target),None)
-        if entry is None:raise Denied('cleanup target unavailable')
+        if entry is None or not entry.hook_available:raise Denied('cleanup target unavailable')
         # Stable within the original operation and target; no unknown retry IDs.
         invocation='hook-'+digest((operation_id+'\0'+target).encode('utf-8'))
-        return make_request(operation_id=operation_id,invocation_id=invocation,
+        return CODECS[entry.protocol].make_request(operation_id=operation_id,invocation_id=invocation,
             subject_digest=self.store.subject_digest,registry_digest=manifest.digest,
             entry_digest=entry.version,target=target,domain_scope=domain_scope,selection=selection)
 

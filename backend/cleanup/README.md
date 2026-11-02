@@ -23,6 +23,23 @@ BYPASSRLS, TRUNCATE or SECURITY DEFINER. Each registered table has an explicit
 SELECT/DELETE policy bound to original operation, subject, purpose and canonical
 domain scope. MESSAGE/NEEDS bridge tables use `message_scope`, USAGE uses `scope_id`,
 legacy cleanup journal uses exact scope bytes. Runtime privileges are unchanged.
+The RLS scope comes from trusted server-set GUCs; it does not independently bind
+those GUCs to the persisted plan or authenticate JWTs. The coordinator verifies
+principal/plan/request binding before intent; only trusted domain hosts receive the
+dedicated connection. Possession of that role can choose another GUC and is not
+an unforgeable account credential. #27 must fix its principal-to-scope resolver and
+never expose a connection, scope selector or GUC to HTTP callers (review P2).
+
+V1 remains the default. To enable C's Unicode version explicitly, freeze with
+`versions=('CLEANUP@1.0','CLEANUP@1.1')`; the operation persists that exact selection
+and each target entry's protocol. Coordinator/Store/original-result helpers select
+only the matching fixed codec. A 1.0 receipt cannot confirm a 1.1 invocation.
+Every operation freezes the complete registry and independent inventory. Account
+cleanup requires every inventory target; memory/diagnostic cleanup freezes only the
+trusted host's explicitly confirmed affected target plan. Registry drift still
+blocks that plan globally. Targets cannot be added/removed after confirmation,
+and an empty plan cannot complete. Memory/diagnostic metadata erasure clears only
+its original operation; account erasure clears all account private plans/requests.
 
 The new operation/step/domain-result tables are included in `cleanup-metadata` and
 ship `MetadataHook` in the same PR. After all other original target results are

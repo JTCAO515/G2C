@@ -8,6 +8,8 @@ CREATE TABLE cj_cleanup_operation (
  plan_digest text NOT NULL CHECK(plan_digest ~ '^[0-9a-f]{64}$'),
  plan_bytes bytea CHECK(plan_bytes IS NULL OR plan_digest=encode(sha256(plan_bytes),'hex')),
  registry_bytes bytea NOT NULL, inventory jsonb NOT NULL CHECK(jsonb_typeof(inventory)='array'),
+ protocol_versions jsonb NOT NULL CHECK(jsonb_typeof(protocol_versions)='array'),
+ targets jsonb NOT NULL CHECK(jsonb_typeof(targets)='array'),
  blocked boolean NOT NULL DEFAULT false, PRIMARY KEY(subject_digest,operation_id)
 );
 CREATE TABLE cj_cleanup_step (

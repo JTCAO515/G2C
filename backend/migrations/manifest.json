@@ -255,7 +255,7 @@
       "version": 32,
       "name": "local_cleanup",
       "file": "backend/migrations/0032_local_cleanup.sql",
-      "sha256": "6c448030244b8c4e3db0a0bf73c99c82c83694a74e674f22f544642e2244bbc2",
+      "sha256": "b90e8eda7a9acc897ccb2b6bcdc588dbe181f3a00189ee4d465bb720c00c232f",
       "down": "backend/migrations/down/0032_local_cleanup.down.sql",
       "down_sha256": "76c129c16670df77c30f216e337e5d792e9e13eb85954b62cb32ce5b33fbdf38"
     }

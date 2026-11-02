@@ -6,6 +6,7 @@ import sys
 import psycopg
 from cj_cleanup.core import Conflict, Denied, digest, encode
 from cj_cleanup.hooks import Selection, make_receipt
+from cj_cleanup import hooks_v1_1 as v11
 from cj_cleanup.registry import freeze
 from cj_cleanup.store import Store, original_result, record_result
 from cj_cleanup.coordinator import Coordinator
@@ -116,6 +117,10 @@ def main():
     host2=Coordinator(store,lambda:current[0],{target:Probe(),metadata:meta})
     plan2={**plan,metadata:{'domain_scope':subject,'selection':{'kind':'account'}}}
     host2.create('metadata-erasure',digest(b'confirm3'),'account',plan2)
+    other_subject=digest(b'other principal')
+    other_store=Store(connect,other_subject,lambda stage:None)
+    other_plan={target:{'domain_scope':'bob','selection':{'kind':'account'}},metadata:{'domain_scope':other_subject,'selection':{'kind':'account'}}}
+    other_store.create('other-op',digest(b'other-confirm'),current[0],'account',(target,metadata),other_plan)
     with psycopg.connect(**config) as conn:
         conn.execute('INSERT INTO cj_cleanup_journal_candidate VALUES(%s,%s,0,%s,%s)',(legacy,'old-op',b'private old journal',b'private old state'))
     host2.advance(host2.request('metadata-erasure',target,'alice',Selection('account')))
@@ -127,9 +132,36 @@ def main():
     assert host2.advance(meta_request)['status']=='complete'
     with psycopg.connect(**config) as conn:
         assert conn.execute('SELECT count(*) FROM cj_cleanup_journal_candidate WHERE scope_bytes=%s',(legacy,)).fetchone()[0]==0
-        assert conn.execute('SELECT count(*) FROM cj_cleanup_operation WHERE plan_bytes IS NOT NULL').fetchone()[0]==0
-        assert conn.execute('SELECT count(*) FROM cj_cleanup_step WHERE request_bytes IS NOT NULL').fetchone()[0]==0
+        assert conn.execute('SELECT count(*) FROM cj_cleanup_operation WHERE subject_digest=%s AND plan_bytes IS NOT NULL',(subject,)).fetchone()[0]==0
+        assert conn.execute('SELECT count(*) FROM cj_cleanup_step WHERE subject_digest=%s AND request_bytes IS NOT NULL',(subject,)).fetchone()[0]==0
+        assert conn.execute('SELECT plan_bytes IS NOT NULL FROM cj_cleanup_operation WHERE subject_digest=%s',(other_subject,)).fetchone()==(True,)
     print('PASS own metadata hook physically erases legacy private journal, clears selection/request bytes, retains bounded original progress/result; interruption recovers actual receipt')
+    # Mixed target protocols are explicit; C's legal long ID survives PG intent/recovery.
+    unicode_target='business/memory'
+    unicode_registry=encode(dict(version='fixture3',stores=[dict(id='business',objects=[
+        dict(id='memory',cleanup_protocol=v11.VERSION),dict(id='unrelated',cleanup_hook='UNIMPLEMENTED')])]))
+    unicode_manifest=freeze(unicode_registry,(unicode_target,'business/unrelated'),versions=('CLEANUP@1.0',v11.VERSION))
+    item='北京🙂'*1000
+    selection=v11.Selection('memory',item,2,3)
+    unicode_plan={unicode_target:{'domain_scope':'alice','selection':selection.to_dict()}}
+    store.create('unicode-memory',digest(b'confirm-unicode'),unicode_manifest,'memory',(unicode_target,),unicode_plan)
+    assert store.query('unicode-memory')['status']=='in_progress'
+    assert [s['target'] for s in store.query('unicode-memory')['steps']]==[unicode_target]
+    store.create('account-needs-all',digest(b'account-confirm'),unicode_manifest,'account',(unicode_target,),unicode_plan)
+    assert store.query('account-needs-all')['status']=='blocked'
+    unicode_host=Coordinator(store,lambda:unicode_manifest,{unicode_target:object()})
+    unicode_request=unicode_host.request('unicode-memory',unicode_target,'alice',selection)
+    assert unicode_request.protocol==v11.VERSION and unicode_request.selection.item_id==item
+    assert store.intent(unicode_request)
+    try:store.receipt(unicode_request,make_receipt(unicode_request,'confirmed'))
+    except Exception as error:
+        from cj_cleanup.core import Invalid
+        assert isinstance(error,Invalid)
+    else:raise AssertionError('downgraded receipt accepted')
+    reopened.recover('unicode-memory')
+    assert reopened.query('unicode-memory')['status']=='unknown'
+    assert not store.intent(unicode_request)
+    print('PASS explicit 1.1 codec, exact Unicode MEMORY selection persisted/recovered, 1.0 receipt downgrade refused; no C hook executed')
     try:
         with psycopg.connect(**config,autocommit=True) as conn:migrate.down(conn,migrate.load(),31)
     except psycopg.Error:pass

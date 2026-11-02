@@ -6,14 +6,22 @@ from psycopg.pq import TransactionStatus
 
 from .core import Conflict, Denied, Invalid, encode, hash_value, identifier, digest
 from .hooks import HookRequest, HookReceipt, make_receipt
+from . import hooks, hooks_v1_1
 from cj_strict_json import reject_duplicates
 from .registry import freeze
 from .postgres import CommitUnknown, Unavailable
 
 
-def _receipt(raw, request_digest):
+CODECS={hooks.VERSION:hooks,hooks_v1_1.VERSION:hooks_v1_1}
+
+
+def receipt_for(request,outcome):
+    return CODECS[request.protocol].make_receipt(request,outcome)
+
+
+def _receipt(raw, request_digest, protocol):
     # The same frozen receipt validator; a reconstructed request would be false evidence.
-    return HookReceipt.from_digest(raw, request_digest)
+    return CODECS[protocol].HookReceipt.from_digest(raw, request_digest)
 
 
 def original_result(cursor, request: HookRequest):
@@ -23,7 +31,7 @@ def original_result(cursor, request: HookRequest):
     row=cursor.fetchone()
     if row is None:return None
     if row[0]!=request.digest:raise Conflict('original invocation conflict')
-    return _receipt(bytes(row[1]),request.digest)
+    return _receipt(bytes(row[1]),request.digest,request.protocol)
 
 
 def record_result(cursor, request: HookRequest, outcome: str):
@@ -32,7 +40,7 @@ def record_result(cursor, request: HookRequest, outcome: str):
     Do not persist unknown as a final domain result; retain original intent instead.
     """
     if outcome not in ('confirmed','failed'):raise Invalid('durable final result required')
-    result=make_receipt(request,outcome)
+    result=receipt_for(request,outcome)
     cursor.execute('INSERT INTO cj_cleanup_domain_result(subject_digest,operation_id,invocation_id,request_digest,receipt_bytes) VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING',
         (request.subject_digest,request.operation_id,request.invocation_id,request.digest,result.original_utf8))
     old=original_result(cursor,request)
@@ -82,14 +90,17 @@ class Store:
                     raise
 
     def _load(self,cur,operation_id,*,lock=False):
-        cur.execute('SELECT confirmation_digest,purpose,registry_bytes,inventory,blocked,plan_bytes,plan_digest FROM cj_cleanup_operation WHERE subject_digest=%s AND operation_id=%s'+(' FOR UPDATE' if lock else ''),
+        cur.execute('SELECT confirmation_digest,purpose,registry_bytes,inventory,blocked,plan_bytes,plan_digest,protocol_versions,targets FROM cj_cleanup_operation WHERE subject_digest=%s AND operation_id=%s'+(' FOR UPDATE' if lock else ''),
                     (self.subject_digest,operation_id))
         row=cur.fetchone()
         if row is None:raise Denied('operation unavailable')
-        confirmation,purpose,raw,inventory,blocked,plan_raw,plan_digest=row
+        confirmation,purpose,raw,inventory,blocked,plan_raw,plan_digest,versions,targets=row
         hash_value(confirmation)
-        if purpose not in ('account','memory','diagnostics') or type(blocked) is not bool or type(inventory) is not list:
+        if purpose not in ('account','memory','diagnostics') or type(blocked) is not bool or type(inventory) is not list or type(versions) is not list or type(targets) is not list:
             raise Unavailable('cleanup state unavailable')
+        manifest=freeze(bytes(raw),tuple(inventory),versions=tuple(versions))
+        targets=tuple(identifier(t) for t in targets)
+        if not targets or len(set(targets))!=len(targets) or set(targets)-set(manifest.inventory):raise Unavailable('cleanup targets unavailable')
         if plan_raw is None:plan=None
         else:
             plan_raw=bytes(plan_raw)
@@ -98,36 +109,38 @@ class Store:
                 plan=json.loads(plan_raw.decode('utf-8'),object_pairs_hook=reject_duplicates(Invalid,'duplicate cleanup plan'))
                 if type(plan) is not dict:raise Invalid('invalid cleanup plan')
             except (ValueError,UnicodeError,RecursionError):raise Unavailable('cleanup plan unavailable') from None
-        return purpose,freeze(bytes(raw),tuple(inventory)),blocked,plan
+        return purpose,manifest,blocked,plan,targets
 
     def create(self,operation_id,confirmation_digest,manifest,purpose,capabilities,plan):
         identifier(operation_id);hash_value(confirmation_digest)
         if purpose not in ('account','memory','diagnostics'):raise Invalid('invalid cleanup purpose')
-        blocked=bool(manifest.gaps) or any(not e.hook_available or e.registry_id not in capabilities or e.registry_id not in plan for e in manifest.entries)
+        targets=manifest.inventory if purpose=='account' else tuple(sorted(plan))
+        if not targets:raise Invalid('explicit cleanup targets required')
+        blocked=bool(manifest.gaps) or any(not e.hook_available or e.registry_id not in capabilities or e.registry_id not in plan for e in manifest.entries if e.registry_id in targets)
         if set(plan)-set(manifest.inventory):raise Invalid('unregistered selection')
         plan_raw=encode(plan)
         with self.transaction(operation_id) as cur:
-            cur.execute('INSERT INTO cj_cleanup_operation(subject_digest,operation_id,confirmation_digest,purpose,registry_bytes,inventory,blocked,plan_digest,plan_bytes) VALUES(%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s) ON CONFLICT DO NOTHING',
-                (self.subject_digest,operation_id,confirmation_digest,purpose,manifest.raw,json.dumps(manifest.inventory),blocked,digest(plan_raw),plan_raw))
-            loaded,old,_,_=self._load(cur,operation_id,lock=True)
+            cur.execute('INSERT INTO cj_cleanup_operation(subject_digest,operation_id,confirmation_digest,purpose,registry_bytes,inventory,blocked,plan_digest,plan_bytes,protocol_versions,targets) VALUES(%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s::jsonb,%s::jsonb) ON CONFLICT DO NOTHING',
+                (self.subject_digest,operation_id,confirmation_digest,purpose,manifest.raw,json.dumps(manifest.inventory),blocked,digest(plan_raw),plan_raw,json.dumps(manifest.versions),json.dumps(targets)))
+            loaded,old,_,_,old_targets=self._load(cur,operation_id,lock=True)
             cur.execute('SELECT confirmation_digest,plan_digest FROM cj_cleanup_operation WHERE subject_digest=%s AND operation_id=%s',(self.subject_digest,operation_id))
-            if (loaded,old.raw,old.inventory,cur.fetchone())!=(purpose,manifest.raw,manifest.inventory,(confirmation_digest,digest(plan_raw))):
+            if (loaded,old.raw,old.inventory,old.versions,old_targets,cur.fetchone())!=(purpose,manifest.raw,manifest.inventory,manifest.versions,targets,(confirmation_digest,digest(plan_raw))):
                 raise Conflict('cleanup confirmation conflict')
 
     def audit(self,operation_id,current):
         with self.transaction(operation_id) as cur:
-            _,old,_,_=self._load(cur,operation_id,lock=True)
-            if (old.raw,old.inventory)!=(current.raw,current.inventory):
+            _,old,_,_,_=self._load(cur,operation_id,lock=True)
+            if (old.raw,old.inventory,old.versions)!=(current.raw,current.inventory,current.versions):
                 cur.execute('UPDATE cj_cleanup_operation SET blocked=true WHERE subject_digest=%s AND operation_id=%s',(self.subject_digest,operation_id))
 
     def query(self,operation_id):
         with self.transaction(operation_id,writing=False) as cur:
-            _,manifest,blocked,_=self._load(cur,operation_id)
+            _,manifest,blocked,_,targets=self._load(cur,operation_id)
             cur.execute('SELECT target,state FROM cj_cleanup_step WHERE subject_digest=%s AND operation_id=%s',(self.subject_digest,operation_id))
             states=dict(cur.fetchall())
-            if any(k not in manifest.inventory or v not in ('in_progress','unknown','failed','confirmed') for k,v in states.items()):
+            if any(k not in targets or v not in ('in_progress','unknown','failed','confirmed') for k,v in states.items()):
                 raise Unavailable('cleanup state unavailable')
-            steps=tuple(dict(target=target,state=states.get(target,'pending')) for target in manifest.inventory)
+            steps=tuple(dict(target=target,state=states.get(target,'pending')) for target in targets)
             status=('blocked' if blocked else 'unknown' if 'unknown' in states.values() else 'failed' if 'failed' in states.values()
                     else 'complete' if len(states)==len(steps) and all(v=='confirmed' for v in states.values()) else 'in_progress')
             value=dict(operation_id=operation_id,status=status,steps=steps)
@@ -136,11 +149,12 @@ class Store:
     def intent(self,request:HookRequest):
         if request.subject_digest!=self.subject_digest:raise Denied('operation unavailable')
         with self.transaction(request.operation_id) as cur:
-            purpose,manifest,blocked,plan=self._load(cur,request.operation_id,lock=True)
+            purpose,manifest,blocked,plan,targets=self._load(cur,request.operation_id,lock=True)
             entry=next((e for e in manifest.entries if e.registry_id==request.target),None)
-            if blocked or entry is None or not entry.hook_available:raise Denied('cleanup hook unavailable')
+            if blocked or entry is None or not entry.hook_available or request.target not in targets:raise Denied('cleanup hook unavailable')
             if (purpose,manifest.digest,entry.version)!=(request.selection.kind,request.registry_digest,request.entry_digest):
                 raise Conflict('cleanup request binding mismatch')
+            if entry.protocol!=request.protocol:raise Conflict('cleanup protocol mismatch')
             cur.execute('SELECT invocation_id,request_digest FROM cj_cleanup_step WHERE subject_digest=%s AND operation_id=%s AND target=%s',
                         (self.subject_digest,request.operation_id,request.target))
             old=cur.fetchone()
@@ -158,9 +172,11 @@ class Store:
         return created
 
     def receipt(self,request,result):
-        result=HookReceipt.from_bytes(result.original_utf8,request)
+        result=CODECS[request.protocol].HookReceipt.from_bytes(result.original_utf8,request)
         with self.transaction(request.operation_id) as cur:
-            self._load(cur,request.operation_id,lock=True)
+            _,manifest,_,_,_=self._load(cur,request.operation_id,lock=True)
+            if next(e.protocol for e in manifest.entries if e.registry_id==request.target)!=request.protocol:
+                raise Conflict('cleanup protocol mismatch')
             cur.execute('SELECT invocation_id,request_digest,state,receipt_bytes FROM cj_cleanup_step WHERE subject_digest=%s AND operation_id=%s AND target=%s FOR UPDATE',
                 (self.subject_digest,request.operation_id,request.target))
             row=cur.fetchone()
@@ -174,7 +190,7 @@ class Store:
     def recover(self,operation_id):
         """Explicit lost-writer recovery: no hook call or delete; actual result wins."""
         with self.transaction(operation_id) as cur:
-            self._load(cur,operation_id,lock=True)
+            _,manifest,_,_,_=self._load(cur,operation_id,lock=True)
             cur.execute('SELECT target,invocation_id,request_digest FROM cj_cleanup_step WHERE subject_digest=%s AND operation_id=%s AND state IN (\'in_progress\',\'unknown\') FOR UPDATE',
                         (self.subject_digest,operation_id))
             for target,invocation,request_digest in cur.fetchall():
@@ -184,6 +200,7 @@ class Store:
                 if row is None:state,raw='unknown',None
                 else:
                     if row[0]!=request_digest:raise Conflict('original result binding mismatch')
-                    value=_receipt(bytes(row[1]),request_digest);state,raw=value.outcome,value.original_utf8
+                    protocol=next(e.protocol for e in manifest.entries if e.registry_id==target)
+                    value=_receipt(bytes(row[1]),request_digest,protocol);state,raw=value.outcome,value.original_utf8
                 cur.execute('UPDATE cj_cleanup_step SET state=%s,receipt_bytes=%s WHERE subject_digest=%s AND operation_id=%s AND target=%s',
                             (state,raw,self.subject_digest,operation_id,target))

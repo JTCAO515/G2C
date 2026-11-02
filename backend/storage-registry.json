@@ -239,7 +239,7 @@
           "read_consumer": "GET /v1/account-cleanup-progress; current ALLOWED account and original operation only; five-field progress whitelist; no private journal or post-logout capability",
           "owner_line": "B",
           "retention_category": "account_reconciliation",
-          "cleanup_protocol": "CLEANUP@1.0"
+          "cleanup_protocol": "CLEANUP@1.1"
         },
         {
           "id": "memory-management-actions",

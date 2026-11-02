@@ -22,6 +22,7 @@ class Selection(v1.Selection):
 
 
 class HookRequest(v1.HookRequest):
+    protocol=VERSION
     @classmethod
     def from_bytes(cls,raw):
         value=v1._decode(raw,131072)

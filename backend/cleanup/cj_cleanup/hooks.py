@@ -57,6 +57,7 @@ class Selection:
 
 @dataclass(frozen=True, repr=False)
 class HookRequest:
+    protocol = VERSION
     operation_id: str
     invocation_id: str
     subject_digest: str
