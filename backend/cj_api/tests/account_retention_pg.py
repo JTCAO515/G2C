@@ -67,6 +67,33 @@ def main(root,conninfo):
         assert conn.execute('SELECT scope_id,revision,ledger FROM cj_usage_ledger_candidate ORDER BY scope_id').fetchall()==usage
         assert conn.execute('SELECT count(*) FROM cj_message_receipt').fetchone()[0]==2
     print('PASS injected 90-day before/at/after cutoff, same dedicated role/original result, actual original run_once/FakeProvider, other owner/content/usage evidence untouched')
+    # Actual periodic host step uses the same dedicated role and injected clock.
+    from cj_api.local_cleanup import Runtime,Configuration
+    from cleanup_worker import step
+    tick=[now//86400*86400]
+    diagnostic_registry=root/'diagnostic-registry.json';diagnostic_registry.write_bytes(raw)
+    options=Configuration({'maintenance':b'explicit-synthetic-maintenance-00'},'maintenance',3600,(target,),diagnostic_registry,clock=lambda:tick[0])
+    runtime=Runtime(database,options,scope_for)
+    scheduled_cutoff=tick[0]-SECONDS
+    with psycopg.connect(**config) as conn:
+        for index,row in enumerate([r for r in original if r[0]==owner]):
+            stamp=scheduled_cutoff-1 if index==0 else scheduled_cutoff if index==1 else scheduled_cutoff+1
+            conn.execute('UPDATE cj_run_event SET diagnostic_at=to_timestamp(%s) WHERE scope=%s AND run_id=%s AND sequence=%s',(stamp,*row[:3]))
+    scheduled=step(runtime,checker_for(auth),principal)
+    assert scheduled['status']=='complete'
+    assert step(runtime,checker_for(auth),principal)==scheduled
+    with psycopg.connect(**config) as conn:
+        marks=conn.execute('SELECT diagnostic_at FROM cj_run_event WHERE scope=%s ORDER BY sequence',(owner,)).fetchall()
+        assert marks[0][0] is None and marks[1][0] is not None and marks[2][0] is not None
+    tick[0]+=86400
+    following=step(runtime,checker_for(auth),principal)
+    assert following['status']=='complete' and following['operation_id']!=scheduled['operation_id']
+    with psycopg.connect(**config) as conn:
+        assert all(row[0] is None for row in conn.execute('SELECT diagnostic_at FROM cj_run_event WHERE scope=%s',(owner,)))
+        assert conn.execute('SELECT scope,run_id,sequence,event_id,kind,value FROM cj_run_event ORDER BY scope,sequence').fetchall()==original
+        assert conn.execute('SELECT scope_id,revision,ledger FROM cj_usage_ledger_candidate ORDER BY scope_id').fetchall()==usage
+        assert conn.execute('SELECT diagnostic_at FROM cj_run_event WHERE scope=%s ORDER BY sequence',(other,)).fetchall()==other_times
+    print('PASS actual periodic host step/restart/day rollover with injected clock; exact-cutoff and other-owner/content/accounting invariants')
     # Real B domain hooks over the produced data, not no-op owner callbacks.
     # Provision older unreferenced periods; discovery must not depend on retaining
     # current RUN bindings or on a caller-supplied list of ledger IDs.

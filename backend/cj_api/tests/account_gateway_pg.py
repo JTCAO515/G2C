@@ -43,6 +43,14 @@ def exercise(root,conninfo):
         assert recovered['preparation']['operation_id']==op
         assert expect(client.get('/v1/account-cleanup-preparations?action_id=prepare',headers=headers['bob']))['preparation'] is None
         spare=post('/v1/account-cleanup-operations',body|dict(action_id='spare'))
+        # Persistent DB data is a boundary: altered original plan bytes cannot
+        # be served or confirmed under the original digest.
+        with psycopg.connect(**config) as conn:
+            saved=conn.execute('SELECT plan_bytes FROM cj_cleanup_request WHERE operation_id=%s',(spare['operation_id'],)).fetchone()[0]
+            conn.execute('UPDATE cj_cleanup_request SET plan_bytes=%s WHERE operation_id=%s',(b'{}',spare['operation_id']))
+        expect(client.get('/v1/account-cleanup-preparations?action_id=spare',headers=headers['alice']),503)
+        with psycopg.connect(**config) as conn:
+            conn.execute('UPDATE cj_cleanup_request SET plan_bytes=%s WHERE operation_id=%s',(saved,spare['operation_id']))
         before=expect(client.get(progress_url,headers={'Authorization':'Cleanup '+cap}))
         assert before['status']=='awaiting_confirmation'
         post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='wrong'),code=403)
@@ -81,6 +89,29 @@ def exercise(root,conninfo):
             assert conn.execute('SELECT count(*) FROM cj_feedback_action WHERE scope=%s',(scope_for(ISSUER,'alice'),)).fetchone()[0]==0
             assert conn.execute('SELECT count(*) FROM cj_account_fence').fetchone()[0]==1
         print('PASS authenticated device original invocation/report bridge, replay/conflict/wrong digest, account and reconnect-only invalidation, no other-device/backup completion claim')
+        # Full real inventory has actual missing C/external owner hooks: it
+        # must remain prepared/blocked, with neither revocation nor deletion.
+        inventory=('business/message','business/usage','business/memory-authoritative','business/trip-authoritative',
+            'business/needs-current-planning','business/feedback-private-actions','business/cleanup-metadata',
+            'business/memory-management-actions','checkpoints/run','memory-derived',
+            'device-cache/encrypted-message-file','device-cache/sdk-session-keychain','device-cache/message-key-keychain',
+            'device-cache/trip-pending-file','device-cache/offline-trip','device-cache/feedback-pending',
+            'device-cache/feedback-key-keychain','external-processing')
+        from dataclasses import replace
+        full=create_local_app(conninfo_path=conninfo,auth_dir=auth,cleanup_configuration=replace(options,
+            inventory=inventory,registry_path=ROOT/'backend/storage-registry.json'))
+        with TestClient(full) as full_client:
+            fresh=expect(full_client.post('/v1/account-cleanup-operations',headers=headers['bob'],content=encode(
+                dict(version='CLEANUP-API@1',action_id='unready-full',binding_id=device['bob']['binding_id']))))
+            blocked=expect(full_client.post('/v1/account-cleanup-operations/'+fresh['operation_id']+'/confirmation',headers=headers['bob'],content=encode(
+                dict(version='CLEANUP-API@1',registry_digest=fresh['registry_digest'],confirmation='DELETE_ACCOUNT'))))
+            assert blocked['status']=='blocked' and blocked['phase']=='prepared' and blocked['business_access']=='unchanged'
+            assert expect(full_client.get('/v1/feedback-action-receipts?action_id=feedback',headers=headers['bob']))['receipt'] is not None
+        from cj_cleanup.device_bridge import TARGETS
+        actual=json.loads((ROOT/'backend/storage-registry.json').read_bytes())
+        entries=next(store for store in actual['stores'] if store['id']=='device-cache')['objects']
+        assert set(TARGETS)=={'device-cache/'+entry['id'] for entry in entries}
+        print('PASS corrupted original plan rejects; actual full inventory missing owner hooks blocks before retirement; all device call targets registered')
         try:
             with psycopg.connect(**config,autocommit=True) as conn:migrate.down(conn,migrate.load(),34)
         except psycopg.Error:pass

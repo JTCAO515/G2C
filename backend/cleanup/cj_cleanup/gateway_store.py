@@ -1,7 +1,9 @@
 """Original HTTP operation/device metadata; all identities are host-bound digests."""
 from dataclasses import dataclass
 import json,uuid
-from .core import Conflict,Denied,digest,encode,identifier
+from .core import Conflict,Denied,digest,encode,identifier,hash_value
+from .postgres import Unavailable
+from cj_strict_json import reject_duplicates
 
 
 @dataclass(frozen=True,repr=False)
@@ -30,7 +32,20 @@ class GatewayStore:
             (self.store.subject_digest,operation_id))
         row=cur.fetchone()
         if row is None:raise Denied('cleanup operation unavailable')
-        return Prepared(row[0],row[1],bytes(row[2]),tuple(row[3]),bytes(row[4]) if row[4] is not None else None,*row[5:])
+        identifier(row[0]);identifier(row[1]);identifier(row[6]);hash_value(row[5])
+        if row[7] not in ('prepared','confirmed','blocked') or type(row[9]) is not int or row[9]<0:
+            raise Unavailable('original HTTP operation state unavailable')
+        if row[8] is not None:hash_value(row[8])
+        if type(row[3]) is not list or not row[3] or len(set(row[3]))!=len(row[3]):
+            raise Unavailable('original HTTP inventory unavailable')
+        for target in row[3]:identifier(target)
+        raw=None if row[4] is None else bytes(row[4])
+        if raw is not None:
+            if digest(raw)!=row[5]:raise Unavailable('original HTTP plan digest unavailable')
+            try:plan=json.loads(raw.decode('utf-8'),object_pairs_hook=reject_duplicates(ValueError,'duplicate original plan'))
+            except (ValueError,UnicodeError,RecursionError):raise Unavailable('original HTTP plan unavailable') from None
+            if type(plan) is not dict or set(plan)!=set(row[3]):raise Unavailable('original HTTP plan unavailable')
+        return Prepared(row[0],row[1],bytes(row[2]),tuple(row[3]),raw,*row[5:])
 
     def query(self,operation_id):
         with self.store.transaction(operation_id,writing=False) as cur:
@@ -44,7 +59,17 @@ class GatewayStore:
             cur.execute('SELECT binding_id,invocation_id,state FROM cj_cleanup_device_call WHERE subject_digest=%s AND operation_id=%s ORDER BY binding_id',
                         (self.store.subject_digest,operation_id))
             devices=[dict(binding_id=b,invocation_id=i,state=s,provenance='authenticated_current_device_report') for b,i,s in cur.fetchall()]
-        return prepared,progress,devices
+            cur.execute('SELECT reason FROM cj_cleanup_account_gate WHERE subject_digest=%s AND operation_id=%s',
+                        (self.store.subject_digest,operation_id))
+            gate=cur.fetchone()
+        return prepared,progress,devices,None if gate is None else gate[0]
+
+    def record_gate(self,operation_id,reason):
+        with self.store.transaction(operation_id) as cur:
+            cur.execute('INSERT INTO cj_cleanup_account_gate(subject_digest,operation_id,reason) VALUES(%s,%s,%s) '
+                'ON CONFLICT(operation_id) DO UPDATE SET reason=EXCLUDED.reason '
+                'WHERE cj_cleanup_account_gate.reason IS DISTINCT FROM EXCLUDED.reason',
+                (self.store.subject_digest,operation_id,reason))
 
     def by_action(self,action_id):
         with self.store.transaction('preparation-read',writing=False) as cur:

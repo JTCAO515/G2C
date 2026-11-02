@@ -86,18 +86,39 @@ class Gateway:
         metadata.confirm(operation_id,input_digest,current,owner_scope=binding.owner_scope,namespaces=binding.namespaces,
                          check_admission=lambda:self._same(token,principal))
         # From here only this captured original cleanup context may continue.
-        stopped=binding.stop_tasks(operation_id)
-        if stopped is not True:
-            return project(dict(version=VERSION,operation_id=operation_id,phase='confirmed',status='unknown',
-                reason='original_tasks_not_yet_stopped',business_access='revoked'))
+        self._continue_original(binding,operation_id,plan,current)
+        DeviceBridge(metadata,self.issuer).call(prepared.binding_id,'account_cleanup',operation_id=operation_id)
+        return project(self._progress(binding,operation_id))
+
+    def _continue_original(self,binding,operation_id,plan,current):
+        # Every execution/resumption entrance passes the same preflight. In
+        # particular, a device report is never authority to erase a live worker
+        # or its unresolved accounting evidence.
+        metadata=GatewayStore(binding.store)
+        if binding.stop_tasks(operation_id) is not True:
+            metadata.record_gate(operation_id,'original_tasks_not_yet_stopped')
+            return
         if 'business/usage' in plan:
             try:binding.hooks['business/usage'].require_settled(operation_id)
             except Denied:
-                return project(dict(version=VERSION,operation_id=operation_id,phase='confirmed',status='unknown',
-                    reason='original_usage_outcome_unresolved',business_access='revoked'))
+                metadata.record_gate(operation_id,'original_usage_outcome_unresolved')
+                return
+        metadata.record_gate(operation_id,None)
         self._run_original(binding,operation_id,plan,current)
-        DeviceBridge(metadata,self.issuer).call(prepared.binding_id,'account_cleanup',operation_id=operation_id)
-        return project(self._progress(binding,operation_id))
+
+    def resume(self,subject_digest,operation_id):
+        """Trusted host job only: re-open the captured original, never fresh AUTH.
+
+        HTTP progress remains observational. Pending intents may dispatch once;
+        committed/unknown intents only reconcile their original result.
+        """
+        binding=self.resolve_original(subject_digest,operation_id)
+        metadata=GatewayStore(binding.store)
+        if metadata.active_operation()!=operation_id:raise Denied('original active operation required')
+        prepared=metadata.query(operation_id)
+        if prepared.plan_bytes is not None:
+            self._continue_original(binding,operation_id,json.loads(prepared.plan_bytes),self.current_registry())
+        return self._progress(binding,operation_id)
 
     def _run_original(self,binding,operation_id,plan,current):
         coordinator=Coordinator(binding.store,self.current_registry,binding.hooks)
@@ -125,13 +146,15 @@ class Gateway:
         if prepared.phase=='prepared':
             return dict(version=VERSION,operation_id=operation_id,phase='prepared',status='awaiting_confirmation',revision=prepared.revision,steps=[])
         Coordinator(binding.store,self.current_registry,binding.hooks).query(operation_id)
-        prepared,progress,devices=metadata.snapshot(operation_id)
+        prepared,progress,devices,reason=metadata.snapshot(operation_id)
         # No online-domain result is relabelled as backup/all-device erasure.
-        aggregate=progress['status'] if progress['status'] in ('blocked','unknown','failed') else 'in_progress'
-        return dict(version=VERSION,operation_id=operation_id,phase=prepared.phase,status=aggregate,online_status=progress['status'],
+        aggregate=progress['status'] if progress['status'] in ('blocked','unknown','failed') else 'unknown' if reason else 'in_progress'
+        result=dict(version=VERSION,operation_id=operation_id,phase=prepared.phase,status=aggregate,online_status=progress['status'],
             revision=prepared.revision,steps=progress['steps'],devices=devices,
             obligations=dict(backups='unverified_30_day_rolling',other_devices='pending_actual_receipts',external='unverified'),
             complete_scope='frozen_online_domains_only',business_access='revoked')
+        if reason is not None:result['reason']=reason
+        return result
 
     def progress(self,capability,operation_id,project):
         claims=self.issuer.verify(capability,purpose='progress',operation_id=operation_id)
@@ -156,7 +179,7 @@ class Gateway:
             original=self.resolve_original(claims.subject_digest,operation_id)
             prepared=metadata.query(operation_id)
             if prepared.plan_bytes is not None:
-                self._run_original(original,operation_id,json.loads(prepared.plan_bytes),self.current_registry())
+                self._continue_original(original,operation_id,json.loads(prepared.plan_bytes),self.current_registry())
         return project(report)
 
     def device_query(self,capability,invocation_id,project):

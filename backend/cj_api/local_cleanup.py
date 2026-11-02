@@ -136,5 +136,9 @@ class Runtime:
 
     def gateway(self,jwt_configuration,verification_keys,access):
         checker=AdmissionChecker(PyJWTVerifier(jwt_configuration,verification_keys),AccountRevocationAccess(access,self.retired))
+        return self.host_gateway(checker)
+
+    def host_gateway(self,checker):
+        """Explicit local host composition, also used by the original-op worker."""
         return Gateway(checker=checker,resolve_principal=self.bind,resolve_subject=self.by_subject,resolve_original=self.original,
                        current_registry=self.registry,issuer=self.issuer,clock=self.configuration.clock)

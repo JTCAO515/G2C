@@ -1,5 +1,5 @@
 {
-  "version": "1.19.0",
+  "version": "1.20.0",
   "stores": [
     {
       "id": "business",
@@ -232,7 +232,8 @@
             "cj_cleanup_request",
             "cj_account_fence",
             "cj_cleanup_device_binding",
-            "cj_cleanup_device_call"
+            "cj_cleanup_device_call",
+            "cj_cleanup_account_gate"
           ],
           "source": "backend/cleanup/cj_cleanup/postgres.py@514aba717dd0e0a7f7783b6d9072d347cdb0a623",
           "status": "candidate_or_local_only; production_not_provisioned",
@@ -473,6 +474,44 @@
           "cleanup_protocol": "CLEANUP@1.1",
           "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook; A exact native primitive/report, original operation and namespace/state refs",
           "restore_fence": "No read after session/account/key/state invalidation; no remote all-device erasure claim"
+        },
+        {
+          "id": "feedback-pending",
+          "owner": "CJ-012 / CJ-007; A native device owner",
+          "objects": [
+            "FeedbackPendingStore AES-GCM Answer/General original feedback attempts"
+          ],
+          "source": "ios/Modules/CJFeedbackClient/Sources/CJFeedbackClient/FeedbackPendingStore.swift; ios/App/DevelopmentTripHost.swift",
+          "status": "provided/DEBUG_simulator_local_only; cleanup_consumer_pending_A_27",
+          "principal_binding": "Canonical SDK environment/account plus localFeedbackPendingV1; G2CDevelopmentFeedback/<environment>/<account>/Answer|General; original current key/state required",
+          "sensitive_fields": [
+            "Original feedback action UTF8/hash, voluntary fields, accepted receipt"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
+        },
+        {
+          "id": "feedback-key-keychain",
+          "owner": "CJ-012 / CJ-007; A native device owner",
+          "objects": [
+            "ScopedMessageKeyProvider localFeedbackPendingV1 canonical account-scoped key"
+          ],
+          "source": "ios/App/DevelopmentTripHost.swift; ios/Modules/CJMessageClient/Sources/CJMessageClient/ScopedMessageKeyProvider.swift",
+          "status": "provided/DEBUG_simulator_local_only; cleanup_consumer_pending_A_27",
+          "principal_binding": "Canonical SDK environment/account plus localFeedbackPendingV1; G2CDevelopmentFeedback/<environment>/<account>/Answer|General; original current key/state required",
+          "sensitive_fields": [
+            "Device-only key material, exact environment/account/purpose/key ID"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@1: persisted original call and purpose-bound authenticated current-device report; A resolves known target to exact native namespace/state/key primitives; other/offline devices stay pending",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
         }
       ],
       "owner_line": "A",
