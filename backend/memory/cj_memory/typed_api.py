@@ -16,6 +16,8 @@ from cj_api.memory_boundary import (MemoryBoundary,MemoryBinding,MemoryAccessBlo
 from cj_api.message_routes import BodyError,_body_error,_error,_require_octets,_stream_octets,_token
 from cj_auth.interfaces import AdmissionStatus,AdmissionReason
 from cj_auth.jwt_adapter import JWTConfiguration,StaticPublicKeys,VerificationKey
+from cj_auth.account_revocation import AccountRevocationAccess
+from cj_api.local_account_admission_v2 import retired_for
 from cj_message.travel_reference import MessageContextAuthority
 from .domain import Service,InvalidInput,Conflict
 from .postgres import Repository
@@ -66,7 +68,8 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
         return configuration.collection.profiles[principal.subject].expires_at>datetime.now(timezone.utc)
 
     boundary=build_memory_boundary(environment='local',jwt_configuration=JWTConfiguration(ISSUER,AUDIENCE,'RS256',0),
-        verification_keys=keys,access_provider=InvitedSubjects(auth_dir/'invited.json'),resolve_binding=resolve,source_policy=policy)
+        verification_keys=keys,access_provider=AccountRevocationAccess(InvitedSubjects(auth_dir/'invited.json'),retired_for(database)),
+        resolve_binding=resolve,source_policy=policy)
     app=create_app()
 
     def query(request,fields):

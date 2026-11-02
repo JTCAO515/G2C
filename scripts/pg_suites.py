@@ -492,6 +492,15 @@ def group_memory_incremental_worker():
 GROUPS.update(memory_ending_worker=group_memory_ending_worker,memory_incremental_worker=group_memory_incremental_worker)
 
 
+def group_memory_account_cleanup():
+    status=script('backend/memory_withdrawal/tests/account_admission_pg.py')
+    status|=script('backend/memory_withdrawal/tests/account_hooks_pg.py')
+    return status
+
+
+GROUPS.update(memory_account_cleanup=group_memory_account_cleanup)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

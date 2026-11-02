@@ -144,7 +144,7 @@ class ScopedPublisher:
 def local_configuration(*,conninfo_path,auth_dir,run_context,memory,credentials,confirmation,limits,language):
     import os
     from cj_api.composition import CompositionUnavailable
-    from cj_api.local_worker_context import checker_for
+    from cj_api.local_account_admission_v2 import account_checker_for
     from pathlib import Path
     from cj_trip.confirmation import ConfirmationSigner
     from cj_memory.edit_runtime import EditRuntimeConfiguration
@@ -152,7 +152,7 @@ def local_configuration(*,conninfo_path,auth_dir,run_context,memory,credentials,
         raise CompositionUnavailable('explicit actual C edit configuration required')
     database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
     tracked=ScopedMemoryConfiguration(memory)
-    publisher=ScopedPublisher(database,checker_for(Path(auth_dir)),credentials,tracked,confirmation,limits,language=language)
+    publisher=ScopedPublisher(database,account_checker_for(Path(auth_dir),database),credentials,tracked,confirmation,limits,language=language)
     configuration=EditConfiguration(tracked,publisher)
     database.edit_configuration=configuration
     return database,configuration
