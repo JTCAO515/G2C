@@ -217,3 +217,25 @@ The opt-in is `G2C_DEV_OFFLINE_TRIP=last-sync-v1` with account mode. Test-only
 They do not activate Release/real-device roots. The original account-cleanup
 operation/device receipt in box 4 stays UNRUN pending B; real device offline and
 VoiceOver remain #29. No handoff update is performed for this follow-up.
+
+## Feedback App acceptance (#15 / #430)
+
+`check_feedback.py` takes a committed App head, explicit `CJ-LOCAL-RUN@2`, a
+booted iOS 17.5 simulator, external output/build directories, and a clean backend
+source with its full `--backend-head` pin. Run Python from that backend's locked
+environment; the harness verifies imports belong to the specified source tree.
+This supports B's notified candidate before merge without editing backend files.
+
+It uses actual account admission, App MESSAGE submission, unmodified worker with
+FakeProvider, signed feedback POST/original GET, and restricted runtime PG.
+Native cases cover opt-in message/run refs and independent Memory general refs,
+bilingual Chinese content, full `.all` AX and system maximum type size, post-commit
+ACK loss/reopen/query without another POST, and a held original ACK across account
+switch. The response delivery faults are labelled; no successful receipt is
+manufactured. Own/foreign receipt/locator checks and source/content/token scans
+are recorded separately. Originals and historical FAILs are retained.
+
+Opt-in: `G2C_DEV_FEEDBACK_PROFILE=feedback-v1`; Release and remote write factories
+remain closed. The server-only locator is inspected through its own actual
+protected route and is never accepted as App-supplied metadata. Real providers,
+physical devices, cloud, and release remain UNRUN in #32/#29.
