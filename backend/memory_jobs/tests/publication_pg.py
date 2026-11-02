@@ -164,6 +164,18 @@ def exercise(conninfo,auth):
         service.publish_output(tokens['alice'],'reject-job','reject-attempt')
         view=expected(client.get('/v3/memory-candidates',params={'job_id':'reject-job','attempt_id':'reject-attempt'},headers=headers['alice']))['result']
         candidate=view['candidates'][0]
+        with repository.transaction() as tx:
+            expired_source=tx.detail(candidate['candidate_id']).command.source_id
+        # Initialization-side clock simulation only reduces an existing source's
+        # validity; it does not grant collection or bypass the runtime source gate.
+        with psycopg.connect(**json.loads(conninfo.read_bytes())) as conn:
+            conn.execute("UPDATE cj_memory_source SET expires_at=clock_timestamp()-interval '1 second' "
+                         'WHERE scope=%s AND source_id=%s',(scope,expired_source))
+        expired=dict(version='MEMORY-CANDIDATE@1',action_id='expired-confirm',job_id='reject-job',attempt_id='reject-attempt',
+            candidate_id=candidate['candidate_id'],expected_candidate_version=candidate['version'],
+            expected_memory_epoch=view['memory_epoch'],operation='confirm',kind='experience',
+            text='Reviewed museum experience',extent='long_term',context=None,occurred_at='date unknown')
+        post('/v3/memory-candidate-actions',expired,status=503)
         reject=dict(version='MEMORY-CANDIDATE@1',action_id='reject',job_id='reject-job',attempt_id='reject-attempt',
             candidate_id=candidate['candidate_id'],expected_candidate_version=candidate['version'],
             expected_memory_epoch=view['memory_epoch'],operation='reject')
@@ -177,7 +189,7 @@ def exercise(conninfo,auth):
         service.publish_output(tokens['alice'],'reject-job','reject-attempt')
         with repository.transaction() as tx:
             assert tx.detail(candidate['candidate_id']).status=='withdrawn'
-        print('PASS rejection/no-response candidates never enter canonical context; original replay does not reactivate a rejected item')
+        print('PASS expired candidate cannot confirm but can be explicitly rejected; rejection/no-response never enters context and replay cannot reactivate it')
         post('/v1/messages',dict(version='MESSAGE-send.1',conversation_id='chat',message_id='m3',
             text='I now prefer spicy food',trip_id=None,creation_intent='none',
             expected_generation=head['generation'],expected_sequence=3))
