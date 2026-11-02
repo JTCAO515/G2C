@@ -90,7 +90,7 @@ struct TypedMemoryItems: View {
                         }.frame(minHeight:44).contentShape(Rectangle())
                     }.buttonStyle(ShellReadableButtonStyle()).disabled(host.busy).accessibilityIdentifier("memory2.item." + item.command.item_id)
                     }
-                  } header: { ShellSectionHeading(title:typedMemoryKind(kind,language)) }
+                  } header: { RunReadableText(text:typedMemoryKind(kind,language),style:.headline).accessibilityAddTraits(.isHeader).textCase(nil) }
                 }
             }
             if host.hasMore {
@@ -175,7 +175,7 @@ struct TypedMemoryManual: View {
                         guard let captured = review else { return };review = nil
                         Task { await host.performSave(captured) }
                     }
-                } header: { ShellSectionHeading(title:language.text("Review exact input", "核对本次原输入")) }
+                } header: { RunReadableText(text:language.text("Review exact input", "核对本次原输入"),style:.headline).accessibilityAddTraits(.isHeader).textCase(nil) }
             }
             TypedMemorySaveOutcome(host:host,surface:surface,language:language)
             NavigationLink { TypedMemoryOriginals(host:host,language:language) } label: {
