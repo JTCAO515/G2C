@@ -136,6 +136,10 @@ class Service:
         from .ending import EndingCommand
         return self._enqueue_command(token,EndingCommand.parse(original),request_id=request_id,ending=True)
 
+    def enqueue_ending_serialized(self,token,original):
+        from .ending import EndingCommand
+        return self._enqueue_command(token,EndingCommand.parse(original),request_id=None,ending=True,serialized=True)
+
     def _enqueue_command(self, token, command, *, request_id, ending=False,serialized=False):
         original=command.raw
         query,job_id,attempt_id = command.query,command.job_id,command.attempt_id
