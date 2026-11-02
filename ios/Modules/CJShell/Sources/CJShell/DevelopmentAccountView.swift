@@ -7,6 +7,7 @@ struct DevelopmentAccountView: View {
 
     var body: some View {
         List {
+            Section { AccountDeletionLink(language: language) }
             Section {
                 Text(language.text("Development session", "开发会话")).font(.headline)
                 Text(status).accessibilityIdentifier("account.development.status")

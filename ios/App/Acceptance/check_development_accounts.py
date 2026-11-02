@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--simulator', required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--build-dir', type=Path)
+    parser.add_argument('--suite', choices=['lifecycle', 'account-deletion'], default='lifecycle')
     parser.add_argument('--diagnostic-test', choices=['testLifecycleEnglish', 'testLifecycleChinese', 'testFailuresEnglish', 'testFailuresChinese', 'testLateEnglish', 'testLateChinese'],
                         help='Run one failing scenario for diagnosis; remaining scenarios stay UNRUN')
     args = parser.parse_args()
@@ -37,6 +38,7 @@ def main():
     if (output / 'report.json').exists():
         raise ValueError('Use a new output directory; preserve previous results')
     env = {k: v for k, v in os.environ.items() if not k.startswith(('SIMCTL_CHILD_', 'G2C_DEV_', 'PG', 'LIBPQ'))}
+    env['OS_ACTIVITY_MODE'] = 'disable'
     env.update(CJ_ENV='local', DEVELOPER_DIR='/Applications/Xcode.app/Contents/Developer')
     os.environ.update(CJ_ENV='local')
     devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j'], env=env))
@@ -44,7 +46,7 @@ def main():
                for runtime, rows in devices['devices'].items() for d in rows)
     report = {'status': 'RUNNING', 'base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'working_tree_dirty': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip()),
-              'scope': 'iOS17.5 actual App, signed local identities, real private PG and simulator Keychain; no OTP/cloud/model', 'cases': {}}
+              'suite': args.suite, 'scope': 'iOS17.5 actual App, signed local identities, real private PG and simulator Keychain; no OTP/cloud/model', 'cases': {}}
     (output / 'report.json').write_text(json.dumps(report, indent=2))
 
     import psycopg
@@ -151,6 +153,8 @@ def main():
                 pbx.write_text(text)
                 variants = {'Debug': ['testLifecycleEnglish', 'testLifecycleChinese', 'testFailuresEnglish', 'testFailuresChinese', 'testLateEnglish', 'testLateChinese'],
                             'Release': ['testReleaseRemainsDisconnected']}
+                if args.suite == 'account-deletion':
+                    variants = {'Debug': ['testDeletionEntryEnglish', 'testDeletionEntryChinese']}
                 if args.diagnostic_test:
                     report['unrun'] = [case for tests in variants.values() for case in tests if case != args.diagnostic_test]
                     variants = {'Debug': [args.diagnostic_test]}
@@ -178,6 +182,8 @@ def main():
                             content = path.read_bytes()
                             assert not any(token.encode() in content for token in tokens.values()), 'token in App data file'
                     report['cases'][configuration]['app_file_token_scan'] = 'PASS'
+                if args.suite == 'account-deletion':
+                    assert all(path.startswith('GET ') for path in audit), 'Account explanation issued a write'
                 report['status'] = 'PARTIAL_PASS' if args.diagnostic_test else 'PASS'
             except BaseException as error:
                 report['status'] = 'FAIL'; report['error'] = type(error).__name__

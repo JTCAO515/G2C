@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import CJRunClient
 
 /// Host owns the state for the window lifetime. No language-based .id or recreation.
 public struct ShellView: View {
@@ -109,8 +110,7 @@ struct ShellReadableButtonStyle: ButtonStyle {
 struct ShellSectionHeading: View {
     let title: String
     var body: some View {
-        Text(title).font(.subheadline).foregroundStyle(Color(uiColor: .label))
-            .fixedSize(horizontal: false, vertical: true)
+        RunReadableText(text: title, style: .caption)
             .accessibilityAddTraits(.isHeader)
     }
 }
