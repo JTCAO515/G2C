@@ -144,6 +144,13 @@ class HistoryReadContext:
         self._check()
         return self._service.read_draft(conversation_id, generation)
 
+    def with_enabled_source(self, query, policy, project):
+        from .source import with_source
+        self._check()
+        result = with_source(self._service, self._principal, query, policy, project)
+        self._check()
+        return result
+
 
 class Boundary:
     """Server composition only. resolve_repository is a server-owned mapping.
@@ -227,6 +234,13 @@ class Boundary:
 
     def receive(self, token, raw):
         return self._service(token).receive(raw)
+
+    def finish_conversation(self, token, query, project):
+        from .source import finish
+        service, principal, scope, guard = self._bind(token)
+        result = project(finish(service, query))
+        guard('return')
+        return result
 
     def receive_v4(self,token,raw):return self._service(token).receive_v4(raw)
 
