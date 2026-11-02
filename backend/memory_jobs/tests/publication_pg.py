@@ -140,6 +140,35 @@ def exercise(conninfo,auth):
         else:raise AssertionError('another interval entered the original processing callback')
         assert calls==[prepared_bytes]
         print('PASS actual protected processing policy: pending/changed bytes/digest/interval and expired lifetime deny the callback; same original inflight source admits exact bytes; no provider/Meter claim')
+        from cj_message.travel import Selection as TravelSelection
+        from cj_message.travel_reference import LeaseUnavailable,Denied as ContextDenied
+        joint_travel=post('/v1/travel-context-actions',dict(version='TRAVEL-context-action.1',action_id='processing-travel',
+            operation='create',travel_context=None))['receipt']['travel_context']
+        joint_calls=[];leases=[]
+        def joint_processing(selection):
+            def stage(context):
+                policy=service.processing_policy(context,tokens['alice'],'job','attempt',prepared_bytes,
+                    hashlib.sha256(prepared_bytes).hexdigest(),max_payload_bytes=262144)
+                def project(snapshot,lease):
+                    leases.append(lease)
+                    def checked(original):
+                        lease.check()
+                        assert lease.context==selection
+                        joint_calls.append(original)
+                        return b'joint-processing-fence-ready'
+                    return policy.with_input(snapshot,checked)
+                return context.with_enabled_source_and_travel(query,policy,selection,project)
+            return host.boundary.with_history_context(tokens['alice'],stage)
+        assert joint_processing(TravelSelection(joint_travel['id'],1))==b'joint-processing-fence-ready'
+        assert joint_calls==[prepared_bytes]
+        try:leases[-1].check()
+        except LeaseUnavailable:pass
+        else:raise AssertionError('joint Travel lease escaped its callback lifetime')
+        try:joint_processing(TravelSelection(joint_travel['id'],2))
+        except ContextDenied:pass
+        else:raise AssertionError('stale Travel version entered processing')
+        assert joint_calls==[prepared_bytes]
+        print('PASS fixed SOURCE@2 candidate with real C processing policy and genuine Travel lease; stale selection/lifetime denied; callback is bounded local work, not provider execution')
         # Supplied synthetic output tests this boundary; no provider or metering claim.
         output=json.dumps(dict(version='MEMORY-EXTRACT@1',entries=[
             dict(subject='self',slot='diet.spicy',kind='preference',text=texts[0],extent='long_term',

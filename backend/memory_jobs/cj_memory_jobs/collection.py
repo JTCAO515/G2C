@@ -74,12 +74,12 @@ class CollectionService(Service):
             return encoded(snapshot,extraction,row[5],max_payload_bytes=max_payload_bytes)
         return self._with_job(token,job_id,attempt_id,project)
 
-    def processing_policy(self,context,token,job_id,attempt_id,original_input,input_sha256,*,max_payload_bytes):
+    def processing_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,*,max_payload_bytes):
         """Compose inside B's outer protected context; never opens a Boundary."""
         from .processing import ProcessingSourcePolicy
         repository,principal,guard=self._binding(context,token)
         extraction,_,_=self.resolve_collection(principal)
-        return ProcessingSourcePolicy(repository,principal,guard,job_id,attempt_id,original_input,input_sha256,
+        return ProcessingSourcePolicy(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
                                       extraction,max_payload_bytes=max_payload_bytes)
 
     def publish_output(self,token,job_id,attempt_id):

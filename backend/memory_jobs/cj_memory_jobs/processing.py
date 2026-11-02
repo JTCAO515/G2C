@@ -17,13 +17,13 @@ from .source_policy import SourcePolicy
 class ProcessingSourcePolicy(SourcePolicy):
     transaction_type=PublicationTransaction
 
-    def __init__(self,repository,principal,guard,job_id,attempt_id,original_input,input_sha256,
+    def __init__(self,repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
                  extraction,*,max_payload_bytes):
         super().__init__(repository,principal,guard)
         job_identity(job_id);job_identity(attempt_id)
         if type(original_input) is not bytes or not 0<len(original_input)<=524288:
             raise ValueError('bounded original prepared input required')
-        if sha256(original_input).hexdigest()!=input_sha256:
+        if sha256(original_input).hexdigest()!=prepared_input_sha256:
             raise Conflict('original prepared input digest differs')
         self.job_id,self.attempt_id=job_id,attempt_id
         self.original_input=original_input
@@ -55,8 +55,9 @@ class ProcessingSourcePolicy(SourcePolicy):
     def with_input(self,snapshot,operation: Callable[[bytes],bytes]):
         """Verify inside the held C tx before entering the actual B exit callback.
 
-        The callback receives the exact original prepared bytes, not a model or
-        client-selected replacement. This is dispatch/claim only: it cannot write
+        The callback performs bounded local admission/claim/dispatch-intent work,
+        without a provider/network wait. It receives the exact original prepared
+        bytes, not a model or client-selected replacement. It cannot write
         a C result/checkpoint or grant permission to resend an unknown B attempt.
         """
         row=self._original(self.query)

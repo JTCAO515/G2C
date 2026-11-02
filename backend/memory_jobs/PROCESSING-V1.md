@@ -8,7 +8,7 @@ Inside B's original protected HistoryReadContext, call:
 
 ```python
 policy = collection.processing_policy(
-    context, token, job_id, attempt_id, original_input, input_sha256,
+    context, token, job_id, attempt_id, original_input, prepared_input_sha256,
     max_payload_bytes=explicit_bound,
 )
 ```
@@ -16,7 +16,9 @@ policy = collection.processing_policy(
 `context` is the actual outer context, not wire principal/scope fields. C binds its
 own canonical repository and fresh checker to that captured identity. Original
 input is the exact fully encoded `{system,messages}` from prepare_model_input;
-input_sha256 is the original B job/operation's digest. A digest or prepared bytes
+prepared_input_sha256 is the digest of exactly those C-prepared bytes, retained in
+B's original job descriptor. It is distinct from a registered Meter operation's
+full-input digest if B wraps the request with other fields. A digest or prepared bytes
 alone is data and confers no permission.
 
 B installs policy in its public source reader. In its actual snapshot callback,
@@ -37,8 +39,10 @@ absence of output/checkpoint. with_input compares the actual protected messages
 to the original C batch and renders the current exact model input under C's
 server policy. Changed bytes, input digest, source, policy, Memory basis or phase
 reject before registered_step. The callback receives the exact original bytes,
-returns bounded bytes through B, and must use B's unique Meter/Run/cancellation
-gates. C rechecks phase and fresh admission on return. Expired wrapper lifetime
+returns bounded bytes through B, and performs only bounded local claim/admission
+or dispatch-intent work under B's unique Meter/Run/cancellation gates. No provider
+or network wait may span this source lease. B's actual exit reenters the short
+guard at its required dispatch point. C rechecks phase and fresh admission on return. Expired wrapper lifetime
 cannot be reused.
 
 Dispatch/claim cannot write a C checkpoint. Publication needs a separate C-owned
