@@ -101,6 +101,45 @@ private func privateRoot() throws -> URL {
     #expect(evaluate(policy:.init(maximumAge:Int64.max)) == .unavailable)
 }
 
+@Test func acceptedTripFourteenDayPolicyUsesSuccessfulSyncAndNeverExtendsOldSnapshot() throws {
+    let policy = OfflinePolicy.acceptedTrip
+    let age: Int64 = 1_209_600
+    let syncedAt: Int64 = 1_800_000_000
+    let deadline = try policy.deadline(syncedAt: syncedAt)
+    #expect(deadline == syncedAt + age)
+    let ns = try namespace()
+    func capture(_ sync: Int64) throws -> OfflineSnapshot {
+        try SnapshotCodec.capture(response: response(), namespace: ns, syncedAt: sync,
+            deadline: policy.deadline(syncedAt: sync), boot: boot, uptime: 50, keyID: keyID)
+    }
+    let original = try capture(syncedAt)
+    func evaluate(_ value: OfflineSnapshot, now: Int64?, uptime: Double = 51,
+                  policy: OfflinePolicy? = .acceptedTrip, currentBoot: UUID = boot,
+                  last: Int64? = syncedAt, active: OfflineNamespace? = ns, allowed: Bool = true) -> OfflineValidity {
+        OfflineValidityEvaluator.evaluate(value, active: active, policy: policy,
+            clock: .init(trustedWallSeconds: now, boot: currentBoot, uptime: uptime),
+            lastTrustedWall: last, minimumVersion: 2, sessionAllowsOffline: allowed)
+    }
+    #expect(evaluate(original, now: deadline - 1) == .readable(version: 2, syncedAt: syncedAt, deadline: deadline))
+    #expect(evaluate(original, now: deadline) == .stale)
+    #expect(evaluate(original, now: deadline + 1) == .stale)
+    // Only a new successfully captured sync receives a new authenticated deadline.
+    let resyncedAt = syncedAt + 86_400
+    let renewed = try capture(resyncedAt)
+    #expect(evaluate(renewed, now: deadline) == .readable(version: 2, syncedAt: resyncedAt, deadline: resyncedAt + age))
+    #expect(evaluate(original, now: deadline, policy: .init(maximumAge: age * 2)) == .stale)
+    #expect(evaluate(original, now: syncedAt + 1, policy: nil) == .unavailable)
+    #expect(evaluate(original, now: syncedAt + 1, uptime: 50 + Double(age)) == .stale)
+    #expect(evaluate(original, now: syncedAt - 1) == .unavailable)
+    #expect(evaluate(original, now: nil, currentBoot: UUID()) == .unavailable)
+    #expect(evaluate(original, now: syncedAt + 1, currentBoot: UUID(), last: nil) == .unavailable)
+    #expect(evaluate(original, now: syncedAt + 1, active: try namespace()) == .unavailable)
+    #expect(evaluate(original, now: syncedAt + 1, allowed: false) == .unavailable)
+    #expect(throws: OfflineFailure.unavailable) { try policy.deadline(syncedAt: Int64.max) }
+    #expect(throws: OfflineFailure.unavailable) { try policy.deadline(syncedAt: 0) }
+    #expect(throws: OfflineFailure.unavailable) { try OfflinePolicy(maximumAge: 0).deadline(syncedAt: syncedAt) }
+}
+
 @Test func atomicReopenClearAndUnknownReadback() throws {
     let root = try privateRoot(); defer { try? FileManager.default.removeItem(at:root) }
     let store = try AtomicSnapshotStore(existingPrivateDirectory:root)
