@@ -54,11 +54,12 @@ def main():
     sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentTypedMemoryUITests.swift',Path(__file__)]
     for name in ('CJShell','CJMemoryClient','CJMessageClient','CJRunClient'):
         sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
-    report=dict(status='RUNNING',head=head,cases={},scope=args.case+'; complete frame 4 still requires the whole matrix',
+    report=dict(status='RUNNING',head=head,cases={},scope=args.case+('; #332 optional questions and loaded-page groups only' if collection_questions else '; complete frame 4 still requires the whole matrix'),
         source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
         git_trees={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=ROOT,text=True).strip() for name in ('ios','backend','contracts','scripts')},
         run_context=json.loads(args.run_context.read_text()),
         unrun=['complete #228 frame4 matrix','other native cases','lifecycle/unknown/interoperability matrix','real services/models/cloud/fees','physical device/VoiceOver'])
+    if collection_questions:report['unrun']=['#332 remaining native cases/pagination/late/Release matrix','real services/models/cloud/fees','physical device/VoiceOver']
     lock=threading.RLock()
     def save():
         with lock:(output/'report.json').write_text(json.dumps(report,indent=2)+'\n')

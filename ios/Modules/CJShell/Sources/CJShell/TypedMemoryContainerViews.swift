@@ -89,7 +89,7 @@ struct TypedMemoryItems: View {
                             TypedMemoryText(text:typedMemoryScope(read.item.scope,language),id:"memory2.item.scope." + item.command.item_id)
                         }.frame(minHeight:44).contentShape(Rectangle())
                     }.buttonStyle(ShellReadableButtonStyle()).disabled(host.busy)
-                        .accessibilityLabel(item.command.text + " · " + typedMemoryKind(item.command.kind.rawValue,language) + " · " + item.command.subject + " · " + item.command.slot + " · " + typedMemoryStatus(item.status.rawValue,language) + " · " + typedMemoryScope(read.item.scope,language))
+                        .accessibilityLabel(rowLabel(read))
                         .accessibilityIdentifier("memory2.item." + item.command.item_id)
                     }
                   } header: { RunReadableText(text:typedMemoryKind(kind,language),style:.headline).accessibilityAddTraits(.isHeader).textCase(nil) }
@@ -102,6 +102,12 @@ struct TypedMemoryItems: View {
             }
         }.navigationTitle(language.text("Saved memories", "已保存记忆"))
             .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface))
+    }
+    private func rowLabel(_ read: TypedMemoryRead) -> String {
+        let item = read.item.value
+        return [item.command.text,typedMemoryKind(item.command.kind.rawValue,language),
+                item.command.subject,item.command.slot,typedMemoryStatus(item.status.rawValue,language),
+                typedMemoryScope(read.item.scope,language)].joined(separator:" · ")
     }
 }
 
