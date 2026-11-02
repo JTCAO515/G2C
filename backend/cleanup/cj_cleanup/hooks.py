@@ -57,6 +57,7 @@ class Selection:
 
 @dataclass(frozen=True, repr=False)
 class HookRequest:
+    protocol = VERSION
     operation_id: str
     invocation_id: str
     subject_digest: str
@@ -98,11 +99,16 @@ class HookReceipt:
 
     @classmethod
     def from_bytes(cls, raw: bytes, request: HookRequest) -> HookReceipt:
+        return cls.from_digest(raw, request.digest)
+
+    @classmethod
+    def from_digest(cls, raw: bytes, original_request_digest: str) -> HookReceipt:
+        """Trusted original-result storage importer; a digest is not authority."""
         value = _decode(raw, 4096)
         if set(value) != {"protocol", "request_digest", "outcome"} or value["protocol"] != VERSION:
             raise Invalid("invalid cleanup receipt fields")
         request_digest = hash_value(value["request_digest"])
-        if request_digest != request.digest:
+        if request_digest != original_request_digest:
             raise Conflict("cleanup receipt binding mismatch")
         if value["outcome"] not in ("confirmed", "unknown", "failed"):
             raise Invalid("invalid cleanup outcome")
