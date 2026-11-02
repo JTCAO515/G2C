@@ -9,6 +9,7 @@ import base64,json
 
 from cj_message.domain import Cursor
 from cj_message.source import SourceQuery
+from cj_auth.interfaces import AdmissionStatus
 from .codec import SourceV2,Unavailable
 from .postgres import Transaction,encode,stream_key
 from .model_v2 import NoEligibleSource
@@ -100,5 +101,11 @@ class ProducerHost:
         self.producer,self.tokens_for_run,self.background=producer,tokens_for_run,background
 
     def run_once(self,provider):
-        for token in self.tokens_for_run():self.producer.poll(token)
+        for token in self.tokens_for_run():
+            # Like B's local host, a definitively retired/revoked roster member
+            # cannot prevent another admitted owner's background pass. UNKNOWN
+            # still reaches the canonical boundary and is never defaulted off.
+            admission=self.producer.collection.boundary.checker.check(token)
+            if admission.status is AdmissionStatus.DENIED:continue
+            self.producer.poll(token)
         return self.background.run_once(provider)

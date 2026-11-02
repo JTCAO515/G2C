@@ -17,6 +17,9 @@ ProducerHost(producer,tokens_for_run,background).run_once(provider) first polls 
 for the actual host's supplied signed tokens, then invokes the original B local
 background host. It is passed through the existing run_once background_jobs seam.
 There is no new default worker, daemon, environment secret or public dispatch API.
+Definitively denied roster tokens are skipped before intake, so a revoked account
+does not block another owner. Every admitted call still reenters the canonical
+boundary; UNKNOWN is explicit and never becomes a default-off observation.
 
 The host must explicitly inject max_payload_bytes and max_conversations (1–100);
 neither has an implicit default. One poll handles at most that configured number

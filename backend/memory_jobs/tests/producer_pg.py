@@ -11,7 +11,7 @@ from cj_api.local_app import ISSUER,scope_for
 from cj_memory.manual import ManualPolicy
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_memory_jobs.extraction import CollectionPolicy
-from cj_memory_jobs.producer import IncrementalProducer
+from cj_memory_jobs.producer import IncrementalProducer,ProducerHost
 
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
 import dev_auth,migrate,pg_suites
@@ -84,6 +84,17 @@ def exercise(conninfo,auth):
         status=json.loads(c.query_original(alice,'pending-job','pending-attempt'))
         assert status['input_sha256']==sha256(original).hexdigest() and status['state']=='inflight'
         assert rebuilt.poll(alice)==() and rebuilt.poll(bob)==() and len(submissions)==2
+        # A revoked account may remain in the local signed-token roster. It
+        # must not permanently stop a different account's background pass.
+        invitation=auth/'invited.json';old=invitation.read_bytes();passes=[]
+        class Background:
+            def run_once(self,provider):passes.append(True);return ['actual-background-pass-reached']
+        try:
+            invitation.write_text(json.dumps(['producer-bob']))
+            combined=ProducerHost(rebuilt,lambda:[alice,bob],Background())
+            assert combined.run_once(None)==['actual-background-pass-reached'] and passes==[True]
+            assert len(submissions)==2
+        finally:invitation.write_bytes(old)
     with host.database.connect(scope_for(ISSUER,'producer-bob')) as conn:
         assert conn.execute('SELECT count(*) FROM cj_memory_history_job').fetchone()==(0,)
     print('PASS actual signed consent→public committed head→durable C incremental intake; default off/manual scope/text cannot grant history; exact pending resume once, rebuilt UNKNOWN and disabled sources never resubmit, Bob isolated; callback only, provider/Meter acceptance separate')
