@@ -22,6 +22,11 @@ class Service:
     def __init__(self, boundary, resolve_repository):
         self.boundary, self.resolve_repository = boundary, resolve_repository
 
+    def source_policy(self,context,token):
+        """One fresh public composition binding, with no new Boundary/read grant."""
+        repository,principal,guard=self._binding(context,token)
+        return SourcePolicy(repository,principal,guard)
+
     def _invoke(self, token, operation, request_id, version):
         if request_id is None:
             return self.boundary.with_history_context(token,operation)
