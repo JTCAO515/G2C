@@ -28,6 +28,7 @@ struct AccountView: View {
 
     var body: some View {
         Form {
+            Section { AccountDeletionLink(language: language) }
             Section {
                 Text(language.text("Account access is not yet verified. Signing in does not grant invited-beta access.", "账号准入尚未验证。登录不代表获得受邀内测资格。"))
                 Text(statusText).accessibilityIdentifier("account.status")

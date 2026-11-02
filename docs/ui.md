@@ -191,3 +191,11 @@ Trip-local 固定／取消固定只改变正式 Trip，不改写 NEEDS。完整�
 RUN 的 published 仅说明已记录候选，不代表正式 Trip。此发送前缀不从正文、worker Outcome、命名前缀或环境 ID 查找候选，也不走旧 provenance/action 降级。受保护 NEEDS 规划发现/采用仍按 C 实际冻结交付接入；source2 后续规划区分来源 context Trip 与新规划 Trip，不冒称原地手改，正式组合另验。
 
 C 的 `TRIP-needs-discovery.1` 已接入该模式：从原 accepted MESSAGE 的完整 travel reference/NEEDS 与 message_id/run_id 查找候选，保留 opaque candidate hash；候选快照、来源 context Trip 与新规划 Trip 分别展示。采用／拒绝只确认当前这份已读候选，原 action 字节先进入独立加密域，再一次 POST；未知不重发，重启只核原 receipt。采用按原 receipt 的新 Trip ID 读回，拒绝要求 committed_version=null。GET null 保持 UNKNOWN 或已记录的原明确拒绝，不凭同内容或竞争方版本冒成功。正式 source2 重新规划入口与整票组合仍另验。
+
+### 注销入口与范围说明（#27）
+
+记忆根页和账号页均提供“注销账号”入口，不依赖记忆列表是否为空。
+双语说明区分单条记忆删除、本机退出与全账号注销，区分停止使用和清理进度；
+说明14天离线期限、重连失效清理、30天滚动备份及外部副本边界。
+正式注销操作未接入时明确显示尚未开放、未发送请求；阅读说明不创建操作或清理文件。
+此入口不代替 #27 的 CLEANUP 接线、原操作进度及设备文件物理清理验收。
