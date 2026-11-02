@@ -19,6 +19,7 @@ from cj_memory.domain import Service as MemoryService
 from cj_auth.interfaces import AdmissionStatus
 from cj_message.domain import HistoryMessage
 from cj_message.travel_reference import MessageContextAuthority
+from cj_message.source import SourceQuery
 from cj_memory_jobs.extraction import Evidence
 from cj_memory_jobs.codec import Conflict
 from cj_memory_jobs.collection_app import create_collection_app
@@ -94,13 +95,88 @@ def exercise(conninfo,auth):
         source=dict(conversation_id='chat',generation=head['generation'],epoch=0,after=0,through=2,
                     source_version=1,withdrawal_epoch=1,mode='incremental')
         post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='job',attempt_id='attempt',source=source))
+        calls=[];captured=[]
+        query=SourceQuery(**source)
+        def protected_processing(raw,query=query,*,digest=None):
+            def stage(context):
+                policy=service.processing_policy(context,tokens['alice'],'job','attempt',raw,
+                    hashlib.sha256(raw).hexdigest() if digest is None else digest,max_payload_bytes=262144)
+                def project(snapshot):
+                    captured.append((policy,snapshot))
+                    from threading import Thread
+                    from cj_memory_jobs.codec import Unavailable as LifetimeUnavailable
+                    denied=[]
+                    def other_thread():
+                        try:policy.with_input(snapshot,lambda raw:b'wrong-thread')
+                        except LifetimeUnavailable:denied.append(True)
+                    thread=Thread(target=other_thread);thread.start();thread.join(5)
+                    assert not thread.is_alive() and denied==[True]
+                    def checked(original):
+                        calls.append(original)
+                        return b'processing-fence-ready'
+                    return policy.with_input(snapshot,checked)
+                return context.with_enabled_source(query,policy,project)
+            return host.boundary.with_history_context(tokens['alice'],stage)
+        try:protected_processing(b'{}')
+        except Conflict:pass
+        else:raise AssertionError('pending C job entered the processing callback')
+        assert calls==[]
         service.transition(tokens['alice'],'job','attempt','inflight')
-        prepared_input=json.loads(service.prepare_model_input(tokens['alice'],'job','attempt',max_payload_bytes=262144))
+        prepared_bytes=service.prepare_model_input(tokens['alice'],'job','attempt',max_payload_bytes=262144)
+        prepared_input=json.loads(prepared_bytes)
         system,input_messages=prepared_input['system'],prepared_input['messages']
         source_data=json.loads(input_messages[0]['content'])
         assert [m['role'] for m in input_messages]==['user']
         assert [m['message_id'] for m in source_data['messages']]==['m0','m1']
         assert source_data['end'] is None and 'Historical text' in system
+        assert protected_processing(prepared_bytes)==b'processing-fence-ready'
+        assert calls==[prepared_bytes]
+        processing_policy,snapshot=captured[-1]
+        from cj_memory_jobs.codec import Unavailable as HistoryUnavailable
+        try:processing_policy.with_input(snapshot,lambda raw:b'escaped')
+        except HistoryUnavailable:pass
+        else:raise AssertionError('expired processing policy retained authority')
+        for changed in (prepared_bytes+b' ',prepared_bytes.replace(b'Historical text',b'Historical DATA')):
+            try:protected_processing(changed)
+            except Conflict:pass
+            else:raise AssertionError('changed prepared bytes entered the processing callback')
+        try:protected_processing(prepared_bytes,digest='0'*64)
+        except Conflict:pass
+        else:raise AssertionError('wrong original digest entered the processing callback')
+        try:protected_processing(prepared_bytes,query=SourceQuery(**dict(source,through=1)))
+        except Conflict:pass
+        else:raise AssertionError('another interval entered the original processing callback')
+        assert calls==[prepared_bytes]
+        print('PASS actual protected processing policy: pending/changed bytes/digest/interval and expired lifetime deny the callback; same original inflight source admits exact bytes; no provider/Meter claim')
+        from cj_message.travel import Selection as TravelSelection
+        from cj_message.travel_reference import LeaseUnavailable,Denied as ContextDenied
+        joint_travel=post('/v1/travel-context-actions',dict(version='TRAVEL-context-action.1',action_id='processing-travel',
+            operation='create',travel_context=None))['receipt']['travel_context']
+        joint_calls=[];leases=[]
+        def joint_processing(selection):
+            def stage(context):
+                policy=service.processing_policy(context,tokens['alice'],'job','attempt',prepared_bytes,
+                    hashlib.sha256(prepared_bytes).hexdigest(),max_payload_bytes=262144)
+                def project(snapshot,lease):
+                    leases.append(lease)
+                    def checked(original):
+                        lease.check()
+                        assert lease.context==selection
+                        joint_calls.append(original)
+                        return b'joint-processing-fence-ready'
+                    return policy.with_input(snapshot,checked)
+                return context.with_enabled_source_and_travel(query,policy,selection,project)
+            return host.boundary.with_history_context(tokens['alice'],stage)
+        assert joint_processing(TravelSelection(joint_travel['id'],1))==b'joint-processing-fence-ready'
+        assert joint_calls==[prepared_bytes]
+        try:leases[-1].check()
+        except LeaseUnavailable:pass
+        else:raise AssertionError('joint Travel lease escaped its callback lifetime')
+        try:joint_processing(TravelSelection(joint_travel['id'],2))
+        except ContextDenied:pass
+        else:raise AssertionError('stale Travel version entered processing')
+        assert joint_calls==[prepared_bytes]
+        print('PASS fixed SOURCE@2 candidate with real C processing policy and genuine Travel lease; stale selection/lifetime denied; callback is bounded local work, not provider execution')
         # Supplied synthetic output tests this boundary; no provider or metering claim.
         output=json.dumps(dict(version='MEMORY-EXTRACT@1',entries=[
             dict(subject='self',slot='diet.spicy',kind='preference',text=texts[0],extent='long_term',
@@ -113,6 +189,10 @@ def exercise(conninfo,auth):
         except OperationWithheld as error:assert (error.operation_id,error.attempt_id)==('job','attempt')
         else:raise AssertionError('checkpoint ACK loss returned success')
         assert service.record_output(tokens['alice'],'job','attempt',output)
+        try:protected_processing(prepared_bytes)
+        except Conflict:pass
+        else:raise AssertionError('checkpointed C job obtained another processing phase')
+        assert calls==[prepared_bytes]
         uncertain=CollectionService(host.boundary,lose_commit_after('INSERT INTO cj_memory_operation'),resolve)
         try:uncertain.publish_output(tokens['alice'],'job','attempt')
         except OperationWithheld as error:assert (error.operation_id,error.attempt_id)==('job','attempt')
@@ -374,6 +454,8 @@ def exercise(conninfo,auth):
             except psycopg.errors.InsufficientPrivilege:pass
             else:raise AssertionError('runtime inserted another owner publication data')
         print('PASS actual new-table RLS: other-owner reads/writes denied and producer has no physical deletion privilege')
+        from result_cases import exercise as result_cases
+        result_cases(client,post,expected,host,repository,tokens['alice'],headers['alice'],scope,lose_commit_after)
         from cj_cleanup.core import Scope,encode,digest
         from cj_cleanup.coordinator import Coordinator
         from cj_cleanup.hooks_v1_1 import Selection

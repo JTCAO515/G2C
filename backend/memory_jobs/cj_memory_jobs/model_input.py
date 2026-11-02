@@ -52,3 +52,9 @@ def prepare(snapshot: SourceSnapshot, policy: CollectionPolicy, mode: str, *, ma
     if len(raw)>max_payload_bytes:
         raise CollectionUnavailable('model source exceeds explicit payload bound')
     return SYSTEM,[dict(role='user',content=raw.decode('utf-8'))]
+
+
+def encoded(snapshot,policy,mode,*,max_payload_bytes):
+    system,messages=prepare(snapshot,policy,mode,max_payload_bytes=max_payload_bytes)
+    return json.dumps(dict(system=system,messages=messages),ensure_ascii=False,
+                      sort_keys=True,separators=(',',':')).encode('utf-8')

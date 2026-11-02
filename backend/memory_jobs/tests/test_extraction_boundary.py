@@ -5,7 +5,7 @@ import json
 import unittest
 
 from cj_memory_jobs.extraction import (CollectionPolicy,CollectionUnavailable,Evidence,InvalidExtraction,
-                                      parse_output,publication_identity)
+                                      parse_output,publication_identity,decode_output)
 from test_jobs import message
 
 
@@ -34,6 +34,13 @@ class ExtractionBoundary(unittest.TestCase):
         self.assertTrue(result[0].direct_statement)
         self.assertEqual(result[0].entry.slot,'diet.spicy')
         self.assertFalse(parse_output(self.raw(),self.messages,replace(self.policy,direct_statement=lambda e,r:None))[0].direct_statement)
+
+    def test_stored_data_decoder_never_applies_collection_or_directness(self):
+        entry=dict(self.entry,subject='unapproved-subject')
+        decoded=decode_output(self.raw([entry]),self.messages)
+        self.assertEqual(decoded[0].subject,'unapproved-subject')
+        with self.assertRaises(CollectionUnavailable):parse_output(self.raw([entry]),self.messages,self.policy)
+        with self.assertRaises(InvalidExtraction):decode_output(self.raw([dict(entry,authorized=True)]),self.messages)
 
     def test_inference_remains_candidate_even_with_permissive_classifier(self):
         result=parse_output(self.raw([dict(self.entry,kind='inference')]),self.messages,self.policy)

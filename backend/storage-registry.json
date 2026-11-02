@@ -343,16 +343,17 @@
       "id": "memory-derived",
       "owner": "CJ-003 / CJ-020 / CJ-021",
       "status": "provided/local_runtime_only; production_not_provisioned",
-      "principal_binding": "Original protected MESSAGE principal/scope and fresh canonical admission; per-conversation consent defaults off; MESSAGE -> MEMORY -> history lock order",
+      "principal_binding": "Original protected MESSAGE principal/scope and fresh ACCOUNT-ADMISSION@2; consent defaults off; MESSAGE -> optional genuine Travel -> MEMORY -> history lock order",
       "sensitive_fields": [
         "Exact original consent/job UTF8 and committed message batches",
         "Conversation/generation/epoch/source and withdrawal versions; task/attempt IDs",
         "Derived candidate bytes and processing cursors",
         "Erasure fence retains scope SHA256 and erased flag only, without account scope plaintext",
-        "Immutable original model output checkpoints, reviewed candidate action/receipt bytes, and exact original-message metadata associated with canonical Memory sources/items"
+        "Immutable original model output checkpoints, reviewed candidate action/receipt bytes, and exact original-message metadata associated with canonical Memory sources/items",
+        "Original typed publication receipt in history_job.candidate; explicit V1/V2 discrimination, opaque model refs and immutable source associations for filtering before model entry"
       ],
       "retention": "User content until user deletion or account closure; no automatic age/capacity erasure; minimal opaque non-resurrection fence remains",
-      "cleanup_hook": "cj_memory_jobs.cleanup.CleanupHook: account-domain fence and physical deletion of jobs/output checkpoints, candidate decisions, origin map, cursors and consent with same-transaction B original result; item selection fails closed pending #26",
+      "cleanup_hook": "cj_memory_jobs.cleanup.CleanupHook: account-domain fence and physical deletion of jobs/output checkpoints/typed publication receipts, candidate decisions, origin map, cursors and consent with same-transaction B original result; item selection fails closed pending #26",
       "restore_fence": "cj_memory_history_fence stores only SHA256(scope)/erased; canonical entry and runtime INSERT/UPDATE RLS reject after erasure; restore must replay this fence before reads/writes",
       "owner_line": "C",
       "retention_category": "user_content",
