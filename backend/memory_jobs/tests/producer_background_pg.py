@@ -30,10 +30,10 @@ class Observed(FakeProvider):
             assert data['version']=='MEMORY-EXTRACT-DATA@2' and data['purpose']=='incremental'
             records=(('diet.spicy','preference','No spicy food'),('mobility.fact','fact','My height is 170 cm'),
                      ('experience.visit','experience','I visited a synthetic museum'))
-            assert [item['text'] for item in data['messages']]==[text for slot,kind,text in records]
+            by_text={text:(slot,kind) for slot,kind,text in records}
             yield json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot=slot,kind=kind,
                 text=item['text'],extent='long_term',occurred_at='date unknown',evidence=[dict(ref=item['ref'],quote=item['text'])])
-                for item,(slot,kind,text) in zip(data['messages'],records)]))
+                for item in data['messages'] if item['text'] in by_text for slot,kind in [by_text[item['text']]]]))
         else:
             data=json.loads(messages[0]['content'].split('\n',1)[1]);self.answers.append(data)
             for chunk in super().stream(messages,system):yield json.dumps(data['items'])+chunk
@@ -93,6 +93,17 @@ def exercise(root,path):
         assert jobs.query_original(tokens['poll-alice'],jid,attempt)['state']=='completed'
         assert json.loads(c.query_original(tokens['poll-alice'],jid,attempt))['processed_through']==3
         assert run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)==[] and model.calls==4
+        send('source','same-next','How should I plan food next?','poll-alice')
+        results=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
+        assert len(results)==2 and all(result.status=='completed' for result in results),results
+        assert {item['slot']:item['text'] for item in model.answers[-1]['items']}=={'diet.spicy':'No spicy food'}
+        assert len(model.extractions)==2 and len(originals)==2
+        # The ordinary question is eligible historical data but yields no new
+        # entries. This is an actual metered empty extraction, unlike the
+        # all-withheld/no-model path; it cannot duplicate an active preference.
+        second=originals[1]
+        assert json.loads(c.query_publication_v2(tokens['poll-alice'],second['job_id'],second['attempt_id']))['receipts']==[]
+        assert run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)==[]
         for who,expected in (('poll-alice',{'diet.spicy':'No spicy food'}),('poll-bob',{})):
             send(who+'-new',who+'-question','饮食怎么安排？',who)
             results=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
@@ -111,7 +122,7 @@ def exercise(root,path):
             results=run_worker.run_once(host.database,model,auth,memory_configuration=chosen,background_jobs=combined)
             assert len(results)==1 and results[0].status=='completed'
             assert {item['slot']:item['text'] for item in model.answers[-1]['items']}=={slot:text}
-        assert len(model.extractions)==1 and len(originals)==1
+        assert len(model.extractions)==2 and len(originals)==2
     with host.database.connect(scope_for(ISSUER,'poll-alice')) as conn:
         assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(3,)
     with host.database.connect(scope_for(ISSUER,'poll-bob')) as conn:
