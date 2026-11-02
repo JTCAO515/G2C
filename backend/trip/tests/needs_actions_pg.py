@@ -569,4 +569,6 @@ class NeedsActionChecks(unittest.TestCase):
 
 from needs_discovery_pg import NeedsDiscoveryChecks
 
+from place_chain_pg import PlaceChainChecks
+
 if __name__=='__main__':unittest.main(verbosity=2)

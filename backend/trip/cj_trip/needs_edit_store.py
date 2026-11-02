@@ -34,6 +34,10 @@ def checked(original,request,source,previous_fields):
     candidate=prepare(original,request.edit)
     from cj_feasibility.trip_time_v2 import evaluate as evaluate_time
     if evaluate_time(candidate.content).status=='CONFLICT':raise Conflict('explicit Trip time conflict')
+    return checked_candidate(request,source,previous_fields,candidate)
+
+
+def checked_candidate(request,source,previous_fields,candidate):
     before,revisions=source.records()
     if before.needs_id!=request.needs_id or before.version!=request.needs_version:raise Denied('original current source mismatch')
     fields=deepcopy(before.fields);old={v['item_id']:v for v in fields.get('fixed_items',[])}
@@ -52,6 +56,9 @@ def checked(original,request,source,previous_fields):
 
 
 class NeedsEdits:
+    request_type=NeedsEdit
+    check=staticmethod(checked)
+    basis_version='needs-manual.1'
     def __init__(self,current_source):self.source=current_source
     def prepare(self,repository,request):
         edit=request.edit
@@ -74,9 +81,9 @@ class NeedsEdits:
                 root=self._origin(cur,repository,original)
                 if root['needs_id']!=request.needs_id:raise Denied('Trip source cannot be retargeted')
                 self._selected(cur,repository,original,root)
-                candidate,needs_candidate,report=checked(original,request,source,root['proposed'])
+                candidate,needs_candidate,report=self.check(original,request,source,root['proposed'])
                 cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())');expires=int(cur.fetchone()[0])+300
-                p=Proposal('needs-manual.'+sha256(request.raw).hexdigest(),original.trip_id,original.version,'needs-manual.1',expires,candidate.content)
+                p=Proposal('needs-manual.'+sha256(request.raw).hexdigest(),original.trip_id,original.version,self.basis_version,expires,candidate.content)
                 digest=repository._publish_in_tx(cur,p)
                 cur.execute('INSERT INTO cj_trip_needs_basis(scope,proposal_id,message_scope,run_id,needs_scope,needs_id,needs_version,source_input,source_sha256,proposed_input) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
                     (repository.scope,p.proposal_id,root['message_scope'],root['run_id'],root['needs_scope'],request.needs_id,request.needs_version,
@@ -89,7 +96,9 @@ class NeedsEdits:
             cur.execute('SELECT proposal_id,diff FROM cj_trip_needs_edit WHERE scope=%s AND request_id=%s',(repository.scope,request_id))
             row=cur.fetchone()
             if row is None:return None
-            p,d,s=repository._proposal(cur,row[0]);return PreparedManual(ProposalDetail(p,d,s),bytes(row[1]))
+            p,d,s=repository._proposal(cur,row[0])
+            if p.basis_version!=self.basis_version:raise Denied('explicit manual version required')
+            return PreparedManual(ProposalDetail(p,d,s),bytes(row[1]))
     def save(self,repository,request):
         from .needs_action_store import NeedsActions
         with repository.transaction() as cur:
@@ -98,7 +107,7 @@ class NeedsEdits:
             cur.execute('SELECT original_input FROM cj_trip_needs_edit WHERE scope=%s AND proposal_id=%s',(repository.scope,request.proposal_id))
             row=cur.fetchone()
             if row is None:raise Denied('original manual basis unavailable')
-            edit=NeedsEdit.parse(bytes(row[0]))
+            edit=self.request_type.parse(bytes(row[0]))
         source=self.source.capture(edit.needs_id,edit.needs_version)
         action=None;pending=None
         with self.source.hold(source) as check:
@@ -111,7 +120,7 @@ class NeedsEdits:
                 current=self._trip(cur,repository,p.trip_id)
                 root=self._origin(cur,repository,current)
                 self._selected(cur,repository,current,root)
-                candidate,needs_candidate,report=checked(current,edit,source,root['proposed'])
+                candidate,needs_candidate,report=self.check(current,edit,source,root['proposed'])
                 if p.content!=candidate.content or p.expected_version!=current.version:raise Conflict('original manual candidate changed')
                 cur.execute('SELECT source_input FROM cj_trip_needs_basis WHERE scope=%s AND proposal_id=%s',(repository.scope,p.proposal_id))
                 if bytes(cur.fetchone()[0])!=source.raw:raise Denied('current source basis changed')
