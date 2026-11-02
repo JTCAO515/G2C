@@ -111,6 +111,22 @@ import Foundation
         let condition=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",fragment),object:value)
         XCTAssertEqual(XCTWaiter.wait(for:[condition],timeout:25),.completed,value.exists ? value.label : "missing status")
     }
+    func revealText(_ id: String) -> XCUIElement {
+        let query=app.descendants(matching:.any).matching(identifier:id),target=query.element
+        for attempt in 0..<45 {
+            if target.exists && target.isHittable {break}
+            let frame=target.exists ? target.frame : .zero
+            let top=app.navigationBars.element.frame.maxY+8,bottom=app.tabBars.element.frame.minY-8
+            let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
+            let down=located ? frame.midY<top : (attempt/8)%2 == 1
+            let middle=(top+bottom)/2,step=min(110,(bottom-top)*0.15)
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.85,dy:middle+(down ? -step:step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.85,dy:middle+(down ? step:-step)))
+            start.press(forDuration:0.05,thenDragTo:end)
+        }
+        XCTAssertEqual(query.count,1,id);XCTAssertTrue(target.isHittable,id)
+        return target
+    }
     func audit(_ name: String) throws {
         let ids=["historyConsent.scope","historyConsent.conversation","historyConsent.read","historyConsent.status","historyConsent.stopExplanation","historyConsent.confirmationExplanation","historyConsent.loadPending"]
         for id in ids {
@@ -175,7 +191,7 @@ import Foundation
         XCTAssertFalse(app.switches["historyConsent.toggle"].isEnabled)
         tap("historyConsent.loadPending");tap("historyConsent.pending."+original.action_id);tap("historyConsent.query")
         current(false,version:2)
-        XCTAssertTrue(app.staticTexts["historyConsent.historicalNotice"].exists)
+        XCTAssertTrue(revealText("historyConsent.historicalNotice").exists)
         let after=try await proof(f);XCTAssertEqual(after.history_posts,before.history_posts);XCTAssertTrue(after.accounts["A"]!.actions.contains{$0.sha256==original.sha256})
         try audit("history-original-historical-current-off");_=try await call("/validate",f.case_id)
     }
