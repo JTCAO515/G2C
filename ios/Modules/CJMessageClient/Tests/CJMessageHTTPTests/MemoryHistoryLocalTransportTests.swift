@@ -82,4 +82,24 @@ private actor MemoryHistoryExitSpy: ClientTransport {
         }
         #expect(await spy.bodies.count == 1)
     }
+    @Test func historyPrivateGetsRecheckAtLiveExitAndDenyAdjacentReads() async throws {
+        let endpoint=try endpoint(),lease=MemoryHistoryExitLease(),spy=MemoryHistoryExitSpy()
+        let transport=NoRedirectTransport(interceptedTransport:spy,memoryHistoryEndpoint:endpoint,validateHistory:{try lease.validate()})
+        func get(_ path:String)->HTTPRequest {HTTPRequest(method:.get,scheme:nil,authority:nil,path:path)}
+        let path="/v3/memory-history-settings?conversation_id=chat"
+        lease.active=false
+        await #expect(throws:(any Error).self){_ = try await transport.send(get(path),body:nil,baseURL:endpoint.url,operationID:"readMemoryHistorySettingsV1")}
+        lease.active=true
+        _ = try await transport.send(get(path),body:nil,baseURL:endpoint.url,operationID:"readMemoryHistorySettingsV1")
+        _ = try await transport.send(get("/v3/memory-history-receipts?action_id=original"),body:nil,baseURL:endpoint.url,operationID:"queryMemoryHistoryReceiptV1")
+        for bad in ["/internal/v1/memory-history/jobs?job_id=x&attempt_id=y","/v3/memory-candidates?job_id=x&attempt_id=y",
+                    "/v3/memory-history-settings?conversation_id=x&conversation_id=y","/v3/memory-history-settings?owner=x"] {
+            await #expect(throws:(any Error).self){_ = try await transport.send(get(bad),body:nil,baseURL:endpoint.url,operationID:"readMemoryHistorySettingsV1")}
+        }
+        let changed=MemoryHistoryExitSpy(after:{await MainActor.run{lease.active=false}})
+        let guarded=NoRedirectTransport(interceptedTransport:changed,memoryHistoryEndpoint:endpoint,validateHistory:{try lease.validate()})
+        await #expect(throws:(any Error).self){_ = try await guarded.send(get(path),body:nil,baseURL:endpoint.url,operationID:"readMemoryHistorySettingsV1")}
+        await #expect(throws:(any Error).self){_ = try await guarded.send(get(path),body:nil,baseURL:endpoint.url,operationID:"readMemoryHistorySettingsV1")}
+    }
+
 }

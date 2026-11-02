@@ -436,6 +436,25 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             return try await sendLocalWrite(request, body: HTTPBody(bytes), baseURL: baseURL, operationID: operationID,
                 capability: tripEditing, messageWire: nil)
         }
+        if let memoryHistory, request.method == .get || request.method == .head {
+            let routes = ["readMemoryHistorySettingsV1": ("/v3/memory-history-settings", "conversation_id", 256),
+                          "queryMemoryHistoryReceiptV1": ("/v3/memory-history-receipts", "action_id", 4096)]
+            guard let route = routes[operationID], request.method == .get, body == nil,
+                  baseURL == memoryHistory.endpoint.url, request.scheme == nil, request.authority == nil,
+                  !request.headerFields.contains(where: { $0.name.canonicalName == "host" }),
+                  let path = request.path, let parts = URLComponents(string: path),
+                  parts.scheme == nil, parts.host == nil, parts.fragment == nil, parts.percentEncodedPath == route.0,
+                  let values = parts.queryItems, values.count == 1, values[0].name == route.1,
+                  let value = values[0].value, !value.contains("\0"), value.utf8.count <= route.2,
+                  !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw MessageHTTPFailure.productionActivationUnavailable }
+            try await memoryHistory.validate(); try Task.checkCancellation()
+            let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
+            try await memoryHistory.validate(); try Task.checkCancellation()
+            guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
+            let bytes = try await Data(collecting: responseBody, upTo: memoryHistory.endpoint.maximumResponseBytes)
+            try await memoryHistory.validate(); try Task.checkCancellation()
+            return (response, HTTPBody(bytes))
+        }
         if request.method == .get || request.method == .head {
             return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
         }

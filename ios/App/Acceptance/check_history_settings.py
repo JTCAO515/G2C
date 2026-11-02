@@ -247,10 +247,20 @@ def main():
                                             response=client.get('/v3/memory-history-receipts',params={'action_id':action['action_id']},headers=own)
                                             response.raise_for_status();assert response.json()['result']['input_sha256']==action['sha256']
                                             other=client.get('/v3/memory-history-receipts',params={'action_id':action['action_id']},headers=foreign)
-                                            other.raise_for_status();assert other.json()['result'] is None
+                                            # B has no history domain. The published service's require_live
+                                            # intentionally returns unavailable, never an absence/permission claim.
+                                            assert other.status_code==503 and 'result' not in other.json()
+                                            assert other.json()['error']['code']=='MEMORY_HISTORY_UNAVAILABLE'
+                                            assert other.json()['error']['recovery']=='retry_safe_read' 
                                         foreign={'Authorization':'Bearer '+tokens[case]['B']}
                                         denied=client.get('/v3/memory-history-settings',params={'conversation_id':records[case]['conversation']},headers=foreign)
                                         assert denied.status_code!=200 and 'result' not in denied.json()
+                                        settings=client.get('/v3/memory-history-settings',params={'conversation_id':records[case]['conversation']},headers={'Authorization':'Bearer '+tokens[case]['A']})
+                                        settings.raise_for_status();current=settings.json()['result']
+                                        forged=dict(version='MEMORY-HISTORY@1',action_id='foreign-'+uuid.uuid4().hex,operation='enable',conversation_id=current['conversation_id'],expected_generation=current['generation'],expected_epoch=current['epoch'],expected_source_version=current['source_version'])
+                                        denied=client.post('/v3/memory-history-actions',content=json.dumps(forged).encode(),headers=dict(foreign,**{'Content-Type':'application/octet-stream'}))
+                                        assert denied.status_code==503 and 'result' not in denied.json()
+
                                     report['checks'][case]=dict(original_hash_receipt=True,foreign_source_refused=True,no_implicit_history_or_job=True)
                                     save()
                                 else: raise ValueError('unsupported control')

@@ -171,3 +171,39 @@ Definitive manual-save failures are retained separately in an encrypted
 a distinct authenticated domain. Existing manual ciphertext/files are unchanged.
 Receipt null alone remains unknown; only the matched direct server failure allows
 a distinct new action. Reopening never resends the failed original.
+
+## MEMORY-HISTORY@1 App consumer (#434)
+
+`MemoryHistoryClient` and `MemoryHistoryView` consume the additive published
+`contracts/memory-jobs/PG-V1.md` without changing older Memory wires or SDK pins.
+The explicit local development factory requires canonical SessionLifecycle/op,
+current account binding, actual selected MESSAGE conversation and the existing
+Memory key namespace. Its dedicated NoRedirect capability admits only the one
+consent POST and two exact private GET routes; it cannot dispatch organizer jobs
+or candidate actions. Default/Release/non-loopback activation remains closed.
+
+Settings are current effective state. A receipt is immutable historical data,
+never authority for the current switch. Epoch0 is valid; strict token-preserving
+JSON rejects bool/float/exponent/overflow counters, duplicate/extra keys and invalid
+Unicode. Original seven-key bytes persist before credentials/network. UNKNOWN/null
+only reconcile the original ID. A new action needs a fresh settings read and all
+unresolved originals for that conversation reconciled; definite failed POST evidence
+is separately durable, and a failed receipt/settings GET never supplies it.
+
+History uses `G2CDevelopmentMemory/<env>/<account>.history-v1` with AD
+`CJMemoryHistoryPendingV1`, plus optional adjacent `CJMemoryHistoryRejectionsV1`,
+and existing `localMemoryPendingV1`. Legacy/manual/typed/lifecycle data is neither
+reinterpreted nor removed. Namespace emptiness checks include all account-owned
+siblings before a missing key is created. New additive ciphertext/inventory proof
+methods leave older journal formats/consumers unchanged; the final callback-free
+proof follows every source/key callback at each live exit.
+
+Presentation scope uses private atomic slots and a coalesced Observation signal.
+Reentrant account/conversation replacement owns its new slot; old work cannot
+publish into or clear it. UI only allows this selected conversation and explains
+that one save is not all-history consent, stopping is not data deletion, and
+inference candidates still need confirmation. Candidate review requires C's actual
+job/attempt discovery source; this consumer does not manufacture those IDs.
+Device physical cleanup of the provided journal family remains part of #27's
+original authenticated device-call bridge. Native/real-provider/device evidence
+and retained failures are recorded in #434/PR437; local tests alone are not release.
