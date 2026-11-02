@@ -4,7 +4,7 @@ Each group gets a fresh cluster under .local/pg-suites/<group> (git-ignored), ap
 working-tree SQL only, runs its suite, then stops the cluster. No TCP listener, no
 ambient DSN, no existing instance. Replaces the pin-era per-feature harnesses.
 
-Usage: uv run --no-sync python -B scripts/pg_suites.py [GROUP ...]
+Usage: uv run --no-sync python -B scripts/pg_suites.py [GROUP ... | --shard I/N]
 PostgreSQL binaries: CJ_PG_BINDIR, else `pg_config --bindir`.
 """
 import contextlib
@@ -390,7 +390,11 @@ GROUPS = {'e2e': group_e2e, 'migrations': group_migrations, 'feasibility_domain'
 
 
 def main(argv):
-    names = argv or list(GROUPS)
+    if argv[:1] == ['--shard']:
+        index, count = map(int, argv[1].split('/'))
+        names = list(GROUPS)[index::count]
+    else:
+        names = argv or list(GROUPS)
     results = {}
     for name in names:
         print(f'::group::pg suite {name}', flush=True)

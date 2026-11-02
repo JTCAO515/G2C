@@ -19,21 +19,56 @@ env:
   DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
 jobs:
+  changes:
+    # Fails open: any error leaves docs_only empty, so every dependent job still runs.
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files=$(git diff --name-only "$BASE...$HEAD")
+          test -n "$files"
+          if echo "$files" | grep -qvE '^(docs/|HANDOFF\.md$)'; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          fi
+
   python:
     # Unit, contract, wire and standalone checks that need no database.
+    # Docs-only PRs keep the handoff check, the one check that reads docs.
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v6
-      - run: uv sync --locked
       - run: python3 -B scripts/handoff.py check
+      - uses: astral-sh/setup-uv@v6
+        if: needs.changes.outputs.docs_only != 'true'
+      - run: uv sync --locked
+        if: needs.changes.outputs.docs_only != 'true'
       - run: uv run --locked python -B scripts/test.py
+        if: needs.changes.outputs.docs_only != 'true'
 
-  postgres:
+  postgres-shard:
     # Fresh private Unix-socket clusters only; migrations up/down/up plus every PG-backed suite.
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     env:
       CJ_PG_BINDIR: /usr/lib/postgresql/17/bin
       CJ_PG17_BINDIR: /usr/lib/postgresql/17/bin
@@ -50,9 +85,23 @@ jobs:
           "$CJ_PG17_BINDIR/postgres" --version
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked
-      - run: uv run --locked python -B scripts/pg_suites.py
+      - run: uv run --locked python -B scripts/pg_suites.py --shard ${{ matrix.shard }}/4
+
+  postgres:
+    # Stable required check. Passes only if every shard passed, or all were skipped for docs.
+    needs: [changes, postgres-shard]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
+          RESULT: ${{ needs.postgres-shard.result }}
+        run: |
+          test "$RESULT" = success || { test "$DOCS_ONLY" = true && test "$RESULT" = skipped; }
 
   swift-packages:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +114,8 @@ jobs:
     # Every package is tested on one runner, reusing locked compiler outputs.
     # Inventory order builds the broad Shell graph first; Cleanup has a distinct
     # locked swift-collections version and runs last to avoid repeated switches.
-    needs: swift-packages
+    needs: [changes, swift-packages]
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.swift-packages.result == 'success' }}
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +127,8 @@ jobs:
   ios-app:
     # The App target with the CJShell four-tab shell and all iOS modules, built for the simulator.
     # arm64 only: Swift 6.3.3 crashes in IRGen on the x86_64 slice of CJFeedbackClient/FeedbackView.swift.
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
