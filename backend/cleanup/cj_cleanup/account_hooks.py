@@ -1,6 +1,6 @@
 """B-owned CLEANUP@1.1 physical account hooks, explicit tables and trusted scopes."""
 from .core import Denied
-from .store import require_intent,original_result,record_result,receipt_for
+from .store import require_intent,require_account_retirement,original_result,record_result,receipt_for
 from cj_usage.codec import decode
 
 MESSAGE=(
@@ -26,9 +26,7 @@ class DomainHook:
             old=original_result(cur,request)
             if old is not None:return old
             require_intent(cur,request)
-            cur.execute('SELECT 1 FROM cj_account_fence WHERE subject_digest=%s AND operation_id=%s',
-                        (self.store.subject_digest,request.operation_id))
-            if cur.fetchone() is None:raise Denied('account revocation unconfirmed')
+            require_account_retirement(cur,request)
             cur.execute("SELECT set_config('cj.cleanup_scope',%s,true),set_config('cj.cleanup_purpose','account',true)",(self.scope,))
             for table,column in self.tables:
                 # Explicit code-owned identifiers; never registry/request paths or SQL.
@@ -74,9 +72,7 @@ class UsageHook:
             old=original_result(cur,request)
             if old is not None:return old
             require_intent(cur,request)
-            cur.execute('SELECT 1 FROM cj_account_fence WHERE subject_digest=%s AND operation_id=%s',
-                        (self.store.subject_digest,request.operation_id))
-            if cur.fetchone() is None:raise Denied('account revocation unconfirmed')
+            require_account_retirement(cur,request)
             cur.execute("SELECT set_config('cj.cleanup_purpose','account',true)")
             for scope in self._scopes(cur):
                 cur.execute("SELECT set_config('cj.cleanup_scope',%s,true)",(scope,))
