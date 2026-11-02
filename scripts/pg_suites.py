@@ -444,6 +444,14 @@ def group_source_travel():
 GROUPS.update(device_v2=group_device_v2,source_travel=group_source_travel)
 
 
+def group_device_v3():
+    return _fresh_runtime_check('device_v3',55515,'cj27_device_v3',
+        f'/tmp/cj27-device-v3-{os.getpid()}','backend/cj_api/tests/device_v3_pg.py')
+
+
+GROUPS.update(device_v3=group_device_v3)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
