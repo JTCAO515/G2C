@@ -48,6 +48,55 @@ def record_result(cursor, request: HookRequest, outcome: str):
     return old
 
 
+def _load_operation(cur,subject_digest,operation_id,*,lock_mode=None):
+    cur.execute('SELECT confirmation_digest,purpose,registry_bytes,inventory,blocked,plan_bytes,plan_digest,protocol_versions,targets FROM cj_cleanup_operation WHERE subject_digest=%s AND operation_id=%s'+({None:'','update':' FOR UPDATE','share':' FOR SHARE'}[lock_mode]),
+                (subject_digest,operation_id))
+    row=cur.fetchone()
+    if row is None:raise Denied('operation unavailable')
+    confirmation,purpose,raw,inventory,blocked,plan_raw,plan_digest,versions,targets=row
+    hash_value(confirmation)
+    if purpose not in ('account','memory','diagnostics') or type(blocked) is not bool or type(inventory) is not list or type(versions) is not list or type(targets) is not list:
+        raise Unavailable('cleanup state unavailable')
+    manifest=freeze(bytes(raw),tuple(inventory),versions=tuple(versions))
+    targets=tuple(identifier(t) for t in targets)
+    if not targets or len(set(targets))!=len(targets) or set(targets)-set(manifest.inventory):raise Unavailable('cleanup targets unavailable')
+    if plan_raw is None:plan=None
+    else:
+        plan_raw=bytes(plan_raw)
+        if digest(plan_raw)!=plan_digest:raise Unavailable('cleanup plan unavailable')
+        try:
+            plan=json.loads(plan_raw.decode('utf-8'),object_pairs_hook=reject_duplicates(Invalid,'duplicate cleanup plan'))
+            if type(plan) is not dict:raise Invalid('invalid cleanup plan')
+        except (ValueError,UnicodeError,RecursionError):raise Unavailable('cleanup plan unavailable') from None
+    return purpose,manifest,blocked,plan,targets
+
+
+def require_intent(cursor,request:HookRequest) -> None:
+    """Read-only owner seam, in the SAME transaction before domain deletion.
+
+    Only SELECTs with parent/step SHARE locks: never create an intent, write state,
+    dispatch or retry. Host has already bound its dedicated connection and scope.
+    Query original_result first for an already committed owner result; reconcile
+    remains a separate read and cannot obtain execution permission from UNKNOWN.
+    """
+    purpose,manifest,blocked,plan,targets=_load_operation(cursor,request.subject_digest,
+        request.operation_id,lock_mode='share')
+    entry=next((e for e in manifest.entries if e.registry_id==request.target),None)
+    if (blocked or manifest.gaps or plan is None or request.target not in targets
+            or entry is None or not entry.hook_available
+            or (purpose,manifest.digest,entry.version,entry.protocol)!=(request.selection.kind,
+                request.registry_digest,request.entry_digest,request.protocol)
+            or plan.get(request.target)!={'domain_scope':request.domain_scope,'selection':request.selection.to_dict()}):
+        raise Denied('original cleanup intent unavailable')
+    cursor.execute('SELECT invocation_id,request_digest,request_bytes,state FROM cj_cleanup_step '
+        'WHERE subject_digest=%s AND operation_id=%s AND target=%s FOR SHARE',
+        (request.subject_digest,request.operation_id,request.target))
+    row=cursor.fetchone()
+    if (row is None or row[0]!=request.invocation_id or row[1]!=request.digest
+            or row[2] is None or bytes(row[2])!=request.original_utf8 or row[3]!='in_progress'):
+        raise Denied('original cleanup intent unavailable')
+
+
 class Store:
     def __init__(self, connect, subject_digest: str, guard):
         self.connect,self.subject_digest,self.guard=connect,hash_value(subject_digest),guard
@@ -90,26 +139,7 @@ class Store:
                     raise
 
     def _load(self,cur,operation_id,*,lock=False):
-        cur.execute('SELECT confirmation_digest,purpose,registry_bytes,inventory,blocked,plan_bytes,plan_digest,protocol_versions,targets FROM cj_cleanup_operation WHERE subject_digest=%s AND operation_id=%s'+(' FOR UPDATE' if lock else ''),
-                    (self.subject_digest,operation_id))
-        row=cur.fetchone()
-        if row is None:raise Denied('operation unavailable')
-        confirmation,purpose,raw,inventory,blocked,plan_raw,plan_digest,versions,targets=row
-        hash_value(confirmation)
-        if purpose not in ('account','memory','diagnostics') or type(blocked) is not bool or type(inventory) is not list or type(versions) is not list or type(targets) is not list:
-            raise Unavailable('cleanup state unavailable')
-        manifest=freeze(bytes(raw),tuple(inventory),versions=tuple(versions))
-        targets=tuple(identifier(t) for t in targets)
-        if not targets or len(set(targets))!=len(targets) or set(targets)-set(manifest.inventory):raise Unavailable('cleanup targets unavailable')
-        if plan_raw is None:plan=None
-        else:
-            plan_raw=bytes(plan_raw)
-            if digest(plan_raw)!=plan_digest:raise Unavailable('cleanup plan unavailable')
-            try:
-                plan=json.loads(plan_raw.decode('utf-8'),object_pairs_hook=reject_duplicates(Invalid,'duplicate cleanup plan'))
-                if type(plan) is not dict:raise Invalid('invalid cleanup plan')
-            except (ValueError,UnicodeError,RecursionError):raise Unavailable('cleanup plan unavailable') from None
-        return purpose,manifest,blocked,plan,targets
+        return _load_operation(cur,self.subject_digest,operation_id,lock_mode='update' if lock else None)
 
     def create(self,operation_id,confirmation_digest,manifest,purpose,capabilities,plan):
         identifier(operation_id);hash_value(confirmation_digest)

@@ -6,9 +6,9 @@ import sys
 import psycopg
 from cj_cleanup.core import Conflict, Denied, digest, encode
 from cj_cleanup.hooks import Selection, make_receipt
-from cj_cleanup import hooks_v1_1 as v11
+from cj_cleanup import hooks as v1, hooks_v1_1 as v11
 from cj_cleanup.registry import freeze
-from cj_cleanup.store import Store, original_result, record_result
+from cj_cleanup.store import Store, original_result, record_result, require_intent
 from cj_cleanup.coordinator import Coordinator
 from cj_cleanup.metadata_hook import MetadataHook
 
@@ -30,11 +30,12 @@ def main():
     calls=[]
     class Probe:
         def execute(self,request):
-            calls.append(request.digest)
             with store.transaction(request.operation_id) as cur:
                 cur.execute("SELECT set_config('cj.cleanup_scope',%s,true),set_config('cj.cleanup_purpose','account',true)",(request.domain_scope,))
                 old=original_result(cur,request)
                 if old is not None:return old
+                require_intent(cur,request)
+                calls.append(request.digest)
                 cur.execute('DELETE FROM cj_feedback_action WHERE scope=%s',(request.domain_scope,))
                 assert cur.execute('SELECT count(*) FROM cj_feedback_action').fetchone()[0]==0
                 value=record_result(cur,request,'confirmed')
@@ -101,10 +102,19 @@ def main():
     reopened.recover('interrupted')
     assert reopened.query('interrupted')['status']=='unknown'
     assert not store.intent(second) and len(calls)==1
-    Probe().execute(second)  # explicit test action simulating the original in-flight call, not redispatch
+    try:Probe().execute(second)
+    except Denied:pass
+    else:raise AssertionError('lost writer was redispatched after UNKNOWN')
     assert reopened.query('interrupted')['status']=='unknown'
-    reopened.recover('interrupted')
-    assert reopened.query('interrupted')['status']=='complete'
+    assert len(calls)==1
+    # A different original call commits its owner result before import is lost.
+    host.create('result-import-lost',digest(b'confirmed-original-result'),'account',plan)
+    committed=host.request('result-import-lost',target,'alice',Selection('account'))
+    assert store.intent(committed)
+    Probe().execute(committed)
+    assert reopened.query('result-import-lost')['status']=='in_progress'
+    reopened.recover('result-import-lost')
+    assert reopened.query('result-import-lost')['status']=='complete'
     assert len(calls)==2
     # The newly provided metadata store ships its own erasure in this same slice.
     legacy=b'synthetic original principal'
@@ -162,6 +172,50 @@ def main():
     assert reopened.query('unicode-memory')['status']=='unknown'
     assert not store.intent(unicode_request)
     print('PASS explicit 1.1 codec, exact Unicode MEMORY selection persisted/recovered, 1.0 receipt downgrade refused; no C hook executed')
+    # Public read-only seam: C can authorize a new hook body without private loaders.
+    seam_manifest=freeze(raw,inventory)
+    seam_host=Coordinator(store,lambda:seam_manifest,{target:Probe()})
+    seam_host.create('intent-seam',digest(b'intent-seam'),'account',plan)
+    seam_request=seam_host.request('intent-seam',target,'alice',Selection('account'))
+    def check(request):
+        with store.transaction('intent-seam',writing=False) as cur:
+            require_intent(cur,request)
+    try:check(seam_request)
+    except Denied:pass
+    else:raise AssertionError('require_intent created a missing intent')
+    assert store.intent(seam_request)
+    before=store.query('intent-seam')
+    check(seam_request)
+    assert store.query('intent-seam')==before
+    wrong=seam_host.request('intent-seam',target,'bob',Selection('account'))
+    try:check(wrong)
+    except Denied:pass
+    else:raise AssertionError('different selection authorized')
+    for field,value in (('invocation_id','other-call'),('target','business/missing'),('registry_digest','4'*64),('entry_digest','5'*64)):
+        wire=json.loads(seam_request.original_utf8);wire[field]=value
+        try:check(v1.HookRequest.from_bytes(encode(wire)))
+        except Denied:pass
+        else:raise AssertionError('different original binding authorized: '+field)
+    wire=json.loads(seam_request.original_utf8);wire['protocol']=v11.VERSION
+    try:check(v11.HookRequest.from_bytes(encode(wire)))
+    except Denied:pass
+    else:raise AssertionError('different protocol authorized')
+    try:check(v1.HookRequest.from_bytes(seam_request.original_utf8+b' '))
+    except Denied:pass
+    else:raise AssertionError('different original bytes authorized')
+    reopened.recover('intent-seam')
+    try:check(seam_request)
+    except Denied:pass
+    else:raise AssertionError('UNKNOWN granted new execution')
+    seam_host.create('intent-blocked',digest(b'intent-blocked'),'account',plan)
+    blocked_request=seam_host.request('intent-blocked',target,'alice',Selection('account'))
+    store.intent(blocked_request)
+    store.audit('intent-blocked',bad)
+    try:
+        with store.transaction('intent-blocked',writing=False) as cur:require_intent(cur,blocked_request)
+    except Denied:pass
+    else:raise AssertionError('blocked frozen plan authorized')
+    print('PASS public require_intent is read-only: persisted exact bytes/invocation/selection/version required, no implicit intent, wrong scope/UNKNOWN/blocked denied')
     try:
         with psycopg.connect(**config,autocommit=True) as conn:migrate.down(conn,migrate.load(),31)
     except psycopg.Error:pass
