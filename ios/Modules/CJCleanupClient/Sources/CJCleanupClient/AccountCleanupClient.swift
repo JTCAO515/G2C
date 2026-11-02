@@ -186,6 +186,28 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         try save(record, ordinary: true)
         return try work(.registration, path: "/v1/cleanup-devices", operation: "registerCleanupDeviceV1", body: record.registration)
     }
+    /// Explicit additive local format for a sealed actual V3 enrollment. Existing
+    /// V1 records/unknown registrations are never upgraded or overwritten.
+    public func adoptDeviceEnrollment(_ enrollment: DeviceCleanupEnrollment) throws {
+        guard !inFlight else { throw CleanupFailure.stale }; inFlight = true; defer { inFlight = false }
+        try check(journal.bytes, ordinary: true)
+        guard enrollment.scope == lifetime.scope, journal.record.registration == nil else { throw CleanupFailure.unavailable }
+        var record = journal.record; record.version = "AccountCleanup.Native@2"
+        record.deviceV3Scope = enrollment.scope; record.deviceV3FromQuery = enrollment.replyFromQuery
+        record.registration = enrollment.originalUTF8; record.registered = enrollment.replyUTF8
+        try save(record, ordinary: true)
+    }
+    /// Only actual revoked progress for this original binding can supply the
+    /// expected server account operation to a V3 device call. No caller ID is accepted.
+    public func originalDeviceAuthorization() throws -> DeviceCleanupAccountAuthorization {
+        try check(journal.bytes, ordinary: false)
+        guard let scope = journal.record.deviceV3Scope, let progress = try journal.record.currentProgress(),
+              progress.businessRevoked else { throw CleanupFailure.unavailable }
+        let original = try journal.record.original(), device = try journal.record.device()
+        guard progress.operationID == original.operationID else { throw CleanupFailure.invalidResponse }
+        return DeviceCleanupAccountAuthorization(operationID: original.operationID, scope: scope,
+            bindingID: device.bindingID, stateRef: device.stateRef)
+    }
     public func prepareAccountDeletion() throws -> AccountCleanupWork {
         guard !inFlight else { throw CleanupFailure.stale }; inFlight = true; defer { inFlight = false }
         try check(journal.bytes, ordinary: true)
