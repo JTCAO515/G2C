@@ -113,6 +113,8 @@ def exercise(conninfo,auth):
             return client.get('/v5/memory-candidate-jobs',params=dict(conversation_id='long',after_job_id=after),headers=headers[actor])
         discovered=expected(discover())['result']
         assert discovered==dict(conversation_id='long',jobs=[dict(job_id='ending-tail',attempt_id='ending-tail-attempt')],next_after_job_id=None)
+        actual_candidates=expected(client.get('/v3/memory-candidates',params=discovered['jobs'][0],headers=headers['alice']))['result']
+        assert [item['candidate_id'] for item in actual_candidates['candidates']]==[tail_receipt['receipts'][0]['item_id']]
         assert expected(discover(after='ending-tail'))['result']['jobs']==[]
         expected(discover('bob'),503)
         from cj_api.local_app import ISSUER,scope_for

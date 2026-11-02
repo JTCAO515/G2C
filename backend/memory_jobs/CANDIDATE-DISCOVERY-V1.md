@@ -20,9 +20,11 @@ not a new index, fabricated task ID or a fresh history grant.
 
 Response is `{version:"MEMORY-CANDIDATE-JOBS@1",request_id,result}`, with result
 `{conversation_id,jobs:[{job_id,attempt_id}],next_after_job_id:null|string}`.
-The final page has null. Each returned reference may be queried through the
-explicit V4 publication-items read; current review metadata remains distinct from
-historical receipts. The existing MEMORY-CANDIDATE@1 action still rechecks current
+The final page has null. Query each returned first-producer reference through the
+existing V3 memory-candidates read and use that same reference for review. This
+path works for both existing supplied-output and typed-publication producers;
+it does not require a failed V4 receipt read or parse fallback. Current candidate
+metadata remains distinct from historical receipts. MEMORY-CANDIDATE@1 still rechecks current
 item/Memory version, source and genuine Travel scope before confirmation.
 
 Discovery is current-account read only, can show a previously produced candidate
