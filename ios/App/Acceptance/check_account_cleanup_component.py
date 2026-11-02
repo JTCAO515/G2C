@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 BUNDLE = 'space.go2china.cleanup.component'
 CASES = ['testActualCommittedUnknownReopen', 'testActualPreparationUnknown', 'testActualFullInventoryBlocked']
+REMOTE_CASE = 'testActualRemoteDeletionReconnection'
 B_DOMAINS = ('business/message', 'checkpoints/run', 'business/usage', 'business/feedback-private-actions')
 # Explicit operator inventory, independent of the registry under test. Its full
 # snapshot must include actual C/unimplemented and all DEVICE@3 domains.
@@ -29,14 +30,16 @@ FULL_INVENTORY = ('business/message','business/usage','business/memory-authorita
 
 
 def main():
-    global BUNDLE
+    global BUNDLE, CASES
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('simulator', 'backend-head'): parser.add_argument('--' + name, required=True)
     for name in ('backend-source', 'run-context', 'output', 'build-dir'): parser.add_argument('--' + name, type=Path, required=True)
-    parser.add_argument('--case', choices=CASES)
+    parser.add_argument('--case', choices=CASES+[REMOTE_CASE])
     parser.add_argument('--native-device', action='store_true', help='Use actual CJProbeApp DEVICE@3 workflow; legacy component cases remain default')
     args = parser.parse_args()
-    if args.native_device: BUNDLE='space.go2china.device-v3.acceptance'
+    if args.native_device:
+        BUNDLE='space.go2china.device-v3.acceptance';CASES=CASES+[REMOTE_CASE]
+    elif args.case==REMOTE_CASE:raise ValueError('remote case requires native-device mode')
     backend = args.backend_source.resolve(); output = args.output.resolve(); build = args.build_dir.resolve()
     for path in (output, build):
         if path.is_relative_to(ROOT) or path.is_relative_to(backend): raise ValueError('external artifact/build root required')
@@ -131,7 +134,7 @@ def main():
                         for k,subject in subjects[case].items():
                             headers={'Authorization':'Bearer '+tokens[case][k],'Content-Type':'application/octet-stream'}
                             opened=api.put('/v1/conversations',params={'conversation_id':'native-cleanup'},headers=headers);opened.raise_for_status()
-                            formal=args.native_device and case=='testActualCommittedUnknownReopen' and k=='A'
+                            formal=args.native_device and case in ('testActualCommittedUnknownReopen',REMOTE_CASE) and k=='A'
                             if formal:
                                 needs='native-needs-'+uuid.uuid4().hex
                                 command=dict(action_id=needs,needs_id=needs,expected_version=0,source={'kind':'manual','text':'Operator-supplied local native acceptance party size'},changes={'party_size':{'state':'known','value':1}})
@@ -183,7 +186,7 @@ def main():
                             if isinstance(payload,dict):
                                 for name in ('device_token','receipt_token'):
                                     if name in payload:secrets.append(payload[name])
-                        entry=dict(mode=mode,case=current['case'],actor=None if who is None else who[1],method=scope['method'],path=scope['path'],http_status=status,
+                        entry=dict(mode=mode,case=current['case'],actor=None if who is None else who[1],producer='remote-operator' if headers.get(b'x-native-operator')==b'1' else 'App',method=scope['method'],path=scope['path'],http_status=status,
                             authorization_scheme=authorization.partition(' ')[0],request_sha256=hashlib.sha256(body).hexdigest())
                         if body:
                             command=json.loads(body)
@@ -277,6 +280,29 @@ def main():
                                 value=dict(endpoint=endpoints['full' if case=='testActualFullInventoryBlocked' else 'component'],accounts=tokens[case],subjects=subjects[case],case_id=case,
                                     proposal_id=proposals[case]['proposal_id'] if case in proposals else None,
                                     trip_id=proposals[case]['trip_id'] if case in proposals else None,provider_calls=provider_counts[case])
+                            elif parsed.path=='/remote-delete' and args.native_device and case==REMOTE_CASE:
+                                import httpx
+                                # Second authenticated local operator produces the actual
+                                # remote operation. No operation/capability enters App fixtures.
+                                headers={'Authorization':'Bearer '+tokens[case]['A'],'Content-Type':'application/octet-stream','X-Native-Operator':'1'}
+                                with httpx.Client(follow_redirects=False,trust_env=False,timeout=20) as client:
+                                    endpoint=endpoints['component']
+                                    observed=client.get(endpoint+'/v1/message-receipts',params={'message_id':'remote-identity-'+uuid.uuid4().hex},headers=headers);observed.raise_for_status()
+                                    registration=dict(version='CLEANUP-DEVICE@3',action_id='remote-'+uuid.uuid4().hex,device_id='remote-'+uuid.uuid4().hex,
+                                        state_ref=hashlib.sha256(tokens[case]['A'].encode()+uuid.uuid4().bytes).hexdigest())
+                                    registered=client.post(endpoint+'/v3/cleanup-devices',content=encode(registration),headers=headers);registered.raise_for_status()
+                                    prepared=client.post(endpoint+'/v1/account-cleanup-operations',content=encode(dict(version='CLEANUP-API@1',action_id=uuid.uuid4().hex,binding_id=registered.json()['binding_id'])),headers=headers);prepared.raise_for_status()
+                                    original=prepared.json()
+                                    confirmed=client.post(endpoint+'/v1/account-cleanup-operations/'+original['operation_id']+'/confirmation',
+                                        content=encode(dict(version='CLEANUP-API@1',registry_digest=original['registry_digest'],confirmation='DELETE_ACCOUNT')),headers=headers);confirmed.raise_for_status()
+                                    assert confirmed.json()['business_access']=='revoked'
+                                report.setdefault('remote_producer',{})[case]=dict(kind='signed local API operator, not a second physical/native device',actual_original=True,operation_id=original['operation_id'])
+                                value={'revoked':True};save()
+                            elif parsed.path=='/offline-checkpoint' and args.native_device:
+                                report.setdefault('offline_reads',{})[case]={'start':len(audits)};value={};save()
+                            elif parsed.path=='/verify-offline-read' and args.native_device:
+                                assert len(audits)==report['offline_reads'][case]['start'],'offline page made an API request'
+                                report['offline_reads'][case]['no_api_request']=True;value={};save()
                             elif parsed.path=='/fault':
                                 if query['kind']=='preparation':fault['path']='/v1/account-cleanup-operations'
                                 elif query['kind']=='confirmation':
@@ -322,14 +348,14 @@ def main():
                                 assert prepares[0]['request_sha256']==a['operations'][0]['input_digest']
                                 confirms=[e for e in writes if e['path'].endswith('/confirmation')];assert len(confirms)==(0 if case=='testActualPreparationUnknown' else 1)
                                 assert b['fences']==0 and b['feedback']==1 and all(count==1 for count in b['domain_rows'].values())
-                                if case=='testActualCommittedUnknownReopen':assert a['fences']==1 and a['cleanup_private_read_eligible'] and all(count==0 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='confirmed'
+                                if case in ('testActualCommittedUnknownReopen',REMOTE_CASE):assert a['fences']==1 and a['cleanup_private_read_eligible'] and all(count==0 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='confirmed'
                                 else:assert a['fences']==0 and all(count==1 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='prepared'
                                 assert not any(e['path'].startswith('/v1/cleanup-device-calls') or e['path'].startswith('/v1/cleanup-device-receipts') for e in value['api'])
                                 if args.native_device:
-                                    registrations=[e for e in writes if e['path']=='/v3/cleanup-devices' and e['actor']=='A'];assert len(registrations)==1
+                                    registrations=[e for e in writes if e['path']=='/v3/cleanup-devices' and e['actor']=='A' and e['producer']=='App'];assert len(registrations)==1
                                     calls=[e for e in writes if e['path']=='/v3/cleanup-device-calls']
                                     receipts=[e for e in writes if e['path']=='/v3/cleanup-device-receipts']
-                                    if case=='testActualCommittedUnknownReopen':
+                                    if case in ('testActualCommittedUnknownReopen',REMOTE_CASE):
                                         assert len(calls)==len(receipts)==1
                                         call=calls[0]['device_call'];assert call['operation_id']==a['operations'][0]['operation_id']
                                         assert call['reason']=='account_cleanup' and len(call['targets'])==19
@@ -337,6 +363,10 @@ def main():
                                         original_reads=[e for e in value['api'] if e['method']=='GET' and e['path']=='/v3/cleanup-device-calls/'+call['invocation_id']]
                                         assert original_reads and original_reads[-1]['device_state']=='confirmed'
                                     else:assert not calls and not receipts
+                                    if case==REMOTE_CASE:
+                                        refused=[e for e in value['api'] if e['producer']=='App' and e['path']=='/v1/message-receipts' and e['http_status'] in (401,403)]
+                                        assert len(refused)>=2 and report['offline_reads'][case]['no_api_request']
+                                        assert all(e['producer']=='remote-operator' for e in prepares+confirms),'App created a replacement account operation'
                                 report.setdefault('checks',{})[case]=dict(real_server_original=True,exact_original_bytes=True,no_repeated_prepare_or_confirmation=True,other_actor_unchanged=True,device_hook_not_claimed=not args.native_device);save()
                             else:raise ValueError('unknown control path')
                             raw=json.dumps(value).encode();self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw)

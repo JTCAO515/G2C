@@ -38,7 +38,7 @@ import Foundation
             let bottom = app.tabBars.element.exists && app.tabBars.element.isHittable ? app.tabBars.element.frame.minY - 16 : app.frame.maxY - 40
             let frame = element.exists ? element.frame : .zero
             print("CLEANUP_SCROLL", element.exists ? element.identifier : "not-materialized", frame, "bounds", top, bottom, "hittable", element.exists && element.isHittable)
-            if element.exists && element.isHittable && frame.minY >= top && frame.maxY <= bottom { return }
+            if element.exists && element.isHittable { return } // XCTest tap chooses the visible hit point. Has no manual center override.
             let down = frame.isEmpty ? (attempt / 10) % 2 == 1 : frame.midY < top
             let middle = (top + bottom) / 2, step = min(100, (bottom - top) * 0.15)
             let x = app.frame.width * 0.85
@@ -140,19 +140,17 @@ import Foundation
         tap("offline.sync")
         contains("offline.sync.status", "Offline snapshot saved from this successful formal-trip read.", towardTop: false)
     }
+    func preparePrivateCaches(_ f: Fixture) async throws {
+        try launch(f); account(); tap("account.development.signin.B"); contains("account.development.status", f.subjects["B"]!)
+        seedDraft("另一账号保留的中文草稿。")
+        try launch(f, proposal: true); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
+        seedDraft("本机原始中文草稿，未发送。")
+        acceptAndCacheFormalTrip(f)
+        account(); try await call("/native-files", f.case_id, ["stage": "before"])
+    }
     func initial(_ f: Fixture, seedPrivateDraft: Bool = false) async throws -> String {
-        try launch(f); account()
-        if seedPrivateDraft {
-            tap("account.development.signin.B"); contains("account.development.status", f.subjects["B"]!)
-            seedDraft("另一账号保留的中文草稿。")
-            try launch(f, proposal: true); account()
-        }
-        tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
-        if seedPrivateDraft {
-            seedDraft("本机原始中文草稿，未发送。")
-            acceptAndCacheFormalTrip(f)
-            account(); try await call("/native-files", f.case_id, ["stage": "before"])
-        }
+        if seedPrivateDraft { try await preparePrivateCaches(f) }
+        else { try launch(f); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!) }
         try await call("/size", f.case_id, ["value": "max"])
         deletion(); tap("account.cleanup.review")
         XCTAssertTrue(app.buttons["account.cleanup.confirm"].waitForExistence(timeout: 25))
@@ -203,4 +201,30 @@ import Foundation
         try audit("delete-account-full-registry-blocked-max", target: "account.cleanup.read")
         try await call("/validate", name)
     }
+    func testActualRemoteDeletionReconnection() async throws {
+        let name = "testActualRemoteDeletionReconnection", f = try await fixture(name)
+        defer { app?.terminate() }
+        try await call("/size", name, ["value": "standard"])
+        try await preparePrivateCaches(f)
+        app.terminate()
+        try await call("/remote-delete", name)
+        try await call("/size", name, ["value": "max"])
+        try await call("/offline-checkpoint", name)
+        try launch(f); tap("Trips"); tap("offline.open")
+        XCTAssertTrue(app.staticTexts["offline.title"].waitForExistence(timeout: 20))
+        XCTAssertEqual(app.staticTexts["offline.tripID"].label, f.trip_id)
+        try await call("/verify-offline-read", name)
+        // No verification has occurred yet: the original protected snapshot is
+        // available only within its unrenewed14-day grant, despite remote deletion.
+        account(); tap("account.development.restore")
+        contains("account.cleanup.deviceReceipt", "Acknowledged for this device")
+        try await call("/native-files", name, ["stage": "after"])
+        try launch(f, language: "zh-Hans"); deletion("zh-Hans"); tap("account.cleanup.readDevice")
+        contains("account.cleanup.deviceReceipt", "已确认")
+        try audit("remote-original-device-zh-max", target: "account.cleanup.readDevice")
+        try await call("/validate", name)
+        tap("行程"); tap("offline.open")
+        XCTAssertFalse(app.staticTexts["offline.title"].exists)
+    }
+
 }
