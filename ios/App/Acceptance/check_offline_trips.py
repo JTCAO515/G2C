@@ -38,6 +38,7 @@ def main():
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--build-dir', required=True, type=Path)
     parser.add_argument('--case', choices=CASES)
+    parser.add_argument('--seed-only', action='store_true', help='Diagnose real formal-source preparation; every native case remains UNRUN')
     args = parser.parse_args()
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
@@ -169,9 +170,19 @@ def main():
                             command=dict(version='MESSAGE-send.1',conversation_id=cid,message_id=uuid.uuid4().hex,text='请安排北京三日游，保留中文地点。本地合成离线验收 '+str(index),
                                 trip_id=None,creation_intent='consider_trip',expected_generation=message_head['generation'],expected_sequence=message_head['last_sequence'])
                             response=client.post('/v1/messages',content=json.dumps(command).encode(),headers={**headers,'Content-Type':'application/octet-stream'});response.raise_for_status()
-                            run_once(database,model,auth)
+                            outcomes=run_once(database,model,auth)
+                            report.setdefault('worker_outcomes', {})[case] = [dict(run_id=o.run_id,status=o.status,proposal_id=o.proposal_id) for o in outcomes]
+                            report.setdefault('provider_calls', {})[case] = model.calls
+                            save()
                             pid=proposal_id_for(response.json()['receipt']['run_id'])
-                            proposal=client.get('/v1/trip-proposals',params={'proposal_id':pid},headers=headers);proposal.raise_for_status();proposal=proposal.json()['proposal']
+                            proposal=client.get('/v1/trip-proposals',params={'proposal_id':pid},headers=headers)
+                            if proposal.status_code != 200:
+                                snapshot=client.get('/v1/runs',params={'run_id':response.json()['receipt']['run_id']},headers=headers)
+                                report.setdefault('source_diagnostics', {})[case] = dict(proposal_status=proposal.status_code,
+                                    error_code=proposal.json().get('error',{}).get('code'),run_status=snapshot.status_code,
+                                    run_fields={key:value for key,value in snapshot.json().get('run',{}).items() if key in {'status','draft_outcome','failure_stage'}})
+                                save()
+                            proposal.raise_for_status();proposal=proposal.json()['proposal']
                             action_id=uuid.uuid4().hex
                             prepared=client.post('/v1/trip-confirmations',json=dict(action_id=action_id,kind='accept',proposal_id=pid,candidate_hash=proposal['candidate_hash']),headers=headers);prepared.raise_for_status()
                             original=base64.b64decode(prepared.json()['action_utf8_base64'])
@@ -181,6 +192,20 @@ def main():
                         assert len(trips)==count and model.calls==count*2
                     row['formal']=[dict(trip_id=t['trip_id'],version=t['version'],title=t['document']['title'],sha256=hashlib.sha256(base64.b64decode(t['content_utf8_base64'])).hexdigest()) for t in trips]
                     row['calls']=model.calls;return row['formal']
+
+                if args.seed_only:
+                    case = args.case or CASES[0]
+                    tokens[case] = {x: dev_auth.token(auth, subject, 120) for x, subject in subjects[case].items()}
+                    for subject in subjects[case].values(): operator(subject, 'init-budget')
+                    models[case] = FakeProvider(chunks_per_reply=2)
+                    records[case] = dict(audit_start=len(audit))
+                    try:
+                        report['formal_source_preparation'] = create(case)
+                        report['status'] = 'UNRUN'
+                        report['mode'] = 'formal_source_diagnostic_only'
+                        save()
+                    finally: stop()
+                    return
 
                 def app_files():
                     container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
