@@ -135,9 +135,11 @@ class JobStore:
         with self.repository.job_transaction(require_clean_close=True) as tx:return self._read(tx,jid,attempt)
 
     def pending(self):
-        with self.repository.job_transaction(require_clean_close=True) as tx:
-            tx.cur.execute("SELECT job_id,attempt_id FROM cj_run_background_job WHERE scope=%s AND state='queued' AND input_bytes IS NOT NULL ORDER BY run_id",(self.scope,))
-            return tuple(tx.cur.fetchall())
+        # A newly invited account may have no RUN scope yet. The actual runtime
+        # RLS query then observes no eligible jobs; it does not initialize one.
+        with self.repository.connect() as conn:
+            rows=conn.execute("SELECT job_id,attempt_id FROM cj_run_background_job WHERE scope=%s AND state='queued' AND input_bytes IS NOT NULL ORDER BY run_id",(self.scope,)).fetchall()
+        return tuple(rows)
 
     def prepare(self,request,config,output_limit):
         run_id=uuid.uuid4().hex;raw=request.envelope(self.scope,run_id)

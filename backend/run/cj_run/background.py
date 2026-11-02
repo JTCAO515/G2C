@@ -208,6 +208,10 @@ class BackgroundJobs:
                     if current is not None and current.state in ('running','publishing'):
                         store.transition(current,('running','publishing'),'unknown')
                 except Exception as state_error:error.add_note('original background state unavailable: '+type(state_error).__name__)
+                try:
+                    original=self._owned(token,lambda context:self.collection.query_publication_in_context(context,token,jid,attempt))
+                    if json.loads(original) is None:self._metadata(token,record,'unknown')
+                except Exception as metadata_error:error.add_note('original C metadata unavailable: '+type(metadata_error).__name__)
                 raise JobOutcomeUnknown(record) from error
 
     def run_once(self,token,provider):
