@@ -263,6 +263,27 @@ class DecisionInputChecks(manual.ManualChecks):
         with collection.database.connect(scope_for(ISSUER,'alice')) as conn:
             self.assertEqual(conn.execute('SELECT result_bytes FROM cj_memory_history_job WHERE job_id=%s',('tail-job',)).fetchone(),(None,))
             self.assertEqual(conn.execute('SELECT jsonb_array_length(origin_refs) FROM cj_memory_history_origin').fetchone(),(2,))
+        # The final HTTP bytes must still be inside the SAME identity lifetime.
+        # JSON encoding is shared by old/new response placement, so this turns
+        # red if the service guard finishes before the envelope is materialized.
+        for operation in ('get','post'):
+            invited=self.auth/'invited.json';before=invited.read_bytes();encode_json=json.dumps;revoked=[]
+            def encoding(value,*args,**kwargs):
+                if type(value) is dict and value.get('version')=='MEMORY-DECISION-response@1' and not revoked:
+                    invited.write_text(encode_json([name for name in json.loads(before) if name!='alice']))
+                    revoked.append(True)
+                return encode_json(value,*args,**kwargs)
+            try:
+                with patch.object(json,'dumps',encoding),TestClient(collection_app) as client:
+                    if operation=='get':response=client.get('/internal/v3/memory-decision/publications',
+                        params={'job_id':'decision-job','attempt_id':'decision-attempt'},headers=headers)
+                    else:
+                        raw=packed(dict(version=JOB_VERSION,job_id='copy-job',attempt_id='copy-attempt',
+                            source=asdict(copy_query),decision=asdict(selected),end=None))
+                        response=client.post('/internal/v1/memory-decision/jobs',content=raw,headers=headers)
+                self.assertEqual(revoked,[True]);self.assertNotEqual(response.status_code,200,response.text)
+                self.assertNotIn('result',response.json());self.assertNotIn('receipts',response.text)
+            finally:invited.write_bytes(before)
         candidates=json.loads(service.candidates(token,'decision-job','decision-attempt'))
         candidate=candidates['candidates'][0]
         service.apply_candidate(token,packed(dict(version='MEMORY-CANDIDATE@1',action_id='review-plan',job_id='decision-job',attempt_id='decision-attempt',
