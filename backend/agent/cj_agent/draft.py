@@ -31,6 +31,9 @@ class DraftRejected(ValueError):
     """Model output did not form a valid draft; nothing is published."""
 
 
+_model_object = reject_duplicates(DraftRejected, 'duplicate JSON field')
+
+
 def proposal_id_for(run_id):
     return 'p-' + run_id
 
@@ -45,7 +48,7 @@ def document_from_model(text):
     if start < 0 or end < start:
         raise DraftRejected('no JSON object')
     try:
-        value = json.loads(text[start:end + 1], object_pairs_hook=reject_duplicates(DraftRejected, 'duplicate JSON field'))
+        value = json.loads(text[start:end + 1], object_pairs_hook=_model_object)
     except (ValueError, RecursionError):
         raise DraftRejected('invalid JSON') from None
     if type(value) is not dict or set(value) != {'title', 'items'}:
