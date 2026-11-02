@@ -184,6 +184,12 @@ import Foundation
         XCTAssertEqual(second.feedback_posts, first.feedback_posts + 1)
         _ = try await call("/validate", f.case_id)
         tap("feedback.another")
+        // Reset removes the receipt section; the new status row can be virtualized
+        // below the long English introduction at system maximum type size.
+        for _ in 0..<10 {
+            if app.staticTexts["feedback.status"].exists { break }
+            app.swipeUp()
+        }
         status(language == "en" ? "Ready to describe" : "请填写反馈")
         XCTAssertTrue(revealEditor("feedback.problem").isEnabled)
         _ = try await call("/size", f.case_id, ["value": "large"])
