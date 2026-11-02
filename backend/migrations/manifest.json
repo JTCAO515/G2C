@@ -250,6 +250,14 @@
       "sha256": "d4e7bb60e696d1495389241599f9021a9ed8334f90d1bc8e7fb9f626d843f6dd",
       "down": "backend/migrations/down/0031_message_source.down.sql",
       "down_sha256": "580ab212d8bbc7541b0b0497aee5f4f56e491ccff91f795ff1fdc88279955b2d"
+    },
+    {
+      "version": 32,
+      "name": "local_cleanup",
+      "file": "backend/migrations/0032_local_cleanup.sql",
+      "sha256": "b90e8eda7a9acc897ccb2b6bcdc588dbe181f3a00189ee4d465bb720c00c232f",
+      "down": "backend/migrations/down/0032_local_cleanup.down.sql",
+      "down_sha256": "76c129c16670df77c30f216e337e5d792e9e13eb85954b62cb32ce5b33fbdf38"
     }
   ]
 }
