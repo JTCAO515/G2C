@@ -104,7 +104,9 @@ def exercise(root,conninfo):
             'business/memory-management-actions','checkpoints/run','memory-derived',
             'device-cache/encrypted-message-file','device-cache/sdk-session-keychain','device-cache/message-key-keychain',
             'device-cache/trip-pending-file','device-cache/offline-trip','device-cache/feedback-pending',
-            'device-cache/feedback-key-keychain','external-processing')
+            'device-cache/feedback-key-keychain','device-cache/memory-manual-pending','device-cache/memory-lifecycle-pending',
+            'device-cache/memory-typed-pending','device-cache/memory-key-keychain','device-cache/needs-pending',
+            'device-cache/needs-key-keychain','external-processing')
         from dataclasses import replace
         full=create_local_app(conninfo_path=conninfo,auth_dir=auth,cleanup_configuration=replace(options,
             inventory=inventory,registry_path=ROOT/'backend/storage-registry.json'))
@@ -118,7 +120,11 @@ def exercise(root,conninfo):
         from cj_cleanup.device_bridge import TARGETS
         actual=json.loads((ROOT/'backend/storage-registry.json').read_bytes())
         entries=next(store for store in actual['stores'] if store['id']=='device-cache')['objects']
-        assert set(TARGETS)=={'device-cache/'+entry['id'] for entry in entries}
+        assert TARGETS==('device-cache/encrypted-message-file','device-cache/sdk-session-keychain',
+            'device-cache/message-key-keychain','device-cache/trip-pending-file','device-cache/offline-trip',
+            'device-cache/feedback-pending','device-cache/feedback-key-keychain')
+        from cj_cleanup.device_v2 import TARGETS as V2_TARGETS
+        assert set(V2_TARGETS)=={'device-cache/'+entry['id'] for entry in entries} and len(V2_TARGETS)==13
         print('PASS corrupted original plan rejects; actual full inventory missing owner hooks blocks before retirement; all device call targets registered')
         # Actual HTTP metadata finalization after the original device report:
         # erase the private scope plan, retain only bounded progress/fences.

@@ -36,11 +36,11 @@ class Gateway:
         if current.status is not AdmissionStatus.ALLOWED or current.principal!=principal:
             raise Denied('ordinary account access unavailable')
 
-    def register_device(self,token,action_id,input_digest,device_id,state_ref,project):
+    def register_device(self,token,action_id,input_digest,device_id,state_ref,project,*,device_version='CLEANUP-DEVICE@1'):
         principal,binding=self._ordinary(token)
         metadata=GatewayStore(binding.store)
-        result=metadata.register_device(action_id,input_digest,device_id,state_ref)
-        result.update(version='CLEANUP-DEVICE@1',device_token=self.issuer.issue(subject_digest=binding.store.subject_digest,
+        result=metadata.register_device(action_id,input_digest,device_id,state_ref,protocol=device_version)
+        result.update(version=device_version,device_token=self.issuer.issue(subject_digest=binding.store.subject_digest,
             operation_id=result['binding_id'],binding_id=result['binding_id'],purpose='device'),
             server_time=int(self.clock()),business_access='not_granted')
         encoded=project(result);self._same(token,principal)
@@ -163,15 +163,17 @@ class Gateway:
         if prepared.binding_id!=claims.binding_id:raise Denied('original progress credential required')
         return project(self._progress(binding,operation_id))
 
-    def device_call(self,capability,binding_id,reason,project):
+    def device_call(self,capability,binding_id,reason,project,*,device_version='CLEANUP-DEVICE@1'):
         claims=self.issuer.verify(capability,purpose='device',operation_id=binding_id,binding_id=binding_id)
         binding=self.resolve_subject(claims.subject_digest)
+        if GatewayStore(binding.store).device(binding_id)['protocol']!=device_version:raise Denied('original device protocol required')
         return project(DeviceBridge(GatewayStore(binding.store),self.issuer).call(binding_id,reason))
 
-    def device_receipt(self,capability,action_id,operation_id,invocation_id,binding_id,request_digest,outcome,raw,project):
+    def device_receipt(self,capability,action_id,operation_id,invocation_id,binding_id,request_digest,outcome,raw,project,*,device_version='CLEANUP-DEVICE@1'):
         claims=self.issuer.verify(capability,purpose='device_receipt',operation_id=operation_id,
             invocation_id=invocation_id,binding_id=binding_id)
         binding=self.resolve_subject(claims.subject_digest)
+        if GatewayStore(binding.store).device(binding_id)['protocol']!=device_version:raise Denied('original device protocol required')
         bridge=DeviceBridge(GatewayStore(binding.store),self.issuer)
         report=bridge.receipt(claims,action_id,request_digest,outcome,raw)
         metadata=GatewayStore(binding.store)
@@ -182,8 +184,9 @@ class Gateway:
                 self._continue_original(original,operation_id,json.loads(prepared.plan_bytes),self.current_registry())
         return project(report)
 
-    def device_query(self,capability,invocation_id,project):
+    def device_query(self,capability,invocation_id,project,*,device_version='CLEANUP-DEVICE@1'):
         claims=self.issuer.verify(capability,purpose='device')
         if claims.operation_id!=claims.binding_id:raise Denied('original device credential required')
         binding=self.resolve_subject(claims.subject_digest)
+        if GatewayStore(binding.store).device(claims.binding_id)['protocol']!=device_version:raise Denied('original device protocol required')
         return project(DeviceBridge(GatewayStore(binding.store),self.issuer).query(invocation_id,claims.binding_id))
