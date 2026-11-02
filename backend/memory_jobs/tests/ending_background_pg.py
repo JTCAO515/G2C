@@ -12,10 +12,10 @@ from cj_api.local_run_context import load_run_context
 from cj_memory.manual import ManualPolicy
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_memory_jobs.collection_app import create_collection_app
-from cj_memory_jobs.ending import EndingCollectionAdapter
+from cj_memory_jobs.worker_adapter import MemoryCollectionAdapterV2
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_message.source import SourceQuery
-from cj_run.background import BackgroundJobs
+from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
 
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
@@ -86,7 +86,7 @@ def exercise(root,path):
         post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='enable',operation='enable',
             conversation_id='ending',expected_generation=head['generation'],expected_epoch=0,expected_source_version=0))
         actual_end=post('/internal/v1/conversation-end',dict(version='MESSAGE-SOURCE@1',**end,conversation_type='travel'))['end']
-        jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=EndingCollectionAdapter(c),max_payload_bytes=262144)
+        jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=MemoryCollectionAdapterV2(c),max_payload_bytes=262144)
         def prepare(jid,source):
             post('/internal/v1/memory-ending/jobs',dict(version='MEMORY-END-JOBS@1',job_id=jid,attempt_id=jid+'-attempt',source=source,end=end))
             c.transition(token,jid,jid+'-attempt','inflight')
@@ -106,6 +106,11 @@ def exercise(root,path):
         assert run_worker.run_once(host.database,model,auth,background_jobs=LocalBackgroundHost(jobs,auth))==[] and model.calls==2
         assert len({item['run_id'] for item in originals})==2
         assert len({item['meter_attempt_id'] for item in originals})==2
+        discovered=expect(client.get('/v5/memory-candidate-jobs',params=dict(conversation_id='ending',after_job_id=''),
+            headers=headers['ending-alice']))['result']
+        assert discovered['jobs']==[dict(job_id='ending-tail',attempt_id='ending-tail-attempt')]
+        actual=expect(client.get('/v3/memory-candidates',params=discovered['jobs'][0],headers=headers['ending-alice']))['result']
+        assert actual['candidates'][0]['status']=='candidate'
         listing=expect(client.get('/v4/memory-publication-items',params={'job_id':'ending-tail','attempt_id':'ending-tail-attempt'},headers=headers['ending-alice']))['result']
         candidate=listing['items'][0]
         assert candidate['status']=='candidate' and candidate['review']==dict(job_id='ending-tail',attempt_id='ending-tail-attempt')
