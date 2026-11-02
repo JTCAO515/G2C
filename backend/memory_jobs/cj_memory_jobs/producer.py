@@ -45,10 +45,22 @@ class IncrementalProducer:
                     return encode([])
                 tx.require_live()
                 if len(consents)>self.max_conversations:raise Unavailable('enabled source inventory exceeds bound')
+                originals=tx.current_unresolved()
+            pending=[]
+            for row in originals:
+                cursor=row[3].cursor
+                head=context.send_status(cursor.conversation_id).head
+                if head is None or (head.generation,head.epoch)!=(cursor.generation,cursor.epoch):continue
+                if row[0].state in ('inflight','unknown'):return encode([])
+                if row[5]!='incremental':return encode([])
+                pending.append(base64.b64encode(row[1]).decode('ascii'))
+            if pending:
+                guard('incremental_original_pending')
+                return encode(pending[:1])
             plans=[]
             for chat,generation,epoch,version,withdrawal in consents:
                 head=context.send_status(chat).head
-                if head is None:raise Unavailable('enabled conversation unavailable')
+                if head is None:continue  # Explicitly missing/inactive, not a lookup failure.
                 if (head.generation,head.epoch)!=(generation,epoch) or head.last_sequence==0:continue
                 source=SourceV2(Cursor(context.scope,chat,generation,epoch,head.last_sequence,0),version,withdrawal)
                 key=stream_key(source,'incremental')
@@ -64,16 +76,18 @@ class IncrementalProducer:
                     if unresolved is not None:
                         if unresolved[2]=='pending':
                             row=tx.job(unresolved[0],unresolved[1])
-                            plans.append(base64.b64encode(row[1]).decode('ascii'))
+                            plans.append((after,chat,base64.b64encode(row[1]).decode('ascii')))
                         continue
                     if after>=head.last_sequence:continue
                     query=SourceQuery(chat,generation,epoch,after,min(after+100,head.last_sequence),version,withdrawal)
                     identity=sha256(encode(dict(scope_digest=sha256(context.scope.encode()).hexdigest(),source=asdict(query)))).hexdigest()
                     command=dict(version='MEMORY-JOBS@1',job_id='incremental-v1:'+identity,
                         attempt_id='incremental-attempt-v1:'+identity,source=asdict(query))
-                    plans.append(base64.b64encode(encode(command)).decode('ascii'))
+                    plans.append((after,chat,base64.b64encode(encode(command)).decode('ascii')))
                     guard('incremental_plan')
-            return encode(plans)
+            # Publishing one source may advance the account-wide Memory epoch.
+            # The next source must be planned after that original has settled.
+            return encode([min(plans)[2]] if plans else [])
         return json.loads(c.boundary.with_history_context(token,read))
 
     def poll(self,token):
@@ -82,7 +96,7 @@ class IncrementalProducer:
         for original in self._plan(token):
             raw=base64.b64decode(original,validate=True)
             plan=EnqueueCommand.parse(raw);jid,attempt=plan.job_id,plan.attempt_id
-            c.enqueue(token,raw)
+            c.enqueue_serialized(token,raw)
             c.transition(token,jid,attempt,'inflight')
             prepared=c.prepare_model_input_v2(token,jid,attempt,max_payload_bytes=self.max_payload_bytes)
             try:

@@ -13,6 +13,7 @@ from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_memory_jobs.producer import IncrementalProducer,ProducerHost
+from cj_memory_jobs.codec import Conflict,Unavailable
 from cj_memory_jobs.worker_adapter import MemoryCollectionAdapterV2
 from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
@@ -39,8 +40,9 @@ class Observed(FakeProvider):
             for chunk in super().stream(messages,system):yield json.dumps(data['items'])+chunk
 
 
-def exercise(root,path):
-    auth=root/'auth';subjects=('poll-alice','poll-bob');dev_auth.init(auth,subjects);now=int(time.time())
+def exercise(root,path,*,multi_only=False):
+    subjects=('poll-multi',) if multi_only else ('poll-alice','poll-bob','poll-multi')
+    auth=root/'auth';dev_auth.init(auth,subjects);now=int(time.time())
     quota=root/'quota.json';quota.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(
         meter=dict(unit='provider_call',budget=30,period_start=now-60,period_end=now+3600,
             max_steps=20,max_tools=10,max_output=40000,max_seconds=600),output_limits=dict(model=4000,tool=4000,memory=4000)))))
@@ -81,6 +83,37 @@ def exercise(root,path):
             post('/v1/messages',dict(version='MESSAGE-send.1',conversation_id=chat,message_id=mid,text=text,trip_id=None,
                 creation_intent='none',expected_generation=head['generation'],expected_sequence=head['last_sequence']),who)
             return head
+        def multiple_sources():
+            a=send('multi-a','multi-pref','No spicy food','poll-multi')
+            b=send('multi-b','multi-height','My height is 170 cm','poll-multi')
+            for chat,head in (('multi-a',a),('multi-b',b)):
+                post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='enable-'+chat,operation='enable',
+                    conversation_id=chat,expected_generation=head['generation'],expected_epoch=0,expected_source_version=0),'poll-multi')
+            before=model.calls
+            assert len(intake.poll(tokens['poll-multi']))==1
+            assert intake.poll(tokens['poll-multi'])==(), 'a queued original must block another preparation at the same basis'
+            racing=json.dumps(dict(version='MEMORY-JOBS@1',job_id='racing-job',attempt_id='racing-attempt',source=dict(
+                conversation_id='multi-b',generation=b['generation'],epoch=0,after=0,through=1,
+                source_version=1,withdrawal_epoch=1,mode='incremental'))).encode()
+            try:c.enqueue_serialized(tokens['poll-multi'],racing)
+            except Conflict:pass
+            else:raise AssertionError('atomic automatic enqueue admitted a second original at the same basis')
+            try:c.query_original(tokens['poll-multi'],'racing-job','racing-attempt')
+            except Unavailable:pass
+            else:raise AssertionError('denied racing original was persisted')
+            first=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
+            assert len(first)==3 and all(result.status=='completed' for result in first),first
+            second=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
+            assert len(second)==1 and second[0].status=='completed',second
+            assert model.calls-before==4
+            assert run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)==[]
+            with host.database.connect(scope_for(ISSUER,'poll-multi')) as conn:
+                assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(2,)
+                assert conn.execute("SELECT count(*) FROM cj_memory_history_job WHERE state='unknown'").fetchone()==(0,)
+            print('PASS two enabled same-owner sources advance sequentially across actual canonical epoch changes, one new job per poll, zero automatic repeat')
+        if multi_only:
+            multiple_sources()
+            return
         head=send('source','fact','No spicy food','poll-alice')
         send('source','height','My height is 170 cm','poll-alice')
         send('source','visit','I visited a synthetic museum','poll-alice')
@@ -123,6 +156,7 @@ def exercise(root,path):
             assert len(results)==1 and results[0].status=='completed'
             assert {item['slot']:item['text'] for item in model.answers[-1]['items']}=={slot:text}
         assert len(model.extractions)==2 and len(originals)==2
+        multiple_sources()
     with host.database.connect(scope_for(ISSUER,'poll-alice')) as conn:
         assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(3,)
     with host.database.connect(scope_for(ISSUER,'poll-bob')) as conn:
@@ -131,4 +165,5 @@ def exercise(root,path):
 
 
 if __name__=='__main__':
-    with tempfile.TemporaryDirectory(prefix='producer-bg-') as folder:exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']))
+    with tempfile.TemporaryDirectory(prefix='producer-bg-') as folder:
+        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']),multi_only=os.environ.get('CJ_MEMORY_MULTI_ONLY')=='1')
