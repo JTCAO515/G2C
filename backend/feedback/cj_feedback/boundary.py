@@ -57,12 +57,15 @@ class Boundary:
     Resolver must use stable issuer/subject + environment, not JWT expiry or a body
     field. It must return a new idle connection factory. No membership source here.
     """
-    def __init__(self, checker, resolve, *, sources=None):
+    def __init__(self, checker, resolve, *, sources=None, scope_binder=None,scope_current=None):
         if not isinstance(checker, AdmissionChecker) or resolve is None: raise Unavailable()
+        if (scope_binder is None)!=(scope_current is None):raise Unavailable()
         if sources is not None:
             from .sources import Sources
             if type(sources) is not Sources or sources.message.checker is not checker: raise Unavailable()
         self.checker, self.resolve, self.sources = checker, resolve, sources
+        self.scope_binder = scope_binder
+        self.scope_current = scope_current
 
     def with_operation(self, token, operation):
         op = None
@@ -91,12 +94,14 @@ class Boundary:
                     unchanged()  # Slow/reentrant provider may mutate server composition.
                     if current.status is not AdmissionStatus.ALLOWED or current.principal != first.principal:
                         raise Unavailable()
+                    if stage=='serialized_return' and self.scope_current is not None:
+                        self.scope_current(connect,scope)
                     if op is not None: op.check()
                 except BaseException:
                     if op is not None: op.blocked = True
                     raise
 
-            repository = Repository(connect, scope, guard, sources=sources, token=token, principal=first.principal)
+            repository = Repository(connect, scope, guard, sources=sources, token=token, principal=first.principal,scope_binder=self.scope_binder)
             op = _Operation(repository, guard)
             context_token = _active.set(op)
             guard('entry')

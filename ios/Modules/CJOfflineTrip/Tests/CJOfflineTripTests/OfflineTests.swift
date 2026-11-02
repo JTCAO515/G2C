@@ -30,9 +30,9 @@ private func privateRoot() throws -> URL {
     #expect(sealed != (try SnapshotCodec.seal(s, key: key)))
     let reopened = try SnapshotCodec.open(sealed, namespace: ns, key: key, expectedKeyID: keyID, minimumVersion: 2)
     #expect(reopened.responseBytes == s.responseBytes)
-    #expect(reopened.trip.document.title == "北京 / Beijing")
+    #expect(try #require(reopened.trip).document.title == "北京 / Beijing")
     #expect(!String(decoding: sealed, as: UTF8.self).contains("北京"))
-    #expect(!SnapshotCodec.appFactoryAvailable)
+    #expect(SnapshotCodec.appFactoryAvailable)
 }
 
 @Test func wrongKeyNamespaceRollbackAndTruncation() throws {

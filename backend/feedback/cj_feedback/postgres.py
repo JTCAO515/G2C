@@ -7,12 +7,13 @@ from .domain import Action, Receipt, Conflict, InvalidInput, Unavailable, Refere
 
 
 class Repository:
-    def __init__(self, connect, scope, guard, *, sources=None, token=None, principal=None):
+    def __init__(self, connect, scope, guard, *, sources=None, token=None, principal=None, scope_binder=None):
         if connect is None or not callable(guard) or type(scope) is not str or not scope:
             raise Unavailable()
         self.connect, self.scope, self.guard = connect, scope, guard
         self.sources, self.token, self.principal = sources, token, principal
         self.publication = None
+        self.scope_binder = scope_binder
 
     @contextmanager
     def transaction(self, aid, *, writing=False, before_commit=None):
@@ -25,6 +26,8 @@ class Repository:
             accepted = True
             cur = conn.cursor()
             cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+            if self.scope_binder is not None:
+                self.scope_binder(cur,self.scope)
             cur.execute("SET LOCAL lock_timeout = '5s'")
             cur.execute("SET LOCAL statement_timeout = '10s'")
             # Collisions only serialize unrelated actions; primary key remains exact.

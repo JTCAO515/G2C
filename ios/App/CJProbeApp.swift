@@ -47,7 +47,7 @@ struct CJProbeApp: App {
                       structuredTripHost: developmentAccounts?.trip?.structuredTrips ?? development?.structuredTrips,
                       needsContainerHost: developmentAccounts?.trip?.needs?.host ?? development?.needs?.host,
                       runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
-                      developmentAccountHost: developmentAccounts?.accounts)
+                      developmentAccountHost: developmentAccounts?.accounts, offlineTripController: developmentAccounts?.offline)
                 .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained
                 .safeAreaInset(edge: .top) {
                     if developmentFailed {

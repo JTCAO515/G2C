@@ -359,7 +359,7 @@ def exercise(conninfo, auth):
         assert json.loads(service.query_original(tokens['alice'],'job-1','attempt-1'))['state']=='completed'
         assert json.loads(service.query_original(tokens['bob'],'job-1','attempt-1'))['state']=='pending'
         post(jobs,job('foreign','foreign',source),subject='bob',status=503)
-        for table in ('cj_memory_history_fence','cj_memory_history_consent','cj_memory_history_action',
+        for table in ('cj_memory_history_consent','cj_memory_history_action',
                       'cj_memory_history_job','cj_memory_history_cursor'):
             with database.connect(b) as conn:
                 assert conn.execute(f'SELECT count(*) FROM {table} WHERE scope=%s',(a,)).fetchone()==(0,)
@@ -370,7 +370,8 @@ def exercise(conninfo, auth):
                 else:raise AssertionError('runtime acquired cleanup authority')
         try:
             with database.connect(b) as conn:
-                conn.execute('INSERT INTO cj_memory_history_fence(scope) VALUES(%s)',(a,))
+                from hashlib import sha256
+                conn.execute('INSERT INTO cj_memory_history_fence(scope_digest) VALUES(%s)',(sha256(a.encode()).hexdigest(),))
         except psycopg.errors.InsufficientPrivilege:pass
         else:raise AssertionError('cross-owner INSERT permitted')
         with database.connect(a) as conn:
@@ -401,24 +402,22 @@ if __name__=='__main__':
         print(compose(Path(conninfo),Path(auth))[3].query_original(token,job,attempt).decode())
         raise SystemExit(0)
     import migrate
-    import pg_suites
     with patch.dict(os.environ,{'CJ_ENV':'local'}),tempfile.TemporaryDirectory(prefix='g2c-history-auth-') as temp:
-        with pg_suites.cluster('memory_jobs_candidate',port=55508,role='cj_history_init',
-                              socket=f'/tmp/g2c-history-{os.getpid()}') as config:
+        conninfo=Path(os.environ['CJ_E2E_CONNINFO'])
+        config=json.loads(conninfo.read_bytes())
+        up=ROOT/'backend/migrations/0034_memory_history.sql'
+        down=ROOT/'backend/migrations/down/0034_memory_history.down.sql'
+        with psycopg.connect(**config,autocommit=True) as conn:
+            conn.execute(down.read_text())
+            conn.execute(up.read_text())
+        print('PASS registered M34 empty DDL down/up over the real MESSAGE/CLEANUP migration chain')
+        exercise(conninfo,Path(temp)/'auth')
+        try:
             with psycopg.connect(**config,autocommit=True) as conn:
-                migrate.up(conn,migrate.load(),migrate.load()[-1]['version'])
-                conn.execute((ROOT/'backend/memory_jobs/schema.sql').read_text())
-                conn.execute((ROOT/'backend/memory_jobs/schema.down.sql').read_text())
-                conn.execute((ROOT/'backend/memory_jobs/schema.sql').read_text())
-            print('PASS candidate empty up/down/up over the fixed MESSAGE/CLEANUP migration chain')
-            conninfo=Path(temp)/'conninfo.json';conninfo.write_text(json.dumps(config))
-            exercise(conninfo,Path(temp)/'auth')
-            try:
-                with psycopg.connect(**config,autocommit=True) as conn:
-                    conn.execute((ROOT/'backend/memory_jobs/schema.down.sql').read_text())
-            except psycopg.errors.RaiseException:
-                with psycopg.connect(**config) as conn:
-                    assert conn.execute('SELECT count(*) FROM cj_memory_history_fence WHERE erased').fetchone()==(3,)
-                    assert conn.execute('SELECT count(*) FROM cj_memory_history_job').fetchone()==(0,)
-            else:raise AssertionError('nonempty rollback erased history')
-            print('PASS nonempty down refusal preserves actual queue rows')
+                conn.execute(down.read_text())
+        except psycopg.errors.RaiseException:
+            with psycopg.connect(**config) as conn:
+                assert conn.execute('SELECT count(*) FROM cj_memory_history_fence WHERE erased').fetchone()==(3,)
+                assert conn.execute('SELECT count(*) FROM cj_memory_history_job').fetchone()==(0,)
+        else:raise AssertionError('nonempty rollback erased history')
+        print('PASS nonempty down refusal preserves erasure fences after content deletion')

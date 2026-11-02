@@ -20,42 +20,58 @@ struct OfflineSyncMetadata {
         let responseHash: String
         let syncedAt: Int64
     }
-    private let snapshot: OfflineSnapshot
+    let snapshot: OfflineSnapshot
     private let access: CanonicalSnapshotAccess
     private let store: AtomicSnapshotStore
     private let validateOriginal: () throws -> Void
     private var attempted = false
 
-    init(client: TripClient, accepted: AcceptedTripDetailSnapshot, store: AtomicSnapshotStore,
+    convenience init(client: TripClient, accepted: AcceptedTripDetailSnapshot, store: AtomicSnapshotStore,
          provider: ScopedMessageKeyProvider, session: SessionLifecycle, sessionOperation: SessionOperation,
          expectedKeyID: UUID, sync: OfflineSyncMetadata) throws {
         try store.requireNoPendingWrite()
         guard AcceptedTripDetailSnapshot.apiSourceCommit == "c02cf08e52a0d8ffc2fefac99226654a7e01539c" else {
             throw OfflineFailure.unsupportedFormat
         }
-        // Consumer await has finished: original sealed handle is revalidated, never caller IDs.
         try client.validateDetailSnapshot(accepted)
-        snapshot = try client.withCurrentDetailSnapshot(accepted) { bytes, record, trace, binding in
+        let snapshot = try client.withCurrentDetailSnapshot(accepted) { bytes, record, trace, binding in
             let namespace = try OfflineNamespace(account: binding.account, backend: binding.environment, trip: record.trip_id)
-            let result = try SnapshotCodec.capture(response: bytes, namespace: namespace, syncedAt: sync.syncedAt,
+            let value = try SnapshotCodec.capture(response: bytes, namespace: namespace, syncedAt: sync.syncedAt,
                 deadline: sync.deadline, boot: sync.boot, uptime: sync.uptime, keyID: expectedKeyID)
             let response = try JSONDecoder().decode(Components.Schemas.TripDetailResponse.self, from: bytes)
-            guard result.trip == record, Data(response.request_id.utf8) == Data(trace.utf8) else {
+            guard value.trip == record, Data(response.request_id.utf8) == Data(trace.utf8) else {
                 throw OfflineFailure.invalidSnapshot
             }
-            return result // read-only closure: no provider, filesystem, callback or side effect
+            return value
         }
+        try self.init(snapshot: snapshot, store: store, provider: provider, session: session,
+            operation: sessionOperation, expectedKeyID: expectedKeyID,
+            validateOriginal: { try client.validateDetailSnapshot(accepted) })
+    }
+    convenience init(client: TripClient, accepted: AcceptedStructuredTripSnapshot, store: AtomicSnapshotStore,
+         provider: ScopedMessageKeyProvider, session: SessionLifecycle, sessionOperation: SessionOperation,
+         expectedKeyID: UUID, sync: OfflineSyncMetadata) throws {
+        try store.requireNoPendingWrite()
+        try client.validateStructuredSnapshot(accepted)
+        let snapshot = try client.withCurrentStructuredSnapshot(accepted) { bytes, record, _, binding in
+            let namespace = try OfflineNamespace(account: binding.account, backend: binding.environment, trip: record.tripID)
+            return try SnapshotCodec.captureStructured(response: bytes, namespace: namespace, syncedAt: sync.syncedAt,
+                deadline: sync.deadline, boot: sync.boot, uptime: sync.uptime, keyID: expectedKeyID)
+        }
+        try self.init(snapshot: snapshot, store: store, provider: provider, session: session,
+            operation: sessionOperation, expectedKeyID: expectedKeyID,
+            validateOriginal: { try client.validateStructuredSnapshot(accepted) })
+    }
+    private init(snapshot: OfflineSnapshot, store: AtomicSnapshotStore, provider: ScopedMessageKeyProvider,
+                 session: SessionLifecycle, operation: SessionOperation, expectedKeyID: UUID,
+                 validateOriginal: @escaping () throws -> Void) throws {
+        self.snapshot = snapshot; self.store = store; self.validateOriginal = validateOriginal
         let lifetime = UUID()
         access = try CanonicalSnapshotAccess(store: store, provider: provider, session: session,
-            sessionOperation: sessionOperation, namespace: snapshot.metadata.namespace, expectedKeyID: expectedKeyID,
+            sessionOperation: operation, namespace: snapshot.metadata.namespace, expectedKeyID: expectedKeyID,
             sourceToken: lifetime, currentSource: {
-                // Concrete Trip owner validates original session/binding/selection before and
-                // after its host callback. No fresh identity may relabel the sealed source.
-                do { try client.validateDetailSnapshot(accepted); return lifetime }
-                catch { return nil }
+                do { try validateOriginal(); return lifetime } catch { return nil }
             })
-        self.store = store
-        validateOriginal = { try client.validateDetailSnapshot(accepted) }
     }
     func writeOnce() throws -> Receipt {
         try store.requireNoPendingWrite() // before any new attempt, lookup or nonce generation

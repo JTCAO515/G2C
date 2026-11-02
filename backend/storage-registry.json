@@ -1,5 +1,5 @@
 {
-  "version": "1.16.0",
+  "version": "1.17.0",
   "stores": [
     {
       "id": "business",
@@ -199,7 +199,8 @@
           "id": "feedback-private-actions",
           "owner": "CJ-023; cleanup CJ-024",
           "objects": [
-            "cj_feedback_action"
+            "cj_feedback_action",
+            "cj_feedback_scope"
           ],
           "source": "backend/feedback/sql/candidate.sql@cf48196e5eb5012630603172951d5c75a46adec4",
           "status": "candidate/local_only; production_not_provisioned",
@@ -207,13 +208,15 @@
           "sensitive_fields": [
             "sole exact original voluntary problem/expectation UTF8 and requested message/run IDs",
             "scope/action ID/input digest/database submission time",
-            "nullable minimal verified message/run binding, message input hash, read-time status/event highwater; no source transcript/tool payload copied"
+            "nullable minimal verified message/run binding, message input hash, read-time status/event highwater; no source transcript/tool payload copied",
+            "Irreversible nonsecret scope digest/retired fence; no plaintext identity in the fence"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "UNIMPLEMENTED; accepted account cleanup must cover retired scope records, backups/exported artifacts and in-flight resubmission; no queue or secondary ledger",
-          "restore_fence": "UNIMPLEMENTED; no retired-scope recycling or stale writer resurrection; source reads and feedback write are not cross-domain atomic",
+          "cleanup_hook": "cj_feedback.lifecycle.FeedbackHook: same original account operation, scope-lock/irreversible fence then actual action erasure and atomic original result; no revived writer",
+          "restore_fence": "Replay retired scope digest before any feedback read/write; trigger/row lock reject retired insertion",
           "owner_line": "B",
-          "retention_category": "user_content"
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
         },
         {
           "id": "cleanup-metadata",
@@ -294,7 +297,8 @@
             "private event text/effect values",
             "message/run association",
             "exact usage command/input bytes",
-            "status and expiry"
+            "status and expiry",
+            "diagnostic_at for newly persisted run events only (no historical backfill); 90-day diagnostic timing, separate from answer/event/accounting retention"
           ],
           "retention": "Retained answer/output content until user/account deletion; diagnostic-only events/checkpoints 90 days; no blanket run deletion",
           "cleanup_hook": "UNIMPLEMENTED; no physical data-delete/retention API; expiry is not deletion",
@@ -328,14 +332,28 @@
     {
       "id": "memory-derived",
       "owner": "CJ-003 / CJ-020 / CJ-021",
-      "status": "not_provisioned",
-      "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
-      "sensitive_fields": "Domain owner must enumerate before activation",
-      "retention": "UNDECIDED; activation blocked",
-      "cleanup_hook": "UNIMPLEMENTED; domain owner must register before activation",
-      "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
+      "status": "provided/local_runtime_only; production_not_provisioned",
+      "principal_binding": "Original protected MESSAGE principal/scope and fresh canonical admission; per-conversation consent defaults off; MESSAGE -> MEMORY -> history lock order",
+      "sensitive_fields": [
+        "Exact original consent/job UTF8 and committed message batches",
+        "Conversation/generation/epoch/source and withdrawal versions; task/attempt IDs",
+        "Derived candidate bytes and processing cursors",
+        "Erasure fence retains scope SHA256 and erased flag only, without account scope plaintext"
+      ],
+      "retention": "User content until user deletion or account closure; no automatic age/capacity erasure; minimal opaque non-resurrection fence remains",
+      "cleanup_hook": "cj_memory_jobs.cleanup.CleanupHook: account-domain fence and physical deletion with same-transaction B original result; item selection fails closed pending producer mapping in #410/#26",
+      "restore_fence": "cj_memory_history_fence stores only SHA256(scope)/erased; canonical entry and runtime INSERT/UPDATE RLS reject after erasure; restore must replay this fence before reads/writes",
       "owner_line": "C",
-      "retention_category": "user_content"
+      "retention_category": "user_content",
+      "objects": [
+        "cj_memory_history_fence",
+        "cj_memory_history_consent",
+        "cj_memory_history_action",
+        "cj_memory_history_job",
+        "cj_memory_history_cursor"
+      ],
+      "source": "backend/migrations/0034_memory_history.sql; #409",
+      "cleanup_protocol": "CLEANUP@1.1"
     },
     {
       "id": "device-cache",

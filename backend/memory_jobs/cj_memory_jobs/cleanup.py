@@ -1,4 +1,5 @@
 """CLEANUP@1.1 for the PG history queue; no cleanup role in the producer path."""
+from hashlib import sha256
 from cj_cleanup.core import Denied
 from cj_cleanup.postgres import CommitUnknown
 from cj_cleanup.store import original_result, record_result, receipt_for
@@ -37,8 +38,9 @@ class CleanupHook:
                             "set_config('cj.cleanup_purpose','account',true)",(self.domain_scope,))
                 cur.execute('SELECT scope FROM cj_memory_scope WHERE scope=%s FOR UPDATE',
                             (self.domain_scope,))
-                cur.execute('INSERT INTO cj_memory_history_fence(scope,erased) VALUES(%s,true) '
-                            'ON CONFLICT(scope) DO UPDATE SET erased=true',(self.domain_scope,))
+                scope_digest=sha256(self.domain_scope.encode('utf-8')).hexdigest()
+                cur.execute('INSERT INTO cj_memory_history_fence(scope_digest,erased) VALUES(%s,true) '
+                            'ON CONFLICT(scope_digest) DO UPDATE SET erased=true',(scope_digest,))
                 for table in CONTENT_TABLES:
                     # Code-owned identifiers only; no request/registry table selection.
                     cur.execute(f'DELETE FROM {table} WHERE scope=%s',(self.domain_scope,))

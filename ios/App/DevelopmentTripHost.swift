@@ -6,6 +6,7 @@ import CJManualPreviewClient
 import CJMessageHTTP
 import CJMessageClient
 import CJRunClient
+import CJOfflineTrip
 import CJMemoryClient
 import CJNeedsClient
 import CJMessageKeyBridge
@@ -68,7 +69,7 @@ import Observation
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
-    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil) throws {
+    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil, offline: OfflineTripController? = nil) throws {
         let environment = ProcessInfo.processInfo.environment
         let messageProfile=try DevelopmentMessageProfile.read(environment)
         let typedMode = try DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
@@ -128,7 +129,7 @@ import Observation
         trips = TripContainerHost(shell: shell)
         guard trips.bind(TripContainerBinding(client: client, trip: lifetime.trip, shellGeneration: shell.generation,
             session: lifetime.session, sessionOperation: lifetime.operation, pageSize: 20,
-            proposalID: configuration.proposalID, synthetic: false, currentBinding: { lifetime.current })) else {
+            proposalID: configuration.proposalID, synthetic: false, offline: offline, currentBinding: { lifetime.current })) else {
             throw TripFailure.staleBinding
         }
         let makeNeeds = { try needsProfile.map { profile in
@@ -199,7 +200,7 @@ import Observation
                 }, readNeeds: {
                     guard let needsHost, let context = needsHost.captureAction(), let work = needsHost.prepareDetail(context: context) else { return }
                     await needsHost.perform(work)
-                })
+                }, offline: offline)
         } else { structuredTrips = nil }
         shell.selectedTab = .trips
         // Disk restoration only selects an original action for GET reconciliation;
@@ -598,6 +599,7 @@ import Observation
 /// Explicit DEBUG simulator account root; its volatile tokens are never UI state or preferences.
 @MainActor @Observable final class DevelopmentAccountRoot {
     var trip: DevelopmentTripHost?
+    let offline: OfflineTripController?
     private let shell: ShellState
     private let endpoint: URL
     private let proposalID: String?
@@ -614,11 +616,15 @@ import Observation
                 return await self.verify(material)
             }, activate: { [weak self] material, session, operation in
                 guard let self, let configuration = self.configuration(material) else { throw SessionFailure.invalidConfiguration }
+                try self.offline?.bindSynchronizationIdentity(material: material, account: configuration.accountID,
+                    session: session, operation: operation)
                 self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
-                    lease: DevelopmentSessionLease(session: session, operation: operation))
+                    lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline)
                 self.shell.selectedTab = .memory
                 self.shell.memoryPath = [.account]
-            }, invalidate: { [weak self] in self?.trip?.invalidate(); self?.trip = nil })
+            }, invalidate: { [weak self] in self?.trip?.invalidate(); self?.trip = nil },
+            clearOffline: offline == nil ? nil : { [weak self] in try self?.offline?.clearLocally() },
+            serverRejected: offline == nil ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) })
     }()
 
     init(environment: [String: String], shell: ShellState) throws {
@@ -634,7 +640,24 @@ import Observation
         let scope = try KeychainSessionScope(namespace: SessionNamespace(
             environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint), slot: "M1.Development.Active"),
             applicationIdentifier: applicationID)
-        persistence = KeychainSessionStore(scope: scope, protection: .whenUnlockedThisDeviceOnly)
+        let sdkStore = KeychainSessionStore(scope: scope, protection: .whenUnlockedThisDeviceOnly)
+        persistence = sdkStore
+        if let profile = try DevelopmentOfflineProfile.read(environment) {
+            let files = FileManager.default
+            let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let directory = support.appendingPathComponent("G2COfflineTrip", isDirectory: true)
+                .appendingPathComponent(DevelopmentSessionConfiguration.environmentNamespace(endpoint).uuidString, isDirectory: true)
+            try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            offline = try OfflineTripController(environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint),
+                applicationIdentifier: applicationID, directory: directory.resolvingSymlinksInPath(),
+                sdkMaterial: sdkStore.load, policy: .acceptedTrip, clock: {
+                    guard let value = OfflineDeviceClock.read(), let wall = value.trustedWallSeconds else { return nil }
+                    let (shifted, overflow) = wall.addingReportingOverflow(profile.wallOffset)
+                    guard !overflow else { return nil }
+                    return .init(trustedWallSeconds: profile.trusted ? shifted : nil,
+                        boot: value.boot, uptime: value.uptime + Double(profile.uptimeOffset))
+                })
+        } else { offline = nil }
     }
 
     private func configuration(_ material: SessionMaterial) -> DevelopmentSessionConfiguration? {
@@ -661,7 +684,7 @@ import Observation
                 guard UUID(uuidString: body.request_id) != nil,
                       body.request_id == response.headers.X_hyphen_Request_hyphen_ID else { return .networkUnknown }
                 return .accepted(account: configuration.subject)
-            case .default(let status, _): return status == 401 || status == 403 ? .rejected : .networkUnknown
+            case .default(let status, _): return status == 401 || status == 403 ? .serverRejected : .networkUnknown
             }
         } catch { return .networkUnknown }
     }
