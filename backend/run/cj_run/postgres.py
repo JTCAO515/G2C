@@ -24,6 +24,14 @@ class Recovery:
     action: str
 
 
+@dataclass(frozen=True)
+class JobCursor:
+    """B job SQL only; no legacy MESSAGE-run accept/get/put methods."""
+    cur: object
+    scope: str
+    epoch: str
+
+
 class Repository:
     def __init__(self, connect, scope, *, expires_at, statement_timeout_ms, lock_timeout_ms):
         if connect is None or type(scope) is not str or not scope.strip():
@@ -118,8 +126,16 @@ class Repository:
                 try: logging.getLogger(__name__).warning('run_worker_lease_cleanup_failed')
                 except BaseException: pass
 
-    @contextmanager
     def transaction(self, *, require_clean_close=False):
+        return self._transaction(require_clean_close=require_clean_close,scope_lock=True)
+
+    def job_transaction(self, *, require_clean_close=False):
+        # Job rows have their own locks/physical lease. Taking the shared RUN
+        # scope before MESSAGE/MEMORY would invert the protected source order.
+        return self._transaction(require_clean_close=require_clean_close,scope_lock=False)
+
+    @contextmanager
+    def _transaction(self, *, require_clean_close,scope_lock):
         conn = self.connect()
         cur = None
         outcome = 'setup_failed'
@@ -148,11 +164,11 @@ class Repository:
                     bind_scope(cur)
                 cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
                             (str(self.statement_timeout_ms), str(self.lock_timeout_ms)))
-                cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s FOR UPDATE', (self.scope,))
+                cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
                 row = cur.fetchone()
                 if row is None or row[1] is not True:
                     raise Denied('scope unavailable')
-                yield Transaction(cur, self.scope, row[0], self.expires_at)
+                yield Transaction(cur, self.scope, row[0], self.expires_at) if scope_lock else JobCursor(cur,self.scope,row[0])
             except BaseException:
                 outcome = 'body_failed'
                 cleanup(conn.rollback, 'rollback')
