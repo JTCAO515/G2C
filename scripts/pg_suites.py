@@ -515,6 +515,14 @@ def group_local_cleanup_host():
 GROUPS.update(local_cleanup_host=group_local_cleanup_host)
 
 
+def group_memory_decision():
+    return _fresh_runtime_check('memory_decision',55810,'cj_memory_decision',
+        f'/tmp/cj-memory-decision-{os.getpid()}','backend/memory_jobs/tests/decision_jobs_pg.py')
+
+
+GROUPS.update(memory_decision=group_memory_decision)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

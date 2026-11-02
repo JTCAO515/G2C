@@ -1,4 +1,4 @@
-"""Unpublished original command data; parsing grants no decision/source permit."""
+"""Explicit original command data; parsing grants no decision/source permit."""
 from dataclasses import dataclass,replace
 
 from cj_message.source import SourceQuery,EndQuery
@@ -9,7 +9,7 @@ from .consent import EnqueueCommand
 from .ending import EndingCommand
 from .postgres import encode
 
-VERSION='MEMORY-DECISION-JOBS-DRAFT@1'
+VERSION='MEMORY-DECISION-JOBS@1'
 
 
 @dataclass(frozen=True,repr=False)

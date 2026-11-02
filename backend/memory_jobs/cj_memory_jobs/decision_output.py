@@ -1,12 +1,19 @@
-"""Unpublished Trip-evidence decoder; shares the canonical finite entry grammar."""
+"""Explicit Trip-evidence decoder; shares the canonical finite entry grammar."""
 import json
+from dataclasses import dataclass
 from cj_message.domain import Command
-from .decision_input import reference
+from .decision_input import reference,source_digest
 from . import model_v2
-from .extraction import _model_value,_parse_value,_decode_value,InvalidExtraction
+from .extraction import _model_value,_parse_value,_decode_value,InvalidExtraction,ParsedEntry
 from .postgres import encode
 
-VERSION='MEMORY-EXTRACT-DRAFT@3'
+VERSION='MEMORY-EXTRACT@3'
+
+
+@dataclass(frozen=True)
+class DecisionEntry(ParsedEntry):
+    decision_source_sha256:str
+    decision_evidence:bool
 
 
 def _translated(raw,messages,decision,scope):
@@ -44,7 +51,10 @@ def parse_output(raw,messages,decision,policy,scope):
     def direct(entry,rows):
         if encode([entry.subject,entry.slot,entry.extent]) in trip_entries:return False
         return policy.direct_statement(entry,rows)
-    return _parse_value(value,messages,policy,quote_texts=texts,direct_statement=direct)
+    entries=_parse_value(value,messages,policy,quote_texts=texts,direct_statement=direct)
+    digest=source_digest(scope,decision)
+    return tuple(DecisionEntry(parsed.entry,parsed.direct_statement,digest,
+        encode([parsed.entry.subject,parsed.entry.slot,parsed.entry.extent]) in trip_entries) for parsed in entries)
 
 
 def decode_output(raw,messages,decision,scope):

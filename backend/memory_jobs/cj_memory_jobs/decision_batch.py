@@ -1,4 +1,4 @@
-"""Unpublished immutable comparison artifact; decoded decisions grant no lease."""
+"""Explicit immutable comparison artifact; decoded decisions grant no lease."""
 from hashlib import sha256
 import json
 
@@ -9,8 +9,9 @@ from cj_trip.structured import validate_document as validate_v1
 from cj_trip.structured_v2 import validate_document as validate_v2
 from .codec import SourceV2,InvalidInput,encode_v2,decode_v2
 from .postgres import encode as canonical
+from .decision_input import source_digest
 
-VERSION='CJ020-decision-DRAFT.1'
+VERSION='CJ020-decision.1'
 FIELDS={'trip_id','version','content_sha256','action_id','proposal_id','candidate_hash','content_utf8'}
 
 
@@ -40,7 +41,7 @@ def encoded(source:SourceV2,messages,mode,decision:AcceptedDecision):
     value=dict(trip_id=decision.trip_id,version=decision.version,content_sha256=decision.content_sha256,
         action_id=decision.action_id,proposal_id=decision.proposal_id,candidate_hash=decision.candidate_hash,
         content_utf8=decision.content.decode('utf-8'))
-    base.update(version=VERSION,decision=value)
+    base.update(version=VERSION,decision=value,decision_source_sha256=source_digest(source.cursor.scope,decision))
     raw=canonical(base)
     if len(raw)>262144:raise InvalidInput('accepted decision batch exceeds queue bound')
     return raw
@@ -50,11 +51,13 @@ def decoded(raw):
     if type(raw) is not bytes or not 0<len(raw)<=262144:raise InvalidInput('bounded decision batch required')
     try:
         value=strict_object(raw)
-        if (type(value) is not dict or set(value)!={'version','source','mode','messages','source_kind','decision'}
+        if (type(value) is not dict or set(value)!={'version','source','mode','messages','source_kind','decision','decision_source_sha256'}
                 or value['version']!=VERSION):raise InvalidInput('explicit decision batch version required')
         decision=_decision(value.pop('decision'))
+        digest=value.pop('decision_source_sha256')
         value['version']='CJ020-internal.2'
         source,messages,mode=decode_v2(canonical(value))
+        if digest!=source_digest(source.cursor.scope,decision):raise InvalidInput('original decision source digest differs')
         if encoded(source,messages,mode,decision)!=raw:raise InvalidInput('noncanonical original decision batch')
         return source,messages,mode,decision
     except (MemoryInvalid,ValueError,TypeError,KeyError,UnicodeError,RecursionError) as error:

@@ -546,8 +546,11 @@ if __name__=='__main__':
             with psycopg.connect(**config,autocommit=True) as conn:
                 # Isolate M37's post-erasure rollback. Later migrations have
                 # their own nonempty guards for unrelated retained C scopes.
+                decision=next(m for m in migrations if m['version']==42)
+                conn.execute((ROOT/decision['down']).read_text())
                 publication=next(m for m in migrations if m['version']==37)
                 conn.execute((ROOT/publication['down']).read_text())
                 assert conn.execute('SELECT count(*) FROM cj_memory_history_fence WHERE erased').fetchone()==(2,)
                 conn.execute((ROOT/publication['file']).read_text())
+                conn.execute((ROOT/decision['file']).read_text())
             print('PASS nonempty down refusal; post-erasure empty publication rollback preserves the existing opaque erasure fence')

@@ -125,51 +125,29 @@ The full `scripts/test.py` and `scripts/pg_suites.py` remain mandatory; new migr
 checks include empty up/down/up, nonempty down refusal and cross-owner negatives.
 Real model extraction quality is #32; no fixture proves it.
 
-## Accepted Trip intake preparation (not frozen/provided)
+## Accepted Trip decision intake
 
-`decision_input.prepared` is an unpublished Data-DRAFT3 preparation slice. It
-joins a retained, genuinely committed full MESSAGE-send.3 Trip discussion to the
-current C accepted-decision lease, under MESSAGE → Trip → Memory. The original
-worker/user accept/signed structured modification produced actual Trip version2
-in its private-PG test; only after the signed discussion was committed was that
-conversation enabled for organization. Data2 filtering runs first, and only a
-permitted opaque message anchor can attach the actual accepted document.
+DECISION-JOBS-V1.md in contracts/memory-jobs defines the explicit current C
+command, immutable batch, Data3/Output3 and Pub3 factories. The caller must hold
+MESSAGE -> genuine C accepted Trip -> canonical Memory, release them for model
+work and reenter for each local phase. No text/manual flag or serialized artifact
+grants a source. Current version/hash/end/consent/Memory/admission are checked.
 
-The bounded data contains opaque decision/anchor references, not Trip/action/
-proposal authority. Accepted planning is neither a visited experience nor an
-automatically confirmed permanent preference. Day/item/scoped-edit selectors
-are explicitly unsupported by this first full-record projection; they need a
-real bounded projection before use, with no whole-Trip fallback. Expired leases
-and oversized data fail. The actual existing B ModelInput accepts the outer
-materialized data shape, but that parsing grants no dispatch or publication.
+M42 stores a scope-bound decision digest on existing origin rows, reuses the
+first canonical item/review producer across chats and appends actual admitted
+message references. Old NULL-digest origins remain immutable. The existing
+memory-derived registry/account hook erases the added document/digest/refs; #26
+item cleanup and its non-resurrection barriers remain separate unfinished work.
 
-The unpublished batch codec can retain the original accepted document within the
-existing bounded job-batch shape; it is not yet a queue writer. The new output
-decoder reuses the finite entry grammar while checking quotes against their exact
-message/Trip reference. Trip-supported entries always require user review, even
-when the general statement classifier would otherwise accept them. Historical
-decoding is comparison data, never renewed source authority.
+Actual private PG uses original worker/Fake -> user accept/modified Trip2,
+signed MSG3 before history enable, durable command/input/phase/Pub3, duplicate
+choice from another chat, candidate confirmation, real C COMMIT ACK loss after
+which original publication remains queryable after disable, and final-tail
+rollback. Account cleanup physically erases the added data. Those C supplied
+extraction outputs are not actual BG3 extraction/Meter proof. New B worker/Meter
+and automatic intake integration remain required before #411 is complete.
 
-No provider, durable decision-job command, producer, original publication/
-reconciliation or cleanup integration is installed by this slice.
-The new version names are DRAFT, not a frozen contract or consumable B interface.
-Ordinary formal Trip discussion after a Memory scope exists remains rejected by
-the old MESSAGE-send.3 safety guard; C does not modify that frozen B path. Full
-intake needs an explicit compatible source/Memory composition, in addition to
-this actual retained-source preparation. #411 stays open until those real
-worker/Meter/candidate/context and #26 cleanup checks are complete.
-
-The intended next integration uses that bounded decision artifact in the existing
-job batch, with a new explicit original-command discriminator containing only
-source/decision IDs and hashes within the existing command bound. New processing
-and publication must reacquire the genuine current decision before Memory; the
-persisted artifact only supports byte comparison and historical original-result
-decoding after a source changes. The old wire/publication versions cannot be
-selected by a failed-parse fallback. Registry sensitivity and existing cleanup
-must cover the added accepted-document bytes in the same delivery.
-
-Automatic scheduling must also account for Trip-version invalidation: a proven
-stale decision cannot publish and should not block an independent enabled source
-forever. That observation needs the protected C current read outside the Memory
-holder; lookup UNKNOWN must not become stale/absent, and the original financial
-UNKNOWN or attempt bytes cannot be rewritten or retried. This remains unimplemented.
+The old MSG3 still refuses a new formal discussion after a Memory scope exists;
+C retains that frozen guard. B needs an explicit compatible source/Memory version,
+not a weakened old path. Day/item/scoped projections remain explicitly unsupported
+by this full-record intake; no whole-Trip fallback is allowed.

@@ -330,6 +330,14 @@
       "sha256": "7ac418c98423bc3775f08019e340c8736e211ddf044906750d20a49a2d4358be",
       "down": "backend/migrations/down/0041_c_account_cleanup_locks.down.sql",
       "down_sha256": "c1775a3ed0b4532ca440da3f8ca8b53ffb83823398d132d84369df7b35348e74"
+    },
+    {
+      "version": 42,
+      "name": "memory_decision_source",
+      "file": "backend/migrations/0042_memory_decision_source.sql",
+      "sha256": "3b4a7caaa7d810d1eba9708feaf998f6a751dbe7b895cd96964a336c52336b23",
+      "down": "backend/migrations/down/0042_memory_decision_source.down.sql",
+      "down_sha256": "4860706f9ec3a92922d60bd8c3adf8ea5a789a2da6b4af3adb5e78acfb91bd64"
     }
   ]
 }
