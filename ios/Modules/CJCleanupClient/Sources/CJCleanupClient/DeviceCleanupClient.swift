@@ -166,6 +166,12 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         _ = try journal.record.enrollment()
         return try work(.identity, "/v1/message-receipts?message_id=cleanup-check-" + UUID().uuidString, "verifyDeviceCleanupIdentityV3")
     }
+    public var hasVerifiedIdentityRefusal: Bool {
+        get throws {
+            try check(journal.bytes, ordinary: false)
+            return journal.record.refusalStatus != nil && journal.record.refusalResponse != nil
+        }
+    }
     public func prepareSessionInvalidation() throws -> DeviceCleanupWork {
         guard !busy else { throw CleanupFailure.stale }; busy = true; defer { busy = false }
         try check(journal.bytes, ordinary: false)

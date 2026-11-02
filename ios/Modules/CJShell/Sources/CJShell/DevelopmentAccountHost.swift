@@ -31,6 +31,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     @ObservationIgnored private let clearOffline: (() throws -> Void)?
     @ObservationIgnored private let serverRejected: ((SessionMaterial) throws -> Void)?
     @ObservationIgnored private let identityWillChange: (() -> Void)?
+    @ObservationIgnored private let rejectedContext: ((SessionMaterial, SessionLifecycle, SessionOperation) async throws -> Void)?
     @ObservationIgnored private var request = UUID()
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var active: (SessionMaterial, SessionOperation)?
@@ -42,20 +43,21 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                 invalidate: @escaping () -> Void,
                 clearOffline: (() throws -> Void)? = nil,
                 serverRejected: ((SessionMaterial) throws -> Void)? = nil,
-                identityWillChange: (() -> Void)? = nil) {
+                identityWillChange: (() -> Void)? = nil,
+                rejectedContext: ((SessionMaterial, SessionLifecycle, SessionOperation) async throws -> Void)? = nil) {
         self.shell = shell; self.choices = choices
         self.session = SessionLifecycle(persistence: persistence, restorePolicy: .userInitiatedOnly)
         self.material = material; self.verify = verify; self.activate = activate; self.invalidate = invalidate
-        self.clearOffline = clearOffline; self.serverRejected = serverRejected; self.identityWillChange = identityWillChange
+        self.clearOffline = clearOffline; self.serverRejected = serverRejected; self.identityWillChange = identityWillChange; self.rejectedContext = rejectedContext
     }
 
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
 
     /// Fence every private projection synchronously, before a callback or an await.
-    private func begin() -> (UUID, ShellGeneration)? {
+    private func begin(cancelTask: Bool = true) -> (UUID, ShellGeneration)? {
         let id = UUID(); request = id
         active = nil
-        let old = task; task = nil; old?.cancel()
+        let old = task; task = nil; if cancelTask { old?.cancel() }
         guard request == id else { return nil }
         let generation = shell.invalidateIdentity()
         guard request == id, shell.generation == generation else { return nil }
@@ -135,7 +137,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     /// Original account-cleanup exit: retire in-memory SDK material as well as
     /// its canonical secure slot. Does not clear another workflow's evidence.
     public func clearForAccountCleanup() throws {
-        guard let (id, generation) = begin() else { throw SessionFailure.staleOperation }
+        guard let (id, generation) = begin(cancelTask: false) else { throw SessionFailure.staleOperation }
         let result = session.clearWithSettlement()
         guard request == id, shell.generation == generation else { throw SessionFailure.staleOperation }
         guard result == .cleared else { state = .storageUnavailable; throw SessionFailure.storageUnavailable }
@@ -191,6 +193,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
             case .serverRejected:
                 do {
                     try self.serverRejected?(candidate)
+                    try await self.rejectedContext?(candidate, self.session, operation)
                     guard self.current(id, generation, operation) else { return }
                     self.state = .rejected
                 } catch {

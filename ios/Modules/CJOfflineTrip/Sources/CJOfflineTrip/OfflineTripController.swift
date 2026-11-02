@@ -153,6 +153,12 @@ struct OfflineAnchor: Codable, Equatable {
         try check(token)
         guard observed == bytes else { throw OfflineFailure.writeUnknown }
     }
+    private func saveDeniedAnchor(_ value: OfflineAnchor, token: UUID) throws {
+        guard !value.readAllowed, generation == token else { throw OfflineFailure.unavailable }
+        let bytes = try SnapshotCodec.encoder().encode(value)
+        try anchors.save(SessionMaterial(trustedSDKBytes: bytes))
+        guard generation == token, try anchors.load()?.withBytes({ $0 }) == bytes else { throw OfflineFailure.writeUnknown }
+    }
     private func store(_ account: UUID, create: Bool) throws -> AtomicSnapshotStore {
         if let existing = stores[account] { return existing }
         let directory = root.appendingPathComponent(account.uuidString, isDirectory: true)
@@ -330,10 +336,7 @@ struct OfflineAnchor: Codable, Equatable {
         switch loaded {
         case .success(var original?):
             original.readAllowed = false
-            let bytes = try SnapshotCodec.encoder().encode(original)
-            try anchors.save(SessionMaterial(trustedSDKBytes: bytes))
-            guard generation == token,
-                  try anchors.load()?.withBytes({ $0 }) == bytes else { throw OfflineFailure.writeUnknown }
+            try saveDeniedAnchor(original, token: token)
             // Retain the exact target in the denied anchor if physical cleanup fails.
             try store(original.namespace.account, create: false).clearLocalEntry()
             guard generation == token else { throw OfflineFailure.unavailable }
@@ -370,6 +373,15 @@ struct OfflineAnchor: Codable, Equatable {
     public func currentIdentityRejected() throws {
         guard let material = try sdkMaterial() else { return }
         try identityRejected(material: material)
+    }
+    /// Immediate read fence for the DEVICE@3 original-call flow. Physical erasure
+    /// follows its durable native intent; no missing/foreign grant is adopted.
+    public func denyRejectedIdentity(material: SessionMaterial) throws {
+        guard var original = try loadAnchor(), original.sessionHash == materialHash(material) else { return }
+        generation = UUID(); blocked = true; hide(); synchronizationIdentity = nil
+        _ = readSession?.clearWithSettlement(); readSession = nil
+        original.readAllowed = false
+        try saveDeniedAnchor(original, token: generation)
     }
     /// Only an explicitly verified HTTP identity rejection may invoke this path.
     public func identityRejected(material: SessionMaterial) throws {

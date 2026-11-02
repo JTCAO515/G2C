@@ -122,6 +122,24 @@ private actor ControllerWire: ClientTransport {
         reopened.readCached()
         guard case .missing = reopened.state else { Issue.record("Cleared grant must remain absent"); return }
     }
+    @Test func deviceReconnectionReadFencePrecedesAuthorizedPhysicalErasure() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        let material = try SessionMaterial(trustedSDKBytes: Data("verified-sdk-original-device".utf8))
+        try sdk.save(material)
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let file = h.root.appendingPathComponent(h.ns.account.uuidString).appendingPathComponent("snapshot.aesgcm")
+        let original = try Data(contentsOf: file)
+        try active.denyRejectedIdentity(material: SessionMaterial(trustedSDKBytes: Data("other-account".utf8)))
+        active.readCached(); guard case .readable = active.state else { Issue.record("Foreign rejection touched original grant"); return }
+        try active.denyRejectedIdentity(material: material)
+        #expect(try Data(contentsOf: file) == original) // Original DEVICE intent, not this read fence, owns unlink.
+        active.readCached(); guard case .unavailable = active.state else { Issue.record("Refused identity remained readable"); return }
+        try active.clearDeviceAccount(account: h.ns.account)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+        try active.verifyDeviceAnchorCleared()
+    }
     @Test func deviceHookBindsExactAccountAndClearsOriginalResidueWithoutKeyReplacement() async throws {
         let h = try KeyHarness(); defer { h.cleanup() }
         let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()

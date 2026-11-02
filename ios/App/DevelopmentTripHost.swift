@@ -763,12 +763,19 @@ import Observation
                     self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
                         lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline)
                 }
+                if self.cleanupEnabled, let workflow = self.cleanupWorkflow {
+                    Task { await workflow.enrollOnline() }
+                }
                 self.shell.selectedTab = .memory
                 self.shell.memoryPath = [.account]
             }, invalidate: { [weak self] in self?.trip?.invalidate(); self?.trip = nil },
             clearOffline: offline == nil ? nil : { [weak self] in try self?.offline?.clearLocally() },
-            serverRejected: offline == nil ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) },
-            identityWillChange: { [weak self] in self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil })
+            serverRejected: offline == nil || cleanupEnabled ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) },
+            identityWillChange: { [weak self] in self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil },
+            rejectedContext: cleanupEnabled ? { [weak self] material, session, operation in
+                guard let self else { throw CleanupFailure.stale }
+                try await self.reconcileRejectedDevice(material: material, lease: .init(session: session, operation: operation))
+            } : nil)
     }()
 
     init(environment: [String: String], shell: ShellState) throws {
@@ -827,6 +834,15 @@ import Observation
             quiesce: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.fenceCleanupBusiness() },
             clearSDK: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.clearCleanupSDK() })
         cleanupWorkflow = workflow; cleanup = workflow.host
+    }
+    private func reconcileRejectedDevice(material: SessionMaterial, lease: DevelopmentSessionLease) async throws {
+        // This callback runs only for the actual verification HTTP401/403. Deny
+        // cached reads immediately; its original DEVICE call owns physical work.
+        try offline?.denyRejectedIdentity(material: material)
+        guard let configuration = configuration(material) else { throw CleanupFailure.unavailable }
+        try attachCleanup(configuration: configuration, lease: lease)
+        guard let workflow = cleanupWorkflow else { throw CleanupFailure.unavailable }
+        await workflow.reconnectIdentityRefused()
     }
     private func restoreCleanup() throws {
         guard let offline, let scope = try DevelopmentCleanupWorkflow.originalScope(environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint)) else { return }
@@ -1134,7 +1150,15 @@ private struct DevelopmentNativeManifest: Codable {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         return try encoder.encode(self)
     }
-    var stateRef: String { get throws { developmentCleanupHash(try encoded()) } }
+    // Stable SDK/installation identity, not a frozen directory inventory. Native
+    // roots/keys are pinned after writer retirement for each actual invocation.
+    private struct Identity: Encodable { let version: String; let scope: AccountCleanupScope; let nonce: UUID; let sdkHash: String }
+    var stateRef: String {
+        get throws {
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+            return developmentCleanupHash(try encoder.encode(Identity(version: version, scope: scope, nonce: nonce, sdkHash: sdkHash)))
+        }
+    }
 }
 private enum DevelopmentNativeStep: String, Codable { case started, confirmed }
 private struct DevelopmentNativeExecution: Codable {
@@ -1144,6 +1168,8 @@ private struct DevelopmentNativeExecution: Codable {
     let operationID: String
     let invocationID: String
     let requestDigest: String
+    let directories: [String: [String]]
+    let keyIDs: [String: UUID]
     var steps: [String: DevelopmentNativeStep]
 }
 private func developmentCleanupHash(_ value: Data) -> String {
@@ -1163,6 +1189,9 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private let offline: OfflineTripController
     private let layout: DevelopmentDeviceNativeLayout
     private let stores: DevelopmentDeviceNativeStores
+    private let nativeDirectories: [String: [String]]
+    private let nativeKeyIDs: [String: UUID]
+    private let validateOwner: @MainActor () throws -> Void
     private let quiesce: @MainActor () throws -> Void
     private let clearSDK: @MainActor () throws -> Void
     private var execution: DevelopmentNativeExecution?
@@ -1172,26 +1201,29 @@ private func developmentCleanupHash(_ value: Data) -> String {
     init(manifest: DevelopmentNativeManifest, manifestStore: KeychainSessionStore,
          executionStore: KeychainSessionStore, sdkStore: KeychainSessionStore,
          offline: OfflineTripController, endpoint: URL,
+         validateOwner: @escaping @MainActor () throws -> Void,
          quiesce: @escaping @MainActor () throws -> Void, clearSDK: @escaping @MainActor () throws -> Void) throws {
         self.manifest = manifest; scope = manifest.scope; stateRef = try manifest.stateRef
         self.manifestStore = manifestStore; self.executionStore = executionStore; self.sdkStore = sdkStore
-        self.offline = offline; self.quiesce = quiesce; self.clearSDK = clearSDK
+        self.offline = offline; self.quiesce = quiesce; self.clearSDK = clearSDK; self.validateOwner = validateOwner
         layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope)
-        guard manifest.version == "NativeDeviceManifest@1", manifest.sdkHash.count == 64,
-              manifest.directories == (try layout.manifestReferences()),
-              Set(manifest.keyIDs.keys).isSubset(of: Set([MessageKeyPurpose.localMessageStorageV1, .localTripPendingV1,
-                .localMemoryPendingV1, .localNeedsPendingV1, .localFeedbackPendingV1, .localOfflineTripSnapshotV1].map(\.rawValue))) else { throw CleanupFailure.stale }
-        stores = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint, originalKeyIDs: manifest.keyIDs)
+        guard manifest.version == "NativeDeviceManifest@2", manifest.sdkHash.count == 64 else { throw CleanupFailure.stale }
         executionBytes = try executionStore.load()?.withBytes { $0 }
+        let restored: DevelopmentNativeExecution?
         if let bytes = executionBytes {
             guard bytes.count <= 32768 else { throw CleanupFailure.unavailable }
-            let restored = try JSONDecoder().decode(DevelopmentNativeExecution.self, from: bytes)
+            let value = try JSONDecoder().decode(DevelopmentNativeExecution.self, from: bytes)
             let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-            guard try encoder.encode(restored) == bytes,
-                  restored.version == "NativeDeviceExecution@1", restored.stateRef == stateRef,
-                  Set(restored.steps.keys).isSubset(of: Set(DeviceCleanupTarget.allCases.map(\.rawValue))) else { throw CleanupFailure.stale }
-            execution = restored
-        }
+            guard try encoder.encode(value) == bytes, value.version == "NativeDeviceExecution@2", value.stateRef == stateRef,
+                  Set(value.steps.keys).isSubset(of: Set(DeviceCleanupTarget.allCases.map(\.rawValue))) else { throw CleanupFailure.stale }
+            restored = value
+        } else { restored = nil }
+        let references = try layout.manifestReferences()
+        if let restored { guard restored.directories == references else { throw CleanupFailure.stale } }
+        stores = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint, originalKeyIDs: restored?.keyIDs)
+        nativeDirectories = references
+        nativeKeyIDs = Dictionary(uniqueKeysWithValues: stores.keyIDs.map { ($0.key.rawValue, $0.value) })
+        execution = restored
         try validateManifest()
     }
     private func currentSDKHash() throws -> String? {
@@ -1199,8 +1231,9 @@ private func developmentCleanupHash(_ value: Data) -> String {
         catch SessionFailure.restorationBlocked { return nil }
     }
     private func validateManifest() throws {
+        try validateOwner()
         guard usable, try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
-              try layout.manifestReferences() == manifest.directories else { throw CleanupFailure.stale }
+              try layout.manifestReferences() == nativeDirectories else { throw CleanupFailure.stale }
         let sdk = try currentSDKHash()
         guard sdk == nil || sdk == manifest.sdkHash else { throw CleanupFailure.stale }
     }
@@ -1231,9 +1264,9 @@ private func developmentCleanupHash(_ value: Data) -> String {
         // SDK stays intact until the original account confirmation exit. All
         // business hosts are retired before filesystem/key operations begin.
         try quiesce(); try validateManifest()
-        try save(.init(version: "NativeDeviceExecution@1", stateRef: stateRef, intentID: intentID,
+        try save(.init(version: "NativeDeviceExecution@2", stateRef: stateRef, intentID: intentID,
             operationID: invocation.operationID, invocationID: invocation.invocationID,
-            requestDigest: invocation.requestDigest, steps: [:]))
+            requestDigest: invocation.requestDigest, directories: nativeDirectories, keyIDs: nativeKeyIDs, steps: [:]))
         return try advance(invocation, intent: intentID)
     }
     func reconcileOriginal(_ invocation: DeviceCleanupInvocation, intentID: UUID) throws -> DeviceCleanupNativeOutcome {
@@ -1321,9 +1354,12 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private var account: AccountCleanupClient?
     private var lifetime: AccountCleanupLifetime
     private var active = true
+    private var enrolling = false
     var holdsBusinessFence: Bool {
-        guard let account else { return manifest != nil }
-        do { return try account.requiresRestrictedProgress } catch { return true }
+        do {
+            if let device, try device.hasVerifiedIdentityRefusal { return true }
+            return try account?.requiresRestrictedProgress ?? false
+        } catch { return true }
     }
 
     static func slot(environment: UUID, suffix: String) throws -> KeychainSessionStore {
@@ -1352,7 +1388,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         if let bytes = try manifestStore.load()?.withBytes({ $0 }) {
             guard bytes.count <= 32768 else { throw CleanupFailure.unavailable }
             let original = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: bytes)
-            guard original.scope.environment == scope.environment, original.scope.account == scope.account,
+            guard original.version == "NativeDeviceManifest@2", original.scope.environment == scope.environment, original.scope.account == scope.account,
                   try original.encoded() == bytes else { throw CleanupFailure.stale }
             manifest = original
         }
@@ -1377,15 +1413,21 @@ private func developmentCleanupHash(_ value: Data) -> String {
         } else {
             device = try DeviceCleanupClient(developmentOriginalDevice: endpoint, lifetime: lifetime,
                 securePersistence: deviceStore, requestTimeout: 10, resourceTimeout: 20)
-            account = try AccountCleanupClient(developmentRestrictedProgress: endpoint, lifetime: lifetime,
-                securePersistence: accountStore, requestTimeout: 10, resourceTimeout: 20)
+            if try accountStore.load() != nil {
+                do {
+                    account = try AccountCleanupClient(developmentRestrictedProgress: endpoint, lifetime: lifetime,
+                        securePersistence: accountStore, requestTimeout: 10, resourceTimeout: 20)
+                } catch CleanupFailure.unavailable { account = nil } // No prepared capability; never fabricate one.
+            }
         }
     }
     private func nativeExecutor() throws -> DevelopmentDeviceNativeExecutor {
         if let executor { return executor }
+        try check(); try quiesce(); try check()
         guard let manifest else { throw CleanupFailure.unavailable }
         let value = try DevelopmentDeviceNativeExecutor(manifest: manifest, manifestStore: manifestStore,
             executionStore: executionStore, sdkStore: sdkStore, offline: offline, endpoint: endpoint.url,
+            validateOwner: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.check() },
             quiesce: quiesce, clearSDK: clearSDK)
         executor = value; return value
     }
@@ -1396,7 +1438,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         try check()
         let layout = try DevelopmentDeviceNativeLayout(scope: lifetime.scope)
         let stores = try DevelopmentDeviceNativeStores(scope: lifetime.scope, layout: layout, endpoint: endpoint.url)
-        let next = DevelopmentNativeManifest(version: "NativeDeviceManifest@1", scope: lifetime.scope, nonce: UUID(),
+        let next = DevelopmentNativeManifest(version: "NativeDeviceManifest@2", scope: lifetime.scope, nonce: UUID(),
             sdkHash: material.withBytes(developmentCleanupHash), directories: try layout.manifestReferences(),
             keyIDs: Dictionary(uniqueKeysWithValues: stores.keyIDs.map { ($0.key.rawValue, $0.value) }))
         let bytes = try next.encoded()
@@ -1413,10 +1455,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private func validateBeforeConfirmation() throws {
         try check()
         guard let manifest else { throw CleanupFailure.unavailable }
-        let layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope)
-        let keys = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint.url)
-        let ids = Dictionary(uniqueKeysWithValues: keys.keyIDs.map { ($0.key.rawValue, $0.value) })
-        guard try layout.manifestReferences() == manifest.directories, ids == manifest.keyIDs,
+        guard try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
               try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
     }
     private func settleRevocation() throws {
@@ -1427,6 +1466,39 @@ private func developmentCleanupHash(_ value: Data) -> String {
         catch SessionFailure.restorationBlocked { current = nil }
         guard let manifest, current == nil || current == manifest.sdkHash else { throw CleanupFailure.stale }
         if current != nil { try clearSDK() }
+    }
+    func enrollOnline() async {
+        guard active, !enrolling else { return }
+        enrolling = true; refresh()
+        do {
+            if manifest == nil { try prepareResources() }
+            guard let device, let manifest else { throw CleanupFailure.unavailable }
+            if case .ready = device.state {
+                _ = try await device.perform(device.prepareRegistration(stateRef: manifest.stateRef)); try check()
+            }
+            enrolling = false; refresh()
+        } catch { enrolling = false; if active { refresh(unknown: true) } }
+    }
+    func reconnectIdentityRefused() async {
+        guard active, !enrolling else { return }
+        enrolling = true; refresh()
+        var unknown = false
+        defer { enrolling = false; if active { refresh(unknown: unknown) } }
+        do {
+            try check()
+            guard let device, let manifest, let ordinary,
+                  developmentCleanupHash(Data(ordinary.configuration.token.utf8)) == manifest.sdkHash else { throw CleanupFailure.stale }
+            guard case .identityRefused = try await device.perform(device.prepareIdentityVerification()) else { throw CleanupFailure.unavailable }
+            try check(); try quiesce()
+            if case .enrolled = device.state {
+                _ = try await device.perform(device.prepareSessionInvalidation()); try check()
+            }
+            if case .invocation = device.state {
+                _ = try device.executeNative(using: nativeExecutor()); try check()
+                if try device.canPrepareReceipt { _ = try await device.perform(device.prepareReceipt()); try check() }
+            }
+            refresh()
+        } catch { unknown = true }
     }
     private func perform(_ command: AccountCleanupCommand) async {
         do {
@@ -1456,9 +1528,15 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 if case .registrationUnknown = device.state { _ = try await device.perform(device.prepareRegistrationQuery()); try check() }
                 else { _ = try await account.read(account.prepareOriginalRead()); try check(); try settleRevocation() }
             } else if command == .cleanDevice {
-                guard let device, let account else { throw CleanupFailure.unavailable }
+                guard let device else { throw CleanupFailure.unavailable }
                 if case .enrolled = device.state {
-                    _ = try await device.perform(device.prepareAccountCleanup(account.originalDeviceAuthorization())); try check()
+                    let work: DeviceCleanupWork
+                    if try device.hasVerifiedIdentityRefusal { work = try device.prepareSessionInvalidation() }
+                    else {
+                        guard let account else { throw CleanupFailure.unavailable }
+                        work = try device.prepareAccountCleanup(account.originalDeviceAuthorization())
+                    }
+                    _ = try await device.perform(work); try check()
                 }
                 _ = try device.executeNative(using: nativeExecutor()); try check()
                 _ = try await device.perform(device.prepareReceipt()); try check()
@@ -1484,22 +1562,25 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private func refresh(unknown: Bool = false) {
         var value = AccountCleanupPresentation(); value.unknown = unknown
         guard active else { value.unavailable = true; host.show(value); return }
-        guard let device, let account else {
+        guard let device else {
             value.canReview = ordinary != nil && manifest == nil
             value.unavailable = manifest != nil
             host.show(value); return
         }
-        do { value.businessStopped = try account.requiresRestrictedProgress }
+        do { value.businessStopped = try device.hasVerifiedIdentityRefusal || account?.requiresRestrictedProgress == true }
         catch { value.unavailable = true }
-        switch account.state {
-        case .ready, .registered: value.canReview = ordinary != nil
-        case .awaitingConfirmation, .confirmationStaged: value.canConfirm = ordinary != nil; value.canRead = true
-        case .preparationUnknown, .confirmationUnknown: value.canRead = true; value.unknown = true
-        case .progress(let progress):
-            value.progress = progress; value.canRead = true
-            if progress.businessRevoked { value.canCleanDevice = true }
-        case .registrationUnknown, .unavailable: value.unavailable = true
+        if let account {
+            switch account.state {
+            case .ready, .registered: value.canReview = ordinary != nil
+            case .awaitingConfirmation, .confirmationStaged: value.canConfirm = ordinary != nil; value.canRead = true
+            case .preparationUnknown, .confirmationUnknown: value.canRead = true; value.unknown = true
+            case .progress(let progress):
+                value.progress = progress; value.canRead = true
+                if progress.businessRevoked { value.canCleanDevice = true }
+            case .registrationUnknown, .unavailable: value.unavailable = true
+            }
         }
+        if value.businessStopped { value.canCleanDevice = true; value.canReview = false; value.canConfirm = false }
         switch device.state {
         case .registrationUnknown: value.canRead = true; value.canReview = false; value.unknown = true
         case .callUnknown: value.canReadDevice = true; value.canCleanDevice = false; value.unknown = true
@@ -1510,6 +1591,10 @@ private func developmentCleanupHash(_ value: Data) -> String {
             catch { value.unavailable = true }
         case .unavailable: value.unavailable = true; value.canReview = false; value.canConfirm = false
         case .ready, .enrolled: break
+        }
+        if enrolling {
+            value.canReview = false; value.canConfirm = false; value.canRead = false
+            value.canCleanDevice = false; value.canReadDevice = false; value.canReportDevice = false; value.preparing = true
         }
         host.show(value)
     }

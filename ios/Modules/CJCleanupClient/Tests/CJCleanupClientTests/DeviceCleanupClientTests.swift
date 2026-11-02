@@ -145,9 +145,11 @@ private struct V3Wire: ClientTransport {
     }
     @Test func unknownIdentityNeverAuthorizesCallOrErasure() async throws {
         let h=try V3Harness();try await h.enroll();h.server.identityStatus=503
+        #expect(try !h.client.hasVerifiedIdentityRefusal)
         await #expect(throws:CleanupFailure.exchangeUnknown){try await h.client.perform(h.client.prepareIdentityVerification())}
         #expect(throws:CleanupFailure.unavailable){try h.client.prepareSessionInvalidation()}
         #expect(try h.secure.record().action==nil && h.secure.record().nativeIntentID==nil)
+        #expect(try !h.client.hasVerifiedIdentityRefusal)
     }
     @Test func lostCallACKIsStickyAcrossLaterAccountFenceAndSDKClear() async throws {
         let h=try V3Harness();try await h.refuse();h.server.loseCall=true

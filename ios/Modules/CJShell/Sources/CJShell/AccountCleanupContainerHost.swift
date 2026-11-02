@@ -14,6 +14,7 @@ public struct AccountCleanupPresentation: Sendable {
     public var canCleanDevice = false
     public var canReadDevice = false
     public var canReportDevice = false
+    public var preparing = false
     public var businessStopped = false
     public var unknown = false
     public var unavailable = false
@@ -76,7 +77,7 @@ struct AccountCleanupControls: View {
     private var value: AccountCleanupPresentation { host.presentation }
     var body: some View {
         Section {
-            if host.busy { ProgressView().accessibilityLabel(language.text("Checking original cleanup", "正在核对原清理操作")) }
+            if host.busy || value.preparing { ProgressView().accessibilityLabel(language.text("Checking original cleanup", "正在核对原清理操作")) }
             if value.unavailable {
                 text(language.text("Secure cleanup information is unavailable. Nothing is marked complete.", "安全清理信息不可用，未标记清理完成。"), "unavailable")
             }

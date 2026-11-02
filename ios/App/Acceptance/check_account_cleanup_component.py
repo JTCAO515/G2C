@@ -118,7 +118,8 @@ def main():
                 key=os.urandom(32); secrets.append(key)
                 options=cleanup.Configuration({'native-local':key},'native-local',7200,B_DOMAINS,component_registry)
                 full_options=cleanup.Configuration({'native-local':key},'native-local',7200,FULL_INVENTORY,registry)
-                apps={mode:local_app.create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,cleanup_configuration=selected)
+                apps={mode:local_app.create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,cleanup_configuration=selected,
+                    history_configuration=local_app.load_history_configuration(auth) if args.native_device else None)
                     for mode,selected in [('component',options),('full',full_options)]}
                 runtime=cleanup.Runtime(database,options,local_app.scope_for)
                 bindings={case:{k:runtime.bind(checker_for(auth).check(tokens[case][k]).principal) for k in ('A','B')} for case in CASES}
@@ -139,7 +140,7 @@ def main():
                     provider_counts[case]=model.calls-before
                     assert provider_counts[case]==2,'actual A/B original FakeProvider run did not complete'
                 original_size = subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
-                if args.native_device: subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size','accessibility-extra-extra-extra-large'],env=env,check=True)
+                if args.native_device: subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size','large'],env=env,check=True)
                 endpoints={}
                 for mode,app in apps.items():
                     async def observed(scope,receive,send,app=app,mode=mode):
@@ -166,6 +167,7 @@ def main():
                         entry=dict(mode=mode,case=current['case'],actor=None if who is None else who[1],method=scope['method'],path=scope['path'],http_status=status,
                             authorization_scheme=authorization.partition(' ')[0],request_sha256=hashlib.sha256(body).hexdigest())
                         if body: entry['action']=json.loads(body)
+                        if isinstance(response.get('error'),dict):entry['error_code']=response['error'].get('code')
                         for name in ('operation_id','binding_id','registry_digest','phase','status','business_access'):
                             if name in response:entry[name]=response[name]
                         if isinstance(response.get('preparation'),dict): entry['operation_id']=response['preparation']['operation_id']
@@ -257,6 +259,10 @@ def main():
                                 elif query['kind']=='device-receipt' and args.native_device:fault['path']='/v3/cleanup-device-receipts'
                                 else:raise ValueError('unknown fault')
                                 value={}
+                            elif parsed.path=='/size' and args.native_device:
+                                size={'max':'accessibility-extra-extra-extra-large','standard':'large'}[query['value']]
+                                subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',size],env=env,check=True)
+                                value={}
                             elif parsed.path=='/native-files' and args.native_device:
                                 container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
                                 namespace=lambda value:str(uuid.UUID(bytes=hashlib.sha256(value.encode()).digest()[:16])).upper()
@@ -292,7 +298,7 @@ def main():
                                 else:assert a['fences']==0 and all(count==1 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='prepared'
                                 assert not any(e['path'].startswith('/v1/cleanup-device-calls') or e['path'].startswith('/v1/cleanup-device-receipts') for e in value['api'])
                                 if args.native_device:
-                                    registrations=[e for e in writes if e['path']=='/v3/cleanup-devices'];assert len(registrations)==1
+                                    registrations=[e for e in writes if e['path']=='/v3/cleanup-devices' and e['actor']=='A'];assert len(registrations)==1
                                     calls=[e for e in writes if e['path']=='/v3/cleanup-device-calls']
                                     receipts=[e for e in writes if e['path']=='/v3/cleanup-device-receipts']
                                     if case=='testActualCommittedUnknownReopen':
@@ -345,7 +351,7 @@ def main():
                 report['credential_scan']='PASS';report['status']='PASS' if len(report['cases'])==len(CASES) else 'PARTIAL_PASS';save()
             report['pg_stopped']=True;save()
     except Exception as error:
-        report['status']='FAIL';report['error_type']=type(error).__name__;save();raise
+        report['status']='FAIL';report['error_type']=type(error).__name__;report['last_api']=audits;save();raise
     finally:
         if args.native_device and 'original_size' in locals():
             subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)

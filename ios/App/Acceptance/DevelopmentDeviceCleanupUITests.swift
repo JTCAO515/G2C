@@ -109,6 +109,7 @@ import Foundation
             seedDraft("本机原始中文草稿，未发送。")
             account(); try await call("/native-files", f.case_id, ["stage": "before"])
         }
+        try await call("/size", f.case_id, ["value": "max"])
         deletion(); tap("account.cleanup.review")
         XCTAssertTrue(app.buttons["account.cleanup.confirm"].waitForExistence(timeout: 25))
         let p = try await proof(f.case_id); XCTAssertEqual(p.provider_calls, 2); XCTAssertEqual(p.accounts["A"]?.operations.count, 1)
@@ -137,6 +138,7 @@ import Foundation
     func testActualPreparationUnknown() async throws {
         let name = "testActualPreparationUnknown", f = try await fixture(name); defer { app?.terminate() }
         try launch(f); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
+        try await call("/size", name, ["value": "max"])
         deletion(); try await call("/fault", name, ["kind": "preparation"]); tap("account.cleanup.review")
         contains("account.cleanup.unknown", "unknown")
         let prepared = try await proof(name)
