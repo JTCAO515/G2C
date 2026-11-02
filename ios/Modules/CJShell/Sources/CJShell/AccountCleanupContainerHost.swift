@@ -6,13 +6,14 @@ import CJRunClient
 import SwiftUI
 #endif
 
-public enum AccountCleanupCommand: Sendable { case review, confirm, checkOriginal, cleanDevice, checkDevice }
+public enum AccountCleanupCommand: Sendable { case review, confirm, checkOriginal, cleanDevice, checkDevice, reportDevice }
 public struct AccountCleanupPresentation: Sendable {
     public var canReview = false
     public var canConfirm = false
     public var canRead = false
     public var canCleanDevice = false
     public var canReadDevice = false
+    public var canReportDevice = false
     public var businessStopped = false
     public var unknown = false
     public var unavailable = false
@@ -46,6 +47,7 @@ public struct AccountCleanupPresentation: Sendable {
         case .checkOriginal: allowed = presentation.canRead
         case .cleanDevice: allowed = presentation.canCleanDevice
         case .checkDevice: allowed = presentation.canReadDevice
+        case .reportDevice: allowed = presentation.canReportDevice
         }
         guard allowed else { return }
         let captured = generation; busy = true
@@ -106,6 +108,7 @@ struct AccountCleanupControls: View {
             }
             if value.canRead { button(language.text("Check original cleanup", "核对原清理操作"), .checkOriginal, "read") }
             if value.canCleanDevice { button(language.text("Clear this device's account data", "清理本机账号数据"), .cleanDevice, "cleanDevice") }
+            if value.canReportDevice { button(language.text("Send this device's verified result", "提交本机已核实的清理结果"), .reportDevice, "reportDevice") }
             if value.canReadDevice { button(language.text("Check original device cleanup", "核对原设备清理"), .checkDevice, "readDevice") }
         } header: { ShellSectionHeading(title: language.text("Account deletion", "账号注销")) }
     }

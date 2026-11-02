@@ -1462,16 +1462,16 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 }
                 _ = try device.executeNative(using: nativeExecutor()); try check()
                 _ = try await device.perform(device.prepareReceipt()); try check()
+            } else if command == .reportDevice {
+                guard let device else { throw CleanupFailure.unavailable }
+                _ = try await device.perform(device.prepareReceipt()); try check()
             } else if command == .checkDevice {
                 guard let device else { throw CleanupFailure.unavailable }
                 if case .callUnknown = device.state { _ = try await device.perform(device.prepareOriginalCallQuery()); try check() }
                 else {
                     _ = try await device.perform(device.prepareOriginalInvocationQuery()); try check()
-                    if case .invocation(let invocation, local: .unknown) = device.state {
-                        let outcome = try device.executeNative(using: nativeExecutor()); try check()
-                        if invocation.state == .unknown, outcome != .unknown {
-                            _ = try await device.perform(device.prepareReceipt()); try check()
-                        }
+                    if case .invocation(_, local: .unknown) = device.state {
+                        _ = try device.executeNative(using: nativeExecutor()); try check()
                     }
                 }
             }
@@ -1504,8 +1504,10 @@ private func developmentCleanupHash(_ value: Data) -> String {
         case .registrationUnknown: value.canRead = true; value.canReview = false; value.unknown = true
         case .callUnknown: value.canReadDevice = true; value.canCleanDevice = false; value.unknown = true
         case .invocation(let invocation, let local):
-            value.canReadDevice = true; value.canCleanDevice = local == nil
+            value.canReadDevice = true; value.canCleanDevice = local == nil && invocation.state == .pending
             value.nativeOutcome = local; value.deviceState = invocation.state
+            do { value.canReportDevice = try device.canPrepareReceipt }
+            catch { value.unavailable = true }
         case .unavailable: value.unavailable = true; value.canReview = false; value.canConfirm = false
         case .ready, .enrolled: break
         }

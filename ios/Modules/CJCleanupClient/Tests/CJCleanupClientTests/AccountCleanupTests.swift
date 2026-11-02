@@ -159,6 +159,18 @@ private struct AccountIntercept: ClientTransport {
 }
 
 @MainActor struct AccountCleanupTests {
+    @Test func preparedOriginalGETPreservesConfirmationAcrossReconstruction() async throws {
+        let h = try AccountHarness(), prepared = try await h.prepare()
+        let preparationBytes = try h.secure.record().preparation
+        _ = try await h.client.read(h.client.prepareOriginalRead())
+        h.client = try h.ordinary()
+        guard case .awaitingConfirmation(let original) = h.client.state else { Issue.record("Prepared GET removed original confirmation"); return }
+        #expect(original.operationID == prepared.operationID && original.registryDigest == prepared.registryDigest)
+        try await h.client.perform(h.confirmation(original))
+        #expect(try h.secure.record().preparation == preparationBytes)
+        #expect(h.server.requests.filter { $0.operation == "prepareAccountCleanupV1" }.count == 1)
+        #expect(h.server.requests.filter { $0.operation == "confirmAccountCleanupV1" }.count == 1)
+    }
     @Test func exactBytesAreSecureBeforePostAndOnlyServerCreatesOperation() async throws {
         let h = try AccountHarness()
         let registration = try h.client.prepareDeviceRegistration(stateRef: accountHash)

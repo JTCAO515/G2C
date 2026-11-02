@@ -222,16 +222,24 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         next = journal.record; next.nativeOutcome = outcome; try save(next)
         return outcome
     }
+    /// Whether a new original receipt may be staged. An existing unacknowledged
+    /// receipt never grants another POST, including after process reconstruction.
+    public var canPrepareReceipt: Bool { get throws { try receiptOutcome() != nil } }
+    private func receiptOutcome() throws -> DeviceCleanupNativeOutcome? {
+        try check(journal.bytes, ordinary: false)
+        guard let outcome = journal.record.nativeOutcome, journal.record.nativeIntentID != nil else { return nil }
+        if let previous = journal.record.receipts.last {
+            let fields = try accountCleanupObject(accountCleanupDocument(previous.originalUTF8))
+            let old = try accountCleanupString(fields["outcome"])
+            guard previous.acknowledged, old == "unknown", outcome != .unknown else { return nil }
+        }
+        return outcome
+    }
     public func prepareReceipt() throws -> DeviceCleanupWork {
         guard !busy else { throw CleanupFailure.stale }; busy = true; defer { busy = false }
         try check(journal.bytes, ordinary: false)
         let invocation = try journal.record.invocation()
-        guard let outcome = journal.record.nativeOutcome, journal.record.nativeIntentID != nil else { throw CleanupFailure.unavailable }
-        if let previous = journal.record.receipts.last {
-            let fields = try accountCleanupObject(accountCleanupDocument(previous.originalUTF8))
-            let old = try accountCleanupString(fields["outcome"])
-            guard previous.acknowledged, old == "unknown", outcome != .unknown else { throw CleanupFailure.unavailable }
-        }
+        guard let outcome = try receiptOutcome() else { throw CleanupFailure.unavailable }
         var next = journal.record
         let raw = try encode(["version":"CLEANUP-DEVICE@3", "action_id":UUID().uuidString, "operation_id":invocation.operationID,
             "invocation_id":invocation.invocationID, "binding_id":invocation.bindingID, "request_digest":invocation.requestDigest, "outcome":outcome.rawValue])

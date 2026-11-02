@@ -181,6 +181,29 @@ private struct V3Wire: ClientTransport {
         #expect(h.server.requests.filter{$0.operation=="reportCleanupDeviceReceiptV3"}.count==2)
         #expect(throws:CleanupFailure.unavailable){try h.client.prepareReceipt()}
     }
+    @Test func nativeOutcomeBeforeFirstReceiptCanResumeButUnacknowledgedReceiptCannotRepost() async throws {
+        let h = try V3Harness(); try await h.refuse()
+        _ = try await h.client.perform(h.client.prepareSessionInvalidation())
+        let native = V3Native(h); native.first = .confirmed
+        #expect(try h.client.executeNative(using: native) == .confirmed)
+        let originalIntent = try h.secure.record().nativeIntentID
+        h.client = try h.restricted()
+        _ = try await h.client.perform(h.client.prepareOriginalInvocationQuery())
+        #expect(try h.client.canPrepareReceipt)
+        #expect(try h.secure.record().receipts.isEmpty)
+        let first = try h.client.prepareReceipt()
+        #expect(try !h.client.canPrepareReceipt)
+        h.server.loseReceipt = true
+        await #expect(throws: CleanupFailure.exchangeUnknown) { try await h.client.perform(first) }
+        h.client = try h.restricted()
+        #expect(try !h.client.canPrepareReceipt)
+        #expect(throws: CleanupFailure.unavailable) { try h.client.prepareReceipt() }
+        _ = try await h.client.perform(h.client.prepareOriginalInvocationQuery())
+        #expect(try !h.client.canPrepareReceipt)
+        #expect(try h.secure.record().nativeIntentID == originalIntent)
+        #expect(native.executions == 1 && native.reconciliations == 0)
+        #expect(h.server.requests.filter { $0.operation == "reportCleanupDeviceReceiptV3" }.count == 1)
+    }
     @Test func originalActionQueryCannotRetargetAnAlreadySealedNativeCall() async throws {
         let h = try V3Harness(); try await h.refuse()
         _ = try await h.client.perform(h.client.prepareSessionInvalidation())

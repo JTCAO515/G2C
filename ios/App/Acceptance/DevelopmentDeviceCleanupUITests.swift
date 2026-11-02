@@ -34,10 +34,10 @@ import Foundation
         for attempt in 0..<45 {
             let bar = app.navigationBars.firstMatch
             let top = bar.exists ? bar.frame.maxY + 4 : app.frame.minY + 48
-            let bottom = app.tabBars.element.exists ? app.tabBars.element.frame.minY - 4 : app.frame.maxY - 40
+            let bottom = app.tabBars.element.exists && app.tabBars.element.isHittable ? app.tabBars.element.frame.minY - 4 : app.frame.maxY - 40
             let frame = element.exists ? element.frame : .zero
             print("CLEANUP_SCROLL", element.exists ? element.identifier : "not-materialized", frame, "bounds", top, bottom, "hittable", element.exists && element.isHittable)
-            if element.exists && element.isHittable && frame.minY >= top && frame.maxY <= bottom { return }
+            if element.exists && element.isHittable && frame.midY >= top && frame.midY <= bottom { return }
             let down = frame.isEmpty ? (attempt / 10) % 2 == 1 : frame.midY < top
             let middle = (top + bottom) / 2, step = min(100, (bottom - top) * 0.15)
             let x = app.frame.width * 0.85

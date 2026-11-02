@@ -129,7 +129,9 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         do {
             try check(journal.bytes, ordinary: false)
             let record = journal.record
-            if let progress = try record.currentProgress(), !record.confirmationDispatched || record.confirmationResponse != nil || progress.businessRevoked { return .progress(progress) }
+            if let progress = try record.currentProgress(),
+               !(progress.status == .awaitingConfirmation && !record.confirmationDispatched),
+               !record.confirmationDispatched || record.confirmationResponse != nil || progress.businessRevoked { return .progress(progress) }
             if record.prepared != nil {
                 let original = try record.original()
                 if record.confirmationDispatched { return .confirmationUnknown(original) }
