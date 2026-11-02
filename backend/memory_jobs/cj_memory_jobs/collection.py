@@ -82,6 +82,46 @@ class CollectionService(Service):
         return ProcessingSourcePolicy(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
                                       extraction,max_payload_bytes=max_payload_bytes)
 
+    def publication_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,
+                           model_output,model_output_sha256,*,max_payload_bytes):
+        """Only bounded local publication in B's existing protected callback."""
+        from .result_policy import ResultSourcePolicy
+        repository,principal,guard=self._binding(context,token)
+        extraction,memory,_=self.resolve_collection(principal)
+        return ResultSourcePolicy(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
+            extraction,max_payload_bytes=max_payload_bytes,model_output=model_output,
+            model_output_sha256=model_output_sha256,memory_policy=memory)
+
+    def transition_original_in_context(self,context,token,job_id,attempt_id,target):
+        """Nonproductive original metadata only, before entering any C holder.
+
+        Withdrawal does not prevent stopping/reconciling the original job. No
+        source is renewed and no begin/completion or model dispatch is exposed.
+        """
+        if target not in ('cancelled','failed','unknown'):
+            raise ValueError('nonproductive original transition required')
+        job_identity(job_id);job_identity(attempt_id)
+        repository,_,guard=self._binding(context,token)
+        with repository.transaction() as memory:
+            tx=PublicationTransaction(memory);tx.require_live()
+            result=tx.transition(job_id,attempt_id,target).encode()
+            guard('original_transition')
+        return result
+
+    def query_publication_in_context(self,context,token,job_id,attempt_id):
+        from .publication_result import original_result
+        job_identity(job_id);job_identity(attempt_id)
+        repository,_,guard=self._binding(context,token)
+        with repository.transaction() as memory:
+            tx=PublicationTransaction(memory);tx.require_live()
+            result=original_result(tx,job_id,attempt_id)
+            guard('publication_receipt')
+            return result if result is not None else b'null'
+
+    def query_publication(self,token,job_id,attempt_id,*,request_id=None):
+        return self._invoke(token,lambda context:self.query_publication_in_context(context,token,job_id,attempt_id),
+                            request_id,'MEMORY-PUBLICATION-response@1')
+
     def publish_output(self,token,job_id,attempt_id):
         def publish(tx,snapshot,principal):
             extraction,memory,context_for=self.resolve_collection(principal)

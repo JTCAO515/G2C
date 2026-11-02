@@ -103,6 +103,14 @@ def exercise(conninfo,auth):
                     hashlib.sha256(raw).hexdigest() if digest is None else digest,max_payload_bytes=262144)
                 def project(snapshot):
                     captured.append((policy,snapshot))
+                    from threading import Thread
+                    from cj_memory_jobs.codec import Unavailable as LifetimeUnavailable
+                    denied=[]
+                    def other_thread():
+                        try:policy.with_input(snapshot,lambda raw:b'wrong-thread')
+                        except LifetimeUnavailable:denied.append(True)
+                    thread=Thread(target=other_thread);thread.start();thread.join(5)
+                    assert not thread.is_alive() and denied==[True]
                     def checked(original):
                         calls.append(original)
                         return b'processing-fence-ready'
@@ -446,6 +454,8 @@ def exercise(conninfo,auth):
             except psycopg.errors.InsufficientPrivilege:pass
             else:raise AssertionError('runtime inserted another owner publication data')
         print('PASS actual new-table RLS: other-owner reads/writes denied and producer has no physical deletion privilege')
+        from result_cases import exercise as result_cases
+        result_cases(client,post,expected,host,repository,tokens['alice'],headers['alice'],scope,lose_commit_after)
         from cj_cleanup.core import Scope,encode,digest
         from cj_cleanup.coordinator import Coordinator
         from cj_cleanup.hooks_v1_1 import Selection

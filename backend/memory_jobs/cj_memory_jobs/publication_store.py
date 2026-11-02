@@ -89,7 +89,7 @@ class PublicationTransaction(Transaction):
              action.operation,action.raw,encoded,previous_source,new_source))
         return self.decision(action.action_id)[1]
 
-    def publish_output(self,job_id,attempt_id,messages,extraction_policy,memory_policy,context_for):
+    def publish_output(self,job_id,attempt_id,messages,extraction_policy,memory_policy,context_for,*,completion=None):
         row,raw=self.output(job_id,attempt_id)
         if raw is None:raise Unavailable('original extraction output unavailable')
         entries=parse_output(raw,messages,extraction_policy)
@@ -112,7 +112,9 @@ class PublicationTransaction(Transaction):
                 self.origin(command,job_id,attempt_id,messages,parsed.entry.evidence)
             receipts.append(dict(operation_id=receipt.operation_id,item_id=receipt.item_id,
                 version=receipt.version,status=receipt.status,input_sha256=receipt.input_sha256))
-        if row[0].state!='completed':self.transition(job_id,attempt_id,'completed',candidate=raw)
+        if row[0].state!='completed':
+            candidate=raw if completion is None else completion(tuple(receipts))
+            self.transition(job_id,attempt_id,'completed',candidate=candidate)
         return tuple(receipts)
 
     def apply_decision(self,action,memory_policy,*,context_lease=None):
