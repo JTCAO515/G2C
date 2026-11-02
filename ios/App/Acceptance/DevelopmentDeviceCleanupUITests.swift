@@ -62,9 +62,22 @@ import Foundation
     }
     func contains(_ id: String, _ expected: String, towardTop: Bool = true) {
         let target = app.staticTexts[id]
-        for _ in 0..<30 {
-            if target.exists { break }
-            if towardTop { app.swipeDown() } else { app.swipeUp() }
+        if !target.exists {
+            // Status rows are lazily materialized. Start at the exact cleanup
+            // heading, then scan forward; never wait on an offscreen phantom.
+            if id.hasPrefix("account.cleanup.") {
+                let heading = app.staticTexts["account.cleanup.heading"]
+                for _ in 0..<25 {
+                    if heading.exists && heading.isHittable { break }
+                    app.swipeDown()
+                }
+                for _ in 0..<35 { if target.exists { break }; app.swipeUp() }
+            } else {
+                for _ in 0..<30 {
+                    if target.exists { break }
+                    if towardTop { app.swipeDown() } else { app.swipeUp() }
+                }
+            }
         }
         XCTAssertTrue(target.exists, id)
         let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: target)

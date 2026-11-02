@@ -114,7 +114,7 @@ struct AccountCleanupControls: View {
             if value.canCleanDevice { button(language.text("Clear this device's account data", "清理本机账号数据"), .cleanDevice, "cleanDevice") }
             if value.canReportDevice { button(language.text("Send this device's verified result", "提交本机已核实的清理结果"), .reportDevice, "reportDevice") }
             if value.canReadDevice { button(language.text("Check original device cleanup", "核对原设备清理"), .checkDevice, "readDevice") }
-        } header: { ShellSectionHeading(title: language.text("Account deletion", "账号注销")) }
+        } header: { ShellSectionHeading(title: language.text("Account deletion", "账号注销")).accessibilityIdentifier("account.cleanup.heading") }
     }
     private func text(_ value: String, _ id: String) -> some View {
         RunReadableText(text: value).frame(maxWidth: .infinity, alignment: .leading)
