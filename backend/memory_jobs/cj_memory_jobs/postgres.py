@@ -39,6 +39,7 @@ class Transaction:
     def __init__(self, memory_transaction):
         self.memory = memory_transaction
         self.cur, self.scope = memory_transaction.cur, memory_transaction.scope
+        self.scope_digest = sha256(self.scope.encode('utf-8')).hexdigest()
 
     def require_live(self, *, initialize=False):
         if initialize:
@@ -46,10 +47,10 @@ class Transaction:
                              (self.scope,))
         self.epoch = self.memory.lock_scope()
         if initialize:
-            self.cur.execute('INSERT INTO cj_memory_history_fence(scope) VALUES(%s) ON CONFLICT DO NOTHING',
-                             (self.scope,))
-        self.cur.execute('SELECT erased FROM cj_memory_history_fence WHERE scope=%s FOR UPDATE',
-                         (self.scope,))
+            self.cur.execute('INSERT INTO cj_memory_history_fence(scope_digest) VALUES(%s) ON CONFLICT DO NOTHING',
+                             (self.scope_digest,))
+        self.cur.execute('SELECT erased FROM cj_memory_history_fence WHERE scope_digest=%s FOR UPDATE',
+                         (self.scope_digest,))
         if self.cur.fetchone() != (False,):
             raise Unavailable('history unavailable')
 
@@ -70,7 +71,7 @@ class Transaction:
         scope = self.cur.fetchone()
         if scope == (False,):
             raise Unavailable('history unavailable')
-        self.cur.execute('SELECT erased FROM cj_memory_history_fence WHERE scope=%s',(self.scope,))
+        self.cur.execute('SELECT erased FROM cj_memory_history_fence WHERE scope_digest=%s',(self.scope_digest,))
         if self.cur.fetchone() == (True,):
             raise Unavailable('history unavailable')
         current = self.consent(conversation_id) if scope is not None else None

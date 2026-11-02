@@ -1,7 +1,7 @@
--- M3 memory history candidate; local runtime only. Not registered/applied yet.
--- Move into the next append-only migration under the shared migration lock.
+-- local runtime only: #409 per-conversation history consent and persistent jobs.
+-- Same-PR memory-derived registration and CLEANUP@1.1 owner hook; no new role.
 CREATE TABLE cj_memory_history_fence (
- scope text PRIMARY KEY,
+ scope_digest text PRIMARY KEY CHECK(scope_digest ~ '^[0-9a-f]{64}$'),
  erased boolean NOT NULL DEFAULT false
 );
 CREATE TABLE cj_memory_history_consent (
@@ -50,37 +50,37 @@ CREATE TABLE cj_memory_history_cursor (
 ALTER TABLE cj_memory_history_fence ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cj_memory_history_fence FORCE ROW LEVEL SECURITY;
 CREATE POLICY own ON cj_memory_history_fence TO cj_m1_runtime
- USING(scope=nullif(current_setting('cj.message_scope',true),''))
- WITH CHECK(scope=nullif(current_setting('cj.message_scope',true),'') AND NOT erased);
+ USING(scope_digest=encode(sha256(convert_to(nullif(current_setting('cj.message_scope',true),''),'UTF8')),'hex'))
+ WITH CHECK(scope_digest=encode(sha256(convert_to(nullif(current_setting('cj.message_scope',true),''),'UTF8')),'hex') AND NOT erased);
 ALTER TABLE cj_memory_history_consent ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cj_memory_history_consent FORCE ROW LEVEL SECURITY;
 CREATE POLICY own ON cj_memory_history_consent TO cj_m1_runtime
  USING(scope=nullif(current_setting('cj.message_scope',true),''))
  WITH CHECK(scope=nullif(current_setting('cj.message_scope',true),'') AND EXISTS(
-  SELECT 1 FROM cj_memory_history_fence f WHERE f.scope=cj_memory_history_consent.scope AND NOT f.erased));
+  SELECT 1 FROM cj_memory_history_fence f WHERE f.scope_digest=encode(sha256(convert_to(cj_memory_history_consent.scope,'UTF8')),'hex') AND NOT f.erased));
 ALTER TABLE cj_memory_history_action ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cj_memory_history_action FORCE ROW LEVEL SECURITY;
 CREATE POLICY own ON cj_memory_history_action TO cj_m1_runtime
  USING(scope=nullif(current_setting('cj.message_scope',true),''))
  WITH CHECK(scope=nullif(current_setting('cj.message_scope',true),'') AND EXISTS(
-  SELECT 1 FROM cj_memory_history_fence f WHERE f.scope=cj_memory_history_action.scope AND NOT f.erased));
+  SELECT 1 FROM cj_memory_history_fence f WHERE f.scope_digest=encode(sha256(convert_to(cj_memory_history_action.scope,'UTF8')),'hex') AND NOT f.erased));
 ALTER TABLE cj_memory_history_job ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cj_memory_history_job FORCE ROW LEVEL SECURITY;
 CREATE POLICY own ON cj_memory_history_job TO cj_m1_runtime
  USING(scope=nullif(current_setting('cj.message_scope',true),''))
  WITH CHECK(scope=nullif(current_setting('cj.message_scope',true),'') AND EXISTS(
-  SELECT 1 FROM cj_memory_history_fence f WHERE f.scope=cj_memory_history_job.scope AND NOT f.erased));
+  SELECT 1 FROM cj_memory_history_fence f WHERE f.scope_digest=encode(sha256(convert_to(cj_memory_history_job.scope,'UTF8')),'hex') AND NOT f.erased));
 ALTER TABLE cj_memory_history_cursor ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cj_memory_history_cursor FORCE ROW LEVEL SECURITY;
 CREATE POLICY own ON cj_memory_history_cursor TO cj_m1_runtime
  USING(scope=nullif(current_setting('cj.message_scope',true),''))
  WITH CHECK(scope=nullif(current_setting('cj.message_scope',true),'') AND EXISTS(
-  SELECT 1 FROM cj_memory_history_fence f WHERE f.scope=cj_memory_history_cursor.scope AND NOT f.erased));
+  SELECT 1 FROM cj_memory_history_fence f WHERE f.scope_digest=encode(sha256(convert_to(cj_memory_history_cursor.scope,'UTF8')),'hex') AND NOT f.erased));
 
 GRANT SELECT,INSERT ON cj_memory_history_consent,cj_memory_history_action,
  cj_memory_history_job,cj_memory_history_cursor TO cj_m1_runtime;
 GRANT SELECT ON cj_memory_history_fence TO cj_m1_runtime;
-GRANT INSERT(scope),UPDATE(scope) ON cj_memory_history_fence TO cj_m1_runtime;
+GRANT INSERT(scope_digest),UPDATE(scope_digest) ON cj_memory_history_fence TO cj_m1_runtime;
 GRANT UPDATE(generation,message_epoch,enabled,source_version,withdrawal_epoch)
  ON cj_memory_history_consent TO cj_m1_runtime;
 GRANT UPDATE(state,processed,candidate) ON cj_memory_history_job TO cj_m1_runtime;
@@ -90,6 +90,7 @@ GRANT UPDATE(processed) ON cj_memory_history_cursor TO cj_m1_runtime;
 DO $history_acl$
 DECLARE
  object_name text;
+ fence_guard text;
  plan_guard text := $condition$
   scope=nullif(current_setting('cj.cleanup_scope',true),'')
   AND current_setting('cj.cleanup_purpose',true)='account'
@@ -105,19 +106,33 @@ DECLARE
     AND s.request_bytes IS NOT NULL AND s.request_digest=encode(sha256(s.request_bytes),'hex'))
  $condition$;
 BEGIN
+ fence_guard := $fence_condition$
+  scope_digest=encode(sha256(convert_to(nullif(current_setting('cj.cleanup_scope',true),''),'UTF8')),'hex')
+  AND current_setting('cj.cleanup_purpose',true)='account'
+  AND EXISTS(SELECT 1 FROM cj_cleanup_operation o
+   WHERE o.subject_digest=nullif(current_setting('cj.cleanup_subject',true),'')
+    AND o.operation_id=nullif(current_setting('cj.cleanup_operation',true),'')
+    AND o.purpose='account' AND NOT o.blocked AND o.plan_bytes IS NOT NULL
+    AND convert_from(o.plan_bytes,'UTF8')::jsonb->'memory-derived'->>'domain_scope'=nullif(current_setting('cj.cleanup_scope',true),''))
+  AND EXISTS(SELECT 1 FROM cj_cleanup_step s
+   WHERE s.subject_digest=nullif(current_setting('cj.cleanup_subject',true),'')
+    AND s.operation_id=nullif(current_setting('cj.cleanup_operation',true),'')
+    AND s.target='memory-derived' AND s.state='in_progress'
+    AND s.request_bytes IS NOT NULL AND s.request_digest=encode(sha256(s.request_bytes),'hex'))
+ $fence_condition$;
  FOREACH object_name IN ARRAY ARRAY['cj_memory_history_consent','cj_memory_history_action',
                                    'cj_memory_history_job','cj_memory_history_cursor'] LOOP
   EXECUTE format('CREATE POLICY cleanup_read ON %I FOR SELECT TO cj_local_cleanup USING (%s)',object_name,plan_guard);
   EXECUTE format('CREATE POLICY cleanup_delete ON %I FOR DELETE TO cj_local_cleanup USING (%s)',object_name,plan_guard);
   EXECUTE format('GRANT SELECT,DELETE ON %I TO cj_local_cleanup',object_name);
  END LOOP;
- EXECUTE format('CREATE POLICY cleanup_read ON cj_memory_history_fence FOR SELECT TO cj_local_cleanup USING (%s)',plan_guard);
- EXECUTE format('CREATE POLICY cleanup_insert ON cj_memory_history_fence FOR INSERT TO cj_local_cleanup WITH CHECK (erased AND (%s))',plan_guard);
- EXECUTE format('CREATE POLICY cleanup_update ON cj_memory_history_fence FOR UPDATE TO cj_local_cleanup USING (%s) WITH CHECK (erased AND (%s))',plan_guard,plan_guard);
+ EXECUTE format('CREATE POLICY cleanup_read ON cj_memory_history_fence FOR SELECT TO cj_local_cleanup USING (%s)',fence_guard);
+ EXECUTE format('CREATE POLICY cleanup_insert ON cj_memory_history_fence FOR INSERT TO cj_local_cleanup WITH CHECK (erased AND (%s))',fence_guard);
+ EXECUTE format('CREATE POLICY cleanup_update ON cj_memory_history_fence FOR UPDATE TO cj_local_cleanup USING (%s) WITH CHECK (erased AND (%s))',fence_guard,fence_guard);
  -- Scope-only UPDATE permits the canonical lock; frozen-plan RLS disallows renaming.
  EXECUTE format('CREATE POLICY cj_m3_history_cleanup_lock ON cj_memory_scope FOR UPDATE TO cj_local_cleanup USING (%s) WITH CHECK (%s)',plan_guard,plan_guard);
 END $history_acl$;
 GRANT SELECT ON cj_memory_history_fence TO cj_local_cleanup;
-GRANT INSERT(scope,erased),UPDATE(erased) ON cj_memory_history_fence TO cj_local_cleanup;
+GRANT INSERT(scope_digest,erased),UPDATE(erased) ON cj_memory_history_fence TO cj_local_cleanup;
 GRANT UPDATE(scope) ON cj_memory_scope TO cj_local_cleanup;
 -- No runtime DELETE/TRUNCATE, role switching or default privilege expansion.

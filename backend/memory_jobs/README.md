@@ -11,19 +11,22 @@ epoch 与处理游标。开始和完成重新进入受保护来源，旧 Memory 
 停用后查询原状态仍可进行，UNKNOWN 不自动派发。completed 只表示派生候选已存，
 不表示正式 Memory 已生效。协议和正负例见 [PG-V1](../../contracts/memory-jobs/PG-V1.md)。
 
-本地候选已验证真实签名 API、受限 PG、进程重建查询、实际 COMMIT ACK 丢失、
-新鲜准入及空库往返/有数据 down 拒绝。尚未发布；迁移、registry 和清理钩子
-须作为同一个 PR 完成交付，实际 worker/Meter 生产者由后续 #410–#413 接入。
-`schema.sql`/`schema.down.sql` 当前仅供隔离消费固定 B 接口的测试，未登记主链。
+本地已验证真实签名 API、受限 PG、进程重建查询、实际 COMMIT ACK 丢失、
+新鲜准入及空库往返/有数据 down 拒绝。追加 M33、registry 和清理钩子同 PR
+交付；实际 worker/Meter 生产者由后续 #410–#413 接入。
 
 ```sh
 uv run --locked python -m pytest -q -p no:cacheprovider backend/memory_jobs/tests
-uv run --locked python -B backend/memory_jobs/tests/queue_pg.py
+uv run --locked python -B scripts/pg_suites.py memory_history
 ```
 
 清理沿用 CLEANUP@1.1 和 #402 的专用角色/原结果账本；生产者不取得清理权限。
+删除后仅保留 scope 的 SHA256 与 erased 屏障，不保留账号 scope 明文。
 账号范围钩子不得被当作已完成单条 Memory 的物理删除；条目关联和 #26 仍须交付。
 真实模型、云、费用、真实账号和 App/设备验收保持 UNRUN。
+
+本地 M3 API 的显式入口为 `cj_memory_jobs.local_app:app_from_environment`。
+它沿用已有 `CJ_LOCAL_CONNINFO` / `CJ_LOCAL_AUTH_DIR`，并保留旧 app 入口。
 
 ## 保留的 SQLite 隔离候选
 

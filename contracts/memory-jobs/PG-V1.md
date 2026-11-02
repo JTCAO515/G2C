@@ -115,7 +115,7 @@ Memory reads, drafts or planning. Unprocessed/refused candidates remain ineffect
 
 ## Storage, cleanup and boundaries
 
-The new PG tables are history_fence, history_consent, history_action, history_job,
+Append-only local migration M33 provides history_fence, history_consent, history_action, history_job,
 history_cursor under the `cj_memory_` prefix. Runtime uses forced scoped RLS and
 only SELECT/INSERT/necessary column UPDATE. It has no DELETE/TRUNCATE or cleanup
 role membership. The old isolated SQLite path remains a test candidate until its
@@ -125,7 +125,8 @@ Same-PR registry entry `memory-derived` lists the provided tables and owner hook
 The hook consumes `CLEANUP@1.1`, B's dedicated cleanup Store and original result
 helpers; actual erasure and the original result commit together. It validates the
 persisted original intent before deletion, and binds RLS to the frozen plan's
-domain_scope. An irreversible content-free fence also covers an empty domain.
+domain_scope. An irreversible fence also covers an empty domain and stores only
+SHA256(scope)/erased, with no retained account-scope plaintext.
 ACK loss is unknown until original result query; it never re-executes deletion.
 Only #26/#27 cleanup paths use this role. The organizer cannot acquire it.
 
