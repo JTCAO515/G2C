@@ -1,6 +1,6 @@
 """B-owned CLEANUP@1.1 physical account hooks, explicit tables and trusted scopes."""
 from .core import Denied
-from .store import require_intent,original_result,record_result,receipt_for
+from .store import require_intent,require_account_retirement,original_result,record_result,receipt_for
 from cj_usage.codec import decode
 
 MESSAGE=(
@@ -11,7 +11,7 @@ MESSAGE=(
  ('cj_local_run_requirement','scope'),('cj_message_delivery','scope'),('cj_message_draft','scope'),
  ('cj_message_receipt','scope'),('cj_travel_context','scope'),('cj_travel_context_action','scope'),
  ('cj_local_metered_profile','scope'),('cj_local_run_protection','scope'),('cj_message_chat','scope'),('cj_message_scope','scope'))
-RUN=(('cj_run_metered_operation','scope'),('cj_run_metered_binding','scope'),('cj_run_step_usage','scope'),
+RUN=(('cj_run_background_job','scope'),('cj_run_metered_operation','scope'),('cj_run_metered_binding','scope'),('cj_run_step_usage','scope'),
      ('cj_run_event','scope'),('cj_run_record','scope'),('cj_run_scope','scope'))
 NEEDS=(('cj_needs_revision','scope'),('cj_needs_record','scope'),('cj_needs_scope','scope'))
 
@@ -26,9 +26,7 @@ class DomainHook:
             old=original_result(cur,request)
             if old is not None:return old
             require_intent(cur,request)
-            cur.execute('SELECT 1 FROM cj_account_fence WHERE subject_digest=%s AND operation_id=%s',
-                        (self.store.subject_digest,request.operation_id))
-            if cur.fetchone() is None:raise Denied('account revocation unconfirmed')
+            require_account_retirement(cur,request)
             cur.execute("SELECT set_config('cj.cleanup_scope',%s,true),set_config('cj.cleanup_purpose','account',true)",(self.scope,))
             for table,column in self.tables:
                 # Explicit code-owned identifiers; never registry/request paths or SQL.
@@ -74,9 +72,7 @@ class UsageHook:
             old=original_result(cur,request)
             if old is not None:return old
             require_intent(cur,request)
-            cur.execute('SELECT 1 FROM cj_account_fence WHERE subject_digest=%s AND operation_id=%s',
-                        (self.store.subject_digest,request.operation_id))
-            if cur.fetchone() is None:raise Denied('account revocation unconfirmed')
+            require_account_retirement(cur,request)
             cur.execute("SELECT set_config('cj.cleanup_purpose','account',true)")
             for scope in self._scopes(cur):
                 cur.execute("SELECT set_config('cj.cleanup_scope',%s,true)",(scope,))

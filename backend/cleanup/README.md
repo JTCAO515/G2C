@@ -104,3 +104,10 @@ P2 close 后最终围栏返修：最终 captured guard/context 检查在最后�
 2026-10-23作者使用新私有PG16.15/Unix55459、canonical AUTH8b + synthetic verifier/accessfacts、
 SELECT-only runtime role执行12定向组合检查PASS，旧14/strict/PG/close门复用、不重跑。
 实际账号/真实撤权provider/注销后凭据和Issue27 I仍UNRUN；core.public_query和destructive入口保持关闭。
+
+## Account retirement owner seam
+
+[CLEANUP-ACCOUNT-RETIREMENT@1](ACCOUNT-RETIREMENT-V1.md) freezes public
+`store.require_account_retirement(cursor, request) -> None` after require_intent
+in the same Store transaction. It reads the original account fence only; C owns
+its namespace locks, erasure and evidence. Existing CLEANUP@1.0/1.1 bytes stay fixed.

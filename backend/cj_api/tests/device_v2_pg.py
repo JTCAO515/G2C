@@ -43,7 +43,7 @@ def exercise(root,conninfo):
             before=inherited(conn);assert before[0] and before[1]
             migrate.down(conn,migrate.load(),37)
             assert inherited(conn)==before
-            migrate.up(conn,migrate.load(),38)
+            migrate.up(conn,migrate.load(),migrate.load()[-1]['version'])
             assert inherited(conn)==before
             assert conn.execute('SELECT DISTINCT protocol FROM cj_cleanup_device_binding').fetchall()==[('CLEANUP-DEVICE@1',)]
         assert query('/v1/cleanup-device-calls/'+legacy_call['call']['invocation_id'],'Device',legacy['device_token'])['call']==legacy_call['call']

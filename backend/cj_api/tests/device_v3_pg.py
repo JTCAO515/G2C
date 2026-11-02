@@ -66,7 +66,7 @@ def exercise(root,path):
         with psycopg.connect(**config,autocommit=True) as conn:
             binding_before=conn.execute('SELECT * FROM cj_cleanup_device_binding ORDER BY binding_id').fetchall()
             calls_before=conn.execute('SELECT * FROM cj_cleanup_device_call ORDER BY invocation_id').fetchall()
-            migrate.down(conn,migrate.load(),38);migrate.up(conn,migrate.load(),39)
+            migrate.down(conn,migrate.load(),38);migrate.up(conn,migrate.load(),migrate.load()[-1]['version'])
             assert conn.execute('SELECT * FROM cj_cleanup_device_binding ORDER BY binding_id').fetchall()==binding_before
             assert conn.execute('SELECT * FROM cj_cleanup_device_call ORDER BY invocation_id').fetchall()==calls_before
         registration=dict(version=VERSION,action_id='original-register',device_id='device-a',state_ref=digest(b'original-state'))

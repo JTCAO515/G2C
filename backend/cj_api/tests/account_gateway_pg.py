@@ -57,6 +57,34 @@ def exercise(root,conninfo):
         post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'),'bob',403)
         result=post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'))
         assert result['business_access']=='revoked' and result['online_status']=='complete' and result['status']!='complete'
+        # Public C owner seam: the fence came from the actual signed confirmation.
+        # Its isolated assertion also works in a genuinely read-only transaction.
+        from cj_cleanup.store import require_account_retirement
+        from cj_cleanup.hooks_v1_1 import HookRequest
+        from cj_cleanup.core import Denied
+        with psycopg.connect(**config) as audit:
+            raw=audit.execute('SELECT request_bytes FROM cj_cleanup_step WHERE subject_digest=%s AND operation_id=%s AND target=%s',
+                (device['alice']['scope_digest'],op,target)).fetchone()[0]
+            original_request=HookRequest.from_bytes(bytes(raw))
+            counts=audit.execute('SELECT (SELECT count(*) FROM cj_account_fence),(SELECT count(*) FROM cj_cleanup_operation),(SELECT count(*) FROM cj_cleanup_domain_result)').fetchone()
+        def assertion(subject,request):
+            with psycopg.connect(**dict(config,user='cj_local_cleanup',options='-c default_transaction_read_only=on')) as readonly:
+                assert readonly.execute('SHOW transaction_read_only').fetchone()==('on',)
+                readonly.execute("SELECT set_config('cj.cleanup_subject',%s,true),set_config('cj.cleanup_operation',%s,true)",(subject,op))
+                with readonly.cursor() as cursor:return require_account_retirement(cursor,request)
+        assert assertion(original_request.subject_digest,original_request) is None
+        wire=json.loads(original_request.original_utf8)
+        negatives=[(original_request.subject_digest,wire|dict(operation_id=spare['operation_id'])),
+            (device['bob']['scope_digest'],wire),
+            (device['bob']['scope_digest'],wire|dict(subject_digest=device['bob']['scope_digest'])),
+            (original_request.subject_digest,wire|dict(selection=dict(kind='diagnostics',before_unix=0)))]
+        for bound_subject,value in negatives:
+            try:assertion(bound_subject,HookRequest.from_bytes(encode(value)))
+            except Denied:pass
+            else:raise AssertionError('public retirement assertion accepted absent/foreign/wrong-operation/wrong-purpose fence')
+        with psycopg.connect(**config) as audit:
+            assert audit.execute('SELECT (SELECT count(*) FROM cj_account_fence),(SELECT count(*) FROM cj_cleanup_operation),(SELECT count(*) FROM cj_cleanup_domain_result)').fetchone()==counts
+        print('PASS public account-retirement helper: actual signed-confirmation fence, readonly success/None, no writes, absent/foreign/original-operation/purpose negatives; B hooks also compose it after require_intent')
         from cj_api.local_account_admission_v2 import account_checker_for
         from cj_auth.interfaces import AdmissionStatus
         from unittest.mock import patch
