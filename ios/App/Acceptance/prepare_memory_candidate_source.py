@@ -136,9 +136,9 @@ def main():
         if name.startswith(('PG', 'LIBPQ', 'CJ_LOCAL_')) or name in ('DATABASE_URL', 'CJ_DATABASE_URL'):
             os.environ.pop(name)
     os.environ['CJ_ENV'] = 'local'
-    sys.path.insert(0, str(backend / 'scripts'))
     # Explicit supplied source paths precede an editable distribution's old tree.
     sys.path[:0] = [str(backend / 'backend'), *[str(p) for p in (backend / 'backend').iterdir() if p.is_dir()]]
+    sys.path.insert(0, str(backend / 'scripts'))
     import psycopg
     import dev_auth
     import local_run_context
@@ -172,7 +172,7 @@ def main():
                 with host.database.connect(scope_for(ISSUER, subjects[0])) as connection:
                     assert connection.execute('SELECT current_user').fetchone() == ('cj_m1_runtime',)
                     assert connection.execute("SELECT count(*) FROM cj_memory_item WHERE status='candidate'").fetchone() == (1,)
-                    assert connection.execute('SELECT count(*) FROM cj_memory_candidate_action').fetchone() == (0,)
+                    assert connection.execute('SELECT count(*) FROM cj_memory_history_candidate_action').fetchone() == (0,)
                 report.update(source=proof, runtime_role='cj_m1_runtime', status='PASS')
             report['pg_stopped'] = True
         # Fresh signer files and credentials were confined to the removed temp tree.
