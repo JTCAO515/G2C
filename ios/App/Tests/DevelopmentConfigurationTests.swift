@@ -9,6 +9,23 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func historyProfileRequiresVerifiedAccountRootAndReleaseStaysClosed() throws {
+        let base = ["G2C_DEV_MEMORY_HISTORY_PROFILE": "history-v1", "G2C_DEV_ACCOUNT_MODE": "1"]
+        #if DEBUG
+        #expect(try DevelopmentMemoryHistoryProfile.read([:]) == nil)
+        #expect(try DevelopmentMemoryHistoryProfile.read(base) != nil)
+        for invalid in [["G2C_DEV_MEMORY_HISTORY_PROFILE":"true"], ["G2C_DEV_ACCOUNT_MODE":"0"]] {
+            #expect(throws:DevelopmentMemoryHistoryProfile.Failure.invalidProfile) {
+                try DevelopmentMemoryHistoryProfile.read(base.merging(invalid){_,new in new})
+            }
+        }
+        #expect(throws:DevelopmentMemoryHistoryProfile.Failure.invalidProfile) {
+            try DevelopmentMemoryHistoryProfile.read(["G2C_DEV_MEMORY_HISTORY_PROFILE":"history-v1"])
+        }
+        #else
+        #expect(try DevelopmentMemoryHistoryProfile.read(base) == nil)
+        #endif
+    }
     @Test func feedbackProfileIsExplicitAndReleaseClosed() throws {
         #if DEBUG
         #expect(try DevelopmentFeedbackProfile.read([:]) == nil)

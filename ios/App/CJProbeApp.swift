@@ -49,7 +49,8 @@ struct CJProbeApp: App {
                       answerFeedbackHost: developmentAccounts?.trip?.feedback?.answer ?? development?.feedback?.answer,
                       generalFeedbackHost: developmentAccounts?.trip?.feedback?.general ?? development?.feedback?.general,
                       runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
-                      developmentAccountHost: developmentAccounts?.accounts, offlineTripController: developmentAccounts?.offline)
+                      developmentAccountHost: developmentAccounts?.accounts, offlineTripController: developmentAccounts?.offline,
+                      memoryHistoryContainerHost: developmentAccounts?.trip?.memoryHistory?.host ?? development?.memoryHistory?.host)
                 .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained
                 .safeAreaInset(edge: .top) {
                     if developmentFailed {

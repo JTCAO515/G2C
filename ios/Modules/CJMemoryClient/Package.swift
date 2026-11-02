@@ -9,6 +9,6 @@ let package = Package(name: "CJMemoryClient", platforms: [.iOS(.v17), .macOS(.v1
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")],
     targets: [.target(name: "CJMemoryClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"),
         .product(name: "CJAPI", package: "ios"), .product(name: "CJMessageHTTP", package: "CJMessageClient"),
-        .product(name: "CJMessageKeys", package: "CJAuth"),
+        .product(name: "CJMessageKeys", package: "CJAuth"), .product(name: "CJSession", package: "CJAuth"),
         .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"), .product(name: "HTTPTypes", package: "swift-http-types")]),
         .testTarget(name: "CJMemoryClientTests", dependencies: ["CJMemoryClient"])])
