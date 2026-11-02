@@ -61,7 +61,7 @@ import Foundation
     }
     func general(_ language: String = "en", backFromAccount: Bool = false) {
         tap(language == "en" ? "Memory" : "记忆")
-        if backFromAccount { back() }
+        if backFromAccount || app.staticTexts["account.development.status"].exists { back() }
         tap("memory.feedback")
         XCTAssertTrue(app.staticTexts["feedback.status"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.switches["feedback.associate"].exists)
