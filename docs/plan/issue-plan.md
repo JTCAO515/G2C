@@ -64,7 +64,7 @@
 
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
-| A App | M2持续goal；#244/#271/#266/#228、#286/#22/#373、#337/#25均CLOSED；#21仅地图综合余项OPEN；#194/#159跳过 | 整个 `ios/**`、`docs/ui.md`；唯一A承接线程，不恢复OldA并行写入 | PR367/370/371/372/376/377/384及原生/精确CI已收口；B/C正式契约及source2前置已解除。JT原指令地图暂缓UNRUN，SDK/Key/许可/实际点位/坐标/权限组合待明确恢复该授权；不接真实服务、不重复请求同一授权，不把未实现App转记L1完成。M2/goal未完成；L2/L3已回链#32/#29。 |
+| A App | M2全部L0/L1已收口，#21/PR387、#332/PR392 CLOSED；milestone3 CLOSED（47 closed/0 open）；#194/#159跳过 | 整个 `ios/**`、`docs/ui.md`；唯一A，不恢复OldA | 本轮最终一次handoff；MapKit无Key/费用/第三方依赖，实际物理点位→#32/#29 UNRUN、不计PASS；#398高德替换/企业许可/iOS平台Key及SDK隐私停点属M3，JT另开新线程。B/C本轮交付从#21通知6567906580取，不依旧快照重开队列。 |
 | B 后端消息与运行 | 本轮[#354](https://github.com/JTCAO515/G2C/issues/354)/[#360](https://github.com/JTCAO515/G2C/issues/360)/[#378](https://github.com/JTCAO515/G2C/issues/378)均CLOSED（PR359/379/380/382）；goal结束仅B交接，C实际B接口缺口优先响应360/343；315按JT保持OPEN不投入 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | source1 needs-structured.1与source2 needs-current-trip.1独立正式入口；publisher@2/M29同cursor结果与新读版本供C336/A337。C381/M30生产交付由C负责，A App/真实资源按各owner验，不由B probe/后端验收代称全M2完成；业务锁已释放 |
 | C M2后端记忆、草稿与可行性 | M2本线已派后端均交：366/374/336及25后端完成；保持原M2 goal，继续处理真实C-owner联调缺口，当前唯一剩余21地图按JT暂缓UNRUN | backend/trip/**、backend/draft/**、backend/feasibility/**、backend/agent/cj_agent/draft.py、backend/memory/**、backend/memory_management/**、backend/memory_jobs/**、backend/memory_withdrawal/**、backend/manual_edit/**；只做后端 | B354/360/378及A337/373/286/22/25均已交闭；C381同RUN cursor结果/受保护读取与M30已合并。实时M2仅21地图综合余项，JT决定授权调整、A实施；无独立C项时保留实际停点，不重复测试/handoff或求同一地图授权，不将M2标complete。 |
 
@@ -147,3 +147,10 @@
 - #354由PR359锁head490ecaf合ae417da6：显式needs-structured.1复用C source-input.1，未patch正式run_once/实际CLI＋签名API/受限PG/Fake/Meter→原确认/structured2/NEEDS basis；默认legacy保持，C来源INITIALIZE另见361/362。精确CI全绿，已通知286/21/22/373/C。
 - #360（parent25）L0 PR379锁19332a15合35fb4b3f，先冻结publisher@2/configCJ-MESSAGE-EDIT-RESULT@1/profile message-edit-result.1、两类非可接受结果/独立effect、新status/history/display及正负例并立即通知336/337；L1 PR380锁37b95f0f合c138fced交M29与同cursor结果/原ID恢复，精确CI全绿/PG33、一次独立P1返修后APPROVE。B桥接真实C函数/lease不冒称C生产；C381/M30及336随后由C交付。原FAIL与schema关联P2保留，无新权限或第二版本引擎。
 - #378（parent22）PR382锁2bb54fed合2d0a1011：独立needs-current-trip.1/C source-input.2正式run_once+CLI，实际registered输入Trip/proposed_fields、手动文本/独立fixed后的原Trip v3→不同新Trip v1、原bytes/receipt/status/history及NEEDS/selection/owner/cancel/UNKNOWN均PASS。六类CI全绿；含C M30实际合并树复验PASS，通知22/286/373/21/C，不等main CI/回执。B业务/共享锁释放，最后B-only handoff与本节合一文档PR。
+
+### M2 最终退出与下一线程边界（JT 2026-11-02）
+
+- M2 milestone3 已关闭（47 closed/0 open）。最后 #332 由 [PR392](https://github.com/JTCAO515/G2C/pull/392) 关闭；#21 由 [PR387](https://github.com/JTCAO515/G2C/pull/387) 按 L0/L1 关闭。原验收与历史 FAIL 保留，真实物理点位验证明确在 #32/#29 既有地图行承接 UNRUN，不计 PASS。上表 B/C 为保留的 owner 历史快照，实时 Issue 和本段优先；本轮 B/C 已交付，统一依据 [C 通知6567906580](https://github.com/JTCAO515/G2C/issues/21#issuecomment-6567906580)，不再要求各写 handoff。
+- 正式地点链需显式 `LocalPlaceDraftTools` 与 `PlaceDraftConfiguration(publisher=PlaceDraftAdapter(...))`，`run_once` 默认不开启。App 仅消费正式 Trip place source，原 provider ID/坐标/hash 不变；MapKit 不做坐标转换。
+- #398 是 M3 高德替换，不阻 M2：企业技术服务许可/档位/费用、绑定 Bundle ID 的 iOS Key（非后端 Web Key）、第三方 SDK 与创建前隐私同意仍由 JT 处理；MapKit 保留到替换验收通过。MapKit 查看区域发送 Apple 已在 #34/#225 通知，隐私/合规评估不计 PASS。M3 由 JT 另开新线程，本线程不实施、不恢复旧监控。
+- #315/#329 保持 OPEN/UNKNOWN；不重复碰绿、不自动重试、不放宽 guard。#186 OPEN 归其 owner，#356 已由 PR357 关闭；#395/#397 非 M2，本轮不处理或等待。当前迁移最高 0030_trip_scoped_result；冻结版本与已应用迁移保持。#194/#159 跳过，真实资源/账号/费用/云/生产/真机继续按既有授权停点与 #32/#29。
