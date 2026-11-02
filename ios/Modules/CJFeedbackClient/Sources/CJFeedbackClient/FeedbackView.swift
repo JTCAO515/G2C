@@ -8,6 +8,8 @@ public struct FeedbackView: View {
     public let model: FeedbackPresentation
     public let language: FeedbackLanguage
     @Environment(\.locale) private var locale
+    private enum Editor: Hashable { case problem, expectation }
+    @FocusState private var focused: Editor?
     public init(model: FeedbackPresentation, language: FeedbackLanguage) { self.model = model; self.language = language }
     private func text(_ en: String, _ zh: String) -> String { language == .chinese ? zh : en }
     public var body: some View {
@@ -15,8 +17,10 @@ public struct FeedbackView: View {
             Section {
                 FeedbackReadableText(text: text("Describe the problem and what you expected. Include only what you choose to share; omit passwords and secrets.", "请描述问题和期望。只填写你愿意分享的内容，请勿包含密码或密钥。"), footnote: true)
                 TextField(text("Problem", "问题"), text: Binding(get: { model.problem }, set: { model.edit(problem: $0, expectation: model.expectation) }), axis: .vertical)
+                    .focused($focused, equals: .problem)
                     .lineLimit(3...8).disabled(!model.canEdit).accessibilityIdentifier("feedback.problem")
                 TextField(text("Expected result (optional)", "期望结果（可选）"), text: Binding(get: { model.expectation }, set: { model.edit(problem: model.problem, expectation: $0) }), axis: .vertical)
+                    .focused($focused, equals: .expectation)
                     .lineLimit(2...6).disabled(!model.canEdit).accessibilityIdentifier("feedback.expectation")
                 if model.context != nil && model.original == nil {
                     Toggle(isOn: Binding(get: { model.includeContext }, set: { model.associateContext($0) })) {
@@ -79,7 +83,14 @@ public struct FeedbackView: View {
                 }
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle(text("Feedback", "问题反馈"))
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(text("Done", "完成")) { focused = nil }.accessibilityIdentifier("feedback.keyboard.done")
+            }
+        }
     }
     private var status: String {
         switch model.state {

@@ -79,7 +79,9 @@ import Foundation
         let next = app.textViews["feedback.expectation"]
         XCTAssertTrue(next.exists); XCTAssertTrue(next.isEnabled && next.isHittable)
         next.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.15)).tap(); next.typeText(expectation)
-        app.swipeUp() // Form interactive keyboard dismissal; no business action.
+        let done = app.buttons["feedback.keyboard.done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 8)); done.tap()
+        XCTAssertFalse(app.keyboards.element.exists)
     }
     func capture(_ name: String) {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
