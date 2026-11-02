@@ -4,11 +4,9 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from .generated import UsageAttemptStatusResponse
 from .history_routes import _query
-from .message_routes import _error,_token
+from .message_routes import _error,_sanitized_read,_token
 from .usage_status_composition import UsageStatusConfiguration
 from .usage_status_projection import encode_response
-
-class UsageReadInterrupted(Exception):pass
 
 def register_usage_status(app,configuration=None,dependencies=None):
     if dependencies is None:
@@ -35,12 +33,9 @@ def register_usage_status(app,configuration=None,dependencies=None):
             # native instance per HTTP read, with the same canonical host checker.
             boundary=modules['cj_auth.read_context'].ProtectedReadBoundary(checker,max_response_bytes=host.max_response_bytes)
             reader=modules['cj_usage.protected_status'].AttemptStatusReader(boundary,resolver,configuration=host)
-            try:return reader.read(token,aid,project=lambda minimal:encode_response(minimal,request_id,aid))
-            except BaseException as exc:
-                if isinstance(exc,Exception):raise
-                raise UsageReadInterrupted() from None
+            return reader.read(token,aid,project=lambda minimal:encode_response(minimal,request_id,aid))
         try:
-            encoded=await run_in_threadpool(invoke)
+            encoded=await run_in_threadpool(_sanitized_read,invoke)
             return Response(content=encoded,media_type='application/json')
         except modules['cj_auth.read_context'].ReadAdmissionFailure as exc:
             auth=modules['cj_auth.interfaces']

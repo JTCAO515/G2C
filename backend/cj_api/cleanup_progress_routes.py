@@ -4,11 +4,9 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from .generated import CurrentAccountCleanupProgressResponse
 from .history_routes import _query
-from .message_routes import _error,_token
+from .message_routes import _error,_sanitized_read,_token
 from .cleanup_progress_composition import CleanupProgressConfiguration
 from .cleanup_progress_projection import encode_response
-
-class CleanupReadInterrupted(Exception):pass
 
 def register_cleanup_progress(app,configuration=None,dependencies=None):
     if dependencies is None:
@@ -30,11 +28,8 @@ def register_cleanup_progress(app,configuration=None,dependencies=None):
             checker,resolve,host,_=dependencies
             boundary=modules['cj_auth.read_context'].ProtectedReadBoundary(checker,max_response_bytes=host.max_response_bytes)
             reader=modules['cj_cleanup.protected_progress'].ProgressReader(boundary,resolve,configuration=host)
-            try:return reader.read(token,oid,project=lambda raw:encode_response(raw,request_id,oid))
-            except BaseException as exc:
-                if isinstance(exc,Exception):raise
-                raise CleanupReadInterrupted() from None
-        try:return Response(content=await run_in_threadpool(invoke),media_type='application/json')
+            return reader.read(token,oid,project=lambda raw:encode_response(raw,request_id,oid))
+        try:return Response(content=await run_in_threadpool(_sanitized_read,invoke),media_type='application/json')
         except modules['cj_auth.read_context'].ReadAdmissionFailure as exc:
             auth=modules['cj_auth.interfaces']
             if exc.status is auth.AdmissionStatus.DENIED:
