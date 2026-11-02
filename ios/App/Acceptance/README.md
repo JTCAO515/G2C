@@ -239,3 +239,24 @@ Opt-in: `G2C_DEV_FEEDBACK_PROFILE=feedback-v1`; Release and remote write factori
 remain closed. The server-only locator is inspected through its own actual
 protected route and is never accepted as App-supplied metadata. Real providers,
 physical devices, cloud, and release remain UNRUN in #32/#29.
+
+## Conversation history settings (#23 / #434)
+
+`check_history_settings.py` uses an explicit CJ-LOCAL-RUN@2 file, committed App/head,
+current signed canonical history host, fresh private Unix-socket PG/runtime role,
+and original worker/FakeProvider for an actual App chat. The same installed API
+provides actual manual Memory saves and current history settings/actions/receipts.
+No accepted message, permission, receipt or background job is injected into App.
+The six methods cover bilingual per-conversation default-off/manual-save isolation,
+explicit enable/disable, original UNKNOWN/reopen versus another device's current
+state, CAS conflict/fresh review, late ACK account switch, and read503 not becoming
+default off. Actual system maximum and unfiltered .all AX cover the policy and
+stopping/confirmation explanations. Worker job POST routes remain closed to App.
+
+Response delivery faults are labelled. Missing/uninitialized foreign history scopes
+may return503 with MEMORY_HISTORY_UNAVAILABLE; they never disclose an original
+receipt or grant, and are not rewritten to null. The verifier also attempts signed
+foreign settings and action access. Every run checks original byte hashes, runtime
+role, zero organizer dispatch, source/head/clean equality and credentials/plaintext
+scans. OS_ACTIVITY_MODE=disable and exact native IDs/viewport-bounded drags remain.
+Real model quality, cloud, actual users and physical device/VoiceOver stay #32/#29.

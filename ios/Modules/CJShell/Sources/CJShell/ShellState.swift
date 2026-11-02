@@ -48,6 +48,7 @@ public enum MemoryRoute: Hashable, Sendable {
     case memoryItems, memoryDetail, manualMemory, memoryActions
     case typedMemoryDetail(owner: UUID,itemID: Data)
     case feedback(FeedbackContainerEntry?)
+    case memoryHistory
 }
 
 /// Retained opaquely during UI navigation; never an authority or an ID generator.
@@ -102,6 +103,7 @@ public final class ShellState {
     @ObservationIgnored weak var needsContainerHost: NeedsContainerHost?
     @ObservationIgnored weak var tripContainerHost: TripContainerHost?
     @ObservationIgnored weak var memoryContainerHost: MemoryContainerHost?
+    @ObservationIgnored weak var memoryHistoryContainerHost: MemoryHistoryContainerHost?
     @ObservationIgnored weak var typedMemoryContainerHost: TypedMemoryContainerHost?
     @ObservationIgnored weak var serverHistoryHost: ServerHistoryHost?
     @ObservationIgnored weak var messageHost: AssistantMessageHost?
@@ -156,6 +158,8 @@ public final class ShellState {
         tripContainerHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
         memoryContainerHost?.invalidate()
+        guard generation == invalidatedGeneration else { return invalidatedGeneration }
+        memoryHistoryContainerHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
         typedMemoryContainerHost?.invalidate()
         guard generation == invalidatedGeneration else { return invalidatedGeneration }
