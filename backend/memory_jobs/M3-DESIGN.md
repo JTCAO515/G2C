@@ -143,11 +143,33 @@ real bounded projection before use, with no whole-Trip fallback. Expired leases
 and oversized data fail. The actual existing B ModelInput accepts the outer
 materialized data shape, but that parsing grants no dispatch or publication.
 
-No provider, extraction decoder, durable decision-job command, producer, original
-publication/reconciliation or cleanup integration is installed by this slice.
+The unpublished batch codec can retain the original accepted document within the
+existing bounded job-batch shape; it is not yet a queue writer. The new output
+decoder reuses the finite entry grammar while checking quotes against their exact
+message/Trip reference. Trip-supported entries always require user review, even
+when the general statement classifier would otherwise accept them. Historical
+decoding is comparison data, never renewed source authority.
+
+No provider, durable decision-job command, producer, original publication/
+reconciliation or cleanup integration is installed by this slice.
 The new version names are DRAFT, not a frozen contract or consumable B interface.
 Ordinary formal Trip discussion after a Memory scope exists remains rejected by
 the old MESSAGE-send.3 safety guard; C does not modify that frozen B path. Full
 intake needs an explicit compatible source/Memory composition, in addition to
 this actual retained-source preparation. #411 stays open until those real
 worker/Meter/candidate/context and #26 cleanup checks are complete.
+
+The intended next integration uses that bounded decision artifact in the existing
+job batch, with a new explicit original-command discriminator containing only
+source/decision IDs and hashes within the existing command bound. New processing
+and publication must reacquire the genuine current decision before Memory; the
+persisted artifact only supports byte comparison and historical original-result
+decoding after a source changes. The old wire/publication versions cannot be
+selected by a failed-parse fallback. Registry sensitivity and existing cleanup
+must cover the added accepted-document bytes in the same delivery.
+
+Automatic scheduling must also account for Trip-version invalidation: a proven
+stale decision cannot publish and should not block an independent enabled source
+forever. That observation needs the protected C current read outside the Memory
+holder; lookup UNKNOWN must not become stale/absent, and the original financial
+UNKNOWN or attempt bytes cannot be rewritten or retried. This remains unimplemented.
