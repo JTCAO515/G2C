@@ -70,7 +70,7 @@ def main():
                *list((ROOT / 'ios/Modules/CJShell/Sources').rglob('*.swift')),
                *list((ROOT / 'ios/Modules/CJAuth/Sources/CJSession').glob('*.swift')),
                Path(__file__), HERE / 'DevelopmentOfflineTripUITests.swift']
-    report = dict(status='RUNNING', head=head, cases={}, checks={}, faults=[],
+    report = dict(status='RUNNING', head=head, cases={}, checks={}, faults=[], unrun_cases=list(CASES),
                   source_hashes={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
                   run_context=json.loads(args.run_context.read_text()),
                   unrun=['#24 box4 original account-cleanup operation/device receipt bridge',
@@ -297,7 +297,7 @@ def main():
                         report.setdefault('results', {})[case] = {x: summary[x] for x in ('passedTests', 'failedTests', 'skippedTests')}
                         save(); run.check_returncode()
                         assert summary['passedTests'] == 1 and summary['failedTests'] == summary['skippedTests'] == 0
-                        report['cases'][case] = 'PASS'; save()
+                        report['cases'][case] = 'PASS'; report['unrun_cases'].remove(case); save()
                     container, _ = app_files()
                     for path in [*container.rglob('*'), *output.rglob('*')]:
                         if path.is_file():
