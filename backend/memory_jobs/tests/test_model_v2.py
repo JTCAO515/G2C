@@ -1,6 +1,7 @@
 """Opaque wire refs decode back to exact original evidence, never authority."""
 from dataclasses import replace
 import hashlib,json
+from pathlib import Path
 import unittest
 
 from cj_memory_jobs.extraction import CollectionPolicy,InvalidExtraction,publication_identity,parse_output as parse_v1
@@ -9,6 +10,17 @@ from test_extraction_boundary import source_message
 
 
 class OpaqueModelOutput(unittest.TestCase):
+    def test_versioned_positive_negative_examples(self):
+        values=json.loads((Path(__file__).resolve().parents[1]/'v2-examples.json').read_bytes())
+        messages=(source_message(values['source_text']),)
+        policy=CollectionPolicy(frozenset({'self'}),frozenset({'diet.spicy'}),5,4096,
+            lambda entry:True,lambda entry,rows:False)
+        for value in values['positive']:
+            with self.subTest(value=value):parse_output(json.dumps(value,ensure_ascii=False).encode(),messages,policy,values['scope'])
+        for value in values['negative']:
+            with self.subTest(value=value),self.assertRaises(InvalidExtraction):
+                parse_output(json.dumps(value,ensure_ascii=False).encode(),messages,policy,values['scope'])
+
     def setUp(self):
         self.scope='scope'
         self.message=source_message('不吃辣 / no spicy food')
