@@ -25,13 +25,17 @@ import Foundation
         let tabs = ["Assistant", "助手", "Trips", "行程", "Plugins", "插件", "Memory", "记忆"]
         let query = tabs.contains(id) ? app.tabBars.buttons.matching(identifier: id) : app.buttons.matching(identifier: id)
         let target = query.element
+        let isTab = tabs.contains(id)
         for _ in 0..<30 {
-            if target.exists && target.isHittable { break }
-            let bar = app.navigationBars.firstMatch
-            if target.exists && bar.exists && target.frame.midY < bar.frame.maxY { app.swipeDown() }
+            let bar = app.navigationBars.firstMatch, tabs = app.tabBars.firstMatch
+            let top = bar.exists ? bar.frame.maxY : app.frame.minY
+            let bottom = tabs.exists ? tabs.frame.minY : app.frame.maxY
+            if target.exists && target.isHittable && (isTab || (target.frame.midY > top + 8 && target.frame.midY < bottom - 8)) { break }
+            if target.exists && target.frame.midY < top + 8 { app.swipeDown() }
             else { app.swipeUp() }
         }
         XCTAssertEqual(query.count, 1, id); XCTAssertTrue(target.isHittable, id)
+        print("feedback tap", id, target.frame)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id); target.tap()
     }
@@ -180,8 +184,8 @@ import Foundation
         XCTAssertEqual(second.feedback_posts, first.feedback_posts + 1)
         _ = try await call("/validate", f.case_id)
         tap("feedback.another")
-        XCTAssertTrue(revealEditor("feedback.problem").isEnabled)
         status(language == "en" ? "Ready to describe" : "请填写反馈")
+        XCTAssertTrue(revealEditor("feedback.problem").isEnabled)
         _ = try await call("/size", f.case_id, ["value": "large"])
     }
     func testAnswerAndGeneralEnglish() async throws { try await basic("testAnswerAndGeneralEnglish", language: "en") }
