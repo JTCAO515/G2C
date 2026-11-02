@@ -17,6 +17,8 @@ import CJMessageKeys
         storage = try MemoryEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
             namespace: namespace, keyID: keyID, domain: "CJMemoryHistoryPendingV1", key: key)
     }
+    /// Retire and erase this journal with its exact known sidecars; not a server receipt.
+    public func clearLocalFiles() throws { try storage.clearLocalFiles() }
     func validate(_ binding: MemoryBinding) throws { try storage.validate(binding) }
     func append(_ original: MemoryHistoryPending, validate: () throws -> Void) throws { try storage.append(original, validateBinding: validate) }
     func prove(_ original: MemoryHistoryPending) throws -> Durability { try storage.proveOriginal(original) }
