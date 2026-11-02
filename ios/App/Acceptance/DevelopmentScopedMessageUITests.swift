@@ -17,6 +17,7 @@ import Foundation
         let scoped_results:Bool?
         let largest_recovery:Bool?
         let map_points:[MapPoint]?
+        let map_loading_failure:Bool?
     }
     private struct MapPoint:Decodable {
         let id,provider_id,name_zh,state,snapshot_sha256:String
@@ -134,6 +135,7 @@ import Foundation
             for key in ["G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
         }
         if f.scoped_results == true { app.launchEnvironment["G2C_DEV_MESSAGE_PROFILE"]="trip-edit-result-v1" }
+        if f.map_loading_failure == true { app.launchEnvironment["G2C_ACCEPTANCE_MAP_LOADING"]="synthetic-delegate-failure" }
         if let timezone { app.launchEnvironment["TZ"]=timezone }
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
@@ -170,6 +172,7 @@ import Foundation
     func testFormalPlaceMapEnglish() async throws { try await formalPlaceMap("testFormalPlaceMapEnglish",large:false) }
     func testFormalPlaceMapChineseLargest() async throws { try await formalPlaceMap("testFormalPlaceMapChineseLargest",large:true) }
     func testFormalPlaceMapMissing() async throws { try await formalPlaceMap("testFormalPlaceMapMissing",large:false) }
+    func testFormalPlaceMapUnavailable() async throws { try await formalPlaceMap("testFormalPlaceMapUnavailable",large:false) }
     private func formalPlaceMap(_ name:String,large:Bool) async throws {
         let f=try await prepare(name);defer { app?.terminate() };mapViewport=true
         let trip=try XCTUnwrap(f.formal_trips.first),points=try XCTUnwrap(f.map_points)
@@ -199,6 +202,7 @@ import Foundation
                     XCTAssertEqual(Double(actual[0]),Double(coordinate.longitude));XCTAssertEqual(Double(actual[1]),Double(coordinate.latitude))
                 }
             }
+            if f.map_loading_failure == true { text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用");for point in points { text("trip.map.name."+point.id,contains:point.name_zh);text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN") } }
             _ = try await call("/map-source-proof",caseID:name)
             capture(name+"-"+language);try audit(name+"-"+language)
         }

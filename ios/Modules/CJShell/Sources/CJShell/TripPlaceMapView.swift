@@ -81,6 +81,15 @@ private struct RecordedPlaceMap: UIViewRepresentable {
         map.userTrackingMode = .none
         map.pointOfInterestFilter = .excludingAll
         map.delegate = context.coordinator
+        #if DEBUG && targetEnvironment(simulator)
+        // Acceptance-only availability fault. It never changes the Trip data,
+        // annotations or production/Release behavior, and is not a network claim.
+        if ProcessInfo.processInfo.environment["G2C_ACCEPTANCE_MAP_LOADING"] == "synthetic-delegate-failure" {
+            Task { @MainActor in
+                context.coordinator.mapViewDidFailLoadingMap(map,withError:NSError(domain:"G2CAcceptanceMap",code:1))
+            }
+        }
+        #endif
         return map
     }
     func updateUIView(_ map: MKMapView, context: Context) {
