@@ -100,6 +100,7 @@ private final class RecordedMapCanvas: UIView {
     private let zoomOut = UIButton(type:.system)
     override init(frame: CGRect) {
         super.init(frame:frame)
+        clipsToBounds = true
         imageView.isAccessibilityElement = false
         imageView.contentMode = .scaleToFill
         addSubview(imageView)
@@ -108,7 +109,9 @@ private final class RecordedMapCanvas: UIView {
             button.tintColor = .label;button.backgroundColor = .systemBackground;button.layer.cornerRadius=8
             button.addAction(UIAction { [weak self] _ in
                 guard let self,!self.retired else { return }
-                self.zoomFactor *= factor;self.load()
+                let next=self.zoomFactor*factor
+                guard (0.25...8).contains(next) else { return }
+                self.zoomFactor=next;self.load()
             },for:.touchUpInside)
             addSubview(button)
         }
@@ -136,6 +139,7 @@ private final class RecordedMapCanvas: UIView {
         imageView.image=nil;markers.forEach { $0.removeFromSuperview() };markers=[];annotations=[];failed=nil
     }
     private func load() {
+        zoomIn.isEnabled=zoomFactor>0.25;zoomOut.isEnabled=zoomFactor<8
         operation?.cancel();markers.forEach { $0.removeFromSuperview() };markers=[];imageView.image=nil
         guard let first=annotations.first else { return }
         var rect=MKMapRect.null
@@ -169,6 +173,7 @@ private final class RecordedMapCanvas: UIView {
                 button.setImage(UIImage(systemName:"mappin.circle.fill"),for:.normal)
                 button.tintColor = .label;button.backgroundColor = .systemBackground;button.layer.cornerRadius=22
                 let point=snapshot.point(for:annotation.coordinate)
+                guard self.bounds.contains(point) else { continue }
                 button.frame=CGRect(x:point.x-22,y:point.y-22,width:44,height:44)
                 button.accessibilityIdentifier="trip.map.marker."+annotation.place.id
                 button.accessibilityLabel=annotation.place.nameZH
