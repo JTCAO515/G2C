@@ -14,6 +14,7 @@ auth_dir=...,run_context=...,confirmation_signer=...)`.
 | POST /v2/trip-needs-edits | canonical octet-stream TRIP-needs-edit.2 -> preparation |
 | GET /v2/trip-needs-edits?request_id=... | original preparation or null |
 | POST /v2/trip-needs-saves | canonical octet-stream TRIP-needs-save.2 -> receipt |
+| GET /v2/trip-needs-discovery?message_id=...&run_id=... | original source-bound candidate, either structured format |
 
 The edit envelope retains exactly version, needs_reference={id,expected_version},
 edit. For actual structured.1 the nested edit is TRIP-manual-edit.1; for actual
@@ -21,6 +22,12 @@ structured.2 it is TRIP-manual-edit.2. Cross-format requests refuse rather than
 convert/pad times. All original selection/version/hash/protection rules remain.
 Save retains exactly version, action_id, proposal_id, candidate_hash. IDs and
 bytes are original and immutable; concurrent/version/source changes do not rebase.
+
+The new discovery response is TRIP-needs-discovery.2 with the original
+TRIP-needs-discovery.1 fields and guards; it explicitly supports structured.1/2.
+Old discovery.1 keeps its structured.2 gate. This does not reclassify source
+snapshots as fresh: source_profile still denotes original NEEDS creation/current
+Trip context, and historical PLACE snapshots retain their original query times.
 
 Response envelope is TRIP-needs-result.2, request_id and preparation/receipt.
 Preparation is proposal_id/trip_id/expected_version/candidate_hash/status/content/

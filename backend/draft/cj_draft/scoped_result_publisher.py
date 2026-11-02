@@ -35,7 +35,7 @@ class ScopedResultPublisher(ScopedPublisher):
         else:from cj_feasibility.trip_time_v2 import evaluate
         if evaluate(candidate.content).status=='CONFLICT':raise Conflict('explicit Trip time conflict')
         required=json.loads(explanation.raw)['required_selection']['item_ids']
-        _,report,verification=check_constraints(candidate.content,state.needs,json.loads(state.previous),required,self.limits)
+        _,report,verification=self.constraint_check(candidate.content,state.needs,json.loads(state.previous),required,self.limits)
         return explanation,report_bytes(report,verification)
 
     def store_result(self,publication,prepared,reply,explanation,report,kind):

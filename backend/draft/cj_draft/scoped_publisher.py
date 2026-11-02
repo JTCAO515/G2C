@@ -110,8 +110,11 @@ class ScopedPublisher:
     def validate_reply(self,state,reply):
         result=preview(state.scope,reply)
         if result.candidate is None:raise DraftRejected(result.reason_zh+' / '+result.reason_en)
-        candidate,report,verification=check_constraints(result.candidate.content,state.needs,json.loads(state.previous),state.scope.selected_ids,self.limits)
+        candidate,report,verification=self.constraint_check(result.candidate.content,state.needs,json.loads(state.previous),state.scope.selected_ids,self.limits)
         return result.candidate,candidate,report,verification
+
+    def constraint_check(self,content,source,previous,selected,limits):
+        return check_constraints(content,source,previous,selected,limits)
 
     def publish_in_transaction(self,publication,prepared,reply):
         state=prepared.state;publication.check(state.binding)

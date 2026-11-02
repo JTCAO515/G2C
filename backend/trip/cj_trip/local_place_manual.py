@@ -14,6 +14,7 @@ from .confirmation import ConfirmationSigner
 from .current_needs_source import CurrentNeedsSource
 from .manual_needs_v2 import NeedsEditV2,NeedsSaveV2,NeedsEditsV2
 from .domain import Conflict,Denied,identifier
+from .scoped_discovery import parse_discovery_query
 from cj_agent.draft import trip_scope_for
 
 
@@ -29,11 +30,23 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
     class PlaceManualBoundary(Boundary):
         def _bind(self,token):
             repository,principal,guard=super()._bind(token)
+            from cj_auth.interfaces import AdmissionStatus
+            from cj_message.travel_reference import MessageContextAuthority
+            from cj_draft.needs_local import publisher
+            from .needs_action_store import NeedsActions
+            owner=scope_for(principal.issuer,principal.subject)
+            def admit():
+                decision=checker.check(token)
+                if decision.status is not AdmissionStatus.ALLOWED or decision.principal!=principal:raise Denied('source admission changed')
+                return decision.principal
+            authority=MessageContextAuthority(database.message_repository(owner),admit)
+            actions=NeedsActions(database,owner,publisher(database,checker,authority,lambda:token,owner).source)
+            repository.needs_actions=actions
             service=NeedsEditsV2(CurrentNeedsSource(database,checker,token,protected_reader(database,checker)))
             repository.needs_edits=service
             def check(stage):
                 guard(stage)
-                if repository.needs_edits is not service:raise Denied('manual source binding changed')
+                if repository.needs_edits is not service or repository.needs_actions is not actions:raise Denied('manual source binding changed')
             return repository,principal,check
     boundary=PlaceManualBoundary(checker,resolve,confirmation_signer,structured=True);app=create_app()
     async def invoke(request,kind,value):
@@ -41,6 +54,15 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
         def operation():
             def project(ctx):
+                if kind=='discovery':
+                    def project_discovery(value):
+                        if value['proposal'] is not None:
+                            detail=value['proposal'];p=detail.proposal
+                            value=dict(value,proposal=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content)))
+                        raw=json.dumps(dict(version='TRIP-needs-discovery.2',request_id=request.state.request_id,discovery=value),ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+                        if len(raw)>max_response_bytes:raise Denied('bounded private response required')
+                        return raw
+                    return ctx.discover_place_needs(value,project_discovery)
                 result=dict(version='TRIP-needs-result.2',request_id=request.state.request_id)
                 if kind=='prepare':prepared=ctx.prepare_needs(NeedsEditV2.parse(value))
                 elif kind=='query':prepared=ctx.needs_preparation(value)
@@ -71,6 +93,11 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
             identifier(pairs[0][1])
         except ValueError:return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         return await invoke(request,'query',pairs[0][1])
+    @app.get('/v2/trip-needs-discovery')
+    async def discovery(request:Request):
+        try:query=parse_discovery_query(request.scope['query_string'])
+        except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
+        return await invoke(request,'discovery',query)
     async def body(request,kind):
         media=request.headers.getlist('content-type')
         if request.query_params or len(media)!=1 or media[0].split(';')[0].strip().lower()!='application/octet-stream' or request.headers.get('content-encoding','identity').lower()!='identity':

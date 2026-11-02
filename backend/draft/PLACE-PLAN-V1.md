@@ -79,6 +79,18 @@ historical bytes remain. Source-bound structured.1 editing uses the appended
 TRIP-needs-edit/save.2 host in backend/trip/NEEDS-EDIT-V2.md; old .1 keeps its
 structured.2-only contract. No source snapshot upload or direct accept shortcut.
 
+The same host supplies TRIP-needs-discovery.2 for original receipt-driven
+candidate discovery in both formats; old discovery.1 remains structured.2-only.
+
+For later scoped edits, use the explicit PLACE-SCOPED@1 composition
+`cj_draft.place_scoped.local_configuration` (same arguments as the original C
+factory, optional results=True for publisher2). It retains already accepted,
+unchanged mutable declarations only when the accepted basis snapshot exactly
+equals current NEEDS. The actual Trip fixed/unselected byte guard is unchanged.
+A newer NEEDS snapshot disables that extra retention; current source/Memory/RUN
+leases remain mandatory. Existing default scoped configurations keep their old
+checking policy. No new version/constraint engine or scope permission is added.
+
 L0 tests are data/transform evidence only. Signed API/restricted PG/original
 run_once/Meter/Fake PLACE -> original confirmation -> v5 reads, manual/scoped
 retention, source/freshness/owner/UNKNOWN negatives are required before reporting
