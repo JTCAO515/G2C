@@ -15,7 +15,7 @@ from cj_message.source import SourceQuery
 from cj_run.background_store import JobRequest
 from cj_run.background import BackgroundJobs,JobOutcomeUnknown
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
-import dev_auth,local_run_context,run_worker
+import dev_auth,local_run_context,run_worker,migrate
 
 
 class ExtractFake(FakeProvider):
@@ -203,6 +203,59 @@ print(json.dumps({key:value[key] for key in ('run_id','meter_attempt_id','operat
     child_value=json.loads(actual)
     assert child_value['run_id']==unknown['run_id'] and child_value['meter_attempt_id']==unknown['meter_attempt_id']
     print('PASS PROTOTYPE fresh-process original metadata without C source or current quota; same original run/attempt/hash, no dispatch capability')
+    # The registered schema itself is a trust boundary, independent of Python.
+    owner=scope_for(ISSUER,'bg-a');other=scope_for(ISSUER,'bg-limit')
+    config=json.loads(conninfo.read_text())
+    columns='scope,job_id,attempt_id,run_id,ledger_scope,prepared_input_sha256,config_bytes,command_bytes,input_bytes'
+    with psycopg.connect(**config,autocommit=True) as conn:
+        sample=conn.execute('SELECT '+columns+' FROM cj_run_background_job WHERE scope=%s LIMIT 1',(owner,)).fetchone()
+        before=conn.execute('SELECT * FROM cj_run_background_job ORDER BY scope,job_id,attempt_id').fetchall()
+        try:migrate.down(conn,migrate.load(),39)
+        except psycopg.errors.RaiseException as error:assert 'original background job evidence retained' in str(error)
+        else:raise AssertionError('down discarded original background jobs')
+        assert conn.execute('SELECT * FROM cj_run_background_job ORDER BY scope,job_id,attempt_id').fetchall()==before
+    with database.connect(other) as conn:
+        assert conn.execute('SELECT job_id FROM cj_run_background_job WHERE scope=%s',(owner,)).fetchall()==[]
+        assert conn.execute("SELECT has_table_privilege(current_user,'cj_run_background_job','DELETE'),has_table_privilege(current_user,'cj_run_background_job','TRUNCATE')").fetchone()==(False,False)
+    for sql,args in (
+        ('INSERT INTO cj_run_background_job('+columns+') VALUES('+','.join(['%s']*9)+')',sample),
+        ('DELETE FROM cj_run_background_job WHERE scope=%s',(owner,)),
+        ('TRUNCATE cj_run_background_job',None),
+        ('UPDATE cj_run_background_job SET input_bytes=%s WHERE scope=%s',(b'changed',owner))):
+        try:
+            with database.connect(other) as conn:conn.execute(sql,args)
+        except psycopg.errors.InsufficientPrivilege:pass
+        else:raise AssertionError('runtime crossed original owner/column/destructive boundary')
+    try:
+        with database.connect(owner) as conn:
+            conn.execute("UPDATE cj_run_background_job SET state='queued' WHERE scope=%s AND job_id='job'",(owner,))
+    except psycopg.errors.RaiseException as error:assert 'cannot redispatch' in str(error)
+    else:raise AssertionError('completed original returned to dispatch queue')
+    with psycopg.connect(**dict(config,user='cj_local_cleanup')) as conn:
+        conn.execute("SELECT set_config('cj.cleanup_scope',%s,true)",(owner,))
+        assert conn.execute('SELECT job_id FROM cj_run_background_job').fetchall()==[]
+        assert conn.execute('DELETE FROM cj_run_background_job WHERE scope=%s RETURNING job_id',(owner,)).fetchall()==[]
+    # A real original account operation physically erases only its completed /
+    # budget-denied RUN domain. Another owner's unknown financial evidence stays.
+    from cj_api.local_cleanup import Configuration
+    from cj_cleanup.core import encode,digest
+    registry=root/'cleanup-registry.json'
+    registry.write_bytes(encode(dict(version='background-run-component',stores=[dict(id='checkpoints',objects=[dict(id='run',cleanup_protocol='CLEANUP@1.1')])])))
+    cleanup=Configuration({'bg-cleanup':b'explicit-background-cleanup-test-00'},'bg-cleanup',3600,('checkpoints/run',),registry)
+    cleanup_app=create_local_app(conninfo_path=conninfo,auth_dir=auth,run_context=limit_context,cleanup_configuration=cleanup)
+    with TestClient(cleanup_app) as client:
+        def cleanup_post(url,value):
+            response=client.post(url,content=encode(value),headers=limit_headers)
+            assert response.status_code==200,('background cleanup HTTP',response.status_code)
+            return response.json()
+        device=cleanup_post('/v1/cleanup-devices',dict(version='CLEANUP-DEVICE@1',action_id='register',device_id='limit-device',state_ref=digest(b'limit-state')))
+        operation=cleanup_post('/v1/account-cleanup-operations',dict(version='CLEANUP-API@1',action_id='delete-limit',binding_id=device['binding_id']))
+        progress=cleanup_post('/v1/account-cleanup-operations/'+operation['operation_id']+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=operation['registry_digest'],confirmation='DELETE_ACCOUNT'))
+        assert progress['business_access']=='revoked' and progress['online_status']=='complete'
+    with psycopg.connect(**config) as conn:
+        assert conn.execute('SELECT count(*) FROM cj_run_background_job WHERE scope=%s',(other,)).fetchone()==(0,)
+        assert conn.execute('SELECT count(*) FROM cj_run_background_job WHERE scope=%s',(owner,)).fetchone()==(3,)
+    print('PASS registered background schema: nonempty down refusal, cross-owner read/write, immutable original/no redispatch, runtime no DELETE/TRUNCATE, dedicated cleanup no-intent denial and actual original account RUN erasure with other owner unchanged')
     print('PASS PROTOTYPE actual signed source/C policy + original run_once/one new Fake model/one same-Meter attempt/C typed publication; no fake MESSAGE or terminal RUN reuse; filtered-v2 candidate tested; registered-migration/main acceptance UNRUN')
 
 
