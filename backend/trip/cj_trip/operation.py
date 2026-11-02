@@ -91,6 +91,8 @@ class OperationContext:
     def manual_preparation(self, request_id): return self.__call('manual_preparation', request_id)
     def query_action(self, action_id): return self.__call('query_action', action_id)
     def detail(self, trip_id): return self.__call('detail', trip_id)
+    def read_decision_source(self,query,project,*,max_source_bytes,max_result_bytes):
+        return self.__call('read_decision_source',query,project,max_source_bytes,max_result_bytes)
     def list_trips(self, after='', limit=20): return self.__call('list_trips', after, limit)
     def proposal_detail(self, proposal_id): return self.__call('proposal_detail', proposal_id)
 

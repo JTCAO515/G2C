@@ -4,7 +4,6 @@ from hashlib import sha256
 
 from cj_message.auth_boundary import AccessBlocked,IdentityChanged
 from cj_message.domain import CommitUnknown as MessageCommitUnknown
-from cj_message.source import SourceQuery
 from cj_message.travel_reference import MessageContextAuthority,LeaseUnavailable
 from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
 from .candidate import CandidateAction
@@ -44,16 +43,16 @@ class CollectionService(Service):
             with repository.transaction() as memory:
                 tx=PublicationTransaction(memory);tx.require_live()
                 row=tx.job(job_id,attempt_id)
-            source,mode=row[3],row[5];c=source.cursor
-            query=SourceQuery(c.conversation_id,c.generation,c.epoch,c.after,c.through,
-                              source.source_version,source.withdrawal_epoch,mode)
+            mode=row[5]
             policy=PublicationSourcePolicy(repository,principal,guard)
             def project(snapshot):
                 current=SourceV2(snapshot.cursor,snapshot.source_version,snapshot.withdrawal_epoch)
                 if encode_v2(current,snapshot.messages,mode)!=row[2]:
                     raise Conflict('original collection source differs')
                 return operation(policy.transaction,snapshot,principal)
-            return context.with_enabled_source(query,policy,project)
+            from .ending import with_original_source
+            return with_original_source(context,row,policy,project,
+                probe_policy=SourcePolicy(repository,principal,guard))
         try:return self.boundary.with_history_context(token,apply)
         except (MemoryCommitUnknown,MessageCommitUnknown) as error:
             raise OperationWithheld(job_id,attempt_id) from error
@@ -93,6 +92,66 @@ class CollectionService(Service):
             extraction,_,_=self.resolve_collection(principal)
             return encoded(tx,snapshot,extraction,row[5],max_payload_bytes=max_payload_bytes)
         return self._with_job(token,job_id,attempt_id,project)
+
+    def _ending_binding(self,context,token,job_id,attempt_id):
+        from .ending import EndingCommand,checked_end
+        repository,principal,guard=self._binding(context,token)
+        with repository.transaction() as memory:
+            tx=PublicationTransaction(memory);tx.require_live()
+            row=tx.job(job_id,attempt_id)
+        command=EndingCommand.parse(row[1])
+        actual=checked_end(context,command.segment,SourcePolicy(repository,principal,guard))
+        extraction,memory_policy,_=self.resolve_collection(principal)
+        return repository,principal,guard,command,actual,extraction,memory_policy
+
+    def discover_candidate_jobs(self,token,conversation_id,after_job_id,*,request_id=None):
+        """Actual first-producer refs for a chat; no fixture ID or source renewal."""
+        from .codec import pg_identity
+        import json
+        pg_identity(conversation_id,256)
+        if after_job_id:job_identity(after_job_id)
+        def query(context):
+            repository,_,guard=self._binding(context,token)
+            if context.send_status(conversation_id).head is None:
+                raise Unavailable('candidate conversation unavailable')
+            with repository.transaction() as memory:
+                tx=PublicationTransaction(memory);tx.require_live()
+                tx.cur.execute('''SELECT DISTINCT o.job_id,o.attempt_id FROM cj_memory_history_origin o
+                    JOIN cj_memory_item i ON (i.scope,i.source_id,i.item_id)=(o.scope,o.source_id,o.item_id)
+                    WHERE o.scope=%s AND i.status='candidate' AND o.job_id>%s
+                      AND o.origin_refs @> %s::jsonb ORDER BY o.job_id LIMIT 51''',
+                    (tx.scope,after_job_id,json.dumps([dict(conversation_id=conversation_id)])))
+                rows=tx.cur.fetchall()
+                value=dict(conversation_id=conversation_id,
+                    jobs=[dict(job_id=job,attempt_id=attempt) for job,attempt in rows[:50]],
+                    next_after_job_id=rows[49][0] if len(rows)>50 else None)
+                raw=encode(value)
+                if len(raw)>524288:raise Unavailable('candidate discovery exceeds bound')
+                guard('candidate_discovery_return')
+            return raw
+        return self._invoke(token,query,request_id,'MEMORY-CANDIDATE-JOBS@1')
+
+    def ending_processing_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,*,max_payload_bytes):
+        from .ending import EndingProcessingPolicy
+        repository,principal,guard,command,actual,extraction,_=self._ending_binding(context,token,job_id,attempt_id)
+        return EndingProcessingPolicy(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
+            extraction,max_payload_bytes=max_payload_bytes,ending_command=command,actual_end=actual)
+
+    def ending_publication_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,
+                                  model_output,model_output_sha256,*,max_payload_bytes):
+        from .ending import EndingPublicationPolicy
+        repository,principal,guard,command,actual,extraction,memory_policy=self._ending_binding(context,token,job_id,attempt_id)
+        return EndingPublicationPolicy(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
+            extraction,max_payload_bytes=max_payload_bytes,ending_command=command,actual_end=actual,
+            model_output=model_output,model_output_sha256=model_output_sha256,memory_policy=memory_policy)
+
+    def ending_publication_policy_v3(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,
+                                     model_output,model_output_sha256,*,max_payload_bytes,before_commit):
+        from .ending import EndingPublicationPolicyV3
+        repository,principal,guard,command,actual,extraction,memory_policy=self._ending_binding(context,token,job_id,attempt_id)
+        return EndingPublicationPolicyV3(repository,principal,guard,job_id,attempt_id,original_input,prepared_input_sha256,
+            extraction,max_payload_bytes=max_payload_bytes,ending_command=command,actual_end=actual,
+            model_output=model_output,model_output_sha256=model_output_sha256,memory_policy=memory_policy,before_commit=before_commit)
 
     def processing_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,*,max_payload_bytes):
         """Compose inside B's outer protected context; never opens a Boundary."""

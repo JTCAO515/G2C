@@ -22,6 +22,11 @@ class Service:
     def __init__(self, boundary, resolve_repository):
         self.boundary, self.resolve_repository = boundary, resolve_repository
 
+    def source_policy(self,context,token):
+        """One fresh public composition binding, with no new Boundary/read grant."""
+        repository,principal,guard=self._binding(context,token)
+        return SourcePolicy(repository,principal,guard)
+
     def _invoke(self, token, operation, request_id, version):
         if request_id is None:
             return self.boundary.with_history_context(token,operation)
@@ -117,6 +122,14 @@ class Service:
 
     def enqueue(self, token, original, *, request_id=None):
         command = EnqueueCommand.parse(original)
+        return self._enqueue_command(token,command,request_id=request_id)
+
+    def enqueue_ending(self, token, original, *, request_id=None):
+        from .ending import EndingCommand
+        return self._enqueue_command(token,EndingCommand.parse(original),request_id=request_id,ending=True)
+
+    def _enqueue_command(self, token, command, *, request_id, ending=False):
+        original=command.raw
         query,job_id,attempt_id = command.query,command.job_id,command.attempt_id
         policy = None
 
@@ -130,6 +143,10 @@ class Service:
                 return policy.transaction.enqueue(source,snapshot.messages,query.mode,
                     job_id,attempt_id,original).encode()
 
+            if ending:
+                from .ending_source import with_ending_source
+                return with_ending_source(context,command.segment,policy,persist,
+                    probe_policy=SourcePolicy(repository,principal,guard))
             return context.with_enabled_source(query,policy,persist)
 
         try:
@@ -173,11 +190,7 @@ class Service:
                     guard('history_metadata_precommit')
                     possible = True
                     return result
-            source, mode = row[3], row[5]
-            from cj_message.source import SourceQuery
-            c = source.cursor
-            query = SourceQuery(c.conversation_id,c.generation,c.epoch,c.after,c.through,
-                                source.source_version,source.withdrawal_epoch,mode)
+            mode = row[5]
             policy = SourcePolicy(repository,principal,guard)
 
             def persist(snapshot):
@@ -186,7 +199,9 @@ class Service:
                     raise Conflict('original history source differs')
                 return policy.transaction.transition(job_id,attempt_id,target,candidate=candidate).encode()
 
-            return context.with_enabled_source(query,policy,persist)
+            from .ending import with_original_source
+            return with_original_source(context,row,policy,persist,
+                probe_policy=SourcePolicy(repository,principal,guard))
 
         try:
             return self.boundary.with_history_context(token,apply)

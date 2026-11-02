@@ -69,6 +69,23 @@ opaque ref；V2 输出回映原证据，同源标识不变。全部原文被屏�
 claim 回调，不伪造模型输出。V1 留作原独立兼容路径，不作失败后的 fallback。
 单条物理删除后的 noncontent tombstone、原聊天防复活与全部清理仍由 #26 交付。
 
+## M3 自动增量与长会话结束段（#410/#411）
+
+显式宿主以 [PRODUCER-V2](../../contracts/memory-jobs/PRODUCER-V2.md) 的
+IncrementalProducer / ProducerHost 接原 run_once 和 B RUN-BACKGROUND@2。
+默认关闭、实际来源/游标、原 pending bytes 和 UNKNOWN 零自动重派沿用同一队列。
+新 writer 安装 MemoryCollectionAdapterV2，以 C factory3 在实际提交前检查原预算。
+
+[ENDING-JOBS-V1](../../contracts/memory-jobs/ENDING-JOBS-V1.md) 用真实不可变
+完整结束头核验后读取 1–100 条段；长会话可按 100+1 持久处理，原 end_ref 不变，
+增量与结束各自游标，同源仍复用同一 canonical 操作。没有新表/派生索引或清理角色。
+[CANDIDATE-DISCOVERY-V1](../../contracts/memory-jobs/CANDIDATE-DISCOVERY-V1.md)
+让 App 从受保护聊天发现真实首次 producer 的 job/attempt，再走现有候选读取/确认。
+
+实际签名 API、受限 PG、自动增量/结束段、原 worker/唯一 Meter/Fake、候选确认和
+下一轮/新中文会话的真实模型输入分别有组合测试；真实模型质量仍由 #32 承接。
+完整结束调度、正式 Trip 决定 intake 与 #26 物理删除/防复活不因此视为全部完成。
+
 ## 保留的 SQLite 隔离候选
 
 本模块仅处理已提交聊天来源的增量整理与会话结束补充摘要的本地队列状态。
