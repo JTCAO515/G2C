@@ -87,6 +87,15 @@ text, persists nothing and has no execution authority. Its origin_producers are
 not all overlapping queued jobs. The bounded prototype is not the future immutable
 B descriptor or a scalable physical-cleanup API, and is not registered as provided.
 
+The next read-only `association.prepare` prototype now joins every exact original
+message coordinate/hash to C job batches, including old-source completed/UNKNOWN,
+pending and inflight work. It also captures canonical source-command operation
+identities and verifies actual save-ledger originals; confirmation/edit receipts
+live in their own action ledgers and are not invented as generic save receipts.
+Actual signed PG checks preserve all four job states across consent versions and
+refuse stale selection, foreign owner or truncated job bounds. This still writes
+no intent/manifest/barrier and cannot serve B's future original cleanup reader.
+
 Actual API/version freeze and A notice, immutable manifest/reader, non-resurrection
 fences, physical C hooks, B memory-purpose payload integration, actual in-flight
 publication rejection, retained-chat ingress, rows/model-context audit and full
