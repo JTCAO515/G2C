@@ -73,6 +73,38 @@ def exercise(root,path):
         assert len(outcome)==1 and outcome[0].status=='unknown' and stale_model.calls==0
         assert jobs.query_original(token,'stale-job','stale-job-attempt')['meter_attempt_id']==stale['meter_attempt_id']
         assert run_worker.run_once(database,stale_model,auth,background_jobs=LocalBackgroundHost(jobs,auth))==[] and stale_model.calls==0
+        # Use the public C management entry under the same signed account
+        # boundary. A new source phase after pausing its only origin has no
+        # eligible model data; neither a B row nor Meter claim may be invented.
+        from cj_memory_management.postgres import Repository as ManagementRepository
+        from cj_memory_management.service import Service as ManagementService
+        from cj_memory_jobs.model_v2 import NoEligibleSource
+        typed=host.boundary.with_history_context(token,lambda ctx:c.query_publication_v2_in_context(ctx,token,'current-job','current-job-attempt'))
+        item=json.loads(typed)['receipts'][0]
+        def pause(context):
+            repository=ManagementRepository(lambda:host.database.connect(context.scope),context.scope,typed_context=True,
+                transaction_binder=lambda connection,cursor:connection.bind_scope(cursor))
+            return ManagementService(repository).apply(json.dumps(dict(version='MEMORY-management.2',action_id='pause-origin',operation='pause',
+                item_id=item['item_id'],expected_version=item['version'],expected_source_version=1)).encode())
+        host.boundary.with_history_context(token,pause)
+        action=dict(version='MEMORY-HISTORY@1',action_id='disable-no-eligible',operation='disable',conversation_id='current',
+            expected_generation=head['generation'],expected_epoch=0,expected_source_version=1)
+        disabled=json.loads(c.apply_consent(token,json.dumps(action).encode()))
+        enabled=json.loads(c.apply_consent(token,json.dumps(action|dict(action_id='enable-no-eligible',operation='enable',expected_source_version=disabled['source_version'])).encode()))
+        empty_source=source|dict(source_version=enabled['source_version'],withdrawal_epoch=enabled['withdrawal_epoch'])
+        c.enqueue(token,json.dumps(dict(version='MEMORY-JOBS@1',job_id='no-eligible',attempt_id='no-eligible-attempt',source=empty_source)).encode())
+        c.transition(token,'no-eligible','no-eligible-attempt','inflight')
+        refused=False
+        try:
+            empty_input=c.prepare_model_input_v2(token,'no-eligible','no-eligible-attempt',max_payload_bytes=262144)
+            jobs.prepare(token,JobRequest('no-eligible','no-eligible-attempt',SourceQuery(**empty_source),Selection(travel['id'],travel['version']+1),empty_input))
+        except NoEligibleSource:refused=True
+        assert refused
+        with psycopg.connect(**json.loads(path.read_text())) as conn:
+            assert conn.execute("SELECT count(*) FROM cj_run_background_job WHERE scope=%s AND job_id='no-eligible'",(owner,)).fetchone()==(0,)
+            ledger=conn.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=(SELECT ledger_scope FROM cj_run_background_job WHERE run_id=%s)',(original['run_id'],)).fetchone()[0]
+            assert len(ledger['attempts'])==3  # two real MESSAGE calls and one actual BG call only
+        print('PASS PROTOTYPE actual paused-origin NoEligibleSource before B prepare/reserve/claim, zero new B job/Meter attempt, no fabricated empty model result')
         print('PASS PROTOTYPE actual send.2/current Travel→joint source→one filtered Fake/Meter→canonical current Memory; stale Travel prevents even first model/claim and cannot redispatch; main acceptance UNRUN')
 
 

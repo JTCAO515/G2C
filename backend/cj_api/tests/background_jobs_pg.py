@@ -39,12 +39,12 @@ def exercise(root,conninfo):
     normal=create_local_app(conninfo_path=conninfo,auth_dir=auth,run_context=context)
     with TestClient(normal) as client:
         head=client.put('/v1/conversations',params={'conversation_id':'chat'},headers=headers).json()
-        for index,text in enumerate(('I do not eat spicy food','No nuts')):
+        for index,text in enumerate(('I do not eat spicy food','No nuts','No shellfish')):
             response=client.post('/v1/messages',content=json.dumps(dict(version='MESSAGE-send.1',conversation_id='chat',message_id='m'+str(index),
                 text=text,trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=index)).encode(),headers=headers)
             assert response.status_code==200
     original_model=FakeProvider();first=run_worker.run_once(database,original_model,auth)
-    assert original_model.calls==2 and len(first)==2 and all(item.status=='completed' for item in first)
+    assert original_model.calls==3 and len(first)==3 and all(item.status=='completed' for item in first)
     slots=frozenset({'diet.spicy'})
     extraction=CollectionPolicy(frozenset({'self'}),slots,10,4096,lambda entry:entry.slot in slots,
         lambda entry,rows:any(entry.text==row.text for row in rows))
@@ -75,13 +75,13 @@ def exercise(root,conninfo):
         assert jobs.prepare(token,request)['run_id']==original['run_id']
     with psycopg.connect(**json.loads(conninfo.read_text())) as conn:
         owner=scope_for(ISSUER,'bg-a')
-        assert conn.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(owner,)).fetchone()==(2,)
-        assert conn.execute('SELECT count(*) FROM cj_run_record WHERE scope=%s',(owner,)).fetchone()==(2,)
+        assert conn.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(owner,)).fetchone()==(3,)
+        assert conn.execute('SELECT count(*) FROM cj_run_record WHERE scope=%s',(owner,)).fetchone()==(3,)
         assert conn.execute('SELECT count(*) FROM cj_run_background_job WHERE scope=%s',(owner,)).fetchone()==(1,)
         assert conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(owner,)).fetchone()==(1,)
         ledgers=conn.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchall()
         attempts=[a for row in ledgers for a in row[0]['attempts'].values()]
-        assert len(attempts)==3 and all(a['state']=='settled' for a in attempts)
+        assert len(attempts)==4 and all(a['state']=='settled' for a in attempts)
     # A physical failed invocation leaves the one original Meter claim UNKNOWN;
     # neither another worker pass nor withdrawal/cancellation can redispatch it.
     class UnknownFake(FakeProvider):
@@ -108,6 +108,53 @@ def exercise(root,conninfo):
         assert attempt['state']=='unknown' and attempt['receipt'] is None and attempt['cancelled'] is True
     assert failing.calls==1
     print('PASS PROTOTYPE original unknown claim retained, zero redispatch, source-independent status and cancel after consent withdrawal without financial release')
+    # C commits an actual typed result, then its outer MESSAGE ACK is lost.
+    # Reconciliation after withdrawal confirms that receipt without republishing.
+    from unittest.mock import patch
+    collection.apply_consent(token,json.dumps(dict(version='MEMORY-HISTORY@1',action_id='re-enable',operation='enable',conversation_id='chat',
+        expected_generation=head['generation'],expected_epoch=0,expected_source_version=2)).encode())
+    ack_source=source|dict(after=0,through=3,source_version=3,withdrawal_epoch=1)
+    collection.enqueue(token,json.dumps(dict(version='MEMORY-JOBS@1',job_id='ack-job',attempt_id='ack-attempt',source=ack_source)).encode())
+    collection.transition(token,'ack-job','ack-attempt','inflight')
+    ack_input=collection.prepare_model_input_v2(token,'ack-job','ack-attempt',max_payload_bytes=262144)
+    armed={'publication':False,'remaining':1}
+    class AckAdapter(FilteredCollectionAdapter):
+        def __init__(self,c):
+            super().__init__(c);self.actual=self.publication_policy;self.publication_policy=self.policy
+        def policy(self,*args,**kwargs):
+            actual=self.actual(*args,**kwargs)
+            class Held:
+                def hold(self,*args,**kwargs):return actual.hold(*args,**kwargs)
+                def apply_original_result(self,*args,**kwargs):
+                    result=actual.apply_original_result(*args,**kwargs);armed['publication']=True
+                    return result
+            return Held()
+    class LostMessageAck:
+        def __init__(self,connection):self.connection=connection
+        def __getattr__(self,name):return getattr(self.connection,name)
+        def commit(self):
+            self.connection.commit()
+            if armed['publication'] and armed['remaining']:
+                armed['remaining']-=1
+                raise OSError('synthetic known C result / lost outer MESSAGE ACK')
+    ack_jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=AckAdapter(collection),max_payload_bytes=262144)
+    ack_original=ack_jobs.prepare(token,JobRequest('ack-job','ack-attempt',SourceQuery(**ack_source),None,ack_input))
+    original_resolve=host.boundary.resolve_repository
+    def lost_repository(principal):
+        repository=original_resolve(principal);connect=repository.connect
+        repository.connect=lambda:LostMessageAck(connect())
+        return repository
+    ack_model=ExtractFake()
+    with patch.object(host.boundary,'resolve_repository',lost_repository):
+        try:ack_jobs.process_one(token,'ack-job','ack-attempt',ack_model)
+        except JobOutcomeUnknown:pass
+        else:raise AssertionError('lost outer ACK was labelled success')
+    assert ack_model.calls==1 and ack_jobs.query_original(token,'ack-job','ack-attempt')['state']=='unknown'
+    collection.apply_consent(token,json.dumps(dict(version='MEMORY-HISTORY@1',action_id='withdraw-after-ack',operation='disable',conversation_id='chat',
+        expected_generation=head['generation'],expected_epoch=0,expected_source_version=3)).encode())
+    actual=ack_jobs.reconcile(token,'ack-job','ack-attempt')
+    assert actual['state']=='completed' and actual['meter_attempt_id']==ack_original['meter_attempt_id'] and ack_model.calls==1
+    print('PASS PROTOTYPE C actual typed publication committed/outer ACK lost; original receipt reconciliation after withdrawal confirms completion with zero provider/publication resend')
     # A separate real quota has exactly one call, consumed by the accepted
     # normal MESSAGE worker. The new job must be denied before any model call.
     limit_document=json.loads(path.read_text());limit_document['current']['meter']['budget']=1
