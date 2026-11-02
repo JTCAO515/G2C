@@ -116,6 +116,23 @@ class Transaction:
         if current != (query.generation,query.epoch,True,query.source_version,query.withdrawal_epoch):
             raise Unavailable('history source unavailable')
 
+    def current_unresolved(self):
+        """Original work still able to publish at this locked Memory basis.
+
+        Old source versions remain queryable history but cannot block another
+        explicitly enabled source once their grant has been withdrawn.
+        """
+        self.cur.execute('''SELECT j.job_id,j.attempt_id FROM cj_memory_history_job j
+            JOIN cj_memory_history_consent c ON c.scope=j.scope AND c.enabled
+             AND c.conversation_id=convert_from(j.batch,'UTF8')::jsonb#>>'{source,cursor,conversation_id}'
+             AND c.generation=convert_from(j.batch,'UTF8')::jsonb#>>'{source,cursor,generation}'
+             AND c.message_epoch=(convert_from(j.batch,'UTF8')::jsonb#>>'{source,cursor,epoch}')::bigint
+             AND c.source_version=(convert_from(j.batch,'UTF8')::jsonb#>>'{source,source_version}')::bigint
+             AND c.withdrawal_epoch=(convert_from(j.batch,'UTF8')::jsonb#>>'{source,withdrawal_epoch}')::bigint
+            WHERE j.scope=%s AND j.memory_epoch=%s AND j.state IN ('pending','inflight','unknown')
+            ORDER BY j.job_id''',(self.scope,self.epoch))
+        return tuple(self.job(jid,attempt) for jid,attempt in self.cur.fetchall())
+
     def _job(self, row):
         if row is None:
             return None

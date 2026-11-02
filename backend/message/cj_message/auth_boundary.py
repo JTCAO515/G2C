@@ -152,6 +152,14 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def source_status_v1(self,conversation_id):
+        """Owned current head + genuine stored end/open, under canonical M lock."""
+        from .source_status_v1 import read_status
+        self._check()
+        result=read_status(self._service,conversation_id)
+        self._check()
+        return result
+
     def with_enabled_source_and_travel(self,query,policy,selection,project):
         """MESSAGE-SOURCE@2. No nested public hold_current/repository escape."""
         from .source_v2 import with_source_and_travel
