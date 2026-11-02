@@ -50,7 +50,7 @@ struct TripPlaceMapView: View {
                     }
                 }
             }
-        }.accessibilityIdentifier("trip.map.sources")
+        }.accessibilityElement(children: .contain).accessibilityIdentifier("trip.map.sources")
     }
     private var projection: Result<[TripPlaceProjection], any Error> {
         Result { try TripPlaceProjection.read(from: document) }
