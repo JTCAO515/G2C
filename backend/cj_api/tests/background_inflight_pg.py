@@ -8,7 +8,7 @@ from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER
 from cj_api.local_cleanup import Configuration,Runtime
 from cj_api.local_run_context import load_run_context
 from cj_api.local_worker_context import checker_for
-from cj_api.local_background import LocalBackgroundHost
+from cj_api.local_background import LocalBackgroundHost,FilteredCollectionAdapter
 from cj_agent.provider import FakeProvider
 from cj_memory.manual import ManualPolicy
 from cj_memory_jobs.extraction import CollectionPolicy
@@ -47,7 +47,7 @@ def exercise(root,path):
             entered.set()
             if not release.wait(30):raise AssertionError('prototype provider gate timed out')
             yield raw[half:]
-    model=Blocking();jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=collection,max_payload_bytes=262144)
+    model=Blocking();jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=FilteredCollectionAdapter(collection),max_payload_bytes=262144)
     with TestClient(app) as client:
         def post(url,value,scheme='Bearer',credential=token):
             response=client.post(url,content=encode(value),headers={'Authorization':scheme+' '+credential,'Content-Type':'application/octet-stream'})
@@ -60,7 +60,7 @@ def exercise(root,path):
         source=dict(conversation_id='live',generation=head['generation'],epoch=0,after=0,through=1,source_version=1,withdrawal_epoch=1,mode='incremental')
         collection.enqueue(token,encode(dict(version='MEMORY-JOBS@1',job_id='live-job',attempt_id='original-attempt',source=source)))
         collection.transition(token,'live-job','original-attempt','inflight')
-        prepared=collection.prepare_model_input(token,'live-job','original-attempt',max_payload_bytes=262144)
+        prepared=collection.prepare_model_input_v2(token,'live-job','original-attempt',max_payload_bytes=262144)
         original=jobs.prepare(token,JobRequest('live-job','original-attempt',SourceQuery(**source),None,prepared))
         device=post('/v1/cleanup-devices',dict(version='CLEANUP-DEVICE@1',action_id='register',device_id='live-device',state_ref=digest(b'live-device')))
         operation=post('/v1/account-cleanup-operations',dict(version='CLEANUP-API@1',action_id='prepare',binding_id=device['binding_id']))

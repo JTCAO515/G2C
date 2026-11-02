@@ -27,6 +27,18 @@ class JobOutcome:
     proposal_id:None=None
 
 
+def read_original(database,boundary,token,jid,attempt):
+    """Fresh own-account metadata only; no C policy/current quota/model adapter."""
+    holder={}
+    def read(context):
+        store=JobStore(database.run_repository(context.scope));record=store.read(jid,attempt)
+        if record is None:raise Denied('original background job unavailable')
+        holder['value']=record.summary()
+        return b'original-background-metadata'
+    boundary.with_history_context(token,read)
+    return holder['value']
+
+
 class _SourceMeter:
     """Same actual Meter; each local mutation holds the current C source lease."""
     def __init__(self,meter,authorized):
@@ -45,6 +57,7 @@ class BackgroundJobs:
         if type(max_payload_bytes) is not int or not 1<=max_payload_bytes<=1048576:raise ValueError('explicit job payload bound required')
         self.database,self.boundary,self.collection=database,boundary,collection
         self.max_payload_bytes,self.clock=max_payload_bytes,clock
+        self.no_eligible_error=collection.no_eligible_error
 
     def _owned(self,token,operation):
         return self.boundary.with_history_context(token,operation)
@@ -98,8 +111,7 @@ class BackgroundJobs:
         return record.summary()
 
     def query_original(self,token,jid,attempt):
-        store,record=self._load(token,jid,attempt)
-        return record.summary()
+        return read_original(self.database,self.boundary,token,jid,attempt)
 
     def _require_stage(self,store,record,states):
         current=store.read(record.job_id,record.attempt_id)
@@ -117,7 +129,7 @@ class BackgroundJobs:
 
     def _publication(self,raw,record):
         value=json.loads(raw)
-        if (type(value) is not dict or value.get('version')!='MEMORY-PUBLICATION-result@1'
+        if (type(value) is not dict or value.get('version')!='MEMORY-PUBLICATION-result@2'
                 or (value.get('job_id'),value.get('attempt_id'),value.get('prepared_input_sha256'),value.get('model_output_sha256'))
                 !=(record.job_id,record.attempt_id,record.prepared_input_sha256,record.output_sha256)):
             raise Conflict('actual original typed C publication receipt required')
@@ -195,6 +207,13 @@ class BackgroundJobs:
                     receipt=self._publication(raw,record)
                     store.write_state(held['tx'],held['current'],'completed',receipt=receipt)
                 return store.read(jid,attempt).summary()
+            except self.no_eligible_error:
+                self._metadata(token,record,'cancelled')
+                result=store.transition(record,('queued','running','publishing','unknown'),'cancelled')
+                meter=self._meter(record)
+                with meter.repo.transaction() as ledger:exists=record.binding.run_id in ledger.runs
+                if exists:meter.cancel(record.binding.run_id)
+                return result.summary()
             except BudgetExceeded:
                 self._metadata(token,record,'failed')
                 result=store.transition(record,('queued','running'),'budget_exhausted')
@@ -205,8 +224,8 @@ class BackgroundJobs:
             except Exception as error:
                 try:
                     current=store.read(jid,attempt)
-                    if current is not None and current.state in ('running','publishing'):
-                        store.transition(current,('running','publishing'),'unknown')
+                    if current is not None and current.state in ('queued','running','publishing'):
+                        store.transition(current,('queued','running','publishing'),'unknown')
                 except Exception as state_error:error.add_note('original background state unavailable: '+type(state_error).__name__)
                 try:
                     original=self._owned(token,lambda context:self.collection.query_publication_in_context(context,token,jid,attempt))

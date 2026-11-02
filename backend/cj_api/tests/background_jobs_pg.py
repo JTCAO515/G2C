@@ -1,12 +1,12 @@
 """Prototype integration; final acceptance must use C's filtered processing V2."""
 from datetime import datetime,timedelta,timezone
-import hashlib,json,os,sys,tempfile,time
+import hashlib,json,os,sys,tempfile,time,subprocess
 from pathlib import Path
 import psycopg
 from fastapi.testclient import TestClient
 from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
-from cj_api.local_background import LocalBackgroundHost
+from cj_api.local_background import LocalBackgroundHost,FilteredCollectionAdapter
 from cj_agent.provider import FakeProvider,ProviderFailed
 from cj_memory.manual import ManualPolicy
 from cj_memory_jobs.extraction import CollectionPolicy
@@ -22,9 +22,9 @@ class ExtractFake(FakeProvider):
     def stream(self,messages,system=None):
         self.calls+=1
         data=json.loads(messages[0]['content']);message=data['messages'][0]
-        yield json.dumps(dict(version='MEMORY-EXTRACT@1',entries=[dict(subject='self',slot='diet.spicy',kind='preference',
+        yield json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot='diet.spicy',kind='preference',
             text=message['text'],extent='long_term',occurred_at='date unknown',
-            evidence=[dict(message_id=message['message_id'],quote=message['text'])])]),ensure_ascii=False)
+            evidence=[dict(ref=message['ref'],quote=message['text'])])]),ensure_ascii=False)
 
 
 def exercise(root,conninfo):
@@ -61,8 +61,8 @@ def exercise(root,conninfo):
         source=dict(conversation_id='chat',generation=head['generation'],epoch=0,after=0,through=1,source_version=1,withdrawal_epoch=1,mode='incremental')
         post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='job',attempt_id='attempt',source=source))
         collection.transition(token,'job','attempt','inflight')
-        prepared=collection.prepare_model_input(token,'job','attempt',max_payload_bytes=262144)
-        jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=collection,max_payload_bytes=262144)
+        prepared=collection.prepare_model_input_v2(token,'job','attempt',max_payload_bytes=262144)
+        jobs=BackgroundJobs(database=host.database,boundary=host.boundary,collection=FilteredCollectionAdapter(collection),max_payload_bytes=262144)
         request=JobRequest('job','attempt',SourceQuery(**source),None,prepared)
         original=jobs.prepare(token,request)
         assert original['state']=='queued'
@@ -91,7 +91,7 @@ def exercise(root,conninfo):
     second_source=source|dict(after=1,through=2)
     collection.enqueue(token,json.dumps(dict(version='MEMORY-JOBS@1',job_id='unknown-job',attempt_id='original-attempt',source=second_source)).encode())
     collection.transition(token,'unknown-job','original-attempt','inflight')
-    second_input=collection.prepare_model_input(token,'unknown-job','original-attempt',max_payload_bytes=262144)
+    second_input=collection.prepare_model_input_v2(token,'unknown-job','original-attempt',max_payload_bytes=262144)
     unknown=jobs.prepare(token,JobRequest('unknown-job','original-attempt',SourceQuery(**second_source),None,second_input))
     failing=UnknownFake()
     result=run_worker.run_once(database,failing,auth,background_jobs=worker)
@@ -128,8 +128,8 @@ def exercise(root,conninfo):
     limit_source=source|dict(conversation_id='limit-chat',generation=lh['generation'])
     limit_collection.enqueue(limit_token,json.dumps(dict(version='MEMORY-JOBS@1',job_id='limit-job',attempt_id='limit-attempt',source=limit_source)).encode())
     limit_collection.transition(limit_token,'limit-job','limit-attempt','inflight')
-    limit_input=limit_collection.prepare_model_input(limit_token,'limit-job','limit-attempt',max_payload_bytes=262144)
-    limited_jobs=BackgroundJobs(database=limit_host.database,boundary=limit_host.boundary,collection=limit_collection,max_payload_bytes=262144)
+    limit_input=limit_collection.prepare_model_input_v2(limit_token,'limit-job','limit-attempt',max_payload_bytes=262144)
+    limited_jobs=BackgroundJobs(database=limit_host.database,boundary=limit_host.boundary,collection=FilteredCollectionAdapter(limit_collection),max_payload_bytes=262144)
     limit_original=limited_jobs.prepare(limit_token,JobRequest('limit-job','limit-attempt',SourceQuery(**limit_source),None,limit_input))
     forbidden=ExtractFake();limited_worker=LocalBackgroundHost(limited_jobs,auth)
     denied=run_worker.run_once(limit_database,forbidden,auth,background_jobs=limited_worker)
@@ -138,7 +138,25 @@ def exercise(root,conninfo):
         ledgers=conn.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchall()
         assert all(limit_original['meter_attempt_id'] not in row[0]['attempts'] for row in ledgers)
     print('PASS PROTOTYPE actual shared quota exhausted by MESSAGE prevents background model outflow, no second Meter or forged reserve/receipt')
-    print('PASS PROTOTYPE actual signed source/C policy + original run_once/one new Fake model/one same-Meter attempt/C typed publication; no fake MESSAGE or terminal RUN reuse; filtered-v2/Main acceptance still UNRUN')
+    # New process: original metadata remains readable without a model adapter,
+    # C source grant, or current quota context. No new attempt can be claimed.
+    child = """import sys,json,uuid
+from pathlib import Path
+from cj_api.local_app import LocalDatabase,scope_for
+from cj_api.local_account_admission_v2 import account_checker_for
+from cj_message.auth_boundary import Boundary
+from cj_run.background import read_original
+import dev_auth
+p,a=map(Path,sys.argv[1:3]);db=LocalDatabase(p);boundary=Boundary(account_checker_for(a,db),lambda principal:db.message_repository(scope_for(principal.issuer,principal.subject)),lambda:uuid.uuid4().hex)
+value=read_original(db,boundary,dev_auth.token(a,'bg-a',30),'unknown-job','original-attempt')
+assert value['state']=='cancelled'
+print(json.dumps({key:value[key] for key in ('run_id','meter_attempt_id','operation_input_sha256')}))
+"""
+    actual=subprocess.check_output([sys.executable,'-B','-c',child,str(conninfo),str(auth)],env=dict(os.environ,PYTHONPATH=os.environ['PYTHONPATH']+os.pathsep+str(ROOT/'scripts')),text=True)
+    child_value=json.loads(actual)
+    assert child_value['run_id']==unknown['run_id'] and child_value['meter_attempt_id']==unknown['meter_attempt_id']
+    print('PASS PROTOTYPE fresh-process original metadata without C source or current quota; same original run/attempt/hash, no dispatch capability')
+    print('PASS PROTOTYPE actual signed source/C policy + original run_once/one new Fake model/one same-Meter attempt/C typed publication; no fake MESSAGE or terminal RUN reuse; filtered-v2 candidate tested; registered-migration/main acceptance UNRUN')
 
 
 if __name__=='__main__':
