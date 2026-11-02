@@ -87,6 +87,9 @@ struct AccountCleanupControls: View {
             if value.businessStopped || value.progress != nil {
                 text(value.businessStopped ? language.text("Account access has stopped.", "账号已停止使用。") : language.text("Account access has not been revoked.", "账号尚未撤权。"), "access")
             }
+            if value.businessStopped && value.progress == nil {
+                text(language.text("Online cleanup has not been verified on this device.", "本机尚未核实线上清理进度。"), "progress")
+            }
             if let progress = value.progress {
                 text(language.text("Online cleanup: ", "线上清理：") + status(progress.onlineStatus ?? progress.status), "progress")
                 let confirmed = progress.steps.filter { $0.state == .confirmed }.count

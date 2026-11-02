@@ -35,10 +35,10 @@ import Foundation
         for attempt in 0..<45 {
             let bar = app.navigationBars.firstMatch
             let top = bar.exists ? bar.frame.maxY + 4 : app.frame.minY + 48
-            let bottom = app.tabBars.element.exists && app.tabBars.element.isHittable ? app.tabBars.element.frame.minY - 4 : app.frame.maxY - 40
+            let bottom = app.tabBars.element.exists && app.tabBars.element.isHittable ? app.tabBars.element.frame.minY - 16 : app.frame.maxY - 40
             let frame = element.exists ? element.frame : .zero
             print("CLEANUP_SCROLL", element.exists ? element.identifier : "not-materialized", frame, "bounds", top, bottom, "hittable", element.exists && element.isHittable)
-            if element.exists && element.isHittable && frame.midY >= top && frame.midY <= bottom { return }
+            if element.exists && element.isHittable && frame.minY >= top && frame.maxY <= bottom { return }
             let down = frame.isEmpty ? (attempt / 10) % 2 == 1 : frame.midY < top
             let middle = (top + bottom) / 2, step = min(100, (bottom - top) * 0.15)
             let x = app.frame.width * 0.85
@@ -58,7 +58,7 @@ import Foundation
         XCTAssertTrue(button.isHittable, id)
         let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 25), .completed, id)
-        button.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).tap()
+        button.tap()
     }
     func contains(_ id: String, _ expected: String) {
         let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: app.staticTexts[id])
@@ -148,6 +148,7 @@ import Foundation
         contains("account.cleanup.unknown", "unknown")
         let committed = try await proof(name); XCTAssertEqual(committed.accounts["A"]?.fences, 1)
         try launch(f); deletion(); tap("account.cleanup.read"); contains("account.cleanup.access", "stopped")
+        contains("account.cleanup.progress", "Confirmed for the listed online domains")
         try await call("/fault", name, ["kind": "device-receipt"])
         tap("account.cleanup.cleanDevice"); contains("account.cleanup.native", "clear")
         contains("account.cleanup.unknown", "unknown")

@@ -1649,8 +1649,11 @@ private func developmentCleanupHash(_ value: Data) -> String {
             value.unavailable = manifest != nil
             host.show(value); return
         }
-        do { value.businessStopped = try device.hasVerifiedIdentityRefusal || account?.requiresRestrictedProgress == true }
-        catch { value.unavailable = true }
+        var identityRefused = false
+        do {
+            identityRefused = try device.hasVerifiedIdentityRefusal
+            value.businessStopped = try identityRefused || account?.requiresRestrictedProgress == true
+        } catch { value.unavailable = true }
         if let account {
             switch account.state {
             case .ready, .registered: value.canReview = ordinary != nil
@@ -1662,7 +1665,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
             case .registrationUnknown, .unavailable: value.unavailable = true
             }
         }
-        if value.businessStopped { value.canCleanDevice = true; value.canReview = false; value.canConfirm = false }
+        if identityRefused { value.canCleanDevice = true }
+        if value.businessStopped { value.canReview = false; value.canConfirm = false }
         switch device.state {
         case .registrationUnknown: value.canRead = true; value.canReview = false; value.unknown = true
         case .callUnknown: value.canReadDevice = true; value.canCleanDevice = false; value.unknown = true
