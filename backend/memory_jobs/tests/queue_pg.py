@@ -206,6 +206,38 @@ def exercise(conninfo, auth):
             post(jobs,value,status=400)
         for value in ('\0','\ud800'):
             post(jobs,json.dumps(dict(job(),job_id=value)).encode(),status=400)
+        class MessageLostAck:
+            def __init__(self,connection):self.connection=connection
+            @property
+            def autocommit(self):return self.connection.autocommit
+            def cursor(self):return self.connection.cursor()
+            def bind_scope(self,cursor):return self.connection.bind_scope(cursor)
+            def rollback(self):return self.connection.rollback()
+            def close(self):return self.connection.close()
+            def commit(self):
+                self.connection.commit()
+                raise OSError('synthetic lost outer MESSAGE ACK')
+        message_ack_app=create_local_history_app(conninfo_path=conninfo,auth_dir=auth)
+        message_ack_host=message_ack_app.state.memory_history
+        def uncertain_message(principal):
+            scope=scope_for(principal.issuer,principal.subject)
+            repo=message_ack_host.database.message_repository(scope)
+            connect=repo.connect
+            repo.connect=lambda:MessageLostAck(connect())
+            return repo
+        message_ack_host.boundary.resolve_repository=uncertain_message
+        message_ack_service=message_ack_host.service
+        with TestClient(message_ack_app) as message_ack_client:
+            read=expected(message_ack_client.get('/v3/memory-history-settings',
+                params={'conversation_id':'chat'},headers=headers['alice']),503)
+            assert read['error']['outcome']=='unknown' and read['error']['recovery']=='retry_safe_read'
+            uncertain=expected(message_ack_client.post(jobs,content=json.dumps(job(),ensure_ascii=False).encode(),
+                headers=headers['alice']),503)
+            assert uncertain['error']['outcome']=='unknown' and uncertain['error']['recovery']=='reconcile_original'
+            head_unknown=expected(message_ack_client.post(consent,
+                content=json.dumps(dict(action,action_id='head-unknown',operation='disable',expected_source_version=1)).encode(),
+                headers=headers['alice']),503)
+            assert head_unknown['error']['outcome']=='unknown' and head_unknown['error']['recovery']=='reconcile_original'
         state=post(jobs,job())['result']
         assert state['state']=='pending'
         assert post(jobs,job())['result']==state
@@ -215,8 +247,14 @@ def exercise(conninfo, auth):
         try:service.transition(tokens['alice'],'job-1','attempt-1','inflight')
         except Conflict:pass
         else:raise AssertionError('original attempt dispatched twice')
-        completed=json.loads(service.transition(tokens['alice'],'job-1','attempt-1','completed',candidate=b'{"candidate":"synthetic"}'))
+        try:message_ack_service.transition(tokens['alice'],'job-1','attempt-1','completed',candidate=b'{"candidate":"synthetic"}')
+        except OperationWithheld as error:
+            assert (error.operation_id,error.attempt_id,error.recovery)==('job-1','attempt-1','reconcile_original')
+        else:raise AssertionError('outer MESSAGE ACK loss became successful completion')
+        completed=json.loads(service.query_original(tokens['alice'],'job-1','attempt-1'))
         assert completed['state']=='completed' and completed['processed_through']==1
+        assert service.transition(tokens['alice'],'job-1','attempt-1','completed',candidate=b'{"candidate":"synthetic"}')==json.dumps(completed,ensure_ascii=True,sort_keys=True,separators=(',',':')).encode()
+        print('PASS actual outer MESSAGE COMMIT ACK loss after inner C commit: enqueue/completion preserve original task; read uncertainty stays retry_safe_read')
         next_source=dict(source,after=1,through=2)
         post(jobs,job('job-2','attempt-2',next_source))
         service.transition(tokens['alice'],'job-2','attempt-2','inflight')

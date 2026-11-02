@@ -6,7 +6,8 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_auth.interfaces import AdmissionReason, AdmissionStatus
 from cj_message.auth_boundary import AccessBlocked, IdentityChanged
-from cj_message.domain import Unavailable as MessageUnavailable, InvalidInput as MessageInvalidInput
+from cj_message.domain import (Unavailable as MessageUnavailable, InvalidInput as MessageInvalidInput,
+                               CommitUnknown as MessageCommitUnknown)
 from cj_memory.domain import Unavailable as MemoryUnavailable, CommitUnknown as MemoryCommitUnknown
 from cj_api.message_routes import BodyError, _body_error, _error, _read_body, _token, _query_pairs
 from .codec import Conflict, InvalidInput, Unavailable
@@ -52,8 +53,11 @@ def register_routes(app, service):
                 return _error(request,503,'ACCESS_UNKNOWN','access','unknown','retry_safe_read')
             status = 401 if error.reason is AdmissionReason.IDENTITY_INVALID else 403
             return _error(request,status,'ACCESS_DENIED','access','failed','do_not_retry')
-        except (OperationWithheld,MemoryCommitUnknown):
+        except OperationWithheld:
             return _error(request,503,'MEMORY_HISTORY_UNKNOWN','dependency','unknown','reconcile_original')
+        except (MemoryCommitUnknown,MessageCommitUnknown):
+            return _error(request,503,'MEMORY_HISTORY_UNKNOWN','dependency','unknown',
+                          'reconcile_original' if write else 'retry_safe_read')
         except (IdentityChanged,Unavailable,MessageUnavailable,MemoryUnavailable,DatabaseError):
             return _error(request,503,'MEMORY_HISTORY_UNAVAILABLE','dependency',
                           'unknown' if write else 'failed',
