@@ -11,6 +11,7 @@ from cj_trip.domain import Conflict
 from .generated import TripConfirmationRequest, TripConfirmationResponse, SourceTripConfirmationResponse
 from .message_routes import _error, _token
 from .trip_projection import proposal_projection, source_representation
+from cj_strict_json import reject_duplicates
 
 
 def register_trip_confirmations(app, boundary=None, configuration=None, modules=None, signer=None):
@@ -34,13 +35,6 @@ def register_trip_confirmations(app, boundary=None, configuration=None, modules=
                 or request.headers.get('content-encoding', 'identity').lower() != 'identity'):
             return _error(request, 415, 'UNSUPPORTED_MEDIA_TYPE', 'input', 'failed', 'do_not_retry')
 
-        def unique(pairs):
-            result = {}
-            for key, value in pairs:
-                if key in result:
-                    raise ValueError('duplicate field')
-                result[key] = value
-            return result
 
         try:
             source_view = source_representation(request)
@@ -53,7 +47,7 @@ def register_trip_confirmations(app, boundary=None, configuration=None, modules=
                     return _error(request, 413, 'BODY_TOO_LARGE', 'input', 'failed', 'do_not_retry')
                 chunks.append(chunk)
             raw = b''.join(chunks)
-            obj = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
+            obj = json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(ValueError, 'duplicate field'))
             if type(obj) is not dict or set(obj) != {'action_id', 'kind', 'proposal_id', 'candidate_hash'}:
                 raise ValueError('exact confirmation input required')
             command = TripConfirmationRequest.model_validate_json(raw, strict=True)

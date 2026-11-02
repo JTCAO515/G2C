@@ -15,6 +15,7 @@ from .models import (
     Place, Quantity, Query, Result, Route, RouteQuery, Search, Source, aware,
     identifier, text_value,
 )
+from cj_strict_json import reject_duplicates
 
 
 class PreparationError(ValueError):
@@ -118,15 +119,6 @@ def prepare(config: Config, query: Query, request_ref: str, started_at: datetime
                            sha256(canonical).hexdigest())
 
 
-def _pairs(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError("duplicate_json_key")
-        result[key] = value
-    return result
-
-
 def _reject_constant(value):
     raise ValueError("non_json_number")
 
@@ -147,7 +139,7 @@ def _validate_unicode(value, depth=0):
 
 
 def _decode(body):
-    value = json.loads(body.decode("utf-8", errors="strict"), object_pairs_hook=_pairs,
+    value = json.loads(body.decode("utf-8", errors="strict"), object_pairs_hook=reject_duplicates(ValueError, 'duplicate_json_key'),
                        parse_constant=_reject_constant, parse_float=Decimal)
     _validate_unicode(value)
     if type(value) is not dict:

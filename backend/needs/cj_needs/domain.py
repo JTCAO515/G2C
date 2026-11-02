@@ -5,6 +5,7 @@ from decimal import Decimal
 import json
 import re
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from cj_strict_json import reject_duplicates
 
 VERSION = 'CJ-NEEDS-INTERNAL@0.1.0-candidate.1'
 
@@ -174,14 +175,8 @@ def validate_fields(fields, *, complete=False):
 
 def decode(raw):
     if type(raw) is not bytes or not 0 < len(raw) <= 131072: raise InvalidInput('bounded original UTF8 bytes required')
-    def unique(pairs):
-        out = {}
-        for key, value in pairs:
-            if key in out: raise InvalidInput('duplicate field')
-            out[key] = value
-        return out
     try:
-        return json.loads(raw.decode('utf-8'), object_pairs_hook=unique,
+        return json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(InvalidInput, 'duplicate field'),
                           parse_constant=lambda _: (_ for _ in ()).throw(InvalidInput('nonfinite number')))
     except (ValueError, UnicodeError, RecursionError): raise InvalidInput('invalid JSON') from None
 

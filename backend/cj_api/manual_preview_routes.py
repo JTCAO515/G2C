@@ -7,6 +7,7 @@ from .generated import ManualPreviewRequest,ManualPreviewResponse
 from .message_routes import _error,_token
 from .manual_preview_composition import ManualPreviewConfiguration
 from .manual_preview_projection import encode_response
+from cj_strict_json import reject_duplicates
 
 class PreviewConflict(Exception):pass
 class PreviewUnavailable(Exception):pass
@@ -30,12 +31,6 @@ def register_manual_preview(app,boundary=None,configuration=None,modules=None):
         if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/json'
                 or request.headers.get('content-encoding','identity').lower()!='identity'):
             return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
-        def unique(pairs):
-            value={}
-            for key,item in pairs:
-                if key in value:raise ValueError('Duplicate preview input')
-                value[key]=item
-            return value
         chunks=[];size=0
         try:
             if request.scope['query_string']:raise ValueError('No preview query parameters')
@@ -44,7 +39,7 @@ def register_manual_preview(app,boundary=None,configuration=None,modules=None):
                 if size>configuration.max_body_bytes:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
                 chunks.append(chunk)
             raw=b''.join(chunks)
-            json.loads(raw.decode('utf-8'),object_pairs_hook=unique,parse_constant=lambda _:(_ for _ in ()).throw(ValueError('Nonfinite input')))
+            json.loads(raw.decode('utf-8'),object_pairs_hook=reject_duplicates(ValueError, 'Duplicate preview input'),parse_constant=lambda _:(_ for _ in ()).throw(ValueError('Nonfinite input')))
             command=ManualPreviewRequest.model_validate_json(raw,strict=True)
             values=command.model_dump(mode='json')  # Official scalar RootModels serialize to plain IDs.
             original=base64.b64decode(command.original_content_utf8_base64,validate=True)

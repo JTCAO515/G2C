@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 import json
 from .core import Binding, Service
+from cj_strict_json import reject_duplicates
 
 MAX_CANCEL_BYTES = 4096
 MAX_TRAVEL_CANCEL_BYTES = 65536
@@ -23,14 +24,6 @@ class CancellationUnknown(Exception):
 
 class CancellationInputTooLarge(ValueError):
     pass
-
-
-def _unique(items):
-    result = {}
-    for key, value in items:
-        if key in result: raise ValueError('duplicate field')
-        result[key] = value
-    return result
 
 
 def _constant(value):
@@ -54,7 +47,7 @@ class CancelCommand:
     def _parse(cls,raw,version,limit):
         if type(raw) is not bytes: raise ValueError('immutable JSON bytes required')
         if len(raw) > limit: raise CancellationInputTooLarge()
-        obj = json.loads(raw.decode('utf-8'), object_pairs_hook=_unique, parse_constant=_constant)
+        obj = json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(ValueError, 'duplicate field'), parse_constant=_constant)
         if type(obj) is not dict or set(obj) != {'version', 'message_id'} or obj['version'] != version:
             raise ValueError('unsupported cancellation')
         return cls(obj['message_id'])

@@ -10,6 +10,7 @@ from .gaode import _quantity,parse_response
 from .models import (CONTRACT_VERSION, Coordinate, Departure, Detail, Endpoint, FieldState,
                      Observed, Outcome, Place, Result, Route, RouteQuery, Search, Source,
                      aware, identifier, text_value)
+from cj_strict_json import reject_duplicates
 
 VERSION = 'PLACE@1.0'
 QUERY_VERSION = 'PLACE-query.1'
@@ -23,19 +24,12 @@ def _exact(value, keys):
 
 
 def _json(raw):
-    def pairs(items):
-        value = {}
-        for key, item in items:
-            if key in value:
-                raise ValueError('duplicate_field')
-            value[key] = item
-        return value
     def constant(value):
         raise ValueError('non_json_number')
     if type(raw) is not bytes or len(raw) > 1048576:
         raise ValueError('bounded_original_bytes_required')
     try:
-        return json.loads(raw.decode('utf8'), object_pairs_hook=pairs, parse_constant=constant)
+        return json.loads(raw.decode('utf8'), object_pairs_hook=reject_duplicates(ValueError, 'duplicate_field'), parse_constant=constant)
     except (ValueError,UnicodeError,RecursionError):
         raise ValueError('invalid_place_json') from None
 

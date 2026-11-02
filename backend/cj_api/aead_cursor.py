@@ -13,6 +13,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from .history_config import CursorBinding, CursorResyncRequired, CursorUnavailable
 from cj_message.auth_boundary import HistoryReadContext
 from cj_message.domain import Cursor, ChatListCursor
+from cj_strict_json import reject_duplicates
 
 MAX_I64=(1<<63)-1
 _LABEL=re.compile(r'[A-Za-z0-9_-]+\Z')
@@ -26,14 +27,6 @@ def _integer(value,minimum=0):
 
 def _json(value):
     return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf-8')
-
-
-def _unique(items):
-    result={}
-    for key,value in items:
-        if key in result:raise ValueError('duplicate field')
-        result[key]=value
-    return result
 
 
 class AeadCursorCodec:
@@ -128,7 +121,7 @@ class AeadCursorCodec:
             if not 28<=len(blob)<=self._max_plain+28:raise ValueError()
             plaintext=self._keys[kid].decrypt(blob[:12],blob[12:],self._aad(binding,kid))
             if len(plaintext)>self._max_plain:raise ValueError()
-            payload=json.loads(plaintext.decode('utf-8'),object_pairs_hook=_unique,
+            payload=json.loads(plaintext.decode('utf-8'),object_pairs_hook=reject_duplicates(ValueError, 'duplicate field'),
                                parse_constant=lambda _:(_ for _ in ()).throw(ValueError()))
             if type(payload) is not dict or set(payload)!=_FIELDS:raise ValueError()
             generation=payload['generation']

@@ -7,19 +7,14 @@ from cj_feasibility.validator import Candidate
 from cj_feasibility.proposed import evaluate
 from .domain import packed
 from .structured_v2 import validate_document
+from cj_strict_json import reject_duplicates
 
 MODEL_VERSION='TRIP-model-plan.1'
 
 
 def parse_model(raw):
-    def unique(pairs):
-        out={}
-        for key,value in pairs:
-            if key in out:raise ValueError('duplicate plan field')
-            out[key]=value
-        return out
     if type(raw) is not bytes or not 0<len(raw)<=1_000_000:raise ValueError('bounded plan required')
-    model=json.loads(raw,object_pairs_hook=unique)
+    model=json.loads(raw,object_pairs_hook=reject_duplicates(ValueError, 'duplicate plan field'))
     if type(model) is not dict or set(model)!={'version','title','items','proposed_subjects'} or model['version']!=MODEL_VERSION:
         raise ValueError('explicit structured model plan required')
     return model

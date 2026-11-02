@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import re
+from cj_strict_json import reject_duplicates
 
 VERSION = 'CJ-FEEDBACK-INTERNAL@0.2.0'
 
@@ -35,14 +36,6 @@ def identifier(value):
     return value
 
 
-def _object(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result: raise InvalidInput()
-        result[key] = value
-    return result
-
-
 @dataclass(frozen=True, repr=False)
 class Action:
     original: bytes
@@ -54,7 +47,7 @@ class Action:
         if type(self.original) is not bytes or not 1 <= len(self.original) <= 16384:
             raise InvalidInput()
         try:
-            value = json.loads(self.original.decode('utf-8'), object_pairs_hook=_object,
+            value = json.loads(self.original.decode('utf-8'), object_pairs_hook=reject_duplicates(InvalidInput),
                                parse_constant=lambda _: (_ for _ in ()).throw(InvalidInput()))
             if type(value) is not dict or set(value) != {'action_id', 'problem', 'expectation', 'references'}:
                 raise InvalidInput()

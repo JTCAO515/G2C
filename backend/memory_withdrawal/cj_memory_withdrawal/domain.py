@@ -4,6 +4,7 @@ from hashlib import sha256
 import json
 
 from cj_memory.domain import Conflict, InvalidInput, Receipt, Unavailable
+from cj_strict_json import reject_duplicates
 
 
 def _id(value):
@@ -30,17 +31,10 @@ class Action:
 
     @classmethod
     def parse(cls, raw):
-        def unique(pairs):
-            result = {}
-            for key, value in pairs:
-                if key in result:
-                    raise InvalidInput('duplicate field')
-                result[key] = value
-            return result
         if type(raw) is not bytes or len(raw) > 32768:
             raise InvalidInput('original UTF8 bytes required')
         try:
-            obj = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
+            obj = json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(InvalidInput, 'duplicate field'))
         except (ValueError, UnicodeError):
             raise InvalidInput('invalid JSON') from None
         if type(obj) is not dict or set(obj) != set(cls.__dataclass_fields__) - {'raw'}:

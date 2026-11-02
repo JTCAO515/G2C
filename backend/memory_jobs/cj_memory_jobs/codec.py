@@ -4,6 +4,7 @@ import hashlib
 import json
 
 from cj_message.domain import Command, Cursor, HistoryMessage, Receipt
+from cj_strict_json import reject_duplicates
 
 
 class InvalidInput(ValueError): pass
@@ -88,17 +89,10 @@ def encode(source, rows, mode):
 
 def decode(raw):
     """Strict persisted codec; decoding conveys zero source or dispatch authority."""
-    def unique(pairs):
-        result = {}
-        for key, value in pairs:
-            if key in result:
-                raise InvalidInput('duplicate field')
-            result[key] = value
-        return result
     if type(raw) is not bytes or len(raw) > 262144:
         raise InvalidInput('bounded bytes required')
     try:
-        obj = json.loads(raw.decode('ascii'), object_pairs_hook=unique)
+        obj = json.loads(raw.decode('ascii'), object_pairs_hook=reject_duplicates(InvalidInput, 'duplicate field'))
         if set(obj) != {'version', 'source', 'mode', 'messages'} or obj['version'] != 'CJ020-internal.1':
             raise InvalidInput('unsupported persisted batch')
         s = obj['source']

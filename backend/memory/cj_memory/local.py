@@ -14,6 +14,7 @@ from types import MappingProxyType
 from typing import Mapping
 
 from .manual import ManualPolicy
+from cj_strict_json import reject_duplicates
 
 
 class LocalMemoryConfigurationError(ValueError):
@@ -68,16 +69,10 @@ class LocalMemoryConfiguration:
 
     @classmethod
     def from_bytes(cls, raw):
-        def unique(pairs):
-            result = {}
-            for key, value in pairs:
-                if key in result: raise LocalMemoryConfigurationError('duplicate policy field')
-                result[key] = value
-            return result
         try:
             if type(raw) is not bytes or not 0 < len(raw) <= 262144:
                 raise LocalMemoryConfigurationError('bounded policy bytes required')
-            value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique)
+            value = json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(LocalMemoryConfigurationError, 'duplicate policy field'))
             if (type(value) is not dict or set(value) != {'version', 'expires_at', 'profiles'}
                     or value['version'] != 'local-memory-policy.1'):
                 raise LocalMemoryConfigurationError('explicit policy format required')

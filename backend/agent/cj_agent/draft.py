@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import time
 
 from cj_trip.domain import Proposal, packed
+from cj_strict_json import reject_duplicates
 
 DRAFT_SYSTEM = (
     'You draft a Beijing itinerary for a foreign visitor. Reply with ONLY one JSON object, '
@@ -39,21 +40,12 @@ def trip_scope_for(message_scope):
     return 't' + hashlib.sha256(message_scope.encode('utf-8')).hexdigest()[:40]
 
 
-def _model_object(pairs):
-    value = {}
-    for key, item in pairs:
-        if key in value:
-            raise DraftRejected('duplicate JSON field')
-        value[key] = item
-    return value
-
-
 def document_from_model(text):
     start, end = text.find('{'), text.rfind('}')
     if start < 0 or end < start:
         raise DraftRejected('no JSON object')
     try:
-        value = json.loads(text[start:end + 1], object_pairs_hook=_model_object)
+        value = json.loads(text[start:end + 1], object_pairs_hook=reject_duplicates(DraftRejected, 'duplicate JSON field'))
     except (ValueError, RecursionError):
         raise DraftRejected('invalid JSON') from None
     if type(value) is not dict or set(value) != {'title', 'items'}:

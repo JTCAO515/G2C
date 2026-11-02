@@ -3,20 +3,14 @@ from dataclasses import dataclass, asdict
 import hashlib
 import json
 from cj_usage.core import Command, Blocked
+from cj_strict_json import reject_duplicates
 
 FIELDS = frozenset({'attempt_id', 'operation_id', 'run_id', 'kind', 'input_digest', 'reserve', 'output_limit'})
 
 
 def _decode_command(raw):
-    def pairs(items):
-        result = {}
-        for key, value in items:
-            if key in result:
-                raise ValueError('duplicate command field')
-            result[key] = value
-        return result
     try:
-        values = json.loads(raw.decode('utf-8'), object_pairs_hook=pairs)
+        values = json.loads(raw.decode('utf-8'), object_pairs_hook=reject_duplicates(ValueError, 'duplicate command field'))
     except (UnicodeError, ValueError) as exc:
         raise ValueError('invalid command encoding') from exc
     if type(values) is not dict or set(values) != FIELDS:

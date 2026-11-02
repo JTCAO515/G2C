@@ -6,6 +6,7 @@ import json
 
 from .domain import (Command, InvalidInput, Revision, Snapshot, decode, exact,
                      identifier, validate_fields)
+from cj_strict_json import reject_duplicates
 
 VERSION = 'NEEDS@1.0'
 COMMAND_VERSION = 'NEEDS-command.1'
@@ -23,15 +24,9 @@ def _load(raw):
     # existing smaller limit for commands and persisted content.
     if type(raw) is not bytes or not 0 < len(raw) <= MAX_BYTES:
         raise InvalidInput('bounded NEEDS envelope required')
-    def unique(pairs):
-        value = {}
-        for key, item in pairs:
-            if key in value: raise InvalidInput('duplicate NEEDS field')
-            value[key] = item
-        return value
     def constant(_): raise InvalidInput('nonfinite NEEDS value')
     try:
-        return json.loads(raw.decode('utf8'), object_pairs_hook=unique, parse_constant=constant)
+        return json.loads(raw.decode('utf8'), object_pairs_hook=reject_duplicates(InvalidInput, 'duplicate NEEDS field'), parse_constant=constant)
     except (ValueError, UnicodeError, RecursionError):
         raise InvalidInput('invalid NEEDS envelope') from None
 
