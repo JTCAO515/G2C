@@ -1,8 +1,10 @@
 # M3 single-memory erasure preparation (#26 / C hooks #27)
 
-Implementation is pending. This document provides no runtime factory, approved
-cleanup intent, descriptor or registered store. Do not advertise any hook as
-provided until its physical implementation, fence and same-PR registry land.
+Memory-item implementation is pending. This document provides no approved item
+cleanup intent, immutable descriptor or registered store. Account-only hooks are
+now candidates described in ACCOUNT-CLEANUP-V1.md, not main/registry acceptance.
+Do not advertise a hook as provided until its implementation, fence and same-PR
+registry land.
 
 ## Verified boundaries
 

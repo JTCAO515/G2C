@@ -94,6 +94,7 @@ def exercise(root,path):
         with psycopg.connect(**admin) as conn:conn.execute("DELETE FROM cj_memory_source WHERE scope=%s AND source_id='orphan-source'",(scope,))
     assert graph()==raw
     print('PASS actual signed history candidate→confirmation→typed edit graph includes all three canonical sources and original message/producer refs; no values leaked, foreign/bounds/unlinked source denied, read-only stable; immutable cleanup descriptor/physical erasure UNRUN')
+    return dict(auth=auth,tokens=tokens,headers=headers,scope=scope,item_id=iid,database=host.database)
 
 
 if __name__=='__main__':

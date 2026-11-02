@@ -322,6 +322,14 @@
       "sha256": "480641a173c16335812668bf11d2a2a5bc144d2d4758f72902c83efcff780327",
       "down": "backend/migrations/down/0040_background_jobs.down.sql",
       "down_sha256": "08dcad286608992288b5dfecf38922a5e6457d95c1f342fa101d964557b2aa78"
+    },
+    {
+      "version": 41,
+      "name": "c_account_cleanup_locks",
+      "file": "backend/migrations/0041_c_account_cleanup_locks.sql",
+      "sha256": "7ac418c98423bc3775f08019e340c8736e211ddf044906750d20a49a2d4358be",
+      "down": "backend/migrations/down/0041_c_account_cleanup_locks.down.sql",
+      "down_sha256": "c1775a3ed0b4532ca440da3f8ca8b53ffb83823398d132d84369df7b35348e74"
     }
   ]
 }
