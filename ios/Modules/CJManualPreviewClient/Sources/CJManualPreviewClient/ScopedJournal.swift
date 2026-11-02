@@ -7,13 +7,14 @@ import CJTripClient
 
 private func scopedDigest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 
-/// Immutable, exclusive encrypted records. Reopening grants query only; no resend/delete API.
+/// Immutable, exclusive encrypted records. Reopening grants query only; no resend API. Explicit account cleanup is separate.
 protocol ScopedJournalRecord: Codable {
     var actionID: String { get }
     func validate() throws
 }
 
 @MainActor final class ScopedJournal<Record: ScopedJournalRecord> {
+    private(set) var retiredForCleanup = false
     private let root: URL
     private let directory: Int32
     private let maximumBytes: Int
@@ -75,12 +76,53 @@ protocol ScopedJournalRecord: Codable {
         try validateDirectory()
     }
     func validateDirectory() throws {
+        guard !retiredForCleanup else { throw TripFailure.storageUnavailable }
+        try validateRoot()
+    }
+    private func validateRoot() throws {
         // Callback/await boundary checks, not a claim of protection against arbitrary same-UID races.
         var current = stat(); var original = stat()
         guard lstat(root.path, &current) == 0, fstat(directory, &original) == 0,
               current.st_ino == original.st_ino, current.st_dev == original.st_dev,
               current.st_mode & S_IFMT == S_IFDIR, current.st_uid == getuid(), current.st_mode & 0o077 == 0,
               root.path == root.resolvingSymlinksInPath().path else { throw TripFailure.storageUnavailable }
+    }
+    struct CleanupEntry {
+        fileprivate let name: String
+        fileprivate let device: dev_t
+        fileprivate let inode: ino_t
+    }
+    func retireForCleanup() { retiredForCleanup = true }
+    /// No key/provider/caller callbacks. Client preflights both original and
+    /// settlement journals before deleting anything from either one.
+    func prepareCleanup() throws -> [CleanupEntry] {
+        retireForCleanup()
+        try validateRoot()
+        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        return try names.map { name in
+            let stem = name.dropLast(7)
+            var entry = stat()
+            guard name.hasSuffix(".scoped"), stem.count == 64,
+                  stem.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+                  fstatat(directory, name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
+                  entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1,
+                  entry.st_uid == getuid() else { throw TripFailure.storageUnavailable }
+            return CleanupEntry(name: name, device: entry.st_dev, inode: entry.st_ino)
+        }
+    }
+    func finishCleanup(_ entries: [CleanupEntry]) throws {
+        try validateRoot()
+        for original in entries {
+            var entry = stat()
+            guard fstatat(directory, original.name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
+                  entry.st_dev == original.device, entry.st_ino == original.inode,
+                  entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1,
+                  entry.st_uid == getuid() else { throw TripFailure.exchangeUnknown }
+            guard unlinkat(directory, original.name, 0) == 0 else { throw TripFailure.exchangeUnknown }
+        }
+        guard fsync(directory) == 0 else { throw TripFailure.exchangeUnknown }
+        try validateRoot()
+        guard try FileManager.default.contentsOfDirectory(atPath: root.path).isEmpty else { throw TripFailure.exchangeUnknown }
     }
     struct Durability {
         fileprivate let filename: String
