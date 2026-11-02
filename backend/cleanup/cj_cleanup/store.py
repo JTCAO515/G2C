@@ -71,6 +71,18 @@ def _load_operation(cur,subject_digest,operation_id,*,lock_mode=None):
     return purpose,manifest,blocked,plan,targets
 
 
+def require_account_retirement(cursor,request:HookRequest) -> None:
+    """CLEANUP-ACCOUNT-RETIREMENT@1, after require_intent in the same Store tx.
+
+    Only the original irreversible account fence is asserted. This is neither
+    a domain-scope grant nor erasure evidence, and performs no write or dispatch.
+    """
+    if request.selection.kind!='account':raise Denied('account revocation unconfirmed')
+    cursor.execute('SELECT 1 FROM cj_account_fence WHERE subject_digest=%s AND operation_id=%s',
+                   (request.subject_digest,request.operation_id))
+    if cursor.fetchone() is None:raise Denied('account revocation unconfirmed')
+
+
 def require_intent(cursor,request:HookRequest) -> None:
     """Read-only owner seam, in the SAME transaction before domain deletion.
 
