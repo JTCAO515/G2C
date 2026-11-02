@@ -8,6 +8,7 @@ from cj_auth.interfaces import AdmissionReason, AdmissionStatus
 from cj_message.auth_boundary import AccessBlocked, IdentityChanged
 from cj_message.domain import (Unavailable as MessageUnavailable, InvalidInput as MessageInvalidInput,
                                CommitUnknown as MessageCommitUnknown)
+from cj_message.travel_reference import Denied as ContextDenied,LeaseUnavailable as ContextUnavailable
 from cj_memory.domain import (Unavailable as MemoryUnavailable, CommitUnknown as MemoryCommitUnknown,
                               Conflict as MemoryConflict)
 from cj_api.message_routes import BodyError, _body_error, _error, _read_body, _token, _query_pairs
@@ -64,7 +65,8 @@ def register_routes(app, service, *, collection=False):
         except (MemoryCommitUnknown,MessageCommitUnknown):
             return _error(request,503,'MEMORY_HISTORY_UNKNOWN','dependency','unknown',
                           'reconcile_original' if write else 'retry_safe_read')
-        except (IdentityChanged,Unavailable,MessageUnavailable,MemoryUnavailable,CollectionUnavailable,DatabaseError):
+        except (IdentityChanged,Unavailable,MessageUnavailable,MemoryUnavailable,CollectionUnavailable,
+                ContextDenied,ContextUnavailable,DatabaseError):
             return _error(request,503,'MEMORY_HISTORY_UNAVAILABLE','dependency',
                           'unknown' if write else 'failed',
                           'reconcile_original' if write else 'retry_safe_read')

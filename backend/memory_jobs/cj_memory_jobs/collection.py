@@ -5,7 +5,7 @@ from hashlib import sha256
 from cj_message.auth_boundary import AccessBlocked,IdentityChanged
 from cj_message.domain import CommitUnknown as MessageCommitUnknown
 from cj_message.source import SourceQuery
-from cj_message.travel_reference import MessageContextAuthority
+from cj_message.travel_reference import MessageContextAuthority,LeaseUnavailable
 from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
 from .candidate import CandidateAction
 from .codec import Conflict,SourceV2,Unavailable,encode_v2,job_identity
@@ -128,6 +128,9 @@ class CollectionService(Service):
         try:return self._invoke(token,apply,request_id,'MEMORY-CANDIDATE-response@1')
         except (MemoryCommitUnknown,MessageCommitUnknown) as error:
             raise OperationWithheld(action.action_id) from error
+        except LeaseUnavailable as error:
+            if possible:raise OperationWithheld(action.action_id) from error
+            raise
         except (AccessBlocked,IdentityChanged) as error:
             if possible:raise OperationWithheld(action.action_id) from error
             raise

@@ -6,7 +6,8 @@ from cj_cleanup.store import original_result, record_result, receipt_for
 
 
 TARGET = 'memory-derived'
-CONTENT_TABLES = ('cj_memory_history_job','cj_memory_history_cursor',
+CONTENT_TABLES = ('cj_memory_history_candidate_action','cj_memory_history_origin',
+                  'cj_memory_history_job','cj_memory_history_cursor',
                   'cj_memory_history_action','cj_memory_history_consent')
 
 
@@ -57,7 +58,3 @@ class CleanupHook:
         with self.store.transaction(request.operation_id,writing=False) as cur:
             result = original_result(cur,request)
         return result if result is not None else receipt_for(request,'unknown')
-
-
-class CollectionCleanupHook(CleanupHook):
-    content_tables=('cj_memory_history_candidate_action','cj_memory_history_origin')+CONTENT_TABLES

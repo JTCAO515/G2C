@@ -1,5 +1,5 @@
 """L1 supplied-output publication/decisions; actual worker/Meter remains separate."""
-from dataclasses import asdict
+from dataclasses import asdict,replace
 from datetime import datetime,timedelta,timezone
 import hashlib
 import json
@@ -15,6 +15,11 @@ from cj_api.local_app import ISSUER,scope_for
 from cj_memory.manual import ManualPolicy
 from cj_memory.postgres import Repository
 from cj_memory.domain import Conflict as MemoryConflict
+from cj_memory.domain import Service as MemoryService
+from cj_auth.interfaces import AdmissionStatus
+from cj_message.domain import HistoryMessage
+from cj_message.travel_reference import MessageContextAuthority
+from cj_memory_jobs.extraction import Evidence
 from cj_memory_jobs.codec import Conflict
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_memory_jobs.extraction import CollectionPolicy
@@ -212,13 +217,56 @@ def exercise(conninfo,auth):
             assert stored==changed and original[0].state=='inflight'
             assert memory.detail(active['candidate_id']).command.text==texts[0]
         print('PASS real canonical-slot conflict rolls back publication, preserves original output checkpoint and leaves the current user value intact; no provider resend path')
+        # Existing typed manual inference is a valid setup candidate. This checks
+        # the explicit user-decision path, not automatic current extraction.
+        travel=post('/v1/travel-context-actions',dict(version='TRAVEL-context-action.1',action_id='current-create',
+            operation='create',travel_context=None))['receipt']['travel_context']
+        memory_policy=replace(memory_policy,context_ids=frozenset({travel['id']}))
+        principal=host.boundary.checker.check(tokens['alice']).principal
+        def admit():
+            current=host.boundary.checker.check(tokens['alice'])
+            if current.status is not AdmissionStatus.ALLOWED or current.principal!=principal:
+                raise AssertionError('fixture current identity unavailable')
+            return current.principal
+        authority=MessageContextAuthority(host.database.message_repository(scope),admit)
+        canonical=MemoryService(repository,manual_policy=memory_policy)
+        current_raw=json.dumps(dict(version='MEMORY-manual.2',operation_id='typed-candidate-op',item_id='typed-candidate',
+            subject='self',slot='pace.inferred',kind='inference',text='Maybe slow pace for this trip',extent='current',
+            context=dict(kind='travel',id=travel['id'],expected_version=1),occurred_at='date unknown')).encode()
+        def guarded(stage):return admit(),scope
+        canonical.with_operation(guarded,lambda operation:json.dumps(operation.save_manual_typed(current_raw,authority).__dict__).encode())
+        original=host.boundary.with_history_context(tokens['alice'],lambda context:context.query_message('m1'))
+        original_message=HistoryMessage(original.receipt,original.raw,json.loads(original.raw)['text'])
+        with repository.transaction() as memory:
+            tx=PublicationTransaction(memory);tx.require_live()
+            current_item=memory.detail('typed-candidate')
+            tx.origin(current_item.command,'job','attempt',(original_message,),
+                      (Evidence('m1',original_message.text),))
+        current_view=expected(client.get('/v3/memory-candidates',params={'job_id':'job','attempt_id':'attempt'},headers=headers['alice']))['result']
+        reviewed=dict(version='MEMORY-CANDIDATE@1',action_id='typed-confirm',job_id='job',attempt_id='attempt',
+            candidate_id='typed-candidate',expected_candidate_version=1,expected_memory_epoch=current_view['memory_epoch'],
+            operation='confirm',kind='preference',text='Slow pace for this trip',extent='current',
+            context=dict(kind='travel',id=travel['id'],expected_version=1),occurred_at='date unknown')
+        post('/v1/travel-context-actions',dict(version='TRAVEL-context-action.1',action_id='current-advance',operation='advance',
+            travel_context=dict(id=travel['id'],expected_version=1)))
+        post('/v3/memory-candidate-actions',reviewed,status=503)
+        reviewed['context']['expected_version']=2
+        typed_saved=post('/v3/memory-candidate-actions',reviewed)['result']
+        assert typed_saved['receipt']['status']=='active'
+        with repository.transaction() as memory:
+            saved_item=memory.detail('typed-candidate')
+            assert (saved_item.command.context_kind,saved_item.command.context_id,saved_item.command.context_version)==('travel',travel['id'],2)
+        post('/v1/travel-context-actions',dict(version='TRAVEL-context-action.1',action_id='current-deactivate',operation='deactivate',
+            travel_context=dict(id=travel['id'],expected_version=2)))
+        assert post('/v3/memory-candidate-actions',reviewed)['result']==typed_saved
+        post('/v3/memory-candidate-actions',dict(reviewed,action_id='typed-again'),status=503)
+        print('PASS actual typed current user confirmation: stale travel refused, real M/T lease version accepted, original replay never reactivates retired travel; automatic current extraction UNRUN')
         from cj_cleanup.core import Scope,encode,digest
         from cj_cleanup.coordinator import Coordinator
         from cj_cleanup.hooks_v1_1 import Selection
         from cj_cleanup.registry import freeze
         from cj_cleanup.store import Store
-        from cj_auth.interfaces import AdmissionStatus
-        from cj_memory_jobs.cleanup import CollectionCleanupHook,TARGET
+        from cj_memory_jobs.cleanup import CleanupHook,TARGET
         config=json.loads(conninfo.read_bytes())
         try:
             with psycopg.connect(**config,autocommit=True) as conn:
@@ -235,7 +283,7 @@ def exercise(conninfo,auth):
             if current.status is not AdmissionStatus.ALLOWED or current.principal!=principal:
                 raise AssertionError('fixture cleanup admission unavailable')
         store=Store(lambda:psycopg.connect(**dict(config,user='cj_local_cleanup')),subject,cleanup_guard)
-        hook=CollectionCleanupHook(store,scope)
+        hook=CleanupHook(store,scope)
         # Domain-only fixture exercises every actual provided table, not global #27 completion.
         metadata=encode(dict(version='publication-test.1',stores=[dict(id=TARGET,
             cleanup_protocol='CLEANUP@1.1',objects=list(hook.content_tables)+['cj_memory_history_fence'])]))
