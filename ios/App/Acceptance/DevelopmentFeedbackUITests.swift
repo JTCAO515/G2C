@@ -30,14 +30,17 @@ import Foundation
             let bar = app.navigationBars.firstMatch, tabs = app.tabBars.firstMatch
             let top = bar.exists ? bar.frame.maxY : app.frame.minY
             let bottom = tabs.exists ? tabs.frame.minY : app.frame.maxY
-            if target.exists && target.isHittable && (isTab || (target.frame.midY > top + 8 && target.frame.midY < bottom - 8)) { break }
-            if target.exists && target.frame.midY < top + 8 { app.swipeDown() }
+            if target.exists && target.isHittable && (isTab || (target.frame.minY > top + 8 && target.frame.maxY < bottom - 8)) { break }
+            if target.exists && target.frame.minY < top + 8 { app.swipeDown() }
             else { app.swipeUp() }
         }
         XCTAssertEqual(query.count, 1, id); XCTAssertTrue(target.isHittable, id)
         print("feedback tap", id, target.frame)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: target)
-        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id); target.tap()
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id)
+        // XCTest selected a cell-edge activation point for a partially exposed
+        // multiline button. Use the resolved, fully visible control's center.
+        target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
     func revealEditor(_ id: String) -> XCUIElement {
         let field = app.textViews[id]
