@@ -1,6 +1,7 @@
 """History consent/queue composition over the original protected MESSAGE boundary."""
 from cj_auth.interfaces import AdmissionStatus
 from cj_message.auth_boundary import AccessBlocked, IdentityChanged
+from cj_message.domain import CommitUnknown as MessageCommitUnknown
 from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
 
 from .codec import Conflict, SourceV2, Unavailable, encode_v2, job_identity, pg_identity
@@ -81,7 +82,7 @@ class Service:
 
         try:
             return self._invoke(token,apply,request_id,'MEMORY-HISTORY-result@1')
-        except MemoryCommitUnknown as error:
+        except (MemoryCommitUnknown,MessageCommitUnknown) as error:
             raise OperationWithheld(action.action_id) from error
         except (AccessBlocked,IdentityChanged) as error:
             if possible:
@@ -133,7 +134,7 @@ class Service:
 
         try:
             return self._invoke(token,apply,request_id,'MEMORY-JOBS-result@1')
-        except MemoryCommitUnknown as error:
+        except (MemoryCommitUnknown,MessageCommitUnknown) as error:
             raise OperationWithheld(job_id,attempt_id) from error
         except (AccessBlocked,IdentityChanged) as error:
             if policy is not None and policy.commit_attempted:
@@ -189,7 +190,7 @@ class Service:
 
         try:
             return self.boundary.with_history_context(token,apply)
-        except MemoryCommitUnknown as error:
+        except (MemoryCommitUnknown,MessageCommitUnknown) as error:
             raise OperationWithheld(job_id,attempt_id) from error
         except (AccessBlocked,IdentityChanged) as error:
             if possible or (policy is not None and policy.commit_attempted):
