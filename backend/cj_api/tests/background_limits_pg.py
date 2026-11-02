@@ -20,7 +20,7 @@ import dev_auth,local_run_context,run_worker
 
 
 def exercise(root,path):
-    for case in ('step','output','time','publication-time'):
+    for case in ('step','output','time','publication-time','publication-work'):
         work=root/case;work.mkdir();auth=work/'auth';subject='bg-limit-'+case;dev_auth.init(auth,[subject])
         now=int(time.time());document=dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(
             meter=dict(unit='provider_call',budget=10,period_start=now-60,period_end=now+3600,max_steps=1,max_tools=1,max_output=10000,max_seconds=10),
@@ -34,7 +34,11 @@ def exercise(root,path):
                 trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0)).encode(),headers=headers)
             assert sent.status_code==200
         normal=FakeProvider();run_worker.run_once(database,normal,auth);assert normal.calls==1
-        slots=frozenset({'diet.spicy'});extraction=CollectionPolicy(frozenset({'self'}),slots,10,4096,lambda entry:True,lambda entry,rows:any(entry.text==row.text for row in rows))
+        slots=frozenset({'diet.spicy'})
+        def content(entry):
+            if case=='publication-work':tick[0]+=10
+            return True
+        extraction=CollectionPolicy(frozenset({'self'}),slots,10,4096,content,lambda entry,rows:any(entry.text==row.text for row in rows))
         memory=ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),datetime.now(timezone.utc)+timedelta(hours=1),lambda command,raw:True,lambda command,raw:True)
         app=create_collection_app(conninfo_path=path,auth_dir=auth,resolve_collection=lambda p:(extraction,memory,lambda entry:(None,None)),run_context=context)
         host=app.state.memory_history;c=host.service

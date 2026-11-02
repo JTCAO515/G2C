@@ -1,5 +1,5 @@
 """Original background JobRun scheduling over public MESSAGE/C/Meter boundaries."""
-from contextlib import ExitStack
+from contextlib import ExitStack,contextmanager
 from dataclasses import dataclass
 import json,time
 from cj_usage.core import Meter
@@ -50,6 +50,17 @@ class _SourceMeter:
     def cancel(self,run_id):return self.base.cancel(run_id)
 
 
+class _BeforeSourceCommit:
+    """Keep the final deadline check inside C's public holder, before commit."""
+    def __init__(self,actual,check):self.actual,self.check=actual,check
+    @contextmanager
+    def hold(self,*args):
+        with self.actual.hold(*args) as permit:
+            yield permit
+            self.check()
+    def apply_original_result(self,*args):return self.actual.apply_original_result(*args)
+
+
 class BackgroundJobs:
     def __init__(self,*,database,boundary,collection,max_payload_bytes,clock=time.time):
         if database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or collection is None:
@@ -73,13 +84,14 @@ class BackgroundJobs:
         self._owned(token,read)
         return holder['store'],holder['record']
 
-    def _phase(self,token,store,request,work,*,output=None):
+    def _phase(self,token,store,request,work,*,output=None,commit_guard=None):
         holder={}
         def enter(context):
             if context.scope!=store.scope:raise Denied('background job owner changed')
             args=(context,token,request.job_id,request.attempt_id,request.prepared_input,request.prepared_sha256)
             policy=(self.collection.processing_policy(*args,max_payload_bytes=self.max_payload_bytes) if output is None else
                 self.collection.publication_policy(*args,output,sha(output),max_payload_bytes=self.max_payload_bytes))
+            if commit_guard is not None:policy=_BeforeSourceCommit(policy,commit_guard)
             def project(source,lease=None):
                 def local(actual):
                     if actual!=request.prepared_input:raise Conflict('original prepared model bytes required')
@@ -202,7 +214,7 @@ class BackgroundJobs:
                         tx,current=stack.enter_context(store.hold(record));held.update(tx=tx,current=current)
                         self._require_stage(store,record,('publishing',));ownership();check_budget()
                         return policy.apply_original_result(source,lease)
-                    raw=self._phase(token,store,record.request,publish,output=output)
+                    raw=self._phase(token,store,record.request,publish,output=output,commit_guard=check_budget)
                     # C and outer MESSAGE commits are known before B writes this.
                     receipt=self._publication(raw,record)
                     store.write_state(held['tx'],held['current'],'completed',receipt=receipt)
