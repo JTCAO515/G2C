@@ -33,7 +33,7 @@ BEGIN
  IF NOT EXISTS (SELECT 1 FROM cj_message_chat WHERE scope=NEW.scope
     AND conversation_id=NEW.conversation_id AND generation=NEW.generation
     AND active AND end_id IS NULL AND conversation_type='travel') THEN
-  RAISE EXCEPTION 'message conversation unavailable';
+  RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='message conversation unavailable';
  END IF;
  RETURN NEW;
 END $$;
