@@ -408,6 +408,7 @@ def group_memory_publication():
     # #410: signed candidate review and original publication on restricted PG.
     status=script('backend/memory_jobs/tests/publication_pg.py')
     status|=script('backend/memory_jobs/tests/current_result_pg.py')
+    status|=script('backend/memory_jobs/tests/publication_tail_pg.py')
     return status
 
 

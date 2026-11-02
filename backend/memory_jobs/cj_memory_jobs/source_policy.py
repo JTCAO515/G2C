@@ -37,6 +37,10 @@ class SourcePolicy:
                     query.epoch,query.through,query.after),query.source_version,query.withdrawal_epoch)
                 tx.require_source(query)
                 self.guard('source_precommit')
+                self._before_commit()
                 self.commit_attempted = True
             finally:
                 self.transaction = None
+
+    def _before_commit(self):
+        """Internal extension point after all source/auth checks, before COMMIT."""
