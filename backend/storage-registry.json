@@ -1,5 +1,5 @@
 {
-  "version": "1.20.0",
+  "version": "1.22.0",
   "stores": [
     {
       "id": "business",
@@ -375,7 +375,7 @@
       "principal_binding": "Required before user data is stored; server-authenticated principal, never caller owner",
       "sensitive_fields": "Enumerated per object below; new objects require domain-owner registration before activation",
       "retention": "Until user/account deletion; offline read maximum14days since last successful sync; expiry is not remote physical-erasure proof",
-      "cleanup_hook": "See objects: accepted session blocking and exact key removal exist; encrypted-file deletion remains UNIMPLEMENTED",
+      "cleanup_hook": "CLEANUP-DEVICE@1/@2 original invocation bridge; A native report verifies exact known own-scope targets, no all-device/backup completion claim",
       "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
       "objects": [
         {
@@ -397,7 +397,11 @@
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
-          "cleanup_protocol": "CLEANUP@1.1"
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@1",
+            "CLEANUP-DEVICE@2"
+          ]
         },
         {
           "id": "sdk-session-keychain",
@@ -416,7 +420,11 @@
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
-          "cleanup_protocol": "CLEANUP@1.1"
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@1",
+            "CLEANUP-DEVICE@2"
+          ]
         },
         {
           "id": "message-key-keychain",
@@ -435,7 +443,11 @@
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
-          "cleanup_protocol": "CLEANUP@1.1"
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@1",
+            "CLEANUP-DEVICE@2"
+          ]
         },
         {
           "id": "trip-pending-file",
@@ -455,7 +467,11 @@
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
-          "cleanup_protocol": "CLEANUP@1.1"
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@1",
+            "CLEANUP-DEVICE@2"
+          ]
         },
         {
           "id": "offline-trip",
@@ -476,7 +492,11 @@
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
           "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook; A exact native primitive/report, original operation and namespace/state refs",
-          "restore_fence": "No read after session/account/key/state invalidation; no remote all-device erasure claim"
+          "restore_fence": "No read after session/account/key/state invalidation; no remote all-device erasure claim",
+          "device_versions": [
+            "CLEANUP-DEVICE@1",
+            "CLEANUP-DEVICE@2"
+          ]
         },
         {
           "id": "feedback-pending",
@@ -495,7 +515,11 @@
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
-          "cleanup_protocol": "CLEANUP@1.1"
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@1",
+            "CLEANUP-DEVICE@2"
+          ]
         },
         {
           "id": "feedback-key-keychain",
@@ -514,7 +538,143 @@
           "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
           "owner_line": "A",
           "retention_category": "user_content",
-          "cleanup_protocol": "CLEANUP@1.1"
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@1",
+            "CLEANUP-DEVICE@2"
+          ]
+        },
+        {
+          "id": "memory-manual-pending",
+          "owner": "CJ-003 / CJ-017 / CJ-007; A native device owner",
+          "objects": [
+            "MemoryPendingStore encrypted originals"
+          ],
+          "source": "ios/App/DevelopmentTripHost.swift; ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift",
+          "status": "provided/DEBUG_simulator_local_only; native_cleanup_consumer_pending_A_27",
+          "principal_binding": "A captured canonical SDK environment/account/generation/key state; G2CDevelopmentMemory/<environment>/<account>",
+          "sensitive_fields": [
+            "Exact original user actions, pending payloads and receipts or purpose-scoped key material; no keys in bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@2: exact original target membership and same-device/state report coverage; A owns physical primitives, unknown stays pending",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@2"
+          ]
+        },
+        {
+          "id": "memory-lifecycle-pending",
+          "owner": "CJ-003 / CJ-017 / CJ-007; A native device owner",
+          "objects": [
+            "MemoryManagementPendingStore encrypted original lifecycle actions"
+          ],
+          "source": "ios/App/DevelopmentTripHost.swift; ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift",
+          "status": "provided/DEBUG_simulator_local_only; native_cleanup_consumer_pending_A_27",
+          "principal_binding": "A captured canonical SDK environment/account/generation/key state; G2CDevelopmentMemory/<environment>/<account>.lifecycle",
+          "sensitive_fields": [
+            "Exact original user actions, pending payloads and receipts or purpose-scoped key material; no keys in bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@2: exact original target membership and same-device/state report coverage; A owns physical primitives, unknown stays pending",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@2"
+          ]
+        },
+        {
+          "id": "memory-typed-pending",
+          "owner": "CJ-003 / CJ-017 / CJ-007; A native device owner",
+          "objects": [
+            "TypedMemoryPendingStore encrypted original typed actions"
+          ],
+          "source": "ios/App/DevelopmentTripHost.swift; ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift",
+          "status": "provided/DEBUG_simulator_local_only; native_cleanup_consumer_pending_A_27",
+          "principal_binding": "A captured canonical SDK environment/account/generation/key state; G2CDevelopmentMemory/<environment>/<account>.typed-v2",
+          "sensitive_fields": [
+            "Exact original user actions, pending payloads and receipts or purpose-scoped key material; no keys in bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@2: exact original target membership and same-device/state report coverage; A owns physical primitives, unknown stays pending",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@2"
+          ]
+        },
+        {
+          "id": "memory-key-keychain",
+          "owner": "CJ-003 / CJ-017 / CJ-007; A native device owner",
+          "objects": [
+            "ScopedMessageKeyProvider localMemoryPendingV1 key shared by those journals"
+          ],
+          "source": "ios/App/DevelopmentTripHost.swift; ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift",
+          "status": "provided/DEBUG_simulator_local_only; native_cleanup_consumer_pending_A_27",
+          "principal_binding": "A captured canonical SDK environment/account/generation/key state; canonical environment/account/localMemoryPendingV1 key namespace",
+          "sensitive_fields": [
+            "Exact original user actions, pending payloads and receipts or purpose-scoped key material; no keys in bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@2: exact original target membership and same-device/state report coverage; A owns physical primitives, unknown stays pending",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@2"
+          ]
+        },
+        {
+          "id": "needs-pending",
+          "owner": "CJ-003 / CJ-017 / CJ-007; A native device owner",
+          "objects": [
+            "NeedsPendingStore encrypted original actions"
+          ],
+          "source": "ios/App/DevelopmentTripHost.swift; ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift",
+          "status": "provided/DEBUG_simulator_local_only; native_cleanup_consumer_pending_A_27",
+          "principal_binding": "A captured canonical SDK environment/account/generation/key state; G2CDevelopmentNeeds/<environment>/<account>",
+          "sensitive_fields": [
+            "Exact original user actions, pending payloads and receipts or purpose-scoped key material; no keys in bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@2: exact original target membership and same-device/state report coverage; A owns physical primitives, unknown stays pending",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@2"
+          ]
+        },
+        {
+          "id": "needs-key-keychain",
+          "owner": "CJ-003 / CJ-017 / CJ-007; A native device owner",
+          "objects": [
+            "ScopedMessageKeyProvider localNeedsPendingV1 key"
+          ],
+          "source": "ios/App/DevelopmentTripHost.swift; ios/Modules/CJAuth/Sources/CJMessageKeys/MessageKeyInterfaces.swift",
+          "status": "provided/DEBUG_simulator_local_only; native_cleanup_consumer_pending_A_27",
+          "principal_binding": "A captured canonical SDK environment/account/generation/key state; canonical environment/account/localNeedsPendingV1 key namespace",
+          "sensitive_fields": [
+            "Exact original user actions, pending payloads and receipts or purpose-scoped key material; no keys in bridge"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@2: exact original target membership and same-device/state report coverage; A owns physical primitives, unknown stays pending",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@2"
+          ]
         }
       ],
       "owner_line": "A",
