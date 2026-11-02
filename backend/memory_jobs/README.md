@@ -12,7 +12,7 @@ epoch 与处理游标。开始和完成重新进入受保护来源，旧 Memory 
 不表示正式 Memory 已生效。协议和正负例见 [PG-V1](../../contracts/memory-jobs/PG-V1.md)。
 
 本地已验证真实签名 API、受限 PG、进程重建查询、实际 COMMIT ACK 丢失、
-新鲜准入及空库往返/有数据 down 拒绝。追加 M33、registry 和清理钩子同 PR
+新鲜准入及空库往返/有数据 down 拒绝。追加 M34、registry 和清理钩子同 PR
 交付；实际 worker/Meter 生产者由后续 #410–#413 接入。
 
 ```sh

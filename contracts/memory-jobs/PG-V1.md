@@ -115,7 +115,7 @@ Memory reads, drafts or planning. Unprocessed/refused candidates remain ineffect
 
 ## Storage, cleanup and boundaries
 
-Append-only local migration M33 provides history_fence, history_consent, history_action, history_job,
+Append-only local migration M34 provides history_fence, history_consent, history_action, history_job,
 history_cursor under the `cj_memory_` prefix. Runtime uses forced scoped RLS and
 only SELECT/INSERT/necessary column UPDATE. It has no DELETE/TRUNCATE or cleanup
 role membership. The old isolated SQLite path remains a test candidate until its
