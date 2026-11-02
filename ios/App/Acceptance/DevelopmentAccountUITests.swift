@@ -27,7 +27,7 @@ import Foundation
         app = XCUIApplication(bundleIdentifier: bundle)
         app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = ["G2C_DEV_ACCOUNT_MODE": "1", "G2C_DEV_API_BASE_URL": fixture.endpoint,
-                                 "G2C_DEV_TOKEN": "", "G2C_DEV_ACCOUNTS": "{}"]
+                                 "G2C_DEV_TOKEN": "", "G2C_DEV_ACCOUNTS": "{}", "OS_ACTIVITY_MODE": "disable"]
         if tokens {
             app.launchEnvironment["G2C_DEV_ACCOUNTS"] = String(data: try JSONEncoder().encode(fixture.accounts), encoding: .utf8)
         }
@@ -116,6 +116,32 @@ import Foundation
 
     func testLifecycleEnglish() async throws { try await lifecycle("en") }
     func testLifecycleChinese() async throws { try await lifecycle("zh-Hans") }
+
+    private func deletionEntry(_ language: String) async throws {
+        defer { app?.terminate() }
+        _ = try await call("/normal")
+        let fixture = try await configuration()
+        try launch(fixture, language: language)
+        tap("account.development.signout"); signedOut(language)
+        tap("account.development.signin.A"); try signed(fixture, "A", language)
+        let links = app.buttons.matching(identifier: "account.deletion.open")
+        XCTAssertEqual(links.count, 1)
+        XCTAssertTrue(links.element.isHittable)
+        links.element.tap()
+        let status = app.staticTexts["account.deletion.unavailable"]
+        XCTAssertTrue(status.waitForExistence(timeout: 5))
+        XCTAssertEqual(status.label, language == "en" ? "Account deletion is not available yet. No deletion request has been sent." : "账号注销尚未开放，未发送注销请求。")
+        try app.performAccessibilityAudit(for: .all) { issue in
+                print("AX_DELETION: \(issue.compactDescription); element=\(issue.element?.label ?? "<unavailable>"); id=\(issue.element?.identifier ?? "<none>")")
+                return false
+            }
+        capture("signed-account-deletion-" + language)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        try signed(fixture, "A", language)
+    }
+
+    func testDeletionEntryEnglish() async throws { try await deletionEntry("en") }
+    func testDeletionEntryChinese() async throws { try await deletionEntry("zh-Hans") }
 
     private func failures(_ language: String) async throws {
         _ = try await call("/normal")

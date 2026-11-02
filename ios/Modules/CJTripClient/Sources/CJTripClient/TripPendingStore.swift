@@ -12,6 +12,17 @@ protocol TripJournalRecord: Codable {
 }
 extension TripPending: TripJournalRecord { var storageID: String { actionID } }
 
+@MainActor private final class TripDirectoryIdentities {
+    var entries: [String: stat] = [:]
+    func register(_ path: String, _ identity: stat) throws {
+        if let original = entries[path] {
+            guard original.st_dev == identity.st_dev, original.st_ino == identity.st_ino else {
+                throw TripFailure.storageUnavailable
+            }
+        } else { entries[path] = identity }
+    }
+}
+
 /// Immutable, exclusive encrypted records. Reopening grants query only; no resend/delete API.
 @MainActor final class TripEncryptedRecords<Record: TripJournalRecord> {
     private let root: URL
@@ -22,18 +33,25 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
     private let namespace: MessageKeyNamespace
     private let keyID: UUID
     private let key: () throws -> SymmetricKey
+    private let identities: TripDirectoryIdentities
     private var ad: Data { Data("\(domain)|1|\(namespace.environment.uuidString)|\(namespace.account.uuidString)|\(namespace.purpose.rawValue)|\(keyID.uuidString)".utf8) }
     // Package-only test seam; no public raw key initializer and no platform key calls in tests.
-    init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID,
+    convenience init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID,
          domain: String = "CJTripPending", key: @escaping () throws -> SymmetricKey) throws {
+        try self.init(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
+            namespace: namespace, keyID: keyID, domain: domain, identities: TripDirectoryIdentities(), key: key)
+    }
+    private init(directory: URL, maximumBytes: Int, maximumRecords: Int, namespace: MessageKeyNamespace, keyID: UUID,
+         domain: String, identities: TripDirectoryIdentities, key: @escaping () throws -> SymmetricKey) throws {
         guard maximumBytes > 0, maximumBytes <= Int.max - 28, maximumRecords > 0, directory.isFileURL,
               directory.standardizedFileURL.path == directory.resolvingSymlinksInPath().path else { throw TripFailure.storageUnavailable }
         let fd = open(directory.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
         guard fd >= 0 else { throw TripFailure.storageUnavailable }
         var st = stat()
         guard fstat(fd, &st) == 0, st.st_uid == getuid(), st.st_mode & 0o077 == 0 else { close(fd); throw TripFailure.storageUnavailable }
+        do { try identities.register(directory.path, st) } catch { close(fd); throw error }
         root = directory; self.domain = domain; self.directory = fd; self.maximumBytes = maximumBytes; self.maximumRecords = maximumRecords
-        self.namespace = namespace; self.keyID = keyID; self.key = key
+        self.namespace = namespace; self.keyID = keyID; self.key = key; self.identities = identities
     }
     deinit { close(directory) }
     func validate(_ binding: TripBinding) throws {
@@ -74,17 +92,59 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
         try validateDirectory()
         guard try ids.map(name).sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else { throw TripFailure.storageUnavailable }
     }
+    /// Exact local journal only; do not decrypt, create keys or recurse into unknown entries.
+    func clearLocalRecords() throws {
+        try validateDirectory()
+        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        for name in names {
+            let stem = name.dropLast(5)
+            var entry = stat()
+            guard name.hasSuffix(".trip"), stem.count == 64,
+                  stem.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+                  fstatat(directory, name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
+                  entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1,
+                  entry.st_uid == getuid() else { throw TripFailure.storageUnavailable }
+        }
+        try validateDirectory()
+        for name in names {
+            guard unlinkat(directory, name, 0) == 0 else { throw TripFailure.exchangeUnknown }
+        }
+        guard fsync(directory) == 0 else { throw TripFailure.exchangeUnknown }
+        try validateDirectory()
+        guard try FileManager.default.contentsOfDirectory(atPath: root.path).isEmpty else {
+            throw TripFailure.exchangeUnknown
+        }
+    }
     func adjacent<Other: TripJournalRecord>(suffix: String, domain: String, maximumBytes: Int, maximumRecords: Int, create: Bool) throws -> TripEncryptedRecords<Other>? {
         try validateDirectory()
         let target = root.appendingPathExtension(suffix)
         var st = stat()
         if lstat(target.path, &st) != 0 {
             guard errno == ENOENT else { throw TripFailure.storageUnavailable }
+            guard identities.entries[target.path] == nil else { throw TripFailure.storageUnavailable }
             guard create else { return nil }
             try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
         }
         return try TripEncryptedRecords<Other>(directory: target, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
-            namespace: namespace, keyID: keyID, domain: domain, key: key)
+            namespace: namespace, keyID: keyID, domain: domain, identities: identities, key: key)
+    }
+    func clearKnownAdjacent(suffix: String) throws {
+        let target = root.appendingPathExtension(suffix)
+        if identities.entries[target.path] == nil {
+            var st = stat()
+            guard lstat(target.path, &st) != 0, errno == ENOENT else { throw TripFailure.storageUnavailable }
+            return
+        }
+        let original: TripEncryptedRecords<TripPending>? = try adjacent(suffix: suffix, domain: suffix,
+            maximumBytes: maximumBytes, maximumRecords: maximumRecords, create: false)
+        guard let original else { throw TripFailure.storageUnavailable }
+        try original.clearLocalRecords()
+    }
+    func captureManualDirectories() throws {
+        for suffix in ["CJTripManual", "CJTripManual.CJTripManualRejections"] {
+            let _: TripEncryptedRecords<TripPending>? = try adjacent(suffix: suffix, domain: suffix,
+                maximumBytes: maximumBytes, maximumRecords: maximumRecords, create: false)
+        }
     }
     func requireLegacyWritesAllowed() throws {
         try validateDirectory()
@@ -176,12 +236,22 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
          key: @escaping () throws -> SymmetricKey) throws {
         storage = try TripEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
             namespace: namespace, keyID: keyID, key: key)
+        try storage.captureManualDirectories()
     }
     func validate(_ binding: TripBinding) throws { try storage.validate(binding) }
     func append(_ pending: TripPending, validateBinding: () throws -> Void = {}) throws {
         try storage.append(pending) { try validateBinding(); try self.storage.requireLegacyWritesAllowed() }
     }
     public func pending() throws -> [TripPending] { try storage.pending() }
+    /// Physical removal for this store and its two manual-action journals only.
+    /// The cleanup host must retire all bound clients before calling. This is not a
+    /// CLEANUP receipt; scoped/planning journals have separate owning stores.
+    public func clearLocalFiles() throws {
+        try storage.clearLocalRecords()
+        for suffix in ["CJTripManual", "CJTripManual.CJTripManualRejections"] {
+            try storage.clearKnownAdjacent(suffix: suffix)
+        }
+    }
     func validateDirectory() throws { try storage.validateDirectory() }
     func requireOriginal(_ expected: TripPending) throws -> Durability { try storage.requireOriginal(expected) }
     func validateDurability(_ proof: Durability) throws { try storage.validateDurability(proof) }

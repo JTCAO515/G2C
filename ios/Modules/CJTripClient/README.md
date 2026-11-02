@@ -235,3 +235,11 @@ malformed-input decoding tests cover the contract's negative notes and producer
 vectors. This supplies no PLACE transport or tool dispatch and proves **L0 only**.
 #266/#21 PLACE/map L1 stays UNRUN until #265's actual producer is delivered; the
 legacy projection and current TRIP path remain unchanged.
+
+M3 #418: `TripPendingStore.clearLocalFiles()` physically clears the exact encrypted
+Trip journal and its two manual-action/rejection siblings. Unknown entries, links
+and directory replacement fail; partial failures do not report completion and may
+be retried against the same stores. It requires no decrypt/key lookup. The trusted
+cleanup host must first retire bound clients. Scoped/planning journals remain
+owned by CJManualPreviewClient and are not covered by this primitive. CLEANUP@1.0
+App hook integration and native deletion remain separate work in #27.

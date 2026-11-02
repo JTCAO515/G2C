@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import Darwin
 
 /// Storage material supplied by a trusted external provider, not an AUTH assertion.
 public struct MessageStorageKey: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
@@ -19,6 +20,7 @@ public struct MessageStorageKey: CustomStringConvertible, CustomDebugStringConve
 @MainActor public final class EncryptedFileStorage: SecureMessageStorage {
     private let directory: URL
     private let keys: any MessageEncryptionKeyProvider
+    private let directoryIdentity: stat
     private let prefix = Data("CJMKEY02".utf8)
     private let headerSize = 44 // 8-byte version + canonical 36-byte UUID; both authenticated.
 
@@ -32,7 +34,38 @@ public struct MessageStorageKey: CustomStringConvertible, CustomDebugStringConve
         guard attributes[.type] as? FileAttributeType == .typeDirectory,
               let permissions = attributes[.posixPermissions] as? NSNumber,
               permissions.intValue & 0o077 == 0 else { throw RecoveryError.unsafeDirectory }
-        self.directory = directory; self.keys = keys
+        var identity = stat()
+        guard lstat(directory.path, &identity) == 0 else { throw RecoveryError.unsafeDirectory }
+        self.directory = directory; self.keys = keys; directoryIdentity = identity
+    }
+
+    /// Local physical removal only. A trusted cleanup host must retire all consumers first.
+    /// No key lookup, server deletion or device-wide completion is implied.
+    public func clearLocalSnapshot(scope: StorageScope) throws {
+        guard directory.standardizedFileURL.path == directory.resolvingSymlinksInPath().path else {
+            throw RecoveryError.unsafeDirectory
+        }
+        let fd = open(directory.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { throw RecoveryError.unsafeDirectory }
+        defer { close(fd) }
+        var current = stat()
+        guard fstat(fd, &current) == 0, current.st_dev == directoryIdentity.st_dev,
+              current.st_ino == directoryIdentity.st_ino, current.st_uid == getuid(),
+              current.st_mode & 0o077 == 0 else { throw RecoveryError.unsafeDirectory }
+        let name = file(scope).lastPathComponent
+        var entry = stat()
+        if fstatat(fd, name, &entry, AT_SYMLINK_NOFOLLOW) == 0 {
+            guard entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1,
+                  entry.st_uid == getuid() else { throw RecoveryError.unsafeDirectory }
+            guard unlinkat(fd, name, 0) == 0 else { throw RecoveryError.persistenceUnknown }
+        } else if errno != ENOENT { throw RecoveryError.persistenceUnknown }
+        guard fsync(fd) == 0, fstatat(fd, name, &entry, AT_SYMLINK_NOFOLLOW) != 0,
+              errno == ENOENT else { throw RecoveryError.persistenceUnknown }
+        var named = stat()
+        guard lstat(directory.path, &named) == 0, named.st_dev == current.st_dev,
+              named.st_ino == current.st_ino, named.st_mode & S_IFMT == S_IFDIR else {
+            throw RecoveryError.unsafeDirectory
+        }
     }
 
     public func load(scope: StorageScope) throws -> Snapshot? {
