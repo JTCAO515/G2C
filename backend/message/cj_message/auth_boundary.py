@@ -36,10 +36,11 @@ class HistoryReadContext:
     Exposes current trusted metadata for codec binding, not a new identity format.
     No write method or raw repository is exposed.
     """
-    def __init__(self, principal, scope, service, *, _factory=None):
+    def __init__(self, principal, scope, service, *, _guard, _factory=None):
         if _factory is not _HISTORY_CONTEXT_FACTORY:
             raise TypeError('history context must be issued by Boundary')
         self._principal, self._scope, self._service = principal, scope, service
+        self._admission_guard = _guard
         self._active = True
         self._thread = threading.current_thread()
 
@@ -157,6 +158,7 @@ class HistoryReadContext:
         self._check()
         def admit():
             self._check()
+            self._admission_guard('current_source_lease')
             return self._principal
         result=with_source_and_travel(self._service,self._principal,query,policy,selection,admit,project)
         self._check()
@@ -228,7 +230,7 @@ class Boundary:
         context = None
         try:
             service, principal, scope, guard = self._bind(token)
-            context = HistoryReadContext(principal, scope, service, _factory=_HISTORY_CONTEXT_FACTORY)
+            context = HistoryReadContext(principal, scope, service, _guard=guard, _factory=_HISTORY_CONTEXT_FACTORY)
             _ACTIVE_HISTORY_CONTEXT.set(context)
             guard('transaction')  # resolver/codec boundary; same captured principal
             result = operation(context)
