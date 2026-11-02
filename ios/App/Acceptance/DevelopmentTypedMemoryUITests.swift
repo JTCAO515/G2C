@@ -170,6 +170,40 @@ import Foundation
     private func dismissKeyboard() {
         if app.toolbars.buttons.matching(identifier:localized("Done","完成")).firstMatch.exists {tap("Done")}
     }
+    func testTypedGroupsPaged() async throws {
+        continueAfterFailure=false;executionTimeAllowance=900
+        let f=try await prepare();defer { app?.terminate() };try launch(f,restore:false)
+        tap("memory2.items.open");tap("memory2.items.read")
+        text("memory2.items.coverage",contains:"not account-wide totals")
+        text("memory2.group.empty.preference",contains:"pages read so far")
+        XCTAssertFalse(app.buttons.matching(identifier:"memory2.item.group-21").firstMatch.exists)
+        tap("memory2.items.next")
+        let last=app.buttons.matching(identifier:"memory2.item.group-21").firstMatch;reveal(last,id:"last.group.record")
+        XCTAssertTrue(last.label.contains("SYNTHETIC grouped preference 21"))
+        tap("memory2.items.next")
+        XCTAssertFalse(app.buttons.matching(identifier:"memory2.items.next").firstMatch.exists)
+        let first=app.buttons.matching(identifier:"memory2.item.group-00").firstMatch;reveal(first,id:"first.group.record")
+        XCTAssertTrue(first.label.contains("SYNTHETIC grouped fact 0"))
+        _ = try await call("/groups-proof")
+        var issues=0;continueAfterFailure=true
+        try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_GROUPS",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
+        continueAfterFailure=false;XCTAssertEqual(issues,0)
+    }
+    func testTypedGroupsLateAccount() async throws {
+        continueAfterFailure=false;executionTimeAllowance=900
+        let f=try await prepare();defer { app?.terminate() };try launch(f,restore:false)
+        tap("memory2.items.open");_ = try await call("/arm-hold");tap("memory2.items.read");_ = try await call("/wait-held")
+        back();tap("memory.account");tap("account.development.signin.B")
+        text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
+        _ = try await call("/release-held")
+        back();tap("memory2.items.open");tap("memory2.items.read")
+        text("memory2.items.status",contains:"No memories found")
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","memory2.item.group-")).count,0)
+        _ = try await call("/groups-proof")
+        var issues=0;continueAfterFailure=true
+        try app.performAccessibilityAudit(for:.all) { issue in issues+=1;print("TYPED_GROUPS_LATE",issue.detailedDescription,issue.element?.label ?? "unavailable");return false }
+        continueAfterFailure=false;XCTAssertEqual(issues,0)
+    }
     func testTypedQuestionsEnglish() async throws { try await questions(large:false) }
     func testTypedQuestionsChineseLargest() async throws { try await questions(large:true) }
     private func questions(large:Bool) async throws {

@@ -18,10 +18,12 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulator',required=True);parser.add_argument('--run-context',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--build-dir',type=Path,required=True)
-    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall','testUnknownReopenAndLifecycleRecall','testSwitchAccountAfterActualCommit','testReleaseTypedFlagsRemainClosed','testLegacyUnknownCannotBypassTypedMode','testRealConflictKeepsOriginalAndAllowsFreshSave','testTypedUnknownCannotReactivateLegacyWriter','testTypedQuestionsEnglish','testTypedQuestionsChineseLargest'],default='testEnglishSaveReadAndOwnedTravel')
+    parser.add_argument('--case',choices=['testEnglishSaveReadAndOwnedTravel','testChineseLargeSaveReadAndRecall','testUnknownReopenAndLifecycleRecall','testSwitchAccountAfterActualCommit','testReleaseTypedFlagsRemainClosed','testLegacyUnknownCannotBypassTypedMode','testRealConflictKeepsOriginalAndAllowsFreshSave','testTypedUnknownCannotReactivateLegacyWriter','testTypedQuestionsEnglish','testTypedQuestionsChineseLargest','testTypedGroupsPaged','testTypedGroupsLateAccount'],default='testEnglishSaveReadAndOwnedTravel')
     args=parser.parse_args();output=args.output.resolve();build=args.build_dir.resolve()
     chinese=args.case in ('testChineseLargeSaveReadAndRecall','testTypedQuestionsChineseLargest')
     collection_questions=args.case in ('testTypedQuestionsEnglish','testTypedQuestionsChineseLargest')
+    collection_groups=args.case in ('testTypedGroupsPaged','testTypedGroupsLateAccount')
+    groups_late=args.case=='testTypedGroupsLateAccount'
     unknown=args.case=='testUnknownReopenAndLifecycleRecall'
     switching=args.case=='testSwitchAccountAfterActualCommit'
     release=args.case=='testReleaseTypedFlagsRemainClosed'
@@ -59,7 +61,7 @@ def main():
         git_trees={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=ROOT,text=True).strip() for name in ('ios','backend','contracts','scripts')},
         run_context=json.loads(args.run_context.read_text()),
         unrun=['complete #228 frame4 matrix','other native cases','lifecycle/unknown/interoperability matrix','real services/models/cloud/fees','physical device/VoiceOver'])
-    if collection_questions:report['unrun']=['#332 remaining native cases/pagination/late/Release matrix','real services/models/cloud/fees','physical device/VoiceOver']
+    if collection_questions or collection_groups:report['unrun']=['#332 remaining native cases/pagination/late/Release matrix','real services/models/cloud/fees','physical device/VoiceOver']
     lock=threading.RLock()
     def save():
         with lock:(output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -81,7 +83,7 @@ def main():
                         cwd=ROOT,check=True,capture_output=True)
                     dev_auth.activate_travel(conn,subject,context,ABI)
                 slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)}
-                if collection_questions and chinese:
+                if (collection_questions and chinese) or collection_groups:
                     slots.update(a_fact=dict(kind='fact',collection_allowed=True,semantic_resolved=True),b_experience=dict(kind='experience',collection_allowed=True,semantic_resolved=True))
                 if reverse:slots['legacy.read']=dict(kind='preference',collection_allowed=True,semantic_resolved=True)
                 legacy_profile=dict(subjects=['self'],slots=slots,extents=['long_term'],context_ids=[])
@@ -106,6 +108,16 @@ def main():
                     selections={subject:dict(subject='self',slots=['preference'],max_bytes=2000) for subject in subjects.values()})).encode())
                 memory=create_local_typed_app(conninfo_path=conn,auth_dir=auth,configuration=typed)
                 database=LocalDatabase(conn,run_context=context,travel_context=True)
+                group_seeds=[]
+                if collection_groups:
+                    with TestClient(memory) as client:
+                        for index in range(22):
+                            kind,slot=('fact','a_fact') if index<10 else ('experience','b_experience') if index<20 else ('preference','preference')
+                            command=dict(version='MEMORY-manual.2',operation_id='group-save-'+str(index),item_id='group-'+str(index).zfill(2),subject='self',slot=slot,kind=kind,text='SYNTHETIC grouped '+kind+' '+str(index),extent='long_term',context=None,occurred_at='SYNTHETIC time unknown')
+                            raw=json.dumps(command,ensure_ascii=False,separators=(',',':')).encode()
+                            response=client.post('/v2/memories',content=raw,headers={**headers['A'],'Content-Type':'application/octet-stream'});response.raise_for_status()
+                            group_seeds.append(dict(command=command,input_sha256=hashlib.sha256(raw).hexdigest(),receipt=response.json()))
+                    report['group_seed_receipts']=group_seeds;save()
                 audit=[];errors=[];iterations=[0];outcomes=[];stop=threading.Event();fixture_actions=[]
                 network=dict(lose=None,hold=False);held=threading.Event();released=threading.Event();response_sent=threading.Event()
                 class ObservedMemoryProvider(FakeProvider):
@@ -133,6 +145,7 @@ def main():
                         bearer=dict(scope['headers']).get(b'authorization',b'')
                         account=next((key for key,token in tokens.items() if bearer==('Bearer '+token).encode()),None)
                         event=dict(host=label,method=scope['method'],path=scope['path'],status=None,account=account);raw=bytearray()
+                        if collection_groups and scope['path']=='/v2/memories':event['query']=parse_qs(scope.get('query_string',b'').decode())
                         with lock:audit.append(event)
                         async def received():
                             message=await receive()
@@ -160,7 +173,7 @@ def main():
                             # Lose only the network body AFTER the real producer
                             # committed. Do not fabricate a business rejection.
                             raise RuntimeError('controlled ACK loss after actual commit')
-                        delayed=committed and network['hold']
+                        delayed=network['hold'] and (committed or (groups_late and label=='memory' and scope['path']=='/v2/memories' and scope['method']=='GET' and account=='A' and event['status']==200))
                         if delayed:
                             network['hold']=False;event['held_at']=time.monotonic();held.set();save()
                             if not await asyncio.to_thread(released.wait,30):raise TimeoutError('actual response release required')
@@ -193,6 +206,32 @@ def main():
                     report['proof']=result
                     report.setdefault('consumption_proofs',{})[str(messages)]=result
                     save();return result
+                def groups_proof():
+                    assert collection_groups and len(group_seeds)==22
+                    rows=[];after=None
+                    with TestClient(memory) as client:
+                        for _ in range(4):
+                            query=dict(limit=20)
+                            if after is not None:query['after']=after
+                            response=client.get('/v2/memories',params=query,headers=headers['A']);response.raise_for_status();page=response.json()['items']
+                            if not page:break
+                            rows+=page;after=page[-1]['command']['item_id']
+                        other=client.get('/v2/memories',params=dict(limit=20),headers=headers['B']);other.raise_for_status();assert other.json()['items']==[]
+                    assert [x['command']['item_id'] for x in rows]==['group-'+str(i).zfill(2) for i in range(22)]
+                    assert [x['command']['text'] for x in rows]==[x['command']['text'] for x in group_seeds]
+                    assert not any(x['method']=='POST' for x in audit) and model.calls==0 and not outcomes and not errors
+                    with database.connect(scope_for(ISSUER,subjects['A'])) as connection:
+                        role=connection.execute('SELECT current_user').fetchone()[0];sources=connection.execute('SELECT source_id,approved_input FROM cj_memory_source ORDER BY source_id').fetchall()
+                    assert role=='cj_m1_runtime' and len(sources)==22
+                    reads=[x for x in audit if x['host']=='memory' and x['path']=='/v2/memories']
+                    if groups_late:
+                        held_reads=[x for x in reads if 'released_at' in x];assert len(held_reads)==1 and held_reads[0]['account']=='A' and held_reads[0]['status']==200
+                        assert held_reads[0]['released_at']-held_reads[0]['held_at']<14
+                        assert any(x['account']=='B' and x['status']==200 for x in reads)
+                    else:
+                        assert [x['query'] for x in reads]==[{'limit':['20']},{'limit':['20'],'after':['group-19']},{'limit':['20'],'after':['group-21']}]
+                    value=dict(role=role,records=22,app_writes=0,model_calls=0,all_original_texts_preserved=True,source_hashes={sid:hashlib.sha256(bytes(raw)).hexdigest() for sid,raw in sources},reads=reads,late=groups_late)
+                    report['groups_proof']=value;save();return value
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
                     def do_GET(self):
@@ -201,6 +240,7 @@ def main():
                             if parsed.path=='/prepare':value=dict(endpoint=endpoints[0],memory_endpoint=endpoints[1],accounts=tokens,subjects=subjects,travel_ids=travels,
                                 travel_profile=json.dumps(dict(version='app-travel.1',travel_ids=travels)),
                                 question_count=(3 if chinese else 2) if collection_questions else None,legacy_profile=json.dumps(legacy_profile),memory_profile=json.dumps(dict(version='app-memory.2',subjects=['self'],slots=slots,extents=['long_term','current'])))
+                            elif parsed.path=='/groups-proof':value=groups_proof()
                             elif parsed.path=='/collection-no-write':
                                 assert collection_questions and not items() and model.calls==0
                                 assert not any(x['method']=='POST' for x in audit)
@@ -283,7 +323,10 @@ def main():
                     assert (summary['passedTests'],summary['failedTests'],summary['skippedTests'])==(1,0,0)
                     assert value['role']==['cj_m1_runtime','cj_m1_runtime'] and not errors and iterations[0]>0
                     posts=[event for event in audit if event['host']=='memory' and event['method']=='POST' and not event.get('fixture',False)]
-                    if collection_questions:
+                    if collection_groups:
+                        expected=[x['command']['text'] for x in group_seeds];groups_proof()
+                        assert len(posts)==0 and value['message_count']==model.calls==0
+                    elif collection_questions:
                         expected=['SYNTHETIC questions preference / 问题偏好 e\u0301']
                         assert len(value['items'])==1 and value['message_count']==model.calls==1 and len(posts)==1
                         assert dict(value['registered_operations']).get('model')==1 and len(report['collection_zero_write_proofs'])==2
