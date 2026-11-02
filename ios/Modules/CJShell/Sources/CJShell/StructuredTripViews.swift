@@ -42,7 +42,7 @@ struct StructuredTripHome: View {
                         if let record=display.selected {
                             Divider()
                             if let offline {
-                                button("offline.sync", language.text("Synchronize for offline reading", "同步用于离线读取"), disabled: display.busy) {
+                                button("offline.sync", language.text("Synchronize for offline reading", "同步用于离线读取"), disabled: display.busy || host.editor != nil) {
                                     run { try host.synchronizeOffline() }
                                 }
                                 OfflineSyncLabel(controller: offline, language: language)

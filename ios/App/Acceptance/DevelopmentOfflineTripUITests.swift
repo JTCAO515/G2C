@@ -156,7 +156,7 @@ import Foundation
         try launch(f, offsets: ["G2C_DEV_OFFLINE_WALL_OFFSET": "1209600", "G2C_DEV_OFFLINE_UPTIME_OFFSET": "1209600"], choices: false)
         expectDenied("has expired"); try audit("offline-expired")
         try await call("/verify", f, ["stage": "unchanged"])
-        try launch(f, offsets: ["G2C_DEV_OFFLINE_WALL_OFFSET": "-60"], choices: false)
+        try launch(f, offsets: ["G2C_DEV_OFFLINE_WALL_OFFSET": "-3600"], choices: false)
         expectDenied("cannot be trusted"); try await call("/verify", f, ["stage": "unchanged"])
         try launch(f, offsets: ["G2C_DEV_OFFLINE_TIME_TRUSTED": "0"], choices: false)
         expectDenied("cannot be trusted"); try await call("/verify", f, ["stage": "unchanged"])

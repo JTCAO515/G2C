@@ -71,6 +71,7 @@ struct OfflineAnchor: Codable, Equatable {
     private let makeKeys: (MessageKeyNamespace) throws -> ScopedMessageKeyProvider
     private let clock: () -> OfflineClock?
     private let policy: OfflinePolicy?
+    private let makeStore: (URL) throws -> AtomicSnapshotStore
     private var generation = UUID()
     private var inFlight = false
     private var blocked = false
@@ -106,14 +107,20 @@ struct OfflineAnchor: Codable, Equatable {
     init(environment: UUID, root: URL, anchors: any SessionPersistence,
          sdkMaterial: @escaping () throws -> SessionMaterial?,
          makeKeys: @escaping (MessageKeyNamespace) throws -> ScopedMessageKeyProvider,
-         clock: @escaping () -> OfflineClock?, policy: OfflinePolicy?) {
+         clock: @escaping () -> OfflineClock?, policy: OfflinePolicy?,
+         makeStore: @escaping (URL) throws -> AtomicSnapshotStore = { try AtomicSnapshotStore(existingPrivateDirectory: $0) }) {
         self.environment = environment; self.root = root; self.anchors = anchors
-        self.sdkMaterial = sdkMaterial; self.makeKeys = makeKeys; self.clock = clock; self.policy = policy
+        self.sdkMaterial = sdkMaterial; self.makeKeys = makeKeys; self.clock = clock; self.policy = policy; self.makeStore = makeStore
     }
     private func check(_ token: UUID) throws {
         guard generation == token, !blocked else { throw OfflineFailure.unavailable }
     }
     private func materialHash(_ material: SessionMaterial) -> String { material.withBytes(digest) }
+    private func requireCurrentMaterial(_ expected: String, token: UUID) throws {
+        let current = try sdkMaterial()
+        try check(token)
+        guard let current, materialHash(current) == expected else { throw OfflineFailure.unavailable }
+    }
     private func loadAnchor() throws -> OfflineAnchor? {
         let value: SessionMaterial?
         do { value = try anchors.load() }
@@ -156,7 +163,7 @@ struct OfflineAnchor: Codable, Equatable {
             try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: directory.path)
             #endif
         }
-        let value = try AtomicSnapshotStore(existingPrivateDirectory: directory)
+        let value = try makeStore(directory)
         stores[account] = value
         return value
     }
@@ -202,13 +209,18 @@ struct OfflineAnchor: Codable, Equatable {
         if let previous, previous.namespace == namespace {
             guard original.snapshot.version >= previous.version else { throw OfflineFailure.rollback }
         }
-        let receipt = try original.writeOnce()
+        var anchor = OfflineAnchor(namespace: namespace, keyID: key.id, version: original.snapshot.version,
+            responseHash: original.snapshot.metadata.responseHash, sessionHash: materialHash(material), syncedAt: wall,
+            deadline: sync.deadline, boot: now.boot, uptimeAtSync: now.uptime, lastWall: wall, readAllowed: false)
+        displayed = nil; displayedAnchor = nil; state = .unavailable
+        try saveAnchor(anchor, token: token) // retain the exact denied target before any file commit
+        _ = try original.writeOnce()
         try check(token)
         guard session.isCurrent(operation) else { throw OfflineFailure.unavailable }
-        let anchor = OfflineAnchor(namespace: namespace, keyID: key.id, version: receipt.version,
-            responseHash: receipt.responseHash, sessionHash: materialHash(material), syncedAt: wall,
-            deadline: sync.deadline, boot: now.boot, uptimeAtSync: now.uptime, lastWall: wall, readAllowed: true)
+        try requireCurrentMaterial(identity.materialHash, token: token)
+        anchor.readAllowed = true
         try saveAnchor(anchor, token: token)
+        try requireCurrentMaterial(identity.materialHash, token: token)
         try check(token); syncState = .saved
         // The next explicit local read revalidates the persisted pair before exposing text.
         displayed = nil; displayedAnchor = nil; state = .idle
@@ -278,7 +290,9 @@ struct OfflineAnchor: Codable, Equatable {
                 clock: now, lastTrustedWall: anchor.lastWall, minimumVersion: anchor.version, sessionAllowsOffline: true) {
             case .readable:
                 var updated = anchor; updated.lastWall = now.trustedWallSeconds!
+                try requireCurrentMaterial(anchor.sessionHash, token: token)
                 try saveAnchor(updated, token: token)
+                try requireCurrentMaterial(anchor.sessionHash, token: token)
                 displayed = snapshot; displayedAnchor = updated; publish(snapshot, anchor: updated)
             case .stale: state = .expired
             case .unavailable: state = .untrustedTime

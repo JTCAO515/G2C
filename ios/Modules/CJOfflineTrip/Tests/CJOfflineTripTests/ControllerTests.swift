@@ -213,4 +213,56 @@ private actor ControllerWire: ClientTransport {
         #expect(trip.document.items[0].text == "天坛" && trip.tripID == "trip1")
     }
 
+    @Test func unconfirmedFirstWriteRetainsDeniedCleanupTargetAcrossReopen() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        let material = try SessionMaterial(trustedSDKBytes: Data("verified-sdk-unit-a".utf8))
+        try sdk.save(material)
+        let (client, binding) = try client(h)
+        var original: OfflineTripController? = OfflineTripController(environment: h.ns.backend, root: h.root,
+            anchors: anchors, sdkMaterial: sdk.load, makeKeys: { _ in h.provider }, clock: clock.read, policy: .acceptedTrip,
+            makeStore: { directory in
+                let store = try AtomicSnapshotStore(existingPrivateDirectory: directory)
+                store.afterRename = { throw OfflineFailure.storageFailure }
+                return store
+            })
+        do {
+            let active = try #require(original)
+            try active.bindSynchronizationIdentity(material: material, account: h.ns.account, session: h.session, operation: h.operation)
+            let accepted = try await source(client, binding)
+            #expect(throws: OfflineFailure.writeUnknown) {
+                try active.synchronize(client: client, source: accepted, session: h.session, operation: h.operation)
+            }
+            guard case .unknown = active.syncState else { Issue.record("Local uncertainty must remain UNKNOWN"); return }
+            #expect(throws: OfflineFailure.writeUnknown) { try active.clearLocally() }
+            let deniedBytes = try #require(anchors.value).withBytes { $0 }
+            let denied = try JSONDecoder().decode(OfflineAnchor.self, from: deniedBytes)
+            #expect(!denied.readAllowed && denied.namespace == h.ns)
+        }
+        original = nil
+        let reopened = try controller(h, anchors, clock, sdk: sdk)
+        reopened.readCached()
+        guard case .unavailable = reopened.state else { Issue.record("Unconfirmed file cannot become a readable grant"); return }
+        try reopened.clearLocally()
+        let file = h.root.appendingPathComponent(h.ns.account.uuidString).appendingPathComponent("snapshot.aesgcm")
+        #expect(!FileManager.default.fileExists(atPath: file.path) && anchors.blocked)
+    }
+
+    @Test func sdkMaterialChangedByKeyLookupCannotPublishOrRenew() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("verified-sdk-unit-a".utf8)))
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let original = try #require(anchors.value).withBytes { $0 }
+        h.storage.onRead = {
+            h.storage.onRead = nil
+            try sdk.save(SessionMaterial(trustedSDKBytes: Data("different-sdk-material".utf8)))
+        }
+        clock.wall += 1; clock.uptime += 1
+        active.readCached()
+        guard case .unavailable = active.state else { Issue.record("Old SDK material must not publish"); return }
+        #expect(try anchors.value?.withBytes({ $0 }) == original)
+    }
+
 }

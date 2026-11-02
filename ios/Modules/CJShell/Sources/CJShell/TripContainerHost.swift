@@ -203,8 +203,13 @@ import CJManualPreviewClient
             let source = try await work.context.binding.client.detailSnapshot(for: work.request)
             guard owns(work.context, work.token) else { return }
             if let source {
-                try cache.synchronize(client: work.context.binding.client, source: source,
-                    session: work.context.binding.session, operation: work.context.binding.operation)
+                do {
+                    try cache.synchronize(client: work.context.binding.client, source: source,
+                        session: work.context.binding.session, operation: work.context.binding.operation)
+                } catch {
+                    guard owns(work.context, work.token) else { return }
+                    // The cache owns its failed/unknown write result; do not relabel it as a GET failure.
+                }
             } else { cache.noteSyncReadFailure() }
         } catch {
             guard owns(work.context, work.token) else { return }

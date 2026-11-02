@@ -95,7 +95,7 @@ public struct StructuredTripDisplay: Sendable {
         busy=true;state = .loading;revision=UUID();return .init(owner:owner,nonce:token,payload:.detail(request))
     }
     public func synchronizeOffline() throws -> StructuredTripHostWork {
-        guard offline != nil, let selected, !busy else { throw TripFailure.invalidInput }
+        guard offline != nil, let selected, !busy, editing == nil else { throw TripFailure.invalidInput }
         let work = try detail(id: selected.tripID)
         offlineNonce = work.nonce
         offline?.prepareSynchronization()

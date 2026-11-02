@@ -32,6 +32,11 @@ are required; a new boot without online synchronization fails closed. Monotonic
 elapsed time expires the snapshot even if wall time stalls. Timers only deny or
 expire an already displayed snapshot and cannot renew it.
 
+Synchronization first persists a denied exact-target anchor, commits the original
+ciphertext, then marks the verified pair readable. An interrupted first file write
+therefore cannot leave an untracked readable/orphan target; local cleanup keeps
+that denied target across reopen until physical removal succeeds.
+
 Files use 0700 account directories, exclusive 0600 ciphertext, AES-GCM AAD and
 atomic fsync/readback. iOS writes set Complete file protection and reads verify
 it. Dedicated canonical `localOfflineTripSnapshotV1` keys are created only after
