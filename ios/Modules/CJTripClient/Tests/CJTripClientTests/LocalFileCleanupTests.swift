@@ -41,6 +41,34 @@ import CJMessageKeys
             namespace: ns, keyID: id, key: { key })
         #expect(try reopened.pending().isEmpty)
     }
+    @Test func manualReplacementAndMissingOriginalCannotBeReboundByCleanup() throws {
+        for suffix in ["CJTripManual", "CJTripManual.CJTripManualRejections"] {
+            let root = try directory(), key = SymmetricKey(size: .bits256), id = UUID()
+            let ns = MessageKeyNamespace(environment: UUID(), account: UUID(), purpose: .localTripPendingV1)
+            let store = try TripPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 10,
+                namespace: ns, keyID: id, key: { key })
+            let manual: TripEncryptedRecords<TripPending> = try #require(try store.manualRecords(maximumBytes: 100_000, maximumRecords: 10, create: true))
+            let original: TripEncryptedRecords<TripPending>
+            if suffix == "CJTripManual" { original = manual }
+            else { original = try #require(try manual.adjacent(suffix: "CJTripManualRejections", domain: "rejections", maximumBytes: 100_000, maximumRecords: 10, create: true)) }
+            try original.append(pending())
+            let target = root.appendingPathExtension(suffix), moved = target.appendingPathExtension("original")
+            defer {
+                for url in [root, moved] + TripPendingStore.manualNamespaceDirectories(at: root) { try? FileManager.default.removeItem(at: url) }
+            }
+            try FileManager.default.moveItem(at: target, to: moved)
+            #expect(throws: TripFailure.storageUnavailable) { try store.clearLocalFiles() }
+            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+            let otherNS = MessageKeyNamespace(environment: ns.environment, account: UUID(), purpose: .localTripPendingV1)
+            let replacement = try TripEncryptedRecords<TripPending>(directory: target, maximumBytes: 100_000, maximumRecords: 10,
+                namespace: otherNS, keyID: id, key: { key })
+            try replacement.append(pending(.reject))
+            #expect(throws: TripFailure.storageUnavailable) { try store.clearLocalFiles() }
+            #expect(try FileManager.default.contentsOfDirectory(atPath: moved.path).count == 1)
+            #expect(try replacement.pending().count == 1)
+        }
+    }
+
     @Test func unknownEntriesAndLinksRefuseCompletionAndPreserveTargets() throws {
         let root = try directory()
         defer { try? FileManager.default.removeItem(at: root) }
