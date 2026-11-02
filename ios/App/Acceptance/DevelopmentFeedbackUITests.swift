@@ -25,7 +25,8 @@ import Foundation
         let query = app.buttons.matching(identifier: id), target = app.buttons.matching(identifier: id).element
         for _ in 0..<30 {
             if target.exists && target.isHittable { break }
-            if target.exists && target.frame.midY < app.navigationBars.element.frame.maxY { app.swipeDown() }
+            let bar = app.navigationBars.firstMatch
+            if target.exists && bar.exists && target.frame.midY < bar.frame.maxY { app.swipeDown() }
             else { app.swipeUp() }
         }
         XCTAssertEqual(query.count, 1, id); XCTAssertTrue(target.isHittable, id)
