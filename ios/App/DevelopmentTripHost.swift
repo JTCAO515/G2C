@@ -903,7 +903,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
     }
 }
 
-/// Fixed App-owned locations, captured only after normal writers are quiesced.
+/// Fixed App-owned locations. Native erasure is allowed only after writers are quiesced.
 /// Neither an HTTP field nor a target string is ever concatenated into a path.
 @MainActor private final class DevelopmentDeviceNativeLayout {
     let scope: AccountCleanupScope
@@ -1321,7 +1321,10 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private var account: AccountCleanupClient?
     private var lifetime: AccountCleanupLifetime
     private var active = true
-    var holdsBusinessFence: Bool { manifest != nil }
+    var holdsBusinessFence: Bool {
+        guard let account else { return manifest != nil }
+        do { return try account.requiresRestrictedProgress } catch { return true }
+    }
 
     static func slot(environment: UUID, suffix: String) throws -> KeychainSessionStore {
         guard let app = Bundle.main.bundleIdentifier else { throw CleanupFailure.unavailable }
@@ -1369,7 +1372,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
             account = try AccountCleanupClient(development: endpoint, lifetime: lifetime, securePersistence: accountStore,
                 session: ordinary.lease.session, sessionOperation: ordinary.lease.operation,
                 credentials: { [weak self] in try self?.check(); return self?.ordinary?.configuration.token },
-                beforeConfirmation: { [weak self] _ in guard let self else { throw CleanupFailure.stale }; try self.check(); try self.quiesce() },
+                beforeConfirmation: { [weak self] _ in guard let self else { throw CleanupFailure.stale }; try self.validateBeforeConfirmation(); try self.quiesce() },
                 requestTimeout: 10, resourceTimeout: 20)
         } else {
             device = try DeviceCleanupClient(developmentOriginalDevice: endpoint, lifetime: lifetime,
@@ -1390,7 +1393,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         try check()
         guard manifest == nil, let ordinary, ordinary.lease.session.isCurrent(ordinary.lease.operation),
               let material = try sdkStore.load() else { throw CleanupFailure.unavailable }
-        try quiesce(); try check()
+        try check()
         let layout = try DevelopmentDeviceNativeLayout(scope: lifetime.scope)
         let stores = try DevelopmentDeviceNativeStores(scope: lifetime.scope, layout: layout, endpoint: endpoint.url)
         let next = DevelopmentNativeManifest(version: "NativeDeviceManifest@1", scope: lifetime.scope, nonce: UUID(),
@@ -1406,6 +1409,15 @@ private func developmentCleanupHash(_ value: Data) -> String {
         try indexStore.save(SessionMaterial(trustedSDKBytes: scopeBytes))
         guard try indexStore.load()?.withBytes({ $0 }) == scopeBytes else { throw CleanupFailure.exchangeUnknown }
         manifest = next; try configureClients()
+    }
+    private func validateBeforeConfirmation() throws {
+        try check()
+        guard let manifest else { throw CleanupFailure.unavailable }
+        let layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope)
+        let keys = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint.url)
+        let ids = Dictionary(uniqueKeysWithValues: keys.keyIDs.map { ($0.key.rawValue, $0.value) })
+        guard try layout.manifestReferences() == manifest.directories, ids == manifest.keyIDs,
+              try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
     }
     private func settleRevocation() throws {
         guard let account, try account.requiresRestrictedProgress else { return }
@@ -1472,7 +1484,11 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private func refresh(unknown: Bool = false) {
         var value = AccountCleanupPresentation(); value.unknown = unknown
         guard active else { value.unavailable = true; host.show(value); return }
-        guard let device, let account else { value.canReview = ordinary != nil; host.show(value); return }
+        guard let device, let account else {
+            value.canReview = ordinary != nil && manifest == nil
+            value.unavailable = manifest != nil
+            host.show(value); return
+        }
         do { value.businessStopped = try account.requiresRestrictedProgress }
         catch { value.unavailable = true }
         switch account.state {

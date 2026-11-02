@@ -47,7 +47,10 @@ import Foundation
     }
     func tap(_ id: String) {
         let query = app.buttons.matching(identifier: id), button = query.element
-        XCTAssertTrue(button.waitForExistence(timeout: 25), id); reveal(button); XCTAssertEqual(query.count, 1, id)
+        XCTAssertTrue(button.waitForExistence(timeout: 25), id)
+        let fixedControl = app.tabBars.buttons.matching(identifier: id).count == 1 || app.navigationBars.buttons.matching(identifier: id).count == 1
+        if !fixedControl { reveal(button) }
+        XCTAssertEqual(query.count, 1, id)
         let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 25), .completed, id)
         button.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).tap()
