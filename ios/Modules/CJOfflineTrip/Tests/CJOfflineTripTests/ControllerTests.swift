@@ -326,20 +326,28 @@ private actor ControllerWire: ClientTransport {
         let material = try SessionMaterial(trustedSDKBytes: Data("verified-sdk-unit-a".utf8))
         try sdk.save(material)
         let (client, binding) = try client(h)
+        var provided: OfflineTripStorageProvision?
         var original: OfflineTripController? = OfflineTripController(environment: h.ns.backend, root: h.root,
             anchors: anchors, sdkMaterial: sdk.load, makeKeys: { _ in h.provider }, clock: clock.read, policy: .acceptedTrip,
             makeStore: { directory in
                 let store = try AtomicSnapshotStore(existingPrivateDirectory: directory)
-                store.afterRename = { throw OfflineFailure.storageFailure }
+                store.afterRename = {
+                    #expect(provided != nil, "Native storage must be recorded before an uncertain file commit")
+                    throw OfflineFailure.storageFailure
+                }
                 return store
             })
         do {
             let active = try #require(original)
+            active.bindStorageProvision { provided = $0 }
             try active.bindSynchronizationIdentity(material: material, account: h.ns.account, session: h.session, operation: h.operation)
             let accepted = try await source(client, binding)
             #expect(throws: OfflineFailure.writeUnknown) {
                 try active.synchronize(client: client, source: accepted, session: h.session, operation: h.operation)
             }
+            let provision = try #require(provided)
+            #expect(provision.namespace == h.ns && provision.keyID == h.expectedID)
+            try active.validateStorageProvision(provision)
             guard case .unknown = active.syncState else { Issue.record("Local uncertainty must remain UNKNOWN"); return }
             #expect(throws: OfflineFailure.writeUnknown) { try active.clearLocally() }
             let deniedBytes = try #require(anchors.value).withBytes { $0 }

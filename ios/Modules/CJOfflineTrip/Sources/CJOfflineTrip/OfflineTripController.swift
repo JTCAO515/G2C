@@ -18,7 +18,7 @@ public enum OfflineTripState: Sendable {
 }
 public enum OfflineSyncState: Sendable, Equatable { case idle, synchronizing, saved, failed, unknown }
 
-/// Sealed evidence of storage actually provisioned by a successful formal sync.
+/// Sealed evidence of storage provisioned while staging an accepted formal source.
 /// This is not a read/cleanup grant and contains no key or SDK credential.
 public struct OfflineTripStorageProvision: Sendable {
     public let namespace: OfflineNamespace
@@ -235,6 +235,9 @@ struct OfflineAnchor: Codable, Equatable, Sendable {
             deadline: sync.deadline, boot: now.boot, uptimeAtSync: now.uptime, lastWall: wall, readAllowed: false)
         displayed = nil; displayedAnchor = nil; state = .unavailable
         try saveAnchor(anchor, token: token) // retain the exact denied target before any file commit
+        storageProvision?(.init(namespace: anchor.namespace, keyID: anchor.keyID, anchor: anchor, token: token))
+        try check(token)
+        guard session.isCurrent(operation) else { throw OfflineFailure.unavailable }
         _ = try original.writeOnce()
         try check(token)
         guard session.isCurrent(operation) else { throw OfflineFailure.unavailable }

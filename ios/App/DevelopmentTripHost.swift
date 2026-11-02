@@ -857,13 +857,13 @@ import Observation
         guard cleanupWorkflow === original else { throw CleanupFailure.stale }
         try original.requireCurrent(); offline?.hide()
         guard cleanupWorkflow === original else { throw CleanupFailure.stale }
-        let generation = shell.invalidateIdentity()
+        let generation = shell.retireBusinessForCleanup()
         guard shell.generation == generation, cleanupWorkflow === original else { throw CleanupFailure.stale }
         try original.requireCurrent()
         // Business projections retire; the original cleanup surface remains reachable.
         shell.selectedTab = .memory
         guard shell.generation == generation, cleanupWorkflow === original else { throw CleanupFailure.stale }
-        shell.memoryPath = [.accountDeletion]
+        if shell.memoryPath.last != .accountDeletion { throw CleanupFailure.stale }
     }
     private func clearCleanupSDK() throws {
         try accounts.clearForAccountCleanup()

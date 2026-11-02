@@ -54,17 +54,17 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
 
     /// Fence every private projection synchronously, before a callback or an await.
-    private func begin(cancelTask: Bool = true) -> (UUID, ShellGeneration)? {
+    private func begin(cancelTask: Bool = true, cleanup: Bool = false) -> (UUID, ShellGeneration)? {
         let id = UUID(); request = id
         active = nil
         let old = task; task = nil; if cancelTask { old?.cancel() }
         guard request == id else { return nil }
-        let generation = shell.invalidateIdentity()
+        let generation = cleanup ? shell.retireBusinessForCleanup() : shell.invalidateIdentity()
         guard request == id, shell.generation == generation else { return nil }
         invalidate()
         guard request == id, shell.generation == generation else { return nil }
         shell.selectedTab = .memory
-        shell.memoryPath = [.account]
+        if !cleanup { shell.memoryPath = [.account] }
         return (id, generation)
     }
 
@@ -137,7 +137,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     /// Original account-cleanup exit: retire in-memory SDK material as well as
     /// its canonical secure slot. Does not clear another workflow's evidence.
     public func clearForAccountCleanup() throws {
-        guard let (id, generation) = begin(cancelTask: false) else { throw SessionFailure.staleOperation }
+        guard let (id, generation) = begin(cancelTask: false, cleanup: true) else { throw SessionFailure.staleOperation }
         let result = session.clearWithSettlement()
         guard request == id, shell.generation == generation else { throw SessionFailure.staleOperation }
         guard result == .cleared else { state = .storageUnavailable; throw SessionFailure.storageUnavailable }
