@@ -46,6 +46,8 @@ struct CJProbeApp: App {
                       tripContainerHost: developmentAccounts?.trip?.trips ?? development?.trips,
                       structuredTripHost: developmentAccounts?.trip?.structuredTrips ?? development?.structuredTrips,
                       needsContainerHost: developmentAccounts?.trip?.needs?.host ?? development?.needs?.host,
+                      answerFeedbackHost: developmentAccounts?.trip?.feedback?.answer ?? development?.feedback?.answer,
+                      generalFeedbackHost: developmentAccounts?.trip?.feedback?.general ?? development?.feedback?.general,
                       runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
                       developmentAccountHost: developmentAccounts?.accounts, offlineTripController: developmentAccounts?.offline)
                 .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained

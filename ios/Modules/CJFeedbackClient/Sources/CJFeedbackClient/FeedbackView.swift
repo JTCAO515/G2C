@@ -7,24 +7,29 @@ public enum FeedbackLanguage: Sendable { case english, chinese }
 public struct FeedbackView: View {
     public let model: FeedbackPresentation
     public let language: FeedbackLanguage
+    @Environment(\.locale) private var locale
+    private enum Editor: Hashable { case problem, expectation }
+    @FocusState private var focused: Editor?
     public init(model: FeedbackPresentation, language: FeedbackLanguage) { self.model = model; self.language = language }
     private func text(_ en: String, _ zh: String) -> String { language == .chinese ? zh : en }
     public var body: some View {
         Form {
             Section {
-                Text(text("Describe the problem and what you expected. Include only what you choose to share; omit passwords and secrets.", "请描述问题和期望。只填写你愿意分享的内容，请勿包含密码或密钥。"))
-                    .font(.footnote)
+                FeedbackReadableText(text: text("Describe the problem and what you expected. Include only what you choose to share; omit passwords and secrets.", "请描述问题和期望。只填写你愿意分享的内容，请勿包含密码或密钥。"), footnote: true)
                 TextField(text("Problem", "问题"), text: Binding(get: { model.problem }, set: { model.edit(problem: $0, expectation: model.expectation) }), axis: .vertical)
+                    .focused($focused, equals: .problem)
                     .lineLimit(3...8).disabled(!model.canEdit).accessibilityIdentifier("feedback.problem")
                 TextField(text("Expected result (optional)", "期望结果（可选）"), text: Binding(get: { model.expectation }, set: { model.edit(problem: model.problem, expectation: $0) }), axis: .vertical)
+                    .focused($focused, equals: .expectation)
                     .lineLimit(2...6).disabled(!model.canEdit).accessibilityIdentifier("feedback.expectation")
                 if model.context != nil && model.original == nil {
-                    Toggle(text("Associate this message", "关联当前消息"), isOn: Binding(get: { model.includeContext }, set: { model.associateContext($0) }))
-                        .disabled(!model.canEdit).accessibilityIdentifier("feedback.associate")
-                    Text(text("Only message and optional run references are sent. The server checks access.", "仅传送消息与可选运行引用，由服务器核验访问权限。"))
-                        .font(.footnote)
+                    Toggle(isOn: Binding(get: { model.includeContext }, set: { model.associateContext($0) })) {
+                        FeedbackReadableText(text: text("Associate this message", "关联当前消息"))
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    }.disabled(!model.canEdit).accessibilityIdentifier("feedback.associate")
+                    FeedbackReadableText(text: text("Only message and optional run references are sent. The server checks access.", "仅传送消息与可选运行引用，由服务器核验访问权限。"), footnote: true)
                 }
-                Button(text("Submit feedback", "提交反馈")) {
+                FeedbackActionButton(title: text("Submit feedback", "提交反馈")) {
                     if let work = model.prepareSubmit() { Task { await model.perform(work) } }
                 }
                 .disabled(!model.submissionAvailable || !model.canEdit)
@@ -32,35 +37,60 @@ public struct FeedbackView: View {
             }
             Section {
                 if model.state.isBusy { ProgressView() }
-                Text(status).accessibilityIdentifier("feedback.status")
+                FeedbackReadableText(text: status).accessibilityIdentifier("feedback.status")
+                if model.state == .submitted {
+                    FeedbackReadableText(text: text("Submitting feedback does not mean the issue has been fixed or a model has been trained.", "提交反馈不代表问题已修复或模型已训练。"), footnote: true).accessibilityIdentifier("feedback.disclaimer")
+                    FeedbackActionButton(title: text("Describe another problem", "反馈另一个问题")) { model.startAnother() }
+                        .accessibilityIdentifier("feedback.another")
+                }
                 if model.original != nil && model.state != .submitted {
-                    Button(text("Check original submission", "查询原反馈")) {
+                    FeedbackActionButton(title: text("Check original submission", "查询原反馈")) {
                         if let work = model.prepareQuery() { Task { await model.perform(work) } }
                     }.disabled(model.state.isBusy).accessibilityIdentifier("feedback.query")
                 }
-                Button(text("Load pending feedback", "读取待核对反馈")) {
+                FeedbackActionButton(title: text("Load pending feedback", "读取待核对反馈")) {
                     if let work = model.prepareReload() { Task { await model.perform(work) } }
-                }.disabled(model.state.isBusy || model.binding == nil)
+                }.disabled(model.state.isBusy || model.binding == nil).accessibilityIdentifier("feedback.loadPending")
                 ForEach(model.pendingActions, id: \.actionID) { pending in
-                    Button(text("Review pending feedback", "查看待核对反馈")) { model.selectPending(actionID: pending.actionID) }
-                        .disabled(model.state.isBusy)
+                    FeedbackActionButton(title: text("Review pending feedback", "查看待核对反馈")) { model.selectPending(actionID: pending.actionID) }
+                        .disabled(model.state.isBusy).accessibilityIdentifier("feedback.pending." + pending.actionID)
+                }
+            }
+            if let original = model.original, let action = try? original.action(), !action.references.isEmpty {
+                Section {
+                    FeedbackReadableText(text: text("Checking this feedback with its original references:", "正在核对此前反馈的原始关联："), footnote: true)
+                    ForEach(action.references, id: \.kind) { reference in
+                        FeedbackReadableText(text: reference.kind.rawValue + ": " + reference.id)
+                            .accessibilityIdentifier("feedback.originalref." + reference.kind.rawValue)
+                    }
+                } header: {
+                    FeedbackReadableText(text: text("Original references", "原始关联"), footnote: true).accessibilityAddTraits(.isHeader)
                 }
             }
             if let receipt = model.receipt {
-                Section(text("Submission record", "提交记录")) {
-                    Text(receipt.submitted_at, style: .date)
-                    Text(receipt.submitted_at, style: .time)
+                Section {
+                    FeedbackReadableText(text: receipt.submitted_at.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(locale))).accessibilityIdentifier("feedback.receipt.date")
+                    FeedbackReadableText(text: receipt.submitted_at.formatted(Date.FormatStyle(date: .omitted, time: .standard).locale(locale))).accessibilityIdentifier("feedback.receipt.time")
                     if case .FeedbackSourceObservation(let source) = receipt.source {
-                        Text(text("Historical source observation", "原始来源观察"))
-                        LabeledContent(text("Run status at read", "读取时运行状态"), value: sourceStatus(source.run_status_at_read))
-                        LabeledContent(text("Event progress at read", "读取时事件进度"), value: String(source.event_highwater_at_read))
-                        Text(text("This is the original read-time observation, not current run status. Model/rule versions, usage, duration and tool results were not provided.", "这是原记录读取时的观察，不代表当前运行状态。模型或规则版本、用量、耗时和工具结果未提供。"))
-                            .font(.footnote)
+                        FeedbackReadableText(text: text("Historical source observation", "原始来源观察"))
+                        FeedbackReadableText(text: text("Run status at read", "读取时运行状态") + ": " + sourceStatus(source.run_status_at_read)).accessibilityIdentifier("feedback.source.status")
+                        FeedbackReadableText(text: text("Event progress at read", "读取时事件进度") + ": " + String(source.event_highwater_at_read)).accessibilityIdentifier("feedback.source.progress")
+                        FeedbackReadableText(text: text("This is the original read-time observation, not current run status. Model/rule versions, usage, duration and tool results were not provided.", "这是原记录读取时的观察，不代表当前运行状态。模型或规则版本、用量、耗时和工具结果未提供。"), footnote: true)
+                            .accessibilityIdentifier("feedback.source.notice")
                     }
+                } header: {
+                    FeedbackReadableText(text: text("Submission record", "提交记录"), footnote: true).accessibilityAddTraits(.isHeader)
                 }
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle(text("Feedback", "问题反馈"))
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(text("Done", "完成")) { focused = nil }.accessibilityIdentifier("feedback.keyboard.done")
+            }
+        }
     }
     private var status: String {
         switch model.state {
@@ -86,6 +116,22 @@ public struct FeedbackView: View {
         case .context_invalid: text("Context invalid", "上下文失效")
         case .unknown: text("Unknown", "未知")
         }
+    }
+}
+
+private struct FeedbackActionButton: View {
+    let title: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            FeedbackReadableText(text: title)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+        }.buttonStyle(FeedbackActionStyle())
+    }
+}
+private struct FeedbackActionStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.65 : 1)
     }
 }
 

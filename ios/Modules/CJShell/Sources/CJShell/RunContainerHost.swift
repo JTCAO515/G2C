@@ -5,6 +5,7 @@ import CJMessageHTTP
 import CJSession
 import CJTripClient
 import CJNeedsClient
+import CJFeedbackClient
 
 public enum RunAnswerFormat: Sendable { case plainText,placeToolV1,factToolV1,needsPreviewV1 }
 public enum PlaceRunProjection: Sendable { case waiting,unavailable,loaded(PlaceToolTranscriptV1) }
@@ -37,6 +38,24 @@ public enum NeedsPreviewRunProjection: Sendable { case waiting,unavailable,loade
     }
 }
 
+/// Sealed presentation source from the selected accepted MESSAGE receipt. No text is copied.
+@MainActor public final class FeedbackAnswerSource {
+    public let context: FeedbackContext
+    private let session: SessionLifecycle
+    private let operation: SessionOperation
+    private let generation: ShellGeneration
+    private let current: @MainActor () -> Bool
+    fileprivate init(context: FeedbackContext, configuration: RunContainerConfiguration,
+                     current: @escaping @MainActor () -> Bool) {
+        self.context = context; session = configuration.session; operation = configuration.operation
+        generation = configuration.generation; self.current = current
+    }
+    public func isCurrent(session: SessionLifecycle, operation: SessionOperation, generation: ShellGeneration) -> Bool {
+        guard self.session === session, self.operation == operation, self.generation == generation else { return false }
+        return current() && session.isCurrent(operation)
+    }
+}
+
 @MainActor @Observable public final class RunContainerHost {
     private let shell: ShellState
     private var configuration: RunContainerConfiguration?
@@ -58,6 +77,16 @@ public enum NeedsPreviewRunProjection: Sendable { case waiting,unavailable,loade
         guard let configuration,let original = origin else { return nil }
         let token = selection
         return sourceIsCurrent(original,configurationID:configuration.id,token:token) ? token : nil
+    }
+    func captureFeedbackSource() throws -> FeedbackAnswerSource? {
+        guard let configuration, let original = origin else { return nil }
+        let token = selection
+        guard sourceIsCurrent(original, configurationID: configuration.id, token: token) else { return nil }
+        let context = try FeedbackContext(messageID: original.receipt.message_id, runID: original.receipt.run_id)
+        guard sourceIsCurrent(original, configurationID: configuration.id, token: token) else { return nil }
+        return FeedbackAnswerSource(context: context, configuration: configuration, current: { [weak self] in
+            self?.sourceIsCurrent(original, configurationID: configuration.id, token: token) == true
+        })
     }
     var scopedResultMarker: RunScopedResultReference? {
         guard let configuration,let original=origin else { return nil }

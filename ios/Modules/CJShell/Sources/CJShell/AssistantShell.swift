@@ -65,6 +65,16 @@ struct AssistantShell: View {
                     }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("assistant.travelContext")
                 }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language, openNeeds: { panel = .needs })
+                if runHost.originalPresentationID != nil {
+                    Button {
+                        do { feedbackEntry = try feedbackHost.prepareAnswer(from: runHost) }
+                        catch { feedbackEntry = nil } // The panel explicitly reports unavailable; no alternate source.
+                        panel = .feedback
+                    } label: {
+                        RunReadableText(text: state.language.text("Report a problem with this answer", "反馈此回答的问题"))
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                    }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("assistant.feedback")
+                }
                 if messageHost.supportsScopedEdits, let scoped = messageHost.scopedCandidates,messageHost.scopedDisplays?.hasResult != true {
                     ScopedCandidateView(host: scoped, messages: messageHost, language: state.language)
                 }

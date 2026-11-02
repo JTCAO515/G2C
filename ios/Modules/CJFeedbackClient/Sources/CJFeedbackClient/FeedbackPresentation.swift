@@ -32,9 +32,10 @@ public struct FeedbackWork: Sendable {
     private var lifetime = UUID()
     private var request = UUID()
     private var started: UUID?
+    @ObservationIgnored private var resetting = false
     public init(client: FeedbackClient?) { self.client = client }
     public var submissionAvailable: Bool { client?.acceptsSubmissions == true && binding != nil }
-    public var canEdit: Bool { original == nil && !state.isBusy }
+    public var canEdit: Bool { !resetting && original == nil && !state.isBusy }
 
     /// Host must synchronously replace on account/environment/selection change, before queued work.
     public func replace(binding: FeedbackBinding?, context: FeedbackContext? = nil) {
@@ -57,7 +58,7 @@ public struct FeedbackWork: Sendable {
         includeContext = include && context != nil
     }
     private func prepare(_ kind: FeedbackWork.Kind) -> FeedbackWork? {
-        guard let binding, let client, !state.isBusy else { return nil }
+        guard !resetting, let binding, let client, !state.isBusy else { return nil }
         let savedLifetime = lifetime
         let savedRequest = UUID(); request = savedRequest; started = nil
         client.invalidate()
@@ -78,6 +79,25 @@ public struct FeedbackWork: Sendable {
             original = frozen; receipt = nil; state = .submitting
             return work
         } catch { state = .invalidInput; return nil }
+    }
+    /// Explicit new feedback after every durable original has a verified receipt.
+    /// UNKNOWN, null lookup and conflicts never unlock this action.
+    public func startAnother() {
+        guard !resetting, state == .submitted, let client, let binding else { return }
+        resetting = true
+        defer { resetting = false }
+        let savedLifetime = lifetime, savedRequest = request
+        do {
+            let operation = try client.begin(binding: binding)
+            guard try client.canStartAnother(operation: operation),
+                  lifetime == savedLifetime, request == savedRequest else { return }
+            request = UUID(); started = nil; client.invalidate()
+            original = nil; receipt = nil; problem = ""; expectation = ""; includeContext = false
+            state = .editing
+        } catch {
+            guard lifetime == savedLifetime, request == savedRequest else { return }
+            state = .recoveryUnavailable
+        }
     }
     public func prepareReload() -> FeedbackWork? {
         guard let work = prepare(.reload) else { return nil }; state = .loading; return work

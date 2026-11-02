@@ -10,14 +10,14 @@ struct FeedbackTransport: ClientTransport {
     let underlying: any ClientTransport
     let endpoint: FeedbackEndpoint
     let bearer: String
-    let testWrites: Bool
+    let allowsWrites: Bool
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let submitting = operationID == "submitFeedback"
         guard baseURL == endpoint.url,
               submitting || operationID == "queryFeedbackAction",
               request.path?.split(separator: "?", maxSplits: 1).first.map(String.init) == (submitting ? "/v1/feedback" : "/v1/feedback-action-receipts"),
-              request.method == (submitting ? .post : .get), !submitting || testWrites else { throw FeedbackFailure.liveWriteUnavailable }
+              request.method == (submitting ? .post : .get), !submitting || allowsWrites else { throw FeedbackFailure.liveWriteUnavailable }
         var request = request; request.headerFields[.authorization] = "Bearer " + bearer
         let bytes: Data?
         if let body { bytes = try await Data(collecting: body, upTo: min(16384, endpoint.maximumRequestBytes)) } else { bytes = nil }
