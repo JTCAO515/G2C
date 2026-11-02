@@ -208,7 +208,8 @@ import Foundation
         account(); tap("account.development.restore")
         let rejected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Sign-in was rejected"), object: app.staticTexts["account.development.status"])
         XCTAssertEqual(XCTWaiter.wait(for: [rejected], timeout: 25), .completed)
-        tap("Trips"); tap("offline.open")
+        tap("Trips")
+        if !app.staticTexts["offline.notice"].exists { tap("offline.open") }
         XCTAssertFalse(app.staticTexts["offline.title"].exists)
         try await call("/verify", f, ["stage": "denied", "files": "0"])
         try launch(f, choices: false); expectDenied("No offline snapshot")

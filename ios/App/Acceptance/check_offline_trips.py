@@ -312,6 +312,7 @@ def main():
                             '-onlyUsePackageVersionsFromResolvedFile', '-parallel-testing-enabled', 'NO', '-collect-test-diagnostics', 'never',
                             'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=YES', 'CODE_SIGN_IDENTITY=-',
                             '-only-testing:G2CControl/DevelopmentOfflineTripUITests/' + case, 'test']
+                        report['cases'][case] = 'RUNNING'; report['unrun_cases'].remove(case); save()
                         print('Offline native: ' + case, flush=True)
                         run = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, timeout=1200)
                         log = run.stdout + run.stderr
@@ -320,9 +321,10 @@ def main():
                         (output / (case + '.log')).write_text(log)
                         summary = json.loads(subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(result)], env=env, text=True))
                         report.setdefault('results', {})[case] = {x: summary[x] for x in ('passedTests', 'failedTests', 'skippedTests')}
+                        if run.returncode != 0: report['cases'][case] = 'FAIL'
                         save(); run.check_returncode()
                         assert summary['passedTests'] == 1 and summary['failedTests'] == summary['skippedTests'] == 0
-                        report['cases'][case] = 'PASS'; report['unrun_cases'].remove(case); save()
+                        report['cases'][case] = 'PASS'; save()
                     container, _ = app_files()
                     for path in [*container.rglob('*'), *output.rglob('*')]:
                         if path.is_file():
