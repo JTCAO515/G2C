@@ -34,11 +34,16 @@ result recovery and zero automatic resend retain the existing queue rules.
 
 CollectionService.prepare_model_input_v2 produces the existing Data2 grammar,
 including the genuine end_ref and all eligible messages in the segment. For B's
-actual BackgroundJobs, install EndingCollectionAdapter explicitly and pass a
+actual RUN-BACKGROUND@2 / BackgroundJobsV2, install EndingCollectionAdapterV2
+or MemoryCollectionAdapterV2 explicitly and pass a
 JobRequest whose query is the original segment with mode=incremental. The adapter
 checks the actual full end on every bounded stage and rejects any other request
 query, original job/bytes, interval or purpose. It uses the same typed output2
 and publication-result@2; original receipt queries stay source independent.
+Publication requires the original B before_commit check and delegates to the
+explicit ending_publication_policy_v3 at the actual C commit tail. There is no
+factory2 fallback. The old EndingCollectionAdapter remains the separate earlier
+isolated candidate/compatibility path; no old B writer/data are activated here.
 No lease spans a provider wait. Candidate/inference requires the existing user
 confirmation action, and generated Trip content cannot certify a long-term
 preference or an actual visit.
@@ -48,5 +53,7 @@ model message, queue permission or dispatch grant. Tests verify 101 actual signe
 committed messages as exact 100+1 segments, real end/replay, consent, two accounts,
 durable jobs and separate cursors, original results after host reconstruction,
 typed publication and same-source incremental reuse. Supplied extraction output
-is not a real-model quality result; actual background/Meter combination has its
-own evidence and L2 remains #32.
+is not a real-model quality result. A separate actual registered worker/Meter /
+FakeProvider test processes both segments, confirms the inferred candidate and
+checks actual new-chat Chinese model input/RUN display and another owner. L2
+remains #32.

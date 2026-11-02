@@ -190,11 +190,7 @@ class Service:
                     guard('history_metadata_precommit')
                     possible = True
                     return result
-            source, mode = row[3], row[5]
-            from cj_message.source import SourceQuery
-            c = source.cursor
-            query = SourceQuery(c.conversation_id,c.generation,c.epoch,c.after,c.through,
-                                source.source_version,source.withdrawal_epoch,mode)
+            mode = row[5]
             policy = SourcePolicy(repository,principal,guard)
 
             def persist(snapshot):

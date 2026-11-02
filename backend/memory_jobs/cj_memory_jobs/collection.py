@@ -4,7 +4,6 @@ from hashlib import sha256
 
 from cj_message.auth_boundary import AccessBlocked,IdentityChanged
 from cj_message.domain import CommitUnknown as MessageCommitUnknown
-from cj_message.source import SourceQuery
 from cj_message.travel_reference import MessageContextAuthority,LeaseUnavailable
 from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
 from .candidate import CandidateAction
@@ -44,9 +43,6 @@ class CollectionService(Service):
             with repository.transaction() as memory:
                 tx=PublicationTransaction(memory);tx.require_live()
                 row=tx.job(job_id,attempt_id)
-            source,mode=row[3],row[5];c=source.cursor
-            query=SourceQuery(c.conversation_id,c.generation,c.epoch,c.after,c.through,
-                              source.source_version,source.withdrawal_epoch,mode)
             policy=PublicationSourcePolicy(repository,principal,guard)
             def project(snapshot):
                 current=SourceV2(snapshot.cursor,snapshot.source_version,snapshot.withdrawal_epoch)
