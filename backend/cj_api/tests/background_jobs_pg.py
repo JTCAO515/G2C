@@ -210,7 +210,10 @@ print(json.dumps({key:value[key] for key in ('run_id','meter_attempt_id','operat
     with psycopg.connect(**config,autocommit=True) as conn:
         sample=conn.execute('SELECT '+columns+' FROM cj_run_background_job WHERE scope=%s LIMIT 1',(owner,)).fetchone()
         before=conn.execute('SELECT * FROM cj_run_background_job ORDER BY scope,job_id,attempt_id').fetchall()
-        try:migrate.down(conn,migrate.load(),39)
+        # Exercise M40's own guard, not unrelated later migrations' down gates.
+        migration=next(m for m in migrate.load() if m['version']==40)
+        try:
+            with conn.transaction():conn.execute((ROOT/migration['down']).read_text())
         except psycopg.errors.RaiseException as error:assert 'original background job evidence retained' in str(error)
         else:raise AssertionError('down discarded original background jobs')
         assert conn.execute('SELECT * FROM cj_run_background_job ORDER BY scope,job_id,attempt_id').fetchall()==before
