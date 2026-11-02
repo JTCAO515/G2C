@@ -9,6 +9,23 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func offlineProfileIsExplicitBoundedAndDoesNotGrantReleaseAccess() throws {
+        let base = ["G2C_DEV_OFFLINE_TRIP": "last-sync-v1", "G2C_DEV_ACCOUNT_MODE": "1"]
+        #if DEBUG
+        #expect(try DevelopmentOfflineProfile.read([:]) == nil)
+        let active = try #require(try DevelopmentOfflineProfile.read(base))
+        #expect(active.wallOffset == 0 && active.uptimeOffset == 0 && active.trusted)
+        for change in [["G2C_DEV_OFFLINE_TRIP": "other"], ["G2C_DEV_ACCOUNT_MODE": "0"],
+                       ["G2C_DEV_OFFLINE_WALL_OFFSET": "+1"], ["G2C_DEV_OFFLINE_UPTIME_OFFSET": "nan"],
+                       ["G2C_DEV_OFFLINE_WALL_OFFSET": "315360001"], ["G2C_DEV_OFFLINE_TIME_TRUSTED": "yes"]] {
+            let invalid = base.merging(change) { _, new in new }
+            #expect(throws: DevelopmentOfflineProfile.Failure.invalidConfiguration) { try DevelopmentOfflineProfile.read(invalid) }
+        }
+        #expect(throws: DevelopmentOfflineProfile.Failure.invalidConfiguration) { try DevelopmentOfflineProfile.read(["G2C_DEV_OFFLINE_WALL_OFFSET": "1"]) }
+        #else
+        #expect(try DevelopmentOfflineProfile.read(base) == nil)
+        #endif
+    }
     @Test func needsPlanningProfileIsExplicitWithoutActivatingDiscussionOrRelease() throws {
         let environment=["G2C_DEV_MESSAGE_PROFILE":"needs-planning-v1"]
         #if DEBUG

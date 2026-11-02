@@ -2,6 +2,7 @@
 import SwiftUI
 import CJTripClient
 import CJRunClient
+import CJOfflineTrip
 
 private extension ShellLanguage {
     var tripLanguage: TripLanguage { self == .english ? .english : .simplifiedChinese }
@@ -12,8 +13,9 @@ struct TripShell: View {
     let host: TripContainerHost
     let onClose: (() -> Void)?
     let openTimeline: (() -> Void)?
-    init(state: ShellState, host: TripContainerHost, onClose: (() -> Void)? = nil, openTimeline: (() -> Void)? = nil) {
-        self.state = state; self.host = host; self.onClose = onClose; self.openTimeline = openTimeline
+    let offline: OfflineTripController?
+    init(state: ShellState, host: TripContainerHost, onClose: (() -> Void)? = nil, openTimeline: (() -> Void)? = nil, offline: OfflineTripController? = nil) {
+        self.state = state; self.host = host; self.onClose = onClose; self.openTimeline = openTimeline; self.offline = offline
     }
     private enum Sheet: Identifiable {
         case manual(ManualPreviewEntry), timeline(UUID,TripTimelineHost)
@@ -26,6 +28,7 @@ struct TripShell: View {
         let action = host.captureAction()
         NavigationStack(path: $state.tripPath) {
             List {
+                if let offline { Section { OfflineTripEntry(controller: offline, language: language) } }
                 if let presentation = host.presentation {
                     Section(language.text("Formal trips", "正式行程")) {
                         Button(language.text("Read destination-local timeline", "读取目的地当地时间线")) {
@@ -173,6 +176,17 @@ private struct TripContainerDetail: View {
                         ProgressView(language.text("Reading original formal Trip", "正在读取原正式行程"))
                     } else if host.manualEditorState == .missing || host.manualEditorState == .failed {
                         Text(language.text("The original formal source could not be read. No editor was created.", "无法读取原正式来源，未创建编辑器。"))
+                    }
+                    if let cache = host.offlineController {
+                        Button {
+                            guard let work = host.prepareOfflineSync(context: action) else { return }
+                            Task { await host.performOfflineSync(work) }
+                        } label: {
+                            RunReadableText(text: language.text("Synchronize for offline reading", "同步用于离线读取"))
+                                .frame(minHeight: 44)
+                        }.buttonStyle(ShellReadableButtonStyle()).disabled(action == nil)
+                            .accessibilityIdentifier("offline.sync")
+                        OfflineSyncLabel(controller: cache, language: language)
                     }
                     Button(language.text("Read current detail", "读取当前详情")) {
                         guard let work = host.prepareTrip(context: action) else { return }

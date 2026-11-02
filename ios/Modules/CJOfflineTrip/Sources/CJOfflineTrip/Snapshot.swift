@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import CJAPI
+import CJTripClient
 
 public enum OfflineFailure: Error, Equatable, Sendable {
     case unavailable, invalidSnapshot, unsupportedFormat, wrongNamespace, rollback, keyUnavailable
@@ -32,11 +33,19 @@ struct SnapshotMetadata: Codable, Equatable, Sendable {
     let keyID: UUID
 }
 
-/// No public constructor: the accepted-source byte hook is not yet provided by TripClient.
+public enum OfflineTripContent: Sendable {
+    case text(Components.Schemas.TripRecord)
+    case structured(StructuredTripRecord)
+}
+
+/// Created only from a protected accepted source, or authenticated local ciphertext.
 public struct OfflineSnapshot: Sendable {
     let metadata: SnapshotMetadata
     let responseBytes: Data
-    let trip: Components.Schemas.TripRecord
+    let content: OfflineTripContent
+    var trip: Components.Schemas.TripRecord? {
+        if case .text(let value) = content { return value }; return nil
+    }
     public var version: Int64 { metadata.version }
     public var syncedAt: Int64 { metadata.syncedAt }
 }
@@ -47,9 +56,11 @@ struct SnapshotEnvelope: Codable {
 }
 
 public enum SnapshotCodec {
-    public static let appFactoryAvailable = false
+    public static let appFactoryAvailable = true
     static let maximumBytes = 4 * 1024 * 1024
     static let source = "GET /v1/trip-details;TRIP@c02cf08e52a0d8ffc2fefac99226654a7e01539c"
+
+    static let structuredSource = "GET /v5/trip-structured;TRIP-structured-read.1"
 
     // Module-only candidate capture. NOT proof that a server accepted a Trip.
     static func capture(response: Data, namespace: OfflineNamespace, syncedAt: Int64,
@@ -60,8 +71,21 @@ public enum SnapshotCodec {
         return OfflineSnapshot(metadata: .init(format: 1, source: source, namespace: namespace,
             version: Int64(trip.version), syncedAt: syncedAt, deadline: deadline, boot: boot,
             uptimeAtSync: uptime, responseHash: digest(response), contentHash: digest(content), keyID: keyID),
-            responseBytes: response, trip: trip)
+            responseBytes: response, content: .text(trip))
     }
+    static func captureStructured(response: Data, namespace: OfflineNamespace, syncedAt: Int64,
+                                  deadline: Int64, boot: UUID, uptime: Double, keyID: UUID) throws -> OfflineSnapshot {
+        var strict = StrictSnapshotJSON(bytes: Array(response)); try strict.check()
+        let trace = try JSONDecoder().decode(StructuredTrace.self, from: response).request_id
+        guard let record = try StructuredTripReadV1.detail(response, requestID: trace),
+              Data(record.tripID.utf8) == Data(namespace.trip.utf8), syncedAt > 0,
+              deadline > syncedAt, uptime.isFinite, uptime >= 0 else { throw OfflineFailure.invalidSnapshot }
+        return OfflineSnapshot(metadata: .init(format: 2, source: structuredSource, namespace: namespace,
+            version: Int64(record.version), syncedAt: syncedAt, deadline: deadline, boot: boot,
+            uptimeAtSync: uptime, responseHash: digest(response), contentHash: record.document.contentSHA256, keyID: keyID),
+            responseBytes: response, content: .structured(record))
+    }
+    private struct StructuredTrace: Decodable { let request_id: String }
     static func encoder() -> JSONEncoder {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]; return encoder
     }
@@ -84,14 +108,20 @@ public enum SnapshotCodec {
             throw OfflineFailure.invalidSnapshot
         }
         let m = envelope.metadata
-        guard m.format == 1, m.source == source else { throw OfflineFailure.unsupportedFormat }
+        guard (m.format == 1 && m.source == source) || (m.format == 2 && m.source == structuredSource) else { throw OfflineFailure.unsupportedFormat }
         guard m.namespace == namespace else { throw OfflineFailure.wrongNamespace }
         guard m.keyID == expectedKeyID else { throw OfflineFailure.keyUnavailable }
         let original: Data
         do { original = try AES.GCM.open(.init(combined: envelope.ciphertext), using: key, authenticating: encoder().encode(m)) }
         catch { throw OfflineFailure.corrupt }
-        let result = try capture(response: original, namespace: namespace, syncedAt: m.syncedAt,
-                                 deadline: m.deadline, boot: m.boot, uptime: m.uptimeAtSync, keyID: m.keyID)
+        let result: OfflineSnapshot
+        if m.format == 1 {
+            result = try capture(response: original, namespace: namespace, syncedAt: m.syncedAt,
+                deadline: m.deadline, boot: m.boot, uptime: m.uptimeAtSync, keyID: m.keyID)
+        } else {
+            result = try captureStructured(response: original, namespace: namespace, syncedAt: m.syncedAt,
+                deadline: m.deadline, boot: m.boot, uptime: m.uptimeAtSync, keyID: m.keyID)
+        }
         guard result.metadata == m else { throw OfflineFailure.corrupt }
         guard m.version >= minimumVersion else { throw OfflineFailure.rollback }
         return result

@@ -95,4 +95,46 @@ import CJSession
         await wait { host.state == .networkUnknown }
         #expect(store.value != nil && store.clears == 0)
     }
+    @Test func offlineCleanupOnlyOnDepartureAndExplicitServerRejection() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        var localClears = 0, denials = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [.init(id: "A", label: "A"), .init(id: "B", label: "B")],
+            persistence: store, material: { try SessionMaterial(trustedSDKBytes: Data($0.utf8)) },
+            verify: { await checks.check($0) }, activate: { _, _, _ in }, invalidate: {},
+            clearOffline: { localClears += 1 }, serverRejected: { _ in denials += 1 })
+        host.signIn("A"); await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "A")); await wait { host.state == .signedIn("A") }
+        #expect(localClears == 1)
+        for result in [DevelopmentSessionCheck.networkUnknown, .expired, .rejected] {
+            let index = checks.replies.count
+            host.restore(); await wait { checks.replies.count == index + 1 }
+            checks.replies[index].resume(returning: result)
+            await wait { host.state != .checking }
+            #expect(localClears == 1 && denials == 0 && store.value != nil)
+        }
+        let index = checks.replies.count
+        host.restore(); await wait { checks.replies.count == index + 1 }
+        checks.replies[index].resume(returning: .serverRejected); await wait { host.state == .rejected }
+        #expect(denials == 1 && localClears == 1)
+        host.signIn("B"); await wait { checks.replies.count == index + 2 }
+        #expect(localClears == 2 && store.blocked)
+        checks.replies[index + 1].resume(returning: .accepted(account: "B")); await wait { host.state == .signedIn("B") }
+        host.signOut()
+        #expect(localClears == 3 && store.blocked && host.state == .signedOut)
+    }
+    @Test func lateRejectionCannotClearTheNewAccountCache() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        var denials = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [.init(id: "A", label: "A"), .init(id: "B", label: "B")],
+            persistence: store, material: { try SessionMaterial(trustedSDKBytes: Data($0.utf8)) },
+            verify: { await checks.check($0) }, activate: { _, _, _ in }, invalidate: {},
+            clearOffline: {}, serverRejected: { _ in denials += 1 })
+        host.signIn("A"); await wait { checks.replies.count == 1 }
+        host.signIn("B"); await wait { checks.replies.count == 2 }
+        checks.replies[1].resume(returning: .accepted(account: "B")); await wait { host.state == .signedIn("B") }
+        checks.replies[0].resume(returning: .serverRejected)
+        for _ in 0..<30 { await Task.yield() }
+        #expect(denials == 0 && host.state == .signedIn("B"))
+    }
+
 }
