@@ -135,3 +135,7 @@ Issue #8 保持未完成。独立审验应固定提交 head；内容变化后补
 不改变旧 profile/准入逻辑或已停止的 Keychain 执行状态。
 
 可选 HTTPS I/O adapter 候选：[HTTPS-JWKS-TRANSPORT](HTTPS-JWKS-TRANSPORT.md)，不自动装配或启用真实 JWKS。
+
+本地注销后的业务准入使用新增 [ACCOUNT-ADMISSION@2](ACCOUNT-ADMISSION-V2.md)：
+仅通过 canonical runtime 读取已提交的退休 fence。@1 是未被消费方接受的历史候选，
+不交付清理角色版业务工厂，不作为 @2 的 fallback；其冻结原文保留。

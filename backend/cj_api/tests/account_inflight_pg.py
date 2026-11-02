@@ -8,6 +8,8 @@ from cj_api.local_app import create_local_app,LocalDatabase,ISSUER,scope_for
 from cj_api.local_cleanup import Configuration,Runtime
 from cj_api.local_run_context import load_run_context
 from cj_api.local_worker_context import checker_for
+from cj_api.local_account_admission_v2 import account_checker_for
+from cj_auth.interfaces import AdmissionStatus
 from cj_cleanup.core import encode,digest,Scope
 from cj_agent.provider import FakeProvider
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
@@ -24,6 +26,8 @@ def exercise(root,config,path):
     app=create_local_app(conninfo_path=path,auth_dir=auth,run_context=context,cleanup_configuration=options)
     database=LocalDatabase(path,run_context=context)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,'active-worker',30),'Content-Type':'application/octet-stream'}
+    independent=account_checker_for(auth,database)
+    assert independent.check(headers['Authorization'][7:]).status is AdmissionStatus.ALLOWED
     entered,release=threading.Event(),threading.Event();errors=[]
     class BlockingFake(FakeProvider):
         def stream(self,messages,system=None):
@@ -55,6 +59,8 @@ def exercise(root,config,path):
             response=post('/v1/account-cleanup-operations/'+op+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'))
             assert response.status_code==200
             assert response.json().get('reason')=='original_tasks_not_yet_stopped',response.json()
+            assert independent.check(headers['Authorization'][7:]).status is AdmissionStatus.DENIED
+            print('PASS key-free independent business checker sees committed retirement before any domain erase',flush=True)
             before=counts()
             response=client.get('/v1/account-cleanup-operations/'+op,headers={'Authorization':'Cleanup '+prepared['progress_token']})
             assert response.status_code==200 and response.json()['status']=='unknown'
