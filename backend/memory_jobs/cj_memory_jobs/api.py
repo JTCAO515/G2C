@@ -41,7 +41,8 @@ def register_routes(app, service, *, collection=False):
                     raise InvalidInput('invalid history query encoding') from None
                 values = dict(pairs)
                 if (set(values) != set(fields) or len(pairs) != len(values)
-                        or any(not v.strip() or len(v)>4096 for v in values.values())):
+                        or any((not v.strip() and not (operation=='candidate_jobs' and k=='after_job_id' and v==''))
+                               or len(v)>4096 for k,v in values.items())):
                     raise InvalidInput('exact history query required')
                 calls = {'consent_query':service.query_consent_action,
                          'settings':service.settings,'job_query':service.query_original}
@@ -49,7 +50,8 @@ def register_routes(app, service, *, collection=False):
                     calls.update(candidates=service.candidates,candidate_receipt=service.query_candidate_action,
                                  publication_receipt=service.query_publication,
                                  publication_receipt_v2=service.query_publication_v2,
-                                 publication_items_v2=service.publication_items_v2)
+                                 publication_items_v2=service.publication_items_v2,
+                                 candidate_jobs=service.discover_candidate_jobs)
                 call = calls[operation]
                 encoded = await run_in_threadpool(call,token,**values,request_id=request.state.request_id)
             return Response(encoded,media_type='application/json')
@@ -100,6 +102,10 @@ def register_routes(app, service, *, collection=False):
         return await invoke(request,'enqueue_ending')
 
     if collection:
+        @app.get('/v5/memory-candidate-jobs')
+        async def candidate_jobs(request: Request):
+            return await invoke(request,'candidate_jobs',('conversation_id','after_job_id'))
+
         @app.get('/v3/memory-candidates')
         async def candidates(request: Request):
             return await invoke(request,'candidates',('job_id','attempt_id'))

@@ -107,6 +107,33 @@ class CollectionService(Service):
         extraction,memory_policy,_=self.resolve_collection(principal)
         return repository,principal,guard,command,actual,extraction,memory_policy
 
+    def discover_candidate_jobs(self,token,conversation_id,after_job_id,*,request_id=None):
+        """Actual first-producer refs for a chat; no fixture ID or source renewal."""
+        from .codec import pg_identity
+        import json
+        pg_identity(conversation_id,256)
+        if after_job_id:job_identity(after_job_id)
+        def query(context):
+            repository,_,guard=self._binding(context,token)
+            if context.send_status(conversation_id).head is None:
+                raise Unavailable('candidate conversation unavailable')
+            with repository.transaction() as memory:
+                tx=PublicationTransaction(memory);tx.require_live()
+                tx.cur.execute('''SELECT DISTINCT o.job_id,o.attempt_id FROM cj_memory_history_origin o
+                    JOIN cj_memory_item i ON (i.scope,i.source_id,i.item_id)=(o.scope,o.source_id,o.item_id)
+                    WHERE o.scope=%s AND i.status='candidate' AND o.job_id>%s
+                      AND o.origin_refs @> %s::jsonb ORDER BY o.job_id LIMIT 51''',
+                    (tx.scope,after_job_id,json.dumps([dict(conversation_id=conversation_id)])))
+                rows=tx.cur.fetchall()
+                value=dict(conversation_id=conversation_id,
+                    jobs=[dict(job_id=job,attempt_id=attempt) for job,attempt in rows[:50]],
+                    next_after_job_id=rows[49][0] if len(rows)>50 else None)
+                raw=encode(value)
+                if len(raw)>524288:raise Unavailable('candidate discovery exceeds bound')
+                guard('candidate_discovery_return')
+            return raw
+        return self._invoke(token,query,request_id,'MEMORY-CANDIDATE-JOBS@1')
+
     def ending_processing_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,*,max_payload_bytes):
         from .ending import EndingProcessingPolicy
         repository,principal,guard,command,actual,extraction,_=self._ending_binding(context,token,job_id,attempt_id)

@@ -109,6 +109,12 @@ def exercise(conninfo,auth):
         _,tail_prepared,tail_data=enqueue(tail,'ending-tail')
         tail_receipt=json.loads(phase(tail,'ending-tail',tail_prepared,output(tail_data,0,'pace','inference')))
         assert tail_receipt['receipts'][0]['status']=='candidate'
+        def discover(actor='alice',after=''):
+            return client.get('/v5/memory-candidate-jobs',params=dict(conversation_id='long',after_job_id=after),headers=headers[actor])
+        discovered=expected(discover())['result']
+        assert discovered==dict(conversation_id='long',jobs=[dict(job_id='ending-tail',attempt_id='ending-tail-attempt')],next_after_job_id=None)
+        assert expected(discover(after='ending-tail'))['result']['jobs']==[]
+        expected(discover('bob'),503)
         from cj_api.local_app import ISSUER,scope_for
         scope=scope_for(ISSUER,'alice')
         with host.database.connect(scope) as connection:
@@ -130,6 +136,7 @@ def exercise(conninfo,auth):
         with host.database.connect(scope) as connection:
             assert connection.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(2,)
         print('PASS actual signed ending jobs persist 100+1 segments, independent ending/incremental cursors, Data2 real end, exact processing/publication2 and original result after host reconstruction; same source reuses canonical item; inference remains candidate')
+        print('PASS signed chat candidate discovery returns actual original producer IDs; pagination and other-account denial, no fixture IDs or source renewal')
         try:read(first,'bob')
         except (Unavailable,MessageUnavailable):pass
         else:raise AssertionError('other account read a private ending segment')
