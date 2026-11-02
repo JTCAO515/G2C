@@ -282,7 +282,8 @@ def trip_configuration(value):
 
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
-                     memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None):
+                     memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
+                     cleanup_configuration=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -292,6 +293,14 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                              needs_context=needs_profile is not None,trip_context=trip_context,edit_configuration=edit_configuration)
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
+    access=base_access=InvitedSubjects(auth_dir/'invited.json')
+    cleanup_runtime=None
+    if cleanup_configuration is not None:
+        from .local_cleanup import Runtime,Configuration
+        from cj_auth.account_revocation import AccountRevocationAccess
+        if type(cleanup_configuration) is not Configuration:raise CompositionUnavailable('explicit local cleanup configuration required')
+        cleanup_runtime=Runtime(database,cleanup_configuration,scope_for)
+        access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
 
     def message_repository(principal):
         scope = scope_for(principal.issuer, principal.subject)
@@ -391,7 +400,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         needs_configuration=needs_wire,resolve_needs=needs_resolve,needs_repository_factory=needs_factory,
         feedback_configuration=FeedbackWireConfiguration(16384,65536),resolve_feedback=feedback_resolver,
         resolve_feedback_run=run_repository,feedback_scope_binder=bind_feedback,feedback_scope_current=feedback_current,
-        access_provider=InvitedSubjects(auth_dir / 'invited.json'),
+        access_provider=access,
         resolve_repository=message_repository, new_run_id=lambda: str(uuid.uuid4()),
         resolve_travel_repository=travel_repository,
         max_body_bytes=16384, history_configuration=history_configuration,
@@ -407,9 +416,11 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes
         reader,_=build_run_display_reader(environment='local',jwt_configuration=config,verification_keys=keys,
-            access_provider=InvitedSubjects(auth_dir/'invited.json'),resolve_message_repository=message_repository,
+            access_provider=access,resolve_message_repository=message_repository,
             resolve_run=run_repository,configuration=RunDisplayWireConfiguration(256,200000,400000))
         register_scoped_result_routes(app,reader,history_configuration)
+    from .account_cleanup_routes import register_account_cleanup_routes
+    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,base_access))
     return app
 
 
@@ -503,10 +514,15 @@ def app_from_environment():
             memory_configuration = load_local_memory_configuration(os.environ['CJ_LOCAL_MEMORY_POLICY'])
         except LocalMemoryConfigurationError:
             raise CompositionUnavailable('local memory policy unavailable') from None
+    cleanup_configuration=None
+    if 'CJ_LOCAL_CLEANUP_CONFIG' in os.environ:
+        from .local_cleanup import load_configuration
+        cleanup_configuration=load_configuration(os.environ['CJ_LOCAL_CLEANUP_CONFIG'])
     return create_local_app(conninfo_path=os.environ['CJ_LOCAL_CONNINFO'], auth_dir=auth_dir,
                             confirmation_signer=load_confirmation_signer(auth_dir),
                             history_configuration=load_history_configuration(auth_dir),
                             memory_configuration=memory_configuration,
+                            cleanup_configuration=cleanup_configuration,
                             needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),
                             travel_context=travel_configuration(os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT')),
                             trip_context=trip_configuration(os.environ.get('CJ_LOCAL_TRIP_CONTEXT')),

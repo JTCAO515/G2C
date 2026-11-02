@@ -4,10 +4,11 @@ from .store import original_result, record_result, receipt_for, require_intent
 
 
 class MetadataHook:
-    def __init__(self,store,legacy_scope_bytes):
+    def __init__(self,store,legacy_scope_bytes,*,additional_erasure=None):
         if digest(legacy_scope_bytes)!=store.subject_digest:
             raise Denied('cleanup subject mismatch')
         self.store,self.legacy_scope_bytes=store,legacy_scope_bytes
+        self.additional_erasure=additional_erasure
 
     def execute(self,request):
         if request.subject_digest!=self.store.subject_digest or request.domain_scope!=self.store.subject_digest:
@@ -32,6 +33,7 @@ class MetadataHook:
             args=(self.store.subject_digest,) if request.selection.kind=='account' else (self.store.subject_digest,request.operation_id)
             cur.execute('UPDATE cj_cleanup_operation SET plan_bytes=NULL WHERE subject_digest=%s'+condition,args)
             cur.execute('UPDATE cj_cleanup_step SET request_bytes=NULL WHERE subject_digest=%s'+condition,args)
+            if self.additional_erasure is not None:self.additional_erasure(cur,request)
             result=record_result(cur,request,'confirmed')
         return result
 
