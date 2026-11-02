@@ -17,6 +17,9 @@ from cj_cleanup.store import Store
 from cj_cleanup.coordinator import Coordinator
 from cj_cleanup.hooks_v1_1 import Selection
 from cj_feedback.lifecycle import FeedbackHook,scope_digest
+from cj_feedback.lifecycle import bind_runtime,check_current
+from cj_feedback.boundary import Boundary as FeedbackBoundary
+from cj_feedback.domain import Unavailable as FeedbackUnavailable
 
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
@@ -24,14 +27,14 @@ import dev_auth,local_run_context,run_worker,migrate
 
 
 def exercise(auth,conninfo):
-    config=json.loads(conninfo.read_text());dev_auth.init(auth,['alice','bob'])
+    config=json.loads(conninfo.read_text());dev_auth.init(auth,['alice','bob','projection'])
     now=int(time.time());profile=auth.parent/'run.json'
     profile.write_text(json.dumps({'version':'CJ-LOCAL-RUN@2','current':{'meter':dict(unit='provider_call',budget=20,
         period_start=now-10,period_end=now+3600,max_steps=20,max_tools=10,max_output=10000,max_seconds=600),
         'output_limits':{'model':2000,'tool':2000,'memory':2000}},'history':[]}))
     context=load_run_context(profile)
     for subject in ('alice','bob'):local_run_context.provision_budget(conninfo,context,subject)
-    tokens={s:dev_auth.token(auth,s,30) for s in ('alice','bob')}
+    tokens={s:dev_auth.token(auth,s,30) for s in ('alice','bob','projection')}
     headers={s:{'Authorization':'Bearer '+t,'Content-Type':'application/octet-stream'} for s,t in tokens.items()}
     env=dict(CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_CONNINFO=str(conninfo),CJ_LOCAL_RUN_CONTEXT=str(profile))
     database=LocalDatabase(conninfo,run_context=context)
@@ -82,6 +85,26 @@ def exercise(auth,conninfo):
         target='business/feedback-private-actions';scope=scope_for(ISSUER,'alice')
         registry=encode(dict(version='feedback-local-proof',stores=[dict(id='business',objects=[dict(id='feedback-private-actions',cleanup_protocol='CLEANUP@1.1',objects=['cj_feedback_action','cj_feedback_scope'])])]))
         frozen=freeze(registry,(target,),versions=('CLEANUP@1.1',))
+        # P1 regression: real retirement after query COMMIT, before final encoding.
+        projected,_=post(dict(action,action_id='projection-original',references=[]),'projection')
+        projector=checker_for(auth);p=projector.check(tokens['projection']).principal
+        projection_subject=digest(encode(asdict(Scope.from_principal('local',p))))
+        projection_scope=scope_for(ISSUER,'projection')
+        projection_store=Store(connect,projection_subject,lambda stage:None)
+        projection_host=Coordinator(projection_store,lambda:frozen,{target:FeedbackHook(projection_store,projection_scope)})
+        projection_host.create('retire-during-projection',digest(b'projection test confirmation'),'account',
+            {target:{'domain_scope':projection_scope,'selection':{'kind':'account'}}})
+        projection_request=projection_host.request('retire-during-projection',target,projection_scope,Selection('account'))
+        boundary=FeedbackBoundary(projector,lambda principal:(lambda:database.connect(scope_for(principal.issuer,principal.subject)),scope_for(principal.issuer,principal.subject)),
+            scope_binder=bind_runtime,scope_current=check_current)
+        def retire_after_query(op):
+            read=op.query_action('projection-original')
+            assert projection_host.advance(projection_request)['status']=='complete'
+            return encode(asdict(read))
+        try:boundary.with_operation(tokens['projection'],retire_after_query)
+        except FeedbackUnavailable:pass
+        else:raise AssertionError('retired scope published an old receipt after query COMMIT')
+        print('PASS P1 regression: actual retirement after query COMMIT/inside projection withholds final private receipt')
         host=Coordinator(store,lambda:frozen,{target:FeedbackHook(store,scope)})
         host.create('delete-feedback',digest(b'original explicit local test confirmation'),'account',
                     {target:{'domain_scope':scope,'selection':{'kind':'account'}}})

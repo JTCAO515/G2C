@@ -19,6 +19,20 @@ def bind_runtime(cursor,scope):
     if cursor.fetchone()!=(False,):raise Unavailable()
 
 
+def check_current(connect,scope):
+    """Final v1 publication fence; no provisioning, mutation or cached allowance."""
+    conn=connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT current_setting('cj.message_scope',true)")
+            if cur.fetchone()[0] not in (None,''):raise Unavailable()
+            cur.execute("SELECT set_config('cj.message_scope',%s,true)",(scope,))
+            cur.execute('SELECT retired FROM cj_feedback_scope WHERE scope_digest=%s',(scope_digest(scope),))
+            if cur.fetchone()!=(False,):raise Unavailable()
+        conn.commit()
+    finally:conn.close()
+
+
 class FeedbackHook:
     """Only the original local account-cleanup coordinator injects this hook."""
     def __init__(self,store,scope):self.store,self.scope=store,scope

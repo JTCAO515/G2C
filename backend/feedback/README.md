@@ -40,6 +40,10 @@ trigger rejects late raw writers. `FeedbackHook` validates the original persiste
 intent, retires/erases the exact account scope, verifies absence, and records the
 original result atomically. Other accounts remain intact. Restore must replay the
 retired hash before reads/writes; new IDs never reactivate it.
+V1 hosts must configure both the transaction binder and the final current-scope
+reader. After full encoding/fresh AUTH, the latter rereads the irreversible fence
+before publishing bytes. Retirement during projection withholds an old receipt;
+AUTH alone is insufficient. Old rc hosts with neither callback keep old semantics.
 
 [FEEDBACK-LOCATOR@1](../../contracts/feedback/LOCATOR-V1.md) reads actual original
 protocol/registration/attempt/input references and current persisted stages/timing.
