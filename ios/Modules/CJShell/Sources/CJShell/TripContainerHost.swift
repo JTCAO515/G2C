@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import CJTripClient
 import CJSession
+import CJOfflineTrip
 import CJManualPreviewClient
 
 /// Supplied only by the trusted root with the same client/session/binding lifetime.
@@ -18,22 +19,29 @@ import CJManualPreviewClient
     let proposalID: String?
     let synthetic: Bool
     let manualPreviewResources: ManualPreviewResources?
+    let offline: OfflineTripController?
     let current: @MainActor () -> TripBinding?
     public init(client: TripClient, trip: TripBinding, shellGeneration: ShellGeneration,
                 session: SessionLifecycle, sessionOperation: SessionOperation, pageSize: Int,
                 currentTripID: String? = nil, proposalID: String? = nil, synthetic: Bool,
-                manualPreviewResources: ManualPreviewResources? = nil,
+                manualPreviewResources: ManualPreviewResources? = nil, offline: OfflineTripController? = nil,
                 currentBinding: @escaping @MainActor () -> TripBinding?) {
         self.client = client; self.trip = trip; self.shellGeneration = shellGeneration
         self.session = session; operation = sessionOperation; self.pageSize = pageSize
         self.currentTripID = currentTripID; self.proposalID = proposalID
-        self.synthetic = synthetic; self.manualPreviewResources = manualPreviewResources; current = currentBinding
+        self.synthetic = synthetic; self.manualPreviewResources = manualPreviewResources; self.offline = offline; current = currentBinding
     }
 }
 @MainActor public struct TripContainerAction {
     fileprivate let binding: TripContainerBinding
     fileprivate let presentation: TripPresentation
     fileprivate let epoch: UUID
+}
+
+@MainActor public struct TripOfflineSyncWork {
+    fileprivate let context: TripContainerAction
+    fileprivate let request: TripDetailSnapshotRequest
+    fileprivate let token: UUID
 }
 
 /// Contains the canonical opaque work prepared synchronously at the original UI event.
@@ -170,6 +178,42 @@ import CJManualPreviewClient
         guard let context, accepts(context), let id = selectedTripID else { return nil }
         retireManualEditor()
         return reserve(context.presentation.prepareTrip(id: id), context: context)
+    }
+    public var offlineController: OfflineTripController? { current ? binding?.offline : nil }
+    public func prepareOfflineSync(context: TripContainerAction?) -> TripOfflineSyncWork? {
+        guard let context, accepts(context), let id = selectedTripID, context.binding.offline != nil else { return nil }
+        retireManualEditor()
+        guard accepts(context) else { return nil }
+        let token = UUID(); epoch = token; busy = true; executing = false
+        do {
+            let request = try context.binding.client.prepareDetailSnapshot(id: id, binding: context.binding.trip)
+            guard owns(context, token) else { return nil }
+            context.binding.offline?.prepareSynchronization()
+            guard owns(context, token) else { return nil }
+            return .init(context: context, request: request, token: token)
+        } catch {
+            if owns(context, token) { busy = false; context.binding.offline?.noteSyncReadFailure() }
+            return nil
+        }
+    }
+    public func performOfflineSync(_ work: TripOfflineSyncWork) async {
+        guard owns(work.context, work.token), !executing, let cache = work.context.binding.offline else { return }
+        executing = true
+        do {
+            let source = try await work.context.binding.client.detailSnapshot(for: work.request)
+            guard owns(work.context, work.token) else { return }
+            if let source {
+                try cache.synchronize(client: work.context.binding.client, source: source,
+                    session: work.context.binding.session, operation: work.context.binding.operation)
+            } else { cache.noteSyncReadFailure() }
+        } catch {
+            guard owns(work.context, work.token) else { return }
+            if case TripFailure.rejected(let status, _) = error, status == 401 || status == 403 {
+                do { try cache.currentIdentityRejected() } catch { cache.noteSyncReadFailure() }
+            } else { cache.noteSyncReadFailure() }
+        }
+        guard owns(work.context, work.token) else { return }
+        busy = false; executing = false
     }
     public func prepareProposal(context: TripContainerAction?) -> TripContainerWork? {
         guard let context, accepts(context), canReadContextProposal, let id = context.binding.proposalID else { return nil }

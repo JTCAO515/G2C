@@ -7,6 +7,7 @@ import CJRunClient
 struct TripPlaceMapView: View {
     let document: StructuredTripDocument
     let language: ShellLanguage
+    var allowsMap: Bool = true
     @State private var expanded = false
     @State private var failed = false
     var body: some View {
@@ -34,7 +35,7 @@ struct TripPlaceMapView: View {
                                 .accessibilityIdentifier("trip.map.status." + place.id)
                         }
                     }
-                    if places.contains(where: { $0.markerCoordinate != nil }) {
+                    if allowsMap && places.contains(where: { $0.markerCoordinate != nil }) {
                         Button { expanded.toggle() } label: {
                             RunReadableText(text: expanded ? language.text("Hide map", "收起地图") : language.text("Show Apple map", "显示 Apple 地图"))
                                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())

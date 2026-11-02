@@ -55,6 +55,12 @@ public final class AtomicSnapshotStore {
         guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG, info.st_mode & 0o777 == 0o600,
               info.st_uid == getuid(), info.st_nlink == 1,
               info.st_size > 0, info.st_size <= SnapshotCodec.maximumBytes else { throw OfflineFailure.corrupt }
+        #if os(iOS)
+        let protection = try FileManager.default.attributesOfItem(atPath: root + "/" + name)[.protectionKey]
+        guard (protection as? FileProtectionType) == .complete || (protection as? String) == FileProtectionType.complete.rawValue else {
+            throw OfflineFailure.storageFailure
+        }
+        #endif
         var data = Data(count: Int(info.st_size))
         let expected = data.count
         let count = data.withUnsafeMutableBytes { buffer -> Int in
@@ -89,6 +95,10 @@ public final class AtomicSnapshotStore {
         let fd = openat(directory, temporary, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
         guard fd >= 0 else { throw OfflineFailure.storageFailure }
         defer { close(fd); unlinkat(directory, temporary, 0) }
+        #if os(iOS)
+        try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete],
+            ofItemAtPath: root + "/" + temporary)
+        #endif
         guard fchmod(fd, 0o600) == 0 else { throw OfflineFailure.storageFailure }
         let count = sealed.withUnsafeBytes { buffer -> Int in
             var offset = 0

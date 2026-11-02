@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import CJTripClient
 import CJSession
+import CJOfflineTrip
 
 public enum StructuredTripLoadState: Sendable { case idle, loading, loaded, missing, unavailable }
 @MainActor public struct StructuredTripHostWork {
@@ -46,6 +47,8 @@ public struct StructuredTripDisplay: Sendable {
     @ObservationIgnored private var foreground = true
     @ObservationIgnored private var rows: [StructuredTripSummary] = []
     @ObservationIgnored private var next: StructuredTripCursor?
+    @ObservationIgnored private var offlineNonce: UUID?
+    @ObservationIgnored private let offline: OfflineTripController?
     @ObservationIgnored private var source: AcceptedStructuredTripSnapshot?
     @ObservationIgnored private var selected: StructuredTripRecord?
     @ObservationIgnored private var observed: StructuredTripRecord?
@@ -58,9 +61,9 @@ public struct StructuredTripDisplay: Sendable {
 
     public init(shell: ShellState, client: TripClient, binding: TripBinding, session: SessionLifecycle,
                 sessionOperation: SessionOperation, currentBinding: @escaping @MainActor () -> TripBinding?,
-                needsSelection: @escaping @MainActor () throws -> TripNeedsReference?, readNeeds: @escaping @MainActor () async -> Void) {
+                needsSelection: @escaping @MainActor () throws -> TripNeedsReference?, readNeeds: @escaping @MainActor () async -> Void, offline: OfflineTripController? = nil) {
         self.shell=shell;shellGeneration=shell.generation;self.client=client;self.binding=binding;self.session=session
-        operation=sessionOperation;self.currentBinding=currentBinding;self.needsSelection=needsSelection;self.readNeeds=readNeeds
+        operation=sessionOperation;self.currentBinding=currentBinding;self.needsSelection=needsSelection;self.readNeeds=readNeeds;self.offline=offline
     }
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
     private var current: Bool {
@@ -90,6 +93,14 @@ public struct StructuredTripDisplay: Sendable {
         editing?.retire();editing=nil;source=nil;selected=nil;observed=nil
         let request=try client.prepareStructuredDetail(id:id,binding:binding);try check(token)
         busy=true;state = .loading;revision=UUID();return .init(owner:owner,nonce:token,payload:.detail(request))
+    }
+    public func synchronizeOffline() throws -> StructuredTripHostWork {
+        guard offline != nil, let selected, !busy else { throw TripFailure.invalidInput }
+        let work = try detail(id: selected.tripID)
+        offlineNonce = work.nonce
+        offline?.prepareSynchronization()
+        try check(work.nonce)
+        return work
     }
     public func openEditor() throws {
         let token=UUID();nonce=token;try check(token)
@@ -154,6 +165,13 @@ public struct StructuredTripDisplay: Sendable {
                 let value=try await client.structuredDetail(for:request);try check(work.nonce)
                 let record=try value.map { try client.withCurrentStructuredSnapshot($0) { _,record,_,_ in record } };try check(work.nonce)
                 source=value;selected=record;state=record == nil ? .missing : .loaded
+                if offlineNonce == work.nonce, let offline {
+                    if let value {
+                        do { try offline.synchronize(client: client, source: value, session: session, operation: operation) }
+                        catch { try check(work.nonce) } // Cache reports its own failed/unknown state.
+                    } else { offline.noteSyncReadFailure() }
+                    try check(work.nonce); offlineNonce = nil
+                }
             case .current(let source):
                 let value=try await client.readCurrentStructuredRecord(for:source);try check(work.nonce);observed=value
             case .edit(let editor,let request):
@@ -165,6 +183,12 @@ public struct StructuredTripDisplay: Sendable {
             busy=false;revision=UUID()
         } catch {
             guard current,nonce==work.nonce else { return }
+            if offlineNonce == work.nonce, let offline {
+                if case TripFailure.rejected(let status, _) = error, status == 401 || status == 403 {
+                    do { try offline.currentIdentityRejected() } catch { offline.noteSyncReadFailure() }
+                } else { offline.noteSyncReadFailure() }
+                guard current, nonce == work.nonce else { return }; offlineNonce = nil
+            }
             busy=false;state = .unavailable;revision=UUID()
         }
     }

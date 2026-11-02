@@ -78,7 +78,7 @@ import CJSession
         #expect(try h.store.read() == originalCiphertext)
         #expect(h.provider.namespace.purpose == .localOfflineTripSnapshotV1)
         #expect(h.storage.adds == 0 && h.storage.removes == 0)
-        #expect(!SnapshotCodec.appFactoryAvailable)
+        #expect(SnapshotCodec.appFactoryAvailable)
     }
     @Test func wrongPurposeAccountAndBackendRejected() throws {
         for purpose in [MessageKeyPurpose.localTripPendingV1,.localMessageStorageV1,.localMemoryPendingV1] {
