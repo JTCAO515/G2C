@@ -4,12 +4,12 @@ let package = Package(name: "CJOfflineTrip", platforms: [.iOS(.v17), .macOS(.v14
     products: [.library(name: "CJOfflineTrip", targets: ["CJOfflineTrip"])],
     dependencies: [
         .package(path: "../CJAuth"), .package(path: "../CJTripClient"), .package(path: "../CJMessageClient"),
-        .package(path: "../.."),
+        .package(path: "../.."), .package(path: "../CJStrictJSON"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.3"),
         .package(url: "https://github.com/apple/swift-http-types", exact: "1.8.0")
     ],
     targets: [
-        .target(name: "CJOfflineTrip", dependencies: [
+        .target(name: "CJOfflineTrip", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"),
             .product(name: "CJAPI", package: "ios"), .product(name: "CJTripClient", package: "CJTripClient"),
             .product(name: "CJMessageKeys", package: "CJAuth"), .product(name: "CJSession", package: "CJAuth")]),
         .testTarget(name: "CJOfflineTripTests", dependencies: [
