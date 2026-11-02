@@ -90,6 +90,13 @@ ConversationProducer 通过真实只读结束状态自动补充结束段；增�
 丢失均按原 bytes/attempt 恢复，UNKNOWN 不自动重发。
 正式 Trip 决定 intake 与 #26 物理删除/防复活仍未完成。
 
+[DECISION-JOBS-V1](../../contracts/memory-jobs/DECISION-JOBS-V1.md) 增加显式的
+create_decision_collection_app / DecisionCollectionAdapter，消费真实完整正式Trip讨论
+与受控accepted-decision lease，持久原命令/批次、Data3/Output3/Pub3。M42登记来源
+指纹，同一决定跨聊天复用首次canonical候选/review，来源只作为可重建派生。
+实际新B worker/Meter和自动intake组合仍待消费；不改旧BG2/Pub2，不把供应输出
+当实际提取。新增document/digest/refs由现有account钩子清理，#26 item清理另交。
+
 ## 保留的 SQLite 隔离候选
 
 本模块仅处理已提交聊天来源的增量整理与会话结束补充摘要的本地队列状态。

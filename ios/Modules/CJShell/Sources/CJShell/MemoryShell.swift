@@ -11,6 +11,7 @@ struct MemoryShell: View {
     let feedbackHost: FeedbackContainerHost
     let developmentAccountHost: DevelopmentAccountHost?
     let historyHost: MemoryHistoryContainerHost
+    let candidateHost: MemoryCandidateContainerHost
     private var language: ShellLanguage { state.language }
 
     var body: some View {
@@ -37,6 +38,7 @@ struct MemoryShell: View {
                         route(language.text("Previous memory actions", "此前的记忆操作"), to: .memoryActions, identifier: "memory.manage.openOriginals")
                     }
                     route(language.text("Conversation history organization", "会话历史整理"), to: .memoryHistory, identifier: "memory.historyConsent")
+                    route(language.text("Memory suggestions", "记忆建议"), to: .memoryCandidates, identifier: "memory.candidates")
                 } header: { ShellSectionHeading(title: language.text("Your memories", "你的记忆")) }
                 Section {
                     route(language.text("Account", "账号"), to: .account, identifier: "memory.account")
@@ -110,6 +112,8 @@ struct MemoryShell: View {
             } else {
                 ShellStatusView(state:.notConnected,language:language)
             }
+        case .memoryCandidates:
+            MemoryCandidateContainerView(host: candidateHost, language: language)
         case .memoryHistory:
             MemoryHistoryContainerView(host: historyHost, language: language)
         case .feedback(let entry):

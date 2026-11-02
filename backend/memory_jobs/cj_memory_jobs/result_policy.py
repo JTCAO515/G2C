@@ -41,7 +41,7 @@ class ResultSourcePolicy(ProcessingSourcePolicy):
                 yield permit
                 if self.failed:raise Unavailable('original publication aborted')
                 if self.result is None:self._original(query)
-                elif original_result(self.transaction,self.job_id,self.attempt_id,expected_version=self.result_version)!=self.result:
+                elif self.original_result()!=self.result:
                     raise Unavailable('original publication result changed')
             finally:self.query=None;self.thread=None
 
@@ -74,10 +74,10 @@ class ResultSourcePolicy(ProcessingSourcePolicy):
                     raise Unavailable('original Travel source and current lease differ')
                 return selection,travel_lease
             def completed(receipts):
-                return encode_result(row[0],self.prepared_input_sha256,self.model_output_sha256,receipts,version=self.result_version)
+                return self.encode_result(row[0],receipts)
             tx.publish_output(self.job_id,self.attempt_id,snapshot.messages,self.extraction,self.memory_policy,
                               context_for,completion=completed,decoder=self._entries)
-            self.result=original_result(tx,self.job_id,self.attempt_id,expected_version=self.result_version)
+            self.result=self.original_result()
             self.guard('result_precommit')
             return self.result
         except BaseException:
@@ -86,3 +86,9 @@ class ResultSourcePolicy(ProcessingSourcePolicy):
 
     def _entries(self,raw,messages,policy):
         return parse_output(raw,messages,policy)
+
+    def original_result(self):
+        return original_result(self.transaction,self.job_id,self.attempt_id,expected_version=self.result_version)
+
+    def encode_result(self,status,receipts):
+        return encode_result(status,self.prepared_input_sha256,self.model_output_sha256,receipts,version=self.result_version)
