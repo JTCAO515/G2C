@@ -33,23 +33,47 @@ class BodyError(Exception):
         self.status,self.code=status,code
 
 
-async def _read_body(request,max_body_bytes):
+async def _read_octets(request,max_body_bytes):
+    """Strict octet-stream body. Stream faults stay with the caller's own mapping."""
     media=request.headers.getlist('content-type')
     if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream'
             or request.headers.get('content-encoding','identity').lower()!='identity'):
         raise BodyError(415,'UNSUPPORTED_MEDIA_TYPE')
     chunks,total=[],0
+    async for chunk in request.stream():
+        total+=len(chunk)
+        if total>max_body_bytes:
+            raise BodyError(413,'BODY_TOO_LARGE')
+        chunks.append(chunk)
+    return b''.join(chunks)
+
+
+async def _read_body(request,max_body_bytes):
     try:
-        async for chunk in request.stream():
-            total+=len(chunk)
-            if total>max_body_bytes:
-                raise BodyError(413,'BODY_TOO_LARGE')
-            chunks.append(chunk)
+        return await _read_octets(request,max_body_bytes)
     except BodyError:
         raise
     except Exception as exc:
         raise BodyError(503,'BODY_UNAVAILABLE') from exc
-    return b''.join(chunks)
+
+
+def _body_error(request,exc):
+    return _error(request,exc.status,exc.code,'input','failed','do_not_retry')
+
+
+class ReadInterrupted(Exception):
+    pass
+
+
+def _sanitized_read(read):
+    # Only interruptions originating inside the synchronous reader are
+    # sanitized. Cancellation of the outer HTTP await still propagates.
+    try:
+        return read()
+    except BaseException as exc:
+        if isinstance(exc,Exception):
+            raise
+        raise ReadInterrupted() from None
 
 
 def register_message_routes(app, boundary=None, max_body_bytes=None):

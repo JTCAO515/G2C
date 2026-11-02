@@ -5,7 +5,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse,Response
 from starlette.concurrency import run_in_threadpool
 from .generated import FeedbackAction,FeedbackReceipt,FeedbackSubmitResponse,FeedbackQueryResponse
-from .message_routes import _error,_token
+from .message_routes import BodyError,_body_error,_error,_read_octets,_token
 from .history_routes import _query,PrivateOutputTooLarge
 from .feedback_composition import FeedbackWireConfiguration
 
@@ -56,18 +56,10 @@ def register_feedback_routes(app,boundary=None,configuration=None,modules=None):
         ready=prepare(request)
         if isinstance(ready,JSONResponse):return ready
         token,_=ready
-        media=request.headers.getlist('content-type')
-        if (len(media)!=1 or media[0].split(';',1)[0].strip().lower()!='application/octet-stream'
-                or request.headers.get('content-encoding','identity').lower()!='identity'):
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
-        chunks=[];size=0
         try:
-            async for chunk in request.stream():
-                size+=len(chunk)
-                if size>configuration.max_body_bytes:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-                chunks.append(chunk)
-            original=b''.join(chunks);action=domain.Action(original)
+            original=await _read_octets(request,configuration.max_body_bytes);action=domain.Action(original)
             FeedbackAction.model_validate_json(original,strict=True)
+        except BodyError as exc:return _body_error(request,exc)
         except (ValueError,UnicodeError,domain.InvalidInput):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         except Exception:return failure(request,True)
         return await invoke(request,token,action,True)
