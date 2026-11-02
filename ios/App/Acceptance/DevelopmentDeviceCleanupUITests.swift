@@ -36,7 +36,7 @@ import Foundation
             let top = bar.exists ? bar.frame.maxY + 4 : app.frame.minY + 48
             let bottom = app.tabBars.element.exists ? app.tabBars.element.frame.minY - 4 : app.frame.maxY - 40
             let frame = element.exists ? element.frame : .zero
-            print("CLEANUP_SCROLL", element.identifier, frame, "bounds", top, bottom, "hittable", element.exists && element.isHittable)
+            print("CLEANUP_SCROLL", element.exists ? element.identifier : "not-materialized", frame, "bounds", top, bottom, "hittable", element.exists && element.isHittable)
             if element.exists && element.isHittable && frame.minY >= top && frame.maxY <= bottom { return }
             let down = frame.isEmpty ? (attempt / 10) % 2 == 1 : frame.midY < top
             let middle = (top + bottom) / 2, step = min(100, (bottom - top) * 0.15)
@@ -44,7 +44,7 @@ import Foundation
             app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x, dy: middle + (down ? -step : step)))
                 .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x, dy: middle + (down ? step : -step))))
         }
-        XCTFail("Exact element was not scroll reachable: " + element.identifier)
+        XCTFail("Exact element was not scroll reachable: " + (element.exists ? element.identifier : "not-materialized"))
     }
     func tap(_ id: String) {
         let query = app.buttons.matching(identifier: id), button = query.element
