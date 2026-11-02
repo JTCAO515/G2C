@@ -12,6 +12,8 @@ struct DeviceCleanupRecord: Codable {
     var registration: Data?
     var enrollmentReply: Data?
     var enrollmentFromQuery: Bool
+    var refusalStatus: Int?
+    var refusalResponse: Data?
     var action: Data?
     var invocationReply: Data?
     var invocationFromActionQuery: Bool
@@ -67,6 +69,8 @@ struct DeviceCleanupRecord: Codable {
               invocationReply != nil || (directInvocation == nil && nativeIntentID == nil && nativeOutcome == nil && receipts.isEmpty),
               nativeIntentID != nil || (nativeOutcome == nil && receipts.isEmpty),
               nativeOutcome != nil || receipts.isEmpty,
+              (refusalStatus == nil) == (refusalResponse == nil),
+              refusalStatus == nil || enrollmentReply != nil,
               receipts.count <= 32 else { throw CleanupFailure.invalidResponse }
         if let registration {
             guard !registration.isEmpty, registration.count <= 16384 else { throw CleanupFailure.invalidResponse }
@@ -75,6 +79,11 @@ struct DeviceCleanupRecord: Codable {
             _ = try accountCleanupID(fields["action_id"]); _ = try accountCleanupID(fields["device_id"]); _ = try accountCleanupDigest(fields["state_ref"])
         }
         if enrollmentReply != nil { _ = try enrollment() }
+        if let refusalStatus { guard [401,403].contains(refusalStatus) else { throw CleanupFailure.invalidResponse } }
+        if let refusalResponse {
+            let fields = try accountCleanupObject(accountCleanupDocument(refusalResponse), fields: ["request_id", "error"])
+            try deviceCleanupTrace(fields)
+        }
         if action != nil { _ = try originalAction() }
         if let expectedAccountOperationID { _ = try accountCleanupID(.string(expectedAccountOperationID)) }
         if invocationReply != nil {
@@ -109,7 +118,7 @@ struct DeviceCleanupRecord: Codable {
             guard bytes.count <= 1048576 else { throw CleanupFailure.invalidResponse }
             let fields = try accountCleanupObject(accountCleanupDocumentForJournal(bytes))
             try accountCleanupKeys(fields, fields: ["version", "scope", "enrollmentFromQuery", "invocationFromActionQuery", "receipts"],
-                optional: ["registration", "enrollmentReply", "action", "invocationReply", "directInvocation", "expectedAccountOperationID", "nativeIntentID", "nativeOutcome"])
+                optional: ["registration", "enrollmentReply", "refusalStatus", "refusalResponse", "action", "invocationReply", "directInvocation", "expectedAccountOperationID", "nativeIntentID", "nativeOutcome"])
             do { record = try JSONDecoder().decode(DeviceCleanupRecord.self, from: bytes) } catch { throw CleanupFailure.invalidResponse }
             try record.validate(expectedScope: scope)
         } else { record = DeviceCleanupRecord(scope: scope) }
