@@ -165,6 +165,8 @@ class SourceInitializationChecks(unittest.TestCase):
                 class Connection:
                     def __init__(self,base):self.base,self.wrote=base,False
                     def __getattr__(self,name):return getattr(self.base,name)
+                    def __enter__(self):self.base.__enter__();return self
+                    def __exit__(self,*args):return self.base.__exit__(*args)
                     def cursor(self):return Cursor(self.base.cursor(),self)
                     def commit(self):
                         self.base.commit()
