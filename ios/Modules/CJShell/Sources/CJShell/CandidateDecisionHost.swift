@@ -1,24 +1,65 @@
 import Foundation
 import Observation
 import CJManualPreviewClient
+import CJMessageHTTP
 import CJTripClient
 
-public enum NeedsPlanningActivity: Equatable { case idle, reading, deciding, ready, unknown, conflict, unavailable }
-@MainActor @Observable public final class NeedsPlanningHost {
+public enum CandidateActivity: Equatable { case idle, reading, deciding, ready, unknown, conflict, unavailable }
+public typealias NeedsPlanningActivity = CandidateActivity
+public typealias ScopedCandidateActivity = CandidateActivity
+public typealias NeedsPlanningHost = CandidateDecisionHost<NeedsPlanningClient>
+public typealias ScopedCandidateHost = CandidateDecisionHost<ScopedTripClient>
+
+@MainActor public protocol CandidateAction { var actionID: String { get } }
+public protocol CandidateReceipt: Sendable { var isAcceptance: Bool { get } }
+
+/// The surface one candidate flow exposes to its host: protected read, one
+/// explicit decision, original-only recovery and the formal read after accept.
+@MainActor public protocol CandidateDecisionClient: AnyObject {
+    associatedtype Source: Sendable
+    associatedtype Read: AnyObject
+    associatedtype Kind
+    associatedtype Work: CandidateAction
+    associatedtype Display: CandidateAction
+    associatedtype Receipt: CandidateReceipt
+    static func source(of original: AcceptedMessageRunReceipt) -> Source?
+    func discover(original: Source, validateOriginal: @escaping @MainActor () throws -> Void) async throws -> Read
+    func validateRead(_ read: Read) throws
+    func originalActions() throws -> [Display]
+    func stage(_ kind: Kind, read: Read) throws -> Work
+    func perform(_ work: Work) async throws -> CandidateDecision<Receipt>
+    func queryOriginal(_ id: String) async throws -> CandidateDecision<Receipt>
+    func readFormal(for receipt: Receipt) async throws -> StructuredTripRecord?
+}
+
+extension NeedsPlanningWork: CandidateAction {}
+extension NeedsPlanningOriginalDisplay: CandidateAction {}
+extension NeedsPlanningReceipt: CandidateReceipt { public var isAcceptance: Bool { kind == .accept } }
+extension NeedsPlanningClient: CandidateDecisionClient {
+    public static func source(of original: AcceptedMessageRunReceipt) -> AcceptedTravelMessageSource? { original.planningSource }
+}
+extension ScopedDecisionWork: CandidateAction {}
+extension ScopedOriginalDisplay: CandidateAction {}
+extension ScopedActionReceipt: CandidateReceipt { public var isAcceptance: Bool { kind == .accept } }
+extension ScopedTripClient: CandidateDecisionClient {
+    public static func source(of original: AcceptedMessageRunReceipt) -> MessageEditReference? { original.editReference }
+}
+
+@MainActor @Observable public final class CandidateDecisionHost<Client: CandidateDecisionClient> {
     @ObservationIgnored private weak var messages: AssistantMessageHost?
-    @ObservationIgnored private let client: NeedsPlanningClient
+    @ObservationIgnored private let client: Client
     private var revision = UUID()
-    private var storedRead: NeedsPlanningRead?
+    private var storedRead: Client.Read?
     private var original: AcceptedMessageRunReceipt?
-    public private(set) var activity: NeedsPlanningActivity = .idle
-    public private(set) var actions: [NeedsPlanningOriginalDisplay] = []
+    public private(set) var activity: CandidateActivity = .idle
+    public private(set) var actions: [Client.Display] = []
     public private(set) var actionID: String?
-    public private(set) var receipt: NeedsPlanningReceipt?
+    public private(set) var receipt: Client.Receipt?
     public private(set) var formal: StructuredTripRecord?
     public private(set) var formalUnavailable = false
     public var busy: Bool { activity == .reading || activity == .deciding }
-    init(messages: AssistantMessageHost, client: NeedsPlanningClient) { self.messages = messages; self.client = client }
-    public var read: NeedsPlanningRead? {
+    init(messages: AssistantMessageHost, client: Client) { self.messages = messages; self.client = client }
+    public var read: Client.Read? {
         guard let captured = storedRead, let original, original.isCurrent(),
               (try? client.validateRead(captured)) != nil, original.isStillOwned(), storedRead === captured else { return nil }
         return captured
@@ -26,7 +67,7 @@ public enum NeedsPlanningActivity: Equatable { case idle, reading, deciding, rea
     public func clearSelection() { revision = UUID(); storedRead = nil; original = nil; actionID = nil; receipt = nil; formal = nil; formalUnavailable = false; activity = .idle }
     public func invalidate() { clearSelection(); actions = []; actionID = nil; receipt = nil; formal = nil }
     public func prepareDiscovery() -> (@MainActor () async -> Void)? {
-        guard !busy, let original = messages?.captureAcceptedRunReceipt(), let reference = original.planningSource else { return nil }
+        guard !busy, let original = messages?.captureAcceptedRunReceipt(), let reference = Client.source(of: original) else { return nil }
         let token = UUID(); revision = token; self.original = original; storedRead = nil; activity = .reading
         return { [weak self] in
             guard let self else { return }
@@ -42,7 +83,7 @@ public enum NeedsPlanningActivity: Equatable { case idle, reading, deciding, rea
             }
         }
     }
-    public func prepareDecision(_ kind: NeedsPlanningAction.Kind, read: NeedsPlanningRead) -> (@MainActor () async -> Void)? {
+    public func prepareDecision(_ kind: Client.Kind, read: Client.Read) -> (@MainActor () async -> Void)? {
         guard !busy, self.read === read else { return nil }
         do {
             let work = try client.stage(kind, read: read)
@@ -80,13 +121,13 @@ public enum NeedsPlanningActivity: Equatable { case idle, reading, deciding, rea
             } catch { guard revision == token else { return }; activity = .unknown }
         }
     }
-    private func apply(_ result: NeedsPlanningResult, token: UUID) async {
+    private func apply(_ result: CandidateDecision<Client.Receipt>, token: UUID) async {
         switch result {
         case .unknown: activity = .unknown
         case .rejected(let status): activity = status == 409 ? .conflict : .unavailable
         case .confirmed(let value):
             receipt = value; activity = .ready; formalUnavailable = false
-            if value.kind == .accept {
+            if value.isAcceptance {
                 do {
                     let current = try await client.readFormal(for: value)
                     guard revision == token else { return }

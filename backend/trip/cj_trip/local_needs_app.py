@@ -9,7 +9,7 @@ from cj_api.app import create_app
 from cj_api.local_app import LocalDatabase,scope_for
 from cj_api.local_worker_context import checker_for
 from cj_api.composition import CompositionUnavailable
-from cj_api.message_routes import _error,_token
+from cj_api.message_routes import BodyError,_body_error,_error,_read_octets,_token
 from cj_auth.interfaces import AdmissionStatus
 from cj_message.travel_reference import MessageContextAuthority
 from cj_agent.draft import trip_scope_for
@@ -124,16 +124,10 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
             'dependency','unknown','reconcile_original' if kind in ('action','prepare','save','source_prepare','source_save') else 'retry_safe_read')
     @app.post('/v1/trip-needs-actions')
     async def action(request:Request):
-        media=request.headers.getlist('content-type')
-        if (request.query_params or len(media)!=1 or media[0].split(';')[0].strip().lower()!='application/octet-stream'
-                or request.headers.get('content-encoding','identity').lower()!='identity'):
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
-        parts=[];size=0
-        async for chunk in request.stream():
-            size+=len(chunk)
-            if size>32768:return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-            parts.append(chunk)
-        return await invoke(request,'action',b''.join(parts))
+        if request.query_params:return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
+        try:raw=await _read_octets(request,32768)
+        except BodyError as exc:return _body_error(request,exc)
+        return await invoke(request,'action',raw)
     async def read(request,kind,key):
         try:arg=query(request,key)
         except ValueError:return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
@@ -150,15 +144,10 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
         except (ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         return await invoke(request,'discovery',query)
     async def edit_write(request,kind):
-        media=request.headers.getlist('content-type')
-        if request.query_params or len(media)!=1 or media[0].split(';')[0].strip().lower()!='application/octet-stream' or request.headers.get('content-encoding','identity').lower()!='identity':
-            return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
-        parts=[];size=0
-        async for chunk in request.stream():
-            size+=len(chunk)
-            if size>(1000000 if kind in ('prepare','source_prepare') else 32768):return _error(request,413,'BODY_TOO_LARGE','input','failed','do_not_retry')
-            parts.append(chunk)
-        return await invoke(request,kind,b''.join(parts))
+        if request.query_params:return _error(request,415,'UNSUPPORTED_MEDIA_TYPE','input','failed','do_not_retry')
+        try:raw=await _read_octets(request,1000000 if kind in ('prepare','source_prepare') else 32768)
+        except BodyError as exc:return _body_error(request,exc)
+        return await invoke(request,kind,raw)
     @app.post('/v1/trip-needs-edits')
     async def edit(request:Request):return await edit_write(request,'prepare')
     @app.get('/v1/trip-needs-edits')
