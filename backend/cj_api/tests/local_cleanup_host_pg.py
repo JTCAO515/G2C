@@ -6,13 +6,12 @@ import io,json,os,sys,tempfile,time
 from pathlib import Path
 from unittest.mock import patch
 
-import psycopg
 from fastapi.testclient import TestClient
-from cj_api.local_app import app_from_environment,LocalDatabase,scope_for,ISSUER
+from cj_api.local_app import app_from_environment,LocalDatabase,scope_for
 from cj_api.local_cleanup import load_configuration,Runtime
 from cj_api.local_worker_context import checker_for
 from cj_auth.interfaces import AdmissionStatus,Fact
-from cj_cleanup.account_hooks import MESSAGE,RUN,NEEDS,DomainHook,UsageHook
+from cj_cleanup.account_hooks import MESSAGE,RUN,NEEDS,UsageHook
 from cj_cleanup.core import encode,digest
 from cj_memory_withdrawal.account_cleanup import account_hooks
 
@@ -70,7 +69,7 @@ def exercise(root,path):
         return replace(loaded,registry_path=registry_path,clock=clock)
     with patch.object(fixture,'Configuration',loaded_component):fixture.exercise(fixture_root,path)
     assert len(loaded_components)==1
-    print('PASS real V2 loader feeds C-owned signed physical-erasure/replay/UNKNOWN/foreign/bootstrap-race fixture; explicit component inventory is not whole-registry acceptance')
+    print('PASS real V2 loader feeds C-owned signed physical-erasure/replay/foreign/bootstrap-race fixture; explicit component inventory is not whole-registry acceptance')
 
     auth=root/'host-auth';dev_auth.init(auth,['host-user'])
     token=dev_auth.token(auth,'host-user',30);headers={'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'}
