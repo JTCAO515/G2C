@@ -47,10 +47,11 @@ import Foundation
     }
     func tap(_ id: String) {
         let query = app.buttons.matching(identifier: id), button = query.element
-        XCTAssertTrue(button.waitForExistence(timeout: 25), id)
         let fixedControl = app.tabBars.buttons.matching(identifier: id).count == 1 || app.navigationBars.buttons.matching(identifier: id).count == 1
-        if !fixedControl { reveal(button) }
+        if fixedControl { XCTAssertTrue(button.waitForExistence(timeout: 25), id) }
+        else { reveal(button) }
         XCTAssertEqual(query.count, 1, id)
+        XCTAssertTrue(button.isHittable, id)
         let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 25), .completed, id)
         button.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).tap()
@@ -86,15 +87,25 @@ import Foundation
         continueAfterFailure = false; XCTAssertEqual(count, 0)
         let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
     }
+    func seedDraft(_ text: String) {
+        tap("Assistant"); tap("assistant.serverHistory"); tap("history.loadConversations"); tap("history.conversation.native-cleanup")
+        tap("assistant.panel.done")
+        let editor = app.textViews["assistant.draft"].exists ? app.textViews["assistant.draft"] : app.textFields["assistant.draft"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 20)); editor.tap(); editor.typeText(text)
+        let keyboardDone = app.toolbars.buttons.matching(identifier: "Done")
+        XCTAssertTrue(keyboardDone.element.waitForExistence(timeout: 5)); XCTAssertEqual(keyboardDone.count, 1)
+        keyboardDone.element.tap()
+    }
     func initial(_ f: Fixture, seedPrivateDraft: Bool = false) async throws -> String {
-        try launch(f); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
+        try launch(f); account()
         if seedPrivateDraft {
-            tap("Assistant"); tap("assistant.serverHistory"); tap("history.loadConversations"); tap("history.conversation.native-cleanup")
-            tap("assistant.panel.done")
-            let editor = app.textViews["assistant.draft"].exists ? app.textViews["assistant.draft"] : app.textFields["assistant.draft"]
-            XCTAssertTrue(editor.waitForExistence(timeout: 20)); editor.tap(); editor.typeText("本机原始中文草稿，未发送。")
-            let keyboardDone = app.toolbars.buttons.matching(identifier: "Done")
-            if keyboardDone.count == 1 { keyboardDone.element.tap() }
+            tap("account.development.signin.B"); contains("account.development.status", f.subjects["B"]!)
+            seedDraft("另一账号保留的中文草稿。")
+            account()
+        }
+        tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
+        if seedPrivateDraft {
+            seedDraft("本机原始中文草稿，未发送。")
             account(); try await call("/native-files", f.case_id, ["stage": "before"])
         }
         deletion(); tap("account.cleanup.review")

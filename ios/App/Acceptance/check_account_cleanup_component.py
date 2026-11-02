@@ -272,7 +272,13 @@ def main():
                                 if query['stage']=='before':assert counts['G2CDevelopmentMessages']>0,'real App draft did not persist encrypted snapshot'
                                 elif query['stage']=='after':assert all(n==0 for n in counts.values()),'original App private files remain'
                                 else:raise ValueError('unknown native file stage')
-                                value=dict(stage=query['stage'],counts=counts)
+                                other_account=namespace('G2C.DEBUG.TRIP.account|https://local.g2c.invalid|'+subjects[case]['B'])
+                                other={str(p.relative_to(support)):hashlib.sha256(p.read_bytes()).hexdigest()
+                                    for folder in known for parent in (support/folder/environment).glob(other_account+'*')
+                                    for p in parent.rglob('*') if p.is_file()}
+                                if query['stage']=='before':assert other,'other account has no actual encrypted file'
+                                else:assert other==report['native_files'][case]['before']['other_hashes'],'other account native file changed'
+                                value=dict(stage=query['stage'],counts=counts,other_hashes=other)
                                 report.setdefault('native_files',{}).setdefault(case,{})[query['stage']]=value;save()
                             elif parsed.path=='/proof':value=proof(case)
                             elif parsed.path=='/validate':
