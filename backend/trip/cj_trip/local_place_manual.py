@@ -6,7 +6,7 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
 from cj_api.local_app import LocalDatabase,scope_for
-from cj_api.local_worker_context import checker_for
+from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.local_needs import protected_reader
 from cj_api.message_routes import _token,_error
 from .auth_boundary import Boundary
@@ -23,7 +23,7 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
     if (os.environ.get('CJ_ENV')!='local' or run_context is None or type(confirmation_signer) is not ConfirmationSigner
             or type(max_response_bytes) is not int or max_response_bytes<1):raise CompositionUnavailable('explicit local source-bound manual host required')
     database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
-    checker=checker_for(Path(auth_dir))
+    checker=account_checker_for(Path(auth_dir),database)
     def resolve(principal):
         owner=scope_for(principal.issuer,principal.subject)
         return lambda:database.connect(owner),trip_scope_for(owner)
