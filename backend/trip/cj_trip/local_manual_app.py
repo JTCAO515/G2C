@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import LocalDatabase, scope_for
-from cj_api.local_worker_context import checker_for
+from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.message_routes import BodyError, _body_error, _error, _require_octets, _stream_octets, _token
 from cj_agent.draft import trip_scope_for
 
@@ -48,7 +48,7 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
                 check(stage)
                 if repository.manual_origin is not origin:raise Denied('original source reader changed')
             return repository,principal,guard
-    boundary=ManualBoundary(checker_for(Path(auth_dir)),resolve,confirmation_signer,structured=True)
+    boundary=ManualBoundary(account_checker_for(Path(auth_dir),database),resolve,confirmation_signer,structured=True)
     app=create_app()
 
     def query(request, fields):

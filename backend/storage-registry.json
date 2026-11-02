@@ -110,7 +110,7 @@
             "cj_memory_operation"
           ],
           "source": "backend/memory/schema.sql@426d337b0647d7770f1716fad83f2e5e724d28e4",
-          "status": "candidate/local_only; production_not_provisioned",
+          "status": "provided/local_runtime_only; production_not_provisioned",
           "principal_binding": "Explicit environment/profile + trusted issuer/subject/audience mapped host scope; public guarded Service; manual source/item/ledger only via explicit ManualPolicy in one transaction; no caller source/approval",
           "sensitive_fields": [
             "original_input and approved_input exact bytes (also duplicated in operation ledger)",
@@ -119,10 +119,11 @@
             "content/types/status/version/record and occurrence times"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "UNIMPLEMENTED; no physical cleanup API; source/item revocation and scope epoch lifecycle must be provided by domain owners; no derived ReMe store added",
-          "restore_fence": "UNIMPLEMENTED; source/revocation/tombstone replay must precede reads; no resurrection promise",
+          "cleanup_hook": "cj_memory_withdrawal.account_cleanup.MemoryAuthorityAccountHook via explicit account_hooks(store,owner_scope); account-only exact original intent/retirement/result transaction; memory selection fails without mutation (#26 pending)",
+          "restore_fence": "Live account: existing M35 retirement and M41 canonical bootstrap/drain fence before physical erasure; backups/offline restoration and item-erasure barriers remain UNIMPLEMENTED",
           "owner_line": "C",
-          "retention_category": "user_content"
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
         },
         {
           "id": "trip-authoritative",
@@ -144,7 +145,7 @@
             "cj_trip_scoped_result"
           ],
           "source": "backend/trip/sql/candidate.sql@5fd115fc97e542bc8776a445d8245fd272000e56",
-          "status": "candidate/local_only; production_not_provisioned",
+          "status": "provided/local_runtime_only; production_not_provisioned",
           "principal_binding": "Fresh existing AUTH plus explicit environment/profile and issuer/subject scope mapping; server-held review/confirmation validator required, default absent denies",
           "sensitive_fields": [
             "exact private itinerary/proposal content and evidence references",
@@ -152,8 +153,8 @@
             "canonical original action bytes including confirmation_ref and historical receipt"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "UNIMPLEMENTED; no deletion of proposal/action receipts or formal records; dedupe only while retained; generation cancellation is not candidate rejection",
-          "restore_fence": "UNIMPLEMENTED; scope/confirmation/candidate/version revocations and deletion replay must precede reads; no backup restoration acceptance",
+          "cleanup_hook": "cj_memory_withdrawal.account_cleanup.TripAuthorityAccountHook via explicit account_hooks(store,owner_scope); account-only exact original intent/retirement/result transaction; memory selection fails without mutation (#26 pending)",
+          "restore_fence": "Live account: existing M35 retirement and M41 canonical bootstrap/drain fence before physical erasure; backups/offline restoration and item-erasure barriers remain UNIMPLEMENTED",
           "read_consumers": [
             {
               "contract": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1",
@@ -163,7 +164,8 @@
             }
           ],
           "owner_line": "C",
-          "retention_category": "user_content"
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
         },
         {
           "id": "needs-current-planning",
@@ -262,19 +264,20 @@
             "cj_memory_management_action"
           ],
           "source": "backend/memory_management/schema.sql@a7e706ce44095d43ab0b80c2e75a2bf81927ce76",
-          "status": "candidate_factory_closed_pending_independent_gates; production_not_provisioned",
+          "status": "provided/local_runtime_only; production_not_provisioned",
           "principal_binding": "Existing host authenticated MEMORY scope; canonical guarded Service and same cj_memory_scope/source/item transaction/row lock; no new source authority",
           "sensitive_fields": [
             "Exact original action UTF8 bytes and action/item IDs",
             "Historical resulting version/status and stored original-input SHA256"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "UNIMPLEMENTED; register this action ledger alongside original source/item/save ledgers; pause is not deletion",
-          "restore_fence": "UNIMPLEMENTED; backups/offline copies/unknown-action recovery require original IDs and exact bytes",
+          "cleanup_hook": "cj_memory_withdrawal.account_cleanup.MemoryManagementAccountHook via explicit account_hooks(store,owner_scope); account-only exact original intent/retirement/result transaction; memory selection fails without mutation (#26 pending)",
+          "restore_fence": "Live account: existing M35 retirement and M41 canonical bootstrap/drain fence before physical erasure; backups/offline restoration and item-erasure barriers remain UNIMPLEMENTED",
           "read_consumer": "Original action receipt query only; null is absence observation, not proof of noncommit or retry authorization",
-          "candidate_sql_registration": "Documentation only; no migration manifest or application to old/production database",
+          "candidate_sql_registration": "Local runtime migrations M19/M32/M41; dedicated cleanup role only, no runtime DELETE",
           "owner_line": "C",
-          "retention_category": "user_content"
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
         }
       ],
       "owner_line": "B / domain owners",
