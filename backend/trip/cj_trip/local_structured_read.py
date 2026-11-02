@@ -9,7 +9,7 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
 from cj_api.local_app import LocalDatabase,scope_for
-from cj_api.local_worker_context import checker_for
+from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.composition import CompositionUnavailable
 from cj_api.message_routes import _error,_token
 from cj_agent.draft import trip_scope_for
@@ -29,7 +29,7 @@ def create_local_structured_read_app(*,conninfo_path,auth_dir,run_context,max_re
         with database.connect(owner) as conn:
             conn.execute('INSERT INTO cj_trip_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
         return lambda:database.connect(owner),scope
-    boundary=Boundary(checker_for(Path(auth_dir)),resolve,structured=True)
+    boundary=Boundary(account_checker_for(Path(auth_dir),database),resolve,structured=True)
     app=create_app()
 
     def structured(trip):
