@@ -851,8 +851,19 @@ import Observation
     }
 
     private func fenceCleanupBusiness() throws {
-        trip?.invalidate(); offline?.hide()
-        _ = shell.invalidateIdentity()
+        guard let original = cleanupWorkflow else { throw CleanupFailure.stale }
+        try original.requireCurrent()
+        trip?.invalidate()
+        guard cleanupWorkflow === original else { throw CleanupFailure.stale }
+        try original.requireCurrent(); offline?.hide()
+        guard cleanupWorkflow === original else { throw CleanupFailure.stale }
+        let generation = shell.invalidateIdentity()
+        guard shell.generation == generation, cleanupWorkflow === original else { throw CleanupFailure.stale }
+        try original.requireCurrent()
+        // Business projections retire; the original cleanup surface remains reachable.
+        shell.selectedTab = .memory
+        guard shell.generation == generation, cleanupWorkflow === original else { throw CleanupFailure.stale }
+        shell.memoryPath = [.accountDeletion]
     }
     private func clearCleanupSDK() throws {
         try accounts.clearForAccountCleanup()
@@ -1437,6 +1448,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         refresh()
     }
     func invalidate() { active = false; lifetime.invalidate(); device?.invalidate(); account?.invalidate(); host.invalidate() }
+    func requireCurrent() throws { try check() }
     private func check() throws { guard active else { throw CleanupFailure.stale }; try Task.checkCancellation() }
     private func configureClients() throws {
         try check()
@@ -1567,6 +1579,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
             guard let device, let manifest, let ordinary,
                   material.withBytes(developmentCleanupHash) == manifest.sdkHash,
                   developmentCleanupHash(Data(ordinary.configuration.token.utf8)) == manifest.sdkHash else { throw CleanupFailure.stale }
+            try quiesce(); try check()
             let verified = try await device.perform(device.prepareIdentityVerification()); try check()
             if case .identityAllowed = verified { return } // No clearing and no offline renewal.
             guard case .identityRefused = verified else { throw CleanupFailure.unavailable }

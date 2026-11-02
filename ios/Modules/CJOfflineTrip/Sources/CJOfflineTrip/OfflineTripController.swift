@@ -397,8 +397,10 @@ struct OfflineAnchor: Codable, Equatable, Sendable {
         let token = generation
         guard let material = try sdkMaterial() else { return }
         guard generation == token else { throw OfflineFailure.unavailable }
-        if let identityRejection { try await identityRejection(material) }
-        else { try self.identityRejected(material: material) }
+        if let identityRejection {
+            try denyRejectedIdentity(material: material)
+            try await identityRejection(material)
+        } else { try self.identityRejected(material: material) }
     }
     public func captureStorageProvision() throws -> OfflineTripStorageProvision {
         let token = generation
