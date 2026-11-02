@@ -25,3 +25,30 @@ Candidate exports: `Action`, `Receipt`, `Boundary.with_operation`, safe failures
 Optional `Sources` consumes pinned MESSAGE/RUN public reads. Only the host callback sees typed values and emits final encoded bytes; no endpoint
 is registered. SQL installs exactly one domain table and no cross-domain access.
 See [evidence](evidence/SOURCES-REPORT.md) and [cleanup inventory](../../contracts/feedback/CLEANUP.md).
+# M3 FEEDBACK@1.0 closeout (#15)
+
+The additive stable wire is [FEEDBACK@1.0](../../contracts/feedback/V1.md); rc wire
+and old default internal hosts are retained. The local app now configures the
+existing submit/original-query routes with the same canonical MESSAGE checker,
+actual runtime-role PG, and an explicit v1 scope binder. No request diagnostic or
+new Memory/Trip reference type is accepted. The source observation remains historical.
+
+Local migration 0033 provides a nonsecret irreversible scope-digest fence, minimal
+runtime SELECT/INSERT and key-column UPDATE solely for its row lock; runtime can
+neither retire/unretire nor DELETE. Explicit scope serialization plus an INSERT
+trigger rejects late raw writers. `FeedbackHook` validates the original persisted
+intent, retires/erases the exact account scope, verifies absence, and records the
+original result atomically. Other accounts remain intact. Restore must replay the
+retired hash before reads/writes; new IDs never reactivate it.
+
+[FEEDBACK-LOCATOR@1](../../contracts/feedback/LOCATOR-V1.md) reads actual original
+protocol/registration/attempt/input references and current persisted stages/timing.
+It copies no transcript/tool payload and invents no external model, rule, fee or
+internal provider failure metadata. `diagnostic_at` applies only to new RUN events;
+legacy timing is null, and #27 owns 90-day timestamp erasure separate from content
+and reconciliation retention. The feedback store itself remains until user deletion.
+
+Test: `scripts/pg_suites.py feedback_runtime` (actual signed API + runtime PG +
+original run_once/FakeProvider); full `scripts/test.py` and `scripts/pg_suites.py`
+remain the gates. App/native combination belongs to A; real provider/account/cloud,
+device and backup acceptance remain #32/#29/#30, not a receipt of this local slice.

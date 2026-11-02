@@ -314,6 +314,10 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             raise CompositionUnavailable('scope mismatch')
         return database.run_repository(scope)
 
+    def feedback_resolver(principal):
+        scope=scope_for(principal.issuer,principal.subject)
+        return lambda:database.connect(scope),scope
+
     def trip(principal):
         scope = scope_for(principal.issuer, principal.subject)
         database.provision(scope)
@@ -378,11 +382,15 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             scope=scope_for(principal.issuer,principal.subject)
             return lambda:database.connect(scope),needs_scope_for(scope)
 
+    from .feedback_composition import FeedbackWireConfiguration
+    from cj_feedback.lifecycle import bind_runtime as bind_feedback
     app=create_composed_app(
         environment='local', jwt_configuration=config, verification_keys=keys,
         memory_configuration=memory_wire, resolve_memory_binding=resolve_memory,
         memory_source_policy=memory_source_policy,
         needs_configuration=needs_wire,resolve_needs=needs_resolve,needs_repository_factory=needs_factory,
+        feedback_configuration=FeedbackWireConfiguration(16384,65536),resolve_feedback=feedback_resolver,
+        resolve_feedback_run=run_repository,feedback_scope_binder=bind_feedback,
         access_provider=InvitedSubjects(auth_dir / 'invited.json'),
         resolve_repository=message_repository, new_run_id=lambda: str(uuid.uuid4()),
         resolve_travel_repository=travel_repository,
