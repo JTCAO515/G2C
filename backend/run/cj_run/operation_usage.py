@@ -5,7 +5,7 @@ import uuid
 from cj_usage.core import Command, label, Blocked
 from .core import Denied
 from .step_usage import ledger_scope_for, OriginalStepOnly
-from .usage_binding import UsageBinding
+from .usage_binding import UsageBinding,ErasedUsageBinding
 
 ABI = 'RUN-USAGE-OPERATIONS@1'
 
@@ -17,7 +17,7 @@ class RegisteredOperation:
     registration_id: str
     ledger_scope: str
     period: tuple[int, int]
-    original: UsageBinding
+    original: UsageBinding|ErasedUsageBinding
 
     @property
     def command(self): return self.original.command
@@ -50,7 +50,11 @@ class OperationStore:
         try: label(row[0])
         except Blocked:
             raise OriginalStepOnly('original registration unavailable') from None
-        original=UsageBinding(bytes(row[9]),bytes(row[10]));command=original.command
+        if row[10] is None:
+            from .payload_evidence import erased_original
+            original=erased_original(tx.cur,binding.scope,'cj_run_metered_operation',binding.run_id,key,bytes(row[9]))
+        else:original=UsageBinding(bytes(row[9]),bytes(row[10]))
+        command=original.command
         if (row[8]!=ABI or row[5]!='provider_call' or (row[6],row[7])!=(self.config.period_start,self.config.period_end)
                 or row[4]!=ledger_scope_for(binding.scope,self.config)
                 or (row[1],row[2],row[3])!=(command.kind,command.attempt_id,command.operation_id)

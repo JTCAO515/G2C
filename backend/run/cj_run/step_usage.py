@@ -5,7 +5,7 @@ import json
 import uuid
 from cj_usage.core import Command, Config
 from .core import Denied
-from .usage_binding import UsageBinding
+from .usage_binding import UsageBinding,ErasedUsageBinding
 
 
 class OriginalStepOnly(Exception):
@@ -24,7 +24,7 @@ class Step:
     step_key: str
     ledger_scope: str
     period: tuple[int, int]
-    original: UsageBinding
+    original: UsageBinding|ErasedUsageBinding
 
     @property
     def command(self):
@@ -43,7 +43,10 @@ class StepStore:
                        (binding.scope,binding.run_id,step_key))
         row=tx.cur.fetchone()
         if row is None: return None
-        original=UsageBinding(bytes(row[5]),bytes(row[6]))
+        if row[6] is None:
+            from .payload_evidence import erased_original
+            original=erased_original(tx.cur,binding.scope,'cj_run_step_usage',binding.run_id,step_key,bytes(row[5]))
+        else:original=UsageBinding(bytes(row[5]),bytes(row[6]))
         original.check_run(binding.run_id)
         if (original.command.attempt_id != row[0] or original.command.kind != 'model'
                 or original.command.reserve != 1 or row[2] != 'provider_call'
