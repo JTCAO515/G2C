@@ -313,6 +313,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network unit seam, unavailable to App callers.
     init(interceptedTransport: any ClientTransport, memoryErasureEndpoint: MessageEndpoint,
          validateMemoryErasure: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryProjection = nil
         deviceCleanup = nil; deviceCompletion = nil
 
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil

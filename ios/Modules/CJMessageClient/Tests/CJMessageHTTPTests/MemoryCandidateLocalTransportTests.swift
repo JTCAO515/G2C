@@ -183,7 +183,7 @@ private actor CandidateExitSpy: ClientTransport {
         }
         #expect(await spy.requests.count == (phase == "before" ? 0 : 1))
     }
-    @Test(arguments: ["projection", "device", "completion"])
+    @Test(arguments: ["projection", "device", "completion", "erasure"])
     func currentProjectionAndDevicePurposesStaySeparateAfterMainMerge(kind: String) async throws {
         let endpoint = try endpoint(), spy = CandidateExitSpy()
         let transport: NoRedirectTransport
@@ -192,15 +192,22 @@ private actor CandidateExitSpy: ClientTransport {
         case "projection":
             transport = NoRedirectTransport(interceptedTransport: spy, memoryProjectionEndpoint: endpoint, validateMemoryProjection: {})
             routes = [("/v3/cleanup-device-calls", "createCleanupDeviceCallV3", true),
+                ("/v1/memory-erasures", "eraseMemoryV1", true),
+                ("/v1/memory-erasure-progress?action_id=original", "readMemoryErasureProgressV1", false),
                 ("/v1/cleanup-device-completions/original?request_digest=" + String(repeating: "a", count: 64), "readCleanupDeviceCompletionV1", false)]
         case "device":
             transport = NoRedirectTransport(interceptedTransport: spy, deviceCleanupEndpoint: endpoint, validateDeviceCleanup: {})
             routes = [("/v6/memory-candidates?conversation_id=chat&after_candidate_id=", "readMemoryCandidateProjectionV2", false),
                 ("/v3/memory-candidate-actions", "applyMemoryCandidateActionV1", true)]
-        default:
+        case "completion":
             transport = NoRedirectTransport(interceptedTransport: spy, deviceCompletionEndpoint: endpoint, validateDeviceCompletion: {})
             routes = [("/v6/memory-candidates?conversation_id=chat&after_candidate_id=", "readMemoryCandidateProjectionV2", false),
                 ("/v3/memory-candidate-actions", "applyMemoryCandidateActionV1", true)]
+        default:
+            transport = NoRedirectTransport(interceptedTransport: spy, memoryErasureEndpoint: endpoint, validateMemoryErasure: {})
+            routes = [("/v6/memory-candidates?conversation_id=chat&after_candidate_id=", "readMemoryCandidateProjectionV2", false),
+                ("/v3/memory-candidate-actions", "applyMemoryCandidateActionV1", true),
+                ("/v3/memory-candidate-receipts?action_id=original", "queryMemoryCandidateReceiptV1", false)]
         }
         for (path, operation, post) in routes {
             await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {

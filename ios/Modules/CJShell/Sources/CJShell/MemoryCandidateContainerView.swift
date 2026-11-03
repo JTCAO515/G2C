@@ -8,10 +8,8 @@ struct MemoryCandidateContainerView: View {
     let language: ShellLanguage
     @Environment(\.scenePhase) private var scenePhase
     private func synchronizeAndRead() {
-        host.synchronizeConversation()
-        guard let model = host.presentation, model.state == .unread,
-              let work = model.prepareDiscovery() else { return }
-        Task { await model.perform(work) }
+        let context = host.captureConversationRead()
+        Task { await host.loadSuggestions(context: context, onlyIfUnread: true) }
     }
     var body: some View {
         VStack(spacing: 0) {

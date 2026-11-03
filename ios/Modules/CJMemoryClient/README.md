@@ -242,9 +242,12 @@ mark #24's original-account-operation box complete.
 
 ## M3 candidate review consumer (#460, parent #23)
 
-`MemoryCandidateClient` discovers actual first-producer references with
-MEMORY-CANDIDATE-JOBS@1, then reads the original V3 candidate projection. Only
-references sealed by that client's current discovery/read can prepare a review.
+Current App constructors explicitly select `.canonicalProjectionV2` and read
+`GET /v6/memory-candidates` / `MEMORY-CANDIDATE-projection@2`. This supplies the
+current canonical candidate, Memory epoch and original review job/attempt without
+recovering an erased job payload. Only this client's protected current read can
+prepare a review. The older producerJobsV1/V5/V3 consumer remains for its existing
+callers; current App activation does not fall back to it.
 The canonical SessionLifecycle, account binding and actual selected MESSAGE
 conversation are checked before and after credentials, HTTP and body collection.
 The explicit DEBUG Simulator loopback factory enables exactly four candidate
@@ -265,10 +268,11 @@ preference choice. Text/time may be edited; original extent and Travel identity
 are retained and the server still verifies current Travel/version/source scope.
 No suggestion, history consent or historical receipt itself activates a memory.
 
-The Shell entry/host is provided, but actual App Root provisioning and native
-acceptance are still pending. Proposed exact roots are M.candidate-v1 and
+The Shell entry/host, source-bound conversation bubble and exact App constructor
+are provided, but ordinary Root activation and native acceptance remain pending.
+The constructor owns exact roots M.candidate-v1 and
 M.candidate-v1.CJMemoryCandidateRejectionsV1. Before either is provisioned, B must
 provide an additive device version and include both in the shared Memory-key
 empty-set rule. Frozen DEVICE@3 is not expanded and no WIP App root is registered
-by this module. Part 1 does not close #460 or the parent App frame; signed local
+by this module. This slice does not close #460 or the parent App frame; signed local
 API/private PG/FakeProvider/native maximum-type/all-AX proof belongs to Part 2.
