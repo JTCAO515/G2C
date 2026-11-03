@@ -43,6 +43,7 @@ public enum TypedMemoryManagementState {
     case legacy(MemoryManagementResult)
 }
 public enum LegacyMemoryRecoveryState { case unconfigured,requiresQuery,reconciled,unavailable }
+public enum MemoryItemLocalCleanupState { case notChecked, clearing, complete, unknown }
 public enum MemoryOriginalReference: Equatable,Sendable {
     case save(String),legacySave(String),management(String),legacyManagement(String)
 }
@@ -61,6 +62,15 @@ public enum MemoryOriginalReference: Equatable,Sendable {
     private let configuredOptions: [TypedMemoryManualOption]
     private let travel: TravelSelectionModel
     private let pageSize: Int
+    private let erasureClient: MemoryErasureClient?
+    private let itemCleanup: MemoryItemLocalCleanup?
+    private let erasureModel: MemoryErasurePresentation?
+    private var localCleanupValue: MemoryItemLocalCleanupState = .notChecked
+    private var localCleanupAction: Data?
+    public var localCleanupState: MemoryItemLocalCleanupState {
+        guard current, localCleanupAction == erasureModel?.original.map({ Data($0.actionID.utf8) }) else { return .notChecked }
+        return localCleanupValue
+    }
     private var active = true
     @ObservationIgnored private var invalidating = false
     @ObservationIgnored private var publishing = false
@@ -81,14 +91,18 @@ public enum MemoryOriginalReference: Equatable,Sendable {
 
     public init(shell: ShellState,client: TypedMemoryClient,binding: MemoryBinding,pageSize: Int,
                 options: [TypedMemoryManualOption],travel: TravelSelectionModel,legacy: MemoryClient? = nil,
-                currentBinding: @escaping @MainActor () -> MemoryBinding?) throws {
+                currentBinding: @escaping @MainActor () -> MemoryBinding?, erasureClient: MemoryErasureClient? = nil,
+                itemCleanup: MemoryItemLocalCleanup? = nil) throws {
         self.shell = shell;generation = shell.generation;self.client = client;self.binding = binding
         self.pageSize = pageSize;configuredOptions = options;self.travel = travel;self.legacy = legacy;self.currentBinding = currentBinding
+        self.erasureClient = erasureClient; self.itemCleanup = itemCleanup
+        erasureModel = erasureClient.map { MemoryErasurePresentation(client: $0) }
         let predecessor = shell.typedMemoryContainerHost
         guard (1...100).contains(pageSize),current,shell.typedMemoryContainerHost === predecessor else { throw MemoryFailure.staleBinding }
         predecessor?.invalidate()
         guard current,shell.typedMemoryContainerHost === predecessor else { throw MemoryFailure.staleBinding }
         shell.typedMemoryContainerHost = self
+        erasureModel?.replace(binding: binding)
     }
     func belongs(to shell: ShellState) -> Bool { self.shell === shell }
     private var current: Bool {
@@ -115,6 +129,40 @@ public enum MemoryOriginalReference: Equatable,Sendable {
     public var saveState: MemorySaveState { presented ? saveValue : .unconfigured }
     public var managementState: TypedMemoryManagementState { presented ? managementValue : .unknown }
     public var hasMore: Bool { presented && !working && page != nil }
+    public var erasurePresentation: MemoryErasurePresentation? { current ? erasureModel : nil }
+    public func prepareErasure(surface: TypedMemorySurface?) throws {
+        guard let surface, owns(surface), !working, presented,
+              case .loaded(let value) = detailValue, let read = value,
+              let erasureClient, let erasureModel else { throw MemoryFailure.staleBinding }
+        let entry = try erasureClient.capture(read: read, reader: client, binding: binding)
+        guard owns(surface), !working else { throw MemoryFailure.staleBinding }
+        erasureModel.replace(binding: binding, entry: entry)
+        guard owns(surface) else { erasureModel.replace(binding: nil); throw MemoryFailure.staleBinding }
+        localCleanupAction = nil; localCleanupValue = .notChecked
+    }
+    /// A stopped original authorizes only its own item. Retire content work
+    /// before physical deletion so a late reply cannot recreate old sidecars.
+    public func clearErasedLocalContent() {
+        guard current, !working, localCleanupState != .clearing,
+              let erasureClient, let erasureModel, let original = erasureModel.original, let itemCleanup else { return }
+        let action = Data(original.actionID.utf8)
+        localCleanupAction = action; localCleanupValue = .clearing
+        let validateCurrent = { [self] in
+            guard current, erasureModel.original.map({ Data($0.actionID.utf8) }) == action else { throw MemoryFailure.staleBinding }
+        }
+        do {
+            try validateCurrent()
+            let authorization = try erasureClient.localAuthorization(for: original)
+            try validateCurrent()
+            epoch = UUID(); visibleEpoch = nil; clearValues(); client.invalidate(); legacy?.invalidate()
+            try itemCleanup.clear(authorization, validateCurrent: validateCurrent)
+            try validateCurrent()
+            localCleanupValue = .complete
+        } catch {
+            guard current, erasureModel.original.map({ Data($0.actionID.utf8) }) == action else { return }
+            localCleanupValue = .unknown
+        }
+    }
 
     public func enterSurface() -> TypedMemorySurface? {
         let original = epoch
@@ -141,6 +189,7 @@ public enum MemoryOriginalReference: Equatable,Sendable {
         invalidating = true // fence before observable writes can reenter this method
         active = false;epoch = UUID();working = false;visibleEpoch = nil;clearValues();client.invalidate()
         legacy?.invalidate()
+        erasureModel?.invalidate()
     }
     public func suspendForBackground() { invalidate() }
     private func owns(_ surface: TypedMemorySurface) -> Bool {
