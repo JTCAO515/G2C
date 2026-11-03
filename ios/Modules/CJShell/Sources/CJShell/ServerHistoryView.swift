@@ -90,7 +90,7 @@ struct ServerHistoryView: View {
     private func historyButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             RunReadableText(text: title).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-        }.buttonStyle(.plain)
+        }.buttonStyle(ShellReadableButtonStyle())
     }
     @ViewBuilder private func humanMessage(_ row: MessageHumanHistoryItem) -> some View {
         let run = host.humanRun(row)
