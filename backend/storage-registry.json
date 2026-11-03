@@ -1,5 +1,5 @@
 {
-  "version": "1.24.0",
+  "version": "1.25.0",
   "stores": [
     {
       "id": "business",
@@ -305,7 +305,7 @@
             "cj_run_metered_operation",
             "cj_run_background_job"
           ],
-          "source": "backend/migrations/0040_background_jobs.sql; existing RUN schema remains unchanged",
+          "source": "backend/migrations/0040_background_jobs.sql; 0043_background_v3.sql appends immutable protocol and accepted-decision digest on the same job table",
           "status": "candidate_or_local_only; production_not_provisioned",
           "principal_binding": "Server-authenticated scope; RUN/MESSAGE/USAGE association and dispatch fences unresolved",
           "sensitive_fields": [
@@ -314,7 +314,8 @@
             "exact usage command/input bytes",
             "status and expiry",
             "diagnostic_at for newly persisted run events only (no historical backfill); 90-day diagnostic timing, separate from answer/event/accounting retention",
-            "Original C job/attempt and source/Travel references, exact filtered prepared model bytes, immutable registered command/config, original publication hashes"
+            "Original C job/attempt and source/Travel references, exact filtered prepared model bytes, immutable registered command/config, original publication hashes",
+            "RUN-BACKGROUND@3 immutable protocol and accepted decision_source_sha256 comparison header; actual authority remains C's accepted Trip/Memory holders"
           ],
           "retention": "Retained answer/output content until user/account deletion; diagnostic-only events/checkpoints 90 days; no blanket run deletion",
           "cleanup_hook": "cj_cleanup.account_hooks.DomainHook; explicit code-owned tables, original persisted intent, account fence, verified physical erasure and atomic original result; no owner/C data guessing",
@@ -339,10 +340,10 @@
             "content": "Persisted user-visible answer/effects and source associations: until user/account deletion",
             "diagnostic_90d": "Diagnostic-only events/checkpoints, once separated from answer/reconciliation state",
             "account_reconciliation": "Metered binding/operation, exact original command/input and unknown settlement: no 90-day TTL",
-            "background_jobs": "Prepared input is user content until user/account deletion; immutable command/config and original/unknown Meter evidence are account reconciliation, never diagnostic logs or subject to a 90-day TTL. Only minimal irreversible original hashes/fences may survive content erasure."
+            "background_jobs": "Prepared input is user content until user/account deletion; immutable command/config, BG3 protocol/decision digest and original/unknown Meter evidence are account reconciliation, never diagnostic logs or subject to a 90-day TTL. Only minimal irreversible original hashes/fences may survive content erasure."
           },
           "cleanup_protocol": "CLEANUP@1.1",
-          "background_contract": "RUN-BACKGROUND@2; explicit local host, C filtered DATA/EXTRACT/PUBLICATION@2 with public publication holder@3, existing Meter; no MESSAGE receipt or terminal RUN reuse"
+          "background_contract": "RUN-BACKGROUND@2 unchanged; explicit RUN-BACKGROUND@3 consumes C filtered DATA/EXTRACT/PUBLICATION@3 accepted decisions with original before_commit, existing Meter and isolated protocol rows; no MESSAGE receipt or terminal RUN reuse"
         }
       ],
       "owner_line": "B",
