@@ -95,6 +95,33 @@ def exercise(root,path,*,physical=False):
             headers=fixture['headers']['graph-alice'])
         assert response.status_code==200,response.text
     assert b'New explicit saving' in in_memory(current) and b'very slow pace' not in in_memory(current)
+    if os.environ.get('CJ_ITEM_ACCOUNT')=='1':
+        from cj_api.local_app import create_local_app
+        from cj_api.local_cleanup import Configuration
+        from cj_memory_withdrawal.account_cleanup import account_hooks
+        targets=('memory-derived','business/memory-management-actions','business/memory-authoritative',
+                 'business/trip-authoritative','business/feedback-private-actions')
+        path_registry=root/'account-component.json'
+        path_registry.write_bytes(encode(dict(version='item-manifest-account-component',stores=[dict(id='memory-derived',cleanup_protocol='CLEANUP@1.1'),
+            dict(id='business',objects=[dict(id=t.split('/')[1],cleanup_protocol='CLEANUP@1.1') for t in targets[1:]])])))
+        configuration=Configuration({'local':b'candidate-item-manifest-account-key'},'local',3600,targets,path_registry,extra_hooks=account_hooks)
+        app=create_local_app(conninfo_path=path,auth_dir=fixture['auth'],cleanup_configuration=configuration)
+        with TestClient(app) as client:
+            def post(url,value):
+                response=client.post(url,content=encode(value),headers=fixture['headers']['graph-alice'])
+                assert response.status_code==200,response.text
+                return response.json()
+            device=post('/v1/cleanup-devices',dict(version='CLEANUP-DEVICE@1',action_id='account-device',device_id='local-device',state_ref='a'*64))
+            operation=post('/v1/account-cleanup-operations',dict(version='CLEANUP-API@1',action_id='account-prepare',binding_id=device['binding_id']))
+            result=post('/v1/account-cleanup-operations/'+operation['operation_id']+'/confirmation',dict(version='CLEANUP-API@1',
+                registry_digest=operation['registry_digest'],confirmation='DELETE_ACCOUNT'))
+            assert result['online_status']=='complete'
+        with psycopg.connect(**json.loads(path.read_text())) as conn:
+            assert conn.execute('SELECT count(*) FROM cj_memory_erasure_manifest WHERE scope=%s',(fixture['scope'],)).fetchone()==(0,)
+            assert conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(fixture['scope'],)).fetchone()==(0,)
+            assert conn.execute('SELECT count(*) FROM cj_memory_erasure_fence').fetchone()[0]>=6
+        print('PASS actual signed account confirmation clears new private manifest and canonical bytes; only minimum noncontent replay barriers remain, component not full external/device erasure')
+        return
     if physical:
         from cj_memory_withdrawal.item_cleanup import DerivedItemHook,ManagementItemHook,TripDerivedItemHook,AuthorityItemHook
         from cj_agent.draft import trip_scope_for

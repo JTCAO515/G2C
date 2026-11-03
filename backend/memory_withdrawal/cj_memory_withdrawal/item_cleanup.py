@@ -34,7 +34,8 @@ class _ItemHook:
         except CommitUnknown:return receipt_for(request,'unknown')
 
     def reconcile(self,request):
-        if request.target!=self.target or request.subject_digest!=self.store.subject_digest or request.domain_scope!=self.domain_scope:
+        if (request.protocol!='CLEANUP@1.1' or request.selection.kind!='memory' or request.target!=self.target
+                or request.subject_digest!=self.store.subject_digest or request.domain_scope!=self.domain_scope):
             raise Denied('original item cleanup domain unavailable')
         with self.store.transaction(request.operation_id,writing=False) as cursor:result=original_result(cursor,request)
         return result if result is not None else receipt_for(request,'unknown')
@@ -103,3 +104,22 @@ class TripDerivedItemHook(_ItemHook):
                       'cj_trip_needs_plan_context','cj_trip_scoped_basis','cj_trip_manual_basis','cj_trip_needs_basis','cj_trip_receipt'):
             cursor.execute(f'DELETE FROM {table} WHERE scope=%s AND proposal_id=ANY(%s)',(scope,proposals))
         cursor.execute('DELETE FROM cj_trip_proposal WHERE scope=%s AND proposal_id=ANY(%s)',(scope,proposals))
+
+
+class _PurposeHook:
+    """New explicit factory; the old account-only factory remains separate."""
+    def __init__(self,account,memory):self.account,self.memory=account,memory
+    def execute(self,request):
+        if request.selection.kind=='account':return self.account.execute(request)
+        return self.memory.execute(request)
+    def reconcile(self,request):
+        if request.selection.kind=='account':return self.account.reconcile(request)
+        return self.memory.reconcile(request)
+
+
+def erasure_hooks(store,memory_scope):
+    from .account_cleanup import account_hooks
+    from cj_memory_jobs.cleanup import CleanupHook
+    account=account_hooks(store,memory_scope);account['memory-derived']=CleanupHook(store,memory_scope)
+    return {cls.target:_PurposeHook(account[cls.target],cls(store,memory_scope)) for cls in (
+        DerivedItemHook,ManagementItemHook,TripDerivedItemHook,AuthorityItemHook)}

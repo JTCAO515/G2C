@@ -138,3 +138,9 @@ projection after shared-job erasure, raw chat/model ingress fences, actual B
 payload hooks/worker publication races, production-shaped signed erasure API,
 exhaustive physical audits and full tests/review/exact CI. M44 direct SQL empty
 roundtrip/minimal privileges and component intent/physical tests do not close #26.
+
+The candidate account hook now includes the private manifest before canonical
+scope removal. A separate actual signed account-confirmation component verifies
+that manifest/source/item bytes are physically gone, while only minimum hashed
+restoration metadata remains. `erasure_hooks` is a new explicit purpose dispatcher;
+the old public account-only factory does not silently install item cleanup.
