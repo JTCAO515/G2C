@@ -188,5 +188,12 @@ def exercise(root,path,*,backend_hooks=None,hold_payloads=None,expect_complete=F
 
 
 if __name__=='__main__':
+    import argparse
+    parser=argparse.ArgumentParser();parser.add_argument('--complete',action='store_true')
+    options=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='erasure-stop-context-') as folder:
-        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']))
+        if options.complete:
+            from cj_cleanup.memory_payloads import hooks,hold_payloads
+            exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']),backend_hooks=hooks,
+                     hold_payloads=hold_payloads,expect_complete=True)
+        else:exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']))

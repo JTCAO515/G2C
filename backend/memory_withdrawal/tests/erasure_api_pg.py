@@ -107,6 +107,20 @@ if __name__=='__main__':
             from erasure_stop_context_pg import exercise as actual_context
             context_root=root/'actual-worker-context';context_root.mkdir()
             actual_context(context_root,Path(os.environ['CJ_E2E_CONNINFO']))
+            import subprocess
+            cases=(('erasure_stop_context_pg.py',['--complete'],55842),('erasure_shared_decision_pg.py',[],55843))
+            for script,args,port in cases:
+                with tempfile.TemporaryDirectory(prefix='actual-erasure-suite-') as folder:
+                    case_root=Path(folder)
+                    with pg_suites.cluster('actual_erasure_'+str(port),port=port,role='cj_actual_erasure_'+str(port),
+                                          root=case_root/'pg',socket=case_root/'s') as config:
+                        with psycopg.connect(**config,autocommit=True) as conn:
+                            chain=migrate.load();migrate.up(conn,chain,chain[-1]['version'])
+                        path=case_root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600)
+                        env=dict(pg_suites.clean_env(),CJ_E2E_CONNINFO=str(path),
+                                 PYTHONPATH=pg_suites.pythonpath(ROOT/'backend/memory_withdrawal/tests'))
+                        result=subprocess.run([sys.executable,'-B',str(ROOT/'backend/memory_withdrawal/tests'/script),*args],env=env)
+                        if result.returncode:raise SystemExit(result.returncode)
             sys.exit(0)
         with pg_suites.cluster('item_api',port=55818,role='cj_c_item_api',root=root/'pg',socket=root/'s') as config:
             with psycopg.connect(**config,autocommit=True) as conn:
