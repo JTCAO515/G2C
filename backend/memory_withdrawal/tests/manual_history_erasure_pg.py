@@ -1,5 +1,6 @@
 """Manual item erasure must also fence pre-existing unprocessed authorized history."""
 import base64,json,sys,time,tempfile,os
+import psycopg
 from pathlib import Path
 from datetime import datetime,timedelta,timezone
 from fastapi.testclient import TestClient
@@ -25,9 +26,10 @@ from cj_cleanup.core import encode
 from cj_cleanup.memory_payloads import hooks,hold_payloads
 from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
+from cj_run.step_usage import ledger_scope_for
 from memory_test_inventory import write_inventory
 
-def exercise(root,path,*,phase='unprepared'):
+def exercise(root,path,*,phase='unprepared',long_id=False):
     who='manual-before-history';owner=scope_for(ISSUER,who)
     auth=root/'auth';dev_auth.init(auth,[who]);now=int(time.time())
     quota=root/'quota.json';quota.write_bytes(encode(dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(
@@ -49,7 +51,8 @@ def exercise(root,path,*,phase='unprepared'):
         return response.json()
     def send(client,cid,text):
         head=ok(client.put('/v1/conversations',params={'conversation_id':cid},headers=headers))
-        result=ok(client.post('/v1/messages',content=encode(dict(version='MESSAGE-send.1',conversation_id=cid,message_id=cid,text=text,
+        message_id='m'*4101 if long_id and cid=='old-chat' else cid
+        result=ok(client.post('/v1/messages',content=encode(dict(version='MESSAGE-send.1',conversation_id=cid,message_id=message_id,text=text,
             trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0)),headers=headers))
         return head,result
     with TestClient(app) as client:
@@ -80,6 +83,11 @@ def exercise(root,path,*,phase='unprepared'):
         ok(manager.post('/v2/memories',content=encode(dict(version='MEMORY-manual.2',operation_id='explicit-save',item_id='explicit-item',subject='self',
             slot='diet.spicy',kind='preference',text='No spicy food',extent='long_term',context=None,occurred_at='date unknown')),headers=headers))
     registry=root/'registry.json';write_inventory(registry,'manual-old-source-reextract')
+    before_delete_prepared=len(prepared)
+    account=ledger_scope_for(owner,run.current.meter)
+    with psycopg.connect(**json.loads(path.read_text())) as audit:
+        ledger=audit.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0]
+    if phase=='unknown':assert any(a['state']=='unknown' and a['receipt'] is None for a in ledger['attempts'].values())
     config=Configuration({'local':b'manual-old-history-synthetic-only'},'local',3600,ORDER,registry)
     erasure=create_erasure_app_v2(conninfo_path=path,auth_dir=auth,run_context=run,resolve_collection=resolve,
         cleanup_configuration=config,resolve_backend_hooks=hooks,hold_payloads=hold_payloads)
@@ -88,12 +96,16 @@ def exercise(root,path,*,phase='unprepared'):
             expected_version=1,derived_range='owned_trip_derived_scope')),headers=headers))['result']
         assert deleted['online_status']=='complete',deleted
     with host.database.connect(owner) as conn:assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
+    with psycopg.connect(**json.loads(path.read_text())) as audit:
+        assert audit.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0]==ledger
     if phase!='unprepared':
         with host.database.connect(owner) as conn:copied=conn.execute('SELECT job_id,state FROM cj_memory_history_job').fetchall()
         originals=[jobs.query_original(token,r['job_id'],r['attempt_id']) for r in records]
         print(json.dumps({'phase':phase,'delete':deleted['online_status'],'C_retained_jobs':copied,'B_originals':originals},ensure_ascii=False),flush=True)
         assert not copied,'deletion reported complete while old C source/job copy remained'
         assert all(r['input_state']=='erased' for r in originals),'deletion retained original B input copies'
+        assert all(r['meter_attempt_id']==before['meter_attempt_id'] and r['meter_operation_id']==before['meter_operation_id']
+                   for r,before in zip(originals,records))
     class Model(FakeProvider):
         def __init__(self):super().__init__();self.normal=[]
         def stream(self,messages,system=None):
@@ -108,11 +120,20 @@ def exercise(root,path,*,phase='unprepared'):
     print(json.dumps({'delete':deleted['online_status'],'background_outcomes':[r.status for r in results],'rows_after_old_extract':rows,
         'old_text_in_prepared':any(b'No spicy food' in p for p in prepared),'new_model_inputs':new.normal},ensure_ascii=False),flush=True)
     assert not rows,'old authorized pre-delete chat re-extraction revived a deleted manual preference'
+    assert not any(b'No spicy food' in value for value in prepared[before_delete_prepared:])
+    with TestClient(create_local_typed_app(conninfo_path=path,auth_dir=auth,configuration=runtime.collection)) as manager:
+        ok(manager.post('/v2/memories',content=encode(dict(version='MEMORY-manual.2',operation_id='fresh-explicit-save',item_id='fresh-explicit-item',subject='self',
+            slot='diet.spicy',kind='preference',text='No spicy food',extent='long_term',context=None,occurred_at='date unknown')),headers=headers))
+    with TestClient(app) as client:send(client,'explicit-new-question','Use my newly explicitly saved preference')
+    fresh=Model();run_worker.run_once(host.database,fresh,auth,memory_configuration=runtime)
+    payload=json.loads(fresh.normal[0][0]['content'].split('\n',1)[1])
+    assert [item['text'] for item in payload['items']]==['No spicy food']
 
 
 if __name__=='__main__':
     import argparse
     parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=('unprepared','pending','prepared','unknown'),default='unprepared')
+    parser.add_argument('--long-id',action='store_true')
     options=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='manual-history-erasure-') as folder:
-        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']),phase=options.phase)
+        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']),phase=options.phase,long_id=options.long_id)

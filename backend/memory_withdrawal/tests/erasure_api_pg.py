@@ -108,7 +108,10 @@ if __name__=='__main__':
             context_root=root/'actual-worker-context';context_root.mkdir()
             actual_context(context_root,Path(os.environ['CJ_E2E_CONNINFO']))
             import subprocess
-            cases=(('erasure_stop_context_pg.py',['--complete'],55842),('erasure_shared_decision_pg.py',[],55843))
+            cases=(('erasure_stop_context_pg.py',['--complete'],55842),('erasure_shared_decision_pg.py',[],55843),
+                   ('manual_history_erasure_pg.py',[],55852),('manual_history_erasure_pg.py',['--phase','pending'],55855),
+                   ('manual_history_erasure_pg.py',['--phase','prepared'],55853),('manual_history_erasure_pg.py',['--phase','unknown'],55854),
+                   ('manual_history_erasure_pg.py',['--long-id'],55856))
             for script,args,port in cases:
                 with tempfile.TemporaryDirectory(prefix='actual-erasure-suite-') as folder:
                     case_root=Path(folder)

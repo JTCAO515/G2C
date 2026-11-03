@@ -75,9 +75,11 @@ class TripItemErasureChecks(Harness):
             with self.assertRaises(TripDenied):digest_under_lease(repo.scope,lease)
             with self.assertRaises(TripConflict):read_original_digest(authority.boundary,token,principal,repo.scope,
                 DecisionQuery(f.trip.trip_id,f.trip.version+1,query.content_sha256))
-            with repo.transaction() as tx:
-                raw=freeze(tx,ErasureCommand.parse(original),subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
-                guard('trip_item_erasure_freeze');return raw
+            def capture(headers):
+                with repo.transaction() as tx:
+                    raw=freeze(tx,ErasureCommand.parse(original),subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000,headers=headers)
+                    guard('trip_item_erasure_freeze');return raw
+            return context.with_erasure_headers(capture,max_refs=10000,max_result_bytes=1_000_000)
         association=json.loads(c.boundary.with_history_context(token,stop));selection=Selection.from_dict(association['selection'])
         targets=('memory-derived','business/memory-management-actions','business/trip-authoritative','business/memory-authoritative')
         registry=registry_freeze(encode(dict(version='trip-item-component',stores=[dict(id='memory-derived',cleanup_protocol='CLEANUP@1.1'),

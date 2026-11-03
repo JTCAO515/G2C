@@ -4,6 +4,9 @@ from cj_cleanup.core import Denied
 from cj_cleanup.postgres import CommitUnknown
 from cj_cleanup.store import original_result,require_intent,record_result,receipt_for
 from cj_agent.draft import trip_scope_for
+from cj_memory.erasure_fence import require_coverage
+from cj_memory.runtime import RuntimeDenied
+from cj_memory_jobs.postgres import encode
 from .association_reader import AssociationReader
 
 
@@ -75,6 +78,10 @@ class AuthorityItemHook(_ItemHook):
         if progress['status']=='blocked' or any(s['state']!='confirmed' for s in progress['steps']
                 if s['target'] not in (self.target,'business/cleanup-metadata')):
             raise Denied('earlier original erasure domains unconfirmed')
+        try:
+            require_coverage(cursor,self.memory_scope,request.operation_id,request.selection.item_version,
+                             request.selection.scope_epoch,encode(association))
+        except RuntimeDenied as error:raise Denied('original complete history capture unavailable') from error
         scope=self.memory_scope;selection=association['selection'];iid=selection['item_id']
         cursor.execute('SELECT status,version FROM cj_memory_item WHERE scope=%s AND item_id=%s',(scope,iid))
         if cursor.fetchone()!=('withdrawn',selection['item_version']):raise Denied('original stopped item unavailable')
