@@ -59,6 +59,16 @@ def exercise(root,path,*,physical=False):
         run=runtime.capture_history(binding,refs,decision_source_sha256s=[])
         assert run.erasure_protocol=='MEMORY-HISTORY-ERASURE-FENCE@1'
         assert registry.captured(binding) is run
+        augmented=runtime.with_history(run,[],decision_source_sha256s=['f'*64])
+        assert registry.captured(binding) is augmented
+        assert augmented.snapshot is run.snapshot and augmented.payload is run.payload and augmented.binding is run.binding
+        assert augmented.references.messages==run.references.messages
+        assert augmented.references.decisions==frozenset({'f'*64})
+        other=RuntimeMemory(Service(repo),admit,RuntimeSelection('self',frozenset({'pace'}),32768))
+        try:other.with_history(augmented,[],decision_source_sha256s=[])
+        except RuntimeDenied:pass
+        else:raise AssertionError('another runtime owner replaced original capture')
+        run=augmented
         with run.hold(binding) as check:check()
         captured.append((runtime,binding,refs,run))
         return b'captured'

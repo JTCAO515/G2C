@@ -23,13 +23,17 @@ class CaptureRegistry:
 
 class TrackedMemory:
     def __init__(self,original,registry):self.original,self.registry=original,registry
+    def _track(self,value):
+        self.registry.current.set(value);return value
+
     def capture(self,binding):
-        value=self.original.capture(binding);self.registry.current.set(value);return value
+        return self._track(self.original.capture(binding))
 
     def capture_history(self,binding,message_refs,*,decision_source_sha256s):
-        value=self.original.capture_history(binding,message_refs,decision_source_sha256s=decision_source_sha256s)
-        self.registry.current.set(value)
-        return value
+        return self._track(self.original.capture_history(binding,message_refs,decision_source_sha256s=decision_source_sha256s))
+
+    def with_history(self,original_run,message_refs,*,decision_source_sha256s):
+        return self._track(self.original.with_history(original_run,message_refs,decision_source_sha256s=decision_source_sha256s))
 
 
 @dataclass(frozen=True)

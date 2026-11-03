@@ -75,6 +75,20 @@ class RuntimeMemory:
         with run.hold(binding):pass
         return run
 
+    def with_history(self,original_run,message_refs,*,decision_source_sha256s):
+        """Add actual later model context without replacing the original input.
+
+        Call outside an already-held Memory lease. Preserve the original owner,
+        binding, principal, snapshot and payload; retain every prior reference.
+        """
+        from .erasure_fence import References,HistoryRuntimeRun
+        if original_run.owner is not self or original_run._check is not None:
+            raise RuntimeDenied('original unheld capture from this Memory owner required')
+        additional=References.capture(message_refs,decision_source_sha256s)
+        run=HistoryRuntimeRun(original_run,original_run._merge_history(additional))
+        with run.hold(run.binding):pass
+        return run
+
     def _capture(self,binding,context):
         selected = self.selection
         snapshot = None
@@ -138,6 +152,9 @@ class RuntimeRun:
 
     def _check_additional(self,tx):
         pass
+
+    def _merge_history(self,references):
+        return references
 
     @contextmanager
     def hold(self, binding):
