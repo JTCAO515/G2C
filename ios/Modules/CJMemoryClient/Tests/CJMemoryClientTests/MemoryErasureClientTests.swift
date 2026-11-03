@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import Testing
 import CJSession
+import CJMessageKeys
 import HTTPTypes
 import OpenAPIRuntime
 @testable import CJMemoryClient
@@ -77,6 +78,7 @@ private struct ErasureWire: ClientTransport {
     var credentialCallback: (() -> Void)?
     var currentCallback: (() -> Void)?
     var directory: URL { f.root.appendingPathExtension("erasure") }
+    var storeNamespace: MessageKeyNamespace { .init(environment: f.binding.environment, account: f.binding.account, purpose: .localMemoryPendingV1) }
     init() throws {
         f = try Fixture()
         session = SessionLifecycle(persistence: sdk, restorePolicy: .userInitiatedOnly)
@@ -110,6 +112,103 @@ private struct ErasureWire: ClientTransport {
     }
 }
 @MainActor struct MemoryErasureClientTests {
+    @Test func localAuthorizationNeedsOriginalProtectedStopAndRetiresWithSDK() async throws {
+        let f = try ErasureClientFixture(); defer { f.dispose() }
+        let work = try f.client.prepare(entry: await f.entry(), acknowledgement: .ownedTripDerivedScope)
+        #expect(throws: (any Error).self) { try f.client.localAuthorization(for: work.original) }
+        _ = try await f.client.perform(work)
+        let grant = try f.client.localAuthorization(for: work.original)
+        #expect(grant.itemID == "item+中文" && grant.binding == f.f.binding)
+        try grant.validate()
+        f.reader.invalidate()
+        // Local erasure recovery is tied to the original stop, not a fresh detail.
+        try grant.validate()
+        try f.session.clear()
+        #expect(throws: (any Error).self) { try grant.validate() }
+    }
+    @Test(arguments: ["preexisting", "late-rejection", "late-management", "late-nested"])
+    func protectedStopClearsOnlyOwnItemJournalsAndRetainsOriginalRecovery(sidecar: String) async throws {
+        let f = try ErasureClientFixture(); defer { f.dispose() }
+        let work = try f.client.prepare(entry: await f.entry(), acknowledgement: .ownedTripDerivedScope)
+        _ = try await f.client.perform(work)
+        let grant = try f.client.localAuthorization(for: work.original)
+        let namespace = f.storeNamespace
+        let manualRoot = f.f.root.appendingPathComponent("manual"), typedRoot = f.f.root.appendingPathComponent("typed"), managementRoot = f.f.root.appendingPathComponent("management")
+        for root in [manualRoot, typedRoot, managementRoot] {
+            try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        }
+        let manual = try MemoryPendingStore(directory: manualRoot, maximumBytes: 100000, maximumRecords: 100, namespace: namespace, keyID: f.f.keyID, key: { f.f.secret })
+        let typed = try TypedMemoryPendingStore(directory: typedRoot, maximumBytes: 100000, maximumRecords: 100, namespace: namespace, keyID: f.f.keyID, key: { f.f.secret })
+        let management = try MemoryManagementPendingStore(directory: managementRoot, maximumBytes: 100000, maximumRecords: 100, namespace: namespace, keyID: f.f.keyID, key: { f.f.secret })
+        var target = command("已删除的中文"); target.item_id = "item+中文"
+        let removed = try MemoryPending(target), other = try MemoryPending(command("另一条记忆"))
+        try manual.append(removed); try manual.append(other)
+        if sidecar == "preexisting" { try manual.recordRejection(removed, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {}) }
+        let typedRecord = TypedMemoryPending(try TypedMemoryCommand(operationID: "typed-save", itemID: "item+中文", subject: "self", slot: "pace", text: "已删除的中文", occurredAt: "时间不详", kind: .preference, travelContext: nil))
+        try typed.append(typedRecord, validateBinding: {})
+        try typed.recordRejection(typedRecord, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {})
+        let otherFile = manualRoot.appendingPathComponent(digest(Data(other.operationID.utf8)) + ".memory")
+        let otherBytes = try Data(contentsOf: otherFile)
+        let cleaner = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed)
+        #expect(throws: MemoryFailure.staleBinding) { try cleaner.clear(grant, validateCurrent: { throw MemoryFailure.staleBinding }) }
+        #expect(try manual.pending().count == 2)
+        if sidecar != "preexisting" {
+            var callbacks = 0
+            let nested = typedRoot.appendingPathExtension("CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2")
+            #expect(throws: MemoryFailure.storageUnavailable) {
+                try cleaner.clear(grant, validateCurrent: {
+                    callbacks += 1
+                    if callbacks == 2 {
+                        switch sidecar {
+                        case "late-rejection": try manual.recordRejection(removed, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {})
+                        case "late-management": _ = try typed.managementRecords(create: true)
+                        default:
+                            try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+                            try Data("unrecognized original".utf8).write(to: nested.appendingPathComponent("retained"))
+                        }
+                    }
+                })
+            }
+            #expect(try manual.pending().count == 2)
+            #expect(callbacks == 2)
+            #expect(try typed.pending().count == 1)
+            #expect(try Data(contentsOf: otherFile) == otherBytes)
+            if sidecar == "late-nested" {
+                #expect(try Data(contentsOf: nested.appendingPathComponent("retained")) == Data("unrecognized original".utf8))
+                return
+            }
+        }
+        try cleaner.clear(grant, validateCurrent: {})
+        #expect(try manual.pending().map(\.operationID) == [other.operationID])
+        #expect(try typed.pending().isEmpty)
+        #expect(try Data(contentsOf: otherFile) == otherBytes)
+        let rejectionRoot = manualRoot.appendingPathExtension("CJMemoryRejections")
+        if sidecar == "late-management" { #expect(!FileManager.default.fileExists(atPath: rejectionRoot.path)) }
+        else { #expect(try FileManager.default.contentsOfDirectory(atPath: rejectionRoot.path).isEmpty) }
+        #expect(try FileManager.default.contentsOfDirectory(atPath: typedRoot.appendingPathExtension("CJMemoryTypedRejectionsV2").path).isEmpty)
+        #expect(try f.store.records().count == 1)
+        try grant.validate()
+        // A fresh original-stop authorization can explicitly verify an empty retry.
+        try cleaner.clear(grant, validateCurrent: {})
+    }
+    @Test func stopAuthorizationCannotClearAnotherAccountsJournals() async throws {
+        let alice = try ErasureClientFixture(); defer { alice.dispose() }
+        let bob = try Fixture(); defer { bob.cleanup() }
+        let work = try alice.client.prepare(entry: await alice.entry(), acknowledgement: .ownedTripDerivedScope)
+        _ = try await alice.client.perform(work)
+        let grant = try alice.client.localAuthorization(for: work.original)
+        let manual = try bob.store()
+        var value = command("Bob private content"); value.item_id = "item+中文"
+        let original = try MemoryPending(value); try manual.append(original)
+        let managementRoot = bob.root.appendingPathExtension("management")
+        try FileManager.default.createDirectory(at: managementRoot, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let management = try MemoryManagementPendingStore(directory: managementRoot, maximumBytes: 100000, maximumRecords: 100,
+            namespace: .init(environment: bob.binding.environment, account: bob.binding.account, purpose: .localMemoryPendingV1), keyID: bob.keyID, key: { bob.secret })
+        let cleaner = try MemoryItemLocalCleanup(manual: manual, management: management, typed: bob.typedStore())
+        #expect(throws: MemoryFailure.staleBinding) { try cleaner.clear(grant, validateCurrent: {}) }
+        #expect(try manual.pending().first?.originalUTF8 == original.originalUTF8)
+        try FileManager.default.removeItem(at: managementRoot)
+    }
     @Test func originalIsDurableBeforePOSTAndTheWorkCannotBeSentTwice() async throws {
         let f = try ErasureClientFixture(); defer { f.dispose() }
         let entry = try await f.entry(), work = try f.client.prepare(entry: entry, acknowledgement: .ownedTripDerivedScope)

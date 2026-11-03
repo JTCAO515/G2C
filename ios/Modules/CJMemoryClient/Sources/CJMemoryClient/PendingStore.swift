@@ -234,6 +234,72 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
         let actual = try Set(FileManager.default.contentsOfDirectory(atPath: root.path))
         guard expected == actual else { throw MemoryFailure.storageUnavailable }
     }
+    /// Exact per-record plan for item erasure. Building it decrypts/validates the
+    /// whole bounded journal before any deletion; execution invokes no key or
+    /// caller callback and never follows a supplied path or a replaced file.
+    struct Removal {
+        fileprivate let owner: MemoryEncryptedRecords<Record>
+        fileprivate let inventory: [Durability]
+        fileprivate let selected: Set<String>
+        fileprivate let identities: [String: (dev_t, ino_t)]
+    }
+    func prepareRemoval(where matches: (Record) throws -> Bool) throws -> Removal {
+        let records = try pending()
+        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        var inventory: [Durability] = [], selected = Set<String>()
+        var identities: [String: (dev_t, ino_t)] = [:]
+        for record in records {
+            let canonical = try name(record.journalID)
+            let legacy = UUID(uuidString: record.journalID).map { $0.uuidString + ".memory" }
+            let candidates = names.filter { $0 == canonical || $0 == legacy }
+            guard candidates.count == 1, let filename = candidates.first else { throw MemoryFailure.storageUnavailable }
+            var entry = stat()
+            guard fstatat(directory, filename, &entry, AT_SYMLINK_NOFOLLOW) == 0 else { throw MemoryFailure.storageUnavailable }
+            identities[filename] = (entry.st_dev, entry.st_ino)
+            let proof = Durability(filename: filename, ciphertext: try readProofCiphertext(filename))
+            let material = try key()
+            try validateDirectory()
+            let plain = try AES.GCM.open(AES.GCM.SealedBox(combined: proof.ciphertext), using: material, authenticating: ad)
+            let observed = try JSONDecoder().decode(Record.self, from: plain)
+            try observed.validate()
+            guard same(observed.journalID, record.journalID), observed.originalUTF8 == record.originalUTF8,
+                  same(observed.expectedSHA256, record.expectedSHA256) else { throw MemoryFailure.storageUnavailable }
+            inventory.append(proof)
+            if try matches(record) { selected.insert(filename) }
+        }
+        let plan = Removal(owner: self, inventory: inventory, selected: selected, identities: identities)
+        try validateRemoval(plan)
+        return plan
+    }
+    func validateRemoval(_ plan: Removal) throws {
+        guard plan.owner === self else { throw MemoryFailure.storageUnavailable }
+        try validateDirectory()
+        guard try Set(FileManager.default.contentsOfDirectory(atPath: root.path)) == Set(plan.inventory.map(\.filename)) else {
+            throw MemoryFailure.storageUnavailable
+        }
+        for proof in plan.inventory { try validateRemovalEntry(proof, plan: plan) }
+    }
+    private func validateRemovalEntry(_ proof: Durability, plan: Removal) throws {
+        var entry = stat()
+        guard let identity = plan.identities[proof.filename],
+              fstatat(directory, proof.filename, &entry, AT_SYMLINK_NOFOLLOW) == 0,
+              entry.st_dev == identity.0, entry.st_ino == identity.1 else { throw MemoryFailure.storageUnavailable }
+        try validateDurability(proof)
+    }
+    func performRemoval(_ plan: Removal) throws {
+        try validateRemoval(plan)
+        for proof in plan.inventory where plan.selected.contains(proof.filename) {
+            // Final callback-free byte/metadata comparison immediately before unlink.
+            try validateRemovalEntry(proof, plan: plan)
+            guard unlinkat(directory, proof.filename, 0) == 0 else { throw MemoryFailure.exchangeUnknown }
+        }
+        guard fsync(directory) == 0 else { throw MemoryFailure.exchangeUnknown }
+        try validateDirectory()
+        guard try Set(FileManager.default.contentsOfDirectory(atPath: root.path)) == Set(plan.inventory.map(\.filename)).subtracting(plan.selected) else {
+            throw MemoryFailure.exchangeUnknown
+        }
+        for proof in plan.inventory where !plan.selected.contains(proof.filename) { try validateDurability(proof) }
+    }
     func pending() throws -> [Record] {
         try validateDirectory()
         let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
@@ -268,7 +334,7 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
 
 /// Manual-save journal. Its existing ciphertext format and public API remain unchanged.
 @MainActor public final class MemoryPendingStore {
-    private let storage: MemoryEncryptedRecords<MemoryPending>
+    let storage: MemoryEncryptedRecords<MemoryPending>
     public init(directory: URL, maximumBytes: Int, maximumRecords: Int, binding: MemoryBinding,
                 expectedKeyID: UUID, provider: any MessageEncryptionKeyProvider) throws {
         storage = try MemoryEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
