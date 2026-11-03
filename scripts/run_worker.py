@@ -178,8 +178,13 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         else:
             from cj_api.local_current_plan import publisher
             drafts=publisher(database,checker,message_context,token,scope)
+    if memory is not None:
+        from cj_api.local_memory_history import HistoryMemory,OriginalHistory,OriginalDecisions
+        decisions=OriginalDecisions(database,Path(auth_dir),memory_credential,memory_admit,message_context)
+        memory=HistoryMemory(memory,OriginalHistory(messages,decisions))
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
+        memory_history=memory is not None,
         message_context=message_context,
         tools=tools_configuration,place_sources=place_sources,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
