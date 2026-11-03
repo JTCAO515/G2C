@@ -190,7 +190,7 @@ import Foundation
             XCTAssertEqual(cleared.original_action_id, actionID)
             XCTAssertEqual(cleared.operation_id, before.operation_id)
             tap("account.cleanup.readDevice")
-            text("account.cleanup.deviceReceipt", contains: "confirmed")
+            text("account.cleanup.deviceReceipt", contains: "Acknowledged for this device")
             tap("account.cleanup.finalizeControls")
             text("account.cleanup.controls", contains: "removed and verified")
         }
