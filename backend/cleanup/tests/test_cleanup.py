@@ -18,7 +18,7 @@ INVENTORY = ('business','business/message','business/usage','business/memory-aut
  'device-cache/memory-key-keychain','device-cache/needs-pending','device-cache/needs-key-keychain','device-cache/memory-history-pending','device-cache/trip-scoped-pending',
  'device-cache/needs-planning-pending','device-cache/trip-key-keychain','device-cache/offline-key-keychain',
  'device-cache/offline-write-residue','device-cache/memory-erasure-pending',
- 'device-cache/memory-erasure-observations','external-processing',
+ 'external-processing',
  'cleanup-control','cleanup-control/selected','cleanup-control/manifest',
  'cleanup-control/execution','cleanup-control/device','cleanup-control/account')
 

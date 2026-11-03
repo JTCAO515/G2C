@@ -30,24 +30,29 @@ Wrong version/binding/purpose/hash, duplicate/extra fields or expired capability
 reject. Device calls do not grant business access after account retirement.
 
 Account cleanup and session invalidation include the unchanged nineteen
-DEVICE3 targets plus exactly:
+DEVICE3 targets plus exactly one indivisible paired-family target:
 
 | Added target | Exact provided scope |
 |---|---|
-| device-cache/memory-erasure-pending | M.erasure-v1, AD CJMemoryErasurePendingV1 |
-| device-cache/memory-erasure-observations | M.erasure-v1.CJMemoryErasureObservationsV1, same AD name |
+| device-cache/memory-erasure-pending | M.erasure-v1 (AD CJMemoryErasurePendingV1) AND M.erasure-v1.CJMemoryErasureObservationsV1 (same AD name) |
 
 M is `G2CDevelopmentMemory/<environment>/<account>`. The files are
 `sha256(action_id).memory`, with existing UUID.memory compatibility. Both use
 the existing `localMemoryPendingV1` purpose/key UUID. A owns native resolution
 and receipts: `MemoryErasurePendingStore.clearLocalFiles()` prechecks and clears
-both exact directories together, keylessly, then fsyncs and reads back. Calling
-it for either target cannot narrow the paired scope. It does not create a key.
+both exact directories together, keylessly, then fsyncs and reads back. The
+one original target/intent authorizes that entire family before physical work;
+neither directory can be selected alone. There is no observations target and
+no unrecorded second-target side effect. Persist the original family intent
+before calling its handler; confirm it only after both directories verify
+empty. Partial/uncertain work stays UNKNOWN under that same original action,
+without inventing a new action or repeating an uncertain write. The primitive
+does not create a key.
 Before clearing `device-cache/memory-key-keychain`, prove both added roots AND
 all existing manual/lifecycle/typed/history roots empty; preserve foreign scope
 and original identity fences. Only an actual authenticated own-device report
 covering each target can complete that device/state group. A DEVICE3 report
-cannot prove either new target, even when the other nineteen are confirmed.
+cannot prove the new family target, even when the other nineteen are confirmed.
 
 `offline_expired` retains exactly DEVICE3's three offline targets; it does not
 clear unrelated Memory journals. Offline maximum remains fourteen days since
@@ -61,7 +66,7 @@ DEVICE4 registration is an explicit original action; registry drift keeps an
 older frozen account operation blocked rather than silently expanding it.
 
 Positive: a DEVICE4 original registration/call is recovered by exact action/SHA,
-its real report covers all21 targets, and the same original call is queried.
+its real report covers all20 targets, and the same original call is queried.
 Negative: old DEVICE3-only group, incomplete/unknown report, wrong key/state,
 nonempty sibling or unavailable native handler remains unknown/blocked; never
 report confirmed from Python metadata. Future #460 Root is not registered.

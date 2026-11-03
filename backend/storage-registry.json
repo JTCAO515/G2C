@@ -867,38 +867,17 @@
           "id": "memory-erasure-pending",
           "owner": "CJ-003 / CJ-022; A native device owner",
           "objects": [
-            "CJMemoryErasurePendingV1 encrypted original action evidence; sha256(action_id).memory and existing UUID.memory"
-          ],
-          "source": "ios/Modules/CJMemoryClient/Sources/CJMemoryClient/MemoryErasurePendingStore.swift; ios/App/DevelopmentTripHost.swift",
-          "status": "provided_A480/local_only; native_DEVICE4_consumer_pending",
-          "principal_binding": "Canonical SDK environment/account/generation; M.erasure-v1 with M=G2CDevelopmentMemory/<environment>/<account>; shared localMemoryPendingV1",
-          "sensitive_fields": [
-            "Original deletion action and source/item/operation/progress evidence ciphertext"
-          ],
-          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@4; actual own original native receipt required; A MemoryErasurePendingStore.clearLocalFiles clears both exact provided directories",
-          "restore_fence": "Original SDK namespace/generation/state/key identity; both erasure roots and all existing shared Memory roots empty before localMemoryPendingV1 clear; never create replacement key",
-          "owner_line": "A",
-          "retention_category": "user_content",
-          "cleanup_protocol": "CLEANUP@1.1",
-          "device_versions": [
-            "CLEANUP-DEVICE@4"
-          ]
-        },
-        {
-          "id": "memory-erasure-observations",
-          "owner": "CJ-003 / CJ-022; A native device owner",
-          "objects": [
+            "CJMemoryErasurePendingV1 encrypted original action evidence; sha256(action_id).memory and existing UUID.memory",
             "CJMemoryErasureObservationsV1 encrypted original action evidence; sha256(action_id).memory and existing UUID.memory"
           ],
           "source": "ios/Modules/CJMemoryClient/Sources/CJMemoryClient/MemoryErasurePendingStore.swift; ios/App/DevelopmentTripHost.swift",
           "status": "provided_A480/local_only; native_DEVICE4_consumer_pending",
-          "principal_binding": "Canonical SDK environment/account/generation; M.erasure-v1.CJMemoryErasureObservationsV1 with M=G2CDevelopmentMemory/<environment>/<account>; shared localMemoryPendingV1",
+          "principal_binding": "Canonical SDK environment/account/generation; indivisible family M.erasure-v1 AND M.erasure-v1.CJMemoryErasureObservationsV1, with M=G2CDevelopmentMemory/<environment>/<account>; shared localMemoryPendingV1",
           "sensitive_fields": [
             "Original deletion action and source/item/operation/progress evidence ciphertext"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@4; actual own original native receipt required; A MemoryErasurePendingStore.clearLocalFiles clears both exact provided directories",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@4; actual own original native receipt required; A MemoryErasurePendingStore.clearLocalFiles clears both exact provided directories; one original target/intent authorizes the entire paired family, never one directory alone",
           "restore_fence": "Original SDK namespace/generation/state/key identity; both erasure roots and all existing shared Memory roots empty before localMemoryPendingV1 clear; never create replacement key",
           "owner_line": "A",
           "retention_category": "user_content",
