@@ -306,7 +306,9 @@ def group_travel_context():
 
 
 def group_travel_message():
-    return script('backend/cj_api/tests/travel_message_pg.py')
+    status=script('backend/cj_api/tests/travel_message_pg.py')
+    status|=script('backend/run/tests/probe_formal_memory.py')
+    return status
 
 
 def group_place_tool():
