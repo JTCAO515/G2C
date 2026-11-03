@@ -2,7 +2,8 @@
 
 The positive host selects actual B-owned domains from the unmodified main registry;
 it is explicitly NOT whole-App/device completion. The second host uses the full
-actual registry and must preserve real missing-owner-hook blocked/prepared state.
+actual registry and the formal V2 environment factory; unavailable external
+obligations must preserve blocked/prepared state before retirement.
 No account operation, binding, receipt or progress token is injected into the App.
 """
 import argparse, asyncio, base64, hashlib, importlib.util, json, os, plistlib, socket, subprocess, sys, tempfile, threading, time, uuid
@@ -120,11 +121,30 @@ def main():
                 report['full_inventory']=list(FULL_INVENTORY);save()
                 key=os.urandom(32); secrets.append(key)
                 options=cleanup.Configuration({'native-local':key},'native-local',7200,B_DOMAINS,component_registry)
-                full_options=cleanup.Configuration({'native-local':key},'native-local',7200,FULL_INVENTORY,registry)
-                apps={mode:local_app.create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,cleanup_configuration=selected,
+                # The complete host consumes B's explicit V2 loader. The B-only
+                # positive component remains separately labelled and unchanged.
+                key_file=root/'cleanup.key';key_file.write_bytes(key);key_file.chmod(0o600)
+                full_config=root/'cleanup.json'
+                full_config.write_text(json.dumps(dict(version='CJ-LOCAL-CLEANUP@2',key_file=str(key_file),
+                    key_id='native-local',lifetime_seconds=7200,inventory=list(FULL_INVENTORY))))
+                full_config.chmod(0o600)
+                full_options=cleanup.load_configuration(full_config)
+                assert full_options.inventory==FULL_INVENTORY and full_options.registry_path==registry
+                full_binding=cleanup.Runtime(database,full_options,local_app.scope_for).bind(
+                    checker_for(auth).check(tokens[CASES[0]]['A']).principal)
+                missing={entry.registry_id for entry in full.entries
+                    if not entry.hook_available or entry.registry_id not in full_binding.hooks}
+                assert missing=={'external-processing'},'formal V2 host must retain every provided domain hook'
+                for target in (os.environ,env):
+                    target.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),
+                        CJ_LOCAL_RUN_CONTEXT=str(args.run_context.resolve()),CJ_LOCAL_CLEANUP_CONFIG=str(full_config))
+                apps={'component':local_app.create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,cleanup_configuration=options,
                     history_configuration=local_app.load_history_configuration(auth) if args.native_device else None,
-                    confirmation_signer=local_app.load_confirmation_signer(auth) if args.native_device else None)
-                    for mode,selected in [('component',options),('full',full_options)]}
+                    confirmation_signer=local_app.load_confirmation_signer(auth) if args.native_device else None),
+                    'full':local_app.app_from_environment()}
+                report['full_host']=dict(version='CJ-LOCAL-CLEANUP@2',factory='app_from_environment',
+                    inventory_count=len(FULL_INVENTORY),unavailable=sorted(missing))
+                save()
                 runtime=cleanup.Runtime(database,options,local_app.scope_for)
                 bindings={case:{k:runtime.bind(checker_for(auth).check(tokens[case][k]).principal) for k in ('A','B')} for case in CASES}
                 model=provider.FakeProvider();provider_counts={};feedback_hashes={};proposals={};source_runs={}
