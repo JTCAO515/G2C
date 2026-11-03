@@ -359,9 +359,9 @@
       "version": 45,
       "name": "memory_payload_erasure",
       "file": "backend/migrations/0045_memory_payload_erasure.sql",
-      "sha256": "3274f63070a26ab1eb7d14e11c7ae643f9b952af3a8b88b49cf8c88c234e609c",
+      "sha256": "2b07d1c845ec9c2cfd9092b229c8b131125b3d5a0a9872966ba08c2fca28627b",
       "down": "backend/migrations/down/0045_memory_payload_erasure.down.sql",
-      "down_sha256": "7f1822e3ceb4da4b3b5fb0a67e9156e60e9078373f2fd521e2ef1b7b631890f1"
+      "down_sha256": "8e937fd20611cfb4e689811b6dd7e3e74b72061d440a25027482a2b35d68fabf"
     }
   ]
 }

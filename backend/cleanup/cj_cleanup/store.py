@@ -8,7 +8,8 @@ from .core import Conflict, Denied, Invalid, encode, hash_value, identifier, dig
 from .hooks import HookRequest, HookReceipt, make_receipt
 from . import hooks, hooks_v1_1
 from cj_strict_json import reject_duplicates
-from .registry import freeze
+from .registry import freeze,freeze_controls
+from .control_records import VERSION as CONTROL
 from .postgres import CommitUnknown, Unavailable
 
 
@@ -57,7 +58,10 @@ def _load_operation(cur,subject_digest,operation_id,*,lock_mode=None):
     hash_value(confirmation)
     if purpose not in ('account','memory','diagnostics') or type(blocked) is not bool or type(inventory) is not list or type(versions) is not list or type(targets) is not list:
         raise Unavailable('cleanup state unavailable')
-    manifest=freeze(bytes(raw),tuple(inventory),versions=tuple(versions))
+    if CONTROL in versions:
+        if versions.count(CONTROL)!=1:raise Unavailable('cleanup control profile unavailable')
+        manifest=freeze_controls(bytes(raw),tuple(inventory),versions=tuple(v for v in versions if v!=CONTROL))
+    else:manifest=freeze(bytes(raw),tuple(inventory),versions=tuple(versions))
     targets=tuple(identifier(t) for t in targets)
     if not targets or len(set(targets))!=len(targets) or set(targets)-set(manifest.inventory):raise Unavailable('cleanup targets unavailable')
     if plan_raw is None:plan=None
@@ -118,6 +122,17 @@ class Store:
 
     @contextmanager
     def transaction(self, operation_id, *, writing=True):
+        with self._transaction(operation_id,writing=writing,snapshot=False) as cursor:
+            yield cursor
+
+    @contextmanager
+    def snapshot(self,operation_id):
+        """One read-only repeatable-read snapshot; no progress audit or dispatch."""
+        with self._transaction(operation_id,writing=False,snapshot=True) as cursor:
+            yield cursor
+
+    @contextmanager
+    def _transaction(self,operation_id,*,writing,snapshot):
         identifier(operation_id)
         conn=self.connect()
         started=failed=False
@@ -125,6 +140,7 @@ class Store:
             if conn.autocommit or conn.info.transaction_status != TransactionStatus.IDLE:
                 raise Unavailable('fresh cleanup connection required')
             with conn.cursor() as cur:
+                if snapshot:cur.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
                 cur.execute('SELECT current_user')
                 if cur.fetchone()!=('cj_local_cleanup',):raise Denied('dedicated cleanup role required')
                 cur.execute("SELECT set_config('cj.cleanup_subject',%s,true),set_config('cj.cleanup_operation',%s,true)",

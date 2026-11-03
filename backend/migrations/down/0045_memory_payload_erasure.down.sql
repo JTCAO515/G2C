@@ -7,7 +7,8 @@ DO $$ BEGIN
  THEN RAISE EXCEPTION 'original memory payload erasure evidence retained'; END IF;
 END $$;
 DO $$ DECLARE t text; BEGIN
- FOREACH t IN ARRAY ARRAY['cj_run_record','cj_run_event','cj_run_step_usage','cj_run_metered_operation',
+ FOREACH t IN ARRAY ARRAY['cj_message_chat','cj_message_receipt','cj_message_delivery',
+  'cj_run_record','cj_run_event','cj_run_step_usage','cj_run_metered_operation',
   'cj_run_background_job','cj_message_trip_reference','cj_message_edit_reference'] LOOP
   EXECUTE format('DROP TRIGGER payload_write_barrier ON %I',t);
  END LOOP;

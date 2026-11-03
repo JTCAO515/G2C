@@ -111,21 +111,25 @@ def read_plan(cursor,scope,association):
         inputs.append(Input(table,rid,key,raw,original.command.input_digest,True))
     references=[]
     for table,version in (('cj_message_trip_reference','MESSAGE-send.3'),('cj_message_edit_reference','MESSAGE-send.4')):
-        sql=f'SELECT message_id,run_id,input_sha256,source_content,content_sha256 FROM {table} WHERE scope=%s'
-        for mid,rid,input_sha,payload,payload_sha in _rows(cursor,sql,scope):
+        sql=f'SELECT message_id,run_id,input_sha256,CASE WHEN octet_length(source_content)<={MAX_PAYLOAD} THEN source_content END,content_sha256,octet_length(source_content) FROM {table} WHERE scope=%s'
+        for mid,rid,input_sha,payload,payload_sha,size in _rows(cursor,sql,scope):
             message=messages.get(mid)
             if message is None or (message.run_id,message.input_sha256)!=(rid,input_sha) or message.document.get('version')!=version:
                 raise Denied('original copied source association differs')
             if rid not in related:continue
+            if size is not None and size>MAX_PAYLOAD:raise Denied('copied source exceeds supported bound')
             raw=None if payload is None else bytes(payload)
             if raw is not None and digest(raw)!=payload_sha:raise Denied('copied source bytes differ')
             references.append(Reference(table,message,raw,payload_sha))
     background={}
-    cursor.execute('SELECT job_id,attempt_id,run_id,ledger_scope,prepared_input_sha256,config_bytes,command_bytes,input_bytes,state,output_sha256,receipt_sha256,protocol,decision_source_sha256 '
-        'FROM cj_run_background_job WHERE scope=%s',(scope,))
-    rows=cursor.fetchall()
-    if len(rows)>MAX_ROWS:raise Denied('complete background inventory exceeds supported bound')
     wanted={(ref['job_id'],ref['attempt_id']) for ref in association['job_refs']}
-    for row in rows:
-        if (row[0],row[1]) in wanted:background[(row[0],row[1])]=load_background(row,scope)
+    for jid,attempt in sorted(wanted):
+        cursor.execute('SELECT job_id,attempt_id,run_id,ledger_scope,prepared_input_sha256,config_bytes,command_bytes,'
+            f'CASE WHEN octet_length(input_bytes)<={MAX_PAYLOAD} THEN input_bytes END,'
+            'state,output_sha256,receipt_sha256,protocol,decision_source_sha256,octet_length(input_bytes) '
+            'FROM cj_run_background_job WHERE scope=%s AND job_id=%s AND attempt_id=%s',(scope,jid,attempt))
+        row=cursor.fetchone()
+        if row is not None:
+            if row[-1] is not None and row[-1]>MAX_PAYLOAD:raise Denied('original background payload exceeds supported bound')
+            background[(jid,attempt)]=load_background(row[:-1],scope)
     return Plan(messages,frozenset(related),tuple(i for i in inputs if i.run_id in related),tuple(references),background)

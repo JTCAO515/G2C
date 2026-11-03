@@ -116,6 +116,14 @@ class DisplaySnapshotReader:
     def read_trip_display(self,token,message_id,request_id):
         return self._context_display(token,message_id,request_id,formal=True)
 
+    def read_history_display(self,token,message_id,request_id):
+        def encode(state,original,history):
+            return json.dumps(dict(request_id=request_id,version='RUN-display.6',
+                snapshot=json.loads(_encode_snapshot(state,self.configuration)),
+                reference=history.reference,source_state=history.source_state),
+                ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
+        return self._read_materialized(token,message_id,encode,history=True)
+
     def read_draft_status_v4(self,token,message_id,request_id):
         return self._read_draft_status(token,message_id,request_id,version=4)
 
@@ -158,7 +166,7 @@ class DisplaySnapshotReader:
             return json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
         return self._read_materialized(token, message_id, encode,travel=version>=3,formal=version>=4,edit=version>=5,results=version==6)
 
-    def _read_materialized(self, token, message_id, encode, *, travel=False, formal=False, edit=False,results=False):
+    def _read_materialized(self, token, message_id, encode, *, travel=False, formal=False, edit=False,results=False,history=False):
         if type(message_id) is not str or not message_id.strip():
             raise ValueError('original message ID required')
         configuration = self.configuration  # Freeze bounds for this read.
@@ -167,11 +175,11 @@ class DisplaySnapshotReader:
             if type(ctx) is not HistoryReadContext:
                 raise SnapshotUnavailable('MESSAGE context unavailable')
             principal, scope = ctx.principal, ctx.scope
-            query=ctx.query_edit_message if edit else ctx.query_trip_message if formal else ctx.query_travel_message if travel else ctx.query_message
+            query=ctx.history_message_v5 if history else ctx.query_edit_message if edit else ctx.query_trip_message if formal else ctx.query_travel_message if travel else ctx.query_message
             record=query(message_id)
             if record is None:
                 raise SnapshotUnavailable('original message unavailable')
-            original=record.stored if travel else record
+            original=record.stored if travel or history else record
             r = original.receipt
             binding = Binding(scope, r.conversation_id, r.generation, r.message_id, r.run_id, r.sequence)
             repository = self.resolve_run_repository(principal, scope)
@@ -183,9 +191,9 @@ class DisplaySnapshotReader:
 
             source_guard()  # Resolver callbacks cannot replace the original source.
             first = _checked_recovery(repository, binding)
-            if first.state.scoped_result is not None and not results:
+            if first.state.scoped_result is not None and not results and not history:
                 raise SnapshotUnavailable('scoped result requires appended read version')
-            encoded = encode(first.state,original,record.reference) if travel else encode(first.state, original)
+            encoded = encode(first.state,original,record) if history else encode(first.state,original,record.reference) if travel else encode(first.state, original)
             if type(encoded) is not bytes:
                 if inspect.iscoroutine(encoded):
                     encoded.close()
