@@ -22,6 +22,9 @@ import Foundation
         let item_journals: [String: String]
         let other_journals: [String: String]
         let erasure_originals: [String: String]
+        let erasure_post_count: Int
+        let original_action_id: String
+        let operation_id: String
     }
     func call(_ path: String, query: [String: String] = [:]) async throws -> Data {
         var url = try XCTUnwrap(URLComponents(string: control + path))
@@ -79,20 +82,24 @@ import Foundation
         XCTAssertEqual(back.count, 1); back.element.tap()
         return saved
     }
-    func verify(_ language: String) async throws {
+    func signIn(_ fixture: Fixture, language: String) {
+        tap(language == "en" ? "Memory" : "记忆")
+        tap("memory.account"); tap("account.development.signin.A")
+        guard let subject = fixture.subjects["A"] else { XCTFail("The actual local subject is required"); return }
+        text("account.development.status", contains: subject)
+        let back = app.navigationBars.buttons.matching(NSPredicate(format: "label == %@", language == "en" ? "Memory" : "记忆"))
+        XCTAssertEqual(back.count, 1); back.element.tap()
+    }
+    func verify(_ language: String, reopenUnknown: Bool = false) async throws {
         continueAfterFailure = false
-        let fixture = try JSONDecoder().decode(Fixture.self, from: await call("/fixture"))
+        let fixture = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", query: ["case": reopenUnknown ? "lost-ack" : "complete"]))
         _ = try await call("/size", query: ["value": "standard"])
         app = XCUIApplication(bundleIdentifier: fixture.bundle)
         app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = fixture.launch.merging(["OS_ACTIVITY_MODE": "disable"]) { _, required in required }
         app.launch(); defer { app.terminate() }
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
-        tap(language == "en" ? "Memory" : "记忆")
-        tap("memory.account"); tap("account.development.signin.A")
-        text("account.development.status", contains: try XCTUnwrap(fixture.subjects["A"]))
-        let back = app.navigationBars.buttons.matching(NSPredicate(format: "label == %@", language == "en" ? "Memory" : "记忆"))
-        XCTAssertEqual(back.count, 1); back.element.tap()
+        signIn(fixture, language: language)
         let other = try await save(option: fixture.other_option_label, value: fixture.other_text, occurredAt: fixture.occurred_at, language: language)
         let saved = try await save(option: fixture.option_label, value: fixture.text, occurredAt: fixture.occurred_at, language: language)
         // This ID comes from the real successful App POST, never from launch env.
@@ -108,22 +115,45 @@ import Foundation
         XCTAssertTrue(acknowledge.element.isEnabled); acknowledge.element.tap()
         try audit("erasure-review-" + language + "-max", target: app.buttons["memoryErasure.submit"])
         tap("memoryErasure.submit")
+        let originalID = app.staticTexts["memoryErasure.originalID"]
+        reveal(originalID); let actionID = originalID.label
+        XCTAssertFalse(actionID.isEmpty)
+        if reopenUnknown {
+            text("memoryErasure.status", contains: language == "en" ? "uncertain" : "尚不明确")
+            XCTAssertFalse(app.buttons["memoryErasure.reconcile"].isEnabled)
+            app.terminate(); app.launch()
+            XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
+            signIn(fixture, language: language)
+            tap("memory.erasure.originals"); tap("memoryErasure.loadOriginals")
+            tap("memoryErasure.original." + actionID)
+            text("memoryErasure.originalID", contains: actionID)
+            XCTAssertFalse(app.buttons["memoryErasure.reconcile"].isEnabled)
+            tap("memoryErasure.query")
+        }
         text("memoryErasure.stopUse", contains: language == "en" ? "Stopped using" : "已停止使用")
         text("memoryErasure.onlineProgress", contains: language == "en" ? "Listed online content cleanup confirmed" : "所列线上内容已确认清理")
         let before = try JSONDecoder().decode(LocalProof.self, from: await call("/local-proof"))
         XCTAssertFalse(before.item_journals.isEmpty, "The App must have written actual target ciphertext before cleanup")
         XCTAssertFalse(before.other_journals.isEmpty, "A separate actual App journal must be preserved")
         XCTAssertFalse(before.erasure_originals.isEmpty, "The actual original deletion must already be durable")
+        XCTAssertEqual(before.erasure_post_count, 1)
+        XCTAssertEqual(before.original_action_id, actionID)
+        XCTAssertTrue(before.operation_id.hasPrefix("memory-erasure-v1:"))
         tap("memoryErasure.clearLocal")
         text("memoryErasure.localProgress", contains: language == "en" ? "physically cleared" : "物理清理")
         let after = try JSONDecoder().decode(LocalProof.self, from: await call("/local-proof"))
         XCTAssertTrue(after.item_journals.isEmpty)
         XCTAssertEqual(after.other_journals, before.other_journals)
         XCTAssertEqual(after.erasure_originals, before.erasure_originals)
+        XCTAssertEqual(after.erasure_post_count, 1)
+        XCTAssertEqual(after.original_action_id, actionID)
+        XCTAssertEqual(after.operation_id, before.operation_id)
         tap("memoryErasure.query")
         text("memoryErasure.stopUse", contains: language == "en" ? "Stopped using" : "已停止使用")
         try audit("erasure-complete-" + language + "-max", target: app.staticTexts["memoryErasure.localProgress"])
     }
     func testMemoryErasureEnglish() async throws { try await verify("en") }
     func testMemoryErasureChinese() async throws { try await verify("zh-Hans") }
+    func testUnknownErasureReopensEnglish() async throws { try await verify("en", reopenUnknown: true) }
+    func testUnknownErasureReopensChinese() async throws { try await verify("zh-Hans", reopenUnknown: true) }
 }
