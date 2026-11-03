@@ -17,10 +17,12 @@ public struct MessageHumanHistoryItem: Sendable, CustomStringConvertible, Custom
     public var customMirror: Mirror { Mirror(self, children: [:]) }
     public let id = UUID()
     fileprivate let reference: Data?
+    fileprivate let referenceIntegers: [[String]: Int64]
     fileprivate let canEraseSource: Bool
     fileprivate init(receipt: Components.Schemas.MessageReceipt, text: String,
-        sourceState: MessageHumanSourceState, reference: Data?, canEraseSource: Bool) {
+        sourceState: MessageHumanSourceState, reference: Data?, referenceIntegers: [[String]: Int64], canEraseSource: Bool) {
         self.receipt = receipt; self.text = text; self.sourceState = sourceState; self.reference = reference; self.canEraseSource = canEraseSource
+        self.referenceIntegers = referenceIntegers
     }
 }
 
@@ -96,7 +98,10 @@ struct PreservedHistoryPage {
             default: throw MessageHTTPFailure.invalidResponse
             }
             let reference = state == .retained ? try JSONSerialization.data(withJSONObject: f["reference"]!, options: [.sortedKeys, .withoutEscapingSlashes]) : nil
-            rows.append(.init(receipt: receipt, text: text, sourceState: state, reference: reference, canEraseSource: canEraseSource))
+            let integers = Dictionary(uniqueKeysWithValues: json.integers.compactMap { key, value in
+                key.starts(with: path) ? (Array(key.dropFirst(path.count)), value) : nil
+            })
+            rows.append(.init(receipt: receipt, text: text, sourceState: state, reference: reference, referenceIntegers: integers, canEraseSource: canEraseSource))
         }
         self.rows = rows
     }
@@ -117,6 +122,9 @@ func decodePreservedRun(_ raw: Data, maximumBytes: Int, textLimit: Int, trace: S
           let state = (f["source_state"] as? String).flatMap(MessageHumanSourceState.init(rawValue:)) else { throw MessageHTTPFailure.invalidResponse }
     switch state {
     case .retained:
+        for (path, value) in row.referenceIntegers {
+            guard json.integers[["reference"] + path] == value else { throw MessageHTTPFailure.invalidResponse }
+        }
         guard row.sourceState == .retained,
               let value = f["reference"] as? [String: Any],
               try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .withoutEscapingSlashes]) == row.reference else { throw MessageHTTPFailure.invalidResponse }

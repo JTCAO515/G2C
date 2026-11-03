@@ -119,6 +119,20 @@ private actor HumanSpy: ClientTransport {
         let p=try await c.preservedHistory(conversationID:"chat",limit:2,limits:limits(),lease:l)
         await #expect(throws:(any Error).self) { try await c.preservedRun(for:#require(p.value.first),page:p,limits:limits(),lease:l) }
     }
+    @Test(arguments: ["\"context_version\":1.0", "\"selection_epoch\":1e0", "\"sequence\":true", "\"expected_version\":1.0"])
+    func retainedRunReferenceRejectsNonIntegerLexemes(replacement: String) throws {
+        let retained = try humanRow("retained")
+        let page = try PreservedHistoryPage(raw: humanHistory([retained]), maximumBytes: 32768, decodedLimit: 8192, limit: 2, requestID: humanTrace)
+        let row = try #require(page.rows.first)
+        let valid = try humanRun(retained, state: "retained")
+        #expect(try decodePreservedRun(valid, maximumBytes: 32768, textLimit: 8192, trace: humanTrace, row: row).sourceState == .retained)
+        let key = replacement.split(separator: ":", maxSplits: 1)[0]
+        let malformed = Data(String(decoding: valid, as: UTF8.self).replacingOccurrences(of: key + ":1", with: replacement).utf8)
+        #expect(malformed != valid)
+        #expect(throws: (any Error).self) {
+            try decodePreservedRun(malformed, maximumBytes: 32768, textLimit: 8192, trace: humanTrace, row: row)
+        }
+    }
     @Test func noSelectorBodyHostOrAmbiguousQueryCanEnterHumanReads() throws {
         let hash=String(repeating:"a",count:64)
         let invalid=["/v5/message-history?conversation_id=chat&limit=2&owner=other", "/v5/message-history?conversation_id=chat&limit=2&limit=1",
