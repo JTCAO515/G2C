@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT/'backend/trip/tests'),str(ROOT/'scripts')]
 import manual_pg as manual
 import dev_auth,local_run_context,message_trip_profile,run_worker
-from cj_api.local_app import create_local_app,LocalDatabase
+from cj_api.local_app import create_local_app,LocalDatabase,scope_for,ISSUER
 from cj_api.local_account_admission_v2 import account_checker_for
 from cj_agent.provider import FakeProvider
 from cj_auth.interfaces import AdmissionStatus
@@ -67,16 +67,36 @@ class FormalMemoryChecks(manual.ManualChecks):
             admission=checker.check(token);self.assertIs(admission.status,AdmissionStatus.ALLOWED);return admission.principal
         authority=MessageContextAuthority(database.message_repository(self.owner),admit)
         memory=config.bind_readonly(database,self.owner,'alice',admit,message_context=authority)
-        observed={}
+        observed={};captured={}
         for name,receipt in receipts.items():
             binding=Binding(self.owner,receipt['conversation_id'],receipt['generation'],receipt['message_id'],receipt['run_id'],receipt['sequence'])
             ref={k:receipt[k] for k in ('conversation_id','generation','sequence','message_id','input_sha256')}
             run=memory.capture_history(binding,[ref],decision_source_sha256s=[])
+            captured[name]=(binding,run)
             with run.hold(binding) as check:
                 check();observed[name]=json.loads(run.payload)['items']
         self.assertEqual([i['text'] for i in observed['formal']],['A steady long-term pace'])
         self.assertEqual([i['text'] for i in observed['none']],['A steady long-term pace'])
         self.assertEqual([i['text'] for i in observed['travel']],['Only this Travel can be fast'])
+        bob_scope=scope_for(ISSUER,'bob')
+        bob_token=self.headers('bob')['Authorization'][7:]
+        def admit_bob():
+            admission=checker.check(bob_token);self.assertIs(admission.status,AdmissionStatus.ALLOWED);return admission.principal
+        bob_authority=MessageContextAuthority(database.message_repository(bob_scope),admit_bob)
+        with self.assertRaises(RuntimeDenied):config.bind_readonly(database,self.owner,'alice',admit,message_context=bob_authority)
+        with self.assertRaises(RuntimeDenied):config.bind_readonly(database,self.owner,'alice',admit_bob,message_context=authority)
+        with TestClient(create_local_typed_app(conninfo_path=path,auth_dir=self.auth,configuration=typed)) as client:
+            disabled=client.post('/v2/memory-management-actions',content=packed(dict(version='MEMORY-management.2',action_id='disable-long',
+                operation='pause',item_id='long',expected_version=1,expected_source_version=1)),headers=headers)
+            self.assertEqual(disabled.status_code,200,disabled.text)
+        original_binding,old=captured['formal']
+        with self.assertRaises(RuntimeDenied):
+            with old.hold(original_binding):pass
+        empty=memory.capture(original_binding)
+        self.assertEqual(json.loads(empty.payload)['items'],[])
+        travel_binding,_=captured['travel']
+        still_current=memory.capture(travel_binding)
+        self.assertEqual([i['text'] for i in json.loads(still_current.payload)['items']],['Only this Travel can be fast'])
         with database.connect(self.owner) as conn:
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_item').fetchone(),(2,))
         with self.assertRaises(RuntimeDenied):run_worker.require_memory_configuration(database,self.owner,config)
