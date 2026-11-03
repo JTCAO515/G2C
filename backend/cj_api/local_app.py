@@ -283,7 +283,7 @@ def trip_configuration(value):
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
-                     cleanup_configuration=None):
+                     cleanup_configuration=None,formal_memory_configuration=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -294,6 +294,14 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
     access=base_access=InvitedSubjects(auth_dir/'invited.json')
+    formal_producer=None
+    if formal_memory_configuration is not None:
+        if memory_configuration is not None:raise CompositionUnavailable('select one explicit Memory producer configuration')
+        from .local_formal_memory import producer_factory
+        from .local_account_admission_v2 import retired_for
+        from cj_auth.account_revocation import AccountRevocationAccess
+        formal_producer=producer_factory(database,formal_memory_configuration)
+        access=AccountRevocationAccess(base_access,retired_for(database))
     cleanup_runtime=None
     if cleanup_configuration is not None:
         from .local_cleanup import Runtime,Configuration
@@ -401,6 +409,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         feedback_configuration=FeedbackWireConfiguration(16384,65536),resolve_feedback=feedback_resolver,
         resolve_feedback_run=run_repository,feedback_scope_binder=bind_feedback,feedback_scope_current=feedback_current,
         access_provider=access,
+        formal_memory_producer=formal_producer,
         resolve_repository=message_repository, new_run_id=lambda: str(uuid.uuid4()),
         resolve_travel_repository=travel_repository,
         max_body_bytes=16384, history_configuration=history_configuration,
@@ -518,10 +527,15 @@ def app_from_environment():
     if 'CJ_LOCAL_CLEANUP_CONFIG' in os.environ:
         from .local_cleanup import load_configuration
         cleanup_configuration=load_configuration(os.environ['CJ_LOCAL_CLEANUP_CONFIG'])
+    formal_memory_configuration=None
+    if 'CJ_LOCAL_FORMAL_MEMORY_RUN_POLICY' in os.environ:
+        from cj_memory.formal_runtime import load_formal_runtime_configuration
+        formal_memory_configuration=load_formal_runtime_configuration(os.environ['CJ_LOCAL_FORMAL_MEMORY_RUN_POLICY'])
     return create_local_app(conninfo_path=os.environ['CJ_LOCAL_CONNINFO'], auth_dir=auth_dir,
                             confirmation_signer=load_confirmation_signer(auth_dir),
                             history_configuration=load_history_configuration(auth_dir),
                             memory_configuration=memory_configuration,
+                            formal_memory_configuration=formal_memory_configuration,
                             cleanup_configuration=cleanup_configuration,
                             needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),
                             travel_context=travel_configuration(os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT')),

@@ -20,7 +20,7 @@ def main():
         root=Path(directory)
         with p.cluster('memory_payload',port=55829,role='cj_mp_private',root=root/'pg',socket=root/'s') as config:
             with psycopg.connect(**config,autocommit=True) as conn:
-                chain=migrate.load();assert chain[-1]['version']==45
+                chain=migrate.load();assert next(m for m in chain if m['version']==45)['name']=='memory_payload_erasure'
                 migrate.up(conn,chain,44);before=acls(conn)
                 migrate.up(conn,chain,45)
                 assert conn.execute("SELECT proacl,prosecdef FROM pg_proc WHERE oid='cj_run_guard_original_binding()'::regprocedure").fetchone()==before[2]

@@ -1,7 +1,7 @@
 """MESSAGE-send.2 original acceptance/status, no live permission in the response."""
 from dataclasses import asdict
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse,Response
 from starlette.concurrency import run_in_threadpool
 from cj_message.domain import Unavailable
 from cj_message.travel_reference import ContextConflict
@@ -9,7 +9,7 @@ from .history_routes import _query
 from .message_routes import _error,_token,_read_body,BodyError
 
 
-def register_message_travel_routes(app,boundary,max_body_bytes,message_failure):
+def register_message_travel_routes(app,boundary,max_body_bytes,message_failure,formal_receiver=None):
     def unavailable(request,write):
         return _error(request,503,'MESSAGE_CONTEXT_UNAVAILABLE','dependency','unknown',
                       'reconcile_original' if write else 'retry_safe_read')
@@ -33,9 +33,14 @@ def register_message_travel_routes(app,boundary,max_body_bytes,message_failure):
             if exc.status==503:return unavailable(request,True)
             return _error(request,exc.status,exc.code,'input','failed','do_not_retry')
         try:
-            value=await run_in_threadpool(boundary.receive_v4 if version==4 else boundary.receive_v3 if version==3 else boundary.receive_v2,token,raw)
-            return JSONResponse(dict(request_id=request.state.request_id,version=f'MESSAGE-accept.{version}',
+            def project(value):return JSONResponse(dict(request_id=request.state.request_id,version=f'MESSAGE-accept.{version}',
                 receipt=asdict(value.receipt),reference=value.reference.public_value()))
+            if version==3 and formal_receiver is not None:
+                body=await run_in_threadpool(formal_receiver,token,raw,lambda value:project(value).body)
+                return Response(content=body,media_type='application/json')
+            receive=boundary.receive_v4 if version==4 else boundary.receive_v3 if version==3 else boundary.receive_v2
+            value=await run_in_threadpool(receive,token,raw)
+            return project(value)
         except Exception as exc:
             return failure(request,exc,True)
 

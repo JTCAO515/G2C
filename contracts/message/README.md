@@ -2,6 +2,10 @@
 
 ## M3 当前来源 / 历史读取消费者（2026-11-03）
 
+已合C476的实际正式Memory工厂由B[显式兼容宿主](FORMAL-MEMORY-HOST.md)消费；
+保持MSG3/ref1/payload2和旧默认拒绝，不追加wire版。原Typed2/MSG4消费者仍适用，
+新代码只选当前作用域对应的实际工厂，不为无消费者的旧版添加适配。
+
 | 契约 | 已合消费者 / 替代关系 |
 |---|---|
 | [MESSAGE-SOURCE@1](SOURCE-V1.md) | C普通、结束与accepted-decision的原消息区间/同意检查仍调用with_enabled_source；并未被2全面取代，不能标无消费者。 |
