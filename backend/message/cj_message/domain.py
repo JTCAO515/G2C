@@ -227,7 +227,10 @@ class Service:
     def receive_v3(self, raw):
         return self._receive(raw,travel=True,formal=True)
 
-    def _receive(self, raw, *, travel, formal=False):
+    def receive_formal_memory(self,raw,producer):
+        return self._receive(raw,travel=True,formal=True,formal_producer=producer)
+
+    def _receive(self, raw, *, travel, formal=False,formal_producer=None):
         command = Command.parse_v3(raw) if formal else Command.parse_v2(raw) if travel else Command.parse(raw)
         with self.repository.transaction() as tx:
             # Scope lock serializes same-ID requests even across conversations.
@@ -244,8 +247,10 @@ class Service:
                 if travel:
                     from .travel_reference import require_producer
                     if formal:
-                        from .trip_reference import require_producer as require_trip
-                        source=require_trip(tx,command)
+                        if formal_producer is None:
+                            from .trip_reference import require_producer as require_trip
+                            source=require_trip(tx,command)
+                        else:source=formal_producer.require(tx,command)
                     else:
                         require_producer(tx,command)
                 receipt = Receipt(command.message_id, command.conversation_id,

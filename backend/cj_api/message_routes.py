@@ -91,7 +91,7 @@ def _sanitized_read(read):
         raise ReadInterrupted() from None
 
 
-def register_message_routes(app, boundary=None, max_body_bytes=None):
+def register_message_routes(app, boundary=None, max_body_bytes=None,formal_receiver=None):
     from .travel_routes import register_travel_routes
     register_travel_routes(app, boundary, max_body_bytes)
     if boundary is not None:
@@ -149,7 +149,7 @@ def register_message_routes(app, boundary=None, max_body_bytes=None):
         return unavailable(request, write)
 
     from .message_travel_routes import register_message_travel_routes
-    register_message_travel_routes(app,boundary,max_body_bytes,failure)
+    register_message_travel_routes(app,boundary,max_body_bytes,failure,formal_receiver)
 
     @app.put('/v1/conversations')
     async def open_conversation(request: Request):
