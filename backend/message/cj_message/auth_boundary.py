@@ -172,6 +172,16 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def with_erasure_headers(self,project,*,max_refs,max_result_bytes):
+        """Complete owned headers while M remains locked through C stop/freeze."""
+        from .erasure_headers import with_headers
+        self._check()
+        result=with_headers(self._service,self._principal,project,max_refs=max_refs,max_result_bytes=max_result_bytes,
+                            check_context=self._check,admit=self._admission_guard)
+        self._check()
+        self._admission_guard('erasure_headers_return')
+        return result
+
     def with_enabled_source_and_travel(self,query,policy,selection,project):
         """MESSAGE-SOURCE@2. No nested public hold_current/repository escape."""
         from .source_v2 import with_source_and_travel
@@ -282,6 +292,13 @@ class Boundary:
 
     def receive_v3(self, token, raw):
         return self._service(token).receive_v3(raw)
+
+    def receive_formal_memory(self,token,raw,producer_factory,project):
+        service,principal,scope,guard=self._bind(token)
+        producer=producer_factory(principal,scope,guard)
+        value=project(service.receive_formal_memory(raw,producer))
+        guard('return')
+        return value
 
     def send_status_v3(self,token,conversation_id,message_id=None):
         return self._service(token).send_status_v3(conversation_id,message_id)
