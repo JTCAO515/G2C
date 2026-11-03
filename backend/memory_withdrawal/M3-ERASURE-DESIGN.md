@@ -107,3 +107,34 @@ Actual API/version freeze and A notice, immutable manifest/reader, non-resurrect
 fences, physical C hooks, B memory-purpose payload integration, actual in-flight
 publication rejection, retained-chat ingress, rows/model-context audit and full
 scripts/test.py/pg_suites.py are UNRUN for #26. This preparation closes no box.
+
+## Candidate local freeze/cleanup implementation (unregistered)
+
+Candidate M44 SQL is intentionally not in the manifest: B owns the next M43
+background-header append, and this follows that actual migration/file lock.
+It adds a private immutable original manifest and minimum hashed replay barriers.
+`erasure_store.freeze` uses the actual canonical Memory transaction to stop the
+complete item/source graph, advance versions, capture all job/message/decision
+references and persist original bytes atomically. Original same-byte replay is
+stable; IDs are not normalized. No runtime physical deletion is granted.
+
+Actual private-PG component evidence now verifies current typed model projection
+becomes empty, erased source IDs cannot be reinserted, and a new explicit source
+can still be saved. `AssociationReader` returns only that original persisted
+selection after B's real committed in-progress CLEANUP intent; DTOs/no intent do
+not grant access, and the observation-only probe returns UNKNOWN, not erasure.
+
+Candidate C item hooks use the dedicated original Store transaction/receipts:
+derived -> management -> Trip derived -> canonical Memory. C-only component
+cleanup physically removes selected source/item/save/action/job bytes, preserves
+new explicit entries and only reports that component inventory. Hash-only cursor
+and replay barriers remain. M30 uses the disclosed owned derived scope: non-
+acceptable scoped results and nonaccepted proposals/bases/actions; accepted
+formal authority is retained. This is not precise item-to-M30 matching.
+
+These files are not installed, registered, frozen or provided to B/A. Remaining:
+same-PR registry + account coverage for the new manifest, canonical candidate
+projection after shared-job erasure, raw chat/model ingress fences, actual B
+payload hooks/worker publication races, production-shaped signed erasure API,
+exhaustive physical audits and full tests/review/exact CI. M44 direct SQL empty
+roundtrip/minimal privileges and component intent/physical tests do not close #26.
