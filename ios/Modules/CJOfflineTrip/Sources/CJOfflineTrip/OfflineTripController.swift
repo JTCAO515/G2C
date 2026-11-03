@@ -16,11 +16,20 @@ public enum OfflineTripState: Sendable {
     case idle, missing, expired, untrustedTime, unavailable, storageFailure
     case readable(OfflineTripRead)
 }
-public enum OfflineSyncState: Sendable { case idle, synchronizing, saved, failed, unknown }
+public enum OfflineSyncState: Sendable, Equatable { case idle, synchronizing, saved, failed, unknown }
+
+/// Sealed evidence of storage provisioned while staging an accepted formal source.
+/// This is not a read/cleanup grant and contains no key or SDK credential.
+public struct OfflineTripStorageProvision: Sendable {
+    public let namespace: OfflineNamespace
+    public let keyID: UUID
+    fileprivate let anchor: OfflineAnchor
+    fileprivate let token: UUID
+}
 
 /// Protected metadata is an offline-read grant for one already-synced response,
 /// never an AUTH session, ordinary API permission or a cleanup operation receipt.
-struct OfflineAnchor: Codable, Equatable {
+struct OfflineAnchor: Codable, Equatable, Sendable {
     let namespace: OfflineNamespace
     let keyID: UUID
     let version: Int64
@@ -50,19 +59,23 @@ struct OfflineAnchor: Codable, Equatable {
 /// The App's explicit read may inspect protected local material, but cannot restore
 /// ordinary business permission. Logout/switch clears the grant before file removal.
 @Observable @MainActor public final class OfflineTripController {
-    private var stateValue: (UUID, OfflineTripState)?
-    private var syncValue: (UUID, OfflineSyncState)?
+    @ObservationIgnored private var stateValue: (UUID, OfflineTripState)?
+    @ObservationIgnored private var syncValue: (UUID, OfflineSyncState)?
     public private(set) var state: OfflineTripState {
         get {
+            access(keyPath: \.state)
             guard !blocked, !clearing else { return .unavailable }
             guard let value = stateValue else { return .idle }
             return value.0 == generation ? value.1 : .unavailable
         }
-        set { let token = generation; stateValue = (token, newValue) }
+        set {
+            stateValue = (generation, newValue)
+            withMutation(keyPath: \.state) {} // Publish after installation; callbacks cannot overwrite a replacement.
+        }
     }
     public private(set) var syncState: OfflineSyncState {
-        get { guard let value = syncValue, value.0 == generation else { return .idle }; return value.1 }
-        set { let token = generation; syncValue = (token, newValue) }
+        get { access(keyPath: \.syncState); guard let value = syncValue, value.0 == generation else { return .idle }; return value.1 }
+        set { syncValue = (generation, newValue); withMutation(keyPath: \.syncState) {} }
     }
     private let environment: UUID
     private let root: URL
@@ -72,9 +85,11 @@ struct OfflineAnchor: Codable, Equatable {
     private let clock: () -> OfflineClock?
     private let policy: OfflinePolicy?
     private let makeStore: (URL) throws -> AtomicSnapshotStore
-    private var generation = UUID()
-    private var inFlight = false
-    private var blocked = false
+    @ObservationIgnored private var generation = UUID()
+    @ObservationIgnored private var inFlight = false
+    @ObservationIgnored private var blocked = false
+    @ObservationIgnored private var identityRejection: (@MainActor (SessionMaterial) async throws -> Void)?
+    @ObservationIgnored private var storageProvision: (@MainActor (OfflineTripStorageProvision) -> Void)?
     @ObservationIgnored private var clearing = false
     private var stores: [UUID: AtomicSnapshotStore] = [:]
     private var providers: [UUID: ScopedMessageKeyProvider] = [:]
@@ -153,6 +168,12 @@ struct OfflineAnchor: Codable, Equatable {
         try check(token)
         guard observed == bytes else { throw OfflineFailure.writeUnknown }
     }
+    private func saveDeniedAnchor(_ value: OfflineAnchor, token: UUID) throws {
+        guard !value.readAllowed, generation == token else { throw OfflineFailure.unavailable }
+        let bytes = try SnapshotCodec.encoder().encode(value)
+        try anchors.save(SessionMaterial(trustedSDKBytes: bytes))
+        guard generation == token, try anchors.load()?.withBytes({ $0 }) == bytes else { throw OfflineFailure.writeUnknown }
+    }
     private func store(_ account: UUID, create: Bool) throws -> AtomicSnapshotStore {
         if let existing = stores[account] { return existing }
         let directory = root.appendingPathComponent(account.uuidString, isDirectory: true)
@@ -214,6 +235,9 @@ struct OfflineAnchor: Codable, Equatable {
             deadline: sync.deadline, boot: now.boot, uptimeAtSync: now.uptime, lastWall: wall, readAllowed: false)
         displayed = nil; displayedAnchor = nil; state = .unavailable
         try saveAnchor(anchor, token: token) // retain the exact denied target before any file commit
+        storageProvision?(.init(namespace: anchor.namespace, keyID: anchor.keyID, anchor: anchor, token: token))
+        try check(token)
+        guard session.isCurrent(operation) else { throw OfflineFailure.unavailable }
         _ = try original.writeOnce()
         try check(token)
         guard session.isCurrent(operation) else { throw OfflineFailure.unavailable }
@@ -221,6 +245,8 @@ struct OfflineAnchor: Codable, Equatable {
         anchor.readAllowed = true
         try saveAnchor(anchor, token: token)
         try requireCurrentMaterial(identity.materialHash, token: token)
+        try check(token)
+        storageProvision?(.init(namespace: anchor.namespace, keyID: anchor.keyID, anchor: anchor, token: token))
         try check(token); syncState = .saved
         // The next explicit local read revalidates the persisted pair before exposing text.
         displayed = nil; displayedAnchor = nil; state = .idle
@@ -330,10 +356,7 @@ struct OfflineAnchor: Codable, Equatable {
         switch loaded {
         case .success(var original?):
             original.readAllowed = false
-            let bytes = try SnapshotCodec.encoder().encode(original)
-            try anchors.save(SessionMaterial(trustedSDKBytes: bytes))
-            guard generation == token,
-                  try anchors.load()?.withBytes({ $0 }) == bytes else { throw OfflineFailure.writeUnknown }
+            try saveDeniedAnchor(original, token: token)
             // Retain the exact target in the denied anchor if physical cleanup fails.
             try store(original.namespace.account, create: false).clearLocalEntry()
             guard generation == token else { throw OfflineFailure.unavailable }
@@ -342,11 +365,73 @@ struct OfflineAnchor: Codable, Equatable {
         case .failure(let error): try anchors.clearAndBlock(); throw error
         }
     }
+    /// Exact account guard for the native device hook. Never clear an anchor
+    /// which now belongs to a different account; caller holds the original scope.
+    public func clearDeviceAccount(account: UUID) throws {
+        if let anchor = try loadAnchor() {
+            guard anchor.namespace.backend == environment, anchor.namespace.account == account else { throw OfflineFailure.wrongNamespace }
+        }
+        let unanchored = try loadAnchor() == nil
+        try clearLocally()
+        // An interrupted sync may leave an exact owned file without a grant.
+        // Reuse the cached store so its unresolved-write guard still applies.
+        if unanchored { try store(account, create: false).clearLocalEntry() }
+    }
+    public func verifyDeviceAnchorCleared() throws {
+        guard try loadAnchor() == nil else { throw OfflineFailure.unavailable }
+    }
+    /// Reuses this controller's existing store, preserving its original pending
+    /// write guard. No fresh store can bypass an unresolved original write.
+    public func clearDeviceTemporaryWrites(account: UUID) throws {
+        if let anchor = try loadAnchor() {
+            guard anchor.namespace.backend == environment, anchor.namespace.account == account else { throw OfflineFailure.wrongNamespace }
+        }
+        try store(account, create: false).clearLocalTemporaryWrites()
+    }
     public func prepareSynchronization() { syncState = .synchronizing }
     public func noteSyncReadFailure() { syncState = .failed }
-    public func currentIdentityRejected() throws {
+    public func bindStorageProvision(_ handler: @escaping @MainActor (OfflineTripStorageProvision) -> Void) {
+        storageProvision = handler
+    }
+    public func bindDeviceIdentityRejection(_ handler: @escaping @MainActor (SessionMaterial) async throws -> Void) {
+        identityRejection = handler
+    }
+    public func currentIdentityRejected() async throws {
+        let token = generation
         guard let material = try sdkMaterial() else { return }
-        try identityRejected(material: material)
+        guard generation == token else { throw OfflineFailure.unavailable }
+        if let identityRejection {
+            try denyRejectedIdentity(material: material)
+            try await identityRejection(material)
+        } else { try self.identityRejected(material: material) }
+    }
+    public func captureStorageProvision() throws -> OfflineTripStorageProvision {
+        let token = generation
+        try check(token)
+        guard syncState == .saved, let anchor = try loadAnchor(), anchor.readAllowed else { throw OfflineFailure.unavailable }
+        try requireCurrentMaterial(anchor.sessionHash, token: token)
+        return .init(namespace: anchor.namespace, keyID: anchor.keyID, anchor: anchor, token: token)
+    }
+    public func validateStorageProvision(_ provision: OfflineTripStorageProvision) throws {
+        try check(provision.token)
+        guard try loadAnchor() == provision.anchor else { throw OfflineFailure.unavailable }
+        try requireCurrentMaterial(provision.anchor.sessionHash, token: provision.token)
+    }
+    /// Immediate read fence for the DEVICE@3 original-call flow. Physical erasure
+    /// follows its durable native intent; no missing/foreign grant is adopted.
+    public func denyRejectedIdentity(material: SessionMaterial) throws {
+        let previous = generation
+        guard var original = try loadAnchor(), original.sessionHash == materialHash(material) else { return }
+        guard generation == previous else { throw OfflineFailure.unavailable }
+        let token = UUID(); generation = token; blocked = true
+        hide()
+        guard generation == token else { throw OfflineFailure.unavailable }
+        synchronizationIdentity = nil
+        let originalSession = readSession; readSession = nil
+        _ = originalSession?.clearWithSettlement()
+        guard generation == token else { throw OfflineFailure.unavailable }
+        original.readAllowed = false
+        try saveDeniedAnchor(original, token: token)
     }
     /// Only an explicitly verified HTTP identity rejection may invoke this path.
     public func identityRejected(material: SessionMaterial) throws {

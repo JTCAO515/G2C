@@ -78,6 +78,50 @@ import CJSession
         #expect(shell.messageBindingBlocked)
     }
 
+    @Test func onlyServerRejectionEntersDeviceContextAndCanonicalClearDoesNotCancelItsReceiptTask() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        store.value = try SessionMaterial(trustedSDKBytes: Data("original-a".utf8))
+        var contexts = 0, completed = false
+        var host: DevelopmentAccountHost!
+        host = DevelopmentAccountHost(shell: shell, choices: [.init(id: "A", label: "A")], persistence: store,
+            material: { _ in try SessionMaterial(trustedSDKBytes: Data("original-a".utf8)) },
+            verify: { await checks.check($0) }, activate: { _,_,_ in }, invalidate: {},
+            rejectedContext: { material, session, operation in
+                #expect(session.isCurrent(operation))
+                #expect(material.withBytes { $0 } == Data("original-a".utf8))
+                contexts += 1; try host.clearForAccountCleanup()
+                await Task.yield()
+                #expect(!Task.isCancelled)
+                completed = true
+            })
+        for result in [DevelopmentSessionCheck.networkUnknown, .expired, .rejected] {
+            let index = checks.replies.count
+            host.restore(); await wait { checks.replies.count == index + 1 }
+            checks.replies[index].resume(returning: result)
+            await wait { host.state != .checking }
+            #expect(contexts == 0 && !store.blocked)
+        }
+        host.restore(); await wait { checks.replies.count == 4 }
+        checks.replies[3].resume(returning: .serverRejected)
+        await wait { completed }
+        #expect(contexts == 1 && store.blocked && host.state == .signedOut)
+    }
+    @Test func cleanupClearsCanonicalSDKAndCannotResumeRetainedActiveMaterial() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        var changes = 0, activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [.init(id: "A", label: "A")], persistence: store,
+            material: { try SessionMaterial(trustedSDKBytes: Data($0.utf8)) }, verify: { await checks.check($0) },
+            activate: { _,_,_ in activations += 1 }, invalidate: {}, identityWillChange: { changes += 1 })
+        host.signIn("A"); await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "A")); await wait { host.state == .signedIn("A") }
+        try host.clearForAccountCleanup()
+        #expect(store.blocked && store.value == nil && host.state == .signedOut && shell.messageBindingBlocked)
+        #expect(changes == 1) // The original restricted workflow is retained.
+        host.suspend(); host.resume()
+        for _ in 0..<20 { await Task.yield() }
+        #expect(checks.replies.count == 1 && activations == 1)
+        host.signOut(); #expect(changes == 2)
+    }
     @Test func foregroundRevalidatesMemoryWithoutAutomaticKeychainRestore() async throws {
         let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
         let host = make(shell, store, checks)

@@ -1,7 +1,7 @@
 """Prepare a genuine #460 candidate with signed API, automatic C intake and Meter.
 
 This is source preparation for native acceptance, not an App/native PASS. The
-App must discover the producer itself through V5; no job/attempt/candidate ID is
+App must read the current V6 canonical projection itself; no job/attempt/candidate ID is
 an environment input. All data and credentials are fresh task-private local data.
 """
 import argparse
@@ -97,21 +97,23 @@ def prepare_source(app, host, jobs, background, model, originals, auth, token, o
         assert len(produced) == 1 and produced[0].status == 'completed'
         assert model.calls == 2 and len(model.extractions) == 1 and len(originals) == 1
         assert run_once(host.database, model, auth, background_jobs=background) == [] and model.calls == 2
-        page = expect(client.get('/v5/memory-candidate-jobs', params={'conversation_id': conversation, 'after_job_id': ''}, headers=headers))['result']
-        assert page['conversation_id'] == conversation and page['next_after_job_id'] is None and len(page['jobs']) == 1
-        reference = page['jobs'][0]
+        wire = expect(client.get('/v6/memory-candidates', params={'conversation_id': conversation, 'after_candidate_id': ''}, headers=headers))
+        assert wire['version'] == 'MEMORY-CANDIDATE-projection@2'
+        current = wire['result']
+        assert current['conversation_id'] == conversation and current['next_after_candidate_id'] is None
+        assert type(current['memory_epoch']) is int and current['memory_epoch'] > 0 and len(current['candidates']) == 1
+        candidate = current['candidates'][0]
+        assert candidate['status'] == 'candidate' and candidate['kind'] == 'inference' and candidate['text'] == text
+        reference = candidate['review']
         original = originals[0]
         assert reference == {key: original[key] for key in ('job_id', 'attempt_id')}
         observed = jobs.query_original(token, reference['job_id'], reference['attempt_id'])
         assert observed['state'] == 'completed' and observed['meter_attempt_id'] == original['meter_attempt_id']
-        current = expect(client.get('/v3/memory-candidates', params=reference, headers=headers))['result']
-        assert len(current['candidates']) == 1
-        candidate = current['candidates'][0]
-        assert candidate['status'] == 'candidate' and candidate['kind'] == 'inference' and candidate['text'] == text
-        foreign = client.get('/v5/memory-candidate-jobs', params={'conversation_id': conversation, 'after_job_id': ''},
+        foreign = client.get('/v6/memory-candidates', params={'conversation_id': conversation, 'after_candidate_id': ''},
                              headers={'Authorization': 'Bearer ' + other_token})
         assert foreign.status_code in (403, 503), ('foreign protected discovery', foreign.status_code)
-        return dict(conversation=conversation, message_id=message['message_id'], producer=reference,
+        return dict(read_wire='MEMORY-CANDIDATE-projection@2', memory_epoch=current['memory_epoch'],
+                    conversation=conversation, message_id=message['message_id'], producer=reference,
                     candidate_id=candidate['candidate_id'], candidate_sha256=hashlib.sha256(candidate['text'].encode()).hexdigest(),
                     provider_calls=model.calls, meter_attempt_id=observed['meter_attempt_id'],
                     status='candidate', foreign_discovery_status=foreign.status_code)

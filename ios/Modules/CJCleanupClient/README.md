@@ -1,6 +1,10 @@
-# CJCleanupClient — current-account original progress
+# CJCleanupClient — original account and device cleanup
 
-Current dependency-only increment: base `d749fdc3ca4a25c78e5f9cc0eba3f55113255798`
+The fixed-candidate notes below describe the historical current-ALLOWED reader.
+The additive M3 API@1 and DEVICE@3 implementations are documented at the end;
+legacy read behavior is preserved. App/native acceptance is a separate gate.
+
+Historical dependency-only increment: base `d749fdc3ca4a25c78e5f9cc0eba3f55113255798`
 → shared9b4852 / official SDKdc29 / Auth4eac0ad. No business source or lock change.
 Old f87 (`6d5e318`) and 20aa (`d749fdc`) candidates, exports and evidence remain
 fixed for their independent gates; do not substitute moving inputs into those graphs.
@@ -160,3 +164,83 @@ registry for a component positive, and separately checks the full real inventory
 missing-owner hooks remain blocked/prepared. It never supplies an operation ID or
 progress capability to the App. Complete App UI/AX, all provided device storage and
 key erasure, original device call/receipt and physical devices remain #27/#29.
+
+## M3 CLEANUP-DEVICE@3 and normal App integration (#450)
+
+`DeviceCleanupClient` consumes the accepted six `/v3` control paths. Registration,
+call and receipt bytes are protected and read back before a POST. First ACK loss
+uses the original action plus exact UTF8 SHA256 GET, or the original invocation
+GET for a report. Null/errors do not permit another POST or an invented operation.
+Only actual service responses create bindings, invocations and limited credentials.
+An accepted call cannot be retargeted by a later account fence or response.
+
+The DEBUG Simulator account root enables the normal Memory/Account deletion page
+only with `G2C_DEV_CLEANUP_PROFILE=device-v3` and the existing explicit account and
+offline profiles. Release/unconfigured roots stay closed. A verified online SDK
+session enrolls the device; opening an explanation does not confirm account
+removal. The user reviews the actual original preparation and explicitly confirms
+it. Possible confirmation retires ordinary business access and the canonical SDK;
+progress remains limited to that original operation. Reading a still-prepared
+operation preserves its confirmation entry. A local stop does not imply online
+cleanup completion or grant a device call.
+
+Actual account verification and foreground legacy/structured Trip sync failures
+share the V3 identity path. Only explicit HTTP401/403 enters the read-denial path;
+a further signed identity check authorizes a session-invalid original call.
+503/network/UNKNOWN cannot stage that call, erase cache, or renew its deadline.
+Local 14-day expiry only denies reading. Offline-page reads perform no business
+write, cleanup POST or queued action. A successful identity check alone renews
+nothing; only another successful formal Trip synchronization renews the period.
+
+The App resolves all19 fixed targets from its verified namespace and exact native
+locations, never from response paths. Directory identities and existing key UUIDs
+must match the recorded manifest before confirmation and first native execution.
+Only a sealed accepted formal-source sync can provision a previously absent
+Offline directory/key; an existing object cannot be replaced. Already-provided
+journal families have their exact empty sidecars provisioned before enrollment.
+No future storage, fake ciphertext, key or formal source is created by this step.
+
+The original native execution and each target intent are protected before syscalls.
+A started target is inspected without repeating an uncertain erase; untouched
+original targets may continue. Shared keys clear only after all their named
+journals verify empty. A verified outcome persisted before its first report can
+explicitly submit that first report after restart. An already staged unknown ACK
+remains GET-only. Partial/uncertain work is UNKNOWN, never confirmed.
+
+Original cleanup evidence uses separate WhenUnlockedThisDeviceOnly, nonsync,
+explicit Bundle-group slots in `G2C.CJAuth.session.<E>`:
+`M3.Cleanup.Selected` and `M3.Cleanup.{Manifest,Execution,Device,Account}.<A>`.
+These contain original scope, native identities, hashes, limited capabilities and
+intent/outcome evidence; ordinary SDK credentials remain only in their canonical
+SDK slot. These are independently registered by Host3's CONTROL-RECORDS@1
+catalog, outside the frozen19 business-cache targets.
+
+The explicit finish control reads only the original invocation/hash through
+DEVICE-COMPLETION@1 with its original Device credential. It requires the server's
+original listed online content complete, this client's acknowledged confirmed
+receipt and the registered control policy. Pending/UNKNOWN/failed/blocked content,
+a missing policy or another receipt cannot authorize finalization. Standalone
+session-invalid/offline-expired calls cannot clear shared account controls.
+
+After retiring old writers, the Root stages a bounded original finalization plan
+in the existing Selected slot. It compares all four exact record hashes before
+removing the first record, physically deletes each expected Keychain value and
+verifies absence. An interruption resumes only that protected staged plan;
+replaced values or a newly selected account deny without a sibling sweep.
+Selected is removed last. Its optional terminal replacement contains only bounded
+nonsecret hashes and the actual local outcome, never tokens, SDK hashes, key IDs,
+paths or plaintext account identity. Restart shows the original terminal result
+without recreating actions or granting ordinary access.
+
+`check_account_cleanup_component.py --native-device` runs the actual CJProbeApp,
+signed local API, fresh restricted PG and unmodified worker/FakeProvider. The
+legacy component cases remain the default. The positive projects only real B
+content leaves and the exact separately retained control catalog. Both use the
+formal Host3 loader; the full30-target host installs provided B/C hooks and keeps
+unavailable external processing blocked before retirement. Actual App-created
+message/Trip pending ciphertext and an accepted formal offline snapshot are
+checked physically, with another account's hashes unchanged. Source preparation
+uses the standard system size; cleanup states use actual system maximum type and
+unfiltered `.all` AX audits. This remains acceptance-in-progress until its reports,
+independent exact-head review and exact CI pass. Physical device/VoiceOver stays
+#29 UNRUN; a current-device report never proves all devices/backups erased.

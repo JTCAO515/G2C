@@ -1,5 +1,7 @@
 #if DEBUG && targetEnvironment(simulator)
 import Foundation
+import Darwin
+import CryptoKit
 import CJShell
 import CJTripClient
 import CJManualPreviewClient
@@ -10,6 +12,7 @@ import CJOfflineTrip
 import CJMemoryClient
 import CJNeedsClient
 import CJFeedbackClient
+import CJCleanupClient
 import CJMessageKeyBridge
 import CJMessageKeys
 import CJSession
@@ -17,6 +20,30 @@ import CJAPI
 import HTTPTypes
 import OpenAPIRuntime
 import Observation
+
+/// Provision only already-provided journal families before device enrollment.
+/// No ciphertext/key is fabricated, and the offline cache is excluded until a
+/// sealed formal sync provisions it. Old unconfigured roots retain their shape.
+@MainActor private func provisionJournalSiblings(of base: URL, suffixes: [String]) throws {
+    let environment = ProcessInfo.processInfo.environment
+    guard environment["G2C_DEV_ACCOUNT_MODE"] == "1", environment["G2C_DEV_CLEANUP_PROFILE"] == "device-v3" else { return }
+    let original = try DeviceCleanupDirectory(existingPrivateDirectory: base)
+    let parentURL = base.deletingLastPathComponent()
+    let parent = try DeviceCleanupDirectory(existingPrivateDirectory: parentURL)
+    let fd = open(parentURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+    guard fd >= 0 else { throw CleanupFailure.unavailable }; defer { close(fd) }
+    var entry = stat()
+    guard fstat(fd, &entry) == 0,
+          try parent.identityReference() == "directory:" + String(entry.st_dev) + ":" + String(entry.st_ino) else { throw CleanupFailure.stale }
+    for suffix in suffixes {
+        try original.validateIdentity(); try parent.validateIdentity()
+        let name = base.lastPathComponent + "." + suffix
+        guard mkdirat(fd, name, 0o700) == 0 || errno == EEXIST else { throw CleanupFailure.unavailable }
+        _ = try parent.child(name) // Exact private directory, never a link or unknown descendant.
+    }
+    guard fsync(fd) == 0 else { throw CleanupFailure.exchangeUnknown }
+    try original.validateIdentity(); try parent.validateIdentity()
+}
 
 @MainActor struct DevelopmentSessionLease {
     let session: SessionLifecycle
@@ -116,6 +143,7 @@ import Observation
             }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
+        try provisionJournalSiblings(of: root, suffixes: ["CJTripManual", "CJTripManual.CJTripManualRejections"])
         let store = try TripPendingStore(directory: root, maximumBytes: 1_000_000, maximumRecords: 100,
             binding: lifetime.trip, expectedKeyID: key.id, provider: keys)
         let transport = try NoRedirectTransport(requestTimeout: 10, resourceTimeout: 20)
@@ -274,6 +302,7 @@ import Observation
         if !files.fileExists(atPath: root.path) {
             try files.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
         }
+        try provisionJournalSiblings(of: root, suffixes: ["CJMemoryHistoryRejectionsV1"])
         let store = try MemoryHistoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
             binding: binding, expectedKeyID: key.id, provider: keys)
         let current: @MainActor () -> MemoryBinding? = {
@@ -387,6 +416,7 @@ import Observation
             guard try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot: directory, files: files) else { throw NeedsFailure.keyUnavailable }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
+        try provisionJournalSiblings(of: root, suffixes: ["CJNeedsRejections"])
         let store = try NeedsPendingStore(directory: root, maximumBytes: 1048576, maximumRecords: 100,
                                          binding: binding, expectedKeyID: key.id, provider: keys)
         let endpoint = try NeedsEndpoint(url: configuration.endpoint, maximumRequestBytes: 131072,
@@ -437,6 +467,7 @@ import Observation
             guard try DevelopmentMemoryStorageNamespace.isEmpty(legacyRoot:directory,files:files) else { throw MemoryFailure.keyUnavailable }
             key = try keys.create(storageState: .confirmedEmpty, for: keys.begin(.create))
         }
+        try provisionJournalSiblings(of: root, suffixes: ["CJMemoryRejections"])
         let store = try MemoryPendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
                                            binding: binding, expectedKeyID: key.id, provider: keys)
         let endpoint = try MemoryEndpoint(url: configuration.endpoint, maximumRequestBytes: 32768,
@@ -465,6 +496,7 @@ import Observation
             if !files.fileExists(atPath: lifecycleRoot.path) {
                 try files.createDirectory(at: lifecycleRoot, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
             }
+            try provisionJournalSiblings(of: lifecycleRoot, suffixes: ["CJMemoryManagementRejections"])
             lifecycle = try MemoryManagementPendingStore(directory: lifecycleRoot, maximumBytes: 100_000,
                 maximumRecords: 100, binding: binding, expectedKeyID: key.id, provider: keys)
         } else { lifecycle = nil }
@@ -543,6 +575,9 @@ import Observation
         for root in [lifecycleRoot,typedRoot] where !files.fileExists(atPath:root.path) {
             try files.createDirectory(at:root,withIntermediateDirectories:false,attributes:[.posixPermissions:0o700])
         }
+        try provisionJournalSiblings(of: legacyRoot, suffixes: ["CJMemoryRejections"])
+        try provisionJournalSiblings(of: lifecycleRoot, suffixes: ["CJMemoryManagementRejections"])
+        try provisionJournalSiblings(of: typedRoot, suffixes: ["CJMemoryTypedRejectionsV2", "CJMemoryTypedManagementV2", "CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2"])
         let oldStore = try MemoryPendingStore(directory:legacyRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
         let oldManagement = try MemoryManagementPendingStore(directory:lifecycleRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
         let store = try TypedMemoryPendingStore(directory:typedRoot,maximumBytes:100_000,maximumRecords:100,binding:binding,expectedKeyID:key.id,provider:keys)
@@ -732,6 +767,9 @@ import Observation
 @MainActor @Observable final class DevelopmentAccountRoot {
     var trip: DevelopmentTripHost?
     let offline: OfflineTripController?
+    var cleanup: AccountCleanupContainerHost?
+    @ObservationIgnored private var cleanupWorkflow: DevelopmentCleanupWorkflow?
+    private let cleanupEnabled: Bool
     private let shell: ShellState
     private let endpoint: URL
     private let proposalID: String?
@@ -750,13 +788,26 @@ import Observation
                 guard let self, let configuration = self.configuration(material) else { throw SessionFailure.invalidConfiguration }
                 try self.offline?.bindSynchronizationIdentity(material: material, account: configuration.accountID,
                     session: session, operation: operation)
-                self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
-                    lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline)
+                if self.cleanupEnabled {
+                    try self.attachCleanup(configuration: configuration, lease: .init(session: session, operation: operation))
+                }
+                if self.cleanupWorkflow?.holdsBusinessFence != true {
+                    self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
+                        lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline)
+                }
+                if self.cleanupEnabled, let workflow = self.cleanupWorkflow {
+                    Task { await workflow.enrollOnline() }
+                }
                 self.shell.selectedTab = .memory
                 self.shell.memoryPath = [.account]
             }, invalidate: { [weak self] in self?.trip?.invalidate(); self?.trip = nil },
             clearOffline: offline == nil ? nil : { [weak self] in try self?.offline?.clearLocally() },
-            serverRejected: offline == nil ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) })
+            serverRejected: offline == nil || cleanupEnabled ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) },
+            identityWillChange: { [weak self] in self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil },
+            rejectedContext: cleanupEnabled ? { [weak self] material, session, operation in
+                guard let self else { throw CleanupFailure.stale }
+                try await self.reconcileRejectedDevice(material: material, lease: .init(session: session, operation: operation))
+            } : nil)
     }()
 
     init(environment: [String: String], shell: ShellState) throws {
@@ -767,6 +818,9 @@ import Observation
               let tokens = try JSONSerialization.jsonObject(with: raw) as? [String: String], tokens.count <= 8,
               tokens.keys.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
               let applicationID = Bundle.main.bundleIdentifier else { throw SessionFailure.invalidConfiguration }
+        let cleanupProfile = environment["G2C_DEV_CLEANUP_PROFILE"]
+        guard cleanupProfile == nil || cleanupProfile == "device-v3" else { throw SessionFailure.invalidConfiguration }
+        cleanupEnabled = cleanupProfile != nil
         self.shell = shell; self.endpoint = endpoint; self.tokens = tokens
         proposalID = environment["G2C_DEV_PROPOSAL_ID"]
         let scope = try KeychainSessionScope(namespace: SessionNamespace(
@@ -790,6 +844,94 @@ import Observation
                         boot: value.boot, uptime: value.uptime + Double(profile.uptimeOffset))
                 })
         } else { offline = nil }
+        if cleanupEnabled {
+            guard offline != nil else { throw SessionFailure.invalidConfiguration }
+            try restoreCleanup()
+        }
+    }
+
+    private func fenceCleanupBusiness() throws {
+        guard let original = cleanupWorkflow else { throw CleanupFailure.stale }
+        try original.requireCurrent()
+        trip?.invalidate()
+        guard cleanupWorkflow === original else { throw CleanupFailure.stale }
+        try original.requireCurrent(); offline?.hide()
+        guard cleanupWorkflow === original else { throw CleanupFailure.stale }
+        let generation = shell.retireBusinessForCleanup()
+        guard shell.generation == generation, cleanupWorkflow === original else { throw CleanupFailure.stale }
+        try original.requireCurrent()
+        // Business projections retire; the original cleanup surface remains reachable.
+        shell.selectedTab = .memory
+        guard shell.generation == generation, cleanupWorkflow === original else { throw CleanupFailure.stale }
+        if shell.memoryPath.last != .accountDeletion { throw CleanupFailure.stale }
+    }
+    private func clearCleanupSDK() throws {
+        try accounts.clearForAccountCleanup()
+        shell.selectedTab = .memory; shell.memoryPath = [.accountDeletion]
+    }
+    private func attachCleanup(configuration: DevelopmentSessionConfiguration, lease: DevelopmentSessionLease) throws {
+        cleanupWorkflow?.invalidate()
+        guard let offline else { throw CleanupFailure.unavailable }
+        let workflow = try DevelopmentCleanupWorkflow(scope: .init(environment: configuration.environmentID, account: configuration.accountID, generation: UUID()),
+            endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: (configuration, lease),
+            quiesce: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.fenceCleanupBusiness() },
+            clearSDK: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.clearCleanupSDK() })
+        cleanupWorkflow = workflow; cleanup = workflow.host
+        offline.bindStorageProvision { [weak workflow] provision in workflow?.recordOfflineProvision(provision) }
+        offline.bindDeviceIdentityRejection { [weak workflow] material in
+            guard let workflow else { throw CleanupFailure.stale }
+            await workflow.reconnectIdentityRefused(material: material)
+        }
+    }
+    private func reconcileRejectedDevice(material: SessionMaterial, lease: DevelopmentSessionLease) async throws {
+        // This callback runs only for the actual verification HTTP401/403. Deny
+        // cached reads immediately; its original DEVICE call owns physical work.
+        try offline?.denyRejectedIdentity(material: material)
+        guard let configuration = configuration(material) else { throw CleanupFailure.unavailable }
+        try attachCleanup(configuration: configuration, lease: lease)
+        guard let workflow = cleanupWorkflow else { throw CleanupFailure.unavailable }
+        await workflow.reconnectIdentityRefused(material: material)
+    }
+    private func restoreCleanup() throws {
+        guard let offline else { return }
+        let environment = DevelopmentSessionConfiguration.environmentNamespace(endpoint)
+        var selected = try DevelopmentCleanupWorkflow.selection(environment: environment)
+        if case .finalizing(let plan) = selected {
+            do {
+                let store = try DevelopmentCleanupWorkflow.controlStore(scope: plan.scope)
+                selected = .terminal(try CleanupControlFinalizer.resume(plan: plan, store: store))
+            } catch {
+                let host = AccountCleanupContainerHost(); var value = AccountCleanupPresentation()
+                value.businessStopped = true; value.controlsPending = true; value.unknown = true
+                host.show(value); cleanup = host; return
+            }
+        }
+        if case .terminal = selected {
+            let saved: SessionMaterial?
+            do { saved = try persistence.load() } catch SessionFailure.restorationBlocked { saved = nil }
+            guard saved == nil else { return }
+            let host = AccountCleanupContainerHost(); var value = AccountCleanupPresentation()
+            value.businessStopped = true; value.originalContentComplete = true; value.controlsFinalized = true
+            value.nativeOutcome = .confirmed; value.deviceState = .confirmed
+            host.show(value); cleanup = host; return
+        }
+        guard case .original(let scope) = selected else { return }
+        do {
+            let saved: SessionMaterial?
+            do { saved = try persistence.load() } catch SessionFailure.restorationBlocked { saved = nil }
+            if let saved {
+                guard configuration(saved)?.accountID == scope.account else { return }
+            }
+            let workflow = try DevelopmentCleanupWorkflow(scope: scope, endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: nil,
+                quiesce: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.fenceCleanupBusiness() },
+                clearSDK: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.clearCleanupSDK() })
+            cleanupWorkflow = workflow; cleanup = workflow.host
+        } catch {
+            // An unacknowledged enrollment/preparation still needs explicit SDK
+            // verification; corrupted state never opens an ordinary fallback.
+            let host = AccountCleanupContainerHost(); var value = AccountCleanupPresentation(); value.unavailable = true
+            host.show(value); cleanup = host
+        }
     }
 
     private func configuration(_ material: SessionMaterial) -> DevelopmentSessionConfiguration? {
@@ -846,4 +988,806 @@ private struct DevelopmentVerificationTransport: ClientTransport {
         return (response, HTTPBody(bytes))
     }
 }
+
+/// Fixed App-owned locations. Native erasure is allowed only after writers are quiesced.
+/// Neither an HTTP field nor a target string is ever concatenated into a path.
+@MainActor private final class DevelopmentDeviceNativeLayout {
+    let scope: AccountCleanupScope
+    private let support: DeviceCleanupDirectory
+    private let roots: [DeviceCleanupTarget: [DeviceCleanupDirectory]]
+    init(scope: AccountCleanupScope) throws {
+        self.scope = scope
+        let supplied = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+            appropriateFor: nil, create: false)
+        guard let physical = realpath(supplied.path, nil) else { throw CleanupFailure.unavailable }
+        defer { free(physical) }
+        let base = try DeviceCleanupDirectory(existingOwnedAncestor: URL(fileURLWithPath: String(cString: physical)))
+        support = base
+        let environment = scope.environment.uuidString, account = scope.account.uuidString
+        func capture(_ folder: String, _ child: String, _ nested: String? = nil) throws -> DeviceCleanupDirectory {
+            let root = try base.child(folder).child(environment).child(child)
+            return try nested.map { try root.child($0) } ?? root
+        }
+        let trip = try capture("G2CDevelopmentTrip", account)
+        let manual = try capture("G2CDevelopmentTrip", account + ".CJTripManual")
+        let manualRejected = try capture("G2CDevelopmentTrip", account + ".CJTripManual.CJTripManualRejections")
+        let scoped = try [".ScopedOriginals", ".ScopedReceipts"].map { try capture("G2CDevelopmentTrip", account + $0) }
+        let planning = try [".NeedsPlanningOriginals", ".NeedsPlanningReceipts"].map { try capture("G2CDevelopmentTrip", account + $0) }
+        let memory = try ["", ".CJMemoryRejections"].map { try capture("G2CDevelopmentMemory", account + $0) }
+        let lifecycle = try [".lifecycle", ".lifecycle.CJMemoryManagementRejections"].map { try capture("G2CDevelopmentMemory", account + $0) }
+        let typed = try [".typed-v2", ".typed-v2.CJMemoryTypedRejectionsV2", ".typed-v2.CJMemoryTypedManagementV2", ".typed-v2.CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2"].map { try capture("G2CDevelopmentMemory", account + $0) }
+        let history = try [".history-v1", ".history-v1.CJMemoryHistoryRejectionsV1"].map { try capture("G2CDevelopmentMemory", account + $0) }
+        let needs = try ["", ".CJNeedsRejections"].map { try capture("G2CDevelopmentNeeds", account + $0) }
+        let feedback = try ["Answer", "General"].map { try capture("G2CDevelopmentFeedback", account, $0) }
+        let offline = try capture("G2COfflineTrip", account)
+        roots = [
+            .encryptedMessage: [try capture("G2CDevelopmentMessages", account)],
+            .tripPending: [trip, manual, manualRejected], .tripScoped: scoped, .needsPlanning: planning,
+            .memoryManual: memory, .memoryLifecycle: lifecycle, .memoryTyped: typed, .memoryHistory: history,
+            .needsPending: needs, .feedbackPending: feedback, .offlineTrip: [offline], .offlineWriteResidue: [offline],
+            .tripKey: [trip, manual, manualRejected] + scoped + planning,
+            .memoryKey: memory + lifecycle + typed + history, .needsKey: needs, .feedbackKey: feedback,
+            .offlineKey: [offline], .messageKey: [try capture("G2CDevelopmentMessages", account)]
+        ]
+    }
+    func directories(for target: DeviceCleanupTarget) throws -> [DeviceCleanupDirectory] {
+        try support.validateIdentity()
+        guard let result = roots[target] else { throw CleanupFailure.unavailable }
+        for directory in result { try directory.validateIdentity() }
+        return result
+    }
+    func requireEmpty(for target: DeviceCleanupTarget) throws {
+        for directory in try directories(for: target) { try directory.requireEmpty() }
+    }
+    func primaryURL(for target: DeviceCleanupTarget) throws -> URL? {
+        guard let first = try directories(for: target).first else { throw CleanupFailure.unavailable }
+        return try first.existingURLForTrustedHost()
+    }
+    func manifestReferences() throws -> [String: [String]] {
+        var result: [String: [String]] = [:]
+        for target in DeviceCleanupTarget.allCases where target != .sdkSession {
+            result[target.rawValue] = try directories(for: target).map { try $0.identityReference() }
+        }
+        return result
+    }
+}
+
+
+/// Actual keyless domain erasure, using each domain's accepted primitive. Key IDs
+/// are captured from existing canonical Keychain records; missing keys are never
+/// replaced or fabricated to construct a readable store.
+@MainActor private final class DevelopmentDeviceNativeStores {
+    let scope: AccountCleanupScope
+    let layout: DevelopmentDeviceNativeLayout
+    private let applicationID: String
+    private let endpoint: MessageEndpoint
+    private let keys: [MessageKeyPurpose: ScopedMessageKeyProvider]
+    let keyIDs: [MessageKeyPurpose: UUID]
+    init(scope: AccountCleanupScope, layout: DevelopmentDeviceNativeLayout, endpoint: URL, originalKeyIDs: [String: UUID]? = nil) throws {
+        guard let applicationID = Bundle.main.bundleIdentifier else { throw CleanupFailure.unavailable }
+        self.scope = scope; self.layout = layout; self.applicationID = applicationID
+        self.endpoint = try MessageEndpoint(url: endpoint, maximumRequestBytes: 32768, maximumResponseBytes: 4_000_000, allowLoopbackHTTP: true)
+        var keys: [MessageKeyPurpose: ScopedMessageKeyProvider] = [:], ids: [MessageKeyPurpose: UUID] = [:]
+        for purpose in [MessageKeyPurpose.localMessageStorageV1, .localTripPendingV1, .localMemoryPendingV1,
+                        .localNeedsPendingV1, .localFeedbackPendingV1, .localOfflineTripSnapshotV1] {
+            let provider = try ScopedMessageKeyProvider(namespace: .init(environment: scope.environment, account: scope.account, purpose: purpose),
+                applicationIdentifier: applicationID, protection: .whenUnlockedThisDeviceOnly)
+            let actual = try provider.existing(expectedID: nil, for: provider.begin(.lookup))?.id
+            if let originalKeyIDs {
+                let expected = originalKeyIDs[purpose.rawValue]
+                guard actual == nil || actual == expected else { throw CleanupFailure.stale }
+                ids[purpose] = expected
+            } else { ids[purpose] = actual }
+            keys[purpose] = provider
+        }
+        self.keys = keys; keyIDs = ids
+    }
+    private func provider(_ purpose: MessageKeyPurpose) throws -> (ScopedMessageKeyProvider, UUID) {
+        guard let provider = keys[purpose], let id = keyIDs[purpose] else { throw CleanupFailure.unavailable }
+        return (provider, id)
+    }
+    private var memoryBinding: MemoryBinding { .init(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation) }
+    private var tripBinding: TripBinding { .init(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation) }
+    func eraseFiles(for target: DeviceCleanupTarget) throws {
+        let captured = try layout.directories(for: target)
+        let firstPhysical = try layout.primaryURL(for: target)
+        if captured.allSatisfy({ !$0.existsInOriginalCapture }) { try layout.requireEmpty(for: target); return }
+        if firstPhysical == nil && target != .feedbackPending { throw CleanupFailure.unavailable }
+        let url = firstPhysical?.resolvingSymlinksInPath() // Domain ctors retain their original root checks.
+        switch target {
+        case .encryptedMessage:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, _) = try provider(.localMessageStorageV1)
+            let scope = try StorageScope(environment: self.scope.environment.uuidString, account: self.scope.account.uuidString)
+            let adapter = try ExistingMessageKeyAdapter(provider: provider, scope: scope, namespace: provider.namespace)
+            let store = try EncryptedFileStorage(directory: url, keys: adapter)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalSnapshot(scope: scope)
+        case .tripPending:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localTripPendingV1)
+            let store = try TripPendingStore(directory: url, maximumBytes: 1_000_000, maximumRecords: 100,
+                binding: tripBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .tripScoped, .needsPlanning:
+            let (provider, id) = try provider(.localTripPendingV1)
+            guard captured.count == 2 else { throw CleanupFailure.unavailable }
+            let original = try captured[0].existingURLForTrustedHost(), receipt = try captured[1].existingURLForTrustedHost()
+            if original == nil && receipt == nil { try layout.requireEmpty(for: target); return }
+            guard let original, let receipt else { throw CleanupFailure.unavailable }
+            let validate: @MainActor () throws -> Void = { for directory in captured { try directory.validateIdentity() } }
+            if target == .tripScoped {
+                let client = try ScopedTripClient(endpoint: endpoint, binding: tripBinding, credentials: { _ in nil }, validate: validate,
+                    directory: original.resolvingSymlinksInPath(), receiptDirectory: receipt.resolvingSymlinksInPath(), expectedKeyID: id, provider: provider)
+                try validate(); try client.clearLocalFiles()
+            } else {
+                let client = try NeedsPlanningClient(endpoint: endpoint, binding: tripBinding, credentials: { _ in nil }, validate: validate,
+                    directory: original.resolvingSymlinksInPath(), receiptDirectory: receipt.resolvingSymlinksInPath(), expectedKeyID: id, provider: provider)
+                try validate(); try client.clearLocalFiles()
+            }
+        case .memoryManual:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            let store = try MemoryPendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                binding: memoryBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .memoryLifecycle:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            let store = try MemoryManagementPendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                binding: memoryBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .memoryTyped:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            let store = try TypedMemoryPendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                binding: memoryBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .memoryHistory:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            let store = try MemoryHistoryPendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                binding: memoryBinding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .needsPending:
+            guard let url else { throw CleanupFailure.unavailable }
+            let (provider, id) = try provider(.localNeedsPendingV1)
+            let binding = NeedsBinding(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation)
+            let store = try NeedsPendingStore(directory: url, maximumBytes: 1_048_576, maximumRecords: 100,
+                binding: binding, expectedKeyID: id, provider: provider)
+            for directory in captured { try directory.validateIdentity() }
+            try store.clearLocalFiles()
+        case .feedbackPending:
+            let (provider, id) = try provider(.localFeedbackPendingV1)
+            let binding = FeedbackBinding(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation)
+            for directory in captured {
+                guard let physical = try directory.existingURLForTrustedHost() else { continue }
+                let store = try FeedbackPendingStore(directory: physical.resolvingSymlinksInPath(), maximumBytes: 100_000,
+                    maximumRecords: 100, binding: binding, expectedKeyID: id, provider: provider)
+                try directory.validateIdentity(); try store.clearLocalFiles()
+            }
+        default: throw CleanupFailure.unavailable // SDK/offline/paired handlers are explicitly supplied separately.
+        }
+        try layout.requireEmpty(for: target)
+    }
+    private func purpose(for target: DeviceCleanupTarget) throws -> MessageKeyPurpose {
+        let purpose: MessageKeyPurpose
+        switch target {
+        case .messageKey: purpose = .localMessageStorageV1
+        case .tripKey: purpose = .localTripPendingV1
+        case .memoryKey: purpose = .localMemoryPendingV1
+        case .needsKey: purpose = .localNeedsPendingV1
+        case .feedbackKey: purpose = .localFeedbackPendingV1
+        case .offlineKey: purpose = .localOfflineTripSnapshotV1
+        default: throw CleanupFailure.unavailable
+        }
+        return purpose
+    }
+    func eraseKey(for target: DeviceCleanupTarget) throws {
+        let purpose = try purpose(for: target)
+        try layout.requireEmpty(for: target) // Every shared sibling, not only the base journal.
+        guard let provider = keys[purpose] else { throw CleanupFailure.unavailable }
+        guard let id = keyIDs[purpose] else {
+            guard try provider.existing(expectedID: nil, for: provider.begin(.lookup)) == nil else { throw CleanupFailure.stale }
+            return
+        }
+        try provider.clear(expectedID: id, storageState: .confirmedEmpty, for: provider.begin(.clear))
+        guard try provider.existing(expectedID: nil, for: provider.begin(.lookup)) == nil else { throw CleanupFailure.exchangeUnknown }
+        try layout.requireEmpty(for: target)
+    }
+    func verifyKeyAbsent(for target: DeviceCleanupTarget) throws {
+        let purpose = try purpose(for: target)
+        try layout.requireEmpty(for: target)
+        guard let provider = keys[purpose], try provider.existing(expectedID: nil, for: provider.begin(.lookup)) == nil else { throw CleanupFailure.unavailable }
+    }
+}
+
+/// These control records retain only original cleanup reconciliation evidence.
+/// Separate device-only Keychain slots are never included in business-store erasure.
+private struct DevelopmentNativeManifest: Codable {
+    let version: String
+    let scope: AccountCleanupScope
+    let nonce: UUID
+    let sdkHash: String
+    let directories: [String: [String]]
+    let keyIDs: [String: UUID]
+    func encoded() throws -> Data {
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        return try encoder.encode(self)
+    }
+    // Stable SDK/installation identity, not a frozen directory inventory. Native
+    // roots/keys are pinned after writer retirement for each actual invocation.
+    private struct Identity: Encodable { let version: String; let scope: AccountCleanupScope; let nonce: UUID; let sdkHash: String }
+    var stateRef: String {
+        get throws {
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+            return developmentCleanupHash(try encoder.encode(Identity(version: version, scope: scope, nonce: nonce, sdkHash: sdkHash)))
+        }
+    }
+}
+private enum DevelopmentNativeStep: String, Codable { case started, confirmed }
+private struct DevelopmentNativeExecution: Codable {
+    let version: String
+    let stateRef: String
+    let intentID: UUID
+    let operationID: String
+    let invocationID: String
+    let requestDigest: String
+    let directories: [String: [String]]
+    let keyIDs: [String: UUID]
+    var steps: [String: DevelopmentNativeStep]
+}
+private func developmentCleanupHash(_ value: Data) -> String {
+    SHA256.hash(data: value).map { String(format: "%02x", $0) }.joined()
+}
+
+/// The only concrete device executor. A server call supplies no native path/key.
+/// Original per-target intent precedes each syscall; restart inspects a started
+/// target without re-erasing it, then may continue targets never started before.
+@MainActor private final class DevelopmentDeviceNativeExecutor: DeviceCleanupNativeExecuting {
+    let scope: AccountCleanupScope
+    let stateRef: String
+    let manifest: DevelopmentNativeManifest
+    private let manifestStore: KeychainSessionStore
+    private let executionStore: KeychainSessionStore
+    private let sdkStore: KeychainSessionStore
+    private let offline: OfflineTripController
+    private let layout: DevelopmentDeviceNativeLayout
+    private let stores: DevelopmentDeviceNativeStores
+    private let nativeDirectories: [String: [String]]
+    private let nativeKeyIDs: [String: UUID]
+    private let validateOwner: @MainActor () throws -> Void
+    private let quiesce: @MainActor () throws -> Void
+    private let clearSDK: @MainActor () throws -> Void
+    private var execution: DevelopmentNativeExecution?
+    private var executionBytes: Data?
+    private var usable = true
+
+    init(manifest: DevelopmentNativeManifest, manifestStore: KeychainSessionStore,
+         executionStore: KeychainSessionStore, sdkStore: KeychainSessionStore,
+         offline: OfflineTripController, endpoint: URL,
+         validateOwner: @escaping @MainActor () throws -> Void,
+         quiesce: @escaping @MainActor () throws -> Void, clearSDK: @escaping @MainActor () throws -> Void) throws {
+        self.manifest = manifest; scope = manifest.scope; stateRef = try manifest.stateRef
+        self.manifestStore = manifestStore; self.executionStore = executionStore; self.sdkStore = sdkStore
+        self.offline = offline; self.quiesce = quiesce; self.clearSDK = clearSDK; self.validateOwner = validateOwner
+        layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope)
+        guard manifest.version == "NativeDeviceManifest@2", manifest.sdkHash.count == 64 else { throw CleanupFailure.stale }
+        executionBytes = try executionStore.load()?.withBytes { $0 }
+        let restored: DevelopmentNativeExecution?
+        if let bytes = executionBytes {
+            guard bytes.count <= 32768 else { throw CleanupFailure.unavailable }
+            let value = try JSONDecoder().decode(DevelopmentNativeExecution.self, from: bytes)
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+            guard try encoder.encode(value) == bytes, value.version == "NativeDeviceExecution@2", value.stateRef == stateRef,
+                  Set(value.steps.keys).isSubset(of: Set(DeviceCleanupTarget.allCases.map(\.rawValue))) else { throw CleanupFailure.stale }
+            restored = value
+        } else { restored = nil }
+        let references = try layout.manifestReferences()
+        guard references == manifest.directories else { throw CleanupFailure.stale }
+        if let restored { guard restored.directories == references, restored.keyIDs == manifest.keyIDs else { throw CleanupFailure.stale } }
+        stores = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint, originalKeyIDs: manifest.keyIDs)
+        nativeDirectories = references
+        nativeKeyIDs = Dictionary(uniqueKeysWithValues: stores.keyIDs.map { ($0.key.rawValue, $0.value) })
+        guard nativeKeyIDs == manifest.keyIDs else { throw CleanupFailure.stale }
+        execution = restored
+        try validateManifest()
+    }
+    private func currentSDKHash() throws -> String? {
+        do { return try sdkStore.load()?.withBytes(developmentCleanupHash) }
+        catch SessionFailure.restorationBlocked { return nil }
+    }
+    private func validateManifest() throws {
+        try validateOwner()
+        guard usable, try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
+              try layout.manifestReferences() == nativeDirectories else { throw CleanupFailure.stale }
+        let sdk = try currentSDKHash()
+        guard sdk == nil || sdk == manifest.sdkHash else { throw CleanupFailure.stale }
+    }
+    private func validateExecution(_ invocation: DeviceCleanupInvocation, _ intent: UUID) throws {
+        try validateManifest()
+        guard invocation.stateRef == stateRef, let execution,
+              execution.intentID == intent, execution.operationID == invocation.operationID,
+              execution.invocationID == invocation.invocationID, execution.requestDigest == invocation.requestDigest,
+              Set(execution.steps.keys).isSubset(of: Set(invocation.targets.map(\.rawValue))),
+              try executionStore.load()?.withBytes({ $0 }) == executionBytes else { throw CleanupFailure.stale }
+    }
+    private func save(_ next: DevelopmentNativeExecution) throws {
+        try validateManifest()
+        guard try executionStore.load()?.withBytes({ $0 }) == executionBytes else { throw CleanupFailure.stale }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        let bytes = try encoder.encode(next)
+        do {
+            try executionStore.save(SessionMaterial(trustedSDKBytes: bytes))
+            guard try executionStore.load()?.withBytes({ $0 }) == bytes else { throw CleanupFailure.exchangeUnknown }
+            try validateManifest()
+            execution = next; executionBytes = bytes
+        } catch { usable = false; throw CleanupFailure.exchangeUnknown }
+    }
+    func executeOriginal(_ invocation: DeviceCleanupInvocation, intentID: UUID) throws -> DeviceCleanupNativeOutcome {
+        try validateManifest()
+        guard execution == nil, executionBytes == nil, invocation.state == .pending,
+              invocation.stateRef == stateRef else { throw CleanupFailure.stale }
+        // SDK stays intact until the original account confirmation exit. All
+        // business hosts are retired before filesystem/key operations begin.
+        try quiesce(); try validateManifest()
+        try save(.init(version: "NativeDeviceExecution@2", stateRef: stateRef, intentID: intentID,
+            operationID: invocation.operationID, invocationID: invocation.invocationID,
+            requestDigest: invocation.requestDigest, directories: nativeDirectories, keyIDs: nativeKeyIDs, steps: [:]))
+        return try advance(invocation, intent: intentID)
+    }
+    func reconcileOriginal(_ invocation: DeviceCleanupInvocation, intentID: UUID) throws -> DeviceCleanupNativeOutcome {
+        try quiesce(); try validateExecution(invocation, intentID)
+        return try advance(invocation, intent: intentID)
+    }
+    private func advance(_ invocation: DeviceCleanupInvocation, intent: UUID) throws -> DeviceCleanupNativeOutcome {
+        try validateExecution(invocation, intent)
+        // Shared keys are last. Fixed snapshot precedes residue so aggregate
+        // emptiness is proved before deleting its one canonical key.
+        let order: [DeviceCleanupTarget] = [.sdkSession, .encryptedMessage, .tripPending, .tripScoped, .needsPlanning,
+            .memoryManual, .memoryLifecycle, .memoryTyped, .memoryHistory, .needsPending, .feedbackPending,
+            .offlineTrip, .offlineWriteResidue, .messageKey, .tripKey, .memoryKey, .needsKey, .feedbackKey, .offlineKey]
+        for target in order where invocation.targets.contains(target) {
+            try validateExecution(invocation, intent)
+            guard var next = execution else { throw CleanupFailure.stale }
+            if next.steps[target.rawValue] != nil {
+                // An existing intent never repeats an uncertain deletion.
+                do { try verify(target) } catch { return .unknown }
+                if next.steps[target.rawValue] == .confirmed { continue }
+            } else {
+                next.steps[target.rawValue] = .started; try save(next)
+                do { try erase(target); try verify(target) } catch { return .unknown }
+            }
+            guard var completed = execution else { throw CleanupFailure.stale }
+            completed.steps[target.rawValue] = .confirmed; try save(completed)
+        }
+        try validateExecution(invocation, intent)
+        for target in invocation.targets { try verify(target) }
+        return .confirmed
+    }
+    private func erase(_ target: DeviceCleanupTarget) throws {
+        switch target {
+        case .sdkSession:
+            let current = try currentSDKHash()
+            guard current == nil || current == manifest.sdkHash else { throw CleanupFailure.stale }
+            if current != nil { try clearSDK() }
+        case .offlineTrip:
+            if try layout.primaryURL(for: target) != nil { try offline.clearDeviceAccount(account: scope.account) }
+            else { try offline.verifyDeviceAnchorCleared() }
+        case .offlineWriteResidue:
+            if try layout.primaryURL(for: target) != nil { try offline.clearDeviceTemporaryWrites(account: scope.account) }
+        case .messageKey, .tripKey, .memoryKey, .needsKey, .feedbackKey, .offlineKey:
+            try stores.eraseKey(for: target)
+        default: try stores.eraseFiles(for: target)
+        }
+    }
+    private func verify(_ target: DeviceCleanupTarget) throws {
+        switch target {
+        case .sdkSession: guard try currentSDKHash() == nil else { throw CleanupFailure.unavailable }
+        case .messageKey, .tripKey, .memoryKey, .needsKey, .feedbackKey, .offlineKey:
+            try stores.verifyKeyAbsent(for: target)
+        case .offlineTrip, .offlineWriteResidue:
+            if target == .offlineTrip { try offline.verifyDeviceAnchorCleared() }
+            let directories = try layout.directories(for: target)
+            for directory in directories {
+                guard let url = try directory.existingURLForTrustedHost() else { continue }
+                let names = try FileManager.default.contentsOfDirectory(atPath: url.path)
+                if target == .offlineTrip { guard !names.contains("snapshot.aesgcm") else { throw CleanupFailure.unavailable } }
+                else { guard names.allSatisfy({ $0 == "snapshot.aesgcm" }) else { throw CleanupFailure.unavailable } }
+                try directory.validateIdentity()
+            }
+        default: try layout.requireEmpty(for: target)
+        }
+    }
+}
+
+/// One original workflow per protected account slot, exposed through safe UI commands.
+@MainActor private final class DevelopmentCleanupWorkflow {
+    let host = AccountCleanupContainerHost()
+    private let endpoint: MessageEndpoint
+    private let sdkStore: KeychainSessionStore
+    private let offline: OfflineTripController
+    private let manifestStore: KeychainSessionStore
+    private let executionStore: KeychainSessionStore
+    private let deviceStore: KeychainSessionStore
+    private let accountStore: KeychainSessionStore
+    private let indexStore: KeychainSessionStore
+    private let ordinary: (configuration: DevelopmentSessionConfiguration, lease: DevelopmentSessionLease)?
+    private let quiesce: @MainActor () throws -> Void
+    private let clearSDK: @MainActor () throws -> Void
+    private var manifest: DevelopmentNativeManifest?
+    private var executor: DevelopmentDeviceNativeExecutor?
+    private var device: DeviceCleanupClient?
+    private var account: AccountCleanupClient?
+    private var lifetime: AccountCleanupLifetime
+    private var active = true
+    private var enrolling = false
+    private var terminalControls: CleanupControlTerminal?
+    private var controlsPending = false
+    var holdsBusinessFence: Bool {
+        if terminalControls != nil || controlsPending { return true }
+        do {
+            if let device, try device.hasVerifiedIdentityRefusal { return true }
+            return try account?.requiresRestrictedProgress ?? false
+        } catch { return true }
+    }
+
+    static func slot(environment: UUID, suffix: String) throws -> KeychainSessionStore {
+        guard let app = Bundle.main.bundleIdentifier else { throw CleanupFailure.unavailable }
+        return KeychainSessionStore(scope: try .init(namespace: .init(environment: environment, slot: suffix),
+            applicationIdentifier: app), protection: .whenUnlockedThisDeviceOnly)
+    }
+    static func selection(environment: UUID) throws -> CleanupControlSelection? {
+        let index = try slot(environment: environment, suffix: "M3.Cleanup.Selected")
+        guard let data = try index.load()?.withBytes({ $0 }) else { return nil }
+        let selected = try CleanupControlSelection(bytes: data)
+        switch selected {
+        case .original(let scope): guard scope.environment == environment else { throw CleanupFailure.stale }
+        case .finalizing(let plan): guard plan.scope.environment == environment else { throw CleanupFailure.stale }
+        case .terminal: break
+        }
+        return selected
+    }
+    static func controlStore(scope: AccountCleanupScope) throws -> DevelopmentControlRecordStore {
+        try .init(scope: scope,
+            manifest: slot(environment: scope.environment, suffix: "M3.Cleanup.Manifest." + scope.account.uuidString),
+            execution: slot(environment: scope.environment, suffix: "M3.Cleanup.Execution." + scope.account.uuidString),
+            device: slot(environment: scope.environment, suffix: "M3.Cleanup.Device." + scope.account.uuidString),
+            account: slot(environment: scope.environment, suffix: "M3.Cleanup.Account." + scope.account.uuidString),
+            selected: slot(environment: scope.environment, suffix: "M3.Cleanup.Selected"))
+    }
+    init(scope: AccountCleanupScope, endpoint: URL, sdkStore: KeychainSessionStore, offline: OfflineTripController,
+         ordinary: (DevelopmentSessionConfiguration, DevelopmentSessionLease)?,
+         quiesce: @escaping @MainActor () throws -> Void, clearSDK: @escaping @MainActor () throws -> Void) throws {
+        self.endpoint = try MessageEndpoint(url: endpoint, maximumRequestBytes: 16384, maximumResponseBytes: 65536, allowLoopbackHTTP: true)
+        self.sdkStore = sdkStore; self.offline = offline; self.ordinary = ordinary; self.quiesce = quiesce; self.clearSDK = clearSDK
+        manifestStore = try Self.slot(environment: scope.environment, suffix: "M3.Cleanup.Manifest." + scope.account.uuidString)
+        executionStore = try Self.slot(environment: scope.environment, suffix: "M3.Cleanup.Execution." + scope.account.uuidString)
+        deviceStore = try Self.slot(environment: scope.environment, suffix: "M3.Cleanup.Device." + scope.account.uuidString)
+        accountStore = try Self.slot(environment: scope.environment, suffix: "M3.Cleanup.Account." + scope.account.uuidString)
+        indexStore = try Self.slot(environment: scope.environment, suffix: "M3.Cleanup.Selected")
+        if let bytes = try manifestStore.load()?.withBytes({ $0 }) {
+            guard bytes.count <= 32768 else { throw CleanupFailure.unavailable }
+            let original = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: bytes)
+            guard original.version == "NativeDeviceManifest@2", original.scope.environment == scope.environment, original.scope.account == scope.account,
+                  try original.encoded() == bytes else { throw CleanupFailure.stale }
+            manifest = original
+        }
+        lifetime = AccountCleanupLifetime(scope: manifest?.scope ?? scope)
+        if manifest != nil { try configureClients() }
+        host.bind { [weak self] command in await self?.perform(command) }
+        refresh()
+    }
+    func invalidate() { active = false; lifetime.invalidate(); device?.invalidate(); account?.invalidate(); host.invalidate() }
+    func requireCurrent() throws { try check() }
+    private func check() throws { guard active else { throw CleanupFailure.stale }; try Task.checkCancellation() }
+    private func configureClients() throws {
+        try check()
+        if let ordinary {
+            device = try DeviceCleanupClient(development: endpoint, lifetime: lifetime, securePersistence: deviceStore,
+                session: ordinary.lease.session, sessionOperation: ordinary.lease.operation,
+                credentials: { [weak self] in try self?.check(); return self?.ordinary?.configuration.token }, requestTimeout: 10, resourceTimeout: 20)
+            account = try AccountCleanupClient(development: endpoint, lifetime: lifetime, securePersistence: accountStore,
+                session: ordinary.lease.session, sessionOperation: ordinary.lease.operation,
+                credentials: { [weak self] in try self?.check(); return self?.ordinary?.configuration.token },
+                beforeConfirmation: { [weak self] _ in guard let self else { throw CleanupFailure.stale }; try self.validateBeforeConfirmation(); try self.quiesce() },
+                requestTimeout: 10, resourceTimeout: 20)
+        } else {
+            device = try DeviceCleanupClient(developmentOriginalDevice: endpoint, lifetime: lifetime,
+                securePersistence: deviceStore, requestTimeout: 10, resourceTimeout: 20)
+            if try accountStore.load() != nil {
+                do {
+                    account = try AccountCleanupClient(developmentRestrictedProgress: endpoint, lifetime: lifetime,
+                        securePersistence: accountStore, requestTimeout: 10, resourceTimeout: 20)
+                } catch CleanupFailure.unavailable { account = nil } // No prepared capability; never fabricate one.
+            }
+        }
+    }
+    private func nativeExecutor() throws -> DevelopmentDeviceNativeExecutor {
+        if let executor { return executor }
+        try check(); try quiesce(); try check()
+        guard let manifest else { throw CleanupFailure.unavailable }
+        let value = try DevelopmentDeviceNativeExecutor(manifest: manifest, manifestStore: manifestStore,
+            executionStore: executionStore, sdkStore: sdkStore, offline: offline, endpoint: endpoint.url,
+            validateOwner: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.check() },
+            quiesce: quiesce, clearSDK: clearSDK)
+        executor = value; return value
+    }
+    private func prepareResources() throws {
+        try check()
+        if case .finalizing = try Self.selection(environment: lifetime.scope.environment) { throw CleanupFailure.unavailable }
+        guard manifest == nil, let ordinary, ordinary.lease.session.isCurrent(ordinary.lease.operation),
+              let material = try sdkStore.load() else { throw CleanupFailure.unavailable }
+        try check()
+        let layout = try DevelopmentDeviceNativeLayout(scope: lifetime.scope)
+        let stores = try DevelopmentDeviceNativeStores(scope: lifetime.scope, layout: layout, endpoint: endpoint.url)
+        let next = DevelopmentNativeManifest(version: "NativeDeviceManifest@2", scope: lifetime.scope, nonce: UUID(),
+            sdkHash: material.withBytes(developmentCleanupHash), directories: try layout.manifestReferences(),
+            keyIDs: Dictionary(uniqueKeysWithValues: stores.keyIDs.map { ($0.key.rawValue, $0.value) }))
+        let bytes = try next.encoded()
+        guard try manifestStore.load() == nil, try deviceStore.load() == nil, try accountStore.load() == nil,
+              try executionStore.load() == nil else { throw CleanupFailure.stale }
+        try manifestStore.save(SessionMaterial(trustedSDKBytes: bytes))
+        guard try manifestStore.load()?.withBytes({ $0 }) == bytes else { throw CleanupFailure.exchangeUnknown }
+        // Selection is local original-state routing only, never an operation ID.
+        let scopeBytes = try JSONEncoder().encode(next.scope)
+        try indexStore.save(SessionMaterial(trustedSDKBytes: scopeBytes))
+        guard try indexStore.load()?.withBytes({ $0 }) == scopeBytes else { throw CleanupFailure.exchangeUnknown }
+        manifest = next; try configureClients()
+    }
+    private func validateBeforeConfirmation() throws {
+        try check()
+        guard let manifest else { throw CleanupFailure.unavailable }
+        let layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope)
+        guard try layout.manifestReferences() == manifest.directories,
+              try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
+              try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
+        _ = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint.url, originalKeyIDs: manifest.keyIDs)
+    }
+    /// Only a sealed successful formal synchronization can provision the previously
+    /// absent offline directory/key. Existing objects/keys can never be replaced.
+    func recordOfflineProvision(_ provision: OfflineTripStorageProvision) {
+        do {
+            try check()
+            guard let original = manifest, let device else { return }
+            switch device.state { case .ready, .registrationUnknown, .enrolled: break; default: throw CleanupFailure.stale }
+            guard provision.namespace.backend == original.scope.environment, provision.namespace.account == original.scope.account else { throw CleanupFailure.stale }
+            try offline.validateStorageProvision(provision)
+            let layout = try DevelopmentDeviceNativeLayout(scope: original.scope)
+            let current = try layout.manifestReferences()
+            let offlineTargets: Set<String> = Set([DeviceCleanupTarget.offlineTrip, .offlineWriteResidue, .offlineKey].map(\.rawValue))
+            for (target, before) in original.directories {
+                guard let now = current[target], before.count == now.count else { throw CleanupFailure.stale }
+                for (old, new) in zip(before, now) {
+                    guard old == new || (offlineTargets.contains(target) && old.hasPrefix("absent:") && new.hasPrefix("directory:")) else { throw CleanupFailure.stale }
+                }
+            }
+            let stores = try DevelopmentDeviceNativeStores(scope: original.scope, layout: layout, endpoint: endpoint.url)
+            let actual = Dictionary(uniqueKeysWithValues: stores.keyIDs.map { ($0.key.rawValue, $0.value) })
+            let offlinePurpose = MessageKeyPurpose.localOfflineTripSnapshotV1.rawValue
+            guard actual[offlinePurpose] == provision.keyID else { throw CleanupFailure.stale }
+            for (purpose, id) in original.keyIDs { guard actual[purpose] == nil || actual[purpose] == id else { throw CleanupFailure.stale } }
+            for (purpose, _) in actual where original.keyIDs[purpose] == nil { guard purpose == offlinePurpose else { throw CleanupFailure.stale } }
+            var expected = original.keyIDs; expected[offlinePurpose] = provision.keyID
+            let next = DevelopmentNativeManifest(version: original.version, scope: original.scope, nonce: original.nonce,
+                sdkHash: original.sdkHash, directories: current, keyIDs: expected)
+            guard try next.stateRef == original.stateRef,
+                  try manifestStore.load()?.withBytes({ $0 }) == original.encoded() else { throw CleanupFailure.stale }
+            try check(); try offline.validateStorageProvision(provision)
+            let bytes = try next.encoded(); try manifestStore.save(SessionMaterial(trustedSDKBytes: bytes))
+            guard try manifestStore.load()?.withBytes({ $0 }) == bytes else { throw CleanupFailure.exchangeUnknown }
+            try check(); try offline.validateStorageProvision(provision)
+            manifest = next
+        } catch { if active { refresh(unknown: true) } }
+    }
+    private func settleRevocation() throws {
+        guard let account, try account.requiresRestrictedProgress else { return }
+        try check(); try quiesce()
+        let current: String?
+        do { current = try sdkStore.load()?.withBytes(developmentCleanupHash) }
+        catch SessionFailure.restorationBlocked { current = nil }
+        guard let manifest, current == nil || current == manifest.sdkHash else { throw CleanupFailure.stale }
+        if current != nil { try clearSDK() }
+    }
+    func enrollOnline() async {
+        guard active, !enrolling, terminalControls == nil, !controlsPending else { return }
+        enrolling = true; refresh()
+        do {
+            if manifest == nil { try prepareResources() }
+            guard let device, let manifest, let ordinary,
+                  ordinary.lease.session.isCurrent(ordinary.lease.operation),
+                  try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
+            // A verified switch back to an existing account must restore its own
+            // original recovery locator. Never replace an unfinished clear plan.
+            if case .finalizing = try Self.selection(environment: lifetime.scope.environment) { throw CleanupFailure.unavailable }
+            let selected = try JSONEncoder().encode(manifest.scope)
+            try indexStore.save(SessionMaterial(trustedSDKBytes: selected))
+            guard try indexStore.load()?.withBytes({ $0 }) == selected else { throw CleanupFailure.exchangeUnknown }
+            if case .ready = device.state {
+                _ = try await device.perform(device.prepareRegistration(stateRef: manifest.stateRef)); try check()
+            }
+            enrolling = false; refresh()
+        } catch { enrolling = false; if active { refresh(unknown: true) } }
+    }
+    func reconnectIdentityRefused(material: SessionMaterial) async {
+        guard active, !enrolling else { return }
+        enrolling = true; refresh()
+        var unknown = false
+        defer { enrolling = false; if active { refresh(unknown: unknown) } }
+        do {
+            try check()
+            guard let device, let manifest, let ordinary,
+                  material.withBytes(developmentCleanupHash) == manifest.sdkHash,
+                  developmentCleanupHash(Data(ordinary.configuration.token.utf8)) == manifest.sdkHash else { throw CleanupFailure.stale }
+            try quiesce(); try check()
+            let verified = try await device.perform(device.prepareIdentityVerification()); try check()
+            if case .identityAllowed = verified { return } // No clearing and no offline renewal.
+            guard case .identityRefused = verified else { throw CleanupFailure.unavailable }
+            try offline.denyRejectedIdentity(material: material)
+            try check(); try quiesce()
+            if case .enrolled = device.state {
+                _ = try await device.perform(device.prepareSessionInvalidation()); try check()
+            }
+            if case .invocation = device.state {
+                _ = try device.executeNative(using: nativeExecutor()); try check()
+                if try device.canPrepareReceipt { _ = try await device.perform(device.prepareReceipt()); try check() }
+            }
+            refresh()
+        } catch { unknown = true }
+    }
+    private func perform(_ command: AccountCleanupCommand) async {
+        do {
+            try check()
+            if command == .finalizeControls {
+                try await finalizeControlRecords(); refresh(); return
+            }
+            if command == .review {
+                if manifest == nil { try prepareResources() }
+                guard let device, let account, let manifest else { throw CleanupFailure.unavailable }
+                if case .ready = device.state { _ = try await device.perform(device.prepareRegistration(stateRef: manifest.stateRef)); try check() }
+                let enrolled = try device.acceptedEnrollment()
+                if case .ready = account.state { try account.adoptDeviceEnrollment(enrolled) }
+                if case .registered = account.state { try await account.perform(account.prepareAccountDeletion()); try check() }
+            } else if command == .confirm {
+                guard let account else { throw CleanupFailure.unavailable }
+                let work: AccountCleanupWork
+                switch account.state {
+                case .awaitingConfirmation(let original):
+                    work = try account.prepareConfirmation(operationID: original.operationID, registryDigest: original.registryDigest, confirmation: "DELETE_ACCOUNT")
+                case .confirmationStaged(let original):
+                    work = try account.prepareStagedConfirmation(operationID: original.operationID, registryDigest: original.registryDigest, confirmation: "DELETE_ACCOUNT")
+                default: throw CleanupFailure.unavailable
+                }
+                do { try await account.perform(work); try check() }
+                catch { try settleRevocation(); throw error }
+                try settleRevocation()
+            } else if command == .checkOriginal {
+                guard let device, let account else { throw CleanupFailure.unavailable }
+                if case .registrationUnknown = device.state { _ = try await device.perform(device.prepareRegistrationQuery()); try check() }
+                else { _ = try await account.read(account.prepareOriginalRead()); try check(); try settleRevocation() }
+            } else if command == .cleanDevice {
+                guard let device else { throw CleanupFailure.unavailable }
+                if case .enrolled = device.state {
+                    let work: DeviceCleanupWork
+                    if try device.hasVerifiedIdentityRefusal { work = try device.prepareSessionInvalidation() }
+                    else {
+                        guard let account else { throw CleanupFailure.unavailable }
+                        work = try device.prepareAccountCleanup(account.originalDeviceAuthorization())
+                    }
+                    _ = try await device.perform(work); try check()
+                }
+                _ = try device.executeNative(using: nativeExecutor()); try check()
+                _ = try await device.perform(device.prepareReceipt()); try check()
+            } else if command == .reportDevice {
+                guard let device else { throw CleanupFailure.unavailable }
+                _ = try await device.perform(device.prepareReceipt()); try check()
+            } else if command == .checkDevice {
+                guard let device else { throw CleanupFailure.unavailable }
+                if case .callUnknown = device.state { _ = try await device.perform(device.prepareOriginalCallQuery()); try check() }
+                else {
+                    _ = try await device.perform(device.prepareOriginalInvocationQuery()); try check()
+                    if case .invocation(_, local: .unknown) = device.state {
+                        _ = try device.executeNative(using: nativeExecutor()); try check()
+                    }
+                }
+            }
+            refresh()
+        } catch {
+            guard active else { return }
+            refresh(unknown: error as? CleanupFailure != .stale)
+        }
+    }
+    private func finalizeControlRecords() async throws {
+        try check()
+        if case .finalizing(let plan) = try Self.selection(environment: lifetime.scope.environment) {
+            guard plan.scope == lifetime.scope else { throw CleanupFailure.stale }
+            terminalControls = try CleanupControlFinalizer.resume(plan: plan, store: Self.controlStore(scope: plan.scope))
+            controlsPending = false; return
+        }
+        guard let device, let manifest else { throw CleanupFailure.unavailable }
+        guard case .invocation(let invocation, .confirmed) = device.state, invocation.state == .confirmed else { throw CleanupFailure.unavailable }
+        guard try device.executeNative(using: nativeExecutor()) == .confirmed else { throw CleanupFailure.unavailable }
+        guard case .completion(let completion) = try await device.perform(device.prepareCompletionQuery()) else { throw CleanupFailure.unavailable }
+        try check()
+        guard completion.scope == manifest.scope, completion.permitsAccountRecordFinalization else {
+            controlsPending = true; throw CleanupFailure.unavailable
+        }
+        if let account {
+            switch account.state {
+            case .ready, .registered: break
+            case .progress(let progress): guard progress.operationID == completion.operationID else { throw CleanupFailure.stale }
+            case .awaitingConfirmation(let original), .confirmationStaged(let original), .confirmationUnknown(let original):
+                guard original.operationID == completion.operationID else { throw CleanupFailure.stale }
+            case .registrationUnknown, .preparationUnknown, .unavailable: throw CleanupFailure.unavailable
+            }
+        }
+        try quiesce(); try check()
+        let store = DevelopmentControlRecordStore(scope: manifest.scope, manifest: manifestStore, execution: executionStore,
+            device: deviceStore, account: accountStore, selected: indexStore)
+        lifetime.invalidate(); device.invalidate(); account?.invalidate()
+        self.device = nil; self.account = nil; executor = nil; controlsPending = true
+        terminalControls = try CleanupControlFinalizer.start(completion: completion, store: store)
+        controlsPending = false
+    }
+    private func refresh(unknown: Bool = false) {
+        var value = AccountCleanupPresentation(); value.unknown = unknown
+        guard active else { value.unavailable = true; host.show(value); return }
+        if terminalControls != nil {
+            value.businessStopped = true; value.originalContentComplete = true; value.controlsFinalized = true
+            value.nativeOutcome = .confirmed; value.deviceState = .confirmed
+            host.show(value); return
+        }
+        if controlsPending, device == nil {
+            value.businessStopped = true; value.controlsPending = true; value.canFinalizeControls = true
+            host.show(value); return
+        }
+        guard let device else {
+            value.canReview = ordinary != nil && manifest == nil
+            value.unavailable = manifest != nil
+            host.show(value); return
+        }
+        var identityRefused = false
+        do {
+            identityRefused = try device.hasVerifiedIdentityRefusal
+            value.businessStopped = try identityRefused || account?.requiresRestrictedProgress == true
+        } catch { value.unavailable = true }
+        if let account {
+            switch account.state {
+            case .ready, .registered: value.canReview = ordinary != nil
+            case .awaitingConfirmation, .confirmationStaged: value.canConfirm = ordinary != nil; value.canRead = true
+            case .preparationUnknown, .confirmationUnknown: value.canRead = true; value.unknown = true
+            case .progress(let progress):
+                value.progress = progress; value.canRead = true
+                if progress.businessRevoked { value.canCleanDevice = true }
+            case .registrationUnknown, .unavailable: value.unavailable = true
+            }
+        }
+        if identityRefused { value.canCleanDevice = true }
+        if value.businessStopped { value.canReview = false; value.canConfirm = false }
+        switch device.state {
+        case .registrationUnknown: value.canRead = true; value.canReview = false; value.unknown = true
+        case .callUnknown: value.canReadDevice = true; value.canCleanDevice = false; value.unknown = true
+        case .invocation(let invocation, let local):
+            value.canReadDevice = true; value.canCleanDevice = local == nil && invocation.state == .pending
+            value.nativeOutcome = local; value.deviceState = invocation.state
+            value.controlsPending = invocation.reason == .accountCleanup
+            value.canFinalizeControls = local == .confirmed && invocation.state == .confirmed && invocation.reason == .accountCleanup
+            do { value.canReportDevice = try device.canPrepareReceipt }
+            catch { value.unavailable = true }
+        case .unavailable: value.unavailable = true; value.canReview = false; value.canConfirm = false
+        case .ready, .enrolled: break
+        }
+        if enrolling {
+            value.canReview = false; value.canConfirm = false; value.canRead = false
+            value.canCleanDevice = false; value.canReadDevice = false; value.canReportDevice = false; value.canFinalizeControls = false; value.preparing = true
+        }
+        host.show(value)
+    }
+}
+
 #endif

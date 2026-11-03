@@ -183,6 +183,33 @@ private actor CandidateExitSpy: ClientTransport {
         }
         #expect(await spy.requests.count == (phase == "before" ? 0 : 1))
     }
+    @Test(arguments: ["projection", "device", "completion"])
+    func currentProjectionAndDevicePurposesStaySeparateAfterMainMerge(kind: String) async throws {
+        let endpoint = try endpoint(), spy = CandidateExitSpy()
+        let transport: NoRedirectTransport
+        let routes: [(String, String, Bool)]
+        switch kind {
+        case "projection":
+            transport = NoRedirectTransport(interceptedTransport: spy, memoryProjectionEndpoint: endpoint, validateMemoryProjection: {})
+            routes = [("/v3/cleanup-device-calls", "createCleanupDeviceCallV3", true),
+                ("/v1/cleanup-device-completions/original?request_digest=" + String(repeating: "a", count: 64), "readCleanupDeviceCompletionV1", false)]
+        case "device":
+            transport = NoRedirectTransport(interceptedTransport: spy, deviceCleanupEndpoint: endpoint, validateDeviceCleanup: {})
+            routes = [("/v6/memory-candidates?conversation_id=chat&after_candidate_id=", "readMemoryCandidateProjectionV2", false),
+                ("/v3/memory-candidate-actions", "applyMemoryCandidateActionV1", true)]
+        default:
+            transport = NoRedirectTransport(interceptedTransport: spy, deviceCompletionEndpoint: endpoint, validateDeviceCompletion: {})
+            routes = [("/v6/memory-candidates?conversation_id=chat&after_candidate_id=", "readMemoryCandidateProjectionV2", false),
+                ("/v3/memory-candidate-actions", "applyMemoryCandidateActionV1", true)]
+        }
+        for (path, operation, post) in routes {
+            await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+                _ = try await transport.send(request(path, post: post), body: post ? HTTPBody("{}".utf8) : nil,
+                    baseURL: endpoint.url, operationID: operation)
+            }
+        }
+        #expect(await spy.requests.isEmpty)
+    }
     @Test func requestAndResponseBoundsDenyWithoutReencodingOrMoreDispatch() async throws {
         let endpoint = try endpoint(), spy = CandidateExitSpy()
         let transport = NoRedirectTransport(interceptedTransport: spy, memoryCandidateEndpoint: endpoint, validateMemoryCandidates: {})
