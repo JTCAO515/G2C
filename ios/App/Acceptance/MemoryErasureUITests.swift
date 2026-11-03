@@ -123,10 +123,17 @@ import Foundation
         reveal(acknowledge.element); XCTAssertEqual(acknowledge.count, 1)
         XCTAssertTrue(acknowledge.element.isEnabled)
         if acknowledge.element.value as? String != "1" {
+            print("ERASURE_SWITCH", acknowledge.element.debugDescription)
             acknowledge.element.coordinate(withNormalizedOffset: .init(dx: 0.9, dy: 0.5)).tap()
         }
         let checked = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: acknowledge.element)
-        XCTAssertEqual(XCTWaiter.wait(for: [checked], timeout: 5), .completed)
+        let checkedResult = XCTWaiter.wait(for: [checked], timeout: 5)
+        if checkedResult != .completed {
+            print("ERASURE_SWITCH_FAILURE", app.debugDescription)
+            let failure = XCTAttachment(screenshot: app.screenshot())
+            failure.name = "erasure-unchecked-switch"; failure.lifetime = .keepAlways; add(failure)
+        }
+        XCTAssertEqual(checkedResult, .completed)
         try audit("erasure-review-" + language + "-max", target: app.buttons["memoryErasure.submit"])
         XCTAssertEqual(acknowledge.element.value as? String, "1")
         tap("memoryErasure.submit")

@@ -90,7 +90,7 @@ public struct MemoryErasureView: View {
                 }
                 MemoryRowText(text: language.text("An uncertain result or a missing progress record never creates a new deletion. Keep the original; its continue action requires a successful original-progress read first.", "结果未知或查不到进度时，不会创建新删除。请保留原记录；继续原操作前必须成功读取它的进度。"), style: .body)
             } header: { heading(language.text("Original operation recovery", "原操作恢复")) }
-          }.padding()
+          }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }
         .navigationTitle(language.text("Delete memory", "删除记忆"))
         .onChange(of: model.entry?.id) { _, _ in acknowledged = false }
