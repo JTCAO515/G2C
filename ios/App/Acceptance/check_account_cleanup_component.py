@@ -19,7 +19,7 @@ REMOTE_CASE = 'testActualRemoteDeletionReconnection'
 PROVIDED_CASE = 'testActualAllProvidedDomains'
 B_DOMAINS = ('business/message', 'checkpoints/run', 'business/usage', 'business/feedback-private-actions')
 # Explicit operator inventory, independent of the registry under test. Its full
-# snapshot must include actual C/unimplemented and all DEVICE@3 domains.
+# snapshot includes every provided DEVICE4 family plus explicit external absence.
 FULL_INVENTORY = ('business/message','business/usage','business/memory-authoritative','business/trip-authoritative',
     'business/needs-current-planning','business/feedback-private-actions','business/cleanup-metadata',
     'business/memory-management-actions','checkpoints/run','memory-derived',
@@ -28,7 +28,8 @@ FULL_INVENTORY = ('business/message','business/usage','business/memory-authorita
     'device-cache/memory-manual-pending','device-cache/memory-lifecycle-pending','device-cache/memory-typed-pending',
     'device-cache/memory-key-keychain','device-cache/needs-pending','device-cache/needs-key-keychain',
     'device-cache/memory-history-pending','device-cache/trip-scoped-pending','device-cache/needs-planning-pending',
-    'device-cache/trip-key-keychain','device-cache/offline-key-keychain','device-cache/offline-write-residue','external-processing')
+    'device-cache/trip-key-keychain','device-cache/offline-key-keychain','device-cache/offline-write-residue',
+    'device-cache/memory-erasure-pending','device-cache/memory-candidate-pending','external-processing')
 
 
 def main():
@@ -38,11 +39,11 @@ def main():
     for name in ('backend-source', 'run-context', 'output', 'build-dir'): parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--case', choices=CASES+[REMOTE_CASE,PROVIDED_CASE])
     parser.add_argument('--prepare-only', action='store_true', help='Only prove real C/B source preparation; native acceptance remains UNRUN')
-    parser.add_argument('--all-provided', action='store_true', help='Additional all29 provided-domain case; original B4/full30 cases stay unchanged')
-    parser.add_argument('--native-device', action='store_true', help='Use actual CJProbeApp DEVICE@3 workflow; legacy component cases remain default')
+    parser.add_argument('--all-provided', action='store_true', help='Additional all31 provided-domain case; original B4/full32 cases stay unchanged')
+    parser.add_argument('--native-device', action='store_true', help='Use actual CJProbeApp DEVICE@4 workflow; legacy component cases remain default')
     args = parser.parse_args()
     if args.native_device:
-        BUNDLE='space.go2china.device-v3.acceptance';CASES=CASES+[REMOTE_CASE]
+        BUNDLE='space.go2china.device-v4.acceptance';CASES=CASES+[REMOTE_CASE]
     elif args.case in (REMOTE_CASE,PROVIDED_CASE):raise ValueError('device case requires native-device mode')
     if args.all_provided:
         if not args.native_device or args.case not in (None,PROVIDED_CASE):raise ValueError('all-provided needs its own native case')
@@ -80,7 +81,7 @@ def main():
     context=load_run_context(args.run_context)
     if args.all_provided:assert context.current.meter.budget==4,'explicit4-call provided-domain profile required'
     report=dict(status='RUNNING',head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(), backend_head=head,
-        app_mode='CJProbeApp_device_v3' if args.native_device else 'native_component_harness_not_CJProbeApp',positive_inventory=list(positive_inventory),full_registry=str(Path('backend/storage-registry.json')),
+        app_mode='CJProbeApp_device_v4' if args.native_device else 'native_component_harness_not_CJProbeApp',positive_inventory=list(positive_inventory),full_registry=str(Path('backend/storage-registry.json')),
         cases={},proofs={},faults=[],run_context=json.loads(args.run_context.read_text()),
         unrun=['CJProbeApp account UI/full AX/localizations', 'complete device hook/key erasure/current-device receipt', 'C/all-domain full-account completion', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment'])
     sources=[Path(__file__),HERE/'AccountCleanupComponentApp.swift',HERE/'AccountCleanupComponentUITests.swift',ROOT/'ios/App/DevelopmentSessionConfiguration.swift']
@@ -92,7 +93,7 @@ def main():
         sources += [ROOT/'ios/App/CJProbeApp.swift', ROOT/'ios/App/DevelopmentTripHost.swift', ROOT/'ios/App/DevelopmentControlRecordStore.swift', HERE/'DevelopmentDeviceCleanupUITests.swift']
         for module in ('CJShell','CJOfflineTrip','CJAuth','CJTripClient','CJManualPreviewClient','CJMemoryClient','CJNeedsClient','CJFeedbackClient'):
             sources += list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
-        report['unrun']=['external-processing full30 positive','physical device/VoiceOver','real accounts/cloud/providers/fees/deployment'] if args.all_provided else ['all C online cleanup domains', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment']
+        report['unrun']=['external-processing full32 positive','physical device/VoiceOver','real accounts/cloud/providers/fees/deployment'] if args.all_provided else ['all C online cleanup domains', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment']
     report['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     report['backend_trees']={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=backend,text=True).strip() for name in ('backend','contracts','scripts')}
     def save(): (output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
@@ -114,22 +115,14 @@ def main():
                 registry=backend/'backend/storage-registry.json';manifest=json.loads(registry.read_bytes())
                 full=freeze_controls(registry.read_bytes(),FULL_INVENTORY,versions=('CLEANUP@1.0','CLEANUP@1.1'))
                 assert not full.gaps,'explicit full inventory differs from actual main'
-                def project(node,parent=''):
-                    target=parent+node['id'];children=node.get('objects',[])
-                    nested=[child for child in children if isinstance(child,dict)]
-                    if nested:
-                        assert len(nested)==len(children),'mixed registry children'
-                        selected=[value for child in nested if (value:=project(child,target+'/')) is not None]
-                        return dict(node,objects=selected) if selected else None
-                    return node if target in positive_inventory or target.startswith('cleanup-control/') else None
-                selected=[value for node in manifest['stores'] if (value:=project(node)) is not None]
+                from prepare_provided_cleanup_sources import project_registry
                 component_registry=root/'component-registry.json'
-                component_registry.write_bytes(encode(dict(version='CJ443-B-COMPONENT-1',stores=selected)))
+                component_registry.write_bytes(encode(project_registry(manifest, positive_inventory, 'CJ443-B-COMPONENT-1')))
                 component=freeze_controls(component_registry.read_bytes(),positive_inventory,versions=('CLEANUP@1.0','CLEANUP@1.1'))
                 actual={entry.registry_id:entry for entry in full.entries}
                 assert not component.gaps and all(entry==actual[entry.registry_id] for entry in component.entries)
                 assert len(full.retained_controls)==5 and component.retained_controls==full.retained_controls
-                report['component_registry']=dict(scope='all29 provided domains; external-processing excluded explicitly' if args.all_provided else 'B-owned component only; not full account/device',
+                report['component_registry']=dict(scope='all31 provided domains; external-processing excluded explicitly' if args.all_provided else 'B-owned component only; not full account/device',
                     sha256=component.digest,full_main_sha256=full.digest,entry_digests={entry.registry_id:entry.version for entry in component.entries},retained_controls=dict(component.retained_controls))
                 report['full_inventory']=list(FULL_INVENTORY);save()
                 key=os.urandom(32); secrets.append(key)
@@ -353,9 +346,9 @@ def main():
                                 with httpx.Client(follow_redirects=False,trust_env=False,timeout=20) as client:
                                     endpoint=endpoints['component']
                                     observed=client.get(endpoint+'/v1/message-receipts',params={'message_id':'remote-identity-'+uuid.uuid4().hex},headers=headers);observed.raise_for_status()
-                                    registration=dict(version='CLEANUP-DEVICE@3',action_id='remote-'+uuid.uuid4().hex,device_id='remote-'+uuid.uuid4().hex,
+                                    registration=dict(version='CLEANUP-DEVICE@4',action_id='remote-'+uuid.uuid4().hex,device_id='remote-'+uuid.uuid4().hex,
                                         state_ref=hashlib.sha256(tokens[case]['A'].encode()+uuid.uuid4().bytes).hexdigest())
-                                    registered=client.post(endpoint+'/v3/cleanup-devices',content=encode(registration),headers=headers);registered.raise_for_status()
+                                    registered=client.post(endpoint+'/v4/cleanup-devices',content=encode(registration),headers=headers);registered.raise_for_status()
                                     prepared=client.post(endpoint+'/v1/account-cleanup-operations',content=encode(dict(version='CLEANUP-API@1',action_id=uuid.uuid4().hex,binding_id=registered.json()['binding_id'])),headers=headers);prepared.raise_for_status()
                                     original=prepared.json()
                                     confirmed=client.post(endpoint+'/v1/account-cleanup-operations/'+original['operation_id']+'/confirmation',
@@ -373,7 +366,7 @@ def main():
                                 elif query['kind']=='confirmation':
                                     candidates=proof(case)['accounts']['A']['operations'];assert len(candidates)==1
                                     fault['path']='/v1/account-cleanup-operations/'+candidates[0]['operation_id']+'/confirmation'
-                                elif query['kind']=='device-receipt' and args.native_device:fault['path']='/v3/cleanup-device-receipts'
+                                elif query['kind']=='device-receipt' and args.native_device:fault['path']='/v4/cleanup-device-receipts'
                                 else:raise ValueError('unknown fault')
                                 value={}
                             elif parsed.path=='/size' and args.native_device:
@@ -420,17 +413,17 @@ def main():
                                 else:assert a['fences']==0 and all(count==1 for count in a['domain_rows'].values()) and a['operations'][0]['phase']=='prepared'
                                 assert not any(e['path'].startswith('/v1/cleanup-device-calls') or e['path'].startswith('/v1/cleanup-device-receipts') for e in value['api'])
                                 if args.native_device:
-                                    registrations=[e for e in writes if e['path']=='/v3/cleanup-devices' and e['actor']=='A' and e['producer']=='App'];assert len(registrations)==1
-                                    calls=[e for e in writes if e['path']=='/v3/cleanup-device-calls']
-                                    receipts=[e for e in writes if e['path']=='/v3/cleanup-device-receipts']
+                                    registrations=[e for e in writes if e['path']=='/v4/cleanup-devices' and e['actor']=='A' and e['producer']=='App'];assert len(registrations)==1
+                                    calls=[e for e in writes if e['path']=='/v4/cleanup-device-calls']
+                                    receipts=[e for e in writes if e['path']=='/v4/cleanup-device-receipts']
                                     if case in ('testActualCommittedUnknownReopen',REMOTE_CASE,PROVIDED_CASE):
                                         assert len(calls)==len(receipts)==1
                                         call=calls[0]['device_call'];assert call['operation_id']==a['operations'][0]['operation_id']
-                                        assert call['reason']=='account_cleanup' and len(call['targets'])==19
+                                        assert call['reason']=='account_cleanup' and len(call['targets'])==21
                                         assert receipts[0]['device_state']=='confirmed' and receipts[0]['action']['outcome']=='confirmed'
-                                        original_reads=[e for e in value['api'] if e['method']=='GET' and e['path']=='/v3/cleanup-device-calls/'+call['invocation_id']]
+                                        original_reads=[e for e in value['api'] if e['method']=='GET' and e['path']=='/v4/cleanup-device-calls/'+call['invocation_id']]
                                         assert original_reads and original_reads[-1]['device_state']=='confirmed'
-                                        completions=[e for e in value['api'] if e['method']=='GET' and e['path']=='/v1/cleanup-device-completions/'+call['invocation_id']]
+                                        completions=[e for e in value['api'] if e['method']=='GET' and e['path']=='/v2/cleanup-device-completions/'+call['invocation_id']]
                                         assert len(completions)==1 and completions[0]['http_status']==200
                                         completion=completions[0]
                                         assert completion['authorization_scheme']=='Device' and completion['operation_id']==call['operation_id']

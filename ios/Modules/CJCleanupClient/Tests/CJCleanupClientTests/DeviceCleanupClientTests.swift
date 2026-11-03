@@ -74,7 +74,7 @@ private func v3Encode(_ value: [String: Any]) throws -> Data { try JSONSerializa
             let operationID = activeAccountOperation ?? "device-original-operation"
             let call: [String: Any] = ["version":"CLEANUP-DEVICE@3", "operation_id":operationID, "invocation_id":"server-original-invocation",
                 "binding_id":"server-binding", "scope_digest":String(repeating:"a", count:64), "state_ref":v3State,
-                "reason":activeAccountOperation == nil ? "session_invalid" : "account_cleanup", "targets":DeviceCleanupTarget.allCases.map(\.rawValue), "business_access":"not_granted"]
+                "reason":activeAccountOperation == nil ? "session_invalid" : "account_cleanup", "targets":legacyDeviceTargetNames, "business_access":"not_granted"]
             invocation = ["call":call,"request_digest":deviceCleanupSHA(try v3Encode(call)),"state":"pending","receipt_digest":NSNull(),"receipt_token":"RECEIPT.SYNTHETIC.V3"]
             if loseCall { throw CleanupFailure.exchangeUnknown }
             result = ["version":"CLEANUP-DEVICE@3", "action_id":actionID!, "input_sha256":actionHash!, "invocation":invocation!]

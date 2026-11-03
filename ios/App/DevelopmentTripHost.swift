@@ -26,7 +26,7 @@ import Observation
 /// sealed formal sync provisions it. Old unconfigured roots retain their shape.
 @MainActor private func provisionJournalSiblings(of base: URL, suffixes: [String]) throws {
     let environment = ProcessInfo.processInfo.environment
-    guard environment["G2C_DEV_ACCOUNT_MODE"] == "1", environment["G2C_DEV_CLEANUP_PROFILE"] == "device-v3" else { return }
+    guard environment["G2C_DEV_ACCOUNT_MODE"] == "1", let profile = environment["G2C_DEV_CLEANUP_PROFILE"], ["device-v3", "device-v4"].contains(profile) else { return }
     let original = try DeviceCleanupDirectory(existingPrivateDirectory: base)
     let parentURL = base.deletingLastPathComponent()
     let parent = try DeviceCleanupDirectory(existingPrivateDirectory: parentURL)
@@ -43,6 +43,12 @@ import Observation
     }
     guard fsync(fd) == 0 else { throw CleanupFailure.exchangeUnknown }
     try original.validateIdentity(); try parent.validateIdentity()
+}
+
+@MainActor private func provisionCurrentMemoryFamilies(_ root: URL) throws {
+    guard ProcessInfo.processInfo.environment["G2C_DEV_CLEANUP_PROFILE"] == "device-v4" else { return }
+    try provisionJournalSiblings(of: root, suffixes: ["erasure-v1", "erasure-v1.CJMemoryErasureObservationsV1",
+        "candidate-v1", "candidate-v1.CJMemoryCandidateRejectionsV1"])
 }
 
 @MainActor struct DevelopmentSessionLease {
@@ -99,13 +105,19 @@ import Observation
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
-    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil, offline: OfflineTripController? = nil) throws {
+    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil, offline: OfflineTripController? = nil, memoryExtensionsAllowed: Bool = false) throws {
         let environment = ProcessInfo.processInfo.environment
         let historyProfile = try DevelopmentMemoryHistoryProfile.read(environment)
         guard historyProfile == nil || lease != nil else { throw MemoryFailure.unconfigured }
         let feedbackProfile = try DevelopmentFeedbackProfile.read(environment)
         let messageProfile=try DevelopmentMessageProfile.read(environment)
         let typedMode = try DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
+        let erasureEndpoint: URL?
+        if environment["G2C_DEV_MEMORY_ERASURE_URL"] != nil {
+            guard memoryExtensionsAllowed, lease != nil, typedMode != nil,
+                  let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment, key: "G2C_DEV_MEMORY_ERASURE_URL") else { throw MemoryFailure.unconfigured }
+            erasureEndpoint = endpoint
+        } else { erasureEndpoint = nil }
         let needsProfile = try DevelopmentNeedsProfile.read(environment)
         let tripEditingProfile = try DevelopmentTripEditingProfile.read(environment)
         let tripDiscussions=messageProfile == .discussion,scopedEdits=messageProfile == .edit || messageProfile == .editResults
@@ -217,7 +229,7 @@ import Observation
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
             typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
-                session:lifetime.session,operation:lifetime.operation,travel:travel,isCurrent:{lifetime.current != nil})
+                session:lifetime.session,operation:lifetime.operation,travel:travel,isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint)
             memory = nil
         } else if let profile = try DevelopmentMemoryProfile.read(environment) {
             memory = try DevelopmentMemoryHost(configuration: configuration, profile: profile, shell: shell,
@@ -290,6 +302,7 @@ import Observation
             .appendingPathComponent(binding.environment.uuidString, isDirectory: true)
             .appendingPathComponent(binding.account.uuidString, isDirectory: true)
         try files.createDirectory(at: legacy, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try provisionCurrentMemoryFamilies(legacy)
         let key: MessageEncryptionKey
         if let existing = try keys.existing(expectedID: nil, for: keys.begin(.lookup)) { key = existing }
         else {
@@ -458,6 +471,7 @@ import Observation
             .appendingPathComponent(binding.environment.uuidString, isDirectory: true)
             .appendingPathComponent(binding.account.uuidString, isDirectory: true)
         try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try provisionCurrentMemoryFamilies(directory)
         let root = directory.resolvingSymlinksInPath()
         let lifecycleRoot = root.appendingPathExtension("lifecycle")
         let managementURL = try DevelopmentMemoryProfile.managementEndpoint(ProcessInfo.processInfo.environment)
@@ -551,9 +565,10 @@ import Observation
 @MainActor final class DevelopmentTypedMemoryHost {
     let host: TypedMemoryContainerHost
     private let keys: ScopedMessageKeyProvider
+    private let erasure: DevelopmentMemoryErasureComponents?
     init(configuration: DevelopmentSessionConfiguration,mode: DevelopmentTypedMode,shell: ShellState,
          session: SessionLifecycle,operation: SessionOperation,travel: TravelSelectionModel,
-         isCurrent: @escaping @MainActor () -> Bool) throws {
+         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil) throws {
         let binding = MemoryBinding(environment:configuration.environmentID,account:configuration.accountID,generation:UUID(),selection:UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1)
@@ -564,6 +579,7 @@ import Observation
         let directory = support.appendingPathComponent("G2CDevelopmentMemory",isDirectory:true)
             .appendingPathComponent(binding.environment.uuidString,isDirectory:true).appendingPathComponent(binding.account.uuidString,isDirectory:true)
         try files.createDirectory(at:directory,withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])
+        try provisionCurrentMemoryFamilies(directory)
         let key: MessageEncryptionKey
         if let existing = try keys.existing(expectedID:nil,for:keys.begin(.lookup)) { key = existing }
         else {
@@ -613,9 +629,14 @@ import Observation
                 }
             }
         }
-        host = try TypedMemoryContainerHost(shell:shell,client:client,binding:binding,pageSize:20,options:options,travel:travel,legacy:legacy,currentBinding:current)
+        if let erasureEndpoint {
+            erasure = try DevelopmentMemoryErasureComponents(configuration: configuration, endpointURL: erasureEndpoint, binding: binding,
+                legacyRoot: legacyRoot, key: key, keys: keys, manual: oldStore, management: oldManagement, typed: store,
+                session: session, operation: operation, current: current)
+        } else { erasure = nil }
+        host = try TypedMemoryContainerHost(shell:shell,client:client,binding:binding,pageSize:20,options:options,travel:travel,legacy:legacy,currentBinding:current, erasureClient: erasure?.client, itemCleanup: erasure?.cleanup)
     }
-    func invalidate() { host.invalidate();keys.invalidate() }
+    func invalidate() { host.invalidate();erasure?.invalidate();keys.invalidate() }
 }
 
 /// Provided App constructor for the erasure journal family. Normal Root
@@ -854,6 +875,7 @@ import Observation
     var cleanup: AccountCleanupContainerHost?
     @ObservationIgnored private var cleanupWorkflow: DevelopmentCleanupWorkflow?
     private let cleanupEnabled: Bool
+    private let cleanupVersion: CleanupDeviceVersion
     private let shell: ShellState
     private let endpoint: URL
     private let proposalID: String?
@@ -877,7 +899,8 @@ import Observation
                 }
                 if self.cleanupWorkflow?.holdsBusinessFence != true {
                     self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
-                        lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline)
+                        lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
+                        memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4)
                 }
                 if self.cleanupEnabled, let workflow = self.cleanupWorkflow {
                     Task { await workflow.enrollOnline() }
@@ -903,8 +926,9 @@ import Observation
               tokens.keys.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
               let applicationID = Bundle.main.bundleIdentifier else { throw SessionFailure.invalidConfiguration }
         let cleanupProfile = environment["G2C_DEV_CLEANUP_PROFILE"]
-        guard cleanupProfile == nil || cleanupProfile == "device-v3" else { throw SessionFailure.invalidConfiguration }
+        if let cleanupProfile, !["device-v3", "device-v4"].contains(cleanupProfile) { throw SessionFailure.invalidConfiguration }
         cleanupEnabled = cleanupProfile != nil
+        cleanupVersion = cleanupProfile == "device-v4" ? .v4 : .v3
         self.shell = shell; self.endpoint = endpoint; self.tokens = tokens
         proposalID = environment["G2C_DEV_PROPOSAL_ID"]
         let scope = try KeychainSessionScope(namespace: SessionNamespace(
@@ -957,7 +981,7 @@ import Observation
         cleanupWorkflow?.invalidate()
         guard let offline else { throw CleanupFailure.unavailable }
         let workflow = try DevelopmentCleanupWorkflow(scope: .init(environment: configuration.environmentID, account: configuration.accountID, generation: UUID()),
-            endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: (configuration, lease),
+            endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: (configuration, lease), preferredVersion: cleanupVersion,
             quiesce: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.fenceCleanupBusiness() },
             clearSDK: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.clearCleanupSDK() })
         cleanupWorkflow = workflow; cleanup = workflow.host
@@ -1006,7 +1030,7 @@ import Observation
             if let saved {
                 guard configuration(saved)?.accountID == scope.account else { return }
             }
-            let workflow = try DevelopmentCleanupWorkflow(scope: scope, endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: nil,
+            let workflow = try DevelopmentCleanupWorkflow(scope: scope, endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: nil, preferredVersion: cleanupVersion,
                 quiesce: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.fenceCleanupBusiness() },
                 clearSDK: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.clearCleanupSDK() })
             cleanupWorkflow = workflow; cleanup = workflow.host
@@ -1077,10 +1101,11 @@ private struct DevelopmentVerificationTransport: ClientTransport {
 /// Neither an HTTP field nor a target string is ever concatenated into a path.
 @MainActor private final class DevelopmentDeviceNativeLayout {
     let scope: AccountCleanupScope
+    let version: CleanupDeviceVersion
     private let support: DeviceCleanupDirectory
     private let roots: [DeviceCleanupTarget: [DeviceCleanupDirectory]]
-    init(scope: AccountCleanupScope) throws {
-        self.scope = scope
+    init(scope: AccountCleanupScope, version: CleanupDeviceVersion = .v3) throws {
+        self.scope = scope; self.version = version
         let supplied = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
             appropriateFor: nil, create: false)
         guard let physical = realpath(supplied.path, nil) else { throw CleanupFailure.unavailable }
@@ -1104,7 +1129,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
         let needs = try ["", ".CJNeedsRejections"].map { try capture("G2CDevelopmentNeeds", account + $0) }
         let feedback = try ["Answer", "General"].map { try capture("G2CDevelopmentFeedback", account, $0) }
         let offline = try capture("G2COfflineTrip", account)
-        roots = [
+        var roots: [DeviceCleanupTarget: [DeviceCleanupDirectory]] = [
             .encryptedMessage: [try capture("G2CDevelopmentMessages", account)],
             .tripPending: [trip, manual, manualRejected], .tripScoped: scoped, .needsPlanning: planning,
             .memoryManual: memory, .memoryLifecycle: lifecycle, .memoryTyped: typed, .memoryHistory: history,
@@ -1113,6 +1138,13 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             .memoryKey: memory + lifecycle + typed + history, .needsKey: needs, .feedbackKey: feedback,
             .offlineKey: [offline], .messageKey: [try capture("G2CDevelopmentMessages", account)]
         ]
+        if version == .v4 {
+            let erasure = try [".erasure-v1", ".erasure-v1.CJMemoryErasureObservationsV1"].map { try capture("G2CDevelopmentMemory", account + $0) }
+            let candidates = try [".candidate-v1", ".candidate-v1.CJMemoryCandidateRejectionsV1"].map { try capture("G2CDevelopmentMemory", account + $0) }
+            roots[.memoryErasure] = erasure; roots[.memoryCandidate] = candidates
+            roots[.memoryKey] = memory + lifecycle + typed + history + erasure + candidates
+        }
+        self.roots = roots
     }
     func directories(for target: DeviceCleanupTarget) throws -> [DeviceCleanupDirectory] {
         try support.validateIdentity()
@@ -1129,7 +1161,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
     }
     func manifestReferences() throws -> [String: [String]] {
         var result: [String: [String]] = [:]
-        for target in DeviceCleanupTarget.allCases where target != .sdkSession {
+        for target in version.nativeTargets where target != .sdkSession {
             result[target.rawValue] = try directories(for: target).map { try $0.identityReference() }
         }
         return result
@@ -1238,6 +1270,22 @@ private struct DevelopmentVerificationTransport: ClientTransport {
                 binding: memoryBinding, expectedKeyID: id, provider: provider)
             for directory in captured { try directory.validateIdentity() }
             try store.clearLocalFiles()
+        case .memoryErasure, .memoryCandidate:
+            guard let url else { throw CleanupFailure.unavailable }
+            guard keyIDs[.localMemoryPendingV1] != nil else { try layout.requireEmpty(for: target); return }
+            let (provider, id) = try provider(.localMemoryPendingV1)
+            for directory in captured { try directory.validateIdentity() }
+            if target == .memoryErasure {
+                let store = try MemoryErasurePendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                    binding: memoryBinding, expectedKeyID: id, provider: provider)
+                for directory in captured { try directory.validateIdentity() }
+                try store.clearLocalFiles()
+            } else {
+                let store = try MemoryCandidatePendingStore(directory: url, maximumBytes: 100_000, maximumRecords: 100,
+                    binding: memoryBinding, expectedKeyID: id, provider: provider)
+                for directory in captured { try directory.validateIdentity() }
+                try store.clearLocalFiles()
+            }
         case .needsPending:
             guard let url else { throw CleanupFailure.unavailable }
             let (provider, id) = try provider(.localNeedsPendingV1)
@@ -1295,6 +1343,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
 /// Separate device-only Keychain slots are never included in business-store erasure.
 private struct DevelopmentNativeManifest: Codable {
     let version: String
+    var deviceVersion: CleanupDeviceVersion { version == "NativeDeviceManifest@2" ? .v3 : .v4 }
     let scope: AccountCleanupScope
     let nonce: UUID
     let sdkHash: String
@@ -1360,8 +1409,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
         self.manifest = manifest; scope = manifest.scope; stateRef = try manifest.stateRef
         self.manifestStore = manifestStore; self.executionStore = executionStore; self.sdkStore = sdkStore
         self.offline = offline; self.quiesce = quiesce; self.clearSDK = clearSDK; self.validateOwner = validateOwner
-        layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope)
-        guard manifest.version == "NativeDeviceManifest@2", manifest.sdkHash.count == 64 else { throw CleanupFailure.stale }
+        guard ["NativeDeviceManifest@2", "NativeDeviceManifest@3"].contains(manifest.version), manifest.sdkHash.count == 64 else { throw CleanupFailure.stale }
+        layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope, version: manifest.deviceVersion)
         executionBytes = try executionStore.load()?.withBytes { $0 }
         let restored: DevelopmentNativeExecution?
         if let bytes = executionBytes {
@@ -1369,7 +1418,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
             let value = try JSONDecoder().decode(DevelopmentNativeExecution.self, from: bytes)
             let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
             guard try encoder.encode(value) == bytes, value.version == "NativeDeviceExecution@2", value.stateRef == stateRef,
-                  Set(value.steps.keys).isSubset(of: Set(DeviceCleanupTarget.allCases.map(\.rawValue))) else { throw CleanupFailure.stale }
+                  Set(value.steps.keys).isSubset(of: Set(manifest.deviceVersion.nativeTargets.map(\.rawValue))) else { throw CleanupFailure.stale }
             restored = value
         } else { restored = nil }
         let references = try layout.manifestReferences()
@@ -1395,7 +1444,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
     }
     private func validateExecution(_ invocation: DeviceCleanupInvocation, _ intent: UUID) throws {
         try validateManifest()
-        guard invocation.stateRef == stateRef, let execution,
+        guard invocation.version == manifest.deviceVersion, invocation.stateRef == stateRef, let execution,
               execution.intentID == intent, execution.operationID == invocation.operationID,
               execution.invocationID == invocation.invocationID, execution.requestDigest == invocation.requestDigest,
               Set(execution.steps.keys).isSubset(of: Set(invocation.targets.map(\.rawValue))),
@@ -1416,7 +1465,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
     func executeOriginal(_ invocation: DeviceCleanupInvocation, intentID: UUID) throws -> DeviceCleanupNativeOutcome {
         try validateManifest()
         guard execution == nil, executionBytes == nil, invocation.state == .pending,
-              invocation.stateRef == stateRef else { throw CleanupFailure.stale }
+              invocation.version == manifest.deviceVersion, invocation.stateRef == stateRef else { throw CleanupFailure.stale }
         // SDK stays intact until the original account confirmation exit. All
         // business hosts are retired before filesystem/key operations begin.
         try quiesce(); try validateManifest()
@@ -1434,7 +1483,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         // Shared keys are last. Fixed snapshot precedes residue so aggregate
         // emptiness is proved before deleting its one canonical key.
         let order: [DeviceCleanupTarget] = [.sdkSession, .encryptedMessage, .tripPending, .tripScoped, .needsPlanning,
-            .memoryManual, .memoryLifecycle, .memoryTyped, .memoryHistory, .needsPending, .feedbackPending,
+            .memoryManual, .memoryLifecycle, .memoryTyped, .memoryHistory, .memoryErasure, .memoryCandidate, .needsPending, .feedbackPending,
             .offlineTrip, .offlineWriteResidue, .messageKey, .tripKey, .memoryKey, .needsKey, .feedbackKey, .offlineKey]
         for target in order where invocation.targets.contains(target) {
             try validateExecution(invocation, intent)
@@ -1494,6 +1543,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
 @MainActor private final class DevelopmentCleanupWorkflow {
     let host = AccountCleanupContainerHost()
     private let endpoint: MessageEndpoint
+    private let preferredVersion: CleanupDeviceVersion
+    var version: CleanupDeviceVersion { manifest?.deviceVersion ?? preferredVersion }
     private let sdkStore: KeychainSessionStore
     private let offline: OfflineTripController
     private let manifestStore: KeychainSessionStore
@@ -1515,6 +1566,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private var controlsPending = false
     var holdsBusinessFence: Bool {
         if terminalControls != nil || controlsPending { return true }
+        if preferredVersion == .v4 && manifest?.deviceVersion == .v3 { return true } // Original recovery only; never upgrade its scope.
         do {
             if let device, try device.hasVerifiedIdentityRefusal { return true }
             return try account?.requiresRestrictedProgress ?? false
@@ -1546,8 +1598,9 @@ private func developmentCleanupHash(_ value: Data) -> String {
             selected: slot(environment: scope.environment, suffix: "M3.Cleanup.Selected"))
     }
     init(scope: AccountCleanupScope, endpoint: URL, sdkStore: KeychainSessionStore, offline: OfflineTripController,
-         ordinary: (DevelopmentSessionConfiguration, DevelopmentSessionLease)?,
+         ordinary: (DevelopmentSessionConfiguration, DevelopmentSessionLease)?, preferredVersion: CleanupDeviceVersion = .v3,
          quiesce: @escaping @MainActor () throws -> Void, clearSDK: @escaping @MainActor () throws -> Void) throws {
+        self.preferredVersion = preferredVersion
         self.endpoint = try MessageEndpoint(url: endpoint, maximumRequestBytes: 16384, maximumResponseBytes: 65536, allowLoopbackHTTP: true)
         self.sdkStore = sdkStore; self.offline = offline; self.ordinary = ordinary; self.quiesce = quiesce; self.clearSDK = clearSDK
         manifestStore = try Self.slot(environment: scope.environment, suffix: "M3.Cleanup.Manifest." + scope.account.uuidString)
@@ -1558,7 +1611,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         if let bytes = try manifestStore.load()?.withBytes({ $0 }) {
             guard bytes.count <= 32768 else { throw CleanupFailure.unavailable }
             let original = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: bytes)
-            guard original.version == "NativeDeviceManifest@2", original.scope.environment == scope.environment, original.scope.account == scope.account,
+            guard ["NativeDeviceManifest@2", "NativeDeviceManifest@3"].contains(original.version), original.scope.environment == scope.environment, original.scope.account == scope.account,
                   try original.encoded() == bytes else { throw CleanupFailure.stale }
             manifest = original
         }
@@ -1575,7 +1628,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         if let ordinary {
             device = try DeviceCleanupClient(development: endpoint, lifetime: lifetime, securePersistence: deviceStore,
                 session: ordinary.lease.session, sessionOperation: ordinary.lease.operation,
-                credentials: { [weak self] in try self?.check(); return self?.ordinary?.configuration.token }, requestTimeout: 10, resourceTimeout: 20)
+                credentials: { [weak self] in try self?.check(); return self?.ordinary?.configuration.token }, requestTimeout: 10, resourceTimeout: 20, version: version)
             account = try AccountCleanupClient(development: endpoint, lifetime: lifetime, securePersistence: accountStore,
                 session: ordinary.lease.session, sessionOperation: ordinary.lease.operation,
                 credentials: { [weak self] in try self?.check(); return self?.ordinary?.configuration.token },
@@ -1608,9 +1661,9 @@ private func developmentCleanupHash(_ value: Data) -> String {
         guard manifest == nil, let ordinary, ordinary.lease.session.isCurrent(ordinary.lease.operation),
               let material = try sdkStore.load() else { throw CleanupFailure.unavailable }
         try check()
-        let layout = try DevelopmentDeviceNativeLayout(scope: lifetime.scope)
+        let layout = try DevelopmentDeviceNativeLayout(scope: lifetime.scope, version: version)
         let stores = try DevelopmentDeviceNativeStores(scope: lifetime.scope, layout: layout, endpoint: endpoint.url)
-        let next = DevelopmentNativeManifest(version: "NativeDeviceManifest@2", scope: lifetime.scope, nonce: UUID(),
+        let next = DevelopmentNativeManifest(version: version == .v3 ? "NativeDeviceManifest@2" : "NativeDeviceManifest@3", scope: lifetime.scope, nonce: UUID(),
             sdkHash: material.withBytes(developmentCleanupHash), directories: try layout.manifestReferences(),
             keyIDs: Dictionary(uniqueKeysWithValues: stores.keyIDs.map { ($0.key.rawValue, $0.value) }))
         let bytes = try next.encoded()
@@ -1627,7 +1680,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private func validateBeforeConfirmation() throws {
         try check()
         guard let manifest else { throw CleanupFailure.unavailable }
-        let layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope)
+        let layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope, version: manifest.deviceVersion)
         guard try layout.manifestReferences() == manifest.directories,
               try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
               try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
@@ -1642,7 +1695,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
             switch device.state { case .ready, .registrationUnknown, .enrolled: break; default: throw CleanupFailure.stale }
             guard provision.namespace.backend == original.scope.environment, provision.namespace.account == original.scope.account else { throw CleanupFailure.stale }
             try offline.validateStorageProvision(provision)
-            let layout = try DevelopmentDeviceNativeLayout(scope: original.scope)
+            let layout = try DevelopmentDeviceNativeLayout(scope: original.scope, version: original.deviceVersion)
             let current = try layout.manifestReferences()
             let offlineTargets: Set<String> = Set([DeviceCleanupTarget.offlineTrip, .offlineWriteResidue, .offlineKey].map(\.rawValue))
             for (target, before) in original.directories {

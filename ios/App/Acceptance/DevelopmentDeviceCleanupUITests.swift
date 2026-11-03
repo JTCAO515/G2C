@@ -22,10 +22,10 @@ import Foundation
     func proof(_ name: String) async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof", name)) }
     func launch(_ f: Fixture, language: String = "en", proposal: Bool = false) throws {
         continueAfterFailure = false
-        app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.device-v3.acceptance")
+        app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.device-v4.acceptance")
         app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = ["OS_ACTIVITY_MODE": "disable", "G2C_DEV_ACCOUNT_MODE": "1",
-            "G2C_DEV_API_BASE_URL": f.endpoint, "G2C_DEV_OFFLINE_TRIP": "last-sync-v1", "G2C_DEV_CLEANUP_PROFILE": "device-v3",
+            "G2C_DEV_API_BASE_URL": f.endpoint, "G2C_DEV_OFFLINE_TRIP": "last-sync-v1", "G2C_DEV_CLEANUP_PROFILE": "device-v4",
             "G2C_DEV_ACCOUNTS": try XCTUnwrap(String(data: JSONEncoder().encode(f.accounts), encoding: .utf8))]
         if proposal, let id = f.proposal_id { app.launchEnvironment["G2C_DEV_PROPOSAL_ID"] = id }
         app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 20))

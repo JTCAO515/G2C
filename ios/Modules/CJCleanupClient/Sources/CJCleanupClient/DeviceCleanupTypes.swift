@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import CJStrictJSON
+import CJMessageHTTP
 
 public enum DeviceCleanupTarget: String, CaseIterable, Sendable {
     case encryptedMessage = "device-cache/encrypted-message-file"
@@ -22,6 +23,17 @@ public enum DeviceCleanupTarget: String, CaseIterable, Sendable {
     case tripKey = "device-cache/trip-key-keychain"
     case offlineKey = "device-cache/offline-key-keychain"
     case offlineWriteResidue = "device-cache/offline-write-residue"
+    case memoryErasure = "device-cache/memory-erasure-pending"
+    case memoryCandidate = "device-cache/memory-candidate-pending"
+}
+extension CleanupDeviceVersion {
+    public var nativeTargets: [DeviceCleanupTarget] {
+        let original: [DeviceCleanupTarget] = [.encryptedMessage, .sdkSession, .messageKey, .tripPending, .offlineTrip,
+            .feedbackPending, .feedbackKey, .memoryManual, .memoryLifecycle, .memoryTyped, .memoryKey,
+            .needsPending, .needsKey, .memoryHistory, .tripScoped, .needsPlanning, .tripKey, .offlineKey, .offlineWriteResidue]
+        return self == .v3 ? original : original + [.memoryErasure, .memoryCandidate]
+    }
+    var nativeRecordVersion: String { self == .v3 ? "DeviceCleanup.Native@1" : "DeviceCleanup.Native@2" }
 }
 public enum DeviceCleanupReason: String, Sendable { case accountCleanup = "account_cleanup", sessionInvalid = "session_invalid", offlineExpired = "offline_expired" }
 public enum DeviceCleanupResultState: String, Sendable { case pending, unknown, failed, confirmed }
@@ -30,6 +42,7 @@ public enum DeviceCleanupNativeOutcome: String, Codable, Sendable { case unknown
 /// A checked actual V3 reply bound to the exact original enrollment request.
 /// It is not a business/read grant. Neither token nor raw response is public UI data.
 public struct DeviceCleanupEnrollment: Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    public let version: CleanupDeviceVersion
     public let scope: AccountCleanupScope
     public let bindingID: String
     public let deviceID: String
@@ -45,7 +58,8 @@ public struct DeviceCleanupEnrollment: Sendable, CustomStringConvertible, Custom
     init(originalUTF8: Data, replyUTF8: Data, fromQuery: Bool, scope: AccountCleanupScope) throws {
         guard !originalUTF8.isEmpty, originalUTF8.count <= 16384 else { throw CleanupFailure.invalidResponse }
         let original = try accountCleanupObject(accountCleanupDocument(originalUTF8), fields: ["version", "action_id", "device_id", "state_ref"])
-        guard try accountCleanupString(original["version"]) == "CLEANUP-DEVICE@3" else { throw CleanupFailure.invalidResponse }
+        guard let version = CleanupDeviceVersion(rawValue: try accountCleanupString(original["version"])) else { throw CleanupFailure.invalidResponse }
+        self.version = version
         let actionID = try accountCleanupID(original["action_id"])
         deviceID = try accountCleanupID(original["device_id"]); stateRef = try accountCleanupDigest(original["state_ref"])
         let root = try accountCleanupObject(accountCleanupDocument(replyUTF8))
@@ -53,7 +67,7 @@ public struct DeviceCleanupEnrollment: Sendable, CustomStringConvertible, Custom
         let payload: [String: StrictJSONValue]
         if fromQuery {
             try accountCleanupKeys(root, fields: ["version", "request_id", "action_id", "input_sha256", "registration"])
-            guard try accountCleanupString(root["version"]) == "CLEANUP-DEVICE@3",
+            guard try accountCleanupString(root["version"]) == version.rawValue,
                   try accountCleanupID(root["action_id"]) == actionID,
                   try accountCleanupDigest(root["input_sha256"]) == deviceCleanupSHA(originalUTF8) else { throw CleanupFailure.invalidResponse }
             payload = try accountCleanupObject(root["registration"], fields: ["version", "binding_id", "device_id", "state_ref", "scope_digest", "device_token", "server_time", "business_access"])
@@ -61,7 +75,7 @@ public struct DeviceCleanupEnrollment: Sendable, CustomStringConvertible, Custom
             try accountCleanupKeys(root, fields: ["version", "request_id", "binding_id", "device_id", "state_ref", "scope_digest", "device_token", "server_time", "business_access"])
             payload = root
         }
-        guard try accountCleanupString(payload["version"]) == "CLEANUP-DEVICE@3",
+        guard try accountCleanupString(payload["version"]) == version.rawValue,
               try accountCleanupID(payload["device_id"]) == deviceID,
               try accountCleanupDigest(payload["state_ref"]) == stateRef,
               try accountCleanupString(payload["business_access"]) == "not_granted" else { throw CleanupFailure.invalidResponse }
@@ -73,7 +87,7 @@ public struct DeviceCleanupEnrollment: Sendable, CustomStringConvertible, Custom
 }
 
 private struct DeviceCleanupCanonicalCall: Encodable {
-    let version = "CLEANUP-DEVICE@3"
+    let version: String
     let operation_id: String
     let invocation_id: String
     let binding_id: String
@@ -86,6 +100,7 @@ private struct DeviceCleanupCanonicalCall: Encodable {
 /// Sealed actual server invocation. Physical dispatch still requires the host's
 /// recorded/current native manifest to match scope/state and every listed target.
 public struct DeviceCleanupInvocation: Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    public let version: CleanupDeviceVersion
     public let operationID: String
     public let invocationID: String
     public let bindingID: String
@@ -107,7 +122,7 @@ public struct DeviceCleanupInvocation: Sendable, CustomStringConvertible, Custom
         let root = try accountCleanupObject(result, fields: directQuery ? fields.union(["request_id"]) : fields)
         if directQuery { try deviceCleanupTrace(root) }
         let call = try accountCleanupObject(root["call"], fields: ["version", "operation_id", "invocation_id", "binding_id", "scope_digest", "state_ref", "reason", "targets", "business_access"])
-        guard try accountCleanupString(call["version"]) == "CLEANUP-DEVICE@3",
+        guard try accountCleanupString(call["version"]) == enrollment.version.rawValue,
               try accountCleanupID(call["binding_id"]) == enrollment.bindingID,
               try accountCleanupDigest(call["scope_digest"]) == enrollment.scopeDigest,
               try accountCleanupDigest(call["state_ref"]) == enrollment.stateRef,
@@ -115,15 +130,16 @@ public struct DeviceCleanupInvocation: Sendable, CustomStringConvertible, Custom
               let reason = DeviceCleanupReason(rawValue: try accountCleanupString(call["reason"])),
               case .array(let values) = call["targets"] else { throw CleanupFailure.invalidResponse }
         operationID = try accountCleanupID(call["operation_id"]); invocationID = try accountCleanupID(call["invocation_id"])
+        version = enrollment.version
         if let expectedOperationID { guard operationID == expectedOperationID else { throw CleanupFailure.invalidResponse } }
         bindingID = enrollment.bindingID; scopeDigest = enrollment.scopeDigest; stateRef = enrollment.stateRef; self.reason = reason
         targets = try values.map { value in
             guard let target = DeviceCleanupTarget(rawValue: try accountCleanupString(value)) else { throw CleanupFailure.invalidResponse }
             return target
         }
-        let expected: Set<DeviceCleanupTarget> = reason == .offlineExpired ? [.offlineTrip, .offlineKey, .offlineWriteResidue] : Set(DeviceCleanupTarget.allCases)
+        let expected: Set<DeviceCleanupTarget> = reason == .offlineExpired ? [.offlineTrip, .offlineKey, .offlineWriteResidue] : Set(version.nativeTargets)
         guard targets.count == expected.count, Set(targets) == expected else { throw CleanupFailure.invalidResponse }
-        let canonical = DeviceCleanupCanonicalCall(operation_id: operationID, invocation_id: invocationID, binding_id: bindingID,
+        let canonical = DeviceCleanupCanonicalCall(version: version.rawValue, operation_id: operationID, invocation_id: invocationID, binding_id: bindingID,
             scope_digest: scopeDigest, state_ref: stateRef, reason: reason.rawValue, targets: targets.map(\.rawValue))
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         // All allowed call values are ASCII identifiers/fixed literals. This is the
