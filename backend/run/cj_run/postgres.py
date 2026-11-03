@@ -129,13 +129,13 @@ class Repository:
     def transaction(self, *, require_clean_close=False):
         return self._transaction(require_clean_close=require_clean_close,scope_lock=True)
 
-    def job_transaction(self, *, require_clean_close=False):
+    def job_transaction(self, *, require_clean_close=False,background_protocol=None):
         # Job rows have their own locks/physical lease. Taking the shared RUN
         # scope before MESSAGE/MEMORY would invert the protected source order.
-        return self._transaction(require_clean_close=require_clean_close,scope_lock=False)
+        return self._transaction(require_clean_close=require_clean_close,scope_lock=False,background_protocol=background_protocol)
 
     @contextmanager
-    def _transaction(self, *, require_clean_close,scope_lock):
+    def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None):
         conn = self.connect()
         cur = None
         outcome = 'setup_failed'
@@ -162,6 +162,8 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
+                if background_protocol is not None:
+                    cur.execute("SELECT set_config('cj.background_protocol',%s,true)",(background_protocol,))
                 cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
                             (str(self.statement_timeout_ms), str(self.lock_timeout_ms)))
                 cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))

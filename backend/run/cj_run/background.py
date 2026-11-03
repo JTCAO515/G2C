@@ -29,9 +29,13 @@ class JobOutcome:
 
 def read_original(database,boundary,token,jid,attempt):
     """Fresh own-account metadata only; no C policy/current quota/model adapter."""
+    return _read_original(database,boundary,token,jid,attempt,protocol=ABI)
+
+
+def _read_original(database,boundary,token,jid,attempt,*,protocol):
     holder={}
     def read(context):
-        store=JobStore(database.run_repository(context.scope));record=store.read(jid,attempt)
+        store=JobStore(database.run_repository(context.scope),protocol=protocol);record=store.read(jid,attempt)
         if record is None:raise Denied('original background job unavailable')
         holder['value']=record.summary()
         return b'original-background-metadata'
@@ -62,10 +66,18 @@ class BackgroundJobsV2:
     def _owned(self,token,operation):
         return self.boundary.with_history_context(token,operation)
 
+    def _store(self,scope):return JobStore(self.database.run_repository(scope))
+
+    def _processing_policy(self,args):
+        return self.collection.processing_policy(*args,max_payload_bytes=self.max_payload_bytes)
+
+    def _publication_policy(self,args,output,commit_guard):
+        return self.collection.publication_policy(*args,output,sha(output),max_payload_bytes=self.max_payload_bytes,before_commit=commit_guard)
+
     def _load(self,token,jid,attempt):
         holder={}
         def read(context):
-            store=JobStore(self.database.run_repository(context.scope))
+            store=self._store(context.scope)
             record=store.read(jid,attempt)
             if record is None:raise Denied('original background job unavailable')
             holder.update(store=store,record=record)
@@ -78,8 +90,7 @@ class BackgroundJobsV2:
         def enter(context):
             if context.scope!=store.scope:raise Denied('background job owner changed')
             args=(context,token,request.job_id,request.attempt_id,request.prepared_input,request.prepared_sha256)
-            policy=(self.collection.processing_policy(*args,max_payload_bytes=self.max_payload_bytes) if output is None else
-                self.collection.publication_policy(*args,output,sha(output),max_payload_bytes=self.max_payload_bytes,before_commit=commit_guard))
+            policy=self._processing_policy(args) if output is None else self._publication_policy(args,output,commit_guard)
             def project(source,lease=None):
                 def local(actual):
                     if actual!=request.prepared_input:raise Conflict('original prepared model bytes required')
@@ -98,7 +109,7 @@ class BackgroundJobsV2:
         profile=self.database.run_context.current
         holder={}
         def bind(context):
-            store=JobStore(self.database.run_repository(context.scope))
+            store=self._store(context.scope)
             old=store.read(request.job_id,request.attempt_id)
             if old is not None:store.require_original(old,request,profile.meter,profile.output_limits['memory'])
             holder.update(store=store,old=old)
@@ -236,7 +247,7 @@ class BackgroundJobsV2:
     def run_once(self,token,provider):
         holder={}
         def pending(context):
-            store=JobStore(self.database.run_repository(context.scope));holder['jobs']=store.pending()
+            store=self._store(context.scope);holder['jobs']=store.pending()
             return b'own-pending-jobs'
         self._owned(token,pending)
         results=[]
