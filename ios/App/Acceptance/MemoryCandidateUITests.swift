@@ -83,9 +83,10 @@ import Foundation
         if result != .completed { print("CANDIDATE_STATUS", id, element.exists ? element.label : "missing") }
         XCTAssertEqual(result, .completed, id)
     }
-    func enter(_ id: String, value: String) {
+    func enter(_ id: String, value: String, placeholder: String) {
         let multi = app.textViews.matching(identifier: id), single = app.textFields.matching(identifier: id)
-        let query = multi.element.exists ? multi : single, field = query.element
+        let multiline = multi.element.exists
+        let query = multiline ? multi : single, field = query.element
         reveal(field); XCTAssertEqual(query.count, 1)
         field.tap()
         XCTAssertTrue(app.keyboards.element.waitForExistence(timeout: 10), "The actual editor must acquire keyboard focus")
@@ -98,7 +99,7 @@ import Foundation
             XCTAssertTrue(selectAll.element.waitForExistence(timeout: 5))
             XCTAssertEqual(selectAll.count, 1); XCTAssertTrue(selectAll.element.isEnabled)
             selectAll.element.tap(); field.typeText(XCUIKeyboardKey.delete.rawValue)
-            XCTAssertEqual(field.value as? String, "")
+            XCTAssertEqual(field.value as? String, multiline ? placeholder : "")
         }
         field.typeText(value)
         XCTAssertEqual(Array((field.value as? String ?? "").utf8), Array(value.utf8))
@@ -153,8 +154,8 @@ import Foundation
             let kind = app.descendants(matching: .any).matching(identifier: "memoryCandidate.editor.kind")
             reveal(kind.element); XCTAssertEqual(kind.count, 1); kind.element.tap()
             tap(language == "en" ? "Preference" : "偏好")
-            enter("memoryCandidate.editor.text", value: f.edited_text)
-            enter("memoryCandidate.editor.time", value: f.occurred_at)
+            enter("memoryCandidate.editor.text", value: f.edited_text, placeholder: language == "en" ? "Memory text" : "记忆内容")
+            enter("memoryCandidate.editor.time", value: f.occurred_at, placeholder: language == "en" ? "Time or original uncertainty" : "时间或原有不确定说明")
             let done = app.toolbars.buttons.matching(identifier: "memoryCandidate.editor.done")
             XCTAssertEqual(done.count, 1); done.element.tap()
             let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.element)
