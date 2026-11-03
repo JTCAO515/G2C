@@ -10,12 +10,13 @@ TARGETS=V2_TARGETS+('device-cache/memory-history-pending','device-cache/trip-sco
 
 
 class DeviceActions:
+    version=VERSION
     def __init__(self,metadata,issuer):self.metadata,self.store,self.issuer=metadata,metadata.store,issuer
 
     def create(self,binding_id,reason,action_id,input_sha256):
         binding=self.metadata.device(binding_id)
-        if binding['protocol']!=VERSION or reason not in ('session_invalid','offline_expired'):
-            raise Denied('original V3 device binding/reason required')
+        if binding['protocol']!=self.version or reason not in ('session_invalid','offline_expired'):
+            raise Denied('original device binding/reason required')
         with self.store.transaction('device-action-'+digest(action_id.encode())) as cur:
             self.metadata.lock_subject(cur)
             cur.execute('SELECT input_digest,invocation_id,binding_id FROM cj_cleanup_device_action WHERE subject_digest=%s AND action_id=%s',
@@ -41,4 +42,4 @@ class DeviceActions:
         if row is not None and row[2]!=binding_id:raise Denied('original device binding required')
         if row is not None and row[0]!=input_sha256:raise Conflict('original device action digest required')
         result=None if row is None else DeviceBridge(self.metadata,self.issuer).query(row[1],binding_id)
-        return dict(version=VERSION,action_id=action_id,input_sha256=input_sha256,invocation=result)
+        return dict(version=self.version,action_id=action_id,input_sha256=input_sha256,invocation=result)

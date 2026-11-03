@@ -88,7 +88,7 @@ def register_account_cleanup_routes(app,gateway):
 
         @app.post(prefix+'/cleanup-device-calls')
         async def device_call(request:Request):
-            v3=version=='CLEANUP-DEVICE@3'
+            v3=version in ('CLEANUP-DEVICE@3','CLEANUP-DEVICE@4')
             return await invoke(request,lambda cap,v,raw,p:gateway.device_call(cap,v['binding_id'],v['reason'],p,device_version=version,
                 action_id=v['action_id'] if v3 else None,input_digest=digest(raw) if v3 else None),write=True,
                 scheme='Device',version=version,fields=('action_id','binding_id','reason') if v3 else ('binding_id','reason'))
@@ -106,18 +106,27 @@ def register_account_cleanup_routes(app,gateway):
     device_routes('/v1','CLEANUP-DEVICE@1')
     device_routes('/v2','CLEANUP-DEVICE@2')
     device_routes('/v3','CLEANUP-DEVICE@3')
+    device_routes('/v4','CLEANUP-DEVICE@4')
 
-    @app.get('/v3/cleanup-device-registrations')
-    async def original_registration(request:Request):
-        return await invoke(request,lambda token,v,raw,p:gateway.device_registration_query(token,v['action_id'],v['input_sha256'],p),
-            write=False,scheme='Bearer',query_fields=('action_id','input_sha256'))
+    def original_device_routes(prefix,version):
+        @app.get(prefix+'/cleanup-device-registrations')
+        async def original_registration(request:Request):
+            return await invoke(request,lambda token,v,raw,p:gateway.device_registration_query(token,v['action_id'],v['input_sha256'],p,device_version=version),
+                write=False,scheme='Bearer',query_fields=('action_id','input_sha256'))
 
-    @app.get('/v3/cleanup-device-call-actions')
-    async def original_device_action(request:Request):
-        return await invoke(request,lambda token,v,raw,p:gateway.device_action_query(token,v['action_id'],v['input_sha256'],p),
-            write=False,scheme='Device',query_fields=('action_id','input_sha256'))
+        @app.get(prefix+'/cleanup-device-call-actions')
+        async def original_device_action(request:Request):
+            return await invoke(request,lambda token,v,raw,p:gateway.device_action_query(token,v['action_id'],v['input_sha256'],p,device_version=version),
+                write=False,scheme='Device',query_fields=('action_id','input_sha256'))
 
-    @app.get('/v1/cleanup-device-completions/{invocation_id}')
-    async def original_device_completion(invocation_id:str,request:Request):
-        return await invoke(request,lambda token,v,raw,p:gateway.device_completion(token,identifier(invocation_id),v['request_digest'],p),
-            write=False,scheme='Device',query_fields=('request_digest',))
+    original_device_routes('/v3','CLEANUP-DEVICE@3')
+    original_device_routes('/v4','CLEANUP-DEVICE@4')
+
+    def completion_route(prefix,device_version,version):
+        @app.get(prefix+'/cleanup-device-completions/{invocation_id}')
+        async def original_device_completion(invocation_id:str,request:Request):
+            return await invoke(request,lambda token,v,raw,p:gateway.device_completion(token,identifier(invocation_id),v['request_digest'],p,
+                device_version=device_version,completion_version=version),write=False,scheme='Device',query_fields=('request_digest',))
+
+    completion_route('/v1','CLEANUP-DEVICE@3','CLEANUP-DEVICE-COMPLETION@1')
+    completion_route('/v2','CLEANUP-DEVICE@4','CLEANUP-DEVICE-COMPLETION@2')
