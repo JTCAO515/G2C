@@ -164,3 +164,10 @@ generation 或 MEMORY epoch 变化拒绝旧结果。相同 fence 的暂时暂停
 没有 prompt 或 active context 出口；未来消费者必须按 MEMORY 当前版本/撤回
 及确认规则重新核对，不能直接注入或 promote。本地候选清理与保留政策未固定，
 因此不得在真实个人数据环境启用。精确请求见 contracts/memory-jobs/SEAM.md。
+# M3 item-erasure compatibility
+
+[MEMORY-ERASURE@1](../../contracts/memory-withdrawal/ERASURE-V1.md) adds permanent
+original message/decision barriers before enqueue, model-data construction and
+new publication. V6 current candidate projection retains unrelated candidates
+after a shared job payload is erased; existing candidate Action1 remains valid.
+Old historical V3/V4 discovery protocols keep their original semantics.

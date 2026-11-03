@@ -346,6 +346,14 @@
       "sha256": "4695caa52c6a39d380a2f2d0062d054aae6d6b48ca4949df2fb3d655488a2e5e",
       "down": "backend/migrations/down/0043_background_v3.down.sql",
       "down_sha256": "37480206642d7829ed05b7ec30a64b0d4a541af8a275e27fd0b383a09a04e169"
+    },
+    {
+      "version": 44,
+      "name": "memory_item_erasure",
+      "file": "backend/migrations/0044_memory_item_erasure.sql",
+      "sha256": "f132f06a0ac4bd6c5fe732f076e6d21226ccea7c04d714a6195753f7e9ec692f",
+      "down": "backend/migrations/down/0044_memory_item_erasure.down.sql",
+      "down_sha256": "d83fb12c7acb70da3fa4391fce456fbf9d88befb210d96c2943f5a522e74769f"
     }
   ]
 }

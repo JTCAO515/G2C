@@ -47,6 +47,9 @@ def prepared(tx,snapshot,decision_lease,policy,mode,*,max_payload_bytes):
         raise Unavailable('actual accepted decision owner differs')
     decision=decision_lease.decision
     digest=source_digest(snapshot.scope,decision)
+    tx.cur.execute("SELECT 1 FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='decision' AND reference_sha256=%s",
+                   (sha256(snapshot.scope.encode()).hexdigest(),digest))
+    if tx.cur.fetchone() is not None:raise model_v2.NoEligibleSource('accepted decision was erased from organization')
     tx.cur.execute('''SELECT 1 FROM cj_memory_history_origin o
         JOIN cj_memory_item i ON (i.scope,i.item_id)=(o.scope,o.item_id)
         LEFT JOIN cj_memory_source s ON (s.scope,s.source_id,s.version)=(i.scope,i.source_id,i.source_version)
