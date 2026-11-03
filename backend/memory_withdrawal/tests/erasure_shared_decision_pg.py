@@ -2,6 +2,7 @@
 from datetime import datetime,timedelta,timezone
 import json,sys,unittest
 from pathlib import Path
+import psycopg
 
 from fastapi.testclient import TestClient
 
@@ -23,6 +24,7 @@ from cj_memory_withdrawal.erasure_service import ORDER
 from cj_cleanup.memory_payloads import hooks,hold_payloads
 from cj_run.background_v3 import BackgroundJobsV3
 from cj_run.background_store_v3 import JobRequestV3
+from cj_run.step_usage import ledger_scope_for
 from cj_trip.domain import packed
 
 
@@ -76,6 +78,10 @@ class SharedDecisionErasureChecks(manual.ManualChecks):
         self.assertEqual(model.calls,2)
         self.assertEqual(len(producer.poll(token).submitted),1)  # Actual B queued header, zero provider claim.
         self.assertEqual(len(originals),3)
+        account=ledger_scope_for(self.owner,run.current.meter)
+        with psycopg.connect(**json.loads(path.read_text())) as audit:
+            original_ledger=audit.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0]
+            self.assertNotIn(originals[-1]['meter_attempt_id'],original_ledger['attempts'])
         projection=json.loads(c.current_conversation_candidates(token,'a-origin',''))
         self.assertEqual(len(projection['candidates']),2)
         selected,other=sorted(projection['candidates'],key=lambda v:v['slot'])
@@ -97,6 +103,8 @@ class SharedDecisionErasureChecks(manual.ManualChecks):
             self.assertEqual(value['online_status'],'complete',value);return raw,value
         with TestClient(erasure) as client:
             first_raw,first=delete(client,selected,'erase-first-shared')
+            with psycopg.connect(**json.loads(path.read_text())) as audit:
+                self.assertEqual(audit.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0],original_ledger)
             with host.database.connect(self.owner) as conn:
                 self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_history_job').fetchone(),(0,))
                 self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_erasure_manifest').fetchone(),(0,))
@@ -118,6 +126,8 @@ class SharedDecisionErasureChecks(manual.ManualChecks):
             self.assertNotEqual(first['operation_id'],second['operation_id'])
             self.assertEqual(client.post('/v1/memory-erasures',content=second_raw,headers=headers).json()['result']['online_status'],'complete')
             self.assertEqual(client.post('/v1/memory-erasures',content=first_raw,headers=headers).json()['result']['online_status'],'complete')
+        with psycopg.connect(**json.loads(path.read_text())) as audit:
+            self.assertEqual(audit.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0],original_ledger)
         with host.database.connect(self.owner) as conn:
             for table in ('cj_memory_item','cj_memory_source','cj_memory_operation','cj_memory_history_origin',
                           'cj_memory_history_candidate_action','cj_memory_history_job','cj_memory_erasure_manifest'):
