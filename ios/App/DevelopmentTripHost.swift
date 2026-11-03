@@ -1703,20 +1703,25 @@ private func developmentCleanupHash(_ value: Data) -> String {
         }
     }
     private func finalizeControlRecords() async throws {
+        var phase = "original-selection"
+        defer { NSLog("G2C_CONTROL_PHASE %@", phase) } // Bounded stages only; never original values or credentials.
         try check()
         if case .finalizing(let plan) = try Self.selection(environment: lifetime.scope.environment) {
             guard plan.scope == lifetime.scope else { throw CleanupFailure.stale }
             terminalControls = try CleanupControlFinalizer.resume(plan: plan, store: Self.controlStore(scope: plan.scope))
             controlsPending = false; return
         }
+        phase = "native-reconciliation"
         guard let device, let manifest else { throw CleanupFailure.unavailable }
         guard case .invocation(let invocation, .confirmed) = device.state, invocation.state == .confirmed else { throw CleanupFailure.unavailable }
         guard try device.executeNative(using: nativeExecutor()) == .confirmed else { throw CleanupFailure.unavailable }
+        phase = "original-completion"
         guard case .completion(let completion) = try await device.perform(device.prepareCompletionQuery()) else { throw CleanupFailure.unavailable }
         try check()
         guard completion.scope == manifest.scope, completion.permitsAccountRecordFinalization else {
             controlsPending = true; throw CleanupFailure.unavailable
         }
+        phase = "account-record-binding"
         if let account {
             switch account.state {
             case .ready, .registered: break
@@ -1726,13 +1731,15 @@ private func developmentCleanupHash(_ value: Data) -> String {
             case .registrationUnknown, .preparationUnknown, .unavailable: throw CleanupFailure.unavailable
             }
         }
+        phase = "writer-retirement"
         try quiesce(); try check()
         let store = DevelopmentControlRecordStore(scope: manifest.scope, manifest: manifestStore, execution: executionStore,
             device: deviceStore, account: accountStore, selected: indexStore)
         lifetime.invalidate(); device.invalidate(); account?.invalidate()
         self.device = nil; self.account = nil; executor = nil; controlsPending = true
+        phase = "exact-record-finalization"
         terminalControls = try CleanupControlFinalizer.start(completion: completion, store: store)
-        controlsPending = false
+        controlsPending = false; phase = "complete"
     }
     private func refresh(unknown: Bool = false) {
         var value = AccountCleanupPresentation(); value.unknown = unknown
