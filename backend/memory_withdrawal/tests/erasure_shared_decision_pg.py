@@ -128,6 +128,12 @@ class SharedDecisionErasureChecks(manual.ManualChecks):
             self.assertEqual(client.post('/v1/memory-erasures',content=first_raw,headers=headers).json()['result']['online_status'],'complete')
         with psycopg.connect(**json.loads(path.read_text())) as audit:
             self.assertEqual(audit.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0],original_ledger)
+        rebuilt=create_automatic_decision_collection_app(conninfo_path=path,auth_dir=self.auth,run_context=run,resolve_collection=resolve)
+        restored=DecisionConversationProducer(rebuilt.state.memory_history.service,no_legacy,submit,
+            max_payload_bytes=262144,max_conversations=100)
+        for current_producer in (producer,restored):
+            self.assertEqual(current_producer.poll(token).submitted,())
+        self.assertEqual(len(originals),3)
         with host.database.connect(self.owner) as conn:
             for table in ('cj_memory_item','cj_memory_source','cj_memory_operation','cj_memory_history_origin',
                           'cj_memory_history_candidate_action','cj_memory_history_job','cj_memory_erasure_manifest'):
