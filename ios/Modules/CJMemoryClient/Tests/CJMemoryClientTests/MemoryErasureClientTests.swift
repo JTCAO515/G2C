@@ -126,7 +126,8 @@ private struct ErasureWire: ClientTransport {
         try f.session.clear()
         #expect(throws: (any Error).self) { try grant.validate() }
     }
-    @Test func protectedStopClearsOnlyOwnItemJournalsAndRetainsOriginalRecovery() async throws {
+    @Test(arguments: ["preexisting", "late-rejection", "late-management", "late-nested"])
+    func protectedStopClearsOnlyOwnItemJournalsAndRetainsOriginalRecovery(sidecar: String) async throws {
         let f = try ErasureClientFixture(); defer { f.dispose() }
         let work = try f.client.prepare(entry: await f.entry(), acknowledgement: .ownedTripDerivedScope)
         _ = try await f.client.perform(work)
@@ -142,7 +143,7 @@ private struct ErasureWire: ClientTransport {
         var target = command("已删除的中文"); target.item_id = "item+中文"
         let removed = try MemoryPending(target), other = try MemoryPending(command("另一条记忆"))
         try manual.append(removed); try manual.append(other)
-        try manual.recordRejection(removed, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {})
+        if sidecar == "preexisting" { try manual.recordRejection(removed, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {}) }
         let typedRecord = TypedMemoryPending(try TypedMemoryCommand(operationID: "typed-save", itemID: "item+中文", subject: "self", slot: "pace", text: "已删除的中文", occurredAt: "时间不详", kind: .preference, travelContext: nil))
         try typed.append(typedRecord, validateBinding: {})
         try typed.recordRejection(typedRecord, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {})
@@ -151,11 +152,39 @@ private struct ErasureWire: ClientTransport {
         let cleaner = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed)
         #expect(throws: MemoryFailure.staleBinding) { try cleaner.clear(grant, validateCurrent: { throw MemoryFailure.staleBinding }) }
         #expect(try manual.pending().count == 2)
+        if sidecar != "preexisting" {
+            var callbacks = 0
+            let nested = typedRoot.appendingPathExtension("CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2")
+            #expect(throws: MemoryFailure.storageUnavailable) {
+                try cleaner.clear(grant, validateCurrent: {
+                    callbacks += 1
+                    if callbacks == 2 {
+                        switch sidecar {
+                        case "late-rejection": try manual.recordRejection(removed, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {})
+                        case "late-management": _ = try typed.managementRecords(create: true)
+                        default:
+                            try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+                            try Data("unrecognized original".utf8).write(to: nested.appendingPathComponent("retained"))
+                        }
+                    }
+                })
+            }
+            #expect(try manual.pending().count == 2)
+            #expect(callbacks == 2)
+            #expect(try typed.pending().count == 1)
+            #expect(try Data(contentsOf: otherFile) == otherBytes)
+            if sidecar == "late-nested" {
+                #expect(try Data(contentsOf: nested.appendingPathComponent("retained")) == Data("unrecognized original".utf8))
+                return
+            }
+        }
         try cleaner.clear(grant, validateCurrent: {})
         #expect(try manual.pending().map(\.operationID) == [other.operationID])
         #expect(try typed.pending().isEmpty)
         #expect(try Data(contentsOf: otherFile) == otherBytes)
-        #expect(try FileManager.default.contentsOfDirectory(atPath: manualRoot.appendingPathExtension("CJMemoryRejections").path).isEmpty)
+        let rejectionRoot = manualRoot.appendingPathExtension("CJMemoryRejections")
+        if sidecar == "late-management" { #expect(!FileManager.default.fileExists(atPath: rejectionRoot.path)) }
+        else { #expect(try FileManager.default.contentsOfDirectory(atPath: rejectionRoot.path).isEmpty) }
         #expect(try FileManager.default.contentsOfDirectory(atPath: typedRoot.appendingPathExtension("CJMemoryTypedRejectionsV2").path).isEmpty)
         #expect(try f.store.records().count == 1)
         try grant.validate()

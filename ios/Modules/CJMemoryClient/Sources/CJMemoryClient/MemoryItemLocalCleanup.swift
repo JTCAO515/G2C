@@ -18,10 +18,17 @@ import Foundation
         let plan = try store.prepareRemoval(where: matches)
         return Step(validate: { try store.validateRemoval(plan) }, perform: { try store.performRemoval(plan) })
     }
+    private func absentStep<Record, Other>(_ store: MemoryEncryptedRecords<Record>, domain: String, type: Other.Type) -> Step where Other: MemoryJournalRecord {
+        let validate = {
+            let observed: MemoryEncryptedRecords<Other>? = try store.adjacentRecords(domain: domain, create: false)
+            guard observed == nil else { throw MemoryFailure.storageUnavailable }
+        }
+        return Step(validate: validate, perform: validate)
+    }
     private func rejectionStep<Record>(_ store: MemoryEncryptedRecords<Record>, domain: String,
-        matches: (Record) throws -> Bool) throws -> Step? {
+        matches: (Record) throws -> Bool) throws -> Step {
         let rejected: MemoryEncryptedRecords<MemoryRejectedOperation<Record>>? = try store.adjacentRecords(domain: domain, create: false)
-        guard let rejected else { return nil }
+        guard let rejected else { return absentStep(store, domain: domain, type: MemoryRejectedOperation<Record>.self) }
         return try step(rejected) { try matches($0.original) }
     }
     public func clear(_ authorization: MemoryErasureLocalAuthorization, validateCurrent: () throws -> Void) throws {
@@ -31,14 +38,17 @@ import Foundation
         let itemID = authorization.itemID
         var steps: [Step] = []
         steps.append(try step(manual.storage) { same($0.itemID, itemID) })
-        if let step = try rejectionStep(manual.storage, domain: "CJMemoryRejections", matches: { same($0.itemID, itemID) }) { steps.append(step) }
+        steps.append(try rejectionStep(manual.storage, domain: "CJMemoryRejections", matches: { same($0.itemID, itemID) }))
         steps.append(try step(management.storage) { same(try $0.action.header.item, itemID) })
-        if let step = try rejectionStep(management.storage, domain: "CJMemoryManagementRejections", matches: { same(try $0.action.header.item, itemID) }) { steps.append(step) }
+        steps.append(try rejectionStep(management.storage, domain: "CJMemoryManagementRejections", matches: { same(try $0.action.header.item, itemID) }))
         steps.append(try step(typed.storage) { same($0.itemID, itemID) })
-        if let step = try rejectionStep(typed.storage, domain: "CJMemoryTypedRejectionsV2", matches: { same($0.itemID, itemID) }) { steps.append(step) }
+        steps.append(try rejectionStep(typed.storage, domain: "CJMemoryTypedRejectionsV2", matches: { same($0.itemID, itemID) }))
         if let management = try typed.managementRecords(create: false) {
             steps.append(try step(management) { same(try $0.action.header.item, itemID) })
-            if let step = try rejectionStep(management, domain: "CJMemoryTypedManagementRejectionsV2", matches: { same(try $0.action.header.item, itemID) }) { steps.append(step) }
+            steps.append(try rejectionStep(management, domain: "CJMemoryTypedManagementRejectionsV2", matches: { same(try $0.action.header.item, itemID) }))
+        } else {
+            steps.append(absentStep(typed.storage, domain: "CJMemoryTypedManagementV2", type: TypedMemoryManagementPending.self))
+            steps.append(absentStep(typed.storage, domain: "CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2", type: MemoryRejectedOperation<TypedMemoryManagementPending>.self))
         }
         // Key/authorization callbacks may reenter. Finish every such callback
         // before validating every physical plan, then unlink without callbacks.
