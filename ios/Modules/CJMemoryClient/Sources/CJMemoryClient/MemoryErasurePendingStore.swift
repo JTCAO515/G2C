@@ -96,6 +96,18 @@ struct MemoryErasureObservation: MemoryJournalRecord, Sendable {
         return ObservationProof(value: record, storage: records, durability: try records.proveOriginal(record))
     }
     func validate(_ observation: ObservationProof) throws { try observation.storage.validateDurability(observation.durability) }
+    func observations(for originals: [MemoryErasurePending]) throws -> [ObservationProof] {
+        let records: MemoryEncryptedRecords<MemoryErasureObservation>? = try storage.adjacentRecords(domain: "CJMemoryErasureObservationsV1", create: false)
+        guard let records else { return [] }
+        let values = try records.pending()
+        let proofs = try values.map { value in
+            guard let original = originals.first(where: { same($0.actionID, value.actionID) }) else { throw MemoryFailure.storageUnavailable }
+            try value.check(original)
+            return ObservationProof(value: value, storage: records, durability: try records.proveOriginal(value))
+        }
+        try records.validateInventory(values)
+        return proofs
+    }
     func record(_ progress: MemoryErasureProgress, original: MemoryErasurePending, validate: () throws -> Void) throws {
         let proof = try storage.proveOriginal(original)
         if let existing = try observation(for: original) {

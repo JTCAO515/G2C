@@ -4,9 +4,9 @@ import Testing
 import CJMessageKeys
 @testable import CJMemoryClient
 
-private let erasureTrace = "11111111-1111-4111-8111-111111111468"
-private let erasureOperation = "memory-erasure-v1:" + String(repeating: "a", count: 64)
-private func erasureOriginal(_ item: String = "条目-e\u{301}", version: Int64 = 3) throws -> MemoryErasureAction {
+let erasureTrace = "11111111-1111-4111-8111-111111111468"
+let erasureOperation = "memory-erasure-v1:" + String(repeating: "a", count: 64)
+func erasureOriginal(_ item: String = "条目-e\u{301}", version: Int64 = 3) throws -> MemoryErasureAction {
     try .init(itemID: item, expectedVersion: version, acknowledgement: .ownedTripDerivedScope)
 }
 
@@ -91,7 +91,7 @@ private func erasureOriginal(_ item: String = "条目-e\u{301}", version: Int64 
         #expect(try FileManager.default.contentsOfDirectory(atPath: f.root.path).isEmpty)
     }
 }
-private func erasureResponse(_ original: MemoryErasureAction, post: Bool, phase: String = "unknown", empty: Bool = false) -> [String: Any] {
+func erasureResponse(_ original: MemoryErasureAction, post: Bool, phase: String = "unknown", empty: Bool = false) -> [String: Any] {
     var result: [String: Any] = ["action_id": original.actionID, "operation_id": erasureOperation,
         "item_version": original.expectedVersion == Int64.max ? Int64.max : original.expectedVersion + 1,
         "scope_epoch": 5, "stop_use": "stopped", "online_status": phase,
@@ -103,7 +103,7 @@ private func erasureResponse(_ original: MemoryErasureAction, post: Bool, phase:
     }
     return ["version": "MEMORY-ERASURE-response@1", "request_id": erasureTrace, "result": result]
 }
-private func erasureBytes(_ value: [String: Any]) throws -> Data { try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .withoutEscapingSlashes]) }
+func erasureBytes(_ value: [String: Any]) throws -> Data { try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .withoutEscapingSlashes]) }
 
 struct MemoryErasureTypesTests {
     @Test func explicitRangeAndOriginalUTF8ArePreservedWithoutOperationIDCreation() throws {
