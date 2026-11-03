@@ -29,6 +29,7 @@ from cj_run.background_v3 import BackgroundJobsV3
 from cj_run.background_store_v3 import JobRequestV3
 from cj_run.step_usage import ledger_scope_for
 from cj_trip.domain import packed
+from memory_test_inventory import write_inventory
 
 
 class TwoEntries(FakeProvider):
@@ -92,9 +93,7 @@ class SharedDecisionErasureChecks(manual.ManualChecks):
             formal=conn.execute('SELECT trip_id,version,content FROM cj_trip_record ORDER BY trip_id').fetchall()
             chat=conn.execute('SELECT message_id,raw_input,input_sha256 FROM cj_message_receipt ORDER BY message_id').fetchall()
         registry=Path(self.tmp.name)/'shared-memory-registry.json'
-        registry.write_bytes(packed(dict(version='actual-shared-bg3-erasure-component',stores=[dict(id='memory-derived',cleanup_protocol='CLEANUP@1.1'),
-            dict(id='checkpoints',objects=[dict(id='run',cleanup_protocol='CLEANUP@1.1')]),
-            dict(id='business',objects=[dict(id=t.split('/')[1],cleanup_protocol='CLEANUP@1.1') for t in ORDER if t.startswith('business/')])])) )
+        write_inventory(registry,'actual-shared-bg3-erasure-component')
         configuration=Configuration({'local':b'shared-bg3-synthetic-erasure-key'},'local',3600,ORDER,registry)
         erasure=create_erasure_app_v2(conninfo_path=path,auth_dir=self.auth,resolve_collection=resolve,run_context=run,
             cleanup_configuration=configuration,resolve_backend_hooks=hooks,hold_payloads=hold_payloads)

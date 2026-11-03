@@ -29,6 +29,14 @@ class TripItemErasureChecks(Harness):
     expand_model=ScopedResultChecks.expand_model;pointer=ScopedResultChecks.pointer
     body_app=ScopedResultChecks.body_app;get=ScopedResultChecks.get
 
+    def test_signed_scoped_delete_stops_inflight_and_clears_actual_payloads(self):
+        from scoped_erasure_context_pg import exercise
+        exercise(self)
+
+    def test_signed_source2_delete_stops_inflight_and_filters_new_models(self):
+        from source2_erasure_context_pg import exercise
+        exercise(self)
+
     def test_actual_derived_result_and_pending_draft_erased_formal_trip_kept(self):
         f=self.fixture('item-erasure-real',legacy=False)
         binding,_,_=self.send_result(f,key='derived-clarification',clarify=True)
