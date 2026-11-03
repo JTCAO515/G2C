@@ -2,13 +2,14 @@
 from datetime import datetime,timedelta,timezone
 import json,os,sys,tempfile,time
 from pathlib import Path
+import psycopg
 
 from fastapi.testclient import TestClient
 from cj_api.local_app import scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
 from cj_api.local_background import LocalBackgroundHost
 from cj_api.local_cleanup import Configuration
-from cj_agent.provider import FakeProvider
+from cj_agent.provider import FakeProvider,ProviderFailed
 from cj_memory.manual import ManualPolicy
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_memory.typed_api import create_local_typed_app
@@ -23,6 +24,7 @@ from cj_cleanup.core import encode
 from cj_cleanup.store import receipt_for
 from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
+from cj_run.step_usage import ledger_scope_for
 
 ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT/'scripts'),str(ROOT/'backend/memory_jobs/tests')]
@@ -76,10 +78,17 @@ def exercise(root,path,*,backend_hooks=None,hold_payloads=None,expect_complete=F
         outcomes=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
         assert all(r.status=='completed' for r in outcomes),outcomes
         assert len(model.extractions)==1 and len(records)==1
-        send(client,'before','before-question','What preferences have I saved?')
+        before=send(client,'before','before-question','What preferences have I saved?')['receipt']
         outcomes=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
         assert all(r.status=='completed' for r in outcomes),outcomes
         assert {i['slot'] for i in model.answers[-1]['items']}==set(kinds)
+        uncertain=send(client,'uncertain','uncertain-question','A real original with an unknown model outcome')['receipt']
+        class Unknown(FakeProvider):
+            def stream(self,messages,system=None):
+                self.calls+=1
+                raise ProviderFailed('synthetic original provider outcome unknown')
+        failed=Unknown();run_worker.run_once(host.database,failed,auth,memory_configuration=config)
+        assert failed.calls==1
     with TestClient(create_local_typed_app(conninfo_path=path,auth_dir=auth,configuration=config.collection)) as manual:
         ok(manual.post('/v2/memories',content=encode(dict(version='MEMORY-manual.2',operation_id='bob-explicit',item_id='bob-preference',
             subject='self',slot='diet.spicy',kind='preference',text='Bob keeps his independent preference',extent='long_term',context=None,
@@ -88,6 +97,20 @@ def exercise(root,path,*,backend_hooks=None,hold_payloads=None,expect_complete=F
         iid,version=conn.execute("SELECT item_id,version FROM cj_memory_item WHERE slot='diet.spicy'").fetchone()
         sources=[r[0] for r in conn.execute('SELECT source_id FROM cj_memory_history_origin WHERE item_id=%s',(iid,)).fetchall()]
         assert len(sources)==1
+    owner=scope_for(ISSUER,alice);account=ledger_scope_for(owner,run.current.meter)
+    affected=[before['run_id'],uncertain['run_id']]
+    def preservation(audit):
+        return dict(ledger=audit.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0],
+            chat=audit.execute('SELECT message_id,raw_input,input_sha256 FROM cj_message_receipt WHERE scope=%s ORDER BY message_id',(owner,)).fetchall(),
+            events=audit.execute('SELECT run_id,sequence,kind,value FROM cj_run_event WHERE scope=%s ORDER BY run_id,sequence',(owner,)).fetchall())
+    def copied_inputs(audit):
+        return sum(audit.execute(f'SELECT count(*) FROM {table} WHERE scope=%s AND run_id=ANY(%s) AND {column} IS NOT NULL',
+            (owner,affected)).fetchone()[0] for table,column in (
+                ('cj_run_record','usage_input_bytes'),('cj_run_step_usage','input_bytes'),('cj_run_metered_operation','input_bytes')))
+    with psycopg.connect(**json.loads(path.read_text())) as audit:
+        retained=preservation(audit);copies=copied_inputs(audit)
+        assert copies>0
+        assert any(a['state']=='unknown' and a['receipt'] is None for a in retained['ledger']['attempts'].values())
     registry=root/'selected-registry.json'
     stores=[dict(id='memory-derived',cleanup_protocol='CLEANUP@1.1'),
         dict(id='checkpoints',objects=[dict(id='run',cleanup_protocol='CLEANUP@1.1')]),
@@ -112,6 +135,16 @@ def exercise(root,path,*,backend_hooks=None,hold_payloads=None,expect_complete=F
         assert result['online_status']==('complete' if expect_complete else 'unknown'),result
         progress=ok(client.get('/v1/memory-erasure-progress',params={'action_id':'delete-spicy'},headers=headers[alice]))['result']
         assert progress['online_status']==result['online_status']
+    with psycopg.connect(**json.loads(path.read_text())) as audit:
+        assert preservation(audit)==retained
+        if expect_complete:
+            assert copied_inputs(audit)==0
+            assert audit.execute('SELECT input_bytes FROM cj_run_background_job WHERE scope=%s AND run_id=%s',
+                (owner,records[0]['run_id'])).fetchone()==(None,)
+        else:assert copied_inputs(audit)==copies
+    if expect_complete:
+        original=jobs.query_original(tokens[alice],records[0]['job_id'],records[0]['attempt_id'])
+        assert original['input_state']=='erased' and original['meter_attempt_id']==records[0]['meter_attempt_id']
     with TestClient(app) as client:
         for number,question in enumerate(('What preferences have I saved?','我保存了什么偏好？')):
             send(client,'after-'+str(number),'after-'+str(number),question)
