@@ -250,8 +250,8 @@ prepare a review. The older producerJobsV1/V5/V3 consumer remains for its existi
 callers; current App activation does not fall back to it.
 The canonical SessionLifecycle, account binding and actual selected MESSAGE
 conversation are checked before and after credentials, HTTP and body collection.
-The explicit DEBUG Simulator loopback factory enables exactly four candidate
-routes through NoRedirectTransport; Release and ordinary write factories stay
+The explicit DEBUG Simulator loopback factory enables the canonical projection
+and original review/receipt routes through NoRedirectTransport; Release and ordinary write factories stay
 closed. Query encoding preserves literal plus signs and original Unicode bytes.
 
 Confirm/reject originals are encrypted and read back before their one POST.
