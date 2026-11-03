@@ -126,7 +126,7 @@ private struct ErasureWire: ClientTransport {
         try f.session.clear()
         #expect(throws: (any Error).self) { try grant.validate() }
     }
-    @Test(arguments: ["preexisting", "late-rejection", "late-management", "late-nested"])
+    @Test(arguments: ["preexisting", "late-rejection", "late-management", "late-nested", "late-signout", "late-invalidation"])
     func protectedStopClearsOnlyOwnItemJournalsAndRetainsOriginalRecovery(sidecar: String) async throws {
         let f = try ErasureClientFixture(); defer { f.dispose() }
         let work = try f.client.prepare(entry: await f.entry(), acknowledgement: .ownedTripDerivedScope)
@@ -155,13 +155,16 @@ private struct ErasureWire: ClientTransport {
         if sidecar != "preexisting" {
             var callbacks = 0
             let nested = typedRoot.appendingPathExtension("CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2")
-            #expect(throws: MemoryFailure.storageUnavailable) {
+            let retired = sidecar == "late-signout" || sidecar == "late-invalidation"
+            #expect(throws: retired ? MemoryFailure.staleBinding : MemoryFailure.storageUnavailable) {
                 try cleaner.clear(grant, validateCurrent: {
                     callbacks += 1
                     if callbacks == 2 {
                         switch sidecar {
                         case "late-rejection": try manual.recordRejection(removed, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {})
                         case "late-management": _ = try typed.managementRecords(create: true)
+                        case "late-signout": try f.session.clear()
+                        case "late-invalidation": f.client.invalidate()
                         default:
                             try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
                             try Data("unrecognized original".utf8).write(to: nested.appendingPathComponent("retained"))
@@ -173,6 +176,7 @@ private struct ErasureWire: ClientTransport {
             #expect(callbacks == 2)
             #expect(try typed.pending().count == 1)
             #expect(try Data(contentsOf: otherFile) == otherBytes)
+            if retired { return }
             if sidecar == "late-nested" {
                 #expect(try Data(contentsOf: nested.appendingPathComponent("retained")) == Data("unrecognized original".utf8))
                 return
