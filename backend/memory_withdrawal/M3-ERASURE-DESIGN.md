@@ -144,3 +144,10 @@ scope removal. A separate actual signed account-confirmation component verifies
 that manifest/source/item bytes are physically gone, while only minimum hashed
 restoration metadata remains. `erasure_hooks` is a new explicit purpose dispatcher;
 the old public account-only factory does not silently install item cleanup.
+
+Candidate GET /v6/memory-candidates now projects current canonical candidates and
+their first review refs directly from the owned conversation/origin, without a
+job-payload dependency. An actual two-candidate shared-job component deletes one
+item and the shared job, then discovers/confirms the unrelated retained candidate
+through that projection and unchanged Action1. The projection remains unprovided
+and not frozen/notified for A until the complete M44 delivery is reviewable.
