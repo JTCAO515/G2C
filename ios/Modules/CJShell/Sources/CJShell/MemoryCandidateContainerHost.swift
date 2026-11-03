@@ -29,7 +29,7 @@ public struct MemoryCandidateConversationReadContext: Sendable {
 /// presentation additionally requires the actual Shell, SDK and MESSAGE leases.
 @MainActor @Observable public final class MemoryCandidateContainerHost {
     private struct Core {
-        let id = UUID()
+        var id = UUID()
         let binding: MemoryCandidateContainerBinding
         let model: MemoryCandidatePresentation
     }
@@ -114,6 +114,9 @@ public struct MemoryCandidateConversationReadContext: Sendable {
     }
     public func retirePresentation() {
         guard let captured = core else { return }
+        // A Task captured by a closed page cannot revive that page's read after
+        // the model is synchronized again, even under the same binding/source.
+        core?.id = UUID()
         captured.model.replace(binding: captured.binding.memory, conversationID: nil)
     }
     public func invalidate() {

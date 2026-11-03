@@ -229,6 +229,17 @@ private actor CandidateBubbleWire: ClientTransport {
         #expect(!host.isCurrent(reviewContext))
         #expect(await wire.paths.count == 1)
     }
+    @Test func suggestionReadPreparedByAClosedPageCannotDispatch() async throws {
+        let f = try RunHostFixture(shell: shell()); try f.bind(nil)
+        let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let wire = CandidateBubbleWire(), (host, _) = try candidate(f, current: HistoryHostCurrent(), directory: dir, wire: wire)
+        host.synchronizeConversation()
+        let context = try #require(host.captureConversationRead())
+        host.retirePresentation()
+        await host.loadSuggestions(context: context)
+        #expect(await wire.paths.isEmpty)
+    }
     @Test func historyUsesActualMessageConversationAndRetiresOnIdentityChange() throws {
         let f = try RunHostFixture(shell: shell()); try f.bind(nil)
         let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
