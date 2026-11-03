@@ -12,7 +12,8 @@ public struct MemoryCandidateView: View {
         self.model = model; self.language = language
     }
     public var body: some View {
-        Form {
+        ScrollView {
+          VStack(alignment: .leading, spacing: 16) {
             Section {
                 MemoryRowText(text: language.text("These suggestions are not active memories. Review each one; only your explicit confirmation can activate it. Leaving a suggestion alone does not confirm it.", "这些建议尚未成为有效记忆。请逐条核对，只有你明确确认后才会生效；不处理不等于确认。"), style: .body)
                     .accessibilityIdentifier("memoryCandidate.scope")
@@ -102,6 +103,7 @@ public struct MemoryCandidateView: View {
                         .accessibilityIdentifier("memoryCandidate.receiptResult")
                 } header: { heading(language.text("Historical receipt", "历史回执")) }
             }
+          }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }
         .navigationTitle(language.text("Memory suggestions", "记忆建议"))
         .sheet(item: $editor) { entry in
@@ -149,6 +151,8 @@ private struct MemoryCandidateEditor: View {
     @State private var text: String
     @State private var occurredAt: String
     @State private var refused = false
+    private enum Field: Hashable { case text, time }
+    @FocusState private var field: Field?
     init(model: MemoryCandidatePresentation, entry: MemoryCandidateEditorEntry, language: MemoryLanguage) {
         self.model = model; self.entry = entry; self.language = language
         _kind = State(initialValue: entry.candidate.kind == .inference ? "" : entry.candidate.kind.rawValue)
@@ -156,7 +160,8 @@ private struct MemoryCandidateEditor: View {
     }
     var body: some View {
         NavigationStack {
-            Form {
+            ScrollView {
+              VStack(alignment: .leading, spacing: 16) {
                 Section {
                     MemoryRowText(text: language.text("Review this one suggestion. Confirming does not authorize organization of other history or change this suggestion's trip scope.", "请核对这一条建议。确认不等于授权整理其他历史，也不会改变这条建议的行程范围。"), style: .body)
                         .accessibilityIdentifier("memoryCandidate.editor.scope")
@@ -168,8 +173,10 @@ private struct MemoryCandidateEditor: View {
                     } label: { MemoryRowText(text: language.text("Memory type", "记忆类型"), style: .body) }
                     .accessibilityIdentifier("memoryCandidate.editor.kind")
                     TextField(language.text("Memory text", "记忆内容"), text: $text, axis: .vertical)
+                        .focused($field, equals: .text)
                         .accessibilityIdentifier("memoryCandidate.editor.text")
                     TextField(language.text("Time or original uncertainty", "时间或原有不确定说明"), text: $occurredAt, axis: .vertical)
+                        .focused($field, equals: .time)
                         .accessibilityIdentifier("memoryCandidate.editor.time")
                     MemoryRowText(text: entry.candidate.extent == .long_term ? language.text("Scope: long-term memory", "范围：长期记忆") : language.text("Scope: this trip", "范围：本次行程"), style: .body)
                     MemoryLifecycleButton(title: language.text("Confirm this memory", "确认这条记忆"), identifier: "memoryCandidate.editor.confirm", enabled: canSubmit && !kind.isEmpty) {
@@ -182,9 +189,15 @@ private struct MemoryCandidateEditor: View {
                             .accessibilityIdentifier("memoryCandidate.editor.refused")
                     }
                 }
-            }
+              }.frame(maxWidth: .infinity, alignment: .leading).padding()
+            }.scrollDismissesKeyboard(.interactively)
             .navigationTitle(language.text("Review suggestion", "核对建议"))
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button(language.text("Close", "关闭")) { dismiss() }.accessibilityIdentifier("memoryCandidate.editor.close") } }
+            .toolbar { ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(language.text("Done", "完成")) { field = nil }
+                    .accessibilityIdentifier("memoryCandidate.editor.done")
+            } }
         }
     }
     private var canSubmit: Bool { model.canReview(entry: entry) }
