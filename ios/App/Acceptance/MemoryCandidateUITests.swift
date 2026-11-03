@@ -88,6 +88,7 @@ import Foundation
         let query = multi.element.exists ? multi : single, field = query.element
         reveal(field); XCTAssertEqual(query.count, 1)
         field.tap()
+        XCTAssertTrue(app.keyboards.element.waitForExistence(timeout: 10), "The actual editor must acquire keyboard focus")
         let old = field.value as? String ?? ""
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count))
         field.typeText(value)
