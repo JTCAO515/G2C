@@ -87,14 +87,8 @@ def require_account_retirement(cursor,request:HookRequest) -> None:
     if cursor.fetchone() is None:raise Denied('account revocation unconfirmed')
 
 
-def require_intent(cursor,request:HookRequest) -> None:
-    """Read-only owner seam, in the SAME transaction before domain deletion.
-
-    Only SELECTs with parent/step SHARE locks: never create an intent, write state,
-    dispatch or retry. Host has already bound its dedicated connection and scope.
-    Query original_result first for an already committed owner result; reconcile
-    remains a separate read and cannot obtain execution permission from UNKNOWN.
-    """
+def require_plan(cursor,request:HookRequest) -> None:
+    """CLEANUP-PLAN-OBSERVATION@1. Root comparison/locks only, no execute grant."""
     purpose,manifest,blocked,plan,targets=_load_operation(cursor,request.subject_digest,
         request.operation_id,lock_mode='share')
     entry=next((e for e in manifest.entries if e.registry_id==request.target),None)
@@ -104,6 +98,15 @@ def require_intent(cursor,request:HookRequest) -> None:
                 request.registry_digest,request.entry_digest,request.protocol)
             or plan.get(request.target)!={'domain_scope':request.domain_scope,'selection':request.selection.to_dict()}):
         raise Denied('original cleanup intent unavailable')
+
+
+def require_intent(cursor,request:HookRequest) -> None:
+    """Original read-only seam in the SAME transaction before domain deletion.
+
+    Root and step SHARE locks; UNKNOWN remains unavailable for fresh execution.
+    The plan-only observation is not a replacement for this physical intent.
+    """
+    require_plan(cursor,request)
     cursor.execute('SELECT invocation_id,request_digest,request_bytes,state FROM cj_cleanup_step '
         'WHERE subject_digest=%s AND operation_id=%s AND target=%s FOR SHARE',
         (request.subject_digest,request.operation_id,request.target))
