@@ -47,10 +47,11 @@
             "travel_reference_version and immutable owner/message/run/generation/sequence/raw-input hash binding",
             "travel context identity/version/active and original action/receipt bytes",
             "per-conversation selection_epoch and explicit travel/none reference; no Trip or Memory facts",
-            "MESSAGE-SOURCE@1 explicit conversation end_id/generation/epoch/through and reserved conversation_type (travel only); source consent authority is owned by C, not inferred from this metadata"
+            "MESSAGE-SOURCE@1 explicit conversation end_id/generation/epoch/through and reserved conversation_type (travel only); source consent authority is owned by C, not inferred from this metadata",
+            "MSG3/4 copied source_content/hash physically erasable under original memory intent; retained original selection/raw chat are human history, not permission to reconstruct model context"
           ],
           "retention": "Chat, drafts, travel context and action/association evidence until user/account deletion; profile/fence rows remain non-recyclable through cleanup",
-          "cleanup_hook": "cj_cleanup.account_hooks.DomainHook; explicit code-owned tables, original persisted intent, account fence, verified physical erasure and atomic original result; no owner/C data guessing",
+          "cleanup_hook": "cj_cleanup.account_hooks.DomainHook; explicit code-owned tables, original persisted intent, account fence, verified physical erasure and atomic original result; no owner/C data guessing; memory purpose B-MEMORY-PAYLOAD@1 clears proven copied Trip/edit source caches and stops old delivery, preserving raw human chat; MESSAGE-history.5 explicitly reports erased source",
           "restore_fence": "Replay cj_account_fence hashed namespace before runtime access; restrictive account_retired RLS prevents sensitive read/write/reconstruction; backup validation remains #30",
           "travel_context_local": {
             "contract": [
@@ -307,9 +308,10 @@
             "cj_run_step_usage",
             "cj_run_metered_binding",
             "cj_run_metered_operation",
-            "cj_run_background_job"
+            "cj_run_background_job",
+            "cj_run_payload_erasure"
           ],
-          "source": "backend/migrations/0040_background_jobs.sql; 0043_background_v3.sql appends immutable protocol and accepted-decision digest on the same job table",
+          "source": "backend/migrations/0040_background_jobs.sql; 0043_background_v3.sql appends immutable protocol and accepted-decision digest on the same job table; 0045_memory_payload_erasure.sql adds only hashed irreversible payload/write barriers",
           "status": "candidate_or_local_only; production_not_provisioned",
           "principal_binding": "Server-authenticated scope; RUN/MESSAGE/USAGE association and dispatch fences unresolved",
           "sensitive_fields": [
@@ -319,11 +321,12 @@
             "status and expiry",
             "diagnostic_at for newly persisted run events only (no historical backfill); 90-day diagnostic timing, separate from answer/event/accounting retention",
             "Original C job/attempt and source/Travel references, exact filtered prepared model bytes, immutable registered command/config, original publication hashes",
-            "RUN-BACKGROUND@3 immutable protocol and accepted decision_source_sha256 comparison header; actual authority remains C's accepted Trip/Memory holders"
+            "RUN-BACKGROUND@3 immutable protocol and accepted decision_source_sha256 comparison header; actual authority remains C's accepted Trip/Memory holders",
+            "cj_run_payload_erasure: SHA256 owner/object/input/C-enqueue digests and finite kind/outcome only; no plaintext scope/IDs/content"
           ],
           "retention": "Retained answer/output content until user/account deletion; diagnostic-only events/checkpoints 90 days; no blanket run deletion",
-          "cleanup_hook": "cj_cleanup.account_hooks.DomainHook; explicit code-owned tables, original persisted intent, account fence, verified physical erasure and atomic original result; no owner/C data guessing",
-          "restore_fence": "Replay cj_account_fence hashed namespace before runtime access; restrictive account_retired RLS prevents sensitive read/write/reconstruction; backup validation remains #30",
+          "cleanup_hook": "cj_cleanup.account_hooks.DomainHook; explicit code-owned tables, original persisted intent, account fence, verified physical erasure and atomic original result; no owner/C data guessing; memory purpose: cj_cleanup.memory_payloads.hooks + hold_payloads, B-MEMORY-PAYLOAD@1 exact original association/evidence and physical worker barrier; visible history/command/config/UNKNOWN accounting retained",
+          "restore_fence": "Replay cj_account_fence hashed namespace before runtime access; restrictive account_retired RLS prevents sensitive read/write/reconstruction; backup validation remains #30; M45 permanent original-hash stopped-run/erased-or-empty-job barriers reject new/late writes; replay before restoration",
           "read_consumers": [
             {
               "contract": "RUN-DISPLAY-WIRE@0.1.0-rc.1",
@@ -344,10 +347,12 @@
             "content": "Persisted user-visible answer/effects and source associations: until user/account deletion",
             "diagnostic_90d": "Diagnostic-only events/checkpoints, once separated from answer/reconciliation state",
             "account_reconciliation": "Metered binding/operation, exact original command/input and unknown settlement: no 90-day TTL",
-            "background_jobs": "Prepared input is user content until user/account deletion; immutable command/config, BG3 protocol/decision digest and original/unknown Meter evidence are account reconciliation, never diagnostic logs or subject to a 90-day TTL. Only minimal irreversible original hashes/fences may survive content erasure."
+            "background_jobs": "Prepared input is user content until user/account deletion; immutable command/config, BG3 protocol/decision digest and original/unknown Meter evidence are account reconciliation, never diagnostic logs or subject to a 90-day TTL. Only minimal irreversible original hashes/fences may survive content erasure.",
+            "memory_payload_erasure": "Memory-purpose erases proven related model/tool inputs, original BG2/3 input copies and owned Trip-derived B caches. Immutable command/config/original cost and UNKNOWN ledger remain accounting evidence, no 90-day TTL; minimal irreversible payload/write barrier hashes survive content erasure, like C M44, with no raw scope/IDs/content."
           },
           "cleanup_protocol": "CLEANUP@1.1",
-          "background_contract": "RUN-BACKGROUND@2 unchanged; explicit RUN-BACKGROUND@3 consumes C filtered DATA/EXTRACT/PUBLICATION@3 accepted decisions with original before_commit, existing Meter and isolated protocol rows; no MESSAGE receipt or terminal RUN reuse"
+          "background_contract": "RUN-BACKGROUND@2 unchanged; explicit RUN-BACKGROUND@3 consumes C filtered DATA/EXTRACT/PUBLICATION@3 accepted decisions with original before_commit, existing Meter and isolated protocol rows; no MESSAGE receipt or terminal RUN reuse",
+          "memory_cleanup_contract": "B-MEMORY-PAYLOAD@1; RUN-MEMORY-HISTORY@1; CLEANUP@1.1 memory purpose. No unadapted MSG3+Memory enablement."
         }
       ],
       "owner_line": "B",

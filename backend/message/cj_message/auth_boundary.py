@@ -110,6 +110,18 @@ class HistoryReadContext:
         self._check()
         return self._service.message_history(conversation_id,cursor,limit,formal=True)
 
+    def history_reference_v5(self,message_id):
+        value=self.history_message_v5(message_id)
+        return value.reference,value.source_state
+
+    def history_message_v5(self,message_id):
+        self._check()
+        if type(message_id) is not str or not message_id.strip():raise InvalidInput('message ID required')
+        from .erasure_history import read
+        value=read(self._service,message_id)
+        self._check()
+        return value
+
     def conversations(self, cursor=None, limit=20):
         self._check()
         return self._service.conversations(cursor, limit)

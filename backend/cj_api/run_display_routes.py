@@ -23,6 +23,7 @@ def register_run_display_route(app,reader=None,configuration=None,modules=None):
         if isinstance(mid,JSONResponse):return mid
         request_id=request.state.request_id
         def invoke():
+            if version==6:return reader.read_history_display(token,mid,request_id)
             if version==4:return reader.read_edit_display(token,mid,request_id)
             if version==3:return reader.read_trip_display(token,mid,request_id)
             if version==2:return reader.read_travel_display(token,mid,request_id)
@@ -45,3 +46,6 @@ def register_run_display_route(app,reader=None,configuration=None,modules=None):
 
     @app.get('/v4/run-display')
     async def read_v4(request:Request):return await read_version(request,version=4)
+
+    @app.get('/v6/run-display')
+    async def read_v6(request:Request):return await read_version(request,version=6)

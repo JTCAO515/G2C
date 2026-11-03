@@ -258,15 +258,19 @@ class Transaction:
             raise ResyncRequired('run recovery expired; not absent')
         self.cur.execute('SELECT sequence,event_id,kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
                          (self.scope, binding.run_id))
+        events=self.cur.fetchall()
         usage = None
         if row[7] is not None or row[8] is not None:
             try:
-                usage = UsageBinding(bytes(row[7]), bytes(row[8]))
+                if row[8] is None:
+                    from .payload_evidence import erased_original
+                    usage=erased_original(self.cur,self.scope,'cj_run_record',binding.run_id,'original',bytes(row[7]))
+                else:usage = UsageBinding(bytes(row[7]), bytes(row[8]))
                 usage.check_run(binding.run_id)
             except (ValueError, TypeError) as exc:
                 raise ResyncRequired('invalid stored usage binding') from exc
         state = State(binding, usage=usage)
-        for sequence, identity, kind, value in self.cur.fetchall():
+        for sequence, identity, kind, value in events:
             # Reconstruct already committed facts; no output or execution occurs here.
             state = advance(state, Event(binding, sequence, identity, kind, value), lambda _: True)
         if (state.status, state.sequence) != (row[4], row[5]):
