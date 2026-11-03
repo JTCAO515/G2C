@@ -92,6 +92,8 @@ def prepare_preserved_history(connection, auth, context, subjects, tokens, direc
 
     expiry = (datetime.now(timezone.utc)+timedelta(hours=1)).isoformat()
     profile = dict(subjects=['self'],slots={'pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    if include_apps:
+        profile['slots']['budget']=dict(kind='preference',collection_allowed=True,semantic_resolved=True)
     typed = TypedConfiguration.from_bytes(packed(dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
         expires_at=expiry,profiles={s:profile for s in subjects.values()}),travel_contexts={s:[] for s in subjects.values()})))
     item = str(uuid.uuid4())

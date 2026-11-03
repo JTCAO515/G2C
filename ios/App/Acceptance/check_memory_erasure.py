@@ -173,7 +173,7 @@ def main():
                             launch=dict(G2C_DEV_ACCOUNT_MODE='1',G2C_DEV_API_BASE_URL=endpoint,G2C_DEV_ACCOUNTS=json.dumps(tokens[case]),G2C_DEV_OFFLINE_TRIP='last-sync-v1',
                                 G2C_DEV_CLEANUP_PROFILE='device-v4',G2C_DEV_TRAVEL_PROFILE=json.dumps(dict(version='app-travel.1',travel_ids=[])),
                                 G2C_DEV_TYPED_MEMORY_PROFILE=json.dumps(profile),G2C_DEV_TYPED_MEMORY_URL=endpoint,G2C_DEV_MEMORY_ERASURE_URL=endpoint)
-                            value=dict(bundle=BUNDLE,launch=launch,subjects=subjects[case],option_label='self · pace · Long term / 长期',other_option_label='self · pace · Long term / 长期',
+                            value=dict(bundle=BUNDLE,launch=launch,subjects=subjects[case],option_label='self · pace · Long term / 长期',other_option_label='self · budget · Long term / 长期',
                                 text='我明确保存少辣的旅行偏好',other_text='这是另一条应当保留的记忆',occurred_at='时间不详')
                         elif path.path=='/size':
                             size='large' if query['value']=='standard' else 'accessibility-extra-extra-extra-large'
