@@ -205,6 +205,24 @@ private struct ErasureWire: ClientTransport {
         f.store = try f.makeStore(); f.client = f.makeClient()
         #expect(throws: MemoryFailure.storageUnavailable) { try f.client.originals(binding: f.f.binding) }
     }
+    @Test func legacySelectionUsesItsOriginalReaderAndRetirementAlsoFencesErasure() async throws {
+        let f = try ErasureClientFixture(); defer { f.dispose() }
+        let server = ManagementServer()
+        let legacy = try MemoryClient(endpoint: f.f.endpoint, credentials: { _ in "synthetic-legacy" },
+            currentBinding: { f.f.current }, pendingStore: f.f.store(), interceptedTransport: server)
+        let itemID = await server.id
+        _ = try await legacy.detail(itemID: itemID, binding: f.f.binding)
+        let selected = try legacy.managementSelection(itemID: itemID, binding: f.f.binding)
+        let other = try MemoryClient(endpoint: f.f.endpoint, credentials: { _ in "synthetic-legacy" },
+            currentBinding: { f.f.current }, pendingStore: f.f.store(), interceptedTransport: server)
+        #expect(throws: MemoryFailure.staleBinding) { try f.client.capture(read: selected, reader: other, binding: f.f.binding) }
+        let entry = try f.client.capture(read: selected, reader: legacy, binding: f.f.binding)
+        #expect(Data(entry.itemID.utf8) == Data(itemID.utf8))
+        let work = try f.client.prepare(entry: entry, acknowledgement: .ownedTripDerivedScope)
+        legacy.invalidate()
+        await #expect(throws: MemoryFailure.staleBinding) { try await f.client.perform(work) }
+        #expect(f.server.requests.isEmpty)
+    }
 }
 
 @MainActor struct MemoryErasurePresentationTests {
