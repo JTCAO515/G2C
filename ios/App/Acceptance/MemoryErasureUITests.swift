@@ -38,7 +38,9 @@ import Foundation
         func visible() -> Bool {
             guard element.exists && element.isHittable else { return false }
             guard centered else { return true }
-            let top = app.navigationBars.element.exists ? app.navigationBars.element.frame.maxY : app.frame.minY
+            let bars = app.navigationBars.matching(NSPredicate(format: "identifier IN %@", ["Delete memory", "删除记忆", "Delete account", "注销账号"]))
+            XCTAssertEqual(bars.count, 1)
+            let top = bars.element.frame.maxY
             return element.frame.midY > top && element.frame.midY < app.frame.maxY - 44
         }
         for _ in 0..<40 { if visible() { return }; app.swipeUp() }
