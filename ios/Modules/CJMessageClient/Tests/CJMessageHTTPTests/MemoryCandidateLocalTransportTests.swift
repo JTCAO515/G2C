@@ -40,6 +40,65 @@ private actor CandidateExitSpy: ClientTransport {
     }
 }
 @MainActor struct MemoryCandidateLocalTransportTests {
+    @Test func projectionCapabilityAdmitsOnlyV6AndOriginalActionReceipt() async throws {
+        let endpoint = try endpoint(), spy = CandidateExitSpy()
+        let transport = NoRedirectTransport(interceptedTransport: spy, memoryProjectionEndpoint: endpoint, validateMemoryProjection: {})
+        let projection = "/v6/memory-candidates?conversation_id=chat&after_candidate_id="
+        _ = try await transport.send(request(projection), body: nil, baseURL: endpoint.url, operationID: "readMemoryCandidateProjectionV2")
+        let raw = Data(" {\"text\":\"e\u{301} 中文\"}\n".utf8)
+        _ = try await transport.send(request("/v3/memory-candidate-actions", post: true), body: HTTPBody(raw), baseURL: endpoint.url, operationID: "applyMemoryCandidateActionV1")
+        _ = try await transport.send(request(reads[2].0), body: nil, baseURL: endpoint.url, operationID: reads[2].1)
+        #expect(await spy.requests.compactMap(\.1) == [raw])
+        for (path, operation) in [reads[0], reads[1], ("/v3/memory-history-settings?conversation_id=chat", "readMemoryCandidateProjectionV2"),
+            ("/v6/memory-candidates?conversation_id=chat&after_candidate_id=&owner=other", "readMemoryCandidateProjectionV2"),
+            ("/v6/memory-candidates?conversation_id=chat&conversation_id=other", "readMemoryCandidateProjectionV2"),
+            ("/v6/memory-candidates?conversation_id=chat+alias&after_candidate_id=", "readMemoryCandidateProjectionV2")] {
+            await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+                _ = try await transport.send(request(path), body: nil, baseURL: endpoint.url, operationID: operation)
+            }
+        }
+        let legacy = NoRedirectTransport(interceptedTransport: spy, memoryCandidateEndpoint: endpoint, validateMemoryCandidates: {})
+        await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+            _ = try await legacy.send(request(projection), body: nil, baseURL: endpoint.url, operationID: "readMemoryCandidateProjectionV2")
+        }
+        #expect(await spy.requests.count == 3)
+    }
+    @Test func projectionCursorSupportsFullUnicodeWithoutBroadHostOrLongerScalarInput() async throws {
+        let endpoint = try endpoint(), spy = CandidateExitSpy()
+        let transport = NoRedirectTransport(interceptedTransport: spy, memoryProjectionEndpoint: endpoint, validateMemoryProjection: {})
+        func path(_ cursor: String) throws -> String {
+            var value = URLComponents(); value.path = "/v6/memory-candidates"
+            value.queryItems = [.init(name: "conversation_id", value: "chat+中文"), .init(name: "after_candidate_id", value: cursor)]
+            value.percentEncodedQuery = value.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+            return try #require(value.string)
+        }
+        let valid = try path(String(repeating: "😀", count: 4096))
+        #expect(valid.utf8.count > 16384)
+        _ = try await transport.send(request(valid), body: nil, baseURL: endpoint.url, operationID: "readMemoryCandidateProjectionV2")
+        for cursor in [String(repeating: "e\u{301}", count: 2049), "\0", " "] {
+            await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+                _ = try await transport.send(request(try path(cursor)), body: nil, baseURL: endpoint.url, operationID: "readMemoryCandidateProjectionV2")
+            }
+        }
+        var host = request(valid); host.headerFields[HTTPField.Name("Host")!] = "other.invalid"
+        await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+            _ = try await transport.send(host, body: nil, baseURL: endpoint.url, operationID: "readMemoryCandidateProjectionV2")
+        }
+        #expect(await spy.requests.count == 1)
+    }
+    @Test(arguments: ["before", "send", "body"])
+    func projectionReadChecksOriginalLeaseAtEveryOutflowBoundary(phase: String) async throws {
+        let endpoint = try endpoint(), lease = CandidateExitLease()
+        let revoke: @Sendable () async -> Void = { await MainActor.run { lease.active = false } }
+        let noop: @Sendable () async -> Void = {}
+        let spy = CandidateExitSpy(after: phase == "send" ? revoke : noop, beforeChunk: phase == "body" ? revoke : nil)
+        let transport = NoRedirectTransport(interceptedTransport: spy, memoryProjectionEndpoint: endpoint, validateMemoryProjection: { try lease.validate() })
+        if phase == "before" { lease.active = false }
+        await #expect(throws: MessageHTTPFailure.credentialsUnavailable) {
+            _ = try await transport.send(request("/v6/memory-candidates?conversation_id=chat&after_candidate_id="), body: nil, baseURL: endpoint.url, operationID: "readMemoryCandidateProjectionV2")
+        }
+        #expect(await spy.requests.count == (phase == "before" ? 0 : 1))
+    }
     private func endpoint() throws -> MessageEndpoint {
         try MessageEndpoint(url: #require(URL(string: "http://127.0.0.1:9000")), maximumRequestBytes: 64, maximumResponseBytes: 64, allowLoopbackHTTP: true)
     }

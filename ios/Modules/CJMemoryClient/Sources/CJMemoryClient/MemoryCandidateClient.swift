@@ -71,7 +71,7 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
     private var candidateReads: [MemoryCandidateJob: UUID] = [:]
     private var settled: Set<Data> = []
     private var uncertainCreation: Set<Data> = []
-    public init(development endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
+    public init(development endpoint: MemoryEndpoint, readWire: MemoryCandidateReadWire = .producerJobsV1, credentials: @escaping MemoryCredentialCallback,
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, currentConversation: @escaping @MainActor () -> String?,
                 session: SessionLifecycle, sessionOperation: SessionOperation, pendingStore: MemoryCandidatePendingStore,
                 requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
@@ -81,10 +81,16 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
               (1...65535).contains(port), endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288,
               requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else { throw MemoryFailure.unconfigured }
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
-        readWire = .producerJobsV1
+        self.readWire = readWire
         self.currentConversation = currentConversation; self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
-        factory = { validate in try NoRedirectTransport.developmentMemoryCandidates(endpoint: endpoint,
-            requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
+        factory = { validate in
+            switch readWire {
+            case .producerJobsV1: try NoRedirectTransport.developmentMemoryCandidates(endpoint: endpoint,
+                requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate)
+            case .canonicalProjectionV2: try NoRedirectTransport.developmentMemoryCandidateProjection(endpoint: endpoint,
+                requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate)
+            }
+        }
         #else
         throw MemoryFailure.liveWriteUnavailable
         #endif
