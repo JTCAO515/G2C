@@ -370,6 +370,14 @@
       "down": "backend/migrations/down/0046_formal_memory_activation.down.sql",
       "sha256": "bb99914c6ffda1095587c6a3b81dc66bf2fc1518bf968a2dfc595b53edd79556",
       "down_sha256": "b1518b4b995a3a825e4e01c3e0b6655d1f1166bb3868f4cf58e4ac607edd42c7"
+    },
+    {
+      "version": 47,
+      "name": "device_erasure_journals",
+      "file": "backend/migrations/0047_device_erasure_journals.sql",
+      "down": "backend/migrations/down/0047_device_erasure_journals.down.sql",
+      "sha256": "3aee88b74bfbd5bedc7a2721dcde66db18c693fca4e78528ad83300a40ed0aac",
+      "down_sha256": "90592e2788d7ce5805651e8ba3d755baaa09af62ca914a3269f71113f39a2897"
     }
   ]
 }

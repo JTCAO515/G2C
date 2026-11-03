@@ -50,12 +50,11 @@ class Gateway:
             server_time=int(self.clock()),business_access='not_granted')
         return result
 
-    def device_registration_query(self,token,action_id,input_sha256,project):
-        from .device_v3 import VERSION
+    def device_registration_query(self,token,action_id,input_sha256,project,*,device_version='CLEANUP-DEVICE@3'):
         principal,binding=self._ordinary(token)
-        original=GatewayStore(binding.store).registration_by_action(action_id,input_sha256,VERSION)
-        result=dict(version=VERSION,action_id=action_id,input_sha256=input_sha256,
-            registration=None if original is None else self._registration_payload(binding,original,VERSION))
+        original=GatewayStore(binding.store).registration_by_action(action_id,input_sha256,device_version)
+        result=dict(version=device_version,action_id=action_id,input_sha256=input_sha256,
+            registration=None if original is None else self._registration_payload(binding,original,device_version))
         encoded=project(result);self._same(token,principal)
         return encoded
 
@@ -183,14 +182,20 @@ class Gateway:
         if device_version=='CLEANUP-DEVICE@3':
             from .device_v3 import DeviceActions
             return project(DeviceActions(GatewayStore(binding.store),self.issuer).create(binding_id,reason,action_id,input_digest))
+        if device_version=='CLEANUP-DEVICE@4':
+            from .device_v4 import DeviceActions
+            return project(DeviceActions(GatewayStore(binding.store),self.issuer).create(binding_id,reason,action_id,input_digest))
         return project(DeviceBridge(GatewayStore(binding.store),self.issuer).call(binding_id,reason))
 
-    def device_action_query(self,capability,action_id,input_sha256,project):
-        from .device_v3 import DeviceActions,VERSION
+    def device_action_query(self,capability,action_id,input_sha256,project,*,device_version='CLEANUP-DEVICE@3'):
+        if device_version=='CLEANUP-DEVICE@4':
+            from .device_v4 import DeviceActions
+        else:
+            from .device_v3 import DeviceActions
         claims=self.issuer.verify(capability,purpose='device')
         if claims.operation_id!=claims.binding_id:raise Denied('original device credential required')
         binding=self.resolve_subject(claims.subject_digest);metadata=GatewayStore(binding.store)
-        if metadata.device(claims.binding_id)['protocol']!=VERSION:raise Denied('original V3 device credential required')
+        if metadata.device(claims.binding_id)['protocol']!=device_version:raise Denied('original device credential required')
         return project(DeviceActions(metadata,self.issuer).query(claims.binding_id,action_id,input_sha256))
 
     def device_receipt(self,capability,action_id,operation_id,invocation_id,binding_id,request_digest,outcome,raw,project,*,device_version='CLEANUP-DEVICE@1'):
@@ -215,6 +220,6 @@ class Gateway:
         if GatewayStore(binding.store).device(claims.binding_id)['protocol']!=device_version:raise Denied('original device protocol required')
         return project(DeviceBridge(GatewayStore(binding.store),self.issuer).query(invocation_id,claims.binding_id))
 
-    def device_completion(self,capability,invocation_id,request_digest,project):
+    def device_completion(self,capability,invocation_id,request_digest,project,*,device_version='CLEANUP-DEVICE@3',completion_version='CLEANUP-DEVICE-COMPLETION@1'):
         from .device_completion import read
-        return read(self,capability,invocation_id,request_digest,project)
+        return read(self,capability,invocation_id,request_digest,project,device_version=device_version,version=completion_version)
