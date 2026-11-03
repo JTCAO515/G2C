@@ -221,7 +221,12 @@ private struct MemoryCandidateEditor: View {
               }.frame(maxWidth: .infinity, alignment: .leading).padding()
             }.scrollDismissesKeyboard(.interactively)
             .navigationTitle(language.text("Review suggestion", "核对建议"))
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(language.text("Close", "关闭")) { dismiss() }.accessibilityIdentifier("memoryCandidate.editor.close") } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.body).frame(minWidth: 44, minHeight: 44)
+                }.accessibilityLabel(language.text("Close", "关闭"))
+                    .accessibilityIdentifier("memoryCandidate.editor.close")
+            } }
             .toolbar { ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button(language.text("Done", "完成")) { field = nil }
