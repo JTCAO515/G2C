@@ -90,7 +90,16 @@ import Foundation
         field.tap()
         XCTAssertTrue(app.keyboards.element.waitForExistence(timeout: 10), "The actual editor must acquire keyboard focus")
         let old = field.value as? String ?? ""
-        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count))
+        if !old.isEmpty {
+            field.press(forDuration: 1)
+            let names = NSPredicate(format: "label IN %@", ["Select All", "全选"])
+            let menu = app.menuItems.matching(names), buttons = app.buttons.matching(names)
+            let selectAll = menu.element.waitForExistence(timeout: 2) ? menu : buttons
+            XCTAssertTrue(selectAll.element.waitForExistence(timeout: 5))
+            XCTAssertEqual(selectAll.count, 1); XCTAssertTrue(selectAll.element.isEnabled)
+            selectAll.element.tap(); field.typeText(XCUIKeyboardKey.delete.rawValue)
+            XCTAssertEqual(field.value as? String, "")
+        }
         field.typeText(value)
         XCTAssertEqual(Array((field.value as? String ?? "").utf8), Array(value.utf8))
     }
