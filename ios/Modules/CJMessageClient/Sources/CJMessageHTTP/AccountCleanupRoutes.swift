@@ -38,7 +38,7 @@ enum LocalAccountCleanupRoute {
               encoded == original.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/%?#"))) else { return nil }
         return original
     }
-    private static func identifier(_ value: String) -> Bool {
+    static func identifier(_ value: String) -> Bool {
         let bytes = Array(value.utf8)
         guard (1...160).contains(bytes.count), let first = bytes.first,
               (48...57).contains(first) || (65...90).contains(first) || (97...122).contains(first) else { return false }

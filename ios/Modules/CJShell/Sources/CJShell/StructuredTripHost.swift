@@ -185,7 +185,7 @@ public struct StructuredTripDisplay: Sendable {
             guard current,nonce==work.nonce else { return }
             if offlineNonce == work.nonce, let offline {
                 if case TripFailure.rejected(let status, _) = error, status == 401 || status == 403 {
-                    do { try offline.currentIdentityRejected() } catch { offline.noteSyncReadFailure() }
+                    do { try await offline.currentIdentityRejected() } catch { offline.noteSyncReadFailure() }
                 } else { offline.noteSyncReadFailure() }
                 guard current, nonce == work.nonce else { return }; offlineNonce = nil
             }

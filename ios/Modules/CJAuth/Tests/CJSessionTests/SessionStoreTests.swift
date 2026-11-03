@@ -24,9 +24,14 @@ import Testing
     var lastQuery: [String: Any] = [:]
     var lastValues: [String: Any] = [:]
     var adds = 0
+    var deletes = 0
+    var deleteStatus: OSStatus = errSecSuccess
+    var keepAfterDelete = false
+    var readbackStatus: OSStatus?
     var operations: KeychainOperations {
         KeychainOperations(copy: { query in
             self.lastQuery = query
+            if self.deletes > 0, let status = self.readbackStatus { return (status, nil) }
             if self.status != errSecSuccess { return (self.status, nil) }
             return self.data.map { (errSecSuccess, $0) } ?? (errSecItemNotFound, nil)
         }, add: { query in
@@ -39,6 +44,11 @@ import Testing
             if self.status != errSecSuccess { return self.status }
             guard self.data != nil else { return errSecItemNotFound }
             self.data = values[kSecValueData as String] as? Data
+            return errSecSuccess
+        }, delete: { query in
+            self.lastQuery = query; self.deletes += 1
+            guard self.deleteStatus == errSecSuccess else { return self.deleteStatus }
+            if !self.keepAfterDelete { self.data = nil }
             return errSecSuccess
         })
     }
@@ -148,5 +158,84 @@ import Testing
         let ns = try SessionNamespace(environment: UUID(), slot: "synthetic")
         #expect(throws: SessionFailure.invalidConfiguration) { try KeychainSessionScope(namespace: ns, applicationIdentifier: "*") }
         #expect(throws: SessionFailure.emptyMaterial) { try SessionMaterial(trustedSDKBytes: Data()) }
+    }
+    @Test func conditionalControlRemovalUsesExactQueryAndChecksPhysicalAbsence() throws {
+        let scope = try KeychainSessionScope(namespace: .init(environment: UUID(), slot: "M3.Cleanup.Device.A"), applicationIdentifier: "SYNTHETIC.app")
+        let fake = FakeKeychain(), expected = try material()
+        let store = KeychainSessionStore(scope: scope, protection: .whenUnlockedThisDeviceOnly, operations: fake.operations)
+        try store.save(expected)
+        #expect(try store.removeIfMatching(expected))
+        #expect(fake.data == nil && fake.deletes == 1)
+        #expect(fake.lastQuery[kSecAttrService as String] as? String == scope.namespace.service)
+        #expect(fake.lastQuery[kSecAttrAccount as String] as? String == scope.namespace.slot)
+        #expect(fake.lastQuery[kSecAttrAccessGroup as String] as? String == scope.applicationIdentifier)
+        #expect(fake.lastQuery[kSecAttrSynchronizable as String] as? Bool == false)
+        #expect(try store.load() == nil)
+        #expect(try !store.removeIfMatching(expected))
+        #expect(fake.deletes == 1)
+    }
+    @Test func changedControlSelectedPointerAndBlockedRecordAreNeverDeleted() throws {
+        let scope = try KeychainSessionScope(namespace: .init(environment: UUID(), slot: "M3.Cleanup.Selected"), applicationIdentifier: "SYNTHETIC.app")
+        let fake = FakeKeychain(), expected = try material()
+        let store = KeychainSessionStore(scope: scope, protection: .whenUnlockedThisDeviceOnly, operations: fake.operations)
+        let replacement = try SessionMaterial(trustedSDKBytes: Data("OTHER-ACCOUNT-CONTROL".utf8))
+        try store.save(replacement); let before = fake.data
+        #expect(try !store.removeIfMatching(expected))
+        #expect(fake.data == before && fake.deletes == 0)
+        try store.clearAndBlock(); let blocked = fake.data
+        #expect(try !store.removeIfMatching(expected))
+        #expect(fake.data == blocked && fake.deletes == 0)
+    }
+    @Test func conditionalRemovalFailureOrUnconfirmedReadbackCannotBecomeSuccess() throws {
+        let scope = try KeychainSessionScope(namespace: .init(environment: UUID(), slot: "M3.Cleanup.Account.A"), applicationIdentifier: "SYNTHETIC.app")
+        let expected = try material()
+        for stage in ["locked", "delete", "retained", "readback"] {
+            let fake = FakeKeychain()
+            let store = KeychainSessionStore(scope: scope, protection: .whenUnlockedThisDeviceOnly, operations: fake.operations)
+            try store.save(expected)
+            switch stage {
+            case "locked": fake.status = errSecInteractionNotAllowed
+            case "delete": fake.deleteStatus = errSecNotAvailable
+            case "retained": fake.keepAfterDelete = true
+            default: fake.readbackStatus = errSecInteractionNotAllowed
+            }
+            #expect(throws: (any Error).self) { try store.removeIfMatching(expected) }
+            #expect(fake.deletes == (stage == "locked" ? 0 : 1))
+        }
+    }
+    @Test func conditionalRemovalKeepsAnotherAccountAndEnvironmentInTheSameKeychain() throws {
+        var records: [[String]: Data] = [:]
+        func key(_ query: [String: Any]) -> [String] {
+            #expect(query[kSecClass as String] as? String == kSecClassGenericPassword as String)
+            #expect(query[kSecAttrSynchronizable as String] as? Bool == false)
+            return [kSecAttrService, kSecAttrAccount, kSecAttrAccessGroup].map { query[$0 as String] as! String }
+        }
+        let operations = KeychainOperations(copy: { query in
+            guard let data = records[key(query)] else { return (errSecItemNotFound, nil) }
+            return (errSecSuccess, data)
+        }, add: { query in
+            let id = key(query); guard records[id] == nil else { return errSecDuplicateItem }
+            records[id] = query[kSecValueData as String] as? Data; return errSecSuccess
+        }, update: { query, values in
+            let id = key(query); guard records[id] != nil else { return errSecItemNotFound }
+            records[id] = values[kSecValueData as String] as? Data; return errSecSuccess
+        }, delete: { query in
+            guard records.removeValue(forKey: key(query)) != nil else { return errSecItemNotFound }
+            return errSecSuccess
+        })
+        let environment = UUID(), secret = try material()
+        func store(_ env: UUID, _ account: String) throws -> KeychainSessionStore {
+            KeychainSessionStore(scope: try .init(namespace: .init(environment: env, slot: account), applicationIdentifier: "SYNTHETIC.app"),
+                protection: .whenUnlockedThisDeviceOnly, operations: operations)
+        }
+        let a = try store(environment, "M3.Cleanup.Device.A"), b = try store(environment, "M3.Cleanup.Device.B")
+        let otherEnvironment = try store(UUID(), "M3.Cleanup.Device.A")
+        try a.save(secret); try b.save(secret); try otherEnvironment.save(secret)
+        let before = records
+        #expect(try a.removeIfMatching(secret))
+        #expect(records.count == 2)
+        for (id, data) in records { #expect(before[id] == data) }
+        #expect(try b.load()?.withBytes { $0 } == secret.withBytes { $0 })
+        #expect(try otherEnvironment.load()?.withBytes { $0 } == secret.withBytes { $0 })
     }
 }

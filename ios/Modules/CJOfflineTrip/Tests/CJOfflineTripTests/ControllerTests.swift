@@ -60,6 +60,39 @@ private actor ControllerWire: ClientTransport {
         }
         return value
     }
+    @Test func deniedIdentityCannotOverwriteReplacementAccountAnchor() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        let a = try SessionMaterial(trustedSDKBytes: Data("review453-account-a".utf8))
+        let b = try SessionMaterial(trustedSDKBytes: Data("review453-account-b".utf8))
+        try sdk.save(a)
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let original = try #require(anchors.value).withBytes { $0 }
+        var json = try #require(JSONSerialization.jsonObject(with: original) as? [String: Any])
+        var ns = try #require(json["namespace"] as? [String: Any])
+        ns["account"] = UUID().uuidString
+        json["namespace"] = ns
+        json["sessionHash"] = b.withBytes(CJOfflineTrip.digest)
+        let foreign = try JSONDecoder().decode(OfflineAnchor.self, from: JSONSerialization.data(withJSONObject: json))
+        let foreignBytes = try SnapshotCodec.encoder().encode(foreign)
+        var switched = false
+        withObservationTracking { _ = active.state } onChange: {
+            MainActor.assumeIsolated {
+                guard !switched else { return }
+                switched = true
+                do {
+                    try active.clearLocally()
+                    try sdk.save(b)
+                    try anchors.save(SessionMaterial(trustedSDKBytes: foreignBytes))
+                } catch { Issue.record(error) }
+            }
+        }
+        #expect(throws: OfflineFailure.unavailable) { try active.denyRejectedIdentity(material: a) }
+        #expect(switched)
+        let observed = try JSONDecoder().decode(OfflineAnchor.self, from: #require(anchors.value).withBytes { $0 })
+        #expect(observed.namespace.account == foreign.namespace.account, "Old A refusal overwrote B replacement anchor after observation account switch")
+    }
     @Test func acceptedSyncReopenExpiryClockRollbackAndFreshSync() async throws {
         let h = try KeyHarness(); defer { h.cleanup() }
         let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
@@ -121,6 +154,80 @@ private actor ControllerWire: ClientTransport {
         let reopened = try controller(h, anchors, clock, sdk: sdk)
         reopened.readCached()
         guard case .missing = reopened.state else { Issue.record("Cleared grant must remain absent"); return }
+    }
+    @Test func onlySuccessfulFormalSynchronizationProvidesStorageAndProofRetiresOnScopeChange() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("verified-sdk-provision".utf8)))
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        var provision: OfflineTripStorageProvision?
+        active.bindStorageProvision { value in provision = value }
+        #expect(throws: OfflineFailure.unavailable) { try active.captureStorageProvision() }
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let provided = try #require(provision)
+        #expect(provided.namespace == h.ns && provided.keyID == h.expectedID)
+        try active.validateStorageProvision(provided)
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("another-sdk".utf8)))
+        #expect(throws: OfflineFailure.unavailable) { try active.validateStorageProvision(provided) }
+        var bridged = 0
+        active.bindDeviceIdentityRejection { _ in bridged += 1 }
+        try await active.currentIdentityRejected()
+        #expect(bridged == 1)
+        #expect(FileManager.default.fileExists(atPath: h.root.appendingPathComponent(h.ns.account.uuidString).appendingPathComponent("snapshot.aesgcm").path))
+    }
+    @Test func deviceReconnectionReadFencePrecedesAuthorizedPhysicalErasure() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        let material = try SessionMaterial(trustedSDKBytes: Data("verified-sdk-original-device".utf8))
+        try sdk.save(material)
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let file = h.root.appendingPathComponent(h.ns.account.uuidString).appendingPathComponent("snapshot.aesgcm")
+        let original = try Data(contentsOf: file)
+        try active.denyRejectedIdentity(material: SessionMaterial(trustedSDKBytes: Data("other-account".utf8)))
+        active.readCached(); guard case .readable = active.state else { Issue.record("Foreign rejection touched original grant"); return }
+        try active.denyRejectedIdentity(material: material)
+        #expect(try Data(contentsOf: file) == original) // Original DEVICE intent, not this read fence, owns unlink.
+        active.readCached(); guard case .unavailable = active.state else { Issue.record("Refused identity remained readable"); return }
+        try active.clearDeviceAccount(account: h.ns.account)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+        try active.verifyDeviceAnchorCleared()
+    }
+    @Test func deviceHookBindsExactAccountAndClearsOriginalResidueWithoutKeyReplacement() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("verified-sdk-device-original".utf8)))
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        let directory = h.root.appendingPathComponent(h.ns.account.uuidString)
+        let snapshot = directory.appendingPathComponent("snapshot.aesgcm")
+        let bytes = try Data(contentsOf: snapshot), original = anchors.value?.withBytes { $0 }
+        #expect(throws: OfflineFailure.wrongNamespace) { try active.clearDeviceAccount(account: UUID()) }
+        #expect(throws: OfflineFailure.wrongNamespace) { try active.clearDeviceTemporaryWrites(account: UUID()) }
+        #expect(try Data(contentsOf: snapshot) == bytes && anchors.value?.withBytes { $0 } == original)
+        let temporary = directory.appendingPathComponent(".write-" + UUID().uuidString)
+        try Data([1,2,3]).write(to: temporary)
+        try active.clearDeviceAccount(account: h.ns.account)
+        try active.verifyDeviceAnchorCleared()
+        #expect(!FileManager.default.fileExists(atPath: snapshot.path))
+        #expect(FileManager.default.fileExists(atPath: temporary.path))
+        try active.clearDeviceTemporaryWrites(account: h.ns.account)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
+        let retained = try h.provider.existing(expectedID: h.expectedID, for: h.provider.begin(.lookup))
+        #expect(retained?.id == h.expectedID)
+    }
+    @Test func exactOrphanWithoutAnchorIsErasedButNeverRestoredReadable() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("verified-sdk-device-original".utf8)))
+        let (client, binding) = try client(h), active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        anchors.value = nil // Interruption lost the grant; the protected exact file is not a read source.
+        let reopened = try controller(h, anchors, clock, sdk: sdk)
+        reopened.readCached(); guard case .missing = reopened.state else { Issue.record("Orphan became readable"); return }
+        try reopened.clearDeviceAccount(account: h.ns.account)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: h.root.appendingPathComponent(h.ns.account.uuidString).path).isEmpty)
+        try reopened.verifyDeviceAnchorCleared()
     }
     @Test func wrongRejectedIdentityDoesNotEraseTheCurrentGrant() async throws {
         let h = try KeyHarness(); defer { h.cleanup() }
@@ -219,20 +326,28 @@ private actor ControllerWire: ClientTransport {
         let material = try SessionMaterial(trustedSDKBytes: Data("verified-sdk-unit-a".utf8))
         try sdk.save(material)
         let (client, binding) = try client(h)
+        var provided: OfflineTripStorageProvision?
         var original: OfflineTripController? = OfflineTripController(environment: h.ns.backend, root: h.root,
             anchors: anchors, sdkMaterial: sdk.load, makeKeys: { _ in h.provider }, clock: clock.read, policy: .acceptedTrip,
             makeStore: { directory in
                 let store = try AtomicSnapshotStore(existingPrivateDirectory: directory)
-                store.afterRename = { throw OfflineFailure.storageFailure }
+                store.afterRename = {
+                    #expect(provided != nil, "Native storage must be recorded before an uncertain file commit")
+                    throw OfflineFailure.storageFailure
+                }
                 return store
             })
         do {
             let active = try #require(original)
+            active.bindStorageProvision { provided = $0 }
             try active.bindSynchronizationIdentity(material: material, account: h.ns.account, session: h.session, operation: h.operation)
             let accepted = try await source(client, binding)
             #expect(throws: OfflineFailure.writeUnknown) {
                 try active.synchronize(client: client, source: accepted, session: h.session, operation: h.operation)
             }
+            let provision = try #require(provided)
+            #expect(provision.namespace == h.ns && provision.keyID == h.expectedID)
+            try active.validateStorageProvision(provision)
             guard case .unknown = active.syncState else { Issue.record("Local uncertainty must remain UNKNOWN"); return }
             #expect(throws: OfflineFailure.writeUnknown) { try active.clearLocally() }
             let deniedBytes = try #require(anchors.value).withBytes { $0 }
