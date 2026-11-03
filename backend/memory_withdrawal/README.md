@@ -15,6 +15,19 @@ are cleared by the explicitly acknowledged owned_trip_derived_scope, not an
 invented item_id foreign key. Devices, external providers and full compatible
 formal foreground integration remain separately verified acceptance.
 
+For every selected source lacking an exact history origin, the controller uses
+the protected MESSAGE-ERASURE-HEADERS1 callback under MESSAGE -> Memory order.
+The original association includes the conservative pre-delete owned message
+coordinates and every matching existing C job, including pending and UNKNOWN;
+its evidence is frozen once. No manual text is matched or collection authorized.
+The same runtime commit records the permanent fences and a hash-only internal
+capture-complete action bound to the original operation/association/versions.
+The final C hook only reads that proof and all message fences before removing
+the manifest; missing proof never becomes completion, including zero messages.
+Original recovery does not capture later messages or change the original bytes.
+An absent Trip scope is confirmed only when its retained Trip/proposal/result
+domain is actually empty. Existing Trip data still requires its canonical lock.
+
 The following is the historical internal observation candidate; it is not the
 M3 deletion API or an activation claim.
 
