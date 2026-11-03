@@ -1,3 +1,19 @@
+# Memory 删除：当前契约与消费者
+
+| 契约 | 状态与消费者 |
+| --- | --- |
+| [ERASURE-V1](ERASURE-V1.md) | 当前 MEMORY-ERASURE1/原 association/C 四域 hooks/永久 hash fence/V6 候选投影；C467 已合。停止使用与物理完成分别报告。 |
+| [COMPOSITION-V2](COMPOSITION-V2.md) | 当前实际 B payload hooks/barrier 的显式组合；原 composition1 观察入口仍有 C 签名 UNKNOWN 组件消费者，不能冒称完整物理删除或作为 V2 失败回退。 |
+| [EVIDENCE-V1](EVIDENCE-V1.md) | 当前不可变原 job/来源/输出证明，供 B memory-purpose hooks 核对；不授予来源或重发权限。 |
+| [WITH-HISTORY-V1](WITH-HISTORY-V1.md) | 当前后加真实上下文引用 union，保留原 snapshot/payload；不重新 capture 隐藏失效。 |
+| [SCOPED-FENCE-V1](SCOPED-FENCE-V1.md) / [DECISION-FENCE-V1](DECISION-FENCE-V1.md) | 当前 scoped/accepted-decision 原来源 fence；不推导 item 精确外键或凭文本扩权。 |
+
+下方 withdrawal-observation.internal.1 与 SEAM-REQUEST 是历史隔离观察候选，
+已被上述真实停止/删除路径替代，无当前签名 API 消费者；保留原文及证据，
+不再为其新增适配或测试。新实现只使用当前显式组合；旧冻结字节不变。
+
+---
+
 # CJ021 withdrawal-observation.internal.1
 
 Internal candidate for [Issue 26](https://github.com/JTCAO515/G2C/issues/26), fixed input
