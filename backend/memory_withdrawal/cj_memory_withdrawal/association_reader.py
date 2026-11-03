@@ -1,9 +1,9 @@
-"""Candidate original-intent reader; not installed or frozen for B consumption."""
+"""Original persisted MEMORY-ERASURE-ASSOCIATION@1, intent bound and read only."""
 from hashlib import sha256
 from cj_cleanup.core import Denied
 from cj_cleanup.store import require_intent
 from cj_agent.draft import trip_scope_for
-from cj_memory.domain import strict_object,InvalidInput
+from .association_codec import parse_original
 
 TARGETS=('business/message','checkpoints/run','business/usage','memory-derived',
          'business/memory-management-actions','business/memory-authoritative','business/trip-authoritative')
@@ -27,11 +27,5 @@ class AssociationReader:
             if row is None:raise Denied('original immutable association absent; no reconstruction grant')
             raw=bytes(row[0])
             if not 0<len(raw)<=1_000_000 or sha256(raw).hexdigest()!=row[1]:raise Denied('original immutable association corrupt')
-            try:value=strict_object(raw)
-            except (InvalidInput,RecursionError) as error:raise Denied('original immutable association invalid') from error
-            if (type(value) is not dict or value.get('version')!='MEMORY-ERASURE-ASSOCIATION-DRAFT@2'
-                    or value.get('operation_id')!=request.operation_id or value.get('subject_digest')!=request.subject_digest
-                    or value.get('memory_scope_digest')!=sha256(self.memory_scope.encode()).hexdigest()
-                    or value.get('selection')!=request.selection.to_dict()):
-                raise Denied('original immutable association differs from approved selection')
+            parse_original(raw,request,self.memory_scope)
             return raw

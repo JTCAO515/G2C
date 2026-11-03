@@ -62,6 +62,19 @@ class RuntimeMemory:
         with self.reference_lease(binding) as lease:
             return self._capture(binding,self.context_for(binding,lease))
 
+    def capture_history(self,binding,message_refs,*,decision_source_sha256s):
+        """Explicit Fence@1 consumer; old capture() has unchanged semantics.
+
+        The host supplies every genuine original message/decision coordinate
+        used by the model. Keep hold(binding) through each model admission and
+        final output commit, using its returned check at the final boundary.
+        """
+        from .erasure_fence import References,HistoryRuntimeRun
+        references=References.capture(message_refs,decision_source_sha256s)
+        run=HistoryRuntimeRun(self.capture(binding),references)
+        with run.hold(binding):pass
+        return run
+
     def _capture(self,binding,context):
         selected = self.selection
         snapshot = None
@@ -123,6 +136,9 @@ class RuntimeRun:
         self.context=binding.conversation_id if context is _LEGACY_CONTEXT else context
         self._check = None
 
+    def _check_additional(self,tx):
+        pass
+
     @contextmanager
     def hold(self, binding):
         if binding != self.binding:
@@ -141,6 +157,7 @@ class RuntimeRun:
                         if owner.guard('runtime_publication') != self.principal:
                             raise RuntimeDenied('memory identity changed')
                         tx.require_current(self.snapshot,owner.selection.subject,self.context)
+                        self._check_additional(tx)
                     check()
                     self._check=check
                     yield check

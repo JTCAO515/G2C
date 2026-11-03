@@ -7,6 +7,10 @@ import psycopg
 from fastapi.testclient import TestClient
 from cj_memory_jobs.collection_app import create_collection_app
 from cj_memory_jobs.extraction import CollectionPolicy
+from cj_memory_jobs.source_policy import SourcePolicy
+from cj_memory_jobs.model_v2 import prepared
+from cj_message.source import SourceQuery
+from cj_memory_jobs.codec import Conflict
 from cj_memory.manual import ManualPolicy
 from cj_memory_withdrawal.erasure_command import ErasureCommand,VERSION
 from cj_memory_withdrawal.erasure_store import freeze
@@ -48,7 +52,7 @@ def exercise(root,path):
         def stop(context):
             repo,principal,guard=service._binding(context,token);scope.append(repo.scope)
             with repo.transaction() as tx:
-                value=freeze(tx,ErasureCommand.parse(encode(dict(version=VERSION,action_id='erase-one',item_id=selected['candidate_id'],expected_version=1))),
+                value=freeze(tx,ErasureCommand.parse(encode(dict(version=VERSION,action_id='erase-one',item_id=selected['candidate_id'],expected_version=1,derived_range='owned_trip_derived_scope'))),
                     subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
                 guard('shared_job_freeze');return value
         association=json.loads(service.boundary.with_history_context(token,stop));selection=Selection.from_dict(association['selection'])
@@ -63,6 +67,22 @@ def exercise(root,path):
         for target in targets:coordinator.advance(coordinator.request(operation,target,scope[0],selection))
         projected=ok(client.get('/v6/memory-candidates',params=dict(conversation_id='source',after_candidate_id=''),headers=headers))['result']
         assert len(projected['candidates'])==1 and projected['candidates'][0]['candidate_id']==other['candidate_id']
+        def historical(context):
+            repo,principal,guard=service._binding(context,token);held=SourcePolicy(repo,principal,guard)
+            def project(snapshot):
+                raw,count=prepared(held.transaction,snapshot,policy,'incremental',max_payload_bytes=262144)
+                assert count==0 and text not in raw.decode()
+                return raw
+            return context.with_enabled_source(SourceQuery(**query),held,project)
+        masked=service.boundary.with_history_context(token,historical)
+        assert json.loads(json.loads(masked)['messages'][0]['content'])['messages']==[]
+        for action,operation,version in (('off-rebuild','disable',1),('on-rebuild','enable',2)):
+            service.apply_consent(token,encode(dict(version='MEMORY-HISTORY@1',action_id=action,operation=operation,
+                conversation_id='source',expected_generation=head['generation'],expected_epoch=0,expected_source_version=version)))
+        rebuilt=dict(query,source_version=3)
+        try:service.enqueue(token,encode(dict(version='MEMORY-JOBS@1',job_id='rebuild-old',attempt_id='rebuild-attempt',source=rebuilt)))
+        except Conflict:pass
+        else:raise AssertionError('original erased message copied by re-extraction/rebuild')
         review=projected['candidates'][0]['review'];assert review==dict(job_id='shared-job',attempt_id='shared-attempt')
         # Existing Action1 uses current canonical origin, not erased job payload.
         service.apply_candidate(token,encode(dict(version='MEMORY-CANDIDATE@1',action_id='confirm-retained',**review,candidate_id=other['candidate_id'],
@@ -71,13 +91,35 @@ def exercise(root,path):
     with psycopg.connect(**json.loads(path.read_text())) as conn:
         assert conn.execute('SELECT count(*) FROM cj_memory_history_job WHERE scope=%s',(scope[0],)).fetchone()==(0,)
         assert conn.execute('SELECT item_id,status FROM cj_memory_item WHERE scope=%s',(scope[0],)).fetchall()==[(other['candidate_id'],'active')]
-    print('PASS actual one-item erasure removes shared private job while unrelated canonical candidate remains discoverable via current projection and confirms with original Action1; no second confirmation authority or fallback')
+    second_command=encode(dict(version=VERSION,action_id='erase-retained-later',item_id=other['candidate_id'],expected_version=2,
+                               derived_range='owned_trip_derived_scope'))
+    def stop_second(context):
+        repo,principal,guard=service._binding(context,token)
+        with repo.transaction() as tx:
+            result=freeze(tx,ErasureCommand.parse(second_command),subject_digest(principal),
+                          max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
+            guard('second_shared_payload_erasure');return result
+    second=json.loads(service.boundary.with_history_context(token,stop_second))
+    assert second['job_refs']==[dict(job_id='shared-job',attempt_id='shared-attempt',
+                                     original_input_sha256=association['job_refs'][0]['original_input_sha256'],state='erased')]
+    selection2=Selection.from_dict(second['selection']);operation2=second['operation_id']
+    coordinator.create(operation2,digest(second_command),'memory',
+        {t:dict(domain_scope=scope[0],selection=selection2.to_dict()) for t in targets})
+    for target in targets:coordinator.advance(coordinator.request(operation2,target,scope[0],selection2))
+    assert coordinator.query(operation2)['status']=='complete'
+    with psycopg.connect(**json.loads(path.read_text())) as conn:
+        assert conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(scope[0],)).fetchone()==(0,)
+        assert conn.execute('SELECT count(*) FROM cj_memory_history_origin WHERE scope=%s',(scope[0],)).fetchone()==(0,)
+    print('PASS actual shared-job one-item deletion preserves unrelated candidate/discovery/Action1, actual retained-message Data2 contains no erased text even with other origin retained; re-enabled source/index rebuild cannot recopy old bytes or recreate canonical memory')
 
 
 if __name__=='__main__':
     with patch.dict(os.environ,{'CJ_ENV':'local'}),tempfile.TemporaryDirectory(prefix='c-shared-candidate-') as folder:
         root=Path(folder)
+        if os.environ.get('CJ_E2E_CONNINFO'):
+            exercise(root,Path(os.environ['CJ_E2E_CONNINFO']))
+            sys.exit(0)
         with pg_suites.cluster('shared_candidate',port=55817,role='cj_c_shared_candidate',root=root/'pg',socket=root/'s') as config:
             with psycopg.connect(**config,autocommit=True) as conn:
-                migrate.up(conn,migrate.load(),42);conn.execute((ROOT/'backend/migrations/0044_memory_item_erasure.sql').read_text())
+                migrate.up(conn,migrate.load(),44)
             path=root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600);exercise(root,path)

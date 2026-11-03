@@ -18,6 +18,7 @@ from cj_cleanup.registry import freeze as freeze_registry
 from cj_cleanup.hooks_v1_1 import Selection
 from cj_cleanup.core import Denied,encode,digest
 from cj_api.local_account_admission_v2 import subject_digest
+from cj_api.local_app import ISSUER,scope_for
 from source_graph_pg import exercise as seed
 
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
@@ -25,9 +26,12 @@ import migrate,pg_suites
 
 
 def exercise(root,path,*,physical=False):
+    with psycopg.connect(**json.loads(path.read_text()),autocommit=True) as conn:
+        chain=migrate.load();migrate.down(conn,chain,0);migrate.up(conn,chain,44)
+    print('PASS registered M1-44 complete empty up/down/up roundtrip')
     fixture=seed(root,path);token=fixture['tokens']['graph-alice']
     c=create_collection_app(conninfo_path=path,auth_dir=fixture['auth'],resolve_collection=lambda principal:None).state.memory_history.service
-    original=json.dumps(dict(version=VERSION,action_id='erase-original',item_id=fixture['item_id'],expected_version=3),indent=2).encode()
+    original=json.dumps(dict(version=VERSION,action_id='erase-original',item_id=fixture['item_id'],expected_version=3,derived_range='owned_trip_derived_scope'),indent=2).encode()
     command=ErasureCommand.parse(original)
     def in_memory(operation):
         def project(context):
@@ -39,6 +43,23 @@ def exercise(root,path,*,physical=False):
         return Service(repo).with_operation(guard,lambda context:context.consume_current_typed('self',None,
             lambda view:json.dumps(dict(items=[dict(id=i.command.item_id,text=i.command.text) for i in view.items])).encode(),max_result_bytes=32768))
     before=in_memory(current);assert b'very slow pace' in before
+    from cj_memory.runtime import RuntimeMemory,RuntimeDenied,Selection as RuntimeSelection
+    from cj_run.core import Binding
+    captured=[]
+    def capture_runtime(context):
+        repo,principal,guard=c._binding(context,token)
+        def admit(stage):guard(stage);return principal,repo.scope
+        receipt=context.send_status('source','origin').stored.receipt
+        binding=Binding(repo.scope,receipt.conversation_id,receipt.generation,receipt.message_id,receipt.run_id,receipt.sequence)
+        refs=[dict(conversation_id=receipt.conversation_id,generation=receipt.generation,sequence=receipt.sequence,
+                   message_id=receipt.message_id,input_sha256=receipt.input_sha256)]
+        runtime=RuntimeMemory(Service(repo),admit,RuntimeSelection('self',frozenset({'pace'}),32768))
+        run=runtime.capture_history(binding,refs,decision_source_sha256s=[])
+        assert run.erasure_protocol=='MEMORY-HISTORY-ERASURE-FENCE@1'
+        with run.hold(binding) as check:check()
+        captured.append((runtime,binding,refs,run))
+        return b'captured'
+    c.boundary.with_history_context(token,capture_runtime)
     def stop(repo,principal,guard):
         with repo.transaction() as memory:
             result=freeze(memory,command,subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
@@ -67,12 +88,29 @@ def exercise(root,path,*,physical=False):
     if not physical:coordinator.create(operation,digest(original),'memory',{'business/memory-authoritative':dict(
         domain_scope=fixture['scope'],selection=selection.to_dict())})
     request=coordinator.request(operation,'business/memory-authoritative',fixture['scope'],selection)
+    try:reader.read_original(request)
+    except Denied:pass
+    else:raise AssertionError('association exposed without committed intent')
     if not physical:
         try:reader.read_original(request)
         except Denied:pass
         else:raise AssertionError('association exposed without committed intent')
         coordinator.advance(request);assert seen==[raw]
     after=in_memory(current);assert json.loads(after)==dict(items=[])
+    runtime,binding,refs,run=captured[0]
+    try:
+        with run.hold(binding):raise AssertionError('stale in-flight runtime admitted after stop')
+    except RuntimeDenied:pass
+    try:runtime.capture_history(binding,refs,decision_source_sha256s=[])
+    except RuntimeDenied:pass
+    else:raise AssertionError('fresh raw-chat context bypassed erased original evidence')
+    with fixture['database'].connect(scope_for(ISSUER,'graph-bob')) as conn:
+        assert conn.execute('SELECT count(*) FROM cj_memory_erasure_manifest').fetchone()==(0,)
+        assert conn.execute('SELECT count(*) FROM cj_memory_erasure_fence').fetchone()==(0,)
+        try:conn.execute("INSERT INTO cj_memory_erasure_fence(scope_digest,kind,reference_sha256) VALUES(%s,'item',%s)",
+                         (descriptor['memory_scope_digest'],'0'*64))
+        except psycopg.errors.InsufficientPrivilege:pass
+        else:raise AssertionError('cross-owner fence write accepted')
     with fixture['database'].connect(fixture['scope']) as conn:
         assert conn.execute('SELECT status,version FROM cj_memory_item').fetchone()==('withdrawn',4)
         assert conn.execute('SELECT count(*) FROM cj_memory_source WHERE active').fetchone()==(0,)
@@ -150,9 +188,11 @@ def exercise(root,path,*,physical=False):
 if __name__=='__main__':
     with patch.dict(os.environ,{'CJ_ENV':'local'}),tempfile.TemporaryDirectory(prefix='c-item-freeze-') as folder:
         root=Path(folder)
+        if os.environ.get('CJ_E2E_CONNINFO'):
+            exercise(root,Path(os.environ['CJ_E2E_CONNINFO']),physical=True)
+            sys.exit(0)
         with pg_suites.cluster('item_freeze',port=55816,role='cj_c_item_freeze',root=root/'pg',socket=root/'s') as config:
             with psycopg.connect(**config,autocommit=True) as conn:
-                chain=migrate.load();migrate.up(conn,chain,42)
-                conn.execute((ROOT/'backend/migrations/0044_memory_item_erasure.sql').read_text())
+                migrate.up(conn,migrate.load(),44)
             path=root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600)
             exercise(root,path,physical=os.environ.get('CJ_ITEM_PHYSICAL')=='1')

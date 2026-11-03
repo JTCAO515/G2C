@@ -1,4 +1,4 @@
--- local runtime only: C item-erasure candidate. Register after B's M43 lands.
+-- local runtime only: original item-erasure association and noncontent fences.
 -- No runtime DELETE, new role, BYPASSRLS or SECURITY DEFINER.
 CREATE TABLE cj_memory_erasure_manifest (
  scope text NOT NULL REFERENCES cj_memory_scope(scope),
@@ -41,12 +41,16 @@ GRANT SELECT,INSERT ON cj_memory_erasure_fence TO cj_m1_runtime;
 CREATE POLICY original_cleanup_read ON cj_memory_erasure_manifest FOR SELECT TO cj_local_cleanup
  USING(scope=nullif(current_setting('cj.cleanup_scope',true),'')
  AND current_setting('cj.cleanup_purpose',true) IN ('account','memory')
+ AND (current_setting('cj.cleanup_purpose',true)='account'
+      OR operation_id=nullif(current_setting('cj.cleanup_operation',true),''))
  AND EXISTS(SELECT 1 FROM cj_cleanup_operation o WHERE o.subject_digest=nullif(current_setting('cj.cleanup_subject',true),'')
    AND o.operation_id=nullif(current_setting('cj.cleanup_operation',true),'') AND NOT o.blocked
    AND o.purpose=current_setting('cj.cleanup_purpose',true)));
 CREATE POLICY original_cleanup_delete ON cj_memory_erasure_manifest FOR DELETE TO cj_local_cleanup
  USING(scope=nullif(current_setting('cj.cleanup_scope',true),'')
  AND current_setting('cj.cleanup_purpose',true) IN ('account','memory')
+ AND (current_setting('cj.cleanup_purpose',true)='account'
+      OR operation_id=nullif(current_setting('cj.cleanup_operation',true),''))
  AND EXISTS(SELECT 1 FROM cj_cleanup_operation o JOIN cj_cleanup_step s
    ON (s.subject_digest,s.operation_id)=(o.subject_digest,o.operation_id)
    WHERE o.subject_digest=nullif(current_setting('cj.cleanup_subject',true),'')

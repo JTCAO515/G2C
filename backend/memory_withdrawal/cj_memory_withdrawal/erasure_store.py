@@ -4,6 +4,7 @@ import json
 from cj_memory.domain import Conflict,Unavailable
 from cj_memory_jobs.postgres import encode
 from .association import prepare
+from .association_codec import VERSION
 
 
 def reference_digest(kind,value):
@@ -41,7 +42,7 @@ def freeze(memory,command,subject_digest,*,max_sources,max_jobs,max_bytes):
     cur.execute('UPDATE cj_memory_scope SET epoch=epoch+1 WHERE scope=%s RETURNING epoch',(scope,))
     stopped_epoch=cur.fetchone()[0];operation=command.operation_id(scope)
     selection=dict(kind='memory',item_id=command.item_id,item_version=stopped[0],scope_epoch=stopped_epoch)
-    value=dict(version='MEMORY-ERASURE-ASSOCIATION-DRAFT@2',operation_id=operation,subject_digest=subject_digest,
+    value=dict(version=VERSION,operation_id=operation,subject_digest=subject_digest,
         memory_scope_digest=sha256(scope.encode()).hexdigest(),selection=selection,original_selection=dict(
             item_id=command.item_id,item_version=command.expected_version,scope_epoch=epoch),
         source_refs=original['source_refs'],operation_refs=original['operation_refs'],message_refs=original['message_refs'],

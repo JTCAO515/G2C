@@ -530,6 +530,25 @@ def group_background_v3():
 GROUPS.update(background_v3=group_background_v3)
 
 
+def group_memory_item_erasure():
+    return _fresh_runtime_check('memory_item_erasure',55816,'cj_memory_item_erasure',
+        f'/tmp/cj-memory-item-erasure-{os.getpid()}','backend/memory_withdrawal/tests/erasure_freeze_pg.py')
+
+
+def group_memory_shared_erasure():
+    return _fresh_runtime_check('memory_shared_erasure',55817,'cj_memory_shared_erasure',
+        f'/tmp/cj-memory-shared-erasure-{os.getpid()}','backend/memory_withdrawal/tests/shared_job_candidate_pg.py')
+
+
+def group_memory_erasure_api():
+    return _fresh_runtime_check('memory_erasure_api',55818,'cj_memory_erasure_api',
+        f'/tmp/cj-memory-erasure-api-{os.getpid()}','backend/memory_withdrawal/tests/erasure_api_pg.py')
+
+
+GROUPS.update(memory_item_erasure=group_memory_item_erasure,memory_shared_erasure=group_memory_shared_erasure,
+              memory_erasure_api=group_memory_erasure_api)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

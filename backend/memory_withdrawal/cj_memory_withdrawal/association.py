@@ -64,6 +64,17 @@ def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,m
     if len(matches)>max_jobs:raise Unavailable('overlapping original jobs exceed bound')
     jobs=Transaction(memory);job_refs=[]
     for jid,attempt in sorted(matches):
+        cur.execute('SELECT 1 FROM cj_memory_history_job WHERE scope=%s AND job_id=%s',(scope,jid))
+        if cur.fetchone() is None:
+            # An earlier overlapping item erasure may have removed this shared
+            # payload. Only its permanent exact original hash proves that fact.
+            ref_digest=sha256(encode(dict(job_id=jid,attempt_id=attempt))).hexdigest()
+            cur.execute("SELECT original_input_sha256 FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='job' AND reference_sha256=%s",
+                        (sha256(scope.encode()).hexdigest(),ref_digest))
+            erased=cur.fetchone()
+            if erased is None or erased[0] is None:raise Unavailable('original job absent without erasure proof')
+            job_refs.append(dict(job_id=jid,attempt_id=attempt,original_input_sha256=erased[0],state='erased'))
+            continue
         row=jobs.job(jid,attempt)
         job_refs.append(dict(job_id=jid,attempt_id=attempt,original_input_sha256=row[0].input_sha256,
                              state=row[0].state))

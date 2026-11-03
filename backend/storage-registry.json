@@ -107,7 +107,9 @@
             "cj_memory_scope",
             "cj_memory_source",
             "cj_memory_item",
-            "cj_memory_operation"
+            "cj_memory_operation",
+            "cj_memory_erasure_manifest",
+            "cj_memory_erasure_fence"
           ],
           "source": "backend/memory/schema.sql@426d337b0647d7770f1716fad83f2e5e724d28e4",
           "status": "provided/local_runtime_only; production_not_provisioned",
@@ -116,11 +118,12 @@
             "original_input and approved_input exact bytes (also duplicated in operation ledger)",
             "source references/version/approval and expiry",
             "subject/slot/context/operation/item IDs",
-            "content/types/status/version/record and occurrence times"
+            "content/types/status/version/record and occurrence times",
+            "Temporary immutable original deletion command, full exact source/message/job association and stopped selection until all original domains confirm; removed with authority step or account erasure"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_memory_withdrawal.account_cleanup.MemoryAuthorityAccountHook via explicit account_hooks(store,owner_scope); account-only exact original intent/retirement/result transaction; memory selection fails without mutation (#26 pending)",
-          "restore_fence": "Live account: existing M35 retirement and M41 canonical bootstrap/drain fence before physical erasure; backups/offline restoration and item-erasure barriers remain UNIMPLEMENTED",
+          "cleanup_hook": "cj_memory_withdrawal.item_cleanup.erasure_hooks(store,memory_scope): explicit CLEANUP@1.1 account/item dispatch; original manifest + require_intent; item authority runs after all payload domains confirm; account hook also deletes new manifest. Old account_hooks stays account-only.",
+          "restore_fence": "M35/M41 account fences; M44 irreversible scope/reference SHA256 item/source/operation/message/decision/job/action barriers. No content or private IDs retained; restore must replay barriers before reads/writes. Offline/device restoration remains A scope.",
           "owner_line": "C",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1"
@@ -153,8 +156,8 @@
             "canonical original action bytes including confirmation_ref and historical receipt"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_memory_withdrawal.account_cleanup.TripAuthorityAccountHook via explicit account_hooks(store,owner_scope); account-only exact original intent/retirement/result transaction; memory selection fails without mutation (#26 pending)",
-          "restore_fence": "Live account: existing M35 retirement and M41 canonical bootstrap/drain fence before physical erasure; backups/offline restoration and item-erasure barriers remain UNIMPLEMENTED",
+          "cleanup_hook": "cj_memory_withdrawal.item_cleanup.erasure_hooks: account retains existing exact account hook; memory purpose uses original intent + canonical Trip lock, clears owned derived scoped results and nonaccepted proposals/drafts, preserves accepted formal Trip. M30 has no item FK: explicitly owned_trip_derived_scope, never precise item-match claim.",
+          "restore_fence": "M35/M41 account fences; M44 Memory stop epoch and original evidence SHA256 barriers invalidate publication and reconstruction. Accepted formal Trip preserved on item deletion; offline/device restoration remains A scope.",
           "read_consumers": [
             {
               "contract": "MANUAL-PREVIEW-WIRE@0.1.0-rc.1",
@@ -271,8 +274,8 @@
             "Historical resulting version/status and stored original-input SHA256"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
-          "cleanup_hook": "cj_memory_withdrawal.account_cleanup.MemoryManagementAccountHook via explicit account_hooks(store,owner_scope); account-only exact original intent/retirement/result transaction; memory selection fails without mutation (#26 pending)",
-          "restore_fence": "Live account: existing M35 retirement and M41 canonical bootstrap/drain fence before physical erasure; backups/offline restoration and item-erasure barriers remain UNIMPLEMENTED",
+          "cleanup_hook": "cj_memory_withdrawal.item_cleanup.erasure_hooks: original CLEANUP@1.1 account hook or selected-item ManagementItemHook, exact manifest/require_intent/scope lock, selected action bytes physically removed and same-transaction original result.",
+          "restore_fence": "M35/M41 account barriers; M44 item/source/operation SHA256 prevents original source/action resurrection; no weakened runtime boundary.",
           "read_consumer": "Original action receipt query only; null is absence observation, not proof of noncommit or retry authorization",
           "candidate_sql_registration": "Local runtime migrations M19/M32/M41; dedicated cleanup role only, no runtime DELETE",
           "owner_line": "C",
@@ -364,8 +367,8 @@
         "Exact complete end-head comparison and logical 1-100 message segment bounds in original history job input; candidate discovery is a transient canonical-origin projection with no new index/cache"
       ],
       "retention": "User content until user deletion or account closure; no automatic age/capacity erasure; minimal opaque non-resurrection fence remains",
-      "cleanup_hook": "cj_memory_jobs.cleanup.CleanupHook: account-domain fence and physical deletion of jobs/output checkpoints/typed publication receipts, candidate decisions, origin map, cursors and consent with same-transaction B original result; item selection fails closed pending #26",
-      "restore_fence": "cj_memory_history_fence stores only SHA256(scope)/erased; canonical entry and runtime INSERT/UPDATE RLS reject after erasure; restore must replay this fence before reads/writes",
+      "cleanup_hook": "cj_memory_withdrawal.item_cleanup.erasure_hooks: account retains original CleanupHook; selected-item DerivedItemHook erases exact sources/origins/candidate actions and every immutable associated job payload, including shared jobs. Unrelated canonical candidates survive and V6 projection/Action1 work without old job payload.",
+      "restore_fence": "M34 account history fence + M44 permanent exact message/accepted-decision/item/source/job SHA256 barriers before new queue/model input/publication; minimal processing hashes retained, no content. Replay barriers must precede restored reads/writes.",
       "owner_line": "C",
       "retention_category": "user_content",
       "objects": [
@@ -380,7 +383,7 @@
       "source": "backend/migrations/0034_memory_history.sql; backend/migrations/0037_memory_publication.sql; #409/#410/#411; existing tables only",
       "cleanup_protocol": "CLEANUP@1.1",
       "decision_intake": "MEMORY-DECISION-JOBS@1 / Data3 / Output3 / Pub3; genuine accepted Trip under MESSAGE->Trip->MEMORY; original bounded accepted document in existing job.batch, never authoritative Memory or provider permission",
-      "decision_provenance": "M42 decision_source_sha256 on history_origin; first real producer retained, admitted message refs monotonically appended for V3 rows only; account hook deletes the entire row with existing content; item cleanup remains #26"
+      "decision_provenance": "M42 decision_source_sha256 on history_origin; first real producer retained, admitted message refs monotonically appended for V3 rows only; account hook deletes the entire row with existing content; item erasure uses immutable MEMORY-ERASURE-ASSOCIATION@1 and exact digest/job union, never current-row inference"
     },
     {
       "id": "device-cache",

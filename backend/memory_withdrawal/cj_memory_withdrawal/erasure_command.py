@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from cj_memory.domain import strict_object,InvalidInput
 
-VERSION='MEMORY-ERASURE-DRAFT@1'
+VERSION='MEMORY-ERASURE@1'
 
 
 @dataclass(frozen=True,repr=False)
@@ -18,8 +18,9 @@ class ErasureCommand:
         if type(raw) is not bytes or not 0<len(raw)<=32768:raise InvalidInput('bounded original erasure UTF8 required')
         try:value=strict_object(raw)
         except (ValueError,RecursionError) as error:raise InvalidInput('invalid original erasure JSON') from error
-        if (type(value) is not dict or set(value)!={'version','action_id','item_id','expected_version'}
+        if (type(value) is not dict or set(value)!={'version','action_id','item_id','expected_version','derived_range'}
                 or value.pop('version')!=VERSION):raise InvalidInput('exact erasure command fields required')
+        if value.pop('derived_range')!='owned_trip_derived_scope':raise InvalidInput('explicit owned derived cleanup range required')
         for key in ('action_id','item_id'):
             identifier=value[key]
             if type(identifier) is not str or not identifier.strip() or len(identifier)>4096 or '\0' in identifier:
