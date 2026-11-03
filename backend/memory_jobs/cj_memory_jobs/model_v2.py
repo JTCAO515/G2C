@@ -39,12 +39,21 @@ def reference(scope,message):
     return 'message-v2:'+sha256(encode(data)).hexdigest()
 
 
+def erased_references(tx,messages):
+    """Current noncontent deletion barriers survive removal of origin rows."""
+    references={sha256(encode(origin_reference(m))).hexdigest():encode(origin_reference(m)) for m in messages}
+    tx.cur.execute('''SELECT reference_sha256 FROM cj_memory_erasure_fence
+        WHERE scope_digest=%s AND kind='message' AND reference_sha256=ANY(%s)''',
+        (sha256(tx.scope.encode()).hexdigest(),list(references)))
+    return {references[row[0]] for row in tx.cur.fetchall()}
+
+
 def visible(tx,messages):
     # These immutable origin rows are the producer's same-transaction source
     # association ledger, not an independently authoritative Memory value/index.
     # An incomplete provided history graph cannot silently become permission.
     tx.cur.execute('''SELECT 1 FROM cj_memory_source s WHERE s.scope=%s
-        AND (s.source_id LIKE 'history-v1:%%' OR s.source_id LIKE 'candidate-confirm-v1:%%')
+        AND (s.source_id LIKE 'history-v1:%%' OR s.source_id LIKE 'trip-history-v1:%%' OR s.source_id LIKE 'candidate-confirm-v1:%%')
         AND NOT EXISTS(SELECT 1 FROM cj_memory_history_origin o
             WHERE (o.scope,o.source_id)=(s.scope,s.source_id)) LIMIT 1''',(tx.scope,))
     if tx.cur.fetchone() is not None:raise Unavailable('history source association unavailable')
@@ -59,7 +68,7 @@ def visible(tx,messages):
                  OR s.source_id IS NULL OR NOT s.authorized OR NOT s.active OR s.expires_at<=clock_timestamp()
                  OR (i.status='active' AND (NOT s.confirmed OR NOT s.semantic_resolved))))''',
           (json.dumps(refs),tx.scope))
-    blocked={encode(row[0]) for row in tx.cur.fetchall()}
+    blocked={encode(row[0]) for row in tx.cur.fetchall()}|erased_references(tx,messages)
     return tuple(m for m in messages if encode(origin_reference(m)) not in blocked)
 
 

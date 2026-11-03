@@ -31,22 +31,22 @@ class PublicationTransaction(Transaction):
                          (raw,self.scope,job_id))
         return raw
 
-    def origin(self,command,job_id,attempt_id,messages,evidence):
+    def origin(self,command,job_id,attempt_id,messages,evidence,*,decision_digest=None):
         by_id={m.receipt.message_id:m.receipt for m in messages}
         refs=[dict(conversation_id=by_id[e.message_id].conversation_id,
                    generation=by_id[e.message_id].generation,sequence=by_id[e.message_id].sequence,
                    message_id=e.message_id,input_sha256=by_id[e.message_id].input_sha256) for e in evidence]
         refs.sort(key=lambda r:(r['conversation_id'],r['generation'],r['sequence'],r['message_id'],r['input_sha256']))
         self.cur.execute('''INSERT INTO cj_memory_history_origin
-            (scope,source_id,item_id,job_id,attempt_id,origin_refs) VALUES(%s,%s,%s,%s,%s,%s::jsonb)
+            (scope,source_id,item_id,job_id,attempt_id,origin_refs,decision_source_sha256) VALUES(%s,%s,%s,%s,%s,%s::jsonb,%s)
             ON CONFLICT(scope,source_id) DO NOTHING''',
-            (self.scope,command.source_id,command.item_id,job_id,attempt_id,json.dumps(refs)))
-        self.cur.execute('SELECT item_id,job_id,attempt_id,origin_refs FROM cj_memory_history_origin '
+            (self.scope,command.source_id,command.item_id,job_id,attempt_id,json.dumps(refs),decision_digest))
+        self.cur.execute('SELECT item_id,job_id,attempt_id,origin_refs,decision_source_sha256 FROM cj_memory_history_origin '
                          'WHERE scope=%s AND source_id=%s',(self.scope,command.source_id))
         old=self.cur.fetchone()
         # A replay from another authorized job may share the immutable logical
         # source, but it cannot change the original item/evidence association.
-        if old is None or old[0]!=command.item_id or old[3]!=refs:
+        if old is None or old[0]!=command.item_id or old[3]!=refs or old[4]!=decision_digest:
             raise Conflict('original source origin differs')
 
     def decision(self,action_id):
@@ -93,12 +93,18 @@ class PublicationTransaction(Transaction):
         row,raw=self.output(job_id,attempt_id)
         if raw is None:raise Unavailable('original extraction output unavailable')
         entries=(parse_output if decoder is None else decoder)(raw,messages,extraction_policy)
+        from .model_v2 import erased_references,origin_reference
+        erased=erased_references(self,messages)
+        by_id={m.receipt.message_id:m for m in messages}
+        if row[0].state!='completed' and any(encode(origin_reference(by_id[e.message_id])) in erased
+                for parsed in entries for e in parsed.entry.evidence):
+            raise Conflict('erased original message cannot produce new canonical memory')
         if row[0].state!='completed' and (row[0].state not in ('inflight','unknown') or row[7]!=self.epoch):
             raise Conflict('original extraction attempt or Memory basis changed')
         receipts=[]
         for parsed in entries:
             context,lease=context_for(parsed.entry)
-            command=build_command(self.scope,parsed.entry,messages,context)
+            command=self.command(parsed,messages,context)
             if row[0].state!='completed' and self.decided(command.item_id):
                 raise Conflict('original candidate has an explicit user decision')
             if row[0].state=='completed':
@@ -109,13 +115,19 @@ class PublicationTransaction(Transaction):
             else:
                 receipt=publish_command(self.memory,command,memory_policy,
                     direct_statement=parsed.direct_statement,context_lease=lease)
-                self.origin(command,job_id,attempt_id,messages,parsed.entry.evidence)
+                self.record_origin(command,job_id,attempt_id,messages,parsed)
             receipts.append(dict(operation_id=receipt.operation_id,item_id=receipt.item_id,
                 version=receipt.version,status=receipt.status,input_sha256=receipt.input_sha256))
         if row[0].state!='completed':
             candidate=raw if completion is None else completion(tuple(receipts))
             self.transition(job_id,attempt_id,'completed',candidate=candidate)
         return tuple(receipts)
+
+    def command(self,parsed,messages,context):
+        return build_command(self.scope,parsed.entry,messages,context)
+
+    def record_origin(self,command,job_id,attempt_id,messages,parsed):
+        self.origin(command,job_id,attempt_id,messages,parsed.entry.evidence)
 
     def apply_decision(self,action,memory_policy,*,context_lease=None):
         old=self.decision(action.action_id)
@@ -129,11 +141,11 @@ class PublicationTransaction(Transaction):
         if item is None:raise Unavailable('candidate unavailable')
         if item.status!='candidate' or item.version!=action.expected_candidate_version:
             raise Conflict('candidate version or state changed')
-        self.cur.execute('SELECT origin_refs,job_id,attempt_id FROM cj_memory_history_origin WHERE scope=%s AND source_id=%s '
+        self.cur.execute('SELECT origin_refs,job_id,attempt_id,decision_source_sha256 FROM cj_memory_history_origin WHERE scope=%s AND source_id=%s '
                          'AND item_id=%s',(self.scope,item.command.source_id,action.candidate_id))
         origin=self.cur.fetchone()
         if origin is None:raise Unavailable('candidate origin unavailable')
-        if origin[1:]!=(action.job_id,action.attempt_id):
+        if origin[1:3]!=(action.job_id,action.attempt_id):
             raise Conflict('candidate original task differs')
         previous=item.command.source_id
         if action.operation=='reject':
@@ -178,8 +190,8 @@ class PublicationTransaction(Transaction):
                          (command.raw,command.source_id,self.scope,command.item_id))
         version=self.cur.fetchone()[0]
         self.cur.execute('UPDATE cj_memory_scope SET epoch=epoch+1 WHERE scope=%s',(self.scope,))
-        self.cur.execute('''INSERT INTO cj_memory_history_origin(scope,source_id,item_id,job_id,attempt_id,origin_refs)
-            VALUES(%s,%s,%s,%s,%s,%s::jsonb)''',(self.scope,command.source_id,command.item_id,action.job_id,action.attempt_id,json.dumps(origin[0])))
+        self.cur.execute('''INSERT INTO cj_memory_history_origin(scope,source_id,item_id,job_id,attempt_id,origin_refs,decision_source_sha256)
+            VALUES(%s,%s,%s,%s,%s,%s::jsonb,%s)''',(self.scope,command.source_id,command.item_id,action.job_id,action.attempt_id,json.dumps(origin[0]),origin[3]))
         if action.extent=='current':context_lease.check()
         return self.record_decision(action,dict(item_id=command.item_id,version=version,status='active',
             source_id=command.source_id,source_version=1),previous,command.source_id)

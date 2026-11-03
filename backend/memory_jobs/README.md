@@ -90,6 +90,13 @@ ConversationProducer 通过真实只读结束状态自动补充结束段；增�
 丢失均按原 bytes/attempt 恢复，UNKNOWN 不自动重发。
 正式 Trip 决定 intake 与 #26 物理删除/防复活仍未完成。
 
+[DECISION-JOBS-V1](../../contracts/memory-jobs/DECISION-JOBS-V1.md) 增加显式的
+create_decision_collection_app / DecisionCollectionAdapter，消费真实完整正式Trip讨论
+与受控accepted-decision lease，持久原命令/批次、Data3/Output3/Pub3。M42登记来源
+指纹，同一决定跨聊天复用首次canonical候选/review，来源只作为可重建派生。
+实际新B worker/Meter和自动intake组合仍待消费；不改旧BG2/Pub2，不把供应输出
+当实际提取。新增document/digest/refs由现有account钩子清理，#26 item清理另交。
+
 ## 保留的 SQLite 隔离候选
 
 本模块仅处理已提交聊天来源的增量整理与会话结束补充摘要的本地队列状态。
@@ -157,3 +164,10 @@ generation 或 MEMORY epoch 变化拒绝旧结果。相同 fence 的暂时暂停
 没有 prompt 或 active context 出口；未来消费者必须按 MEMORY 当前版本/撤回
 及确认规则重新核对，不能直接注入或 promote。本地候选清理与保留政策未固定，
 因此不得在真实个人数据环境启用。精确请求见 contracts/memory-jobs/SEAM.md。
+# M3 item-erasure compatibility
+
+[MEMORY-ERASURE@1](../../contracts/memory-withdrawal/ERASURE-V1.md) adds permanent
+original message/decision barriers before enqueue, model-data construction and
+new publication. V6 current candidate projection retains unrelated candidates
+after a shared job payload is erased; existing candidate Action1 remains valid.
+Old historical V3/V4 discovery protocols keep their original semantics.

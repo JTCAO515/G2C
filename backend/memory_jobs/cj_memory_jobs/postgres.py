@@ -139,7 +139,23 @@ class Transaction:
         job_id, attempt_id, source_key, stored_stream, original, batch, state, processed, candidate, memory_epoch = row
         job_identity(job_id); job_identity(attempt_id)
         batch, original = bytes(batch), bytes(original)
-        source, rows, mode = decode_v2(batch)
+        from .decision_batch import VERSION as DECISION_BATCH,decoded as decision_batch
+        from .decision_command import DecisionCommand
+        try:version=json.loads(batch)['version']
+        except (ValueError,TypeError,KeyError,RecursionError) as error:
+            raise Unavailable('stored history batch version unavailable') from error
+        if version==DECISION_BATCH:
+            source,rows,mode,decision=decision_batch(batch)
+            command=DecisionCommand.parse(original);q=command.query;c=source.cursor
+            if (command.job_id,command.attempt_id)!=(job_id,attempt_id):raise Unavailable('stored decision identity differs')
+            if (q.conversation_id,q.generation,q.epoch,q.after,q.through,q.source_version,q.withdrawal_epoch,q.mode)!= (
+                    c.conversation_id,c.generation,c.epoch,c.after,c.through,source.source_version,source.withdrawal_epoch,mode):
+                raise Unavailable('original decision range differs from batch')
+            if (command.decision.trip_id,command.decision.expected_version,command.decision.content_sha256)!=(
+                    decision.trip_id,decision.version,decision.content_sha256):
+                raise Unavailable('original accepted decision differs from batch')
+        else:
+            source, rows, mode = decode_v2(batch)
         if (source.cursor.scope != self.scope or sha256(batch).hexdigest() != source_key
                 or stream_key(source,mode) != stored_stream):
             raise Unavailable('stored history binding unavailable')
@@ -161,6 +177,13 @@ class Transaction:
 
     def enqueue(self, source, rows, mode, job_id, attempt_id, original):
         batch = encode_v2(source, rows, mode)
+        return self._enqueue_batch(source,rows,mode,job_id,attempt_id,original,batch)
+
+    def enqueue_decision(self,source,rows,mode,job_id,attempt_id,original,decision):
+        from .decision_batch import encoded
+        return self._enqueue_batch(source,rows,mode,job_id,attempt_id,original,encoded(source,rows,mode,decision))
+
+    def _enqueue_batch(self,source,rows,mode,job_id,attempt_id,original,batch):
         key = sha256(batch).hexdigest()
         self.cur.execute('''SELECT job_id,attempt_id,source_key,stream_key,original_input,batch,state,processed,candidate,memory_epoch
             FROM cj_memory_history_job WHERE scope=%s AND (job_id=%s OR attempt_id=%s OR source_key=%s)''',
@@ -173,6 +196,10 @@ class Transaction:
             if (stored[0].job_id,stored[0].attempt_id,stored[1],stored[2]) != (job_id,attempt_id,original,batch):
                 raise Conflict('original history task differs')
             return stored[0]
+        self.cur.execute('''SELECT 1 FROM cj_memory_erasure_fence WHERE scope_digest=%s
+            AND ((kind='job_id' AND reference_sha256=%s) OR (kind='attempt_id' AND reference_sha256=%s)) LIMIT 1''',
+            (self.scope_digest,sha256(job_id.encode()).hexdigest(),sha256(attempt_id.encode()).hexdigest()))
+        if self.cur.fetchone() is not None:raise Conflict('original erased job and attempt identities cannot be reused')
         stream = stream_key(source,mode)
         self.cur.execute('SELECT processed FROM cj_memory_history_cursor WHERE scope=%s AND stream_key=%s',
                          (self.scope,stream))
@@ -183,6 +210,8 @@ class Transaction:
                          "AND state IN ('pending','inflight','unknown')", (self.scope,stream))
         if self.cur.fetchone() is not None:
             raise Conflict('original history interval is unresolved')
+        from .model_v2 import erased_references
+        if erased_references(self,rows):raise Conflict('original erased message cannot be copied into another job')
         self.cur.execute('''INSERT INTO cj_memory_history_job
             (scope,job_id,attempt_id,source_key,stream_key,original_input,batch,memory_epoch,state,processed)
             VALUES(%s,%s,%s,%s,%s,%s,%s,%s,'pending',%s)''',

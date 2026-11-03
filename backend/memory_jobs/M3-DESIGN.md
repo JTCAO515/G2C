@@ -124,3 +124,30 @@ cleanup, account hooks and App behavior remain separate open acceptance boxes.
 The full `scripts/test.py` and `scripts/pg_suites.py` remain mandatory; new migration
 checks include empty up/down/up, nonempty down refusal and cross-owner negatives.
 Real model extraction quality is #32; no fixture proves it.
+
+## Accepted Trip decision intake
+
+DECISION-JOBS-V1.md in contracts/memory-jobs defines the explicit current C
+command, immutable batch, Data3/Output3 and Pub3 factories. The caller must hold
+MESSAGE -> genuine C accepted Trip -> canonical Memory, release them for model
+work and reenter for each local phase. No text/manual flag or serialized artifact
+grants a source. Current version/hash/end/consent/Memory/admission are checked.
+
+M42 stores a scope-bound decision digest on existing origin rows, reuses the
+first canonical item/review producer across chats and appends actual admitted
+message references. Old NULL-digest origins remain immutable. The existing
+memory-derived registry/account hook erases the added document/digest/refs; #26
+item cleanup and its non-resurrection barriers remain separate unfinished work.
+
+Actual private PG uses original worker/Fake -> user accept/modified Trip2,
+signed MSG3 before history enable, durable command/input/phase/Pub3, duplicate
+choice from another chat, candidate confirmation, real C COMMIT ACK loss after
+which original publication remains queryable after disable, and final-tail
+rollback. Account cleanup physically erases the added data. Those C supplied
+extraction outputs are not actual BG3 extraction/Meter proof. New B worker/Meter
+and automatic intake integration remain required before #411 is complete.
+
+The old MSG3 still refuses a new formal discussion after a Memory scope exists;
+C retains that frozen guard. B needs an explicit compatible source/Memory version,
+not a weakened old path. Day/item/scoped projections remain explicitly unsupported
+by this full-record intake; no whole-Trip fallback is allowed.
