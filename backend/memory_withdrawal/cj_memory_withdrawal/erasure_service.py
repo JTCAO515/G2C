@@ -7,6 +7,9 @@ from cj_cleanup.coordinator import Coordinator
 from cj_cleanup.hooks_v1_1 import Selection
 from cj_agent.draft import trip_scope_for
 from cj_memory.domain import Conflict,Unavailable,CommitUnknown
+from cj_memory.erasure_fence import require_coverage
+from cj_memory.runtime import RuntimeDenied
+from cj_message.domain import Unavailable as MessageUnavailable
 from cj_memory_jobs.postgres import encode
 from cj_memory_jobs.service import OperationWithheld
 from cj_api.local_account_admission_v2 import subject_digest
@@ -29,28 +32,53 @@ class ErasureService:
     def _record(self,context,token,command,*,write):
         c=self.collection;repository,principal,guard=c._binding(context,token)
         scope=repository.scope;sd=sha256(scope.encode()).hexdigest()
+        possible=[False]
+        def record(headers):
+            with repository.transaction() as memory:
+                memory.lock_scope();cur=memory.cur
+                cur.execute('''SELECT operation_id,item_version,scope_epoch,original_input_sha256
+                    FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='action' AND reference_sha256=%s''',
+                    (sd,reference_digest('action',command.action_id)))
+                fence=cur.fetchone()
+                if fence is not None:
+                    if fence[3]!=sha256(command.raw).hexdigest():raise Conflict('original delete action bytes differ')
+                    operation,version,epoch,_=fence
+                    cur.execute('SELECT association,association_sha256 FROM cj_memory_erasure_manifest WHERE scope=%s AND operation_id=%s',(scope,operation))
+                    row=cur.fetchone()
+                    if row is not None:
+                        raw=bytes(row[0])
+                        if sha256(raw).hexdigest()!=row[1]:raise Unavailable('immutable delete association corrupt')
+                        association=json.loads(raw)
+                    else:association=None
+                elif write:
+                    raw=freeze(memory,command,subject_digest(principal),max_sources=self.max_sources,max_jobs=self.max_jobs,max_bytes=self.max_bytes,headers=headers)
+                    association=json.loads(raw);operation=association['operation_id'];version=association['selection']['item_version'];epoch=association['selection']['scope_epoch']
+                else:raise Unavailable('original delete outcome unknown; absence does not permit resubmission')
+                try:require_coverage(cur,scope,operation,version,epoch,encode(association) if association is not None else None)
+                except RuntimeDenied as error:raise Unavailable('original complete history capture unavailable') from error
+                possible[0]=write
+                guard('item_erasure_record')
+            return repository,principal,guard,operation,version,epoch,association
+        if not write:return record(None)
+        # Recovery of an already frozen original must not depend on later
+        # unrelated MESSAGE inventory or capture new post-delete references.
         with repository.transaction() as memory:
-            memory.lock_scope();cur=memory.cur
-            cur.execute('''SELECT operation_id,item_version,scope_epoch,original_input_sha256
-                FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='action' AND reference_sha256=%s''',
+            memory.lock_scope()
+            memory.cur.execute("SELECT 1 FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='action' AND reference_sha256=%s",
                 (sd,reference_digest('action',command.action_id)))
-            fence=cur.fetchone()
-            if fence is not None:
-                if fence[3]!=sha256(command.raw).hexdigest():raise Conflict('original delete action bytes differ')
-                operation,version,epoch,_=fence
-                cur.execute('SELECT association,association_sha256 FROM cj_memory_erasure_manifest WHERE scope=%s AND operation_id=%s',(scope,operation))
-                row=cur.fetchone()
-                if row is not None:
-                    raw=bytes(row[0])
-                    if sha256(raw).hexdigest()!=row[1]:raise Unavailable('immutable delete association corrupt')
-                    association=json.loads(raw)
-                else:association=None
-            elif write:
-                raw=freeze(memory,command,subject_digest(principal),max_sources=self.max_sources,max_jobs=self.max_jobs,max_bytes=self.max_bytes)
-                association=json.loads(raw);operation=association['operation_id'];version=association['selection']['item_version'];epoch=association['selection']['scope_epoch']
-            else:raise Unavailable('original delete outcome unknown; absence does not permit resubmission')
-            guard('item_erasure_record')
-        return repository,principal,guard,operation,version,epoch,association
+            existing=memory.cur.fetchone() is not None
+        if existing:return record(None)
+        try:
+            result={}
+            def capture(headers):
+                value=record(headers);result['record']=value
+                return encode(value[-1]) if value[-1] is not None else b'null'
+            context.with_erasure_headers(capture,max_refs=10000,max_result_bytes=self.max_bytes)
+            return result['record']
+        except Exception as error:
+            if possible[0]:raise OperationWithheld(command.action_id) from error
+            if isinstance(error,MessageUnavailable):raise Unavailable('original message metadata unavailable') from error
+            raise
 
     def _binding(self,principal,scope):
         binding=self.runtime.bind(principal)
@@ -134,6 +162,9 @@ class ErasureService:
                 record=memory.cur.fetchone()
                 if record is None:raise Unavailable('original delete outcome unknown')
             operation,version,epoch=record;store,_=self._binding(principal,repo.scope)
+            with repo.transaction() as memory:
+                try:require_coverage(memory.cur,repo.scope,operation,version,epoch)
+                except RuntimeDenied as error:raise Unavailable('original complete history capture unavailable') from error
             try:progress=store.query(operation)
             except Denied:progress=dict(status='unknown',steps=[])
             guard('item_erasure_progress_projection')

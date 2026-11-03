@@ -13,7 +13,7 @@ public struct MemoryCandidateEditorEntry: Identifiable, Sendable {
 }
 public struct MemoryCandidatePresentationWork: Sendable {
     fileprivate enum Kind: Sendable {
-        case discover(MemoryCandidateJobsRead?), candidates(MemoryCandidateJobsRead, MemoryCandidateJob)
+        case discover(MemoryCandidateJobsRead?), candidates(MemoryCandidateJobsRead, MemoryCandidateJob), projection(MemoryCandidateProjectionRead?)
         case review(MemoryCandidateWork), query(MemoryCandidateOriginal), originals
     }
     fileprivate let slot: UUID
@@ -31,6 +31,7 @@ public struct MemoryCandidatePresentationWork: Sendable {
         var request = UUID(), started: UUID?
         var state: MemoryCandidateState
         var pages: [MemoryCandidateJobsRead] = []
+        var projectionPages: [MemoryCandidateProjectionRead] = []
         var source: MemoryCandidateJobsRead?
         var selectedProducer: MemoryCandidateJob?
         var read: MemoryCandidatesRead?
@@ -54,17 +55,31 @@ public struct MemoryCandidatePresentationWork: Sendable {
     public var state: MemoryCandidateState { _ = signal; return slot.state }
     public var conversationID: String? { _ = signal; return slot.conversation }
     public var jobs: [MemoryCandidateJob] { _ = signal; return slot.pages.flatMap(\.page.jobs) }
-    public var candidates: [MemoryCandidate] { _ = signal; return slot.read?.page.candidates ?? [] }
+    public var usesCurrentProjection: Bool { client?.readWire == .canonicalProjectionV2 }
+    public var candidates: [MemoryCandidate] {
+        _ = signal
+        return usesCurrentProjection ? slot.projectionPages.flatMap { $0.page.items.map(\.candidate) } : slot.read?.page.candidates ?? []
+    }
     public var producer: MemoryCandidateJob? { _ = signal; return slot.selectedProducer }
     public var original: MemoryCandidateOriginal? { _ = signal; return slot.original }
     public var historicalReceipt: MemoryCandidateReceipt? { _ = signal; return slot.receipt }
     public var rejectionStatus: Int? { _ = signal; return slot.rejection?.0 }
     public var pendingActions: [MemoryCandidateOriginal] { _ = signal; return slot.originals }
     public var canRead: Bool { _ = signal; return client != nil && slot.binding != nil && slot.conversation != nil && !slot.state.isBusy }
-    public var hasMore: Bool { _ = signal; return canRead && slot.pages.last?.page.nextAfterJobID != nil }
+    public var hasMore: Bool {
+        _ = signal
+        return canRead && (usesCurrentProjection ? slot.projectionPages.last?.page.nextAfterCandidateID != nil : slot.pages.last?.page.nextAfterJobID != nil)
+    }
+    private func candidate(_ id: String, in captured: Slot) -> MemoryCandidate? {
+        if usesCurrentProjection {
+            return captured.projectionPages.lazy.flatMap(\.page.items).first(where: { same($0.candidate.id, id) })?.candidate
+        }
+        return captured.read?.page.candidates.first(where: { same($0.id, id) })
+    }
     public func canReview(candidateID: String) -> Bool {
         _ = signal
-        return (slot.state == .ready || slot.state == .invalidReview) && slot.read?.page.candidates.contains(where: { same($0.id, candidateID) && $0.status == .candidate }) == true
+        guard slot.state == .ready || slot.state == .invalidReview, let value = candidate(candidateID, in: slot) else { return false }
+        return value.status == .candidate && value.actionV1IdentifierIsSupported
     }
     public func replace(binding: MemoryBinding?, conversationID: String?) {
         client?.invalidate(); slot = Slot(binding: binding, conversation: conversationID, configured: client != nil); notify()
@@ -85,13 +100,14 @@ public struct MemoryCandidatePresentationWork: Sendable {
     public func prepareDiscovery(more: Bool = false) -> MemoryCandidatePresentationWork? {
         guard canRead, !more || hasMore, let captured = prepare() else { return nil }
         let after = more ? captured.pages.last : nil
-        if !more { captured.pages = []; captured.read = nil; captured.source = nil; captured.selectedProducer = nil }
+        if !more { captured.pages = []; captured.projectionPages = []; captured.read = nil; captured.source = nil; captured.selectedProducer = nil }
         captured.state = .loading
-        let work = MemoryCandidatePresentationWork(slot: captured.id, request: captured.request, kind: .discover(after))
+        let kind: MemoryCandidatePresentationWork.Kind = usesCurrentProjection ? .projection(more ? captured.projectionPages.last : nil) : .discover(after)
+        let work = MemoryCandidatePresentationWork(slot: captured.id, request: captured.request, kind: kind)
         notify(); return work
     }
     public func prepareCandidates(producer: MemoryCandidateJob) -> MemoryCandidatePresentationWork? {
-        guard canRead, let captured = prepare(), let source = captured.pages.first(where: { $0.page.jobs.contains(producer) }) else { return nil }
+        guard !usesCurrentProjection, canRead, let captured = prepare(), let source = captured.pages.first(where: { $0.page.jobs.contains(producer) }) else { return nil }
         captured.read = nil; captured.state = .loading
         let work = MemoryCandidatePresentationWork(slot: captured.id, request: captured.request, kind: .candidates(source, producer))
         notify(); return work
@@ -100,7 +116,7 @@ public struct MemoryCandidatePresentationWork: Sendable {
         let captured = slot, request = captured.request
         guard canReview(candidateID: candidateID), let client, let binding = captured.binding,
               client.isCurrent(binding: binding, conversation: captured.conversation), slot === captured, captured.request == request,
-              let candidate = captured.read?.page.candidates.first(where: { same($0.id, candidateID) }) else { return nil }
+              let candidate = candidate(candidateID, in: captured) else { return nil }
         return .init(id: UUID(), candidate: candidate, slot: captured.id, request: request)
     }
     public func canReview(entry: MemoryCandidateEditorEntry) -> Bool {
@@ -112,13 +128,20 @@ public struct MemoryCandidatePresentationWork: Sendable {
     }
     public func prepareReview(candidateID: String, review: MemoryCandidateReview) -> MemoryCandidatePresentationWork? {
         let originalRequest = slot.request
-        guard canReview(candidateID: candidateID), let captured = prepare(), let read = captured.read, let client else { return nil }
+        guard canReview(candidateID: candidateID), let captured = prepare(), let client else { return nil }
         let request = captured.request
         do {
-            let action = try client.prepareReview(read: read, candidateID: candidateID, review: review)
+            let action: MemoryCandidateWork
+            if usesCurrentProjection {
+                guard let read = captured.projectionPages.first(where: { $0.page.items.contains(where: { same($0.candidate.id, candidateID) }) }) else { throw MemoryFailure.staleBinding }
+                action = try client.prepareReview(read: read, candidateID: candidateID, review: review)
+            } else {
+                guard let read = captured.read else { throw MemoryFailure.staleBinding }
+                action = try client.prepareReview(read: read, candidateID: candidateID, review: review)
+            }
             guard slot === captured, captured.request == request else { return nil }
             captured.original = action.original; captured.receipt = nil; captured.rejection = nil
-            captured.read = nil; captured.state = .changing
+            captured.read = nil; captured.projectionPages = []; captured.state = .changing
             let work = MemoryCandidatePresentationWork(slot: captured.id, request: captured.request, kind: .review(action))
             notify(); return work
         } catch {
@@ -126,7 +149,7 @@ public struct MemoryCandidatePresentationWork: Sendable {
             if error as? MemoryFailure == .invalidInput {
                 captured.request = originalRequest; captured.state = .invalidReview
             } else {
-                captured.read = nil
+                captured.read = nil; captured.projectionPages = []
                 captured.state = error as? MemoryFailure == .pendingRequiresQuery ? .unknown : .recoveryUnavailable
             }
             notify(); return nil
@@ -142,7 +165,7 @@ public struct MemoryCandidatePresentationWork: Sendable {
         let captured = slot
         guard !captured.state.isBusy, let original = captured.originals.first(where: { same($0.actionID, actionID) }) else { return }
         client?.retireReads(); captured.request = UUID(); captured.started = nil
-        captured.pages = []; captured.source = nil; captured.read = nil; captured.selectedProducer = nil
+        captured.pages = []; captured.projectionPages = []; captured.source = nil; captured.read = nil; captured.selectedProducer = nil
         captured.original = original; captured.receipt = nil; captured.rejection = nil; captured.state = .unknown
         notify()
     }
@@ -168,10 +191,16 @@ public struct MemoryCandidatePresentationWork: Sendable {
                 let read = try await client.candidates(from: source, producer: producer)
                 guard current(work) else { return }
                 captured.source = source; captured.selectedProducer = producer; captured.read = read; captured.state = .ready
+            case .projection(let previous):
+                guard let conversation = captured.conversation else { throw MemoryFailure.staleBinding }
+                let read = try await client.currentProjection(binding: binding, conversation: conversation, after: previous)
+                guard current(work) else { return }
+                captured.projectionPages.append(read); captured.state = .ready
             case .originals:
                 let records = try client.originals(binding: binding)
                 guard current(work) else { return }
-                captured.originals = records; captured.state = captured.original == nil ? .unread : .unknown
+                captured.originals = records
+                captured.state = captured.original == nil ? (captured.read != nil || !captured.projectionPages.isEmpty ? .ready : .unread) : .unknown
             case .review(let action):
                 let result = try await client.perform(action)
                 try await apply(result, work: work, client: client)
@@ -184,7 +213,7 @@ public struct MemoryCandidatePresentationWork: Sendable {
             notify()
         } catch {
             guard current(work) else { return }
-            captured.read = nil
+            captured.read = nil; captured.projectionPages = []
             if captured.receipt != nil { captured.state = .unavailable }
             else if case MemoryFailure.rejected(let status, let code) = error {
                 captured.rejection = (status, code); captured.state = status == 409 ? .conflict : .unavailable
@@ -192,7 +221,7 @@ public struct MemoryCandidatePresentationWork: Sendable {
                 switch work.kind {
                 case .review, .query: captured.state = .unknown
                 case .originals: captured.state = .recoveryUnavailable
-                case .discover, .candidates: captured.state = .unavailable
+                case .discover, .candidates, .projection: captured.state = .unavailable
                 }
             }
             notify()
@@ -206,14 +235,18 @@ public struct MemoryCandidatePresentationWork: Sendable {
             captured.receipt = receipt; captured.rejection = nil
             // The receipt is historical. Only this fresh protected read installs
             // a current candidate projection; failure preserves the known result.
-            if let source = captured.source, let producer = captured.selectedProducer {
+            if usesCurrentProjection, let binding = captured.binding, let conversation = captured.conversation {
+                let read = try await client.currentProjection(binding: binding, conversation: conversation)
+                guard current(work) else { return }
+                captured.projectionPages = [read]; captured.state = .ready
+            } else if let source = captured.source, let producer = captured.selectedProducer {
                 let read = try await client.candidates(from: source, producer: producer)
                 guard current(work) else { return }
                 captured.read = read; captured.state = .ready
             } else { captured.state = .unread }
-        case .notObserved: captured.read = nil; captured.state = .unknown
+        case .notObserved: captured.read = nil; captured.projectionPages = []; captured.state = .unknown
         case .rejected(let status, let code):
-            captured.read = nil; captured.rejection = (status, code); captured.state = status == 409 ? .conflict : .unavailable
+            captured.read = nil; captured.projectionPages = []; captured.rejection = (status, code); captured.state = status == 409 ? .conflict : .unavailable
         }
         notify()
     }

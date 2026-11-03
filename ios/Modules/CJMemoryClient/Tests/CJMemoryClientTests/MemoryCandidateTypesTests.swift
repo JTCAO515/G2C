@@ -15,6 +15,67 @@ private func candidateItem() -> [String: Any] {
     ["candidate_id": "history-item-v1:偏好", "version": 1, "status": "candidate", "subject": "traveler", "slot": "food",
      "kind": "inference", "text": "不吃辣 / no spicy food", "extent": "long_term", "occurred_at": "date unknown", "context": NSNull()]
 }
+private func projectionItem(_ id: String = "history-item-v1:偏好") -> [String: Any] {
+    var item = candidateItem(); item["candidate_id"] = id
+    item["review"] = ["job_id": "erased-shared-job", "attempt_id": "original-attempt"]
+    return item
+}
+@Test func canonicalProjectionCarriesOriginalReviewWithoutJobPayloadAndPreservesFullUnicodeID() throws {
+    let id = String(repeating: "😀", count: 4096)
+    let raw = try candidateWire("MEMORY-CANDIDATE-projection@2", ["conversation_id": "chat", "memory_epoch": 2,
+        "candidates": [projectionItem(id)], "next_after_candidate_id": NSNull()])
+    let page = try MemoryCandidateProjectionPage(response: raw, trace: candidateTrace, conversationID: "chat")
+    let item = try #require(page.items.first)
+    #expect(Data(item.candidate.id.utf8) == Data(id.utf8) && item.producer.jobID == "erased-shared-job")
+    #expect(!item.candidate.actionV1IdentifierIsSupported)
+    #expect(throws: MemoryFailure.invalidInput) {
+        try MemoryCandidateAction(candidate: item.candidate, producer: item.producer, memoryEpoch: page.memoryEpoch, review: .reject)
+    }
+    let acceptedID = String(repeating: "😀", count: 1024)
+    let acceptedRaw = try candidateWire("MEMORY-CANDIDATE-projection@2", ["conversation_id": "chat", "memory_epoch": 2,
+        "candidates": [projectionItem(acceptedID)], "next_after_candidate_id": NSNull()])
+    let acceptedPage = try MemoryCandidateProjectionPage(response: acceptedRaw, trace: candidateTrace, conversationID: "chat")
+    let accepted = try #require(acceptedPage.items.first)
+    let action = try MemoryCandidateAction(candidate: accepted.candidate, producer: accepted.producer, memoryEpoch: page.memoryEpoch, review: .reject)
+    #expect(try MemoryCandidateAction(originalUTF8: action.originalUTF8).candidateID.utf8.count == 4096)
+    var fields = try #require(JSONSerialization.jsonObject(with: action.originalUTF8) as? [String: Any])
+    fields["candidate_id"] = acceptedID + "a"
+    #expect(throws: MemoryFailure.invalidResponse) { try MemoryCandidateAction(originalUTF8: JSONSerialization.data(withJSONObject: fields)) }
+}
+@Test func projectionCursorUsesActualLastCandidateAndEmptyEpochZeroIsNotAnError() throws {
+    let values = (0..<50).map { projectionItem("candidate-\($0)") }
+    let raw = try candidateWire("MEMORY-CANDIDATE-projection@2", ["conversation_id": "chat", "memory_epoch": 3,
+        "candidates": values, "next_after_candidate_id": "candidate-49"])
+    let page = try MemoryCandidateProjectionPage(response: raw, trace: candidateTrace, conversationID: "chat")
+    #expect(page.items.count == 50 && page.nextAfterCandidateID == "candidate-49")
+    let empty = try candidateWire("MEMORY-CANDIDATE-projection@2", ["conversation_id": "chat", "memory_epoch": 0,
+        "candidates": [], "next_after_candidate_id": NSNull()])
+    #expect(try MemoryCandidateProjectionPage(response: empty, trace: candidateTrace, conversationID: "chat").items.isEmpty)
+    for value in ["candidate-48", "invented"] {
+        #expect(throws: MemoryFailure.invalidResponse) {
+            try MemoryCandidateProjectionPage(response: candidateWire("MEMORY-CANDIDATE-projection@2", ["conversation_id": "chat", "memory_epoch": 3,
+                "candidates": values, "next_after_candidate_id": value]), trace: candidateTrace, conversationID: "chat")
+        }
+    }
+}
+@Test(arguments: ["status", "duplicate", "review", "conversation", "too-many-scalars", "extra-owner", "epoch-zero"])
+func canonicalProjectionRejectsMalformedCurrentSource(change: String) throws {
+    var item = projectionItem(), conversation = "chat", epoch = 2
+    switch change {
+    case "status": item["status"] = "disabled"
+    case "review": item["review"] = ["job_id": "job", "attempt_id": "attempt", "owner": "other"]
+    case "conversation": conversation = "other"
+    case "too-many-scalars": item["candidate_id"] = String(repeating: "e\u{301}", count: 2049)
+    case "extra-owner": item["owner"] = "other"
+    case "epoch-zero": epoch = 0
+    default: break
+    }
+    #expect(throws: MemoryFailure.invalidResponse) {
+        try MemoryCandidateProjectionPage(response: candidateWire("MEMORY-CANDIDATE-projection@2", ["conversation_id": conversation,
+            "memory_epoch": epoch, "candidates": change == "duplicate" ? [item, item] : [item],
+            "next_after_candidate_id": NSNull()]), trace: candidateTrace, conversationID: "chat")
+    }
+}
 @Test func discoveryPreservesOriginalUnicodeReferencesAndDoesNotNormalizeIDs() throws {
     let composed = "é", decomposed = "e\u{301}"
     let raw = try candidateWire("MEMORY-CANDIDATE-JOBS@1", ["conversation_id": "会话甲", "jobs": [

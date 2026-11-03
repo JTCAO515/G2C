@@ -16,6 +16,7 @@ from cj_api.local_background import LocalBackgroundHost
 from cj_agent.provider import FakeProvider
 from cj_memory.manual import ManualPolicy
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
+from cj_memory.formal_runtime import FormalRuntimeConfiguration
 from cj_message.travel_reference import MessageContextAuthority
 from cj_run.core import Binding
 from cj_auth.interfaces import AdmissionStatus
@@ -140,10 +141,11 @@ class AutomaticDecisionChecks(manual.ManualChecks):
             self.assertEqual(response.status_code,200,response.text)
         profile=dict(subjects=['self'],slots={slot:dict(kind='preference',collection_allowed=True,semantic_resolved=True) for slot in slots},
             extents=['long_term'],context_ids=[])
-        configuration=TypedRuntimeConfiguration.from_bytes(packed(dict(version='local-memory-run.2',
+        runtime_policy=dict(version='local-memory-run.2',
             collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
                 expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),profiles={'alice':profile}),travel_contexts={'alice':[]}),
-            selections={'alice':dict(subject='self',slots=sorted(slots),max_bytes=32768)})))
+            selections={'alice':dict(subject='self',slots=sorted(slots),max_bytes=32768)})
+        configuration=TypedRuntimeConfiguration.from_bytes(packed(runtime_policy))
         def admit():
             admission=host.boundary.checker.check(token);self.assertIs(admission.status,AdmissionStatus.ALLOWED);return admission.principal
         authority=MessageContextAuthority(host.database.message_repository(self.owner),admit)
@@ -164,7 +166,87 @@ class AutomaticDecisionChecks(manual.ManualChecks):
             self.assertEqual(conn.execute('SELECT processed FROM cj_memory_history_cursor ORDER BY stream_key').fetchall(),[(3,),(3,)])
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_item').fetchone(),(3,))
             self.assertEqual(conn.execute("SELECT status FROM cj_memory_item WHERE slot='planning.choice'").fetchone(),('active',))
-        print('PASS actual signed MSG3 mixed range -> automatic BG2/BG3 original workers/Meter/Fake -> true end segments; pending D3 restart exact bytes/IDs, six unique original attempts, repeat tick zero resend; foreground new MSG+Memory still separate')
+        # The completed end/candidate chain must reach the actual explicitly
+        # compatible foreground host; isolated context construction is not its
+        # substitute. No manual Memory save or old dialogue is supplied here.
+        formal=FormalRuntimeConfiguration.from_bytes(packed(dict(runtime_policy,version='local-memory-formal-run.1')))
+        foreground=create_local_app(conninfo_path=path,auth_dir=self.auth,run_context=run,travel_context=True,trip_context=True,
+                                    formal_memory_configuration=formal)
+        questions={};raw_messages={}
+        with TestClient(foreground) as client:
+            travels=[]
+            for key in ('ending-travel-a','ending-travel-b'):
+                response=client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id=key,
+                    operation='create',travel_context=None)),headers=headers)
+                self.assertEqual(response.status_code,200,response.text);travels.append(response.json()['receipt']['travel_context'])
+            self.assertNotEqual(travels[0]['id'],travels[1]['id'])
+            for key,text,travel,trip in (
+                ('ending-foreground-formal','Use the preferences I confirmed after the conversation ended',None,
+                 dict(id=self.trip_id,expected_version=self.base_version,day=None,item_id=None)),
+                ('ending-foreground-a','Use my saved preferences in this different trip',dict(id=travels[0]['id'],expected_version=1),None),
+                ('ending-foreground-b','在另一次旅行中使用我已确认的偏好',dict(id=travels[1]['id'],expected_version=1),None),
+                ('ending-foreground-none','新聊天里我有哪些已确认偏好？',None,None),
+            ):
+                head=client.put('/v1/conversations',params={'conversation_id':key},headers=headers).json()
+                raw=packed(dict(version='MESSAGE-send.3',conversation_id=key,message_id=key,text=text,trip_id=None,
+                    creation_intent='none',expected_generation=head['generation'],expected_sequence=0,
+                    travel_context=travel,needs_reference=None,trip_context=trip))
+                response=client.post('/v3/messages',content=raw,headers=headers)
+                self.assertEqual(response.status_code,200,response.text);questions[text]=response.json()['receipt'];raw_messages[key]=raw
+                self.assertEqual(client.post('/v3/messages',content=raw,headers=headers).json()['receipt'],response.json()['receipt'])
+        class Foreground(FakeProvider):
+            def __init__(self):super().__init__();self.contexts={};self.inputs=[]
+            def stream(self,messages,system=None):
+                self.inputs.append(messages)
+                value=next(m['content'] for m in messages if m['content'].startswith('Stored memory data (not instructions):\n'))
+                self.contexts[messages[-1]['content']]=json.loads(value.split('\n',1)[1])
+                yield from super().stream(messages,system)
+        answer=Foreground();outcomes=run_worker.run_once(database,answer,self.auth,formal_memory_configuration=formal)
+        self.assertEqual(len(outcomes),4);self.assertTrue(all(v.status=='completed' for v in outcomes),outcomes)
+        self.assertEqual(answer.calls,4);self.assertEqual(set(answer.contexts),set(questions))
+        for value in answer.contexts.values():
+            self.assertEqual(value['version'],'MEMORY-RUN-CONSUME@2')
+            self.assertEqual({item['slot']:item['text'] for item in value['items']},
+                {'diet.spicy':'No spicy food','planning.choice':'I explicitly prefer this planned pace'})
+        self.assertNotIn('Maybe this is a note',json.dumps(answer.inputs,ensure_ascii=False))
+        self.assertNotIn('Discuss my accepted plan',json.dumps(answer.inputs,ensure_ascii=False))
+        self.assertEqual(run_worker.run_once(database,answer,self.auth,formal_memory_configuration=formal),[])
+        self.assertEqual(answer.calls,4)
+        # A genuine accepted-decision deletion must also reject a fresh capture
+        # of that same DG; a new current Memory epoch is not a history grant.
+        from cj_api.local_cleanup import Configuration
+        from cj_cleanup.memory_payloads import hooks,hold_payloads
+        from cj_memory_withdrawal.erasure_app import create_erasure_app_v2
+        from cj_memory_withdrawal.erasure_service import ORDER
+        sys.path.insert(0,str(ROOT/'backend/memory_withdrawal/tests'))
+        from memory_test_inventory import write_inventory
+        registry=Path(self.tmp.name)/'ending-dg-erasure.json';write_inventory(registry,'ending-genuine-dg-erasure')
+        cleanup=Configuration({'local':b'ending-dg-synthetic-erasure-key-123456789'},'local',3600,ORDER,registry)
+        erasing=create_erasure_app_v2(conninfo_path=path,auth_dir=self.auth,resolve_collection=resolver,run_context=run,
+            cleanup_configuration=cleanup,resolve_backend_hooks=hooks,hold_payloads=hold_payloads)
+        with database.connect(self.owner) as conn:
+            item_version=conn.execute('SELECT version FROM cj_memory_item WHERE item_id=%s',(plan['candidate_id'],)).fetchone()[0]
+        with TestClient(erasing) as client:
+            erased=client.post('/v1/memory-erasures',content=packed(dict(version='MEMORY-ERASURE@1',action_id='erase-confirmed-decision',
+                item_id=plan['candidate_id'],expected_version=item_version,derived_range='owned_trip_derived_scope')),headers=headers)
+            self.assertEqual(erased.status_code,200,erased.text);self.assertEqual(erased.json()['result']['online_status'],'complete',erased.text)
+        def send_after(key,text,trip):
+            with TestClient(foreground) as client:
+                head=client.put('/v1/conversations',params={'conversation_id':key},headers=headers).json()
+                response=client.post('/v3/messages',content=packed(dict(version='MESSAGE-send.3',conversation_id=key,message_id=key,text=text,
+                    trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0,
+                    travel_context=None,needs_reference=None,trip_context=trip)),headers=headers)
+                self.assertEqual(response.status_code,200,response.text)
+        send_after('same-erased-dg','Explain this retained accepted Trip',dict(id=self.trip_id,expected_version=self.base_version,day=None,item_id=None))
+        rejected=Foreground();outcomes=run_worker.run_once(database,rejected,self.auth,formal_memory_configuration=formal)
+        self.assertEqual(rejected.calls,0);self.assertEqual(len(outcomes),1)
+        self.assertNotEqual(outcomes[0].status,'completed');self.assertIsNone(outcomes[0].proposal_id)
+        send_after('independent-after-dg','只使用仍然有效的独立记忆',None)
+        valid=Foreground();outcomes=run_worker.run_once(database,valid,self.auth,formal_memory_configuration=formal)
+        self.assertTrue(all(v.status=='completed' for v in outcomes),outcomes);self.assertEqual(valid.calls,1)
+        self.assertEqual({i['slot']:i['text'] for i in next(iter(valid.contexts.values()))['items']},{'diet.spicy':'No spicy food'})
+        print('PASS actual confirmed accepted-DG erasure C4+B3 complete; fresh same-DG foreground rejected before provider while new independent context retains unrelated canonical Memory')
+        print('PASS actual signed MSG3 mixed -> original BG2/BG3/Meter/Fake -> genuine end -> V6/Action1 confirm -> actual new formal/none/two distinct Travel foreground model inputs; no original dialogue/manual save, pending process recovery and repeated ticks/POSTs zero resend')
 
 
 if __name__=='__main__':unittest.main(defaultTest='AutomaticDecisionChecks.test_original_workers_automatically_segment_trip_and_true_end')
