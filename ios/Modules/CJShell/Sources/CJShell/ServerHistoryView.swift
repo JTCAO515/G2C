@@ -12,7 +12,8 @@ struct ServerHistoryView: View {
         let writeContext = host.captureDraftWriteContext()
         let queryContext = host.captureDraftQueryContext()
         let cancelContext = host.captureDraftCancelContext()
-        List {
+        ScrollView {
+          VStack(alignment: .leading, spacing: 16) {
             RunReadableText(text: language.text("Server records. Local recovery is a separate source. Reads never replace your editor.", "服务器记录，与本地恢复不同。读取不会替换编辑中的草稿。"))
             if host.isSynthetic { RunReadableText(text: language.text("Synthetic intercepted responses", "合成拦截响应")) }
             Section {
@@ -82,6 +83,7 @@ struct ServerHistoryView: View {
                     RunReadableText(text: queryStatus, style: .caption)
                 } header: { historyHeading(language.text("Server draft save", "服务器草稿保存")) }
             }
+          }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }.navigationTitle(language.text("Server history", "服务器历史"))
     }
     private func historyHeading(_ text: String) -> some View {
