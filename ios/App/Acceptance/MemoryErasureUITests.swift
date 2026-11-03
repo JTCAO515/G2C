@@ -127,7 +127,7 @@ import Foundation
             acknowledge.element.coordinate(withNormalizedOffset: .init(dx: 0.9, dy: 0.5)).tap()
         }
         let checked = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: acknowledge.element)
-        let checkedResult = XCTWaiter.wait(for: [checked], timeout: 5)
+        let checkedResult = await XCTWaiter.fulfillment(of: [checked], timeout: 5)
         if checkedResult != .completed {
             print("ERASURE_SWITCH_FAILURE", app.debugDescription)
             let failure = XCTAttachment(screenshot: app.screenshot())
