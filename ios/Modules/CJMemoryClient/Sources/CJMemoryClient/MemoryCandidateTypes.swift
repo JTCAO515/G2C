@@ -58,7 +58,7 @@ public struct MemoryCandidate: Sendable, CustomStringConvertible, CustomDebugStr
     public var customMirror: Mirror { Mirror(self, children: [:]) }
     init(_ value: StrictJSONValue) throws {
         let fields = try historyObject(value, fields: ["candidate_id", "version", "status", "subject", "slot", "kind", "text", "extent", "occurred_at", "context"])
-        id = try historyString(fields["candidate_id"], limit: 4096)
+        id = try candidateItemIdentity(fields["candidate_id"])
         version = try historyInteger(fields["version"])
         guard version > 0,
               let status = Components.Schemas.MemoryItemV2.statusPayload(rawValue: try historyString(fields["status"], limit: 32)),

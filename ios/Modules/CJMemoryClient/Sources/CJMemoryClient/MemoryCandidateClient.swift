@@ -26,6 +26,13 @@ public struct MemoryCandidatesRead: Sendable {
     fileprivate let series: UUID
     fileprivate let nonce: UUID
 }
+public struct MemoryCandidateProjectionRead: Sendable {
+    public let page: MemoryCandidateProjectionPage
+    fileprivate let owner: UUID
+    fileprivate let generation: UUID
+    fileprivate let binding: MemoryBinding
+    fileprivate let series: UUID
+}
 public struct MemoryCandidateOriginal: Sendable {
     public let actionID: String
     public let candidateID: String
@@ -46,6 +53,7 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
 /// dispatch is exposed. Canonical live activation is connected in the App seam;
 /// raw transport construction remains module-internal for independent tests.
 @MainActor public final class MemoryCandidateClient {
+    public let readWire: MemoryCandidateReadWire
     typealias Factory = @MainActor (@escaping @MainActor @Sendable () throws -> Void) throws -> any ClientTransport
     private let endpoint: MemoryEndpoint
     private let credentials: MemoryCredentialCallback
@@ -57,8 +65,9 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
     private let factory: Factory
     private let owner = UUID()
     private var generation = UUID()
-    private struct Discovery { let series: UUID; var request: UUID; var next: String? }
+    private struct Discovery { let series: UUID; var request: UUID; var next: String?; var items: Set<Data> = [] }
     private var discovery: [Data: Discovery] = [:]
+    private var projections: [Data: Discovery] = [:]
     private var candidateReads: [MemoryCandidateJob: UUID] = [:]
     private var settled: Set<Data> = []
     private var uncertainCreation: Set<Data> = []
@@ -72,6 +81,7 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
               (1...65535).contains(port), endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288,
               requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else { throw MemoryFailure.unconfigured }
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
+        readWire = .producerJobsV1
         self.currentConversation = currentConversation; self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
         factory = { validate in try NoRedirectTransport.developmentMemoryCandidates(endpoint: endpoint,
             requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
@@ -82,13 +92,14 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
          currentBinding: @escaping @MainActor () -> MemoryBinding?, currentConversation: @escaping @MainActor () -> String?,
          session: SessionLifecycle, sessionOperation: SessionOperation, pendingStore: MemoryCandidatePendingStore,
-         interceptedTransport: any ClientTransport) {
+         interceptedTransport: any ClientTransport, readWire: MemoryCandidateReadWire = .producerJobsV1) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
+        self.readWire = readWire
         self.currentConversation = currentConversation; self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
         factory = { CandidateInterceptedTransport(underlying: interceptedTransport, validate: $0) }
     }
-    public func invalidate() { generation = UUID(); discovery = [:]; candidateReads = [:] }
-    func retireReads() { discovery = [:]; candidateReads = [:] }
+    public func invalidate() { generation = UUID(); discovery = [:]; projections = [:]; candidateReads = [:] }
+    func retireReads() { discovery = [:]; projections = [:]; candidateReads = [:] }
     func isCurrent(binding: MemoryBinding, conversation: String?) -> Bool {
         do { _ = try begin(binding, conversation: conversation); return true } catch { return false }
     }
@@ -109,6 +120,7 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
         try Task.checkCancellation()
     }
     public func discover(binding: MemoryBinding, conversation: String, after previous: MemoryCandidateJobsRead? = nil) async throws -> MemoryCandidateJobsRead {
+        guard readWire == .producerJobsV1 else { throw MemoryFailure.unconfigured }
         let scope = try begin(binding, conversation: conversation), key = Data(conversation.utf8)
         let series: UUID, cursor: String
         if let previous {
@@ -128,6 +140,7 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
         return .init(page: page, owner: owner, generation: generation, binding: binding, series: series)
     }
     public func candidates(from source: MemoryCandidateJobsRead, producer: MemoryCandidateJob) async throws -> MemoryCandidatesRead {
+        guard readWire == .producerJobsV1 else { throw MemoryFailure.unconfigured }
         let scope = try begin(source.binding, conversation: source.page.conversationID)
         guard source.owner == owner, source.generation == generation,
               discovery[Data(source.page.conversationID.utf8)]?.series == source.series,
@@ -141,6 +154,32 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
               discovery[Data(source.page.conversationID.utf8)]?.series == source.series else { throw MemoryFailure.staleBinding }
         return .init(page: page, owner: owner, generation: generation, binding: scope.binding,
             conversation: source.page.conversationID, series: source.series, nonce: nonce)
+    }
+    public func currentProjection(binding: MemoryBinding, conversation: String, after previous: MemoryCandidateProjectionRead? = nil) async throws -> MemoryCandidateProjectionRead {
+        guard readWire == .canonicalProjectionV2 else { throw MemoryFailure.unconfigured }
+        let scope = try begin(binding, conversation: conversation), key = Data(conversation.utf8)
+        let series: UUID, cursor: String, seen: Set<Data>
+        if let previous {
+            guard previous.owner == owner, previous.generation == generation, previous.binding == binding,
+                  same(previous.page.conversationID, conversation), let next = previous.page.nextAfterCandidateID,
+                  let state = projections[key], state.series == previous.series, state.next.map({ same($0, next) }) == true else { throw MemoryFailure.staleBinding }
+            series = previous.series; cursor = next; seen = state.items
+        } else { series = UUID(); cursor = ""; seen = [] }
+        let request = UUID(); projections[key] = .init(series: series, request: request, next: nil, items: seen)
+        let response = try await exchange(scope, path: "/v6/memory-candidates", operation: "readMemoryCandidateProjectionV2",
+            query: [.init(name: "conversation_id", value: conversation), .init(name: "after_candidate_id", value: cursor)])
+        let page = try MemoryCandidateProjectionPage(response: response.requireSuccess(), trace: response.trace, conversationID: conversation)
+        try check(scope)
+        guard projections[key]?.request == request else { throw MemoryFailure.staleBinding }
+        if let previous, previous.page.memoryEpoch != page.memoryEpoch {
+            projections[key] = nil; throw MemoryFailure.staleBinding
+        }
+        let ids = Set(page.items.map { Data($0.candidate.id.utf8) })
+        guard seen.isDisjoint(with: ids) else { projections[key] = nil; throw MemoryFailure.invalidResponse }
+        if let next = page.nextAfterCandidateID { guard !same(next, cursor) else { throw MemoryFailure.invalidResponse } }
+        projections[key]?.next = page.nextAfterCandidateID
+        projections[key]?.items.formUnion(ids)
+        return .init(page: page, owner: owner, generation: scope.generation, binding: binding, series: series)
     }
     private struct Inventory { let records: [MemoryCandidatePending]; let declines: [Data: MemoryCandidatePendingStore.Decline] }
     private func inventory(_ scope: CandidateScope) throws -> Inventory {
@@ -172,18 +211,37 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
     }
     public func prepareReview(read: MemoryCandidatesRead, candidateID: String, review: MemoryCandidateReview) throws -> MemoryCandidateWork {
         let scope = try begin(read.binding, conversation: read.conversation)
-        guard read.owner == owner, read.generation == generation,
-              discovery[Data(read.conversation.utf8)]?.series == read.series,
-              candidateReads[read.page.producer] == read.nonce else { throw MemoryFailure.staleBinding }
+        func validateRead() throws {
+            guard read.owner == owner, read.generation == generation,
+                  discovery[Data(read.conversation.utf8)]?.series == read.series,
+                  candidateReads[read.page.producer] == read.nonce else { throw MemoryFailure.staleBinding }
+        }
+        try validateRead()
+        guard let candidate = read.page.candidates.first(where: { same($0.id, candidateID) }) else { throw MemoryFailure.invalidInput }
+        return try prepareReview(candidate: candidate, producer: read.page.producer, memoryEpoch: read.page.memoryEpoch,
+            scope: scope, review: review, validateRead: validateRead)
+    }
+    public func prepareReview(read: MemoryCandidateProjectionRead, candidateID: String, review: MemoryCandidateReview) throws -> MemoryCandidateWork {
+        let scope = try begin(read.binding, conversation: read.page.conversationID)
+        func validateRead() throws {
+            guard read.owner == owner, read.generation == generation,
+                  projections[Data(read.page.conversationID.utf8)]?.series == read.series else { throw MemoryFailure.staleBinding }
+        }
+        try validateRead()
+        guard let item = read.page.items.first(where: { same($0.candidate.id, candidateID) }) else { throw MemoryFailure.invalidInput }
+        return try prepareReview(candidate: item.candidate, producer: item.producer, memoryEpoch: read.page.memoryEpoch,
+            scope: scope, review: review, validateRead: validateRead)
+    }
+    private func prepareReview(candidate: MemoryCandidate, producer: MemoryCandidateJob, memoryEpoch: Int64,
+        scope: CandidateScope, review: MemoryCandidateReview, validateRead: () throws -> Void) throws -> MemoryCandidateWork {
+        let candidateID = candidate.id
         let existing = try inventory(scope), id = Data(candidateID.utf8)
         guard !uncertainCreation.contains(id), existing.records.filter({ same($0.candidateID, candidateID) }).allSatisfy({
             settled.contains(Data($0.actionID.utf8)) || existing.declines[Data($0.actionID.utf8)] != nil
         }) else { throw MemoryFailure.pendingRequiresQuery }
-        let pending = try MemoryCandidatePending(MemoryCandidateAction(page: read.page, candidateID: candidateID, review: review))
-        try check(scope)
-        guard read.generation == generation, candidateReads[read.page.producer] == read.nonce,
-              discovery[Data(read.conversation.utf8)]?.series == read.series else { throw MemoryFailure.staleBinding }
-        candidateReads = [:]; uncertainCreation.insert(id)
+        let pending = try MemoryCandidatePending(MemoryCandidateAction(candidate: candidate, producer: producer, memoryEpoch: memoryEpoch, review: review))
+        try check(scope); try validateRead()
+        candidateReads = [:]; projections = [:]; uncertainCreation.insert(id)
         try store.append(pending) { try self.check(scope) }
         try verify(pending, scope: scope)
         return MemoryCandidateWork(scope: scope, original: wrap(pending, scope.binding))

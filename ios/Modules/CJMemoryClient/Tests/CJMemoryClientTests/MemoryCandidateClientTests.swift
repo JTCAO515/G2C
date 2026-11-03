@@ -20,6 +20,8 @@ private let ccTrace = "11111111-1111-4111-8111-111111111461"
     var requests: [(String, String, Data?)] = []
     var receipt: [String: Any]?
     var conversation = "chat-A", jobID = "producer-job", attemptID = "original-attempt"
+    var projectionIDs = ["candidate-中文"], projectionEpoch = 2
+    var projectionNext: String?
     var loseACK = false, nullReceipt = false, nullAction = false
     var status = "candidate", wrongProducer = false, serviceUnavailable = false, conflict = false
     var beforePost: ((Data) throws -> Void)?
@@ -34,6 +36,14 @@ private let ccTrace = "11111111-1111-4111-8111-111111111461"
             value = ["request_id": ccTrace, "error": ["code":"DEPENDENCY_UNAVAILABLE","category":"dependency","message_en":"Unknown","message_zh":"未知","outcome":"unknown","recovery":"reconcile_original"]]
         } else {
             switch operation {
+            case "readMemoryCandidateProjectionV2":
+                let items: [[String: Any]] = status == "candidate" ? projectionIDs.map { id in
+                    ["candidate_id":id,"version":1,"status":"candidate","subject":"traveler","slot":"food","kind":"inference",
+                     "text":"不吃辣","extent":"long_term","occurred_at":"时间不详","context":NSNull(),
+                     "review":["job_id":jobID,"attempt_id":attemptID]]
+                } : []
+                value = ["version":"MEMORY-CANDIDATE-projection@2","request_id":ccTrace,"result":["conversation_id":conversation,
+                    "memory_epoch":projectionEpoch,"candidates":items,"next_after_candidate_id":projectionNext as Any? ?? NSNull()]]
             case "readMemoryCandidateJobsV1":
                 value = ["version":"MEMORY-CANDIDATE-JOBS@1","request_id":ccTrace,"result":["conversation_id":conversation,"jobs":[["job_id":jobID,"attempt_id":attemptID]],"next_after_job_id":NSNull()]]
             case "readMemoryCandidatesV1":
@@ -51,6 +61,7 @@ private let ccTrace = "11111111-1111-4111-8111-111111111461"
                     if confirmed { result["source_id"] = "candidate-confirm-v1:" + digest(bytes); result["source_version"] = 1 }
                     receipt = ["version":"MEMORY-CANDIDATE-result@1","action_id":fields["action_id"]!,"candidate_id":fields["candidate_id"]!,"input_sha256":digest(bytes),"receipt":result]
                     status = confirmed ? "active" : "withdrawn"
+                    projectionEpoch += 1
                     if loseACK { throw MemoryFailure.exchangeUnknown }
                     value = ["version":"MEMORY-CANDIDATE-response@1","request_id":ccTrace,"result":nullAction ? NSNull() : receipt!]
                 }
@@ -96,11 +107,11 @@ private struct CandidateWire: ClientTransport {
         return try MemoryCandidatePendingStore(directory: root, maximumBytes:100000,maximumRecords:100,
             namespace:.init(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1),keyID:keyID,key:{material})
     }
-    func makeClient() throws -> MemoryCandidateClient {
+    func makeClient(readWire: MemoryCandidateReadWire = .producerJobsV1) throws -> MemoryCandidateClient {
         let endpoint = try MemoryEndpoint(url: URL(string:"https://candidate-unit.invalid")!,maximumRequestBytes:32768,maximumResponseBytes:524288)
         return MemoryCandidateClient(endpoint:endpoint,credentials:{ [self] captured in
             #expect(captured == binding);let callback=credentialCallback;credentialCallback=nil;callback?();return "SYNTHETIC.CANDIDATE.SDK"
-        },currentBinding:{[self] in current ? binding : nil},currentConversation:{[self] in selected},session:session,sessionOperation:operation,pendingStore:store,interceptedTransport:CandidateWire(server:server))
+        },currentBinding:{[self] in current ? binding : nil},currentConversation:{[self] in selected},session:session,sessionOperation:operation,pendingStore:store,interceptedTransport:CandidateWire(server:server),readWire:readWire)
     }
     func read() async throws -> MemoryCandidatesRead {
         let jobs = try await client.discover(binding:binding,conversation:selected)
@@ -109,6 +120,54 @@ private struct CandidateWire: ClientTransport {
     func dispose() { try? FileManager.default.removeItem(at:root) }
 }
 @MainActor struct MemoryCandidateClientTests {
+    @Test func explicitProjectionWireReviewsCanonicalCandidateWithoutAnyJobPayloadGET() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        f.client = try f.makeClient(readWire: .canonicalProjectionV2)
+        let read = try await f.client.currentProjection(binding: f.binding, conversation: f.selected)
+        #expect(read.page.items.first?.producer.jobID == "producer-job")
+        let work = try f.client.prepareReview(read: read, candidateID: "candidate-中文", review: .reject)
+        guard case .recorded(let result) = try await f.client.perform(work) else { Issue.record("No original result"); return }
+        #expect(!result.active)
+        #expect(f.server.requests.map(\.0) == ["readMemoryCandidateProjectionV2", "applyMemoryCandidateActionV1"])
+        #expect(throws: MemoryFailure.staleBinding) { try f.client.prepareReview(read: read, candidateID: "candidate-中文", review: .reject) }
+        let fresh = try await f.client.currentProjection(binding: f.binding, conversation: f.selected)
+        #expect(fresh.page.items.isEmpty)
+    }
+    @Test func explicitReadWireCannotFallBackAndForeignProjectionDoesNotAuthorizeReview() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        await #expect(throws: MemoryFailure.unconfigured) { try await f.client.currentProjection(binding: f.binding, conversation: f.selected) }
+        let projection = try f.makeClient(readWire: .canonicalProjectionV2)
+        await #expect(throws: MemoryFailure.unconfigured) { try await projection.discover(binding: f.binding, conversation: f.selected) }
+        #expect(f.server.requests.isEmpty)
+        let read = try await projection.currentProjection(binding: f.binding, conversation: f.selected)
+        let other = try f.makeClient(readWire: .canonicalProjectionV2)
+        #expect(throws: MemoryFailure.staleBinding) { try other.prepareReview(read: read, candidateID: "candidate-中文", review: .reject) }
+        _ = try await projection.currentProjection(binding: f.binding, conversation: f.selected)
+        #expect(throws: MemoryFailure.staleBinding) { try projection.prepareReview(read: read, candidateID: "candidate-中文", review: .reject) }
+        #expect(try f.store.records().isEmpty)
+    }
+    @Test func paginationRejectsMixedMemoryEpochAndRetiresTheEarlierPage() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let client = try f.makeClient(readWire: .canonicalProjectionV2)
+        f.server.projectionIDs = (0..<50).map { "candidate-\($0)" }; f.server.projectionNext = "candidate-49"
+        let first = try await client.currentProjection(binding: f.binding, conversation: f.selected)
+        f.server.projectionIDs = ["candidate-last"]; f.server.projectionNext = nil; f.server.projectionEpoch = 3
+        await #expect(throws: MemoryFailure.staleBinding) { try await client.currentProjection(binding: f.binding, conversation: f.selected, after: first) }
+        #expect(throws: MemoryFailure.staleBinding) { try client.prepareReview(read: first, candidateID: "candidate-0", review: .reject) }
+        #expect(try f.store.records().isEmpty)
+        let fresh = try await client.currentProjection(binding: f.binding, conversation: f.selected)
+        #expect(fresh.page.memoryEpoch == 3 && fresh.page.items.count == 1)
+    }
+    @Test func projectionPaginationRejectsDuplicateIdentityAcrossPagesBeforeItCanBeReviewed() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        let client = try f.makeClient(readWire: .canonicalProjectionV2)
+        f.server.projectionIDs = (0..<50).map { "candidate-\($0)" }; f.server.projectionNext = "candidate-49"
+        let first = try await client.currentProjection(binding: f.binding, conversation: f.selected)
+        f.server.projectionIDs = ["candidate-0"]; f.server.projectionNext = nil
+        await #expect(throws: MemoryFailure.invalidResponse) { try await client.currentProjection(binding: f.binding, conversation: f.selected, after: first) }
+        #expect(throws: MemoryFailure.staleBinding) { try client.prepareReview(read: first, candidateID: "candidate-0", review: .reject) }
+        #expect(try f.store.records().isEmpty)
+    }
     @Test func queryIDsKeepLiteralPlusAndUnicodeThroughTheCanonicalQueryParser() async throws {
         let f = try CandidateClientFixture(); defer { f.dispose() }
         f.selected = "chat+中文"; f.server.conversation = f.selected
@@ -217,6 +276,45 @@ private struct CandidateWire: ClientTransport {
 }
 
 @MainActor struct MemoryCandidatePresentationTests {
+    @Test func canonicalProjectionReviewsDirectlyAndDoesNotTurnReceiptIntoAnActiveRow() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        f.client = try f.makeClient(readWire: .canonicalProjectionV2)
+        let model = MemoryCandidatePresentation(client: f.client)
+        model.replace(binding: f.binding, conversationID: f.selected)
+        await model.perform(try #require(model.prepareDiscovery()))
+        #expect(model.usesCurrentProjection && model.jobs.isEmpty && model.producer == nil)
+        #expect(model.candidates.count == 1 && model.canReview(candidateID: "candidate-中文"))
+        let entry = try #require(model.captureReview(candidateID: "candidate-中文"))
+        let work = try #require(model.prepareReview(entry: entry, review: .confirm(kind: .preference, text: "少辣", occurredAt: "时间不详", travel: nil)))
+        await model.perform(work)
+        #expect(model.historicalReceipt?.active == true && model.candidates.isEmpty && model.state == .ready)
+        #expect(f.server.requests.map(\.0) == ["readMemoryCandidateProjectionV2", "applyMemoryCandidateActionV1", "readMemoryCandidateProjectionV2"])
+    }
+    @Test func projectionReceiptSurvivesUnavailableFreshReadWithoutInventingCurrentStatus() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        f.client = try f.makeClient(readWire: .canonicalProjectionV2)
+        let model = MemoryCandidatePresentation(client: f.client)
+        model.replace(binding: f.binding, conversationID: f.selected)
+        await model.perform(try #require(model.prepareDiscovery()))
+        f.server.after = { f.server.serviceUnavailable = true }
+        await model.perform(try #require(model.prepareReview(candidateID: "candidate-中文", review: .reject)))
+        #expect(model.historicalReceipt != nil && model.candidates.isEmpty && model.state == .unavailable)
+        #expect(f.server.requests.filter { $0.0 == "applyMemoryCandidateActionV1" }.count == 1)
+    }
+    @Test func canonicalMorePagesRetainSameEpochAndOriginalReadDoesNotDisableReview() async throws {
+        let f = try CandidateClientFixture(); defer { f.dispose() }
+        f.client = try f.makeClient(readWire: .canonicalProjectionV2)
+        f.server.projectionIDs = (0..<50).map { "candidate-\($0)" }; f.server.projectionNext = "candidate-49"
+        let model = MemoryCandidatePresentation(client: f.client)
+        model.replace(binding: f.binding, conversationID: f.selected)
+        await model.perform(try #require(model.prepareDiscovery()))
+        #expect(model.hasMore && model.candidates.count == 50)
+        f.server.projectionIDs = ["last"]; f.server.projectionNext = nil
+        await model.perform(try #require(model.prepareDiscovery(more: true)))
+        #expect(!model.hasMore && model.candidates.count == 51)
+        await model.perform(try #require(model.prepareOriginals()))
+        #expect(model.canReview(candidateID: "last") && model.state == .ready)
+    }
     private func loaded(_ f: CandidateClientFixture) async throws -> MemoryCandidatePresentation {
         let model = MemoryCandidatePresentation(client: f.client)
         model.replace(binding: f.binding, conversationID: f.selected)
