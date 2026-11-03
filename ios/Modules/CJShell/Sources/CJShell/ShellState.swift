@@ -137,11 +137,19 @@ public final class ShellState {
     /// Host calls synchronously before changing identity or accepting new account work.
     /// This only clears local UI; it does not revoke credentials or cancel remote work.
     @discardableResult public func invalidateIdentity() -> ShellGeneration {
+        invalidateIdentity(preservingCleanupNavigation: false)
+    }
+    /// A trusted cleanup root retains only the non-business cleanup destination.
+    /// Account switch/logout still use invalidateIdentity and clear every route.
+    @discardableResult public func retireBusinessForCleanup() -> ShellGeneration {
+        invalidateIdentity(preservingCleanupNavigation: true)
+    }
+    private func invalidateIdentity(preservingCleanupNavigation: Bool) -> ShellGeneration {
         let invalidatedGeneration = ShellGeneration()
         messageBindingBlocked = true
         generation = invalidatedGeneration
         draft = ""
-        contextReset()
+        contextReset(preservingCleanupNavigation: preservingCleanupNavigation)
         // Publish the fence and clear private UI before a resource callback can reenter.
         // No outer-lifetime mutation is allowed after this callback.
         originalUsageContainerHost?.invalidate()
@@ -172,8 +180,13 @@ public final class ShellState {
         return invalidatedGeneration
     }
 
-    private func contextReset() {
-        memoryPath = []; tripPath = []
+    private func contextReset(preservingCleanupNavigation: Bool = false) {
+        if preservingCleanupNavigation {
+            if memoryPath != [.accountDeletion] && memoryPath != [.account, .accountDeletion] {
+                memoryPath = [.accountDeletion]
+            }
+        } else { memoryPath = [] }
+        tripPath = []
         assistantContentRevision = UUID()
         presentation = ShellPresentation()
     }
