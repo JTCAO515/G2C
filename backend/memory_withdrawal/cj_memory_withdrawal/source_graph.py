@@ -84,13 +84,18 @@ def capture(memory,item_id,*,max_sources,max_bytes):
         (scope,nodes,scope,nodes,scope,nodes,scope,nodes,scope,nodes))
     if any(referred!=item_id for _,referred in cur.fetchall()):
         raise Unavailable('selected source has another item reference')
-    cur.execute('SELECT source_id,item_id,job_id,attempt_id,origin_refs FROM cj_memory_history_origin '
+    cur.execute('SELECT source_id,item_id,job_id,attempt_id,origin_refs,decision_source_sha256 FROM cj_memory_history_origin '
                 'WHERE scope=%s AND source_id=ANY(%s)',(scope,nodes))
-    origins=cur.fetchall();refs={};producers=set()
-    for sid,origin_item,jid,attempt,values in origins:
+    origins=cur.fetchall();refs={};producers=set();decisions=set()
+    for sid,origin_item,jid,attempt,values,decision_digest in origins:
         if origin_item!=item_id or type(values) is not list:
             raise Unavailable('selected source origin differs')
         producers.add((jid,attempt))
+        if decision_digest is not None:
+            if type(decision_digest) is not str or len(decision_digest)!=64 or any(c not in '0123456789abcdef' for c in decision_digest):
+                raise Unavailable('original decision digest unavailable')
+            decisions.add(decision_digest)
+        if sid.startswith('trip-history-v1:') and decision_digest is None:raise Unavailable('decision source association missing')
         for ref in values:
             fields={'conversation_id','generation','sequence','message_id','input_sha256'}
             if (type(ref) is not dict or set(ref)!=fields or type(ref['sequence']) is not int
@@ -100,11 +105,12 @@ def capture(memory,item_id,*,max_sources,max_bytes):
                     or len(ref['input_sha256'])!=64 or any(ch not in '0123456789abcdef' for ch in ref['input_sha256'])):
                 raise Unavailable('original message reference unavailable')
             refs[encode(ref)]=ref
-    if any(sid.startswith(('history-v1:','candidate-confirm-v1:')) and not any(o[0]==sid for o in origins) for sid in nodes):
+    if any(sid.startswith(('history-v1:','trip-history-v1:','candidate-confirm-v1:')) and not any(o[0]==sid for o in origins) for sid in nodes):
         raise Unavailable('provided history source origin missing')
     raw=encode(dict(version='MEMORY-ERASURE-GRAPH-DRAFT@1',item_id=item_id,item_version=item.version,
         current_source_id=item.command.source_id,current_source_version=item.command.source_version,scope_epoch=epoch,
         source_refs=sources,message_refs=[refs[key] for key in sorted(refs)],
+        decision_source_sha256s=sorted(decisions),
         origin_producers=[dict(job_id=jid,attempt_id=attempt) for jid,attempt in sorted(producers)]))
     if len(raw)>max_bytes:raise Unavailable('source graph response exceeds explicit bound')
     return raw

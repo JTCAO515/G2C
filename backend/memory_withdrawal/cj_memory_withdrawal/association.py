@@ -53,11 +53,12 @@ def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,m
     # Include pending/inflight/UNKNOWN/terminal work at any original source or
     # Memory basis: withdrawal is no evidence that old payload has disappeared.
     cur.execute('''SELECT j.job_id,j.attempt_id FROM cj_memory_history_job j
-        WHERE j.scope=%s AND EXISTS(
+        WHERE j.scope=%s AND (EXISTS(
           SELECT 1 FROM jsonb_array_elements(convert_from(j.batch,'UTF8')::jsonb->'messages') m,
                         jsonb_array_elements(%s::jsonb) r
           WHERE m->'receipt' @> r)
-        ORDER BY j.job_id LIMIT %s''',(scope,json.dumps(refs),max_jobs+1))
+          OR convert_from(j.batch,'UTF8')::jsonb->>'decision_source_sha256'=ANY(%s))
+        ORDER BY j.job_id LIMIT %s''',(scope,json.dumps(refs),graph['decision_source_sha256s'],max_jobs+1))
     matches=set(cur.fetchall())
     matches.update((ref['job_id'],ref['attempt_id']) for ref in graph['origin_producers'])
     if len(matches)>max_jobs:raise Unavailable('overlapping original jobs exceed bound')
@@ -69,7 +70,7 @@ def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,m
     result=dict(version='MEMORY-ERASURE-ASSOCIATION-DRAFT@1',item_id=item_id,item_version=expected_version,
         scope_epoch=expected_scope_epoch,source_refs=graph['source_refs'],
         operation_refs=[dict(operation_id=oid,input_sha256=digest) for oid,digest in sorted(operation_refs.items())],
-        message_refs=refs,job_refs=job_refs)
+        message_refs=refs,job_refs=job_refs,decision_source_sha256s=graph['decision_source_sha256s'])
     raw=encode(result)
     if len(raw)>max_bytes:raise Unavailable('erasure association exceeds explicit byte bound')
     return raw
