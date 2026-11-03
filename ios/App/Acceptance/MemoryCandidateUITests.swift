@@ -46,9 +46,10 @@ import Foundation
         return data
     }
     func proof() async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof")) }
-    func reveal(_ element: XCUIElement, centered: Bool = false) {
+    func reveal(_ element: XCUIElement, centered: Bool = false, editor: Bool = false) {
         func top() -> CGFloat {
-            let bars = app.navigationBars.matching(NSPredicate(format: "identifier IN %@", ["Memory suggestions", "记忆建议", "Review suggestion", "核对建议", "Delete account", "注销账号"]))
+            let titles = editor ? ["Review suggestion", "核对建议"] : ["Memory suggestions", "记忆建议", "Delete account", "注销账号"]
+            let bars = app.navigationBars.matching(NSPredicate(format: "identifier IN %@", titles))
             XCTAssertEqual(bars.count, 1)
             return bars.element.frame.maxY
         }
@@ -65,7 +66,7 @@ import Foundation
     func tap(_ id: String) {
         let label = ["Memory", "记忆", "Assistant", "助手", "Preference", "偏好"].contains(id)
         let query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id)), button = query.element
-        reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."))
+        reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."), editor: id.hasPrefix("memoryCandidate.editor."))
         XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
