@@ -24,6 +24,7 @@ class LocalCleanupConfigurationChecks(unittest.TestCase):
         self.assertIsNone(loaded.extra_hooks)
         self.assertEqual(loaded.inventory,tuple(self.value['inventory']))
         self.assertEqual(loaded.keys,{'local':self.key.read_bytes()})
+        self.assertFalse(loaded.control_records)
 
     def test_v2_installs_only_the_named_code_owned_factory(self):
         from cj_memory_withdrawal.account_cleanup import account_hooks
@@ -31,13 +32,21 @@ class LocalCleanupConfigurationChecks(unittest.TestCase):
         self.assertIs(loaded.extra_hooks,account_hooks)
         self.assertEqual(loaded.inventory,tuple(self.value['inventory']))
         self.assertEqual(loaded.registry_path.name,'storage-registry.json')
+        self.assertFalse(loaded.control_records)
+
+    def test_v3_explicitly_recognizes_client_controls_with_same_fields(self):
+        from cj_memory_withdrawal.account_cleanup import account_hooks
+        loaded=self.load(self.value|dict(version='CJ-LOCAL-CLEANUP@3'))
+        self.assertTrue(loaded.control_records)
+        self.assertIs(loaded.extra_hooks,account_hooks)
+        self.assertEqual(loaded.inventory,tuple(self.value['inventory']))
 
     def test_unknown_versions_or_hook_selectors_and_bad_keys_fail(self):
-        for value in (self.value|dict(version='CJ-LOCAL-CLEANUP@3'),
+        for value in (self.value|dict(version='CJ-LOCAL-CLEANUP@4'),
                       self.value|dict(version='CJ-LOCAL-CLEANUP@2',extra_hooks='caller.module'),
                       {k:v for k,v in self.value.items() if k!='inventory'}):
             with self.subTest(fields=tuple(value)),self.assertRaises(ValueError):self.load(value)
-        for version in ('CJ-LOCAL-CLEANUP@1','CJ-LOCAL-CLEANUP@2'):
+        for version in ('CJ-LOCAL-CLEANUP@1','CJ-LOCAL-CLEANUP@2','CJ-LOCAL-CLEANUP@3'):
             self.key.chmod(0o644)
             with self.subTest(version=version),self.assertRaises(ValueError):self.load(self.value|dict(version=version))
             self.key.chmod(0o600);self.key.write_bytes(b'wrong-length')
