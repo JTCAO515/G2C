@@ -131,6 +131,7 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
             "CJMemoryTypedManagementV2.CJMemoryTypedManagementRejectionsV2"]
         case "CJMemoryHistoryPendingV1": ["CJMemoryHistoryRejectionsV1"]
         case "CJMemoryCandidatePendingV1": ["CJMemoryCandidateRejectionsV1"]
+        case "CJMemoryErasurePendingV1": ["CJMemoryErasureObservationsV1"]
         default: []
         }
     }
