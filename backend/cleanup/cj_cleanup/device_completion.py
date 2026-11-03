@@ -21,11 +21,11 @@ def _object(raw):
     except (ValueError,UnicodeError,RecursionError) as error:raise Unavailable('original device evidence unavailable') from error
 
 
-def _device(cur,subject,binding_id):
+def _device(cur,subject,binding_id,version):
     cur.execute('SELECT binding_id,device_id,state_ref,scope_digest,protocol FROM cj_cleanup_device_binding WHERE subject_digest=%s AND binding_id=%s',
                 (subject,binding_id))
     row=cur.fetchone()
-    if row is None or row[4]!='CLEANUP-DEVICE@3' or row[3]!=subject:raise Denied('original V3 device binding unavailable')
+    if row is None or row[4]!=version or row[3]!=subject:raise Denied('original device binding unavailable')
     return dict(binding_id=row[0],device_id=row[1],state_ref=row[2],scope_digest=row[3],protocol=row[4])
 
 
@@ -46,7 +46,7 @@ def _call(cur,subject,binding,invocation,expected_digest):
         fields={'version','action_id','operation_id','invocation_id','binding_id','request_digest','outcome'}
         if (digest(receipt_raw)!=receipt_digest or type(receipt) is not dict or set(receipt)!=fields
             or (receipt['version'],receipt['operation_id'],receipt['invocation_id'],receipt['binding_id'],receipt['request_digest'],receipt['outcome'])
-            !=('CLEANUP-DEVICE@3',operation,invocation,binding['binding_id'],request_digest,state)):
+            !=(binding['protocol'],operation,invocation,binding['binding_id'],request_digest,state)):
             raise Unavailable('original authenticated device receipt unavailable')
     elif receipt_digest is not None or state in ('confirmed','failed'):
         raise Unavailable('original device receipt absent')
@@ -85,7 +85,7 @@ def _account(cur,store,operation,current):
     return 'complete',manifest.digest,policy
 
 
-def read(gateway,capability,invocation,request_digest,project):
+def read(gateway,capability,invocation,request_digest,project,*,device_version='CLEANUP-DEVICE@3',version=VERSION):
     claims=gateway.issuer.verify(capability,purpose='device')
     if claims.operation_id!=claims.binding_id:raise Denied('original device credential required')
     store=gateway.resolve_subject(claims.subject_digest).store
@@ -93,12 +93,12 @@ def read(gateway,capability,invocation,request_digest,project):
     try:current=gateway.current_registry()
     except Invalid as error:raise Unavailable('current registry unavailable') from error
     with store.snapshot('device-completion-read') as cur:
-        binding=_device(cur,claims.subject_digest,claims.binding_id)
+        binding=_device(cur,claims.subject_digest,claims.binding_id,device_version)
         operation,reason,state,receipt_digest=_call(cur,claims.subject_digest,binding,invocation,request_digest)
         cur.execute("SELECT set_config('cj.cleanup_operation',%s,true)",(operation,))
         if reason=='account_cleanup':status,registry,policy=_account(cur,store,operation,current)
         else:status,registry,policy='not_applicable',None,None
-        value=dict(version=VERSION,operation_id=operation,binding_id=claims.binding_id,invocation_id=invocation,
+        value=dict(version=version,operation_id=operation,binding_id=claims.binding_id,invocation_id=invocation,
             request_digest=request_digest,receipt_digest=receipt_digest,reason=reason,device_state=state,
             content_status=status,registry_digest=registry,control_record_protocol=policy,
             complete_scope='frozen_online_domains_only' if reason=='account_cleanup' else 'original_device_action_only',

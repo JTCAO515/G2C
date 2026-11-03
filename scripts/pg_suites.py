@@ -585,8 +585,11 @@ GROUPS.update(memory_payload=group_memory_payload)
 
 
 def group_device_completion():
-    return _fresh_runtime_check('device_completion',55827,'cj_device_completion',
+    original = _fresh_runtime_check('device_completion',55827,'cj_device_completion',
         f'/tmp/cj-device-completion-{os.getpid()}','backend/cj_api/tests/device_completion_pg.py')
+    provided = _fresh_runtime_check('device_v4',55870,'cj_device_v4',
+        f'/tmp/cj-device-v4-{os.getpid()}','backend/cj_api/tests/device_v4_pg.py')
+    return original or provided
 
 
 GROUPS.update(device_completion=group_device_completion)

@@ -24,10 +24,12 @@ def original_call(binding,active,reason,operation_id=None):
         from .device_v2 import TARGETS as targets
     elif version=='CLEANUP-DEVICE@3':
         from .device_v3 import TARGETS as targets
+    elif version=='CLEANUP-DEVICE@4':
+        from .device_v4 import TARGETS as targets
     else:raise Denied('device protocol unavailable')
     if reason=='offline_expired':
         targets=(('device-cache/offline-trip','device-cache/offline-write-residue','device-cache/offline-key-keychain')
-                 if version=='CLEANUP-DEVICE@3' else ('device-cache/offline-trip',))
+                 if version in ('CLEANUP-DEVICE@3','CLEANUP-DEVICE@4') else ('device-cache/offline-trip',))
     return operation_id,invocation,encode(dict(version=version,operation_id=operation_id,invocation_id=invocation,
         binding_id=binding_id,scope_digest=binding['scope_digest'],state_ref=binding['state_ref'],
         reason=reason,targets=targets,business_access='not_granted'))
