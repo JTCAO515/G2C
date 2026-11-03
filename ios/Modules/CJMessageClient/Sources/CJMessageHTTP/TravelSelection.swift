@@ -35,6 +35,17 @@ public struct CapturedTravelSelection: Sendable {
               ids.allSatisfy({ $0.utf8.count == 32 && $0.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) }) else { throw MessageHTTPFailure.invalidConfiguration }
         configuredIDs = ids;self.client = client;self.lease = lease;current = isCurrent
     }
+    private init(copying original: TravelSelectionModel, isCurrent: @escaping @MainActor () -> Bool) {
+        configuredIDs = original.configuredIDs; client = original.client; lease = original.lease
+        let originalCurrent = original.current
+        current = { originalCurrent() && isCurrent() }
+    }
+    /// A separate explicit review reads through the same SDK/HTTP lease without
+    /// changing the Assistant's chosen context or borrowing its cached version.
+    public func isolatedSelection(isCurrent: @escaping @MainActor () -> Bool) throws -> TravelSelectionModel {
+        try check(revision)
+        return TravelSelectionModel(copying: self, isCurrent: isCurrent)
+    }
     private func check(_ token: UUID) throws {
         guard revision == token else { throw RecoveryError.staleOperation }
         let active = current()

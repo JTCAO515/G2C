@@ -16,7 +16,7 @@ import tempfile
 import uuid
 
 
-def build_source_host(connection, auth, context, subjects, token):
+def build_source_host(connection, auth, context, subjects, token, *, travel=None):
     from cj_agent.provider import FakeProvider
     from cj_api.local_background import LocalBackgroundHost
     from cj_memory.manual import ManualPolicy
@@ -26,11 +26,13 @@ def build_source_host(connection, auth, context, subjects, token):
     from cj_memory_jobs.worker_adapter import MemoryCollectionAdapterV2
     from cj_run.background import BackgroundJobsV2
     from cj_run.background_store import JobRequest
+    from cj_message.travel import Selection
 
     extraction = CollectionPolicy(frozenset({'self'}), frozenset({'pace'}), 1, 4096,
                                   lambda entry: True, lambda entry, rows: False)
-    memory = ManualPolicy(extraction.subjects, extraction.slots, frozenset({'long_term'}),
-                          frozenset(), datetime.now(timezone.utc) + timedelta(hours=1),
+    selection = None if travel is None else Selection(travel['id'], travel['version'])
+    memory = ManualPolicy(extraction.subjects, extraction.slots, frozenset({'long_term','current'} if travel else {'long_term'}),
+                          frozenset({travel['id']} if travel else ()), datetime.now(timezone.utc) + timedelta(hours=1),
                           lambda command, raw: True, lambda command, raw: True)
     app = create_collection_app(conninfo_path=connection, auth_dir=auth, run_context=context,
                                 resolve_collection=lambda principal: (extraction, memory, lambda entry: (None, None)))
@@ -40,7 +42,7 @@ def build_source_host(connection, auth, context, subjects, token):
     originals = []
 
     def submit(bearer, job, attempt, query, prepared):
-        result = jobs.prepare(bearer, JobRequest(job, attempt, query, None, prepared))
+        result = jobs.prepare(bearer, JobRequest(job, attempt, query, selection, prepared))
         originals.append(result)
         return result
 
@@ -64,13 +66,13 @@ def build_source_host(connection, auth, context, subjects, token):
             original = data['messages'][0]
             yield json.dumps(dict(version='MEMORY-EXTRACT@2', entries=[dict(
                 subject='self', slot='pace', kind='inference', text=original['text'],
-                extent='long_term', occurred_at='时间不详',
+                extent='current' if travel else 'long_term', occurred_at='时间不详',
                 evidence=[dict(ref=original['ref'], quote=original['text'])])]), ensure_ascii=False)
 
     return app, host, jobs, background, SourceFake(), originals
 
 
-def prepare_source(app, host, jobs, background, model, originals, auth, token, other_token):
+def prepare_source(app, host, jobs, background, model, originals, auth, token, other_token, *, travel=None):
     from fastapi.testclient import TestClient
     from run_worker import run_once
 
@@ -85,9 +87,10 @@ def prepare_source(app, host, jobs, background, model, originals, auth, token, o
 
     with TestClient(app) as client:
         head = expect(client.put('/v1/conversations', params={'conversation_id': conversation}, headers=headers))
-        message = dict(version='MESSAGE-send.1', conversation_id=conversation, message_id=str(uuid.uuid4()),
+        message = dict(version='MESSAGE-send.2' if travel else 'MESSAGE-send.1', conversation_id=conversation, message_id=str(uuid.uuid4()),
                        text=text, trip_id=None, creation_intent='none', expected_generation=head['generation'], expected_sequence=0)
-        expect(client.post('/v1/messages', content=json.dumps(message).encode(), headers=headers))
+        if travel:message.update(travel_context=dict(id=travel['id'],expected_version=travel['version']),needs_reference=None)
+        expect(client.post('/v2/messages' if travel else '/v1/messages', content=json.dumps(message).encode(), headers=headers))
         normal = run_once(host.database, model, auth)
         assert len(normal) == 1 and normal[0].status == 'completed' and model.calls == 1
         consent = dict(version='MEMORY-HISTORY@1', action_id=str(uuid.uuid4()), operation='enable',

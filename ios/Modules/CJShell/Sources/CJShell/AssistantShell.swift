@@ -37,6 +37,20 @@ struct AssistantShell: View {
                     ShellStatusView(state: state.assistantState, language: state.language)
                 }
                 unavailableHint
+                if messageHost.supportsSending && !messageHost.supportsTripMessages {
+                    if let conversation = messageHost.selectedConversation {
+                        RunReadableText(text: state.language.text("Conversation: ", "会话：") + conversation, style: .caption)
+                            .accessibilityIdentifier("assistant.conversation")
+                    }
+                    Toggle(isOn: Binding(
+                        get: { messageHost.creationIntent == .considerTrip },
+                        set: { messageHost.creationIntent = $0 ? .considerTrip : .none })) {
+                        RunReadableText(text: state.language.text("Trip planning", "规划行程"))
+                    }
+                        .accessibilityLabel(state.language.text("Trip planning", "规划行程"))
+                        .disabled(messageHost.isBusy)
+                        .accessibilityIdentifier("assistant.intent")
+                }
                 MemoryCandidateConversationBubble(host: candidateHost, language: state.language) { panel = .memoryCandidates }
                 if let bodyText, !runHost.isShowingOriginal {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
@@ -193,21 +207,6 @@ struct AssistantShell: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if messageHost.supportsSending {
-                if !messageHost.supportsTripMessages,let conversation = messageHost.selectedConversation {
-                    RunReadableText(text: state.language.text("Conversation: ", "会话：") + conversation, style: .caption)
-                        .accessibilityIdentifier("assistant.conversation")
-                }
-                if !messageHost.supportsTripMessages { Toggle(isOn: Binding(
-                    get: { messageHost.creationIntent == .considerTrip },
-                    set: { messageHost.creationIntent = $0 ? .considerTrip : .none })) {
-                    RunReadableText(text: state.language.text("Trip planning", "规划行程"))
-                }
-                    .accessibilityLabel(state.language.text("Trip planning", "规划行程"))
-                    .disabled(messageHost.isBusy)
-                    .accessibilityIdentifier("assistant.intent")
-                }
-            }
             HStack(alignment: .bottom, spacing: 4) {
                 unavailableIcon("plus", english: "Attachments — not available", chinese: "附件——尚未开放")
                 TextField(state.language.text("Start chatting", "开始聊天"), text: $state.draft, axis: .vertical)

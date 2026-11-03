@@ -118,6 +118,12 @@ import Observation
                   let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment, key: "G2C_DEV_MEMORY_ERASURE_URL") else { throw MemoryFailure.unconfigured }
             erasureEndpoint = endpoint
         } else { erasureEndpoint = nil }
+        let candidateEndpoint: URL?
+        if environment["G2C_DEV_MEMORY_CANDIDATE_URL"] != nil {
+            guard memoryExtensionsAllowed, lease != nil, typedMode != nil,
+                  let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment, key: "G2C_DEV_MEMORY_CANDIDATE_URL") else { throw MemoryFailure.unconfigured }
+            candidateEndpoint = endpoint
+        } else { candidateEndpoint = nil }
         let needsProfile = try DevelopmentNeedsProfile.read(environment)
         let tripEditingProfile = try DevelopmentTripEditingProfile.read(environment)
         let tripDiscussions=messageProfile == .discussion,scopedEdits=messageProfile == .edit || messageProfile == .editResults
@@ -229,7 +235,8 @@ import Observation
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
             typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
-                session:lifetime.session,operation:lifetime.operation,travel:travel,isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint)
+                session:lifetime.session,operation:lifetime.operation,travel:travel,messages:messages.messages,
+                isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint, candidateEndpoint: candidateEndpoint)
             memory = nil
         } else if let profile = try DevelopmentMemoryProfile.read(environment) {
             memory = try DevelopmentMemoryHost(configuration: configuration, profile: profile, shell: shell,
@@ -566,9 +573,10 @@ import Observation
     let host: TypedMemoryContainerHost
     private let keys: ScopedMessageKeyProvider
     private let erasure: DevelopmentMemoryErasureComponents?
+    private let candidates: DevelopmentMemoryCandidateComponents?
     init(configuration: DevelopmentSessionConfiguration,mode: DevelopmentTypedMode,shell: ShellState,
-         session: SessionLifecycle,operation: SessionOperation,travel: TravelSelectionModel,
-         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil) throws {
+         session: SessionLifecycle,operation: SessionOperation,travel: TravelSelectionModel,messages: AssistantMessageHost,
+         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil, candidateEndpoint: URL? = nil) throws {
         let binding = MemoryBinding(environment:configuration.environmentID,account:configuration.accountID,generation:UUID(),selection:UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1)
@@ -635,8 +643,13 @@ import Observation
                 session: session, operation: operation, current: current)
         } else { erasure = nil }
         host = try TypedMemoryContainerHost(shell:shell,client:client,binding:binding,pageSize:20,options:options,travel:travel,legacy:legacy,currentBinding:current, erasureClient: erasure?.client, itemCleanup: erasure?.cleanup)
+        if let candidateEndpoint {
+            candidates = try DevelopmentMemoryCandidateComponents(configuration: configuration, endpointURL: candidateEndpoint,
+                binding: binding, key: key, keys: keys, shell: shell, messages: messages,
+                session: session, operation: operation, current: current)
+        } else { candidates = nil }
     }
-    func invalidate() { host.invalidate();erasure?.invalidate();keys.invalidate() }
+    func invalidate() { candidates?.invalidate();host.invalidate();erasure?.invalidate();keys.invalidate() }
 }
 
 /// Provided App constructor for the erasure journal family. Normal Root
@@ -679,8 +692,8 @@ import Observation
     func invalidate() { client.invalidate() }
 }
 
-/// Exact provided candidate family. Ordinary Root activation waits for B's
-/// merged device coverage and shared Memory-key emptiness rule for this family.
+/// Exact provided candidate family, activated only with merged DEVICE4 coverage
+/// and its shared Memory-key emptiness rule.
 /// No environment job, attempt or candidate ID is accepted by the constructor.
 @MainActor final class DevelopmentMemoryCandidateComponents {
     let host: MemoryCandidateContainerHost
