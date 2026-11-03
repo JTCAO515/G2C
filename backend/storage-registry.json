@@ -1,5 +1,5 @@
 {
-  "version": "1.25.0",
+  "version": "1.27.0",
   "stores": [
     {
       "id": "business",
@@ -842,6 +842,130 @@
       ],
       "owner_line": "A",
       "retention_category": "user_content"
+    },
+    {
+      "id": "cleanup-control",
+      "owner": "A / actual App cleanup coordination",
+      "owner_line": "A",
+      "retention_category": "cleanup_reconciliation",
+      "status": "provided_control_records; A_finalization_pending",
+      "objects": [
+        {
+          "id": "selected",
+          "owner": "A / App original cleanup control records",
+          "owner_line": "A",
+          "status": "provided_in_App_Root_PR453_f254fab6; finalization_not_yet_verified",
+          "objects": [
+            "Keychain:G2C.CJAuth.session.<verified-backend-uuid>/M3.Cleanup.Selected"
+          ],
+          "service_template": "G2C.CJAuth.session.<verified-backend-uuid>",
+          "slot_template": "M3.Cleanup.Selected",
+          "source": "ios/App/DevelopmentTripHost.swift@f254fab6; actual Root and native evidence tracked in #27/PR453",
+          "principal_binding": "Exact verified backend/account/applicationIdentifier/accessGroup and original control bytes; Selected is environment-wide and must still point at the original account",
+          "sensitive_fields": [
+            "Original backend/account/device/generation routing; no server operation ID or capability"
+          ],
+          "retention_category": "cleanup_reconciliation",
+          "retention": "Retain original recovery evidence while pending/UNKNOWN; after original content completion and acknowledged device receipt, A must retire writers and finalize exact original records. Never a90-day log TTL or ordinary business access grant.",
+          "cleanup_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "finalization_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "cleanup_hook": "A-owned local post-terminal finalization; no server content hook or DEVICE3 receipt attests these records. App-wide completion requires actual native finalization evidence.",
+          "restore_fence": "Finalized controls cannot restore SDK/ordinary access; optional nonsecret hashed terminal marker only; mismatched/replaced/unknown records remain unconfirmed"
+        },
+        {
+          "id": "manifest",
+          "owner": "A / App original cleanup control records",
+          "owner_line": "A",
+          "status": "provided_in_App_Root_PR453_f254fab6; finalization_not_yet_verified",
+          "objects": [
+            "Keychain:G2C.CJAuth.session.<verified-backend-uuid>/M3.Cleanup.Manifest.<verified-account-uuid>"
+          ],
+          "service_template": "G2C.CJAuth.session.<verified-backend-uuid>",
+          "slot_template": "M3.Cleanup.Manifest.<verified-account-uuid>",
+          "source": "ios/App/DevelopmentTripHost.swift@f254fab6; actual Root and native evidence tracked in #27/PR453",
+          "principal_binding": "Exact verified backend/account/applicationIdentifier/accessGroup and original control bytes; Selected is environment-wide and must still point at the original account",
+          "sensitive_fields": [
+            "Original scope/nonce, SDK bytes hash, exact native directory references and key UUIDs"
+          ],
+          "retention_category": "cleanup_reconciliation",
+          "retention": "Retain original recovery evidence while pending/UNKNOWN; after original content completion and acknowledged device receipt, A must retire writers and finalize exact original records. Never a90-day log TTL or ordinary business access grant.",
+          "cleanup_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "finalization_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "cleanup_hook": "A-owned local post-terminal finalization; no server content hook or DEVICE3 receipt attests these records. App-wide completion requires actual native finalization evidence.",
+          "restore_fence": "Finalized controls cannot restore SDK/ordinary access; optional nonsecret hashed terminal marker only; mismatched/replaced/unknown records remain unconfirmed"
+        },
+        {
+          "id": "execution",
+          "owner": "A / App original cleanup control records",
+          "owner_line": "A",
+          "status": "provided_in_App_Root_PR453_f254fab6; finalization_not_yet_verified",
+          "objects": [
+            "Keychain:G2C.CJAuth.session.<verified-backend-uuid>/M3.Cleanup.Execution.<verified-account-uuid>"
+          ],
+          "service_template": "G2C.CJAuth.session.<verified-backend-uuid>",
+          "slot_template": "M3.Cleanup.Execution.<verified-account-uuid>",
+          "source": "ios/App/DevelopmentTripHost.swift@f254fab6; actual Root and native evidence tracked in #27/PR453",
+          "principal_binding": "Exact verified backend/account/applicationIdentifier/accessGroup and original control bytes; Selected is environment-wide and must still point at the original account",
+          "sensitive_fields": [
+            "Original native intent ID, scope/binding hashes and per-target physical outcomes"
+          ],
+          "retention_category": "cleanup_reconciliation",
+          "retention": "Retain original recovery evidence while pending/UNKNOWN; after original content completion and acknowledged device receipt, A must retire writers and finalize exact original records. Never a90-day log TTL or ordinary business access grant.",
+          "cleanup_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "finalization_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "cleanup_hook": "A-owned local post-terminal finalization; no server content hook or DEVICE3 receipt attests these records. App-wide completion requires actual native finalization evidence.",
+          "restore_fence": "Finalized controls cannot restore SDK/ordinary access; optional nonsecret hashed terminal marker only; mismatched/replaced/unknown records remain unconfirmed"
+        },
+        {
+          "id": "device",
+          "owner": "A / App original cleanup control records",
+          "owner_line": "A",
+          "status": "provided_in_App_Root_PR453_f254fab6; finalization_not_yet_verified",
+          "objects": [
+            "Keychain:G2C.CJAuth.session.<verified-backend-uuid>/M3.Cleanup.Device.<verified-account-uuid>"
+          ],
+          "service_template": "G2C.CJAuth.session.<verified-backend-uuid>",
+          "slot_template": "M3.Cleanup.Device.<verified-account-uuid>",
+          "source": "ios/App/DevelopmentTripHost.swift@f254fab6; actual Root and native evidence tracked in #27/PR453",
+          "principal_binding": "Exact verified backend/account/applicationIdentifier/accessGroup and original control bytes; Selected is environment-wide and must still point at the original account",
+          "sensitive_fields": [
+            "Exact original registration/action/call/receipt bytes, limited device/receipt capabilities, refusal/ACK and native intent state"
+          ],
+          "retention_category": "cleanup_reconciliation",
+          "retention": "Retain original recovery evidence while pending/UNKNOWN; after original content completion and acknowledged device receipt, A must retire writers and finalize exact original records. Never a90-day log TTL or ordinary business access grant.",
+          "cleanup_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "finalization_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "cleanup_hook": "A-owned local post-terminal finalization; no server content hook or DEVICE3 receipt attests these records. App-wide completion requires actual native finalization evidence.",
+          "restore_fence": "Finalized controls cannot restore SDK/ordinary access; optional nonsecret hashed terminal marker only; mismatched/replaced/unknown records remain unconfirmed"
+        },
+        {
+          "id": "account",
+          "owner": "A / App original cleanup control records",
+          "owner_line": "A",
+          "status": "provided_in_App_Root_PR453_f254fab6; finalization_not_yet_verified",
+          "objects": [
+            "Keychain:G2C.CJAuth.session.<verified-backend-uuid>/M3.Cleanup.Account.<verified-account-uuid>"
+          ],
+          "service_template": "G2C.CJAuth.session.<verified-backend-uuid>",
+          "slot_template": "M3.Cleanup.Account.<verified-account-uuid>",
+          "source": "ios/App/DevelopmentTripHost.swift@f254fab6; actual Root and native evidence tracked in #27/PR453",
+          "principal_binding": "Exact verified backend/account/applicationIdentifier/accessGroup and original control bytes; Selected is environment-wide and must still point at the original account",
+          "sensitive_fields": [
+            "Exact original preparation/confirmation/progress bytes and limited original-operation progress/device capability"
+          ],
+          "retention_category": "cleanup_reconciliation",
+          "retention": "Retain original recovery evidence while pending/UNKNOWN; after original content completion and acknowledged device receipt, A must retire writers and finalize exact original records. Never a90-day log TTL or ordinary business access grant.",
+          "cleanup_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "finalization_protocol": "CLEANUP-CONTROL-RECORDS@1",
+          "cleanup_hook": "A-owned local post-terminal finalization; no server content hook or DEVICE3 receipt attests these records. App-wide completion requires actual native finalization evidence.",
+          "restore_fence": "Finalized controls cannot restore SDK/ordinary access; optional nonsecret hashed terminal marker only; mismatched/replaced/unknown records remain unconfirmed"
+        }
+      ],
+      "principal_binding": "Actual App Root verified backend/account/applicationIdentifier/accessGroup; exact original record and Selected routing comparison",
+      "sensitive_fields": "Original cleanup requests/responses, limited-purpose capabilities and native manifests/intents; no ordinary SDK token is granted by this category",
+      "retention": "Original recovery evidence until terminal proofs; A post-terminal exact-record finalization required, never diagnostic TTL",
+      "cleanup_hook": "CLEANUP-CONTROL-RECORDS@1 local A finalization obligation, distinct from online content hooks and DEVICE3 targets",
+      "restore_fence": "Retire original control writers; never recover business identity; optional nonsecret hashed terminal marker only"
     },
     {
       "id": "external-processing",

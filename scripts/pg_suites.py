@@ -570,6 +570,14 @@ def group_memory_erasure_driver():
 GROUPS.update(memory_erasure_driver=group_memory_erasure_driver)
 
 
+def group_device_completion():
+    return _fresh_runtime_check('device_completion',55827,'cj_device_completion',
+        f'/tmp/cj-device-completion-{os.getpid()}','backend/cj_api/tests/device_completion_pg.py')
+
+
+GROUPS.update(device_completion=group_device_completion)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
