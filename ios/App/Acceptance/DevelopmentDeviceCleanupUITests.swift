@@ -80,6 +80,8 @@ import Foundation
             }
         }
         XCTAssertTrue(target.exists, id)
+        reveal(target) // Materialize the current status after the form changes height.
+        print("CLEANUP_VISIBLE_STATUS", id, target.label)
         let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 25), .completed, id)
     }
