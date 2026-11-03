@@ -68,10 +68,17 @@ import Foundation
     }
     func text(_ id: String, contains value: String) {
         let element = app.staticTexts.matching(identifier: id).element
-        reveal(element)
-        let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", value), object: element)
-        let result = XCTWaiter.wait(for: [expected], timeout: 30)
-        if result != .completed { print("ERASURE_UI_STATUS", id, element.label) }
+        var result = XCTWaiter.Result.timedOut
+        // An asynchronous original-operation result can rebuild a Form and
+        // move its existing status row. Re-locate that same row; never repeat
+        // an operation or accept its earlier pending text as completion.
+        for _ in 0..<3 {
+            reveal(element)
+            let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", value), object: element)
+            result = XCTWaiter.wait(for: [expected], timeout: 10)
+            if result == .completed { break }
+        }
+        if result != .completed { print("ERASURE_UI_STATUS", id, element.exists ? element.label : "missing") }
         XCTAssertEqual(result, .completed, id)
     }
     func enter(_ id: String, value: String) {
