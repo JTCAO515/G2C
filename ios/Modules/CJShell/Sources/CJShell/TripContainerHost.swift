@@ -214,7 +214,7 @@ import CJManualPreviewClient
         } catch {
             guard owns(work.context, work.token) else { return }
             if case TripFailure.rejected(let status, _) = error, status == 401 || status == 403 {
-                do { try cache.currentIdentityRejected() } catch { cache.noteSyncReadFailure() }
+                do { try await cache.currentIdentityRejected() } catch { cache.noteSyncReadFailure() }
             } else { cache.noteSyncReadFailure() }
         }
         guard owns(work.context, work.token) else { return }
