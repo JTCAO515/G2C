@@ -44,7 +44,7 @@ def visible(tx,messages):
     # association ledger, not an independently authoritative Memory value/index.
     # An incomplete provided history graph cannot silently become permission.
     tx.cur.execute('''SELECT 1 FROM cj_memory_source s WHERE s.scope=%s
-        AND (s.source_id LIKE 'history-v1:%%' OR s.source_id LIKE 'candidate-confirm-v1:%%')
+        AND (s.source_id LIKE 'history-v1:%%' OR s.source_id LIKE 'trip-history-v1:%%' OR s.source_id LIKE 'candidate-confirm-v1:%%')
         AND NOT EXISTS(SELECT 1 FROM cj_memory_history_origin o
             WHERE (o.scope,o.source_id)=(s.scope,s.source_id)) LIMIT 1''',(tx.scope,))
     if tx.cur.fetchone() is not None:raise Unavailable('history source association unavailable')

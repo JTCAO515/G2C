@@ -107,7 +107,7 @@ def _model_value(raw):
     return value
 
 
-def _value_entries(value,messages,max_entries,max_text_bytes,selector):
+def _value_entries(value,messages,max_entries,max_text_bytes,selector,*,quote_texts=None):
     if (type(value) is not dict or set(value)!={'version','entries'}
             or value['version']!='MEMORY-EXTRACT@1' or type(value['entries']) is not list
             or len(value['entries'])>max_entries):
@@ -136,7 +136,10 @@ def _value_entries(value,messages,max_entries,max_text_bytes,selector):
                 raise InvalidExtraction('exact evidence reference required')
             mid=_text(ref['message_id'],32768)
             quote=_text(ref['quote'],max_text_bytes)
-            if mid in used or mid not in source or quote not in source[mid].text:
+            if mid in used or mid not in source:
+                raise InvalidExtraction('evidence does not match original source')
+            text=source[mid].text if quote_texts is None else quote_texts[mid,quote]
+            if quote not in text:
                 raise InvalidExtraction('evidence does not match original source')
             used.add(mid);evidence.append(Evidence(mid,quote))
         entry=Entry(subject,slot,kind,_text(item['text'],max_text_bytes),extent,
@@ -153,8 +156,8 @@ def decode_output(raw: bytes, messages: tuple[HistoryMessage, ...]) -> tuple[Ent
     return _decode_value(_model_value(raw),messages)
 
 
-def _decode_value(value,messages):
-    return tuple(_value_entries(value,messages,100,4096,None))
+def _decode_value(value,messages,*,quote_texts=None):
+    return tuple(_value_entries(value,messages,100,4096,None,quote_texts=quote_texts))
 
 
 def parse_output(raw: bytes, messages: tuple[HistoryMessage, ...],
@@ -163,18 +166,19 @@ def parse_output(raw: bytes, messages: tuple[HistoryMessage, ...],
     return _parse_value(_model_value(raw),messages,policy)
 
 
-def _parse_value(value,messages,policy):
+def _parse_value(value,messages,policy,*,quote_texts=None,direct_statement=None):
     source={row.receipt.message_id:row for row in messages}
     def selector(subject,slot):
         if subject not in policy.subjects or slot not in policy.slots:
             raise CollectionUnavailable('canonical collection scope unavailable')
     result=[]
-    for entry in _value_entries(value,messages,policy.max_entries,policy.max_text_bytes,selector):
+    classify=policy.direct_statement if direct_statement is None else direct_statement
+    for entry in _value_entries(value,messages,policy.max_entries,policy.max_text_bytes,selector,quote_texts=quote_texts):
         if policy.content_allowed(entry) is not True:
             raise CollectionUnavailable('content collection unavailable')
         # Model kind/quote cannot certify explicit consent. A trusted policy must
         # independently classify source statements, and inference never promotes.
-        direct=(entry.kind!='inference' and policy.direct_statement(entry,
+        direct=(entry.kind!='inference' and classify(entry,
                 tuple(source[e.message_id] for e in entry.evidence)) is True)
         result.append(ParsedEntry(entry,direct))
     return tuple(result)

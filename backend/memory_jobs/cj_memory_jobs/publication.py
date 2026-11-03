@@ -7,7 +7,7 @@ from .extraction import CollectionUnavailable, Entry, publication_identity
 
 
 def build_command(scope: str, entry: Entry, messages: tuple[HistoryMessage, ...],
-                  context: Selection | None) -> TypedCommand:
+                  context: Selection | None,*,identities=None) -> TypedCommand:
     """Use a server-resolved context, never context/owner fields from model JSON.
 
     The caller still needs the accepted current B lease and canonical MEMORY
@@ -23,7 +23,7 @@ def build_command(scope: str, entry: Entry, messages: tuple[HistoryMessage, ...]
             raise CollectionUnavailable('current collection requires a resolved travel scope')
         kind,identifier,version='travel',context.id,context.expected_version
         key=('travel',identifier)
-    identities=publication_identity(scope,entry,messages,key)
+    if identities is None:identities=publication_identity(scope,entry,messages,key)
     value=dict(version=STORED_VERSION,operation_id=identities.operation_id,item_id=identities.item_id,
         subject=entry.subject,slot=entry.slot,kind=entry.kind,text=entry.text,extent=entry.extent,
         context_id=identifier,context_kind=kind,context_version=version,
