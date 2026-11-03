@@ -162,6 +162,24 @@ private struct ErasureWire: ClientTransport {
         // A fresh original-stop authorization can explicitly verify an empty retry.
         try cleaner.clear(grant, validateCurrent: {})
     }
+    @Test func stopAuthorizationCannotClearAnotherAccountsJournals() async throws {
+        let alice = try ErasureClientFixture(); defer { alice.dispose() }
+        let bob = try Fixture(); defer { bob.cleanup() }
+        let work = try alice.client.prepare(entry: await alice.entry(), acknowledgement: .ownedTripDerivedScope)
+        _ = try await alice.client.perform(work)
+        let grant = try alice.client.localAuthorization(for: work.original)
+        let manual = try bob.store()
+        var value = command("Bob private content"); value.item_id = "item+中文"
+        let original = try MemoryPending(value); try manual.append(original)
+        let managementRoot = bob.root.appendingPathExtension("management")
+        try FileManager.default.createDirectory(at: managementRoot, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let management = try MemoryManagementPendingStore(directory: managementRoot, maximumBytes: 100000, maximumRecords: 100,
+            namespace: .init(environment: bob.binding.environment, account: bob.binding.account, purpose: .localMemoryPendingV1), keyID: bob.keyID, key: { bob.secret })
+        let cleaner = try MemoryItemLocalCleanup(manual: manual, management: management, typed: bob.typedStore())
+        #expect(throws: MemoryFailure.staleBinding) { try cleaner.clear(grant, validateCurrent: {}) }
+        #expect(try manual.pending().first?.originalUTF8 == original.originalUTF8)
+        try FileManager.default.removeItem(at: managementRoot)
+    }
     @Test func originalIsDurableBeforePOSTAndTheWorkCannotBeSentTwice() async throws {
         let f = try ErasureClientFixture(); defer { f.dispose() }
         let entry = try await f.entry(), work = try f.client.prepare(entry: entry, acknowledgement: .ownedTripDerivedScope)
