@@ -43,8 +43,16 @@ import Foundation
             let top = bars.element.frame.maxY
             return element.frame.midY > top && element.frame.midY < app.frame.maxY - 44
         }
-        for _ in 0..<40 { if visible() { return }; app.swipeUp() }
-        for _ in 0..<60 { if visible() { return }; app.swipeDown() }
+        for index in 0..<100 {
+            if visible() { return }
+            if centered && element.exists {
+                let bars = app.navigationBars.matching(NSPredicate(format: "identifier IN %@", ["Delete memory", "删除记忆", "Delete account", "注销账号"]))
+                XCTAssertEqual(bars.count, 1)
+                if element.frame.midY <= bars.element.frame.maxY { app.swipeDown() }
+                else { app.swipeUp() }
+            } else if index < 40 { app.swipeUp() }
+            else { app.swipeDown() }
+        }
         print("ERASURE_UI_TREE", app.debugDescription)
         let failure = XCTAttachment(screenshot: app.screenshot())
         failure.name = "erasure-missing-control"; failure.lifetime = .keepAlways; add(failure)
@@ -52,7 +60,8 @@ import Foundation
     }
     func tap(_ id: String) {
         let query = app.buttons.matching(identifier: id), button = query.element
-        reveal(button); XCTAssertEqual(query.count, 1, id)
+        reveal(button, centered: id.hasPrefix("memoryErasure.") || id.hasPrefix("account.cleanup."))
+        XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
         button.tap()
