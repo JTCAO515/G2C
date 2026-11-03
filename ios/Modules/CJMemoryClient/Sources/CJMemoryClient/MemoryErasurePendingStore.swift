@@ -77,6 +77,7 @@ struct MemoryErasureObservation: MemoryJournalRecord, Sendable {
         storage = try MemoryEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,
             namespace: namespace, keyID: keyID, domain: "CJMemoryErasurePendingV1", key: key)
     }
+    /// Whole provided family for account cleanup, not a per-item erase API.
     public func clearLocalFiles() throws { try storage.clearLocalFiles() }
     func validate(_ binding: MemoryBinding) throws { try storage.validate(binding) }
     func append(_ original: MemoryErasurePending, validate: () throws -> Void) throws { try storage.append(original, validateBinding: validate) }

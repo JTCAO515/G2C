@@ -32,6 +32,15 @@ private struct ErasureScope {
     let generation: UUID
     let binding: MemoryBinding
     let entry: MemoryErasureEntry?
+    let reconciliationRead: (Data, UUID)?
+}
+public struct MemoryErasureProgressRead: Sendable {
+    public let progress: MemoryErasureProgress
+    fileprivate let owner: UUID
+    fileprivate let generation: UUID
+    fileprivate let binding: MemoryBinding
+    fileprivate let inputSHA256: String
+    fileprivate let nonce: UUID
 }
 public struct MemoryErasureOriginal: Sendable {
     public let actionID: String
@@ -63,23 +72,28 @@ public struct MemoryErasureOriginal: Sendable {
     private var generation = UUID()
     private var uncertainCreation: Set<Data> = []
     private var preparing = false
+    private var progressReads: [Data: UUID] = [:]
+    private var consumedReads: [Data: UUID] = [:]
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
          currentBinding: @escaping @MainActor () -> MemoryBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
          pendingStore: MemoryErasurePendingStore, interceptedTransport: any ClientTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; operation = sessionOperation; store = pendingStore; transport = interceptedTransport
     }
-    public func invalidate() { generation = UUID() }
+    public func invalidate() { generation = UUID(); progressReads = [:]; consumedReads = [:] }
     private func check(_ scope: ErasureScope) throws {
         guard generation == scope.generation, session.isCurrent(operation) else { throw MemoryFailure.staleBinding }
         let observed = currentBinding()
         guard generation == scope.generation, observed == scope.binding, session.isCurrent(operation) else { throw MemoryFailure.staleBinding }
         if let entry = scope.entry { try entry.validate() }
         guard generation == scope.generation, session.isCurrent(operation) else { throw MemoryFailure.staleBinding }
+        if let (action, nonce) = scope.reconciliationRead {
+            guard progressReads[action] == nonce, consumedReads[action] == nonce else { throw MemoryFailure.staleBinding }
+        }
         try Task.checkCancellation()
     }
     private func begin(_ binding: MemoryBinding, entry: MemoryErasureEntry? = nil) throws -> ErasureScope {
-        let scope = ErasureScope(generation: generation, binding: binding, entry: entry)
+        let scope = ErasureScope(generation: generation, binding: binding, entry: entry, reconciliationRead: nil)
         if let entry {
             guard entry.owner == owner, entry.generation == generation, entry.binding == binding else { throw MemoryFailure.staleBinding }
         }
@@ -149,9 +163,40 @@ public struct MemoryErasureOriginal: Sendable {
         return try await exchange(work.original.pending, scope: work.scope, post: true)
     }
     public func query(_ original: MemoryErasureOriginal) async throws -> MemoryErasureProgress {
+        try await queryRead(original).progress
+    }
+    public func queryRead(_ original: MemoryErasureOriginal) async throws -> MemoryErasureProgressRead {
         let scope = try begin(original.binding)
         guard original.owner == owner, original.generation == generation else { throw MemoryFailure.staleBinding }
-        return try await exchange(original.pending, scope: scope, post: false)
+        let key = Data(original.actionID.utf8), nonce = UUID()
+        progressReads[key] = nonce
+        let progress = try await exchange(original.pending, scope: scope, post: false)
+        try check(scope)
+        guard progressReads[key] == nonce else { throw MemoryFailure.staleBinding }
+        return .init(progress: progress, owner: owner, generation: scope.generation, binding: scope.binding,
+            inputSHA256: original.pending.expectedSHA256, nonce: nonce)
+    }
+    /// C's explicit reconciliation POST reuses the exact original command. A
+    /// successful current GET is mandatory first; absence/error cannot enable it.
+    /// The service reconciles issued steps and may start untouched original steps.
+    public func prepareReconciliation(_ original: MemoryErasureOriginal, after read: MemoryErasureProgressRead) throws -> MemoryErasureWork {
+        guard !preparing else { throw MemoryFailure.pendingRequiresQuery }
+        preparing = true; defer { preparing = false }
+        let scope = try begin(original.binding), key = Data(original.actionID.utf8)
+        func validateRead() throws {
+            guard original.owner == owner, original.generation == generation,
+                  read.owner == owner, read.generation == generation, read.binding == scope.binding,
+                  same(read.progress.actionID, original.actionID), same(read.inputSHA256, original.pending.expectedSHA256),
+                  read.progress.phase == .unknown || read.progress.phase == .inProgress,
+                  progressReads[key] == read.nonce, consumedReads[key] != read.nonce else { throw MemoryFailure.staleBinding }
+        }
+        try validateRead(); try verify(original.pending, scope: scope)
+        guard let observation = try store.observation(for: original.pending) else { throw MemoryFailure.storageUnavailable }
+        try observation.value.check(original.pending, progress: read.progress)
+        try check(scope); try validateRead(); try store.validate(observation)
+        consumedReads[key] = read.nonce
+        let reconciled = ErasureScope(generation: scope.generation, binding: scope.binding, entry: nil, reconciliationRead: (key, read.nonce))
+        return .init(original: original, scope: reconciled)
     }
     private func exchange(_ original: MemoryErasurePending, scope: ErasureScope, post: Bool) async throws -> MemoryErasureProgress {
         try verify(original, scope: scope)

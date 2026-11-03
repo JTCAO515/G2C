@@ -67,8 +67,12 @@ public struct MemoryErasureView: View {
                     MemoryLifecycleButton(title: language.text("Check original deletion", "查询原删除"), identifier: "memoryErasure.query", enabled: model.canRecover) {
                         if let work = model.prepareQuery() { perform(work) }
                     }
+                    MemoryRowText(text: language.text("The original scope also covers this account's trip-derived results and unaccepted drafts, while retaining original chat and accepted formal trips. After checking progress, you may explicitly continue that same deletion. This can advance untouched steps without issuing an already-started step again.", "原范围还包括此账号的行程派生结果和未接受草稿，保留原聊天与已接受的正式行程。核验进度后，你可明确继续同一原删除，处理尚未开始的步骤；已开始的步骤不会重新派发。"), style: .body)
+                    MemoryLifecycleButton(title: language.text("Continue this original deletion", "继续同一原删除"), identifier: "memoryErasure.reconcile", enabled: model.canReconcile) {
+                        if let work = model.prepareReconciliation() { perform(work) }
+                    }
                 }
-                MemoryRowText(text: language.text("An uncertain result or a missing progress record does not authorize resubmission. Keep the same original record and query it.", "结果未知或查不到进度，都不代表可以重新提交；请保留并查询同一原记录。"), style: .body)
+                MemoryRowText(text: language.text("An uncertain result or a missing progress record never creates a new deletion. Keep the original; its continue action requires a successful original-progress read first.", "结果未知或查不到进度时，不会创建新删除。请保留原记录；继续原操作前必须成功读取它的进度。"), style: .body)
             } header: { heading(language.text("Original operation recovery", "原操作恢复")) }
         }
         .navigationTitle(language.text("Delete memory", "删除记忆"))
@@ -82,7 +86,7 @@ public struct MemoryErasureView: View {
         case .unselected: language.text("Choose a currently read memory, or load an original deletion to query it.", "请选择当前已读取的记忆，或读取原删除记录后查询。")
         case .ready: language.text("Read and confirm the linked cleanup range before deleting.", "删除前请核对并确认关联清理范围。")
         case .preparing: language.text("Preserving the original deletion request…", "正在保留原删除请求…")
-        case .submitting: language.text("Submitting this original deletion once…", "正在提交这次原删除请求…")
+        case .submitting: language.text("Submitting the original deletion operation…", "正在提交原删除操作…")
         case .loading: language.text("Reading original deletion records…", "正在读取原删除记录…")
         case .reconciling: language.text("Checking the original deletion; no new request is being submitted.", "正在查询原删除，没有提交新请求。")
         case .known: language.text("The original stop is recorded. See online cleanup progress separately.", "原停止操作已记录，线上清理进度请另行查看。")

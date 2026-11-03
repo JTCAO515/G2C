@@ -24,6 +24,7 @@ public struct MemoryErasurePresentationWork: Sendable {
         var original: MemoryErasureOriginal?
         var originals: [MemoryErasureOriginal] = []
         var progress: MemoryErasureProgress?
+        var read: MemoryErasureProgressRead?
         var progressIsCurrent = false
         init(binding: MemoryBinding?, entry: MemoryErasureEntry?, configured: Bool) {
             self.binding = binding; self.entry = entry
@@ -47,6 +48,11 @@ public struct MemoryErasurePresentationWork: Sendable {
     public var knownStopped: Bool { _ = signal; return slot.progress?.stopped == true || slot.original?.knownStopped == true }
     public var canSubmit: Bool { _ = signal; return slot.state == .ready && slot.entry != nil }
     public var canRecover: Bool { _ = signal; return client != nil && slot.binding != nil && !slot.state.isBusy }
+    public var canReconcile: Bool {
+        _ = signal
+        guard canRecover, slot.original != nil, let read = slot.read else { return false }
+        return read.progress.phase == .unknown || read.progress.phase == .inProgress
+    }
     public func replace(binding: MemoryBinding?, entry: MemoryErasureEntry? = nil) {
         let next = Slot(binding: binding, entry: entry, configured: client != nil)
         slot = next
@@ -89,21 +95,37 @@ public struct MemoryErasurePresentationWork: Sendable {
     }
     public func prepareOriginals() -> MemoryErasurePresentationWork? {
         guard let captured = prepare() else { return nil }
-        captured.state = .loading; captured.progressIsCurrent = false
+        captured.state = .loading; captured.progressIsCurrent = false; captured.read = nil
         let result = MemoryErasurePresentationWork(slot: captured.id, request: captured.request, kind: .originals)
         notify(); return result
     }
     public func selectOriginal(actionID: String) {
         guard !slot.state.isBusy, let selected = slot.originals.first(where: { same($0.actionID, actionID) }) else { return }
         slot.request = UUID(); slot.started = nil; slot.entry = nil
-        slot.original = selected; slot.progress = nil; slot.progressIsCurrent = false; slot.state = .unknown
+        slot.original = selected; slot.progress = nil; slot.read = nil; slot.progressIsCurrent = false; slot.state = .unknown
         notify()
     }
     public func prepareQuery() -> MemoryErasurePresentationWork? {
         guard let original = slot.original, let captured = prepare() else { return nil }
-        captured.state = .reconciling; captured.progressIsCurrent = false
+        captured.state = .reconciling; captured.progressIsCurrent = false; captured.read = nil
         let result = MemoryErasurePresentationWork(slot: captured.id, request: captured.request, kind: .query(original))
         notify(); return result
+    }
+    public func prepareReconciliation() -> MemoryErasurePresentationWork? {
+        guard canReconcile, let captured = prepare(), let original = captured.original, let read = captured.read, let client else { return nil }
+        let request = captured.request
+        captured.state = .preparing
+        do {
+            let work = try client.prepareReconciliation(original, after: read)
+            guard slot === captured, captured.request == request else { return nil }
+            captured.read = nil; captured.progressIsCurrent = false; captured.state = .submitting
+            let result = MemoryErasurePresentationWork(slot: captured.id, request: request, kind: .submit(work))
+            notify(); return result
+        } catch {
+            guard slot === captured, captured.request == request else { return nil }
+            captured.read = nil; captured.progressIsCurrent = false; captured.state = .unknown
+            notify(); return nil
+        }
     }
     private func current(_ work: MemoryErasurePresentationWork) -> Bool {
         guard slot.id == work.slot, slot.request == work.request, let binding = slot.binding, let client else { return false }
@@ -119,15 +141,20 @@ public struct MemoryErasurePresentationWork: Sendable {
                 let originals = try client.originals(binding: binding)
                 guard current(work) else { return }
                 captured.originals = originals
-                captured.state = captured.original == nil ? .unselected : .unknown
+                if let entry = captured.entry {
+                    let valid = client.isCurrent(binding: binding, entry: entry)
+                    guard current(work) else { return }
+                    captured.state = valid ? .ready : .unavailable
+                    if !valid { captured.entry = nil }
+                } else { captured.state = captured.original == nil ? .unselected : .unknown }
             case .submit(let action):
                 let progress = try await client.perform(action)
                 guard current(work) else { return }
-                captured.progress = progress; captured.progressIsCurrent = true; captured.state = .known
+                captured.progress = progress; captured.read = nil; captured.progressIsCurrent = true; captured.state = .known
             case .query(let original):
-                let progress = try await client.query(original)
+                let read = try await client.queryRead(original)
                 guard current(work) else { return }
-                captured.progress = progress; captured.progressIsCurrent = true; captured.state = .known
+                captured.progress = read.progress; captured.read = read; captured.progressIsCurrent = true; captured.state = .known
             }
             notify()
         } catch {

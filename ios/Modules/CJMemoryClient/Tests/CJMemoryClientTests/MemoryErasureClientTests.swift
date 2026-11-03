@@ -26,6 +26,7 @@ import OpenAPIRuntime
         if post {
             #expect(request.path == "/v1/memory-erasures")
             let raw = try #require(raw); try beforePost?(raw)
+            if let original { #expect(original.originalUTF8 == raw) }
             original = try MemoryErasureAction(originalUTF8: raw)
             if lostACK { throw MemoryFailure.exchangeUnknown }
         } else {
@@ -223,6 +224,39 @@ private struct ErasureWire: ClientTransport {
         await #expect(throws: MemoryFailure.staleBinding) { try await f.client.perform(work) }
         #expect(f.server.requests.isEmpty)
     }
+    @Test func explicitReconciliationRequiresOwnedGETAndKeepsExactOriginalBytesAndOperation() async throws {
+        let f = try ErasureClientFixture(); defer { f.dispose() }
+        let entry = try await f.entry(), initial = try f.client.prepare(entry: entry, acknowledgement: .ownedTripDerivedScope)
+        f.server.lostACK = true
+        await #expect(throws: MemoryFailure.exchangeUnknown) { try await f.client.perform(initial) }
+        let original = try #require(try f.client.originals(binding: f.f.binding).first)
+        let read = try await f.client.queryRead(original)
+        let reconciled = try f.client.prepareReconciliation(original, after: read)
+        #expect(throws: MemoryFailure.staleBinding) { try f.client.prepareReconciliation(original, after: read) }
+        f.server.lostACK = false; f.server.phase = "complete"
+        let result = try await f.client.perform(reconciled)
+        #expect(result.onlineComplete && result.operationID == read.progress.operationID)
+        let posts = f.server.requests.filter { $0.0 == "eraseMemoryV1" }
+        #expect(posts.count == 2 && posts[0].1 == posts[1].1)
+        let completed = try await f.client.queryRead(original)
+        #expect(throws: MemoryFailure.staleBinding) { try f.client.prepareReconciliation(original, after: completed) }
+        await #expect(throws: MemoryFailure.staleBinding) { try await f.client.perform(reconciled) }
+    }
+    @Test func unavailableNewGETRetiresOldPermissionAndAnotherClientCannotUseIt() async throws {
+        let f = try ErasureClientFixture(); defer { f.dispose() }
+        let entry = try await f.entry(), initial = try f.client.prepare(entry: entry, acknowledgement: .ownedTripDerivedScope)
+        _ = try await f.client.perform(initial)
+        let original = try #require(try f.client.originals(binding: f.f.binding).first)
+        let read = try await f.client.queryRead(original)
+        let other = f.makeClient(), otherOriginal = try #require(try other.originals(binding: f.f.binding).first)
+        #expect(throws: MemoryFailure.staleBinding) { try other.prepareReconciliation(otherOriginal, after: read) }
+        let prepared = try f.client.prepareReconciliation(original, after: read)
+        f.server.missing = true
+        await #expect(throws: MemoryFailure.exchangeUnknown) { try await f.client.queryRead(original) }
+        await #expect(throws: MemoryFailure.staleBinding) { try await f.client.perform(prepared) }
+        #expect(throws: MemoryFailure.staleBinding) { try f.client.prepareReconciliation(original, after: read) }
+        #expect(f.server.requests.filter { $0.0 == "eraseMemoryV1" }.count == 1)
+    }
 }
 
 @MainActor struct MemoryErasurePresentationTests {
@@ -284,5 +318,20 @@ private struct ErasureWire: ClientTransport {
         await model.perform(work)
         #expect(replaced && model.state == .unconfigured && model.original == nil && f.server.requests.isEmpty)
         #expect(try f.store.records().count == 1)
+    }
+    @Test func originalInventoryReadPreservesSelectionAndContinueNeedsFreshSuccessfulGET() async throws {
+        let f = try ErasureClientFixture(); defer { f.dispose() }
+        let model = try await model(f)
+        await model.perform(try #require(model.prepareOriginals()))
+        #expect(model.canSubmit && model.entry != nil)
+        await model.perform(try #require(model.prepareSubmission(acknowledged: true)))
+        #expect(!model.canReconcile && model.prepareReconciliation() == nil)
+        await model.perform(try #require(model.prepareQuery()))
+        #expect(model.canReconcile)
+        f.server.phase = "complete"
+        await model.perform(try #require(model.prepareReconciliation()))
+        #expect(model.knownStopped && model.progress?.onlineComplete == true && !model.canReconcile)
+        let bodies = f.server.requests.filter { $0.0 == "eraseMemoryV1" }.compactMap(\.1)
+        #expect(bodies.count == 2 && bodies[0] == bodies[1])
     }
 }
