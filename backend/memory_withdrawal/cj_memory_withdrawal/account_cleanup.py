@@ -69,7 +69,7 @@ class MemoryManagementAccountHook(_AccountHook):
 class MemoryAuthorityAccountHook(_AccountHook):
     target='business/memory-authoritative'
     scope_table='cj_memory_scope'
-    content_tables=('cj_memory_operation','cj_memory_item','cj_memory_source','cj_memory_scope')
+    content_tables=('cj_memory_erasure_manifest','cj_memory_operation','cj_memory_item','cj_memory_source','cj_memory_scope')
 
 
 class TripAuthorityAccountHook(_AccountHook):
