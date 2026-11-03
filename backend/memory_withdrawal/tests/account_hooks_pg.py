@@ -215,7 +215,9 @@ def exercise(root,path):
     except Denied:pass
     else:raise AssertionError('foreign C domain erased')
     try:
-        with psycopg.connect(**admin,autocommit=True) as conn:migrate.down(conn,migrate.load(),40)
+        with psycopg.connect(**admin,autocommit=True) as conn:
+            migration=next(m for m in migrate.load() if m['version']==41)
+            conn.execute((ROOT/migration['down']).read_text())
     except psycopg.errors.RaiseException:pass
     else:raise AssertionError('M41 down accepted retained other-owner data')
     print('PASS actual signed confirmation/retirement and C account hooks erase authoritative Memory/action/Trip records and original bytes, source/queue cleared by existing derived hook; Bob preserved, replay/reconcile and foreign denial, runtime no DELETE, populated down refused; item erasure/global devices UNRUN')
@@ -227,5 +229,8 @@ if __name__=='__main__':
         with pg_suites.cluster('c_account_hooks',port=55796,role='cj_c_account_hooks',root=Path(folder)/'pg',socket=Path(folder)/'s') as config:
             with psycopg.connect(**config,autocommit=True) as conn:
                 chain=migrate.load();migrate.up(conn,chain,41);migrate.down(conn,chain,40);migrate.up(conn,chain,41)
+                # M41's empty round trip above remains exact. Runtime behavior
+                # below uses current code, so install all later dependencies.
+                migrate.up(conn,chain,chain[-1]['version'])
             root=Path(folder);path=root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600)
             exercise(root,path)

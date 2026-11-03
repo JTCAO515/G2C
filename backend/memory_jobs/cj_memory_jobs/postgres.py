@@ -139,7 +139,23 @@ class Transaction:
         job_id, attempt_id, source_key, stored_stream, original, batch, state, processed, candidate, memory_epoch = row
         job_identity(job_id); job_identity(attempt_id)
         batch, original = bytes(batch), bytes(original)
-        source, rows, mode = decode_v2(batch)
+        from .decision_batch import VERSION as DECISION_BATCH,decoded as decision_batch
+        from .decision_command import DecisionCommand
+        try:version=json.loads(batch)['version']
+        except (ValueError,TypeError,KeyError,RecursionError) as error:
+            raise Unavailable('stored history batch version unavailable') from error
+        if version==DECISION_BATCH:
+            source,rows,mode,decision=decision_batch(batch)
+            command=DecisionCommand.parse(original);q=command.query;c=source.cursor
+            if (command.job_id,command.attempt_id)!=(job_id,attempt_id):raise Unavailable('stored decision identity differs')
+            if (q.conversation_id,q.generation,q.epoch,q.after,q.through,q.source_version,q.withdrawal_epoch,q.mode)!= (
+                    c.conversation_id,c.generation,c.epoch,c.after,c.through,source.source_version,source.withdrawal_epoch,mode):
+                raise Unavailable('original decision range differs from batch')
+            if (command.decision.trip_id,command.decision.expected_version,command.decision.content_sha256)!=(
+                    decision.trip_id,decision.version,decision.content_sha256):
+                raise Unavailable('original accepted decision differs from batch')
+        else:
+            source, rows, mode = decode_v2(batch)
         if (source.cursor.scope != self.scope or sha256(batch).hexdigest() != source_key
                 or stream_key(source,mode) != stored_stream):
             raise Unavailable('stored history binding unavailable')
@@ -161,6 +177,13 @@ class Transaction:
 
     def enqueue(self, source, rows, mode, job_id, attempt_id, original):
         batch = encode_v2(source, rows, mode)
+        return self._enqueue_batch(source,mode,job_id,attempt_id,original,batch)
+
+    def enqueue_decision(self,source,rows,mode,job_id,attempt_id,original,decision):
+        from .decision_batch import encoded
+        return self._enqueue_batch(source,mode,job_id,attempt_id,original,encoded(source,rows,mode,decision))
+
+    def _enqueue_batch(self,source,mode,job_id,attempt_id,original,batch):
         key = sha256(batch).hexdigest()
         self.cur.execute('''SELECT job_id,attempt_id,source_key,stream_key,original_input,batch,state,processed,candidate,memory_epoch
             FROM cj_memory_history_job WHERE scope=%s AND (job_id=%s OR attempt_id=%s OR source_key=%s)''',
