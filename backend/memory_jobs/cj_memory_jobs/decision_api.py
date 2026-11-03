@@ -12,8 +12,6 @@ from cj_memory.domain import Unavailable as MemoryUnavailable,Conflict as Memory
 from .codec import InvalidInput,Conflict,Unavailable
 from .model_v2 import NoEligibleSource
 from .service import OperationWithheld
-from .postgres import encode
-import json
 
 
 def register(app,service):
@@ -24,15 +22,15 @@ def register(app,service):
             if write:
                 if request.scope['query_string']:raise InvalidInput('unexpected decision query')
                 raw=await _read_body(request,32768)
-                result=await run_in_threadpool(service.enqueue_decision,token,raw)
+                result=await run_in_threadpool(service.enqueue_decision,token,raw,request_id=request.state.request_id)
             else:
                 try:pairs=_query_pairs(request)
                 except (ValueError,UnicodeError) as error:raise InvalidInput('invalid query encoding') from error
                 values=dict(pairs)
                 if set(values)!={'job_id','attempt_id'} or len(pairs)!=len(values):raise InvalidInput('exact original decision query required')
-                result=await run_in_threadpool(service.query_decision_publication,token,values['job_id'],values['attempt_id'])
-            return Response(encode(dict(version='MEMORY-DECISION-response@1',request_id=request.state.request_id,
-                                        result=json.loads(result))),media_type='application/json')
+                result=await run_in_threadpool(service.query_decision_publication,token,values['job_id'],values['attempt_id'],
+                                               request_id=request.state.request_id)
+            return Response(result,media_type='application/json')
         except BodyError as error:return _body_error(request,error)
         except InvalidInput:return _error(request,400,'INVALID_DECISION_INPUT','input','failed','do_not_retry')
         except (Conflict,TripConflict,MemoryConflict):return _error(request,409,'MEMORY_DECISION_CONFLICT','conflict','failed','do_not_retry')

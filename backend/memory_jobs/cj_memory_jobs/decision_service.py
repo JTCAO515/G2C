@@ -59,8 +59,8 @@ class DecisionCollectionService(CollectionService):
             if policy is not None and policy.commit_attempted:raise OperationWithheld(jid,attempt) from error
             raise
 
-    def enqueue_decision(self,token,original):
-        return self._enqueue_decision(token,original,serialized=False)
+    def enqueue_decision(self,token,original,*,request_id=None):
+        return self._enqueue_decision(token,original,serialized=False,request_id=request_id)
 
     def _invalid_originals(self,context,token,principal,repository):
         with repository.transaction() as memory:
@@ -86,7 +86,7 @@ class DecisionCollectionService(CollectionService):
     def enqueue_decision_serialized(self,token,original):
         return self._enqueue_decision(token,original,serialized=True)
 
-    def _enqueue_decision(self,token,original,*,serialized):
+    def _enqueue_decision(self,token,original,*,serialized,request_id=None):
         command=DecisionCommand.parse(original);policy=None
         def apply(context):
             nonlocal policy
@@ -104,7 +104,7 @@ class DecisionCollectionService(CollectionService):
                 return policy.transaction.enqueue_decision(source,snapshot.messages,command.query.mode,
                     command.job_id,command.attempt_id,original,policy.decision_lease.decision).encode()
             return self._source(context,command,policy,persist)
-        try:return self.boundary.with_history_context(token,apply)
+        try:return self._invoke(token,apply,request_id,'MEMORY-DECISION-response@1')
         except (TripCommitUnknown,MessageCommitUnknown,MemoryCommitUnknown) as error:
             raise OperationWithheld(command.job_id,command.attempt_id) from error
         except Exception as error:
@@ -153,9 +153,9 @@ class DecisionCollectionService(CollectionService):
             guard('original_decision_publication')
             return b'null' if result is None else result
 
-    def query_decision_publication(self,token,jid,attempt):
-        return self.boundary.with_history_context(token,
-            lambda context:self.query_decision_publication_in_context(context,token,jid,attempt))
+    def query_decision_publication(self,token,jid,attempt,*,request_id=None):
+        return self._invoke(token,lambda context:self.query_decision_publication_in_context(context,token,jid,attempt),
+                            request_id,'MEMORY-DECISION-response@1')
 
 
 class DecisionCollectionAdapter:
