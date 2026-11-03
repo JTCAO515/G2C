@@ -77,7 +77,9 @@ import Foundation
         XCTAssertEqual(nativeCopy.count, 1); XCTAssertTrue(nativeCopy.element.isEnabled)
         let selection = XCTAttachment(screenshot: app.screenshot()); selection.name = "history-copy-menu-" + language
         selection.lifetime = .keepAlways; add(selection)
-        app.swipeUp()
+        nativeCopy.element.tap()
+        let menuClosed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: nativeCopy.element)
+        XCTAssertEqual(XCTWaiter.wait(for: [menuClosed], timeout: 5), .completed)
         let erased = app.staticTexts["history.source.erased." + f.message_id]
         reveal(erased)
         XCTAssertTrue(erased.label.contains(language == "en" ? "viewing only" : "仅供查看"))
