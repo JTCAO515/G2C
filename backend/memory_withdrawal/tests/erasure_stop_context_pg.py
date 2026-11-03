@@ -169,6 +169,21 @@ def exercise(root,path,*,backend_hooks=None,hold_payloads=None,expect_complete=F
         assert conn.execute("SELECT status FROM cj_memory_item WHERE slot='mobility.fact'").fetchone()==('active',)
     assert len(model.extractions)==1 and len(records)==1
     if not expect_complete:assert [k for k,_ in observations]==['execute']
+    with TestClient(create_local_typed_app(conninfo_path=path,auth_dir=auth,configuration=config.collection)) as manual:
+        ok(manual.post('/v2/memories',content=encode(dict(version='MEMORY-manual.2',operation_id='new-explicit-save',item_id='new-explicit-diet',
+            subject='self',slot='diet.spicy',kind='preference',text='A new explicit preference',extent='long_term',context=None,
+            occurred_at='date unknown')),headers=headers[alice]))
+    with TestClient(app) as client:
+        send(client,'new-explicit-context','new-explicit-question','What have I explicitly saved now?')
+        outcomes=run_worker.run_once(host.database,model,auth,memory_configuration=config,background_jobs=combined)
+        assert all(r.status=='completed' for r in outcomes),outcomes
+        assert {i['slot']:i['text'] for i in model.answers[-1]['items']}=={
+            'diet.spicy':'A new explicit preference','mobility.fact':'My height is 170 cm'}
+    with host.database.connect(owner) as conn:
+        fresh=conn.execute("SELECT source_id FROM cj_memory_item WHERE item_id='new-explicit-diet'").fetchone()[0]
+        assert fresh not in sources
+        assert conn.execute('SELECT status FROM cj_memory_item WHERE item_id=%s',(iid,)).fetchone()==(None if expect_complete else ('withdrawn',))
+    assert len(model.extractions)==1 and len(records)==1
     print('PASS actual signed producer/BG2/run_once/unique Meter/Fake -> signed ERASURE1 stop -> actual EN/CN new model contexts omit deleted preference, independent fact/Bob remain; online='+result['online_status']+'; actual B hook composition='+str(expect_complete)+'; complete B physical acceptance is separate')
 
 
