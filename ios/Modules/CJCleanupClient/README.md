@@ -212,13 +212,32 @@ explicit Bundle-group slots in `G2C.CJAuth.session.<E>`:
 `M3.Cleanup.Selected` and `M3.Cleanup.{Manifest,Execution,Device,Account}.<A>`.
 These contain original scope, native identities, hashes, limited capabilities and
 intent/outcome evidence; ordinary SDK credentials remain only in their canonical
-SDK slot. Registration/retention/final handling of these provided control slots is
-tracked on #27 and is not implied by the frozen19 business-cache targets.
+SDK slot. These are independently registered by Host3's CONTROL-RECORDS@1
+catalog, outside the frozen19 business-cache targets.
+
+The explicit finish control reads only the original invocation/hash through
+DEVICE-COMPLETION@1 with its original Device credential. It requires the server's
+original listed online content complete, this client's acknowledged confirmed
+receipt and the registered control policy. Pending/UNKNOWN/failed/blocked content,
+a missing policy or another receipt cannot authorize finalization. Standalone
+session-invalid/offline-expired calls cannot clear shared account controls.
+
+After retiring old writers, the Root stages a bounded original finalization plan
+in the existing Selected slot. It compares all four exact record hashes before
+removing the first record, physically deletes each expected Keychain value and
+verifies absence. An interruption resumes only that protected staged plan;
+replaced values or a newly selected account deny without a sibling sweep.
+Selected is removed last. Its optional terminal replacement contains only bounded
+nonsecret hashes and the actual local outcome, never tokens, SDK hashes, key IDs,
+paths or plaintext account identity. Restart shows the original terminal result
+without recreating actions or granting ordinary access.
 
 `check_account_cleanup_component.py --native-device` runs the actual CJProbeApp,
 signed local API, fresh restricted PG and unmodified worker/FakeProvider. The
 legacy component cases remain the default. The positive projects only real B
-registry leaves; full-registry missing C hooks must stay blocked. Actual App-created
+content leaves and the exact separately retained control catalog. Both use the
+formal Host3 loader; the full30-target host installs provided B/C hooks and keeps
+unavailable external processing blocked before retirement. Actual App-created
 message/Trip pending ciphertext and an accepted formal offline snapshot are
 checked physically, with another account's hashes unchanged. Source preparation
 uses the standard system size; cleanup states use actual system maximum type and
