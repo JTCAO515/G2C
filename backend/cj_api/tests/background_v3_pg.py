@@ -46,6 +46,7 @@ class DecisionFake(FakeProvider):
 class BackgroundV3Checks(manual.ManualChecks):
     def test_actual_original_bg3(self):
         case=os.environ['BG3_CASE']
+        migrations=migrate.load();m43=next(entry for entry in migrations if entry['version']==43)
         meter=replace(self.run_context.current.meter,budget=1 if case=='budget' else 20,
                       max_steps=1,max_tools=1,max_seconds=10)
         limits=dict(self.run_context.current.output_limits)
@@ -93,10 +94,16 @@ class BackgroundV3Checks(manual.ManualChecks):
                 old=JobStore(database.run_repository(self.owner))
                 legacy=old.prepare(JobRequest('inherited-v2','original-v2',req.query,None,data),meter,limits['memory'])
                 with psycopg.connect(**json.loads(path.read_text()),autocommit=True) as audit:
+                    versions=migrate.applied(audit)
                     before=audit.execute('SELECT to_jsonb(j)-\'protocol\'-\'decision_source_sha256\' FROM cj_run_background_job j').fetchall()
-                    migrate.down(audit,migrate.load(),42)
-                    self.assertEqual(audit.execute('SELECT to_jsonb(j) FROM cj_run_background_job j').fetchall(),before)
-                    migrate.up(audit,migrate.load(),43)
+                    # Probe only registered M43, preserving later schema and its
+                    # ledger; this is not a whole-chain downgrade to M42.
+                    with audit.transaction():
+                        audit.execute((ROOT/m43['down']).read_text())
+                        self.assertEqual(audit.execute('SELECT to_jsonb(j) FROM cj_run_background_job j').fetchall(),before)
+                        audit.execute((ROOT/m43['file']).read_text())
+                    self.assertEqual(migrate.applied(audit),versions)
+                    migrate.up(audit,migrations,migrations[-1]['version'])
                 self.assertEqual(old.read('inherited-v2','original-v2'),legacy)
                 old.transition(legacy,('queued',),'cancelled')
             return req,jobs.prepare(token,req)
@@ -117,9 +124,11 @@ class BackgroundV3Checks(manual.ManualChecks):
                 self.assertFalse(conn.execute("SELECT has_column_privilege(current_user,'cj_run_background_job',%s,'UPDATE')",(field,)).fetchone()[0])
         with psycopg.connect(**json.loads(path.read_text())) as audit:
             self.assertEqual(audit.execute('SELECT protocol,decision_source_sha256 FROM cj_run_background_job WHERE run_id=%s',(original['run_id'],)).fetchone(),('RUN-BACKGROUND@3',request.decision_source_sha256))
+            versions=migrate.applied(audit)
             with self.assertRaisesRegex(psycopg.Error,'original BG3 decision evidence retained'),audit.transaction():
-                migrate.down(audit,migrate.load(),42)
-            self.assertEqual(migrate.applied(audit)[-1],43)
+                audit.execute((ROOT/m43['down']).read_text())
+            self.assertEqual(migrate.applied(audit),versions)
+            self.assertIn(43,migrate.applied(audit))
             with self.assertRaisesRegex(psycopg.Error,'immutable original background protocol/decision header'),audit.transaction():
                 audit.execute("UPDATE cj_run_background_job SET decision_source_sha256=%s WHERE run_id=%s",('b'*64,original['run_id']))
         class Model(DecisionFake):
