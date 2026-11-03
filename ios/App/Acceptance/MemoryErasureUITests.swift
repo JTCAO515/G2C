@@ -34,9 +34,15 @@ import Foundation
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return bytes
     }
-    func reveal(_ element: XCUIElement) {
-        for _ in 0..<40 { if element.exists && element.isHittable { return }; app.swipeUp() }
-        for _ in 0..<60 { if element.exists && element.isHittable { return }; app.swipeDown() }
+    func reveal(_ element: XCUIElement, centered: Bool = false) {
+        func visible() -> Bool {
+            guard element.exists && element.isHittable else { return false }
+            guard centered else { return true }
+            let top = app.navigationBars.element.exists ? app.navigationBars.element.frame.maxY : app.frame.minY
+            return element.frame.midY > top && element.frame.midY < app.frame.maxY - 44
+        }
+        for _ in 0..<40 { if visible() { return }; app.swipeUp() }
+        for _ in 0..<60 { if visible() { return }; app.swipeDown() }
         print("ERASURE_UI_TREE", app.debugDescription)
         let failure = XCTAttachment(screenshot: app.screenshot())
         failure.name = "erasure-missing-control"; failure.lifetime = .keepAlways; add(failure)
@@ -120,7 +126,7 @@ import Foundation
         text("memoryErasure.range", contains: language == "en" ? "not limited" : "不是只精准匹配")
         text("memoryErasure.retained", contains: language == "en" ? "retained" : "保留")
         let acknowledge = app.switches.matching(identifier: "memoryErasure.rangeAcknowledgement")
-        reveal(acknowledge.element); XCTAssertEqual(acknowledge.count, 1)
+        reveal(acknowledge.element, centered: true); XCTAssertEqual(acknowledge.count, 1)
         XCTAssertTrue(acknowledge.element.isEnabled)
         if acknowledge.element.value as? String != "1" {
             print("ERASURE_SWITCH", acknowledge.element.debugDescription)
@@ -182,7 +188,7 @@ import Foundation
             signIn(fixture, language: language)
             tap("memory.accountDeletion"); tap("account.cleanup.review")
             let consent = app.switches.matching(identifier: "account.cleanup.consent")
-            reveal(consent.element); XCTAssertEqual(consent.count, 1)
+            reveal(consent.element, centered: true); XCTAssertEqual(consent.count, 1)
             if consent.element.value as? String != "1" {
                 consent.element.coordinate(withNormalizedOffset: .init(dx: 0.9, dy: 0.5)).tap()
             }
