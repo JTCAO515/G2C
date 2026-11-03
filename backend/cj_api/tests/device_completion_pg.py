@@ -1,6 +1,7 @@
 """Actual signed API/limited PG completion observation; native erase is not faked."""
 from pathlib import Path
 from dataclasses import replace
+from unittest.mock import patch
 import json,os,sys,tempfile,time
 import psycopg
 from fastapi.testclient import TestClient
@@ -126,6 +127,25 @@ def exercise(root,path):
             else:raise AssertionError('projection-time expiry leaked complete')
             read(403)
         finally:now[0]=base_time
+        def close_connection(action):
+            class Connection(psycopg.Connection):
+                def close(self):
+                    active=not self.closed
+                    super().close()
+                    if active:action()
+            return lambda:Connection.connect(**dict(config,user='cj_local_cleanup'))
+        try:
+            with patch.object(runtime,'connect',close_connection(lambda:now.__setitem__(0,base_time+3601))):
+                try:gateway.device_completion(cap,invocation,request,encode)
+                except CapabilityUnavailable:pass
+                else:raise AssertionError('close-time expiry leaked complete')
+        finally:now[0]=base_time
+        try:
+            with patch.object(runtime,'connect',close_connection(lambda:registry.write_bytes(original_registry+b'\n'))):
+                try:gateway.device_completion(cap,invocation,request,encode)
+                except Unavailable:pass
+                else:raise AssertionError('close-time registry drift leaked complete')
+        finally:registry.write_bytes(original_registry)
         wrong=Runtime(LocalDatabase(path),replace(options,keys={'proof':b'other-explicit-synthetic-key-0000'}),scope_for).host_gateway(checker_for(auth))
         try:wrong.device_completion(cap,invocation,request,encode)
         except CapabilityUnavailable:pass

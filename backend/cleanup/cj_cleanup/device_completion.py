@@ -105,9 +105,11 @@ def read(gateway,capability,invocation,request_digest,project):
             business_access='not_granted')
         encoded=project(value)
         if type(encoded) is not bytes or len(encoded)>4096:raise Unavailable('bounded original completion bytes required')
-        gateway.issuer.verify(capability,purpose='device',binding_id=claims.binding_id,operation_id=claims.binding_id)
-        try:latest=gateway.current_registry()
-        except Invalid as error:raise Unavailable('current registry unavailable') from error
-        if (latest.raw,latest.inventory,latest.versions)!=(current.raw,current.inventory,current.versions):
-            raise Unavailable('completion registry changed during projection')
+    # COMMIT, physical close and the Store return guard can all be slow or
+    # uncertain. No completed bytes escape until those external actions finish.
+    try:latest=gateway.current_registry()
+    except Invalid as error:raise Unavailable('current registry unavailable') from error
+    if (latest.raw,latest.inventory,latest.versions)!=(current.raw,current.inventory,current.versions):
+        raise Unavailable('completion registry changed during projection')
+    gateway.issuer.verify(capability,purpose='device',binding_id=claims.binding_id,operation_id=claims.binding_id)
     return encoded
