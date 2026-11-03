@@ -58,8 +58,8 @@ public struct MemoryErasureOriginal: Sendable {
     fileprivate init(original: MemoryErasureOriginal, scope: ErasureScope) { self.original = original; self.scope = scope }
 }
 
-/// Two erasure exits only. No public live factory until the formal complete
-/// B/C host and the actual App storage/cleanup binding are available.
+/// Two erasure exits only, under an explicit local Simulator capability.
+/// Actual Root/storage activation still requires the supplied complete B/C host.
 @MainActor public final class MemoryErasureClient {
     private let endpoint: MemoryEndpoint
     private let credentials: MemoryCredentialCallback
@@ -67,18 +67,36 @@ public struct MemoryErasureOriginal: Sendable {
     private let session: SessionLifecycle
     private let operation: SessionOperation
     private let store: MemoryErasurePendingStore
-    private let transport: any ClientTransport
+    private typealias Factory = @MainActor (@escaping @MainActor @Sendable () throws -> Void) throws -> any ClientTransport
+    private let factory: Factory
     private let owner = UUID()
     private var generation = UUID()
     private var uncertainCreation: Set<Data> = []
     private var preparing = false
     private var progressReads: [Data: UUID] = [:]
     private var consumedReads: [Data: UUID] = [:]
+    public init(development endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
+                currentBinding: @escaping @MainActor () -> MemoryBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
+                pendingStore: MemoryErasurePendingStore, requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
+        #if DEBUG && targetEnvironment(simulator)
+        guard session.isCurrent(sessionOperation), currentBinding() != nil, session.isCurrent(sessionOperation) else { throw MemoryFailure.staleBinding }
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1", let port = endpoint.url.port,
+              (1...65535).contains(port), endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288,
+              requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else { throw MemoryFailure.unconfigured }
+        self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
+        self.session = session; operation = sessionOperation; store = pendingStore
+        factory = { validate in try NoRedirectTransport.developmentMemoryErasure(endpoint: endpoint,
+            requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
+        #else
+        throw MemoryFailure.liveWriteUnavailable
+        #endif
+    }
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
          currentBinding: @escaping @MainActor () -> MemoryBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
          pendingStore: MemoryErasurePendingStore, interceptedTransport: any ClientTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
-        self.session = session; operation = sessionOperation; store = pendingStore; transport = interceptedTransport
+        self.session = session; operation = sessionOperation; store = pendingStore
+        factory = { ErasureInterceptedTransport(underlying: interceptedTransport, validate: $0) }
     }
     public func invalidate() { generation = UUID(); progressReads = [:]; consumedReads = [:] }
     private func check(_ scope: ErasureScope) throws {
@@ -214,8 +232,9 @@ public struct MemoryErasureOriginal: Sendable {
         var request = HTTPRequest(method: post ? .post : .get, scheme: nil, authority: nil, path: path)
         request.headerFields[.authorization] = "Bearer " + bearer; request.headerFields[.cacheControl] = "no-store"
         if post { request.headerFields[.contentType] = "application/octet-stream" }
-        let checked = ErasureInterceptedTransport(underlying: transport, validate: { try self.verify(original, scope: scope) })
+        let validate: @MainActor @Sendable () throws -> Void = { try self.verify(original, scope: scope) }
         do {
+            try validate(); let checked = try factory(validate); try validate()
             let (response, body) = try await checked.send(request, body: post ? HTTPBody(original.originalUTF8) : nil,
                 baseURL: endpoint.url, operationID: post ? "eraseMemoryV1" : "readMemoryErasureProgressV1")
             try verify(original, scope: scope)

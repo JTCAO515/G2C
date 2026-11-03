@@ -108,6 +108,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     private let memoryHistory: EndpointCapability?
     private let accountCleanup: EndpointCapability?
     private let memoryCandidates: EndpointCapability?
+    private let memoryErasure: EndpointCapability?
 
     public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
@@ -284,9 +285,30 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network boundary-test seam, unavailable to App consumers.
     init(interceptedTransport: any ClientTransport, memoryCandidateEndpoint: MessageEndpoint,
          validateMemoryCandidates: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
         typedMemory=nil;needs=nil;tripEditing=nil;feedback=nil;memoryHistory=nil;accountCleanup=nil
         memoryCandidates=EndpointCapability(endpoint:memoryCandidateEndpoint,validate:validateMemoryCandidates)
+    }
+
+    /// Explicit MEMORY-ERASURE@1 original POST/progress GET, not account deletion.
+    public static func developmentMemoryErasure(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1", let port = endpoint.url.port,
+              (1...65535).contains(port), endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288 else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
+            preview: nil, memoryErasure: EndpointCapability(endpoint: endpoint, validate: validate))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+    /// Non-network unit seam, unavailable to App callers.
+    init(interceptedTransport: any ClientTransport, memoryErasureEndpoint: MessageEndpoint,
+         validateMemoryErasure: @escaping @MainActor @Sendable () throws -> Void) {
+        session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
+        typedMemory=nil;needs=nil;tripEditing=nil;feedback=nil;memoryHistory=nil;accountCleanup=nil;memoryCandidates=nil
+        memoryErasure=EndpointCapability(endpoint:memoryErasureEndpoint,validate:validateMemoryErasure)
     }
 
     /// Explicit CLEANUP-API@1 and device registration only. This grants no
@@ -307,13 +329,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network boundary-test seam; never an App factory bypass.
     init(interceptedTransport: any ClientTransport, accountCleanupEndpoint: MessageEndpoint,
          validateAccountCleanup: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
         typedMemory=nil;needs=nil;tripEditing=nil;feedback=nil;memoryHistory=nil
         accountCleanup=EndpointCapability(endpoint:accountCleanupEndpoint,validate:validateAccountCleanup)
     }
 
-    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil, tripEditing: EndpointCapability? = nil, feedback: EndpointCapability? = nil, memoryHistory: EndpointCapability? = nil, accountCleanup: EndpointCapability? = nil, memoryCandidates: EndpointCapability? = nil) throws {
+    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil, tripEditing: EndpointCapability? = nil, feedback: EndpointCapability? = nil, memoryHistory: EndpointCapability? = nil, accountCleanup: EndpointCapability? = nil, memoryCandidates: EndpointCapability? = nil, memoryErasure: EndpointCapability? = nil) throws {
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
             throw MessageHTTPFailure.invalidConfiguration
         }
@@ -321,12 +344,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         let session = URLSession(configuration: config, delegate: RedirectBlocker(), delegateQueue: nil)
-        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory;self.needs=needs;self.tripEditing=tripEditing;self.feedback=feedback;self.memoryHistory=memoryHistory;self.accountCleanup=accountCleanup;self.memoryCandidates=memoryCandidates
+        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory;self.needs=needs;self.tripEditing=tripEditing;self.feedback=feedback;self.memoryHistory=memoryHistory;self.accountCleanup=accountCleanup;self.memoryCandidates=memoryCandidates;self.memoryErasure=memoryErasure
     }
 
     /// Internal non-network seam for module tests; never used by live callers.
     init(interceptedTransport: any ClientTransport, previewEndpoint: MessageEndpoint?,
          validatePreview: (@MainActor @Sendable () throws -> Void)?) throws {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         if let endpoint=previewEndpoint, let validate=validatePreview {
@@ -342,6 +366,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Module-test-only composition: the supplied transport must be non-network.
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory = nil;feedback = nil;tripEditing = nil; needs = nil;typedMemory = nil
@@ -352,6 +377,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network typed MESSAGE transport seam for module boundary tests.
     init(interceptedTransport: any ClientTransport,travelMessageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory=nil;feedback=nil;tripEditing=nil;needs=nil;typedMemory=nil
@@ -362,6 +388,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network boundary test seam; no live caller uses this initializer.
     init(interceptedTransport: any ClientTransport, tripDiscussionEndpoint: MessageEndpoint,
          validateDiscussion: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory=nil;feedback=nil;tripEditing=nil; needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
@@ -371,6 +398,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     init(interceptedTransport: any ClientTransport, tripEditEndpoint: MessageEndpoint,
          validateEdit: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory=nil;feedback=nil;tripEditing=nil; needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
@@ -381,6 +409,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network Memory boundary seam for deterministic transport tests.
     init(interceptedTransport: any ClientTransport, memoryEndpoint: MessageEndpoint,
          validateMemory: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory = nil;feedback = nil;tripEditing = nil; needs = nil;typedMemory = nil
@@ -391,6 +420,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network lifecycle capability seam for boundary tests.
     init(interceptedTransport: any ClientTransport, memoryManagementEndpoint: MessageEndpoint,
          validateManagement: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory = nil;feedback = nil;tripEditing = nil; needs = nil;typedMemory = nil
@@ -401,6 +431,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network typed Memory boundary seam; never activated by normal init.
     init(interceptedTransport: any ClientTransport,typedMemoryEndpoint: MessageEndpoint,
          validateTypedMemory: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
@@ -410,6 +441,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network seam for exact NEEDS operation/host/body boundary tests.
     init(interceptedTransport: any ClientTransport, needsEndpoint: MessageEndpoint,
          validateNeeds: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil;typedMemory=nil
@@ -419,6 +451,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network boundary seam; no public intercepted write grant.
     init(interceptedTransport: any ClientTransport, feedbackEndpoint: MessageEndpoint,
          validateFeedback: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil;typedMemory=nil;needs=nil;tripEditing=nil
@@ -428,6 +461,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network boundary test seam, not an App activation switch.
     init(interceptedTransport: any ClientTransport, memoryHistoryEndpoint: MessageEndpoint,
          validateHistory: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
@@ -442,6 +476,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     init(interceptedTransport: any ClientTransport, tripEditingEndpoint: MessageEndpoint,
          validateTripEditing: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil;typedMemory=nil;needs=nil
@@ -485,6 +520,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     deinit { session?.invalidateAndCancel() }
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        if let memoryErasure {
+            guard baseURL == memoryErasure.endpoint.url,
+                  LocalMemoryErasureRoute.accepts(request, hasBody: body != nil, operationID: operationID) else { throw MessageHTTPFailure.productionActivationUnavailable }
+            if let body {
+                return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
+                    capability: memoryErasure, messageWire: nil)
+            }
+            return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: memoryErasure)
+        }
         if let memoryCandidates {
             guard baseURL == memoryCandidates.endpoint.url,
                   LocalMemoryCandidateRoute.accepts(request, hasBody: body != nil, operationID: operationID) else {
@@ -494,13 +538,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                 return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
                     capability: memoryCandidates, messageWire: nil)
             }
-            try await memoryCandidates.validate(); try Task.checkCancellation()
-            let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
-            try await memoryCandidates.validate(); try Task.checkCancellation()
-            guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
-            let bytes = try await Data(collecting: responseBody, upTo: memoryCandidates.endpoint.maximumResponseBytes)
-            try await memoryCandidates.validate(); try Task.checkCancellation()
-            return (response, HTTPBody(bytes))
+            return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: memoryCandidates)
         }
         if let accountCleanup {
             guard baseURL == accountCleanup.endpoint.url,
@@ -511,13 +549,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                 return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
                     capability: accountCleanup, messageWire: nil)
             }
-            try await accountCleanup.validate(); try Task.checkCancellation()
-            let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
-            try await accountCleanup.validate(); try Task.checkCancellation()
-            guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
-            let bytes = try await Data(collecting: responseBody, upTo: accountCleanup.endpoint.maximumResponseBytes)
-            try await accountCleanup.validate(); try Task.checkCancellation()
-            return (response, HTTPBody(bytes))
+            return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: accountCleanup)
         }
 
         if let tripEditing {
@@ -555,13 +587,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                   let values = parts.queryItems, values.count == 1, values[0].name == route.1,
                   let value = values[0].value, !value.contains("\0"), value.utf8.count <= route.2,
                   !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw MessageHTTPFailure.productionActivationUnavailable }
-            try await memoryHistory.validate(); try Task.checkCancellation()
-            let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
-            try await memoryHistory.validate(); try Task.checkCancellation()
-            guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
-            let bytes = try await Data(collecting: responseBody, upTo: memoryHistory.endpoint.maximumResponseBytes)
-            try await memoryHistory.validate(); try Task.checkCancellation()
-            return (response, HTTPBody(bytes))
+            return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: memoryHistory)
         }
         if request.method == .get || request.method == .head {
             return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
@@ -645,6 +671,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         try await preview.validate()
         try Task.checkCancellation()
         return (response,HTTPBody(result))
+    }
+    private func sendLocalRead(_ request: HTTPRequest, baseURL: URL, operationID: String,
+                               capability: EndpointCapability) async throws -> (HTTPResponse, HTTPBody?) {
+        try await capability.validate(); try Task.checkCancellation()
+        let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
+        try await capability.validate(); try Task.checkCancellation()
+        guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
+        let bytes = try await Data(collecting: responseBody, upTo: capability.endpoint.maximumResponseBytes)
+        try await capability.validate(); try Task.checkCancellation()
+        return (response, HTTPBody(bytes))
     }
     private func sendLocalWrite(_ request: HTTPRequest, body: HTTPBody, baseURL: URL, operationID: String,
                                 capability: EndpointCapability, messageWire: MessageWire?) async throws -> (HTTPResponse, HTTPBody?) {
