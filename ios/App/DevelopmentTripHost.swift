@@ -1704,7 +1704,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
     }
     private func finalizeControlRecords() async throws {
         var phase = "original-selection"
-        defer { NSLog("G2C_CONTROL_PHASE %@", phase) } // Bounded stages only; never original values or credentials.
+        defer { UserDefaults.standard.set(phase, forKey: "G2C.Development.Cleanup.ControlPhase") }
+        do {
         try check()
         if case .finalizing(let plan) = try Self.selection(environment: lifetime.scope.environment) {
             guard plan.scope == lifetime.scope else { throw CleanupFailure.stale }
@@ -1740,6 +1741,12 @@ private func developmentCleanupHash(_ value: Data) -> String {
         phase = "exact-record-finalization"
         terminalControls = try CleanupControlFinalizer.start(completion: completion, store: store)
         controlsPending = false; phase = "complete"
+        } catch {
+            if let failure = error as? CleanupFailure { phase += ":" + String(describing: failure) }
+            else if let failure = error as? SessionFailure { phase += ":" + String(describing: failure) }
+            else { phase += ":unknown-error-category" }
+            throw error
+        }
     }
     private func refresh(unknown: Bool = false) {
         var value = AccountCleanupPresentation(); value.unknown = unknown
