@@ -387,8 +387,11 @@ def group_place_draft_source():
 
 
 def group_message_source():
-    return _fresh_runtime_check('message_source',55506,'cj403_source',
+    status=_fresh_runtime_check('message_source',55506,'cj403_source',
         f'/tmp/cj403-source-{os.getpid()}','backend/cj_api/tests/message_source_pg.py')
+    status|=_fresh_runtime_check('erasure_headers',55861,'cj_erasure_headers',
+        f'/tmp/cj-erasure-headers-{os.getpid()}','backend/cj_api/tests/erasure_headers_pg.py')
+    return status
 
 
 def group_cleanup_foundation():

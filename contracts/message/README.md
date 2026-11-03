@@ -2,6 +2,10 @@
 
 ## M3 当前来源 / 历史读取消费者（2026-11-03）
 
+[#472/#403 实际manual旧历史复活缺口](ERASURE-HEADERS-V1.md)使用新增
+MESSAGE-ERASURE-HEADERS@1：同M锁的完整无正文metadata同步callback，供已合C消费者
+stop/freeze；不取代仍有消费者的SOURCE1/2/status1，不加SOURCE3或HTTP/wire版。
+
 已合C476的实际正式Memory工厂由B[显式兼容宿主](FORMAL-MEMORY-HOST.md)消费；
 保持MSG3/ref1/payload2和旧默认拒绝，不追加wire版。原Typed2/MSG4消费者仍适用，
 新代码只选当前作用域对应的实际工厂，不为无消费者的旧版添加适配。
