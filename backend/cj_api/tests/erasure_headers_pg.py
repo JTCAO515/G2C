@@ -66,6 +66,18 @@ def exercise(root,path):
             except Unavailable:pass
             else:raise AssertionError('escaped metadata snapshot accepted')
         assert read(lambda s:encode(dict(complete=s.complete,refs=len(s.references))),'headers-b')==b'{"complete":true,"refs":0}'
+        # SEND1 already accepts this ID. Metadata must preserve its full original
+        # bytes rather than introduce an unsupported per-identifier length cap.
+        long_id='long-'+'x'*4096
+        empty=client.get('/v1/message-send-status',params={'conversation_id':'empty'},headers=headers['headers-b']).json()['head']
+        long=client.post('/v1/messages',content=encode(dict(version='MESSAGE-send.1',conversation_id='empty',message_id=long_id,
+            text='a legal original long ID',trip_id=None,creation_intent='none',expected_generation=empty['generation'],expected_sequence=0)),headers=headers['headers-b'])
+        assert long.status_code==200,long.text
+        def original_long(snapshot):
+            assert snapshot.complete and len(snapshot.references)==1 and snapshot.references[0].message_id==long_id
+            assert snapshot.references[0].input_sha256==long.json()['receipt']['input_sha256']
+            return b'complete-original'
+        assert read(original_long,'headers-b',max_refs=1,max_result_bytes=100)==b'complete-original'
         calls=[]
         for limits in ((0,100),(10001,100),(1,100),(100,0),(100,8388609)):
             try:read(lambda s:calls.append(s) or b'ok',max_refs=limits[0],max_result_bytes=limits[1])

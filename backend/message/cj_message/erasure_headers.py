@@ -48,7 +48,7 @@ class HeaderSnapshot:
 
 
 def _identity(value):
-    if type(value) is not str or not value.strip() or '\0' in value or len(value)>4096:
+    if type(value) is not str or not value.strip() or '\0' in value:
         raise Unavailable('original message metadata unavailable')
     return value
 
