@@ -136,6 +136,10 @@ Issue #8 保持未完成。独立审验应固定提交 head；内容变化后补
 
 可选 HTTPS I/O adapter 候选：[HTTPS-JWKS-TRANSPORT](HTTPS-JWKS-TRANSPORT.md)，不自动装配或启用真实 JWKS。
 
-本地注销后的业务准入使用新增 [ACCOUNT-ADMISSION@2](ACCOUNT-ADMISSION-V2.md)：
+本地注销后的业务准入当前唯一新代码入口是 [ACCOUNT-ADMISSION@2](ACCOUNT-ADMISSION-V2.md)：
 仅通过 canonical runtime 读取已提交的退休 fence。@1 是未被消费方接受的历史候选，
 不交付清理角色版业务工厂，不作为 @2 的 fallback；其冻结原文保留。
+
+2026-11-03消费者核对：@2由已合C collection/manual/typed及B清理/Memory宿主实际使用；
+它已取代@1，@1无当前业务消费者，不再为@1补新测试或适配。新版本必须由已合消费方的
+真实缺陷触发，在PR说明替代关系/旧消费者；保留既有测试、历史FAIL与旧冻结字节。
