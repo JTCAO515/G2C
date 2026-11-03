@@ -26,6 +26,11 @@ class TrackedMemory:
     def capture(self,binding):
         value=self.original.capture(binding);self.registry.current.set(value);return value
 
+    def capture_history(self,binding,message_refs,*,decision_source_sha256s):
+        value=self.original.capture_history(binding,message_refs,decision_source_sha256s=decision_source_sha256s)
+        self.registry.current.set(value)
+        return value
+
 
 @dataclass(frozen=True)
 class ScopedMemoryConfiguration:

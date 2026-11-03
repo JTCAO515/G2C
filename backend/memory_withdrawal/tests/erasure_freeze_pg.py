@@ -44,6 +44,7 @@ def exercise(root,path,*,physical=False):
             lambda view:json.dumps(dict(items=[dict(id=i.command.item_id,text=i.command.text) for i in view.items])).encode(),max_result_bytes=32768))
     before=in_memory(current);assert b'very slow pace' in before
     from cj_memory.runtime import RuntimeMemory,RuntimeDenied,Selection as RuntimeSelection
+    from cj_memory.scoped_capture import CaptureRegistry,TrackedMemory
     from cj_run.core import Binding
     captured=[]
     def capture_runtime(context):
@@ -53,9 +54,11 @@ def exercise(root,path,*,physical=False):
         binding=Binding(repo.scope,receipt.conversation_id,receipt.generation,receipt.message_id,receipt.run_id,receipt.sequence)
         refs=[dict(conversation_id=receipt.conversation_id,generation=receipt.generation,sequence=receipt.sequence,
                    message_id=receipt.message_id,input_sha256=receipt.input_sha256)]
-        runtime=RuntimeMemory(Service(repo),admit,RuntimeSelection('self',frozenset({'pace'}),32768))
+        registry=CaptureRegistry()
+        runtime=TrackedMemory(RuntimeMemory(Service(repo),admit,RuntimeSelection('self',frozenset({'pace'}),32768)),registry)
         run=runtime.capture_history(binding,refs,decision_source_sha256s=[])
         assert run.erasure_protocol=='MEMORY-HISTORY-ERASURE-FENCE@1'
+        assert registry.captured(binding) is run
         with run.hold(binding) as check:check()
         captured.append((runtime,binding,refs,run))
         return b'captured'
