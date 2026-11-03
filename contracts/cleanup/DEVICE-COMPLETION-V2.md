@@ -1,7 +1,7 @@
 # CLEANUP-DEVICE-COMPLETION@2
 
-Additive replacement for new DEVICE4 consumers of merged A480's two erasure
-journals. COMPLETION1 remains exclusively DEVICE3 for A453 until migration;
+Additive replacement for new DEVICE4 consumers of merged A480/A482's paired
+erasure and candidate journals. COMPLETION1 remains exclusively DEVICE3 for A453 until migration;
 its frozen semantics and consumers remain unchanged.
 
 `GET /v2/cleanup-device-completions/{original_invocation_id}?request_digest=<original_call_sha256>`

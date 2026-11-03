@@ -158,7 +158,7 @@ def exercise(root,conninfo):
         from cj_cleanup.device_v3 import TARGETS as V3_TARGETS
         assert set(V3_TARGETS)=={'device-cache/'+entry['id'] for entry in entries if 'CLEANUP-DEVICE@3' in entry['device_versions']} and len(V3_TARGETS)==19
         from cj_cleanup.device_v4 import TARGETS as V4_TARGETS
-        assert set(V4_TARGETS)=={'device-cache/'+entry['id'] for entry in entries} and len(V4_TARGETS)==20
+        assert set(V4_TARGETS)=={'device-cache/'+entry['id'] for entry in entries} and len(V4_TARGETS)==21
         print('PASS corrupted original plan rejects; actual full inventory missing owner hooks blocks before retirement; all device call targets registered')
         # Actual HTTP metadata finalization after the original device report:
         # erase the private scope plan, retain only bounded progress/fences.

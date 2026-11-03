@@ -667,7 +667,7 @@
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@2: exact original target membership and same-device/state report coverage; A owns physical primitives, unknown stays pending",
-          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure; DEVICE4 additionally requires M.erasure-v1 and M.erasure-v1.CJMemoryErasureObservationsV1 empty with all existing Memory roots before clearing localMemoryPendingV1",
+          "restore_fence": "A exact native scope/state/key fence plus server hashed account retirement; reconnect uses original invalidation invocation, no SDK key clear inferred as all-device erasure; DEVICE4 additionally requires M.erasure-v1 and M.erasure-v1.CJMemoryErasureObservationsV1 empty with all existing Memory roots before clearing localMemoryPendingV1; A482 additionally requires M.candidate-v1 and M.candidate-v1.CJMemoryCandidateRejectionsV1 empty",
           "owner_line": "A",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",
@@ -879,6 +879,29 @@
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@4; actual own original native receipt required; A MemoryErasurePendingStore.clearLocalFiles clears both exact provided directories; one original target/intent authorizes the entire paired family, never one directory alone",
           "restore_fence": "Original SDK namespace/generation/state/key identity; both erasure roots and all existing shared Memory roots empty before localMemoryPendingV1 clear; never create replacement key",
+          "owner_line": "A",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1",
+          "device_versions": [
+            "CLEANUP-DEVICE@4"
+          ]
+        },
+        {
+          "id": "memory-candidate-pending",
+          "owner": "CJ-003 / CJ-022; A native device owner",
+          "objects": [
+            "CJMemoryCandidatePendingV1 encrypted original actions; sha256(action_id).memory",
+            "CJMemoryCandidateRejectionsV1 encrypted observations; sha256(action_id).memory"
+          ],
+          "source": "ios/Modules/CJMemoryClient/Sources/CJMemoryClient/MemoryCandidatePendingStore.swift; ios/App/DevelopmentTripHost.swift",
+          "status": "provided_A482/local_only; native_DEVICE4_consumer_pending",
+          "principal_binding": "Canonical SDK environment/account/generation; indivisible family M.candidate-v1 AND M.candidate-v1.CJMemoryCandidateRejectionsV1, with M=G2CDevelopmentMemory/<environment>/<account>; shared localMemoryPendingV1",
+          "sensitive_fields": [
+            "Original candidate review/confirmation action and rejection observation ciphertext"
+          ],
+          "retention": "Until explicit user deletion/account deletion; no automatic TTL",
+          "cleanup_hook": "cj_cleanup.device_bridge.DeviceHook + CLEANUP-DEVICE@4; actual own original native receipt required; A MemoryCandidatePendingStore.clearLocalFiles clears both exact provided directories; one original target/intent authorizes the entire paired family, never one directory alone",
+          "restore_fence": "Original SDK namespace/generation/state/key identity; both candidate roots and all existing shared Memory roots including both erasure roots empty before localMemoryPendingV1 clear; never create replacement key",
           "owner_line": "A",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1",

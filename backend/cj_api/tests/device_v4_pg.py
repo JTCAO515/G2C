@@ -23,10 +23,12 @@ def exercise(root,path):
     actual=json.loads((ROOT/'backend/storage-registry.json').read_bytes())
     provided=next(s for s in actual['stores'] if s['id']=='device-cache')
     assert tuple('device-cache/'+o['id'] for o in provided['objects'])==TARGETS
-    assert len(TARGETS)==20 and len(set(TARGETS))==20
+    assert len(TARGETS)==21 and len(set(TARGETS))==21
     family=next(o for o in provided['objects'] if o['id']=='memory-erasure-pending')
     assert 'M.erasure-v1 AND M.erasure-v1.CJMemoryErasureObservationsV1' in family['principal_binding']
     assert len(family['objects'])==2 and 'device-cache/memory-erasure-observations' not in TARGETS
+    candidates=next(o for o in provided['objects'] if o['id']=='memory-candidate-pending')
+    assert len(candidates['objects'])==2 and 'M.candidate-v1 AND M.candidate-v1.CJMemoryCandidateRejectionsV1' in candidates['principal_binding']
     registry=root/'registry.json';inventory=TARGETS+('business/feedback-private-actions','business/cleanup-metadata')
     registry.write_bytes(encode(dict(version='device4-component',stores=[provided,
         dict(id='business',objects=[dict(id=n,cleanup_protocol='CLEANUP@1.1') for n in ('feedback-private-actions','cleanup-metadata')]),
@@ -126,7 +128,7 @@ def exercise(root,path):
             with psycopg.connect(**config,autocommit=True) as c:migrate.down(c,migrate.load(),46)
         except psycopg.errors.RaiseException as e:assert 'original V4 device evidence retained' in str(e)
         else:raise AssertionError('V4 evidence rollback was destructive')
-    print('PASS DEVICE4 signed originals/close-ACK recovery/20-target bridge/current account retirement/COMPLETION2 exact original read-only proof; V3-only device cannot cover added roots; M47 empty roundtrip and populated refusal; native physical erasure UNRUN')
+    print('PASS DEVICE4 signed originals/close-ACK recovery/21-target bridge/current account retirement/COMPLETION2 exact original read-only proof; V3-only device cannot cover added roots; M47 empty roundtrip and populated refusal; native physical erasure UNRUN')
 
 
 if __name__=='__main__':

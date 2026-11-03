@@ -29,7 +29,7 @@ INVENTORY=(
  'device-cache/memory-typed-pending','device-cache/memory-key-keychain','device-cache/needs-pending',
  'device-cache/needs-key-keychain','device-cache/memory-history-pending','device-cache/trip-scoped-pending',
  'device-cache/needs-planning-pending','device-cache/trip-key-keychain','device-cache/offline-key-keychain',
- 'device-cache/offline-write-residue','device-cache/memory-erasure-pending',
+ 'device-cache/offline-write-residue','device-cache/memory-erasure-pending','device-cache/memory-candidate-pending',
  'external-processing')
 C_TARGETS={'business/memory-authoritative','business/memory-management-actions','business/trip-authoritative'}
 
@@ -106,7 +106,7 @@ def exercise(root,path):
         assert {s['target'] for s in progress['steps']}==set(INVENTORY)
         assert all(s['state']=='pending' for s in progress['steps']) and progress['reason']=='domain_hooks_unavailable'
     assert runtime.retired(principal) is Fact.NO
-    print('PASS actual app_from_environment V3 preserves all31 independent content targets and5 retained client controls; external blocks without retirement, old V2 full registry has5 real gaps, V1 remains uninstalled; no native finalization claimed')
+    print('PASS actual app_from_environment V3 preserves all32 independent content targets and5 retained client controls; external blocks without retirement, old V2 full registry has5 real gaps, V1 remains uninstalled; no native finalization claimed')
 
     # Run the original worker main/argparse/loader/PG path. The observation wrapper
     # adds assertions only; no binding, hook, identity or outcome is substituted.
