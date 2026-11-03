@@ -73,14 +73,17 @@ def exercise(root,path,*,physical=False):
         captured.append((runtime,binding,refs,run))
         return b'captured'
     c.boundary.with_history_context(token,capture_runtime)
-    def stop(repo,principal,guard):
-        with repo.transaction() as memory:
-            result=freeze(memory,command,subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
-            guard('item_freeze_precommit');return result
-    raw=in_memory(stop);descriptor=json.loads(raw)
+    def stop(context):
+        repo,principal,guard=c._binding(context,token)
+        def capture(headers):
+            with repo.transaction() as memory:
+                result=freeze(memory,command,subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000,headers=headers)
+                guard('item_freeze_precommit');return result
+        return context.with_erasure_headers(capture,max_refs=10000,max_result_bytes=1_000_000)
+    raw=c.boundary.with_history_context(token,stop);descriptor=json.loads(raw)
     assert descriptor['selection']==dict(kind='memory',item_id=fixture['item_id'],item_version=4,scope_epoch=5)
     assert len(descriptor['source_refs'])==3 and len(descriptor['message_refs'])==1
-    assert in_memory(stop)==raw
+    assert c.boundary.with_history_context(token,stop)==raw
     # Reader sees only the persisted original, under a real same-operation
     # in-progress B intent. A DTO or absence never grants private-source access.
     targets=('memory-derived','business/memory-management-actions','business/trip-authoritative','business/memory-authoritative') if physical else ('business/memory-authoritative',)
