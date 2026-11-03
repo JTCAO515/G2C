@@ -78,7 +78,8 @@ public struct MemoryCandidatePresentationWork: Sendable {
     }
     public func canReview(candidateID: String) -> Bool {
         _ = signal
-        return (slot.state == .ready || slot.state == .invalidReview) && candidate(candidateID, in: slot)?.status == .candidate
+        guard slot.state == .ready || slot.state == .invalidReview, let value = candidate(candidateID, in: slot) else { return false }
+        return value.status == .candidate && value.actionV1IdentifierIsSupported
     }
     public func replace(binding: MemoryBinding?, conversationID: String?) {
         client?.invalidate(); slot = Slot(binding: binding, conversation: conversationID, configured: client != nil); notify()

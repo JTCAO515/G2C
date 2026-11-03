@@ -44,6 +44,7 @@ public struct MemoryCandidateJobPage: Sendable {
 /// The client separately binds this data to its session/read/selection lifetime.
 public struct MemoryCandidate: Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     public let id: String
+    var actionV1IdentifierIsSupported: Bool { id.utf8.count <= 4096 }
     public let version: Int64
     public let status: Components.Schemas.MemoryItemV2.statusPayload
     public let subject: String

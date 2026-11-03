@@ -58,6 +58,10 @@ public struct MemoryCandidateView: View {
                             MemoryRowText(text: language.text("Time: ", "时间：") + candidate.occurredAt, style: .body)
                             MemoryRowText(text: candidate.extent == .long_term ? language.text("Scope: long-term memory", "范围：长期记忆") : language.text("Scope: this trip", "范围：本次行程"), style: .body)
                             MemoryRowText(text: stateTitle(candidate), style: .body)
+                            if !candidate.actionV1IdentifierIsSupported {
+                                MemoryRowText(text: language.text("This suggestion can be viewed, but cannot be reviewed with the current service. No action was submitted.", "这条建议可查看，但当前服务暂不支持核对它，未提交操作。"), style: .body)
+                                    .accessibilityIdentifier("memoryCandidate.reviewUnavailable")
+                            }
                             MemoryLifecycleButton(title: language.text("Review this suggestion", "核对这条建议"), identifier: "memoryCandidate.review." + candidate.utf8Identity.base64EncodedString(), enabled: model.canReview(candidateID: candidate.id)) {
                                 editor = model.captureReview(candidateID: candidate.id)
                             }

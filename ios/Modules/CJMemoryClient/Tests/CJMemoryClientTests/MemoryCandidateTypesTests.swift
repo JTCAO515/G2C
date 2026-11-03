@@ -27,8 +27,20 @@ private func projectionItem(_ id: String = "history-item-v1:偏好") -> [String:
     let page = try MemoryCandidateProjectionPage(response: raw, trace: candidateTrace, conversationID: "chat")
     let item = try #require(page.items.first)
     #expect(Data(item.candidate.id.utf8) == Data(id.utf8) && item.producer.jobID == "erased-shared-job")
-    let action = try MemoryCandidateAction(candidate: item.candidate, producer: item.producer, memoryEpoch: page.memoryEpoch, review: .reject)
-    #expect(try MemoryCandidateAction(originalUTF8: action.originalUTF8).candidateID.utf8.count == 16384)
+    #expect(!item.candidate.actionV1IdentifierIsSupported)
+    #expect(throws: MemoryFailure.invalidInput) {
+        try MemoryCandidateAction(candidate: item.candidate, producer: item.producer, memoryEpoch: page.memoryEpoch, review: .reject)
+    }
+    let acceptedID = String(repeating: "😀", count: 1024)
+    let acceptedRaw = try candidateWire("MEMORY-CANDIDATE-projection@2", ["conversation_id": "chat", "memory_epoch": 2,
+        "candidates": [projectionItem(acceptedID)], "next_after_candidate_id": NSNull()])
+    let acceptedPage = try MemoryCandidateProjectionPage(response: acceptedRaw, trace: candidateTrace, conversationID: "chat")
+    let accepted = try #require(acceptedPage.items.first)
+    let action = try MemoryCandidateAction(candidate: accepted.candidate, producer: accepted.producer, memoryEpoch: page.memoryEpoch, review: .reject)
+    #expect(try MemoryCandidateAction(originalUTF8: action.originalUTF8).candidateID.utf8.count == 4096)
+    var fields = try #require(JSONSerialization.jsonObject(with: action.originalUTF8) as? [String: Any])
+    fields["candidate_id"] = acceptedID + "a"
+    #expect(throws: MemoryFailure.invalidResponse) { try MemoryCandidateAction(originalUTF8: JSONSerialization.data(withJSONObject: fields)) }
 }
 @Test func projectionCursorUsesActualLastCandidateAndEmptyEpochZeroIsNotAnError() throws {
     let values = (0..<50).map { projectionItem("candidate-\($0)") }
