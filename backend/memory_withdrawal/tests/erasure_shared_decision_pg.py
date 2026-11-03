@@ -2,6 +2,7 @@
 from datetime import datetime,timedelta,timezone
 import json,sys,unittest
 from pathlib import Path
+from unittest.mock import patch
 import psycopg
 
 from fastapi.testclient import TestClient
@@ -14,6 +15,8 @@ from cj_api.local_app import create_local_app,LocalDatabase
 from cj_api.local_cleanup import Configuration
 from cj_api.local_background import LocalBackgroundHost
 from cj_agent.provider import FakeProvider
+from cj_message.auth_boundary import HistoryReadContext
+from cj_message.domain import Unavailable as MessageUnavailable
 from cj_memory.manual import ManualPolicy
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_memory_jobs.collection_app import create_automatic_decision_collection_app
@@ -133,6 +136,10 @@ class SharedDecisionErasureChecks(manual.ManualChecks):
             max_payload_bytes=262144,max_conversations=100)
         for current_producer in (producer,restored):
             self.assertEqual(current_producer.poll(token).submitted,())
+        for error in (MessageUnavailable('original erasure proof unavailable'),RuntimeError('proof reader failed')):
+            with patch.object(HistoryReadContext,'history_reference_v5',side_effect=error):
+                with self.assertRaises(type(error)):
+                    restored.poll(token)
         self.assertEqual(len(originals),3)
         with host.database.connect(self.owner) as conn:
             for table in ('cj_memory_item','cj_memory_source','cj_memory_operation','cj_memory_history_origin',
