@@ -119,7 +119,8 @@
             "source references/version/approval and expiry",
             "subject/slot/context/operation/item IDs",
             "content/types/status/version/record and occurrence times",
-            "Temporary immutable original deletion command, full exact source/message/job association and stopped selection until all original domains confirm; removed with authority step or account erasure"
+            "Temporary immutable original deletion command, full exact source/message/job association and stopped selection until all original domains confirm; removed with authority step or account erasure",
+            "MEMORY-ERASURE-EVIDENCE@1 exact enqueue/Pub bytes and source/text/document hashes in same temporary immutable manifest; no invented C prepared SHA; same item/account hook deletes all proof bytes"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "cj_memory_withdrawal.item_cleanup.erasure_hooks(store,memory_scope): explicit CLEANUP@1.1 account/item dispatch; original manifest + require_intent; item authority runs after all payload domains confirm; account hook also deletes new manifest. Old account_hooks stays account-only.",

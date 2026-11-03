@@ -549,6 +549,27 @@ GROUPS.update(memory_item_erasure=group_memory_item_erasure,memory_shared_erasur
               memory_erasure_api=group_memory_erasure_api)
 
 
+def group_memory_trip_erasure():
+    return _fresh_runtime_check('memory_trip_erasure',55824,'cj_memory_trip_erasure',
+        f'/tmp/cj-memory-trip-erasure-{os.getpid()}','backend/memory_withdrawal/tests/trip_item_erasure_pg.py')
+
+
+def group_memory_decision_evidence():
+    return _fresh_runtime_check('memory_decision_evidence',55826,'cj_memory_decision_evidence',
+        f'/tmp/cj-memory-decision-evidence-{os.getpid()}','backend/memory_withdrawal/tests/decision_evidence_pg.py')
+
+
+GROUPS.update(memory_trip_erasure=group_memory_trip_erasure,memory_decision_evidence=group_memory_decision_evidence)
+
+
+def group_memory_erasure_driver():
+    return _fresh_runtime_check('memory_erasure_driver',55827,'cj_memory_erasure_driver',
+        f'/tmp/cj-memory-erasure-driver-{os.getpid()}','backend/memory_withdrawal/tests/erasure_driver_pg.py')
+
+
+GROUPS.update(memory_erasure_driver=group_memory_erasure_driver)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

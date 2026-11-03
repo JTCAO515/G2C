@@ -5,6 +5,7 @@ from cj_memory.domain import Conflict,Unavailable
 from cj_memory_jobs.postgres import encode
 from .association import prepare
 from .association_codec import VERSION
+from .erasure_evidence import freeze_jobs,VERSION as EVIDENCE_VERSION,MAX_BYTES as MAX_EVIDENCE_BYTES
 
 
 def reference_digest(kind,value):
@@ -50,10 +51,14 @@ def freeze(memory,command,subject_digest,*,max_sources,max_jobs,max_bytes):
         derived_range=dict(kind='owned_trip_derived_scope',precise_item_match=False,preserve_formal_trips=True))
     raw=encode(value)
     if len(raw)>max_bytes:raise Unavailable('immutable erasure association exceeds bound')
+    evidence=encode(dict(version=EVIDENCE_VERSION,operation_id=operation,subject_digest=subject_digest,
+        memory_scope_digest=value['memory_scope_digest'],selection=selection,association_sha256=sha256(raw).hexdigest(),
+        jobs=freeze_jobs(memory,original)))
+    if len(evidence)>MAX_EVIDENCE_BYTES:raise Unavailable('immutable original source proof exceeds bound')
     cur.execute('''INSERT INTO cj_memory_erasure_manifest
-        (scope,action_id,operation_id,original_input,input_sha256,association,association_sha256,item_id,item_version,scope_epoch)
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',(scope,command.action_id,operation,command.raw,sha256(command.raw).hexdigest(),
-        raw,sha256(raw).hexdigest(),command.item_id,stopped[0],stopped_epoch))
+        (scope,action_id,operation_id,original_input,input_sha256,association,association_sha256,evidence,evidence_sha256,item_id,item_version,scope_epoch)
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',(scope,command.action_id,operation,command.raw,sha256(command.raw).hexdigest(),
+        raw,sha256(raw).hexdigest(),evidence,sha256(evidence).hexdigest(),command.item_id,stopped[0],stopped_epoch))
     scope_digest=value['memory_scope_digest']
     def fence(kind,identifier,original_sha=None):
         cur.execute('''INSERT INTO cj_memory_erasure_fence(scope_digest,kind,reference_sha256,original_input_sha256)
@@ -63,7 +68,10 @@ def freeze(memory,command,subject_digest,*,max_sources,max_jobs,max_bytes):
     for ref in original['operation_refs']:fence('operation',ref['operation_id'],ref['input_sha256'])
     for ref in original['message_refs']:fence('message',ref)
     for digest in original['decision_source_sha256s']:fence('decision',digest)
-    for ref in original['job_refs']:fence('job',dict(job_id=ref['job_id'],attempt_id=ref['attempt_id']),ref['original_input_sha256'])
+    for ref in original['job_refs']:
+        fence('job',dict(job_id=ref['job_id'],attempt_id=ref['attempt_id']),ref['original_input_sha256'])
+        fence('job_id',ref['job_id'],ref['original_input_sha256'])
+        fence('attempt_id',ref['attempt_id'],ref['original_input_sha256'])
     cur.execute('''INSERT INTO cj_memory_erasure_fence
         (scope_digest,kind,reference_sha256,original_input_sha256,operation_id,item_version,scope_epoch)
         VALUES(%s,'action',%s,%s,%s,%s,%s)''',(scope_digest,reference_digest('action',command.action_id),

@@ -45,5 +45,10 @@ class AssociationCodecTests(unittest.TestCase):
         with self.assertRaises(Denied):parse_original(b'{"version":1,"version":2}',self.request,self.scope)
         with self.assertRaises(Denied):parse_original(b' '*1_000_001,self.request,self.scope)
 
+    def test_documented_association_bound_exceeds_command_decoder_bound(self):
+        value=dict(self.value,source_refs=[dict(source_id=str(i)+'x'*400,source_version=1) for i in range(100)])
+        raw=encode(value);self.assertGreater(len(raw),32768)
+        self.assertEqual(parse_original(raw,self.request,self.scope),value)
+
 
 if __name__=='__main__':unittest.main()

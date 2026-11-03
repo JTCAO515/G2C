@@ -196,6 +196,10 @@ class Transaction:
             if (stored[0].job_id,stored[0].attempt_id,stored[1],stored[2]) != (job_id,attempt_id,original,batch):
                 raise Conflict('original history task differs')
             return stored[0]
+        self.cur.execute('''SELECT 1 FROM cj_memory_erasure_fence WHERE scope_digest=%s
+            AND ((kind='job_id' AND reference_sha256=%s) OR (kind='attempt_id' AND reference_sha256=%s)) LIMIT 1''',
+            (self.scope_digest,sha256(job_id.encode()).hexdigest(),sha256(attempt_id.encode()).hexdigest()))
+        if self.cur.fetchone() is not None:raise Conflict('original erased job and attempt identities cannot be reused')
         stream = stream_key(source,mode)
         self.cur.execute('SELECT processed FROM cj_memory_history_cursor WHERE scope=%s AND stream_key=%s',
                          (self.scope,stream))
