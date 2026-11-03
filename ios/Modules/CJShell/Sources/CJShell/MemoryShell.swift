@@ -39,6 +39,9 @@ struct MemoryShell: View {
                     }
                     route(language.text("Conversation history organization", "会话历史整理"), to: .memoryHistory, identifier: "memory.historyConsent")
                     route(language.text("Memory suggestions", "记忆建议"), to: .memoryCandidates, identifier: "memory.candidates")
+                    if typedMemoryHost?.erasurePresentation != nil {
+                        route(language.text("Original memory deletions", "原记忆删除记录"), to: .memoryErasure, identifier: "memory.erasure.originals")
+                    }
                 } header: { ShellSectionHeading(title: language.text("Your memories", "你的记忆")) }
                 Section {
                     route(language.text("Account", "账号"), to: .account, identifier: "memory.account")
@@ -116,6 +119,9 @@ struct MemoryShell: View {
             MemoryCandidateContainerView(host: candidateHost, language: language)
         case .memoryHistory:
             MemoryHistoryContainerView(host: historyHost, language: language)
+        case .memoryErasure:
+            if let typedMemoryHost { TypedMemoryErasurePage(host: typedMemoryHost, language: language) }
+            else { ShellStatusView(state: .notConnected, language: language) }
         case .feedback(let entry):
             FeedbackContainerView(host: feedbackHost, entry: entry, language: language)
         case .account:

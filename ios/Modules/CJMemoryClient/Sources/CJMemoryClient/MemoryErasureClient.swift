@@ -51,6 +51,17 @@ public struct MemoryErasureOriginal: Sendable {
     fileprivate let binding: MemoryBinding
     fileprivate let pending: MemoryErasurePending
 }
+/// A current SDK-bound, durable observation of this original stop. The App
+/// cannot manufacture it from an item ID or a displayed completion string.
+@MainActor public final class MemoryErasureLocalAuthorization {
+    let itemID: String
+    let binding: MemoryBinding
+    private let current: @MainActor () throws -> Void
+    fileprivate init(itemID: String, binding: MemoryBinding, current: @escaping @MainActor () throws -> Void) {
+        self.itemID = itemID; self.binding = binding; self.current = current
+    }
+    func validate() throws { try current() }
+}
 @MainActor public final class MemoryErasureWork {
     public let original: MemoryErasureOriginal
     fileprivate let scope: ErasureScope
@@ -157,6 +168,18 @@ public struct MemoryErasureOriginal: Sendable {
         let observed = try inventory(scope)
         return observed.records.map { record in
             wrap(record, binding: binding, knownStopped: observed.observations.contains(where: { same($0.value.actionID, record.actionID) }))
+        }
+    }
+    public func localAuthorization(for original: MemoryErasureOriginal) throws -> MemoryErasureLocalAuthorization {
+        let scope = try begin(original.binding)
+        guard original.owner == owner, original.generation == generation else { throw MemoryFailure.staleBinding }
+        try verify(original.pending, scope: scope)
+        guard let stopped = try store.observation(for: original.pending) else { throw MemoryFailure.exchangeUnknown }
+        try check(scope); try store.validate(stopped)
+        return MemoryErasureLocalAuthorization(itemID: original.itemID, binding: original.binding) { [self] in
+            try verify(original.pending, scope: scope)
+            try store.validate(stopped)
+            try check(scope)
         }
     }
     public func prepare(entry: MemoryErasureEntry, acknowledgement: MemoryErasureRangeAcknowledgement) throws -> MemoryErasureWork {

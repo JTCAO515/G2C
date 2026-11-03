@@ -6,8 +6,15 @@ import Foundation
 public struct MemoryErasureView: View {
     public let model: MemoryErasurePresentation
     public let language: MemoryLanguage
+    public let localStatus: String?
+    public let canClearLocal: Bool
+    public let clearLocal: (() -> Void)?
     @State private var acknowledged = false
-    public init(model: MemoryErasurePresentation, language: MemoryLanguage) { self.model = model; self.language = language }
+    public init(model: MemoryErasurePresentation, language: MemoryLanguage, localStatus: String? = nil,
+        canClearLocal: Bool = false, clearLocal: (() -> Void)? = nil) {
+        self.model = model; self.language = language; self.localStatus = localStatus
+        self.canClearLocal = canClearLocal; self.clearLocal = clearLocal
+    }
     public var body: some View {
         Form {
             if let entry = model.entry {
@@ -52,6 +59,14 @@ public struct MemoryErasureView: View {
                 MemoryRowText(text: language.text("Online results do not establish cleanup on this device or another device. Requests already sent to a model, previously displayed history and external-provider retention cannot be withdrawn here.", "线上结果不代表本机或其他设备已完成清理。已发给模型的请求、此前显示的历史，以及外部服务留存无法在这里撤回。"), style: .body)
                     .accessibilityIdentifier("memoryErasure.limits")
             } header: { heading(language.text("Online cleanup progress", "线上清理进度")) }
+            if let localStatus {
+                Section {
+                    MemoryRowText(text: localStatus, style: .body).accessibilityIdentifier("memoryErasure.localProgress")
+                    MemoryLifecycleButton(title: language.text("Clear this memory's local copies", "清理这条记忆的本机副本"),
+                        identifier: "memoryErasure.clearLocal", enabled: canClearLocal) { clearLocal?() }
+                    MemoryRowText(text: language.text("This result covers this device's matching memory save and edit journals only. It does not confirm online cleanup or another device.", "此结果仅涵盖本机对应条目的记忆保存和编辑日志，不代表线上或其他设备已清理。"), style: .body)
+                } header: { heading(language.text("This device's cleanup progress", "本机清理进度")) }
+            }
             Section {
                 MemoryLifecycleButton(title: language.text("Load original deletions", "读取原删除记录"), identifier: "memoryErasure.loadOriginals", enabled: model.canRecover) {
                     if let work = model.prepareOriginals() { perform(work) }
