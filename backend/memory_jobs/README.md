@@ -181,9 +181,15 @@ accepted decisions use existing DECISION-JOBS1/BG3. Original pending bytes are
 never translated or rekeyed. The genuine end still follows incremental progress,
 and the source/Trip/Memory policy rechecks before enqueue, model and publication.
 No new wire, storage, Meter, producer authorization or old MSG3 guard change.
-`ProducerPass.unavailable` reports permanently invalid original conversations
-without pretending they were extracted or changing their UNKNOWN/fee records.
+`ProducerPass.unavailable` reports proven invalid or explicitly ineligible
+sources without pretending they were extracted or changing their UNKNOWN/fee
+records. A first not-yet-enqueued advanced/rejected decision, erased-copy range
+or an existing pending command on an obsolete Memory basis cannot starve an
+independent eligible source. Unknown reads and unproven mismatches still fail.
 
 The existing registered `memory_decision` PG group retains its original case
 and additionally runs automatic mixed BG2/BG3/true-end intake on a fresh private
 cluster; a genuinely new Python process verifies exact pending D3 reconstruction.
+Separate private PG regressions cover signed Trip advance, signed rejection,
+untouched obsolete pending bytes and actual erasure/re-enable without recopying
+old history or advancing its cursor.

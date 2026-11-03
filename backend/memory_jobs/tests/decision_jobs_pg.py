@@ -322,12 +322,19 @@ if __name__=='__main__':
     # the original case's genuine account retirement, not a reused retired row.
     import tempfile,subprocess
     import pg_suites
-    with tempfile.TemporaryDirectory(prefix='automatic-decision-suite-') as folder:
-        root=Path(folder)
-        with pg_suites.cluster('automatic_decision',port=55832,role='cj_automatic_decision',root=root/'pg',socket=root/'s') as config:
-            with psycopg.connect(**config,autocommit=True) as connection:
-                chain=migrate.load();migrate.up(connection,chain,chain[-1]['version'])
-            path=root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600)
-            env=dict(pg_suites.clean_env(),CJ_E2E_CONNINFO=str(path),PYTHONPATH=pg_suites.pythonpath(ROOT/'backend/memory_jobs/tests'))
-            result=subprocess.run([sys.executable,'-B',str(ROOT/'backend/memory_jobs/tests/auto_decision_worker_pg.py')],env=env)
-            raise SystemExit(result.returncode)
+    cases=[('auto_decision_worker_pg.py',None,55832),
+           ('auto_decision_unavailable_pg.py','advanced',55835),
+           ('auto_decision_unavailable_pg.py','rejected',55836),
+           ('auto_decision_unavailable_pg.py','erased',55837)]
+    for script,case,port in cases:
+        with tempfile.TemporaryDirectory(prefix='automatic-decision-suite-') as folder:
+            root=Path(folder)
+            with pg_suites.cluster('automatic_decision_'+str(port),port=port,role='cj_automatic_decision_'+str(port),root=root/'pg',socket=root/'s') as config:
+                with psycopg.connect(**config,autocommit=True) as connection:
+                    chain=migrate.load();migrate.up(connection,chain,chain[-1]['version'])
+                path=root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600)
+                env=dict(pg_suites.clean_env(),CJ_E2E_CONNINFO=str(path),PYTHONPATH=pg_suites.pythonpath(ROOT/'backend/memory_jobs/tests'))
+                command=[sys.executable,'-B',str(ROOT/'backend/memory_jobs/tests'/script)]
+                if case is not None:command.append(case)
+                result=subprocess.run(command,env=env)
+                if result.returncode:raise SystemExit(result.returncode)
