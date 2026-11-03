@@ -33,6 +33,9 @@ class ClientControlRegistryChecks(unittest.TestCase):
         cases=[]
         missing=deepcopy(self.value);missing['stores'][1]['objects'].pop();cases.append(missing)
         duplicate=deepcopy(self.value);duplicate['stores'].append(deepcopy(self.controls));cases.append(duplicate)
+        for objects in ([dict(id='unexpected-private-content',cleanup_protocol='CLEANUP@1.1',retention_category='user_content')],
+                        ['unexpected-private-content'],[],self.controls['objects'][0]['objects']+['extra-private-copy']):
+            value=deepcopy(self.value);value['stores'][1]['objects'][0]['objects']=objects;cases.append(value)
         for field,bad in (('slot_template','M1.Development.Active'),('service_template','other-account-service'),
                           ('retention_category','diagnostic_90d'),('cleanup_protocol','CLEANUP@1.1'),('owner_line','B')):
             value=deepcopy(self.value);value['stores'][1]['objects'][0][field]=bad;cases.append(value)

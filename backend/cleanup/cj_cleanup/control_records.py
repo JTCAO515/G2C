@@ -24,7 +24,8 @@ def catalog(store):
         if (key not in SLOTS or key in seen or row.get('cleanup_protocol')!=VERSION
             or row.get('owner_line')!='A' or row.get('retention_category')!='cleanup_reconciliation'
             or row.get('service_template')!=SERVICE or row.get('slot_template')!=SLOTS[key]
-            or row.get('finalization_protocol')!=VERSION):
+            or row.get('finalization_protocol')!=VERSION
+            or row.get('objects')!=['Keychain:'+SERVICE+'/'+SLOTS[key]]):
             raise Invalid('explicit original client reconciliation slot required')
         seen.add(key);entries.append((STORE+'/'+key,digest(encode(row))))
     return tuple(sorted(entries))

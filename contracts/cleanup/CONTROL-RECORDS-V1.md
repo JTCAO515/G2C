@@ -35,8 +35,11 @@ only original recovery evidence. Credentials stay in the protected native store,
 never files, logs, diagnostics or a server registry value.
 
 For account deletion, A may finalize these original records only after observing
-both the original server content operation's complete result and the original
-device's acknowledged confirmed receipt. A must first retire all old writers and
+both the original server online content result (`API@1.online_status=complete`,
+not the overall unverified-obligation status) and the original device's
+acknowledged confirmed receipt. A remote device can use the bounded original-call
+representation in DEVICE-COMPLETION-V1.md; a device receipt alone is insufficient.
+A must first retire all old writers and
 capture the exact original namespace, generation, operation/invocation/request
 bindings and expected record bytes. Physically remove the secret-bearing control
 records using the owner's proven exact-record primitive, then read back and

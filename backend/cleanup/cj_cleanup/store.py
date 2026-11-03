@@ -119,6 +119,17 @@ class Store:
 
     @contextmanager
     def transaction(self, operation_id, *, writing=True):
+        with self._transaction(operation_id,writing=writing,snapshot=False) as cursor:
+            yield cursor
+
+    @contextmanager
+    def snapshot(self,operation_id):
+        """One read-only repeatable-read snapshot; no progress audit or dispatch."""
+        with self._transaction(operation_id,writing=False,snapshot=True) as cursor:
+            yield cursor
+
+    @contextmanager
+    def _transaction(self,operation_id,*,writing,snapshot):
         identifier(operation_id)
         conn=self.connect()
         started=failed=False
@@ -126,6 +137,7 @@ class Store:
             if conn.autocommit or conn.info.transaction_status != TransactionStatus.IDLE:
                 raise Unavailable('fresh cleanup connection required')
             with conn.cursor() as cur:
+                if snapshot:cur.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
                 cur.execute('SELECT current_user')
                 if cur.fetchone()!=('cj_local_cleanup',):raise Denied('dedicated cleanup role required')
                 cur.execute("SELECT set_config('cj.cleanup_subject',%s,true),set_config('cj.cleanup_operation',%s,true)",

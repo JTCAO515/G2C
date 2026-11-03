@@ -214,3 +214,7 @@ class Gateway:
         binding=self.resolve_subject(claims.subject_digest)
         if GatewayStore(binding.store).device(claims.binding_id)['protocol']!=device_version:raise Denied('original device protocol required')
         return project(DeviceBridge(GatewayStore(binding.store),self.issuer).query(invocation_id,claims.binding_id))
+
+    def device_completion(self,capability,invocation_id,request_digest,project):
+        from .device_completion import read
+        return read(self,capability,invocation_id,request_digest,project)
