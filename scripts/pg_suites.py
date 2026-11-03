@@ -306,7 +306,9 @@ def group_travel_context():
 
 
 def group_travel_message():
-    return script('backend/cj_api/tests/travel_message_pg.py')
+    status=script('backend/cj_api/tests/travel_message_pg.py')
+    status|=script('backend/run/tests/probe_formal_memory.py')
+    return status
 
 
 def group_place_tool():
@@ -568,6 +570,13 @@ def group_memory_erasure_driver():
 
 
 GROUPS.update(memory_erasure_driver=group_memory_erasure_driver)
+
+
+def group_memory_payload():
+    return script('backend/run/tests/probe_memory_payload.py')
+
+
+GROUPS.update(memory_payload=group_memory_payload)
 
 
 def group_device_completion():

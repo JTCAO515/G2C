@@ -326,7 +326,8 @@ if __name__=='__main__':
            ('auto_decision_unavailable_pg.py','advanced',55835),
            ('auto_decision_unavailable_pg.py','rejected',55836),
            ('auto_decision_unavailable_pg.py','erased',55837),
-           ('auto_decision_unavailable_pg.py','obsolete',55838)]
+           ('auto_decision_unavailable_pg.py','obsolete',55838),
+           ('formal_memory_read_pg.py',None,55841)]
     for script,case,port in cases:
         with tempfile.TemporaryDirectory(prefix='automatic-decision-suite-') as folder:
             root=Path(folder)

@@ -99,7 +99,7 @@ public struct MemoryManagementPending: Codable, Sendable, MemoryJournalRecord {
 /// Dedicated lifecycle journal/directory and AES-GCM AD; never the save or Message ledger.
 /// Uses the accepted Memory key purpose with a separate ciphertext domain.
 @MainActor public final class MemoryManagementPendingStore {
-    private let storage: MemoryEncryptedRecords<MemoryManagementPending>
+    let storage: MemoryEncryptedRecords<MemoryManagementPending>
     public init(directory: URL, maximumBytes: Int, maximumRecords: Int, binding: MemoryBinding,
                 expectedKeyID: UUID, provider: any MessageEncryptionKeyProvider) throws {
         storage = try MemoryEncryptedRecords(directory: directory, maximumBytes: maximumBytes, maximumRecords: maximumRecords,

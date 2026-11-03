@@ -18,6 +18,7 @@ def error_body(request_id, code, category, en, zh, recovery="do_not_retry"):
     }}).model_dump(mode="json")
 
 def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configuration=None, _history_environment=None,
+               _formal_message_receiver=None,
                _memory_boundary=None, _memory_configuration=None,
                _trip_boundary=None, _trip_configuration=None, _trip_modules=None, _trip_confirmation_signer=None,
                _needs_boundary=None, _needs_configuration=None, _needs_modules=None,
@@ -66,7 +67,7 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
         return ProbeResponse.model_validate({"contract_version": "1.0.0", "status": "ok",
                                              "request_id": request.state.request_id})
     from .message_routes import register_message_routes
-    register_message_routes(app, _message_boundary, _max_body_bytes)
+    register_message_routes(app, _message_boundary, _max_body_bytes,_formal_message_receiver)
     from .history_routes import register_history_routes
     register_history_routes(app, _message_boundary, _history_configuration, _history_environment)
     from .memory_routes import register_memory_routes

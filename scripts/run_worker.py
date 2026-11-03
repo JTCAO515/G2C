@@ -83,7 +83,7 @@ def require_memory_configuration(database, scope, configuration):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -106,13 +106,19 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             raise CompositionUnavailable('explicit activated publisher2 profile/configuration required')
         if memory_configuration is not None or tools_configuration is not None:
             raise CompositionUnavailable('edit profile requires its negotiated memory/publisher only')
+    elif formal_memory_configuration is not None:
+        if (memory_configuration is not None or not database.trip_context or not database.travel_context
+                or not database.trip_profile(scope)):
+            raise CompositionUnavailable('explicit existing formal profile and sole C formal Memory configuration required')
     else:require_memory_configuration(database, scope, memory_configuration)
+    if editing and formal_memory_configuration is not None:
+        raise CompositionUnavailable('formal discussion and scoped edit have separate C configurations')
     if tools_configuration is not None and (database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2'):
         raise CompositionUnavailable('tools require the registered M2 exit')
     messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
     subject = scope.removeprefix('local:' + ISSUER + ':')
     def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
-    memory_credential = token() if memory_configuration is not None or editing else None
+    memory_credential = token() if memory_configuration is not None or editing or formal_memory_configuration is not None else None
     def memory_admit(credential=memory_credential, scope=scope):
         decision = checker.check(credential)
         if decision.status is AdmissionStatus.UNKNOWN:
@@ -124,7 +130,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     message_context=None
     if database.travel_profile(scope) or type(memory_configuration) is TypedRuntimeConfiguration:
         from cj_message.travel_reference import MessageContextAuthority
-        credential=memory_credential if type(memory_configuration) is TypedRuntimeConfiguration else token()
+        credential=memory_credential if type(memory_configuration) is TypedRuntimeConfiguration or formal_memory_configuration is not None else token()
         def travel_admit():
             decision=checker.check(credential)
             if decision.status is AdmissionStatus.UNKNOWN:
@@ -140,6 +146,8 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     if editing:
         memory=edit_config.memory.bind(database,scope,subject,memory_admit,message_context=message_context)
         if memory is None:raise RuntimeDenied('C memory adapter did not bind')
+    elif formal_memory_configuration is not None:
+        memory=formal_memory_configuration.bind(database,scope,subject,memory_admit,message_context=message_context)
     elif type(memory_configuration) is TypedRuntimeConfiguration:
         memory=memory_configuration.bind(database,scope,subject,memory_admit,message_context=message_context)
     else:
@@ -178,8 +186,22 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         else:
             from cj_api.local_current_plan import publisher
             drafts=publisher(database,checker,message_context,token,scope)
+    history=None
+    if editing:
+        from cj_memory.edit_runtime import EditRuntimeConfiguration
+        from cj_memory.scoped_capture import ScopedMemoryConfiguration
+        # Only the provided canonical C factories opt into the new history ABI.
+        # Existing test-only/custom EDIT-MEMORY@1 adapters retain their original
+        # capture contract; they are not an accepted #26 history implementation.
+        history_supported=type(edit_config.memory) in (EditRuntimeConfiguration,ScopedMemoryConfiguration)
+    else:history_supported=True
+    if memory is not None and history_supported:
+        from cj_api.local_memory_history import HistoryMemory,OriginalHistory,OriginalDecisions
+        decisions=OriginalDecisions(database,Path(auth_dir),memory_credential,memory_admit,message_context)
+        history=HistoryMemory(memory,OriginalHistory(messages,decisions))
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
+        memory_history=history is not None,history_adapter=history,
         message_context=message_context,
         tools=tools_configuration,place_sources=place_sources,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
@@ -188,18 +210,26 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None):
+    if formal_memory_configuration is not None:
+        from cj_api.local_formal_memory import configuration
+        formal_memory_configuration=configuration(formal_memory_configuration)
+        if not database.travel_context or not database.trip_context or database.edit_configuration is not None:
+            raise CompositionUnavailable('explicit formal/travel worker required, separate from scoped edit')
     pending_scopes=scopes(database,auth_dir)
     if not pending_scopes and background_jobs is None: return []
     if database.run_context is None:
         raise CompositionUnavailable('explicit run context required before execution')
     if not isinstance(model,FakeProvider):
         raise ProviderFailed('configured local context permits only FakeProvider')
-    checker=checker_for(Path(auth_dir))
+    if formal_memory_configuration is None:checker=checker_for(Path(auth_dir))
+    else:
+        from cj_api.local_account_admission_v2 import account_checker_for
+        checker=account_checker_for(Path(auth_dir),database)
     results = []
     for scope in pending_scopes:
         results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                     memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration).process()
+                                     memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration).process()
     if background_jobs is not None:results+=background_jobs.run_once(model)
     return results
 
@@ -210,6 +240,7 @@ def main():
     parser.add_argument('--auth-dir', type=Path, default=os.environ.get('CJ_LOCAL_AUTH_DIR'))
     parser.add_argument('--run-context', type=Path, default=os.environ.get('CJ_LOCAL_RUN_CONTEXT'))
     parser.add_argument('--memory-run-policy', type=Path, default=os.environ.get('CJ_LOCAL_MEMORY_RUN_POLICY'))
+    parser.add_argument('--formal-memory-run-policy',type=Path,default=os.environ.get('CJ_LOCAL_FORMAL_MEMORY_RUN_POLICY'))
     parser.add_argument('--travel-context',choices=['message-travel.1'],default=os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT'))
     parser.add_argument('--trip-context',choices=['message-trip.1'],default=os.environ.get('CJ_LOCAL_TRIP_CONTEXT'))
     parser.add_argument('--tools-profile',choices=['synthetic-v1','synthetic-fact-v1','synthetic-needs-v1'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
@@ -229,12 +260,21 @@ def main():
     audit.addHandler(logging.StreamHandler(sys.stderr))
     audit.propagate=False
     memory = load_runtime_configuration(args.memory_run_policy) if args.memory_run_policy is not None else None
+    formal_memory=None
+    if args.formal_memory_run_policy is not None:
+        from cj_memory.formal_runtime import load_formal_runtime_configuration
+        if memory is not None:parser.error('select one explicit Memory configuration')
+        formal_memory=load_formal_runtime_configuration(args.formal_memory_run_policy)
     database=LocalDatabase(args.conninfo_json,run_context=context,travel_context=travel_configuration(args.travel_context),trip_context=trip_configuration(args.trip_context))
+    if formal_memory is not None and (not database.travel_context or not database.trip_context):
+        parser.error('formal Memory requires an explicit formal/travel host')
     # Protection metadata is checked before even loading real-provider credentials.
     # run_once repeats the check before accepting every original pending run.
     for scope in scopes(database,args.auth_dir):
         database.require_execution(scope)
-        require_memory_configuration(database, scope, memory)
+        if formal_memory is None:require_memory_configuration(database, scope, memory)
+        elif not database.trip_context or not database.trip_profile(scope):
+            parser.error('formal Memory requires an activated formal Trip host')
     if args.draft_profile is not None and args.tools_profile is not None:
         parser.error('explicit NEEDS draft and tool profiles cannot be combined')
     tools=None
@@ -257,7 +297,7 @@ def main():
         else:model=provider(args.real)
     else:raise CompositionUnavailable('unknown tools profile')
     while True:
-        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory,tools_configuration=tools,draft_profile=args.draft_profile):
+        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory,tools_configuration=tools,draft_profile=args.draft_profile,formal_memory_configuration=formal_memory):
             print(f'{outcome.status} run={outcome.run_id}'
                   + (f' proposal={outcome.proposal_id}' if outcome.proposal_id else ''), flush=True)
         if args.once:

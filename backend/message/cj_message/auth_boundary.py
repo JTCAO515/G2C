@@ -110,6 +110,18 @@ class HistoryReadContext:
         self._check()
         return self._service.message_history(conversation_id,cursor,limit,formal=True)
 
+    def history_reference_v5(self,message_id):
+        value=self.history_message_v5(message_id)
+        return value.reference,value.source_state
+
+    def history_message_v5(self,message_id):
+        self._check()
+        if type(message_id) is not str or not message_id.strip():raise InvalidInput('message ID required')
+        from .erasure_history import read
+        value=read(self._service,message_id)
+        self._check()
+        return value
+
     def conversations(self, cursor=None, limit=20):
         self._check()
         return self._service.conversations(cursor, limit)
@@ -270,6 +282,13 @@ class Boundary:
 
     def receive_v3(self, token, raw):
         return self._service(token).receive_v3(raw)
+
+    def receive_formal_memory(self,token,raw,producer_factory,project):
+        service,principal,scope,guard=self._bind(token)
+        producer=producer_factory(principal,scope,guard)
+        value=project(service.receive_formal_memory(raw,producer))
+        guard('return')
+        return value
 
     def send_status_v3(self,token,conversation_id,message_id=None):
         return self._service(token).send_status_v3(conversation_id,message_id)

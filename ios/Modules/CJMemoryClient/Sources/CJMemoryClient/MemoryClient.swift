@@ -413,6 +413,10 @@ extension MemoryClient {
               accepted.item.command.source_version == selection.expectedSourceVersion,
               same(accepted.item.command.source_id, selection.sourceID) else { throw MemoryFailure.staleBinding }
     }
+    /// Read-proof validation only; grants no management or deletion dispatch.
+    public func validateManagementRead(_ selection: MemoryManagementSelection, binding: MemoryBinding) throws {
+        try validateManagementSelection(selection, binding: binding, token: begin(binding))
+    }
     public func managementPending(binding: MemoryBinding) throws -> [MemoryManagementPending] {
         let token = try begin(binding)
         guard let managementStore else { throw MemoryFailure.unconfigured }

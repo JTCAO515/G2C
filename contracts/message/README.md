@@ -1,5 +1,20 @@
 # MESSAGE-draft.1 — CJ009 / Issue #10
 
+## M3 当前来源 / 历史读取消费者（2026-11-03）
+
+已合C476的实际正式Memory工厂由B[显式兼容宿主](FORMAL-MEMORY-HOST.md)消费；
+保持MSG3/ref1/payload2和旧默认拒绝，不追加wire版。原Typed2/MSG4消费者仍适用，
+新代码只选当前作用域对应的实际工厂，不为无消费者的旧版添加适配。
+
+| 契约 | 已合消费者 / 替代关系 |
+|---|---|
+| [MESSAGE-SOURCE@1](SOURCE-V1.md) | C普通、结束与accepted-decision的原消息区间/同意检查仍调用with_enabled_source；并未被2全面取代，不能标无消费者。 |
+| [MESSAGE-SOURCE@2](SOURCE-V2.md) | genuine当前Travel与历史共用一个MESSAGE→Travel→Memory租约；C当前Travel提取的适用最新版，旧普通/结束消费者仍用1，不隐式把Trip当Travel。 |
+| MESSAGE-history.2/.3/.4 | 已合A Transport/Root仍分别消费讨论、局部编辑与scoped-result历史；都有实际消费者，不废弃或重解。 |
+| [MESSAGE-history.5 / RUN-display.6](HISTORY-V5.md) | PR474候选：物理清掉MSG3/4 source cache后，旧完整source读取实际503；新增原proof下的纯人类历史/已显示回答。仅解决#26保留历史与已合C471原producer再poll的真实擦除边界；不取代仍有消费者的history4/RUN5 scoped-result authority，A接线另验。 |
+
+新消费代码只指向适用最新版；新增版本仅为已合消费者的实际阻断，并在PR写明替代关系和旧消费者。无消费者旧版不补新测试/适配；原冻结语义和已有测试/FAIL保留。本文下方是原草案背景。
+
 > 发送路径已由 [MESSAGE-SEND@1](SEND-PERMIT.md)（[ADR-0008](../../docs/adr/0008-message-send-permit.md)）取代：POST 请求体改为 `MESSAGE-send.1`，`MESSAGE-draft.1` 的 POST 撤回。本文其余语义仍作为草案背景。
 
 协议无关草案，目标 MESSAGE@1.0 **未冻结**。仅 `contracts/message/**`，

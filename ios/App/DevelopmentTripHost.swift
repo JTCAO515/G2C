@@ -618,6 +618,46 @@ import Observation
     func invalidate() { host.invalidate();keys.invalidate() }
 }
 
+/// Provided App constructor for the erasure journal family. Normal Root
+/// activation waits for B's merged device coverage of these exact paths and the
+/// shared Memory key emptiness check; DEVICE3 is never expanded locally.
+@MainActor final class DevelopmentMemoryErasureComponents {
+    let client: MemoryErasureClient
+    let cleanup: MemoryItemLocalCleanup
+    init(configuration: DevelopmentSessionConfiguration, endpointURL: URL, binding: MemoryBinding,
+        legacyRoot: URL, key: MessageEncryptionKey, keys: ScopedMessageKeyProvider,
+        manual: MemoryPendingStore, management: MemoryManagementPendingStore, typed: TypedMemoryPendingStore,
+        session: SessionLifecycle, operation: SessionOperation,
+        current: @escaping @MainActor () -> MemoryBinding?) throws {
+        let files = FileManager.default
+        let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let expected = support.appendingPathComponent("G2CDevelopmentMemory", isDirectory: true)
+            .appendingPathComponent(configuration.environmentID.uuidString, isDirectory: true)
+            .appendingPathComponent(configuration.accountID.uuidString, isDirectory: true)
+        let existing = try keys.existing(expectedID: key.id, for: keys.begin(.lookup))
+        guard legacyRoot == expected, binding.environment == configuration.environmentID,
+              binding.account == configuration.accountID, current() == binding, session.isCurrent(operation),
+              key.namespace == keys.namespace, key.id == existing?.id else {
+            throw MemoryFailure.staleBinding
+        }
+        let root = legacyRoot.appendingPathExtension("erasure-v1")
+        if !files.fileExists(atPath: root.path) {
+            try files.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        }
+        try provisionJournalSiblings(of: root, suffixes: ["CJMemoryErasureObservationsV1"])
+        let store = try MemoryErasurePendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
+            binding: binding, expectedKeyID: key.id, provider: keys)
+        let endpoint = try MemoryEndpoint(url: endpointURL, maximumRequestBytes: 32768, maximumResponseBytes: 524288, allowLoopbackHTTP: true)
+        client = try MemoryErasureClient(development: endpoint, credentials: { requested in
+            guard requested == binding, current() == binding, session.isCurrent(operation) else { return nil }
+            return configuration.token
+        }, currentBinding: current, session: session, sessionOperation: operation, pendingStore: store,
+            requestTimeout: 10, resourceTimeout: 20)
+        cleanup = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed)
+    }
+    func invalidate() { client.invalidate() }
+}
+
 @MainActor private final class DevelopmentMessageLifetime {
     var active = true
     let isCurrent: @MainActor () -> Bool
@@ -730,7 +770,7 @@ import Observation
         let limits = try MessageReadLimits(maximumPageItems: 20, maximumCursorBytes: 4096,
                                            maximumDecodedBytes: 1_000_000, maximumPages: 50)
         guard history.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease,
-            generation: shell.generation, limit: 20, limits: limits, synthetic: false,tripDiscussions:tripDiscussions,scopedEdits:scopedEdits,
+            generation: shell.generation, limit: 20, limits: limits, synthetic: false,tripDiscussions:tripDiscussions,scopedEdits:scopedEdits,preservedHumanHistory:true,
             isCurrent: { lifetime.current },
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
