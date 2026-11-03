@@ -523,6 +523,13 @@ def group_memory_decision():
 GROUPS.update(memory_decision=group_memory_decision)
 
 
+def group_background_v3():
+    return script('backend/run/tests/probe_background_v3.py')
+
+
+GROUPS.update(background_v3=group_background_v3)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
