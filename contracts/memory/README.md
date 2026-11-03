@@ -1,3 +1,18 @@
+# Memory 契约入口与版本状态
+
+- 新 typed 保存/管理及实际 Travel runtime 使用 [TYPED-V2](TYPED-V2.md)，
+  payload 为 MEMORY-RUN-CONSUME@2；C227/B273 的原 MessageContextAuthority
+  与当前租约仍是权限边界。Trip 不产生 Travel 身份。
+- 需要真实 formal Trip 的新显式宿主消费 [FORMAL-RUNTIME-V1](FORMAL-RUNTIME-V1.md)
+  的 C reader；保留 payload2，Trip/none 只选长期值，真实 Travel 仍按原范围。
+  它针对已合 MSG3 与 Memory 共存硬拒，不替代旧 Travel/none 消费者，也不激活旧 B 入口。
+- 下方 MEMORY-internal.1 是保留的原内部/legacy 约定；main 的 legacy API 与
+  worker 配置仍有消费者，不能整体标为无消费者或改写原字节。
+- 新代码使用与实际消费方匹配的当前显式入口，不对读取/鉴权失败做版本 fallback。
+  无消费者且已被替代的路径不再新增测试或适配；已有历史证据保留。
+
+---
+
 # MEMORY-internal.1 — CJ011 first candidate
 
 Internal Python domain/repository only. NOT MEMORY@1.0 public-wire freeze. Root OpenAPI, generated clients and migration registry remain CJ005-owned. Source baseline: 23e12f28435ab0ddc685d544670564e3fa79db41. AUTH composition decision remains existing `AdmissionDecision`; MESSAGE/RUN scope is the existing trusted internal partition concept, not a new principal schema. Concrete consumer acceptance via Main is pending.
