@@ -315,4 +315,27 @@ class DecisionInputChecks(manual.ManualChecks):
 
 
 if __name__=='__main__':
-    unittest.main(defaultTest='DecisionInputChecks.test_real_modified_trip_and_committed_discussion_feed_bounded_data',verbosity=2)
+    program=unittest.main(defaultTest='DecisionInputChecks.test_real_modified_trip_and_committed_discussion_feed_bounded_data',verbosity=2,exit=False)
+    if not program.result.wasSuccessful():raise SystemExit(1)
+    # Keep the existing registered memory_decision group and all original
+    # assertions. Automatic intake needs a new isolated account/database after
+    # the original case's genuine account retirement, not a reused retired row.
+    import tempfile,subprocess
+    import pg_suites
+    cases=[('auto_decision_worker_pg.py',None,55832),
+           ('auto_decision_unavailable_pg.py','advanced',55835),
+           ('auto_decision_unavailable_pg.py','rejected',55836),
+           ('auto_decision_unavailable_pg.py','erased',55837),
+           ('auto_decision_unavailable_pg.py','obsolete',55838)]
+    for script,case,port in cases:
+        with tempfile.TemporaryDirectory(prefix='automatic-decision-suite-') as folder:
+            root=Path(folder)
+            with pg_suites.cluster('automatic_decision_'+str(port),port=port,role='cj_automatic_decision_'+str(port),root=root/'pg',socket=root/'s') as config:
+                with psycopg.connect(**config,autocommit=True) as connection:
+                    chain=migrate.load();migrate.up(connection,chain,chain[-1]['version'])
+                path=root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600)
+                env=dict(pg_suites.clean_env(),CJ_E2E_CONNINFO=str(path),PYTHONPATH=pg_suites.pythonpath(ROOT/'backend/memory_jobs/tests'))
+                command=[sys.executable,'-B',str(ROOT/'backend/memory_jobs/tests'/script)]
+                if case is not None:command.append(case)
+                result=subprocess.run(command,env=env)
+                if result.returncode:raise SystemExit(result.returncode)
