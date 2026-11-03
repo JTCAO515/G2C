@@ -40,7 +40,7 @@ import Foundation
         print("ERASURE_UI_TREE", app.debugDescription)
         let failure = XCTAttachment(screenshot: app.screenshot())
         failure.name = "erasure-missing-control"; failure.lifetime = .keepAlways; add(failure)
-        XCTFail("Exact erasure element is not visible: " + element.identifier)
+        XCTFail("Exact erasure element is not visible")
     }
     func tap(_ id: String) {
         let query = app.buttons.matching(identifier: id), button = query.element

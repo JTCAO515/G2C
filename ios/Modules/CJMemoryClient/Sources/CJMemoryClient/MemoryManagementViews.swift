@@ -40,7 +40,7 @@ struct MemoryLifecycleButton: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            MemoryRowText(text: title, style: .body)
+            Text(title).font(.body).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
         }.buttonStyle(.plain).disabled(!enabled).accessibilityIdentifier(identifier)
     }
