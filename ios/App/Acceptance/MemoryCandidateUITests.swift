@@ -187,7 +187,7 @@ import Foundation
         text("memoryCandidate.empty", contains: language == "en" ? "no suggestions" : "没有待确认建议")
         let after = try await proof()
         XCTAssertEqual(after.action_count, 1); XCTAssertEqual(after.action_id, actionID)
-        XCTAssertEqual(after.item?.status, operation == "confirm" ? "active" : "disabled")
+        XCTAssertEqual(after.item?.status, operation == "confirm" ? "active" : "withdrawn")
         if operation == "confirm" { XCTAssertEqual(Array((after.item?.command.text ?? "").utf8), Array(f.edited_text.utf8)) }
         XCTAssertFalse(after.candidate_files.isEmpty); XCTAssertTrue(after.other_item_unchanged)
         XCTAssertEqual(after.input_sha256?.count, 64)
