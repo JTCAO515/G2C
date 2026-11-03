@@ -489,7 +489,45 @@ def group_memory_incremental_worker():
         f'/tmp/cj-memory-incremental-{os.getpid()}','backend/memory_jobs/tests/producer_background_pg.py')
 
 
-GROUPS.update(memory_ending_worker=group_memory_ending_worker,memory_incremental_worker=group_memory_incremental_worker)
+def group_memory_auto_ending():
+    return _fresh_runtime_check('memory_auto_ending',55523,'cj_memory_auto_end',
+        f'/tmp/cj-memory-auto-end-{os.getpid()}','backend/memory_jobs/tests/auto_ending_worker_pg.py')
+
+
+GROUPS.update(memory_ending_worker=group_memory_ending_worker,memory_incremental_worker=group_memory_incremental_worker,
+              memory_auto_ending=group_memory_auto_ending)
+
+
+def group_memory_account_cleanup():
+    status=script('backend/memory_withdrawal/tests/account_admission_pg.py')
+    status|=script('backend/memory_withdrawal/tests/account_hooks_pg.py')
+    return status
+
+
+GROUPS.update(memory_account_cleanup=group_memory_account_cleanup)
+
+
+def group_local_cleanup_host():
+    return _fresh_runtime_check('local_cleanup_host',55804,'cj27_host_hooks',
+        f'/tmp/cj-host-hooks-{os.getpid()}','backend/cj_api/tests/local_cleanup_host_pg.py')
+
+
+GROUPS.update(local_cleanup_host=group_local_cleanup_host)
+
+
+def group_memory_decision():
+    return _fresh_runtime_check('memory_decision',55810,'cj_memory_decision',
+        f'/tmp/cj-memory-decision-{os.getpid()}','backend/memory_jobs/tests/decision_jobs_pg.py')
+
+
+GROUPS.update(memory_decision=group_memory_decision)
+
+
+def group_background_v3():
+    return script('backend/run/tests/probe_background_v3.py')
+
+
+GROUPS.update(background_v3=group_background_v3)
 
 
 def main(argv):

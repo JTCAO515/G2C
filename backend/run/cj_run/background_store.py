@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict,dataclass
+from typing import ClassVar
 import base64,hashlib,json,uuid
 from cj_message.source import SourceQuery
 from cj_message.travel import Selection
@@ -13,6 +14,8 @@ from .usage_binding import UsageBinding,_decode_command
 
 ABI='RUN-BACKGROUND@2'
 REGISTRATION='memory.history-extract.1'
+ABI_V3='RUN-BACKGROUND@3'
+REGISTRATION_V3='memory.accepted-decision.1'
 LEASE_NAMESPACE='background-job@1'
 TABLE='cj_run_background_job'
 STATES=('queued','running','publishing','completed','budget_exhausted','cancelled','unknown')
@@ -30,11 +33,14 @@ def _identity(value):
 
 @dataclass(frozen=True,repr=False)
 class JobRequest:
+    protocol:ClassVar[str]=ABI
+    registration_id:ClassVar[str]=REGISTRATION
     job_id:str
     attempt_id:str
     query:SourceQuery
     travel:Selection|None
     prepared_input:bytes
+    decision_source_sha256:ClassVar[str|None]=None
 
     def __post_init__(self):
         _identity(self.job_id);_identity(self.attempt_id)
@@ -78,17 +84,23 @@ class JobRecord:
     state:str
     output_sha256:str|None
     receipt_sha256:str|None
+    protocol:str=ABI
+    decision_source_sha256:str|None=None
 
     def summary(self):
-        return dict(version=ABI,job_id=self.job_id,attempt_id=self.attempt_id,run_id=self.binding.run_id,state=self.state,
-            registration_id=REGISTRATION,meter_attempt_id=self.command.attempt_id,meter_operation_id=self.command.operation_id,
+        value=dict(version=self.protocol,job_id=self.job_id,attempt_id=self.attempt_id,run_id=self.binding.run_id,state=self.state,
+            registration_id=REGISTRATION if self.protocol==ABI else REGISTRATION_V3,meter_attempt_id=self.command.attempt_id,meter_operation_id=self.command.operation_id,
             prepared_input_sha256=self.prepared_input_sha256,
             operation_input_sha256=self.command.input_digest,output_sha256=self.output_sha256,receipt_sha256=self.receipt_sha256,
             input_state='erased' if self.request is None else 'retained',recovery='reconcile_original')
+        if self.protocol==ABI_V3:value['decision_source_sha256']=self.decision_source_sha256
+        return value
 
 
 def _load(row,scope):
-    jid,attempt,run_id,ledger,prepared_sha,config_raw,command_raw,input_raw,state,output,receipt=row
+    jid,attempt,run_id,ledger,prepared_sha,config_raw,command_raw,input_raw,state,output,receipt,protocol,decision_sha=row
+    if protocol not in (ABI,ABI_V3) or (protocol==ABI)!=(decision_sha is None):raise Denied('original background protocol unavailable')
+    registration=REGISTRATION if protocol==ABI else REGISTRATION_V3
     _identity(jid);_identity(attempt)
     config=Config(**json.loads(bytes(config_raw)))
     command_raw=bytes(command_raw);input_raw=None if input_raw is None else bytes(input_raw)
@@ -99,32 +111,39 @@ def _load(row,scope):
     request=None
     if input_raw is not None:
         value=json.loads(input_raw.decode('utf-8'),object_pairs_hook=reject_duplicates(ValueError,'duplicate job input'))
-        if (set(value)!={'version','registration_id','run_id','scope_digest','job_id','attempt_id','source','travel','prepared_input_base64'}
+        fields={'version','registration_id','run_id','scope_digest','job_id','attempt_id','source','travel','prepared_input_base64'}
+        if protocol==ABI_V3:fields.add('decision_source_sha256')
+        if (set(value)!=fields
                 or (value['version'],value['registration_id'],value['run_id'],value['scope_digest'],value['job_id'],value['attempt_id'])
-                !=(ABI,REGISTRATION,run_id,sha(scope.encode()),jid,attempt)):
+                !=(protocol,registration,run_id,sha(scope.encode()),jid,attempt)):
             raise Denied('original job input unavailable')
         travel=None if value['travel'] is None else Selection(**value['travel'])
-        request=JobRequest(jid,attempt,SourceQuery(**value['source']),travel,
-            base64.b64decode(value['prepared_input_base64'],validate=True))
+        args=(jid,attempt,SourceQuery(**value['source']),travel,base64.b64decode(value['prepared_input_base64'],validate=True))
+        if protocol==ABI:request=JobRequest(*args)
+        else:
+            from .background_store_v3 import JobRequestV3
+            if value['decision_source_sha256']!=decision_sha:raise Denied('original decision digest unavailable')
+            request=JobRequestV3(*args,decision_sha)
         if prepared_sha!=request.prepared_sha256:raise Denied('original prepared data digest unavailable')
-    for value in (prepared_sha,output,receipt):
+    for value in (prepared_sha,output,receipt,decision_sha):
         if value is not None and (type(value) is not str or len(value)!=64 or any(c not in '0123456789abcdef' for c in value)):
             raise Denied('original publication digest unavailable')
     if state=='completed' and (output is None or receipt is None):raise Denied('actual publication receipt unavailable')
-    return JobRecord(JobBinding(scope,run_id),jid,attempt,ledger,prepared_sha,config,command,command_raw,input_raw,request,state,output,receipt)
+    return JobRecord(JobBinding(scope,run_id),jid,attempt,ledger,prepared_sha,config,command,command_raw,input_raw,request,state,output,receipt,protocol,decision_sha)
 
 
 class JobStore:
-    def __init__(self,repository):
+    def __init__(self,repository,*,protocol=ABI):
         self.repository=repository
         self.scope=repository.scope
+        self.protocol=protocol
         self._active=ContextVar('background_job_row',default=None)
 
     def _read(self,tx,jid,attempt,*,lock=False):
         tx.cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s',(self.scope,))
         if tx.cur.fetchone()!=(tx.epoch,True):raise Denied('original job scope changed')
-        tx.cur.execute('SELECT job_id,attempt_id,run_id,ledger_scope,prepared_input_sha256,config_bytes,command_bytes,input_bytes,state,output_sha256,receipt_sha256 '
-            'FROM cj_run_background_job WHERE scope=%s AND job_id=%s AND attempt_id=%s'+(' FOR UPDATE' if lock else ''),(self.scope,jid,attempt))
+        tx.cur.execute('SELECT job_id,attempt_id,run_id,ledger_scope,prepared_input_sha256,config_bytes,command_bytes,input_bytes,state,output_sha256,receipt_sha256,protocol,decision_source_sha256 '
+            'FROM cj_run_background_job WHERE scope=%s AND job_id=%s AND attempt_id=%s AND protocol=%s'+(' FOR UPDATE' if lock else ''),(self.scope,jid,attempt,self.protocol))
         row=tx.cur.fetchone()
         return None if row is None else _load(row,self.scope)
 
@@ -132,23 +151,25 @@ class JobStore:
         _identity(jid);_identity(attempt)
         active=self._active.get()
         if active is not None:return self._read(active,jid,attempt)
-        with self.repository.job_transaction(require_clean_close=True) as tx:return self._read(tx,jid,attempt)
+        with self.repository.job_transaction(require_clean_close=True,background_protocol=self.protocol) as tx:return self._read(tx,jid,attempt)
 
     def pending(self):
         # A newly invited account may have no RUN scope yet. The actual runtime
         # RLS query then observes no eligible jobs; it does not initialize one.
         with self.repository.connect() as conn:
+            conn.execute("SELECT set_config('cj.background_protocol',%s,true)",(self.protocol,))
             rows=conn.execute("SELECT job_id,attempt_id FROM cj_run_background_job WHERE scope=%s AND state='queued' AND input_bytes IS NOT NULL ORDER BY run_id",(self.scope,)).fetchall()
         return tuple(rows)
 
     def prepare(self,request,config,output_limit):
+        if request.protocol!=self.protocol:raise Denied('explicit original background writer required')
         run_id=uuid.uuid4().hex;raw=request.envelope(self.scope,run_id)
         command=Command(uuid.uuid4().hex,uuid.uuid4().hex,run_id,'memory',sha(raw),1,output_limit)
         binding=UsageBinding.from_command(command,raw)
-        with self.repository.job_transaction() as tx:
-            tx.cur.execute("INSERT INTO cj_run_background_job(scope,job_id,attempt_id,run_id,ledger_scope,prepared_input_sha256,config_bytes,command_bytes,input_bytes) "
-                "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(scope,job_id,attempt_id) DO NOTHING",
-                (self.scope,request.job_id,request.attempt_id,run_id,ledger_scope_for(self.scope,config),request.prepared_sha256,pack(asdict(config)),binding.command_bytes,raw))
+        with self.repository.job_transaction(background_protocol=self.protocol) as tx:
+            tx.cur.execute("INSERT INTO cj_run_background_job(scope,job_id,attempt_id,run_id,ledger_scope,prepared_input_sha256,config_bytes,command_bytes,input_bytes,protocol,decision_source_sha256) "
+                "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(scope,job_id,attempt_id) DO NOTHING",
+                (self.scope,request.job_id,request.attempt_id,run_id,ledger_scope_for(self.scope,config),request.prepared_sha256,pack(asdict(config)),binding.command_bytes,raw,self.protocol,request.decision_source_sha256))
             result=self._read(tx,request.job_id,request.attempt_id,lock=True)
             if result is None:raise Denied('original job unavailable')
             self.require_original(result,request,config,output_limit)
@@ -161,7 +182,7 @@ class JobStore:
 
     @contextmanager
     def hold(self,record):
-        with self.repository.job_transaction() as tx:
+        with self.repository.job_transaction(background_protocol=self.protocol) as tx:
             current=self._read(tx,record.job_id,record.attempt_id,lock=True)
             if current is None or current.binding!=record.binding:raise Denied('original job unavailable')
             token=self._active.set(tx)
