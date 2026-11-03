@@ -50,7 +50,9 @@ import Foundation
         let element = app.staticTexts.matching(identifier: id).element
         reveal(element)
         let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", value), object: element)
-        XCTAssertEqual(XCTWaiter.wait(for: [expected], timeout: 30), .completed, id)
+        let result = XCTWaiter.wait(for: [expected], timeout: 30)
+        if result != .completed { print("ERASURE_UI_STATUS", id, element.label) }
+        XCTAssertEqual(result, .completed, id)
     }
     func enter(_ id: String, value: String) {
         let multiline = app.textViews.matching(identifier: id), single = app.textFields.matching(identifier: id)

@@ -120,6 +120,7 @@ def main():
                             for name in ('device_token','receipt_token','progress_token'):
                                 if isinstance(value.get(name),str):secrets.append(value[name])
                     entry=dict(method=scope['method'],path=path,status=status,input_sha256=hashlib.sha256(body).hexdigest())
+                    if isinstance(response.get('error'),dict):entry['error_code']=response['error'].get('code')
                     drop=False
                     with lock:
                         data=observations[case];data['api'].append(entry)
@@ -214,6 +215,7 @@ def main():
     except BaseException as error:
         report.update(status='FAIL',error_type=type(error).__name__);raise
     finally:
+        report['api']={case:value['api'] for case,value in observations.items()}
         if control:control.shutdown();control.server_close()
         if server:server.should_exit=True
         if thread:thread.join(timeout=10)
