@@ -62,21 +62,23 @@ import Foundation
     }
     func contains(_ id: String, _ expected: String, towardTop: Bool = true) {
         let target = app.staticTexts[id]
-        if !target.exists {
-            // Status rows are lazily materialized. Start at the exact cleanup
-            // heading, then scan forward; never wait on an offscreen phantom.
-            if id.hasPrefix("account.cleanup.") {
-                let heading = app.staticTexts["account.cleanup.heading"]
-                for _ in 0..<25 {
-                    if heading.exists && heading.isHittable { break }
-                    app.swipeDown()
-                }
-                for _ in 0..<35 { if target.exists { break }; app.swipeUp() }
-            } else {
-                for _ in 0..<30 {
-                    if target.exists { break }
-                    if towardTop { app.swipeDown() } else { app.swipeUp() }
-                }
+        if id.hasPrefix("account.cleanup.") {
+            // A replaced List row can remain in AX while its current UILabel is
+            // offscreen. Reset to the exact heading even when an old node exists.
+            let heading = app.staticTexts["account.cleanup.heading"]
+            for _ in 0..<25 {
+                if heading.exists && heading.isHittable { break }
+                app.swipeDown()
+            }
+            XCTAssertTrue(heading.exists && heading.isHittable, "cleanup heading must be visible")
+            for _ in 0..<35 {
+                if target.exists && target.isHittable { break }
+                app.swipeUp()
+            }
+        } else if !target.exists {
+            for _ in 0..<30 {
+                if target.exists { break }
+                if towardTop { app.swipeDown() } else { app.swipeUp() }
             }
         }
         XCTAssertTrue(target.exists, id)
