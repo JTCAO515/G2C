@@ -29,6 +29,9 @@ private func v3Encode(_ value: [String: Any]) throws -> Data { try JSONSerializa
     var nullRegistration = false, nullAction = false
     var identityStatus = 403
     var activeAccountOperation: String?
+    var completionStatus = "complete"
+    var completionPolicy: String? = "CLEANUP-CONTROL-RECORDS@1"
+    var changeCompletion: ((inout [String: Any]) -> Void)?
     var after: (() -> Void)?
     func respond(_ request: HTTPRequest, body: Data?, operation: String) throws -> (HTTPResponse, HTTPBody?) {
         requests.append((operation, body, request.headerFields[.authorization]))
@@ -36,6 +39,22 @@ private func v3Encode(_ value: [String: Any]) throws -> Data { try JSONSerializa
         var status = 200
         var result: [String: Any]
         switch operation {
+        case "readCleanupDeviceCompletionV1":
+            #expect(body == nil && request.method == .get)
+            #expect(request.headerFields[.authorization] == "Device DEVICE.SYNTHETIC.V3")
+            let current = try #require(invocation), call = current["call"] as! [String: Any]
+            let parts = try #require(URLComponents(string: request.path!))
+            #expect(parts.queryItems?.count == 1 && parts.queryItems?.first?.name == "request_digest")
+            #expect(parts.queryItems?.first?.value == current["request_digest"] as? String)
+            let account = call["reason"] as? String == "account_cleanup"
+            result = ["version":"CLEANUP-DEVICE-COMPLETION@1","operation_id":call["operation_id"]!,"binding_id":call["binding_id"]!,
+                "invocation_id":call["invocation_id"]!,"request_digest":current["request_digest"]!,"reason":call["reason"]!,
+                "device_state":current["state"]!,"receipt_digest":current["receipt_digest"]!,
+                "content_status":account ? completionStatus : "not_applicable",
+                "registry_digest":account ? String(repeating:"c",count:64) : NSNull(),
+                "control_record_protocol":account ? completionPolicy as Any? ?? NSNull() : NSNull(),
+                "complete_scope":account ? "frozen_online_domains_only" : "original_device_action_only", "business_access":"not_granted"]
+            changeCompletion?(&result)
         case "registerCleanupDeviceV3":
             let payload: [String: Any] = ["version":"CLEANUP-DEVICE@3", "binding_id":"server-binding", "device_id":input!["device_id"]!,
                 "state_ref":input!["state_ref"]!, "scope_digest":String(repeating: "a", count: 64), "device_token":"DEVICE.SYNTHETIC.V3", "server_time":1000, "business_access":"not_granted"]
@@ -130,7 +149,115 @@ private struct V3Wire: ClientTransport {
         if failReconciliation { throw CleanupFailure.unavailable }; return recovered
     }
 }
+@MainActor private final class FinalizationMemoryStore: CleanupControlRecordStoring {
+    let scope: AccountCleanupScope
+    var selected: Data?
+    var records: [CleanupControlRecord: Data]
+    var removals: [CleanupControlRecord] = []
+    var afterStage: (() -> Void)?
+    var failAfterRemoval: CleanupControlRecord?
+    init(_ h: V3Harness, completion: DeviceCleanupCompletion) throws {
+        scope = h.scope
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        selected = try encoder.encode(scope)
+        records = [.manifest:Data("manifest".utf8), .execution:Data("execution".utf8),
+            .account:Data("account".utf8), .device:try #require(h.secure.value?.withBytes { $0 })]
+    }
+    func read(_ record: CleanupControlRecord) throws -> Data? { records[record] }
+    func readSelected() throws -> Data? { selected }
+    func stageSelected(_ plan: Data, expected: Data) throws {
+        guard selected == expected else { throw CleanupFailure.stale }; selected = plan; afterStage?()
+    }
+    func remove(_ record: CleanupControlRecord, expected: Data) throws -> Bool {
+        guard records[record] == expected else { return false }
+        records[record] = nil; removals.append(record)
+        if failAfterRemoval == record { throw CleanupFailure.exchangeUnknown }
+        return true
+    }
+    func removeSelected(expected: Data) throws -> Bool {
+        guard selected == expected else { return false }; selected = nil; return true
+    }
+    func writeTerminalIfSelectedAbsent(_ terminal: Data) throws -> Bool {
+        guard selected == nil else { return false }; selected = terminal; return true
+    }
+}
 @MainActor struct DeviceCleanupClientTests {
+    private func accountCompletion(_ h: V3Harness) async throws -> DeviceCleanupCompletion {
+        try await h.refuse(); h.server.activeAccountOperation = "server-original-account-operation"
+        _ = try await h.client.perform(h.client.prepareSessionInvalidation())
+        let native = V3Native(h); native.first = .confirmed
+        _ = try h.client.executeNative(using: native)
+        _ = try await h.client.perform(h.client.prepareReceipt())
+        let before = h.secure.value?.withBytes { $0 }
+        guard case .completion(let result) = try await h.client.perform(h.client.prepareCompletionQuery()) else { throw CleanupFailure.unavailable }
+        #expect(h.secure.value?.withBytes { $0 } == before)
+        return result
+    }
+    @Test func originalCompletionUsesOnlyDeviceCredentialAndDoesNotMutateTheJournal() async throws {
+        let h = try V3Harness()
+        let completion = try await accountCompletion(h)
+        #expect(completion.permitsAccountRecordFinalization && completion.scope == h.scope)
+        #expect(completion.operationID == "server-original-account-operation" && completion.contentStatus == .complete)
+        #expect(completion.journalSHA256 == h.secure.value?.withBytes(deviceCleanupSHA))
+        try h.session.clear()
+        _ = try await h.client.perform(h.client.prepareCompletionQuery())
+        #expect(h.server.requests.last?.auth == "Device DEVICE.SYNTHETIC.V3")
+    }
+    @Test(arguments: ["in_progress", "unknown", "blocked", "failed", "no-policy"])
+    func contentNotCompleteOrMissingPolicyNeverFinalizesControls(_ status: String) async throws {
+        let h = try V3Harness()
+        if status == "no-policy" { h.server.completionPolicy = nil } else { h.server.completionStatus = status }
+        let completion = try await accountCompletion(h)
+        #expect(!completion.permitsAccountRecordFinalization)
+    }
+    @Test func standaloneInvalidationAndUnacknowledgedOwnOutcomeCannotFinalizeAccountControls() async throws {
+        let h = try V3Harness(); try await h.refuse()
+        _ = try await h.client.perform(h.client.prepareSessionInvalidation())
+        guard case .completion(let standalone) = try await h.client.perform(h.client.prepareCompletionQuery()) else { throw CleanupFailure.unavailable }
+        #expect(standalone.reason == .sessionInvalid && !standalone.permitsAccountRecordFinalization && standalone.contentStatus == .notApplicable)
+        let other = try V3Harness(); try await other.refuse(); other.server.activeAccountOperation = "account-original"
+        _ = try await other.client.perform(other.client.prepareSessionInvalidation())
+        let native = V3Native(other); native.first = .confirmed; _ = try other.client.executeNative(using: native)
+        other.server.loseReceipt = true
+        await #expect(throws: CleanupFailure.exchangeUnknown) { try await other.client.perform(other.client.prepareReceipt()) }
+        guard case .completion(let unacknowledged) = try await other.client.perform(other.client.prepareCompletionQuery()) else { throw CleanupFailure.unavailable }
+        #expect(!unacknowledged.permitsAccountRecordFinalization)
+    }
+    @Test(arguments: ["operation_id", "binding_id", "invocation_id", "request_digest", "receipt_digest", "reason", "control_record_protocol", "business_access"])
+    func completionCannotRetargetOrBroadenOriginalEvidence(_ field: String) async throws {
+        let h = try V3Harness()
+        h.server.changeCompletion = { fields in
+            fields[field] = field.hasSuffix("digest") ? String(repeating:"e",count:64) : "other"
+        }
+        await #expect(throws: CleanupFailure.invalidResponse) { try await accountCompletion(h) }
+    }
+    @Test func finalizationPlanRecoversOnlyItsOwnMissingRecordsAndLeavesHashOnlyTerminal() async throws {
+        let h = try V3Harness(), completion = try await accountCompletion(h)
+        let store = try FinalizationMemoryStore(h, completion: completion)
+        store.failAfterRemoval = .device
+        #expect(throws: CleanupFailure.exchangeUnknown) { try CleanupControlFinalizer.start(completion: completion, store: store) }
+        let staged = try #require(store.selected)
+        let plan = try CleanupControlFinalizationPlan(bytes: staged)
+        store.failAfterRemoval = nil
+        let terminal = try CleanupControlFinalizer.resume(plan: plan, store: store)
+        #expect(store.records.isEmpty && store.removals.filter { $0 == .device }.count == 1)
+        let raw = try terminal.encoded(), restored = try CleanupControlTerminal(bytes: raw)
+        #expect(restored.outcome == "original_control_records_cleared" && store.selected == raw)
+        #expect(!raw.contains(Data(h.scope.account.uuidString.utf8)) && !raw.contains(Data(completion.operationID.utf8)))
+        #expect(!raw.contains(Data("DEVICE.SYNTHETIC.V3".utf8)))
+    }
+    @Test func replacementAndAnotherSelectedAccountWithholdAllFinalization() async throws {
+        let h = try V3Harness(), completion = try await accountCompletion(h)
+        let store = try FinalizationMemoryStore(h, completion: completion)
+        store.afterStage = { store.records[.account] = Data("different-generation".utf8) }
+        #expect(throws: CleanupFailure.stale) { try CleanupControlFinalizer.start(completion: completion, store: store) }
+        #expect(store.removals.isEmpty)
+        let other = try FinalizationMemoryStore(h, completion: completion)
+        other.selected = try v3Encode(["environment":h.scope.environment.uuidString,"account":UUID().uuidString,"generation":UUID().uuidString])
+        let before = other.selected
+        #expect(throws: CleanupFailure.stale) { try CleanupControlFinalizer.start(completion: completion, store: other) }
+        #expect(other.removals.isEmpty && other.selected == before)
+    }
     @Test func firstRegistrationLostACKUsesOriginalHashGETAndNullNeverReposts() async throws {
         let h=try V3Harness();h.server.loseRegistration=true
         let work=try h.client.prepareRegistration(stateRef:v3State),original=try h.secure.record().registration

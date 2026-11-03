@@ -29,8 +29,9 @@ public enum DeviceCleanupClientState: Sendable {
 }
 public enum DeviceCleanupReadResult: Sendable {
     case notObserved, enrolled(DeviceCleanupEnrollment), invocation(DeviceCleanupInvocation), identityAllowed, identityRefused
+    case completion(DeviceCleanupCompletion)
 }
-fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrationQuery, identity, call, actionQuery, invocationQuery, receipt }
+fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrationQuery, identity, call, actionQuery, invocationQuery, receipt, completion }
 @MainActor public final class DeviceCleanupWork {
     fileprivate let owner: UUID
     fileprivate let kind: DeviceCleanupWorkKind
@@ -55,7 +56,7 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
     private let journal: DeviceCleanupJournal
     private let endpoint: MessageEndpoint
     private let ordinary: Ordinary?
-    private let transportFactory: @MainActor (@escaping @MainActor @Sendable () throws -> Void) throws -> any ClientTransport
+    private let transportFactory: @MainActor (DeviceCleanupWorkKind, @escaping @MainActor @Sendable () throws -> Void) throws -> any ClientTransport
     private var active = true
     private var busy = false
     public var capturedScope: AccountCleanupScope { journal.record.scope }
@@ -68,7 +69,10 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         self.endpoint = endpoint; self.lifetime = lifetime
         journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
         ordinary = Ordinary(session: session, operation: sessionOperation, credentials: credentials)
-        transportFactory = { try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: $0) }
+        transportFactory = { kind, validate in
+            if kind == .completion { return try NoRedirectTransport.developmentDeviceCompletion(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
+            return try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate)
+        }
         try checkLifetime(ordinary: true)
         #else
         throw MessageHTTPFailure.productionActivationUnavailable
@@ -81,7 +85,10 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         self.endpoint = endpoint; self.lifetime = lifetime; ordinary = nil
         journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
         _ = try journal.record.enrollment()
-        transportFactory = { try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: $0) }
+        transportFactory = { kind, validate in
+            if kind == .completion { return try NoRedirectTransport.developmentDeviceCompletion(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
+            return try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate)
+        }
         try checkLifetime(ordinary: false)
         #else
         throw MessageHTTPFailure.productionActivationUnavailable
@@ -98,7 +105,7 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
             guard session == nil, sessionOperation == nil, credentials == nil else { throw CleanupFailure.unavailable }
             ordinary = nil; _ = try journal.record.enrollment()
         }
-        transportFactory = { _ in interceptedTransport }
+        transportFactory = { _, _ in interceptedTransport }
         try checkLifetime(ordinary: ordinary != nil)
     }
     private static func configuration(_ endpoint: MessageEndpoint, _ request: TimeInterval, _ resource: TimeInterval) throws {
@@ -205,6 +212,15 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         guard let encoded = invocation.invocationID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/%?#"))) else { throw CleanupFailure.invalidResponse }
         return try work(.invocationQuery, "/v3/cleanup-device-calls/" + encoded, "queryCleanupDeviceInvocationV3")
     }
+    public func prepareCompletionQuery() throws -> DeviceCleanupWork {
+        guard !busy else { throw CleanupFailure.stale }; try check(journal.bytes, ordinary: false)
+        let invocation = try journal.record.invocation()
+        guard let encoded = invocation.invocationID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/%?#"))) else { throw CleanupFailure.invalidResponse }
+        var parts = URLComponents(); parts.percentEncodedPath = "/v1/cleanup-device-completions/" + encoded
+        parts.queryItems = [.init(name: "request_digest", value: invocation.requestDigest)]
+        guard let path = parts.string else { throw CleanupFailure.invalidResponse }
+        return try work(.completion, path, "readCleanupDeviceCompletionV1")
+    }
     /// Intent is durable before the executor receives a call. An existing intent
     /// always enters reconcileOriginal, even when its previous result was unknown.
     public func executeNative(using executor: any DeviceCleanupNativeExecuting) throws -> DeviceCleanupNativeOutcome {
@@ -286,6 +302,21 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
             throw status == 503 ? CleanupFailure.exchangeUnknown : CleanupFailure.rejected(status)
         }
         switch work.kind {
+        case .completion:
+            let invocation = try next.invocation()
+            var acknowledged: String?
+            if next.nativeOutcome == .confirmed, next.nativeIntentID != nil, let receipt = next.receipts.last, receipt.acknowledged {
+                let fields = try accountCleanupObject(accountCleanupDocument(receipt.originalUTF8))
+                if try accountCleanupString(fields["outcome"]) == "confirmed" {
+                    let digest = deviceCleanupSHA(receipt.originalUTF8)
+                    guard invocation.state == .confirmed, invocation.receiptDigest == digest else { throw CleanupFailure.invalidResponse }
+                    acknowledged = digest
+                }
+            }
+            let completion = try DeviceCleanupCompletion(reply: raw, invocation: invocation, scope: next.scope,
+                acknowledgedConfirmedReceipt: acknowledged, journalSHA256: deviceCleanupSHA(work.record))
+            try check(work.record, ordinary: false)
+            return .completion(completion) // GET does not rewrite the original journal.
         case .registration, .registrationQuery:
             if work.kind == .registrationQuery {
                 try accountCleanupKeys(root, fields: ["version", "request_id", "action_id", "input_sha256", "registration"])
@@ -337,11 +368,11 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
             var request = HTTPRequest(method: work.body == nil ? .get : .post, scheme: nil, authority: nil, path: work.path)
             request.headerFields[.authorization] = authorization; request.headerFields[.cacheControl] = "no-store"
             if work.body != nil { request.headerFields[.contentType] = "application/octet-stream" }
-            let transport = try transportFactory(validate); try validate()
+            let transport = try transportFactory(work.kind, validate); try validate()
             let (response, body) = try await transport.send(request, body: work.body.map(HTTPBody.init), baseURL: endpoint.url, operationID: work.operation)
             try validate()
             guard !(300..<400).contains(response.status.code), let body else { throw CleanupFailure.invalidResponse }
-            let bytes = try await Data(collecting: body, upTo: min(endpoint.maximumResponseBytes, 65536)); try validate()
+            let bytes = try await Data(collecting: body, upTo: min(endpoint.maximumResponseBytes, work.kind == .completion ? 4096 : 65536)); try validate()
             let media = response.headerFields.filter { $0.name == .contentType }, cache = response.headerFields.filter { $0.name == .cacheControl }
             let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
             guard media.count == 1, ["application/json", "application/json; charset=utf-8"].contains(media.first?.value.lowercased()),

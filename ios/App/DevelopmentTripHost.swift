@@ -893,7 +893,29 @@ import Observation
         await workflow.reconnectIdentityRefused(material: material)
     }
     private func restoreCleanup() throws {
-        guard let offline, let scope = try DevelopmentCleanupWorkflow.originalScope(environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint)) else { return }
+        guard let offline else { return }
+        let environment = DevelopmentSessionConfiguration.environmentNamespace(endpoint)
+        var selected = try DevelopmentCleanupWorkflow.selection(environment: environment)
+        if case .finalizing(let plan) = selected {
+            do {
+                let store = try DevelopmentCleanupWorkflow.controlStore(scope: plan.scope)
+                selected = .terminal(try CleanupControlFinalizer.resume(plan: plan, store: store))
+            } catch {
+                let host = AccountCleanupContainerHost(); var value = AccountCleanupPresentation()
+                value.businessStopped = true; value.controlsPending = true; value.unknown = true
+                host.show(value); cleanup = host; return
+            }
+        }
+        if case .terminal = selected {
+            let saved: SessionMaterial?
+            do { saved = try persistence.load() } catch SessionFailure.restorationBlocked { saved = nil }
+            guard saved == nil else { return }
+            let host = AccountCleanupContainerHost(); var value = AccountCleanupPresentation()
+            value.businessStopped = true; value.originalContentComplete = true; value.controlsFinalized = true
+            value.nativeOutcome = .confirmed; value.deviceState = .confirmed
+            host.show(value); cleanup = host; return
+        }
+        guard case .original(let scope) = selected else { return }
         do {
             let saved: SessionMaterial?
             do { saved = try persistence.load() } catch SessionFailure.restorationBlocked { saved = nil }
@@ -1405,7 +1427,10 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private var lifetime: AccountCleanupLifetime
     private var active = true
     private var enrolling = false
+    private var terminalControls: CleanupControlTerminal?
+    private var controlsPending = false
     var holdsBusinessFence: Bool {
+        if terminalControls != nil || controlsPending { return true }
         do {
             if let device, try device.hasVerifiedIdentityRefusal { return true }
             return try account?.requiresRestrictedProgress ?? false
@@ -1417,13 +1442,24 @@ private func developmentCleanupHash(_ value: Data) -> String {
         return KeychainSessionStore(scope: try .init(namespace: .init(environment: environment, slot: suffix),
             applicationIdentifier: app), protection: .whenUnlockedThisDeviceOnly)
     }
-    static func originalScope(environment: UUID) throws -> AccountCleanupScope? {
+    static func selection(environment: UUID) throws -> CleanupControlSelection? {
         let index = try slot(environment: environment, suffix: "M3.Cleanup.Selected")
         guard let data = try index.load()?.withBytes({ $0 }) else { return nil }
-        guard data.count <= 1024 else { throw CleanupFailure.unavailable }
-        let scope = try JSONDecoder().decode(AccountCleanupScope.self, from: data)
-        guard scope.environment == environment else { throw CleanupFailure.stale }
-        return scope
+        let selected = try CleanupControlSelection(bytes: data)
+        switch selected {
+        case .original(let scope): guard scope.environment == environment else { throw CleanupFailure.stale }
+        case .finalizing(let plan): guard plan.scope.environment == environment else { throw CleanupFailure.stale }
+        case .terminal: break
+        }
+        return selected
+    }
+    static func controlStore(scope: AccountCleanupScope) throws -> DevelopmentControlRecordStore {
+        try .init(scope: scope,
+            manifest: slot(environment: scope.environment, suffix: "M3.Cleanup.Manifest." + scope.account.uuidString),
+            execution: slot(environment: scope.environment, suffix: "M3.Cleanup.Execution." + scope.account.uuidString),
+            device: slot(environment: scope.environment, suffix: "M3.Cleanup.Device." + scope.account.uuidString),
+            account: slot(environment: scope.environment, suffix: "M3.Cleanup.Account." + scope.account.uuidString),
+            selected: slot(environment: scope.environment, suffix: "M3.Cleanup.Selected"))
     }
     init(scope: AccountCleanupScope, endpoint: URL, sdkStore: KeychainSessionStore, offline: OfflineTripController,
          ordinary: (DevelopmentSessionConfiguration, DevelopmentSessionLease)?,
@@ -1484,6 +1520,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
     }
     private func prepareResources() throws {
         try check()
+        if case .finalizing = try Self.selection(environment: lifetime.scope.environment) { throw CleanupFailure.unavailable }
         guard manifest == nil, let ordinary, ordinary.lease.session.isCurrent(ordinary.lease.operation),
               let material = try sdkStore.load() else { throw CleanupFailure.unavailable }
         try check()
@@ -1558,7 +1595,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         if current != nil { try clearSDK() }
     }
     func enrollOnline() async {
-        guard active, !enrolling else { return }
+        guard active, !enrolling, terminalControls == nil, !controlsPending else { return }
         enrolling = true; refresh()
         do {
             if manifest == nil { try prepareResources() }
@@ -1598,6 +1635,9 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private func perform(_ command: AccountCleanupCommand) async {
         do {
             try check()
+            if command == .finalizeControls {
+                try await finalizeControlRecords(); refresh(); return
+            }
             if command == .review {
                 if manifest == nil { try prepareResources() }
                 guard let device, let account, let manifest else { throw CleanupFailure.unavailable }
@@ -1654,9 +1694,50 @@ private func developmentCleanupHash(_ value: Data) -> String {
             refresh(unknown: error as? CleanupFailure != .stale)
         }
     }
+    private func finalizeControlRecords() async throws {
+        try check()
+        if case .finalizing(let plan) = try Self.selection(environment: lifetime.scope.environment) {
+            guard plan.scope == lifetime.scope else { throw CleanupFailure.stale }
+            terminalControls = try CleanupControlFinalizer.resume(plan: plan, store: Self.controlStore(scope: plan.scope))
+            controlsPending = false; return
+        }
+        guard let device, let manifest else { throw CleanupFailure.unavailable }
+        guard case .invocation(let invocation, .confirmed) = device.state, invocation.state == .confirmed else { throw CleanupFailure.unavailable }
+        guard try device.executeNative(using: nativeExecutor()) == .confirmed else { throw CleanupFailure.unavailable }
+        guard case .completion(let completion) = try await device.perform(device.prepareCompletionQuery()) else { throw CleanupFailure.unavailable }
+        try check()
+        guard completion.scope == manifest.scope, completion.permitsAccountRecordFinalization else {
+            controlsPending = true; throw CleanupFailure.unavailable
+        }
+        if let account {
+            switch account.state {
+            case .ready, .registered: break
+            case .progress(let progress): guard progress.operationID == completion.operationID else { throw CleanupFailure.stale }
+            case .awaitingConfirmation(let original), .confirmationStaged(let original), .confirmationUnknown(let original):
+                guard original.operationID == completion.operationID else { throw CleanupFailure.stale }
+            case .registrationUnknown, .preparationUnknown, .unavailable: throw CleanupFailure.unavailable
+            }
+        }
+        try quiesce(); try check()
+        let store = DevelopmentControlRecordStore(scope: manifest.scope, manifest: manifestStore, execution: executionStore,
+            device: deviceStore, account: accountStore, selected: indexStore)
+        lifetime.invalidate(); device.invalidate(); account?.invalidate()
+        self.device = nil; self.account = nil; executor = nil; controlsPending = true
+        terminalControls = try CleanupControlFinalizer.start(completion: completion, store: store)
+        controlsPending = false
+    }
     private func refresh(unknown: Bool = false) {
         var value = AccountCleanupPresentation(); value.unknown = unknown
         guard active else { value.unavailable = true; host.show(value); return }
+        if terminalControls != nil {
+            value.businessStopped = true; value.originalContentComplete = true; value.controlsFinalized = true
+            value.nativeOutcome = .confirmed; value.deviceState = .confirmed
+            host.show(value); return
+        }
+        if controlsPending, device == nil {
+            value.businessStopped = true; value.controlsPending = true; value.canFinalizeControls = true
+            host.show(value); return
+        }
         guard let device else {
             value.canReview = ordinary != nil && manifest == nil
             value.unavailable = manifest != nil
@@ -1686,6 +1767,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
         case .invocation(let invocation, let local):
             value.canReadDevice = true; value.canCleanDevice = local == nil && invocation.state == .pending
             value.nativeOutcome = local; value.deviceState = invocation.state
+            value.controlsPending = invocation.reason == .accountCleanup
+            value.canFinalizeControls = local == .confirmed && invocation.state == .confirmed && invocation.reason == .accountCleanup
             do { value.canReportDevice = try device.canPrepareReceipt }
             catch { value.unavailable = true }
         case .unavailable: value.unavailable = true; value.canReview = false; value.canConfirm = false
@@ -1693,7 +1776,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         }
         if enrolling {
             value.canReview = false; value.canConfirm = false; value.canRead = false
-            value.canCleanDevice = false; value.canReadDevice = false; value.canReportDevice = false; value.preparing = true
+            value.canCleanDevice = false; value.canReadDevice = false; value.canReportDevice = false; value.canFinalizeControls = false; value.preparing = true
         }
         host.show(value)
     }
