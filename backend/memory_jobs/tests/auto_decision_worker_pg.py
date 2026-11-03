@@ -11,10 +11,14 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT/'backend/trip/tests'),str(ROOT/'scripts')]
 import manual_pg as manual
 import dev_auth,local_run_context,message_trip_profile,run_worker
-from cj_api.local_app import create_local_app,LocalDatabase
+from cj_api.local_app import create_local_app,LocalDatabase,scope_for,ISSUER
 from cj_api.local_background import LocalBackgroundHost
 from cj_agent.provider import FakeProvider
 from cj_memory.manual import ManualPolicy
+from cj_memory.typed_runtime import TypedRuntimeConfiguration
+from cj_message.travel_reference import MessageContextAuthority
+from cj_run.core import Binding
+from cj_auth.interfaces import AdmissionStatus
 from cj_memory_jobs.extraction import CollectionPolicy
 from cj_memory_jobs.collection_app import create_automatic_decision_collection_app
 from cj_memory_jobs.decision_producer import DecisionConversationProducer
@@ -64,6 +68,12 @@ class AutomaticDecisionChecks(manual.ManualChecks):
                 self.assertEqual(response.status_code,200,response.text)
                 outcomes=run_worker.run_once(database,FakeProvider(),self.auth)
                 self.assertTrue(all(o.status=='completed' for o in outcomes),outcomes)
+            future_head=client.put('/v1/conversations',params={'conversation_id':'independent-context'},headers=headers).json()
+            future=client.post('/v3/messages',content=packed(dict(version='MESSAGE-send.3',conversation_id='independent-context',message_id='independent-question',
+                text='What preferences did I explicitly save?',trip_id=None,creation_intent='none',expected_generation=future_head['generation'],
+                expected_sequence=0,travel_context=None,needs_reference=None,trip_context=None)),headers=headers)
+            self.assertEqual(future.status_code,200,future.text);future_receipt=future.json()['receipt']
+            self.assertTrue(all(o.status=='completed' for o in run_worker.run_once(database,FakeProvider(),self.auth)))
         slots=frozenset({'diet.spicy','planning.choice','note'})
         extraction=CollectionPolicy(frozenset({'self'}),slots,5,4096,lambda e:True,lambda e,rows:e.kind=='preference')
         memory=ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),
@@ -121,11 +131,39 @@ class AutomaticDecisionChecks(manual.ManualChecks):
             self.assertEqual(model.calls,6);self.assertEqual(len(originals),6)
             self.assertEqual(len({r['run_id'] for r in originals}),6)
             self.assertEqual(len({r['meter_attempt_id'] for r in originals}),6)
+            projection=json.loads(c.current_conversation_candidates(token,'mixed',''))
+            plan=next(v for v in projection['candidates'] if v['slot']=='planning.choice')
+            decision=packed(dict(version='MEMORY-CANDIDATE@1',action_id='explicit-accepted-plan-preference',**plan['review'],candidate_id=plan['candidate_id'],
+                expected_candidate_version=plan['version'],expected_memory_epoch=projection['memory_epoch'],operation='confirm',kind='preference',
+                text='I explicitly prefer this planned pace',extent='long_term',context=None,occurred_at='date unknown'))
+            response=client.post('/v3/memory-candidate-actions',content=decision,headers=headers)
+            self.assertEqual(response.status_code,200,response.text)
+        profile=dict(subjects=['self'],slots={slot:dict(kind='preference',collection_allowed=True,semantic_resolved=True) for slot in slots},
+            extents=['long_term'],context_ids=[])
+        configuration=TypedRuntimeConfiguration.from_bytes(packed(dict(version='local-memory-run.2',
+            collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+                expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),profiles={'alice':profile}),travel_contexts={'alice':[]}),
+            selections={'alice':dict(subject='self',slots=sorted(slots),max_bytes=32768)})))
+        def admit():
+            admission=host.boundary.checker.check(token);self.assertIs(admission.status,AdmissionStatus.ALLOWED);return admission.principal
+        authority=MessageContextAuthority(host.database.message_repository(self.owner),admit)
+        runtime=configuration.bind(host.database,self.owner,'alice',admit,message_context=authority)
+        receipt=future_receipt
+        binding=Binding(self.owner,receipt['conversation_id'],receipt['generation'],receipt['message_id'],receipt['run_id'],receipt['sequence'])
+        refs=[{key:receipt[key] for key in ('conversation_id','generation','sequence','message_id','input_sha256')}]
+        context=runtime.capture_history(binding,refs,decision_source_sha256s=[])
+        with context.hold(binding) as check:
+            check();actual_model_context=context.messages('What preferences did I explicitly save?')
+            data=json.loads(actual_model_context[0]['content'].split('\n',1)[1])
+            self.assertEqual({item['slot']:item['text'] for item in data['items']},
+                {'diet.spicy':'No spicy food','planning.choice':'I explicitly prefer this planned pace'})
+        with database.connect(scope_for(ISSUER,'bob')) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_item').fetchone(),(0,))
         with database.connect(self.owner) as conn:
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_history_job').fetchone(),(6,))
             self.assertEqual(conn.execute('SELECT processed FROM cj_memory_history_cursor ORDER BY stream_key').fetchall(),[(3,),(3,)])
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_item').fetchone(),(3,))
-            self.assertEqual(conn.execute("SELECT status FROM cj_memory_item WHERE slot='planning.choice'").fetchone(),('candidate',))
+            self.assertEqual(conn.execute("SELECT status FROM cj_memory_item WHERE slot='planning.choice'").fetchone(),('active',))
         print('PASS actual signed MSG3 mixed range -> automatic BG2/BG3 original workers/Meter/Fake -> true end segments; pending D3 restart exact bytes/IDs, six unique original attempts, repeat tick zero resend; foreground new MSG+Memory still separate')
 
 
