@@ -57,10 +57,15 @@ public struct MemoryErasureOriginal: Sendable {
     let itemID: String
     let binding: MemoryBinding
     private let current: @MainActor () throws -> Void
-    fileprivate init(itemID: String, binding: MemoryBinding, current: @escaping @MainActor () throws -> Void) {
+    private let finalFence: @MainActor () throws -> Void
+    fileprivate init(itemID: String, binding: MemoryBinding, current: @escaping @MainActor () throws -> Void,
+        finalFence: @escaping @MainActor () throws -> Void) {
         self.itemID = itemID; self.binding = binding; self.current = current
+        self.finalFence = finalFence
     }
     func validate() throws { try current() }
+    /// No key, credentials, source/current callback or await in the final phase.
+    func validateFinal() throws { try finalFence() }
 }
 @MainActor public final class MemoryErasureWork {
     public let original: MemoryErasureOriginal
@@ -175,12 +180,17 @@ public struct MemoryErasureOriginal: Sendable {
         guard original.owner == owner, original.generation == generation else { throw MemoryFailure.staleBinding }
         try verify(original.pending, scope: scope)
         guard let stopped = try store.observation(for: original.pending) else { throw MemoryFailure.exchangeUnknown }
-        try check(scope); try store.validate(stopped)
-        return MemoryErasureLocalAuthorization(itemID: original.itemID, binding: original.binding) { [self] in
+        let proof = try store.prove(original.pending)
+        try check(scope); try store.validate(stopped); try store.validate(proof)
+        return MemoryErasureLocalAuthorization(itemID: original.itemID, binding: original.binding, current: { [self] in
             try verify(original.pending, scope: scope)
             try store.validate(stopped)
             try check(scope)
-        }
+        }, finalFence: { [self] in
+            guard generation == scope.generation, session.isCurrent(operation) else { throw MemoryFailure.staleBinding }
+            try Task.checkCancellation()
+            try store.validate(proof); try store.validate(stopped)
+        })
     }
     public func prepare(entry: MemoryErasureEntry, acknowledgement: MemoryErasureRangeAcknowledgement) throws -> MemoryErasureWork {
         guard !preparing else { throw MemoryFailure.pendingRequiresQuery }

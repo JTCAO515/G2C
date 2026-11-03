@@ -54,6 +54,7 @@ import Foundation
         // before validating every physical plan, then unlink without callbacks.
         try authorization.validate()
         try validateCurrent()
+        try authorization.validateFinal()
         for step in steps { try step.validate() }
         for step in steps { try step.perform() }
     }
