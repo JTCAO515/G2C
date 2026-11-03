@@ -49,9 +49,9 @@ def pipeline(path,auth,run):
     return app,c,producer,Both(),records
 
 
-def send(case,client,headers,cid,trip_id,version):
+def send(case,client,headers,cid,trip_id,version,*,text='No spicy food'):
     head=client.put('/v1/conversations',params={'conversation_id':cid},headers=headers).json()
-    response=client.post('/v3/messages',content=packed(dict(version='MESSAGE-send.3',conversation_id=cid,message_id=cid,text='No spicy food',
+    response=client.post('/v3/messages',content=packed(dict(version='MESSAGE-send.3',conversation_id=cid,message_id=cid,text=text,
         trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0,travel_context=None,needs_reference=None,
         trip_context=None if trip_id is None else dict(id=trip_id,expected_version=version,day=None,item_id=None))),headers=headers)
     case.assertEqual(response.status_code,200,response.text);return head
@@ -183,8 +183,49 @@ class ErasedHistoryChecks(manual.ManualChecks):
         print('PASS actual extracted source -> original erasure freeze -> signed off/on: re-extraction reports erased range, no old payload copy/cursor advancement or provider resend, independent BG preparation still progresses')
 
 
+class ObsoleteDecisionChecks(manual.ManualChecks):
+    def test_pending_decision_old_memory_basis_keeps_bytes_and_yields(self):
+        path=Path(manual.CONNINFO);run=self.run_context
+        local_run_context.provision_budget(path,run,'alice');dev_auth.activate_travel(path,'alice',run,'MESSAGE-TRAVEL-CONSUMER@1')
+        message_trip_profile.activate(path,'alice',run,'MESSAGE-TRIP-CONSUMER@1')
+        ingress=create_local_app(conninfo_path=path,auth_dir=self.auth,run_context=run,travel_context=True,trip_context=True)
+        database=LocalDatabase(path,run_context=run,travel_context=True,trip_context=True)
+        headers={**self.headers('alice'),'Content-Type':'application/octet-stream'};token=headers['Authorization'][7:]
+        with TestClient(ingress) as client:
+            heads={cid:send(self,client,headers,cid,selected,self.base_version,text=text) for cid,selected,text in
+                [('a-note',None,'Maybe only a note'),('b-pending',self.trip_id,'Discuss accepted plan'),('z-independent',None,'No spicy food')]}
+        self.assertTrue(all(r.status=='completed' for r in run_worker.run_once(database,FakeProvider(),self.auth)))
+        app,service,producer,background,records=pipeline(path,self.auth,run)
+        enable(service,token,'a-note',heads['a-note']);model=Model();producer.poll(token)
+        self.assertEqual([r.status for r in run_worker.run_once(database,model,self.auth,background_jobs=background)],['completed'])
+        enable(service,token,'b-pending',heads['b-pending'])
+        import base64
+        raw=base64.b64decode(producer.incremental._plan(token)[0]);self.assertEqual(json.loads(raw)['version'],'MEMORY-DECISION-JOBS@1')
+        service.enqueue_decision_serialized(token,raw);jid=json.loads(raw)['job_id']
+        with database.connect(self.owner) as conn:
+            original=conn.execute('SELECT state,original_input,memory_epoch FROM cj_memory_history_job WHERE job_id=%s',(jid,)).fetchone()
+        view=json.loads(service.current_conversation_candidates(token,'a-note',''));candidate=view['candidates'][0]
+        with TestClient(app) as client:
+            rejected=client.post('/v3/memory-candidate-actions',content=packed(dict(version='MEMORY-CANDIDATE@1',action_id='reject-unrelated-note',
+                **candidate['review'],candidate_id=candidate['candidate_id'],expected_candidate_version=candidate['version'],
+                expected_memory_epoch=view['memory_epoch'],operation='reject')),headers=headers)
+            self.assertEqual(rejected.status_code,200,rejected.text)
+        # The Trip remains an eligible accepted source. Only its original
+        # captured Memory basis is obsolete; replay is historical, not a rebase.
+        self.assertEqual(json.loads(service.enqueue_decision_serialized(token,raw))['state'],'pending')
+        enable(service,token,'z-independent',heads['z-independent'])
+        result=producer.poll(token);self.assertEqual(result.unavailable,('b-pending',));self.assertEqual(len(result.submitted),1)
+        self.assertEqual([r.status for r in run_worker.run_once(database,model,self.auth,background_jobs=background)],['completed'])
+        self.assertEqual(producer.poll(token).unavailable,('b-pending',));self.assertEqual(len(records),2)
+        self.assertEqual(run_worker.run_once(database,model,self.auth,background_jobs=background),[]);self.assertEqual(model.calls,2)
+        with database.connect(self.owner) as conn:
+            self.assertEqual(conn.execute('SELECT state,original_input,memory_epoch FROM cj_memory_history_job WHERE job_id=%s',(jid,)).fetchone(),original)
+        print('PASS genuine eligible accepted Trip D3 pending -> signed unrelated note reject advances Memory basis: two polls report unavailable, original bytes/state/epoch untouched, independent BG2 completes without auto-rebase/resend')
+
+
 if __name__=='__main__':
     selected={'advanced':'AdvancedDecisionChecks.test_formal_version_advance_before_enqueue_reports_and_progresses',
               'rejected':'RejectedDecisionChecks.test_rejected_decision_before_new_enqueue_reports_and_progresses',
-              'erased':'ErasedHistoryChecks.test_erased_history_copy_reports_and_does_not_starve_other_source'}[sys.argv[1]]
+              'erased':'ErasedHistoryChecks.test_erased_history_copy_reports_and_does_not_starve_other_source',
+              'obsolete':'ObsoleteDecisionChecks.test_pending_decision_old_memory_basis_keeps_bytes_and_yields'}[sys.argv[1]]
     unittest.main(argv=[sys.argv[0]],defaultTest=selected,verbosity=2)

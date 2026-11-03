@@ -47,8 +47,10 @@ class _DecisionPlanning:
     def _promote(self,token,plans):
         if not plans:return plans
         raw=base64.b64decode(plans[0],validate=True);value=json.loads(raw)
-        if value['version']==DECISION_VERSION:return plans
-        plan=EnqueueCommand.parse(raw) if value['version']=='MEMORY-JOBS@1' else EndingCommand.parse(raw)
+        original_decision=value['version']==DECISION_VERSION
+        if original_decision:plan=DecisionCommand.parse(raw)
+        elif value['version']=='MEMORY-JOBS@1':plan=EnqueueCommand.parse(raw)
+        else:plan=EndingCommand.parse(raw)
         query=plan.query;reader=query if query.mode=='incremental' else replace(query,mode='incremental')
         c=self.collection
         def inspect(context):
@@ -60,6 +62,12 @@ class _DecisionPlanning:
                 if old is not None:
                     if old[0]!=tx.epoch:raise _SourceUnavailable(query.conversation_id)
                     return raw
+                if original_decision:
+                    tx.cur.execute("SELECT original_input_sha256 FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='job_id' AND reference_sha256=%s",
+                        (tx.scope_digest,sha256(plan.job_id.encode()).hexdigest()))
+                    erased=tx.cur.fetchone()
+                    if erased is not None and erased[0]==sha256(raw).hexdigest():raise _SourceUnavailable(query.conversation_id)
+                    raise Unavailable('original pending decision absent; reconcile only')
             source_policy=SourcePolicy(repo,principal,guard)
             def references(snapshot):
                 # Only metadata leaves this source callback; no new history
@@ -122,9 +130,9 @@ class _DecisionPlanning:
     def _plan(self,token,*,excluded=()):
         self._excluded=set(excluded);self.unavailable=tuple(sorted(self._excluded))
         for _ in range(self.max_conversations+1):
-            resumed=self._decision_resume(token,self.purpose)
-            if resumed is not None:return resumed
-            try:return self._promote(token,super()._plan(token))
+            try:
+                resumed=self._decision_resume(token,self.purpose)
+                return self._promote(token,resumed if resumed is not None else super()._plan(token))
             except _SourceUnavailable as error:
                 # This source is provably no longer current, not a failed or
                 # UNKNOWN lookup. Report it and fairly inspect another source;
