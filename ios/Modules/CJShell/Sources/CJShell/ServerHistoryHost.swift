@@ -23,19 +23,21 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     let synthetic: Bool
     let tripDiscussions: Bool
     let scopedEdits: Bool
+    let preservedHumanHistory: Bool
     var versionedTripHistory:Bool { tripDiscussions || scopedEdits }
     let draftWriteCapability: ServerDraftWriteCapability?
     let isCurrent: @MainActor () -> Bool
     let selectForSending: (@MainActor (String) -> Bool)?
     public init(client: MessageHTTPClient, recovery: MessageRecovery, scope: StorageScope, lease: Lease,
                 generation: ShellGeneration, limit: Int, limits: MessageReadLimits, synthetic: Bool,
-                draftWriteCapability: ServerDraftWriteCapability? = nil, tripDiscussions: Bool = false, scopedEdits:Bool = false, isCurrent: @escaping @MainActor () -> Bool,
+                draftWriteCapability: ServerDraftWriteCapability? = nil, tripDiscussions: Bool = false, scopedEdits:Bool = false, preservedHumanHistory: Bool = false, isCurrent: @escaping @MainActor () -> Bool,
                 selectForSending: (@MainActor (String) -> Bool)? = nil) {
         self.client = client; self.recovery = recovery; self.scope = scope; self.lease = lease
         self.generation = generation; self.limit = limit; self.limits = limits
         self.synthetic = synthetic; self.isCurrent = isCurrent
         self.tripDiscussions = tripDiscussions
         self.scopedEdits = scopedEdits
+        self.preservedHumanHistory = preservedHumanHistory
         self.draftWriteCapability = draftWriteCapability
         self.selectForSending = selectForSending
     }
@@ -51,6 +53,13 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     fileprivate let selected: Components.Schemas.ConversationSummary?
     fileprivate let listCursor: MessageReadCursor?
     fileprivate let historyCursor: MessageReadCursor?
+}
+
+@MainActor public struct ServerHumanRunContext {
+    fileprivate let read: ServerReadContext
+    fileprivate let row: MessageHumanHistoryItem
+    fileprivate let page: MessageReadResult<[MessageHumanHistoryItem]>
+    fileprivate let priorRequest: UUID?
 }
 
 @MainActor public struct ServerDraftWriteContext {
@@ -75,6 +84,10 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     fileprivate let queryRequest: UUID
 }
 
+private enum HumanRunReadState {
+    case loading, loaded(MessageReadResult<MessageHumanRun>), failed(ServerReadStatus)
+}
+
 @MainActor @Observable public final class ServerHistoryHost {
     private let shell: ShellState
     private var binding: ServerHistoryBinding?
@@ -83,6 +96,9 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
     private var serverDraftState: ServerReadStatus = .unconfigured
     private var listPages: [MessageReadResult<[Components.Schemas.ConversationSummary]>] = []
     private var messagePages: [MessageReadResult<[Components.Schemas.MessageHistoryItem]>] = []
+    private var humanPages: [MessageReadResult<[MessageHumanHistoryItem]>] = []
+    private var humanRuns: [Data: HumanRunReadState] = [:]
+    @ObservationIgnored private var humanRunRequests: [Data: UUID] = [:]
     private var tripMessagePages: [MessageReadResult<[MessageTripHistoryItem]>] = []
     private var draftResult: MessageReadResult<Components.Schemas.MessageDraftSnapshot?>?
     private var selection: Components.Schemas.ConversationSummary?
@@ -109,8 +125,15 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         guard current, let binding, listPages.allSatisfy({ (try? binding.client.validateRead($0, lease: binding.lease)) != nil }) else { return [] }
         return listPages.flatMap(\.value)
     }
+    public var usesPreservedHumanHistory: Bool { current && binding?.preservedHumanHistory == true }
+    public var humanMessages: [MessageHumanHistoryItem] {
+        guard current, let binding, binding.preservedHumanHistory,
+              humanPages.allSatisfy({ (try? binding.client.validateRead($0, lease: binding.lease)) != nil }) else { return [] }
+        return humanPages.flatMap(\.value)
+    }
     public var messages: [Components.Schemas.MessageHistoryItem] {
         guard current, let binding, messagePages.allSatisfy({ (try? binding.client.validateRead($0, lease: binding.lease)) != nil }) else { return [] }
+        if binding.preservedHumanHistory { return [] }
         if binding.versionedTripHistory {
             // Text-only rendering projection. Original references and bytes stay
             // in their typed pages; this never enters canonical action recovery.
@@ -119,7 +142,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         return messagePages.flatMap(\.value)
     }
     public var tripMessages: [MessageTripHistoryItem] {
-        guard current,let binding,binding.versionedTripHistory,
+        guard current,let binding,!binding.preservedHumanHistory,binding.versionedTripHistory,
               tripMessagePages.allSatisfy({ (try? binding.client.validateRead($0,lease:binding.lease)) != nil }) else { return [] }
         return tripMessagePages.flatMap(\.value)
     }
@@ -129,7 +152,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         return draftResult.value
     }
     public var hasMoreConversations: Bool { current && listState == .ready && listPages.last?.next != nil }
-    public var hasMoreMessages: Bool { current && messagesState == .ready && (binding?.versionedTripHistory == true ? tripMessagePages.last?.next : messagePages.last?.next) != nil }
+    public var hasMoreMessages: Bool { current && messagesState == .ready && (binding?.preservedHumanHistory == true ? humanPages.last?.next : binding?.versionedTripHistory == true ? tripMessagePages.last?.next : messagePages.last?.next) != nil }
     public init(shell: ShellState) {
         self.shell = shell
         shell.serverHistoryHost?.invalidate()
@@ -158,7 +181,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         writeState = .ready; writeCancelled = false; queryState = .idle
         selectionEpoch = UUID()
         binding = nil; listRequest = UUID(); historyRequest = UUID(); draftRequest = UUID()
-        listPages = []; messagePages = []; tripMessagePages = []; draftResult = nil; selection = nil
+        listPages = []; messagePages = []; tripMessagePages = []; resetHumanHistory(); draftResult = nil; selection = nil
         listState = .unconfigured; messagesState = .unconfigured; serverDraftState = .unconfigured
         // Retire all state before cancellation can invoke external completion handlers.
         pendingWrite?.cancel()
@@ -167,7 +190,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         guard current, let binding else { return nil }
         return ServerReadContext(binding: binding, selectionEpoch: selectionEpoch,
             listRequest: listRequest, historyRequest: historyRequest, draftRequest: draftRequest,
-            selected: selection, listCursor: listPages.last?.next, historyCursor: binding.versionedTripHistory ? tripMessagePages.last?.next : messagePages.last?.next)
+            selected: selection, listCursor: listPages.last?.next, historyCursor: binding.preservedHumanHistory ? humanPages.last?.next : binding.versionedTripHistory ? tripMessagePages.last?.next : messagePages.last?.next)
     }
     private func accepts(_ context: ServerReadContext) -> Bool {
         current(context.binding) && selectionEpoch == context.selectionEpoch
@@ -183,7 +206,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
             guard writeState != .saving && queryState != .loading else { return }
             resetWriteSelection()
             selectionEpoch = UUID()
-            listPages = []; selection = nil; messagePages = []; tripMessagePages = []; draftResult = nil
+            listPages = []; selection = nil; messagePages = []; tripMessagePages = []; resetHumanHistory(); draftResult = nil
             historyRequest = UUID(); draftRequest = UUID(); messagesState = .idle; serverDraftState = .idle
         }
         let resultSelectionEpoch = selectionEpoch
@@ -197,7 +220,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         } catch {
             guard current(original), listRequest == request, selectionEpoch == resultSelectionEpoch else { return }
             selectionEpoch = UUID()
-            listPages = []; selection = nil; messagePages = []; tripMessagePages = []; draftResult = nil
+            listPages = []; selection = nil; messagePages = []; tripMessagePages = []; resetHumanHistory(); draftResult = nil
             historyRequest = UUID(); draftRequest = UUID(); messagesState = .idle; serverDraftState = .idle
             listState = status(for: error)
         }
@@ -213,7 +236,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         selectionEpoch = UUID()
         listRequest = UUID() // retire a list read issued under the previous selected context
         if listState == .loading { listState = listPages.isEmpty ? .idle : .ready }
-        selection = row; messagePages = []; tripMessagePages = []; draftResult = nil
+        selection = row; messagePages = []; tripMessagePages = []; resetHumanHistory(); draftResult = nil
         historyRequest = UUID(); draftRequest = UUID(); messagesState = .idle; serverDraftState = .idle
         return true
     }
@@ -223,6 +246,30 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
               !more || hasMoreMessages else { return }
         let original = context.binding
         let cursor = more ? context.historyCursor : nil
+        if original.preservedHumanHistory {
+            let request = UUID(); historyRequest = request
+            guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
+            messagesState = .loading
+            guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
+            if !more { resetHumanHistory() }
+            guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
+            do {
+                let result = try await original.client.preservedHistory(conversationID: selected.conversation_id,
+                    limit: original.limit, after: cursor, limits: original.limits, lease: original.lease)
+                try original.client.validateRead(result, lease: original.lease)
+                guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
+                guard result.value.allSatisfy({ Data($0.receipt.generation.utf8) == Data(selected.generation.utf8) }) else { throw MessageReadFailure.resyncRequired }
+                humanPages.append(result)
+                guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
+                messagesState = humanPages.flatMap(\.value).isEmpty ? .empty : .ready
+            } catch {
+                guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
+                resetHumanHistory()
+                guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
+                messagesState = status(for: error)
+            }
+            return
+        }
         if !more { messagePages = []; tripMessagePages = [] }
         let request = UUID(); historyRequest = request; messagesState = .loading
         do {
@@ -244,7 +291,7 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
             messagePages.append(result); messagesState = messagePages.flatMap(\.value).isEmpty ? .empty : .ready
         } catch {
             guard current(original), selectionEpoch == context.selectionEpoch, historyRequest == request else { return }
-            messagePages = []; tripMessagePages = []; messagesState = status(for: error)
+            messagePages = []; tripMessagePages = []; resetHumanHistory(); messagesState = status(for: error)
         }
     }
     public func loadServerDraft(context: ServerReadContext?) async {
@@ -262,6 +309,50 @@ public enum ServerReadStatus: Equatable { case unconfigured, idle, loading, read
         } catch {
             guard current(original), selectionEpoch == context.selectionEpoch, draftRequest == request else { return }
             draftResult = nil; serverDraftState = status(for: error)
+        }
+    }
+    private func resetHumanHistory() {
+        humanRunRequests = [:]; humanPages = []; humanRuns = [:]
+    }
+    public func humanRunStatus(_ row: MessageHumanHistoryItem) -> ServerReadStatus {
+        guard humanMessages.contains(where: { $0.id == row.id }) else { return .unconfigured }
+        switch humanRuns[Data(row.receipt.message_id.utf8)] {
+        case .loading: return .loading
+        case .loaded: return .ready
+        case .failed(let status): return status
+        case nil: return .idle
+        }
+    }
+    public func humanRun(_ row: MessageHumanHistoryItem) -> MessageHumanRun? {
+        guard current, let binding, humanMessages.contains(where: { $0.id == row.id }),
+              case .loaded(let result) = humanRuns[Data(row.receipt.message_id.utf8)],
+              (try? binding.client.validateRead(result, lease: binding.lease)) != nil else { return nil }
+        return result.value
+    }
+    public func captureHumanRun(_ row: MessageHumanHistoryItem) -> ServerHumanRunContext? {
+        guard let read = captureReadContext(), read.binding.preservedHumanHistory,
+              messagesState == .ready, humanRunStatus(row) != .loading,
+              let page = humanPages.first(where: { $0.value.contains(where: { $0.id == row.id }) }) else { return nil }
+        return .init(read: read, row: row, page: page, priorRequest: humanRunRequests[Data(row.receipt.message_id.utf8)])
+    }
+    public func loadHumanRun(context: ServerHumanRunContext?) async {
+        guard let context, accepts(context.read), historyRequest == context.read.historyRequest,
+              humanMessages.contains(where: { $0.id == context.row.id }) else { return }
+        let key = Data(context.row.receipt.message_id.utf8)
+        guard humanRunRequests[key] == context.priorRequest, humanRunStatus(context.row) != .loading else { return }
+        let request = UUID(); humanRunRequests[key] = request
+        humanRuns[key] = .loading
+        guard accepts(context.read), historyRequest == context.read.historyRequest, humanRunRequests[key] == request else { return }
+        let original = context.read.binding
+        do {
+            let result = try await original.client.preservedRun(for: context.row, page: context.page,
+                limits: original.limits, lease: original.lease)
+            try original.client.validateRead(result, lease: original.lease)
+            guard accepts(context.read), historyRequest == context.read.historyRequest, humanRunRequests[key] == request else { return }
+            humanRuns[key] = .loaded(result)
+        } catch {
+            guard accepts(context.read), historyRequest == context.read.historyRequest, humanRunRequests[key] == request else { return }
+            humanRuns[key] = .failed(status(for: error))
         }
     }
     private func resetWriteSelection() {

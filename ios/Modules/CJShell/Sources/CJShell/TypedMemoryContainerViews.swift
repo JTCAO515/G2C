@@ -208,6 +208,7 @@ struct TypedMemoryDetail: View {
     @State private var replacement = ""
     @State private var review: TypedMemoryManagementWork?
     @State private var reviewFailed = false
+    @State private var showErasure = false
     @FocusState private var editFocused: Bool
     var body: some View {
         Form {
@@ -252,6 +253,12 @@ struct TypedMemoryDetail: View {
                         }
                     }
                     if status != "withdrawn" { reviewButton(.stopUse,title:language.text("Review stop using", "核对停止使用")) }
+                    if host.erasurePresentation != nil {
+                        TypedMemoryButton(title: language.text("Delete this whole memory", "删除整条记忆"), id: "memory2.erasure.review", enabled: !host.busy) {
+                            do { try host.prepareErasure(surface: surface); showErasure = true; reviewFailed = false }
+                            catch { reviewFailed = true }
+                        }
+                    }
                 } else { TypedMemoryText(text:language.text("Memory not found.", "未找到该记忆。"),id:"memory2.detail.state") }
             }
             if reviewFailed { TypedMemoryText(text:language.text("A current record, matching travel or earlier original still needs verification. No new action was submitted.", "仍需核实当前记录、对应旅行或此前原操作；尚未新增提交。"),id:"memory2.manage.error") }
@@ -284,6 +291,9 @@ struct TypedMemoryDetail: View {
             } }
             .onChange(of:replacement) { _,_ in review = nil }
             .modifier(TypedMemorySurfaceLifecycle(host:host,surface:$surface,onBegin:{editFocused = false;review = nil;reviewFailed = false}))
+            .sheet(isPresented: $showErasure) {
+                NavigationStack { TypedMemoryErasurePage(host: host, language: language) }
+            }
     }
     private func operationLabel(_ operation: TypedMemoryOperation) -> String {
         switch operation {
@@ -298,6 +308,28 @@ struct TypedMemoryDetail: View {
             editFocused = false
             do { review = try host.prepareManagement(operation,text:operation == .edit ? replacement : nil,surface:surface);reviewFailed = false }
             catch { review = nil;reviewFailed = true }
+        }
+    }
+}
+
+struct TypedMemoryErasurePage: View {
+    let host: TypedMemoryContainerHost
+    let language: ShellLanguage
+    var body: some View {
+        if let model = host.erasurePresentation {
+            MemoryErasureView(model: model, language: language == .english ? .english : .chinese,
+                localStatus: localStatus, canClearLocal: model.knownStopped && !model.state.isBusy && host.localCleanupState != .clearing,
+                clearLocal: { host.clearErasedLocalContent() })
+        } else {
+            RunReadableText(text: language.text("Deletion is unavailable in this account session. Nothing was submitted.", "当前账号会话暂不能删除，未提交操作。"))
+        }
+    }
+    private var localStatus: String {
+        switch host.localCleanupState {
+        case .notChecked: language.text("This device's item copies have not been cleared or verified.", "尚未清理或核实本机条目副本。")
+        case .clearing: language.text("Clearing and verifying this device's matching item journals…", "正在清理并核实本机对应条目日志…")
+        case .complete: language.text("Matching memory save/edit journals on this device were physically cleared and verified.", "本机对应条目的记忆保存、编辑日志已物理清理并核实。")
+        case .unknown: language.text("This device's cleanup is unconfirmed. Keep the original deletion and explicitly check again.", "本机清理尚未确认，请保留原删除并明确再次核查。")
         }
     }
 }

@@ -5,7 +5,7 @@ import CJMessageKeys
 /// Separate V2 domain/directory; never reinterpret or overwrite an existing V1
 /// manual/lifecycle journal. Reopen permits only original receipt queries.
 @MainActor public final class TypedMemoryPendingStore {
-    private let storage: MemoryEncryptedRecords<TypedMemoryPending>
+    let storage: MemoryEncryptedRecords<TypedMemoryPending>
     public init(directory: URL,maximumBytes: Int,maximumRecords: Int,binding: MemoryBinding,
                 expectedKeyID: UUID,provider: any MessageEncryptionKeyProvider) throws {
         storage = try MemoryEncryptedRecords(directory:directory,maximumBytes:maximumBytes,maximumRecords:maximumRecords,
