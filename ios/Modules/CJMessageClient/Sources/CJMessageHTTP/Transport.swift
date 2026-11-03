@@ -49,6 +49,7 @@ struct CheckedTransport: ClientTransport {
               (operationID == "readTripEditHistoryV3" && request.method == .get && request.path?.hasPrefix("/v3/message-history?") == true) ||
               (operationID == "readTripEditStatusV5" && request.method == .get && request.path?.hasPrefix("/v5/message-send-status?") == true) ||
               (operationID == "readTripEditHistoryV4" && request.method == .get && request.path?.hasPrefix("/v4/message-history?") == true) ||
+              PreservedHistoryRoute.accepts(request, hasBody: body != nil, operationID: operationID) ||
               (operationID == Operations.openConversation.id && request.method == .put && request.path?.hasPrefix("/v1/conversations?") == true) ||
               (operationID == Operations.getTravelContext.id && request.method == .get && request.path?.hasPrefix("/v1/travel-contexts/") == true && request.path?.contains("?") == false) ||
               (operationID == "listConversations" && request.method == .get && request.path?.hasPrefix("/v1/conversations?") == true) ||
@@ -1162,6 +1163,53 @@ extension MessageHTTPClient {
             return MessageReadResult(value:value,next:nil,requestID:body.request_id,owner:readOwner,lease:lease)
         case .default(let status, let response): try readError(status, response.body.json)
         }
+    }
+    /// Current human-history projection only. It deliberately does not update
+    /// send permits, accepted action recovery or any current Trip selection.
+    public func preservedHistory(conversationID: String, limit: Int, after: MessageReadCursor? = nil,
+        limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<[MessageHumanHistoryItem]> {
+        guard !conversationID.isEmpty, conversationID.utf8.count <= 256, !conversationID.utf8.contains(0) else { throw MessageHTTPFailure.invalidConfiguration }
+        try checkSendLease(lease)
+        let purpose = Data("preserved-history5:".utf8) + Data(conversationID.utf8)
+        try readCursor(after, purpose: purpose, limit: limit, limits: limits, lease: lease)
+        var query = URLComponents(); query.path = "/v5/message-history"
+        query.queryItems = [.init(name: "conversation_id", value: conversationID), .init(name: "limit", value: String(limit))]
+        if let after { query.queryItems!.append(.init(name: "cursor", value: after.opaque)) }
+        query.percentEncodedQuery = query.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        guard let path = query.string else { throw MessageHTTPFailure.invalidConfiguration }
+        let (status, bytes, trace) = try await versionedMessageExchange(path: path, operation: "readPreservedMessageHistoryV5", raw: nil, lease: lease)
+        guard status == 200 else { try readError(status, JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: bytes)) }
+        let page = try PreservedHistoryPage(raw: bytes, maximumBytes: endpoint.maximumResponseBytes,
+            decodedLimit: limits.maximumDecodedBytes, limit: limit, requestID: trace)
+        guard !page.rows.isEmpty || (after == nil && page.next == nil) else { throw MessageHTTPFailure.invalidResponse }
+        var last = after?.last ?? 0, generation = after?.generation, ids = after?.seenIDs ?? []
+        for row in page.rows {
+            let r = row.receipt
+            guard DiscussionJSON.same(r.conversation_id, conversationID), !r.message_id.isEmpty, !r.generation.isEmpty, !r.run_id.isEmpty,
+                  last < Int64.max, Int64(exactly: r.sequence) == last + 1, ids.insert(Data(r.message_id.utf8)).inserted,
+                  generation.map({ DiscussionJSON.same($0, r.generation) }) ?? true else { throw MessageReadFailure.resyncRequired }
+            generation = r.generation; last = Int64(r.sequence)
+        }
+        let next = try nextRead(page.next, previous: after, purpose: purpose, last: last, generation: generation, ids: ids, limits: limits, lease: lease)
+        try checkSendLease(lease)
+        return MessageReadResult(value: page.rows, next: next, requestID: trace, owner: readOwner, lease: lease)
+    }
+    /// A row must belong to this exact live page/client/lease. The result carries
+    /// only display state; it cannot recover an input or stage a RUN/Trip write.
+    public func preservedRun(for row: MessageHumanHistoryItem, page: MessageReadResult<[MessageHumanHistoryItem]>,
+        limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<MessageHumanRun> {
+        try validateRead(page, lease: lease); try checkSendLease(lease)
+        guard page.value.contains(where: { $0.id == row.id }) else { throw RecoveryError.inactive }
+        var query = URLComponents(); query.path = "/v6/run-display"
+        query.queryItems = [.init(name: "message_id", value: row.receipt.message_id)]
+        query.percentEncodedQuery = query.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        guard let path = query.string else { throw MessageHTTPFailure.invalidConfiguration }
+        let (status, bytes, trace) = try await versionedMessageExchange(path: path, operation: "readPreservedRunDisplayV6", raw: nil, lease: lease)
+        guard status == 200 else { try readError(status, JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: bytes)) }
+        let value = try decodePreservedRun(bytes, maximumBytes: endpoint.maximumResponseBytes,
+            textLimit: limits.maximumDecodedBytes, trace: trace, row: row)
+        try validateRead(page, lease: lease); try checkSendLease(lease)
+        return MessageReadResult(value: value, next: nil, requestID: trace, owner: readOwner, lease: lease)
     }
     public func tripDiscussionHistory(conversationID:String,limit:Int,after:MessageReadCursor?=nil,limits:MessageReadLimits,lease:Lease) async throws -> MessageReadResult<[MessageTripHistoryItem]> {
         try await versionedTripHistory(conversationID:conversationID,limit:limit,after:after,limits:limits,lease:lease,edit:false)

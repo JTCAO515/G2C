@@ -2,6 +2,7 @@
 import SwiftUI
 import CJAPI
 import CJRunClient
+import CJMessageHTTP
 
 struct ServerHistoryView: View {
     let host: ServerHistoryHost
@@ -43,6 +44,9 @@ struct ServerHistoryView: View {
                     Button(language.text("Load messages from first page", "从第一页读取消息")) { Task { await host.loadHistory(context: readContext) } }
                         .accessibilityIdentifier("history.loadMessages")
                         .disabled(host.historyStatus == .loading)
+                    ForEach(host.humanMessages, id: \.id) { row in
+                        humanMessage(row)
+                    }
                     ForEach(host.messages, id: \.messageBytes) { row in
                         Text(row.text).textSelection(.enabled).accessibilityIdentifier("history.message." + row.receipt.message_id)
                     }
@@ -80,6 +84,33 @@ struct ServerHistoryView: View {
                 }
             }
         }.navigationTitle(language.text("Server history", "服务器历史"))
+    }
+    @ViewBuilder private func humanMessage(_ row: MessageHumanHistoryItem) -> some View {
+        let run = host.humanRun(row)
+        let source = run?.sourceState ?? row.sourceState
+        let context = host.captureHumanRun(row)
+        RunReadableText(text: row.text).textSelection(.enabled)
+            .accessibilityIdentifier("history.message." + row.receipt.message_id)
+        if source == .erased {
+            RunReadableText(text: language.text(
+                "The original model source was cleared. This history is available for viewing only.",
+                "原模型来源已清理，这段历史仅供查看。"))
+                .accessibilityIdentifier("history.source.erased." + row.receipt.message_id)
+        }
+        Button { Task { await host.loadHumanRun(context: context) } } label: {
+            RunReadableText(text: language.text("Read original answer", "读取原回答")).frame(minHeight: 44)
+        }.disabled(context == nil)
+            .accessibilityIdentifier("history.answer.read." + row.receipt.message_id)
+        status(host.humanRunStatus(row))
+            .accessibilityIdentifier("history.answer.status." + row.receipt.message_id)
+        if let run {
+            RunReadableText(text: run.snapshot.text).textSelection(.enabled)
+                .accessibilityIdentifier("history.answer.text." + row.receipt.message_id)
+            RunReadableText(text: language.text(
+                "Reading this answer does not resend the message or restart its task.",
+                "读取原回答不会重发消息或重新执行任务。"))
+                .accessibilityIdentifier("history.answer.readonly." + row.receipt.message_id)
+        }
     }
     private var writeStatus: String {
         switch host.draftWriteStatus {

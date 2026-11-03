@@ -730,7 +730,7 @@ import Observation
         let limits = try MessageReadLimits(maximumPageItems: 20, maximumCursorBytes: 4096,
                                            maximumDecodedBytes: 1_000_000, maximumPages: 50)
         guard history.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease,
-            generation: shell.generation, limit: 20, limits: limits, synthetic: false,tripDiscussions:tripDiscussions,scopedEdits:scopedEdits,
+            generation: shell.generation, limit: 20, limits: limits, synthetic: false,tripDiscussions:tripDiscussions,scopedEdits:scopedEdits,preservedHumanHistory:true,
             isCurrent: { lifetime.current },
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
