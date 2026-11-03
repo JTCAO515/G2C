@@ -183,6 +183,38 @@ def exercise(auth,conninfo):
         before=model.calls;assert run_worker.run_once(db(s),model,auth,draft_profile='needs-current-trip.1')==[] and model.calls==before
         no_basis(s,r);original(s,r,raw)
         with TestClient(needs(s)) as c:assert read(c,s,old['trip_id'])==old
+    # The draft's accepted Trip is appended after the first answer model. B must
+    # augment C's original capture at this actual second-model boundary.
+    from datetime import datetime,timedelta,timezone
+    from unittest.mock import patch
+    from cj_memory.typed_api import create_local_typed_app
+    from cj_memory.typed_local import TypedConfiguration
+    from cj_memory.typed_runtime import TypedRuntimeConfiguration
+    from cj_api.local_memory_history import read_original_digest
+    deadline=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat()
+    profile=dict(subjects=['self'],slots={'pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},
+                 extents=['long_term'],context_ids=[])
+    typed=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',expires_at=deadline,
+               profiles={'program':profile}),travel_contexts={'program':[]})
+    configuration=TypedRuntimeConfiguration.from_bytes(packed(dict(version='local-memory-run.2',collection=typed,
+                    selections={'program':dict(subject='self',slots=['pace'],max_bytes=32768)})))
+    with TestClient(create_local_typed_app(conninfo_path=conninfo,auth_dir=auth,configuration=TypedConfiguration.from_bytes(packed(typed)))) as c:
+        manual=packed(dict(version='MEMORY-manual.2',operation_id='history-memory',item_id='history-memory',subject='self',slot='pace',
+            kind='preference',text='Keep a slow pace',extent='long_term',context=None,occurred_at='date unknown'))
+        harness.expect(post(c,'program','/v2/memories',manual))
+    r,raw=send('program','memory-source2')
+    model=CurrentTripPlanFakeProvider()
+    with patch('cj_api.local_memory_history.read_original_digest',wraps=read_original_digest) as reads:
+        outcome=run_worker.run_once(db('program'),model,auth,memory_configuration=configuration,draft_profile='needs-current-trip.1')[0]
+    assert outcome.status=='completed' and outcome.proposal_id and model.calls==2,outcome
+    assert reads.call_count==1,reads.call_args_list
+    assert reads.call_args.args[4].trip_id and reads.call_args.args[4].content_sha256
+    with db('program').connect(scope_for(ISSUER,'program')) as c:
+        rows=c.execute("SELECT input_bytes FROM cj_run_metered_operation WHERE run_id=%s AND registration_id='model.draft'",(r['run_id'],)).fetchall()
+        invocation=json.loads(bytes(rows[0][0]));assert json.loads(invocation['messages'][-1]['content'])['current_trip'] is not None
+        assert 'Keep a slow pace' in invocation['messages'][0]['content']
+    original('program',r,raw)
+    print('PASS real source2 second model augments original C History Memory via genuine accepted-decision fence; original capture retained, two real Meter/Fake calls and publication completed')
     print('PASS378 actual signed API/restricted PG/unpatched run_once+CLI/Meter/C source2, original discovery/Signer/act/receipt/bytes, local fixed retention/new Trip vs original context; missing/stale/fixed/owner/NEEDS/selection/cancel/UNKNOWN negatives')
 
 if __name__=='__main__':harness.exercise=exercise;harness.main()

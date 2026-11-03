@@ -570,6 +570,13 @@ def group_memory_erasure_driver():
 GROUPS.update(memory_erasure_driver=group_memory_erasure_driver)
 
 
+def group_memory_payload():
+    return script('backend/run/tests/probe_memory_payload.py')
+
+
+GROUPS.update(memory_payload=group_memory_payload)
+
+
 def group_device_completion():
     return _fresh_runtime_check('device_completion',55827,'cj_device_completion',
         f'/tmp/cj-device-completion-{os.getpid()}','backend/cj_api/tests/device_completion_pg.py')

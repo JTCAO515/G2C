@@ -1,7 +1,7 @@
 """RUN internal candidate. No authentication, provider, tools or network entry point."""
 from dataclasses import dataclass, replace
 from typing import Callable, ContextManager, Protocol, Optional
-from .usage_binding import UsageBinding
+from .usage_binding import UsageBinding,ErasedUsageBinding
 
 
 class Conflict(Exception):
@@ -82,7 +82,7 @@ class State:
     events: tuple[Event, ...] = ()
     text: str = ''
     effects: tuple[str, ...] = ()
-    usage: Optional[UsageBinding] = None
+    usage: Optional[UsageBinding|ErasedUsageBinding] = None
 
     @property
     def draft_outcome(self):

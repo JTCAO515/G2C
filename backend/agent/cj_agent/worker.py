@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -113,6 +113,8 @@ class RunWorker:
         self.budget_exit = budget_exit
         self.execution_guard = execution_guard
         self.memory = memory
+        self.memory_history=memory_history
+        self.history_adapter=history_adapter
         self.memory_run = None
         self.message_context=message_context
         self._publication_check=None
@@ -251,6 +253,7 @@ class RunWorker:
         return state, result
 
     def _stream(self, binding, messages, system=None):
+        self._model_history(binding,messages,system)
         prepared = None
         if self.budget_exit is not None:
             prepared = self.budget_exit.prepare(self.runs,binding,'draft' if system is not None else 'answer',
@@ -261,8 +264,18 @@ class RunWorker:
         yield from self._stream_source(binding,source,draft=system is not None)
 
     def _registered_stream(self,binding,key,registration,argument):
+        if self.memory_history and registration in ('model.answer','model.draft'):
+            messages,system,_=argument
+            self._model_history(binding,messages,system)
         prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer')
         yield from self._stream_source(binding,lambda:self.budget_exit.stream(prepared),draft=False)
+
+    def _model_history(self,binding,messages,system):
+        if self.memory_history and self.memory_run is not None:
+            self.memory_run=self.history_adapter.before_model(binding,self.memory_run,messages,system)
+            # This proxy belongs to this original worker. Preserve its provider
+            # and payload; only the actual C fence/reference union is enriched.
+            self.provider.memory=self.memory_run
 
     def _stream_source(self,binding,source,*,draft):
         stream=None
@@ -355,7 +368,7 @@ class RunWorker:
                     check()
             owned = RunWorker(scope=binding.scope, messages=messages, provider=provider, drafts=drafts,
                               needs_lease=self.needs_lease, budget_exit=self.budget_exit,
-                              memory=self.memory,
+                              memory=self.memory,memory_history=self.memory_history,history_adapter=self.history_adapter,
                               message_context=self.message_context,
                               tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
                               runs=Service(OwnedRepository(), runs.valid))
@@ -414,7 +427,8 @@ class RunWorker:
         command = json.loads(stored.raw)
         text = command['text']
         if self.memory is not None:
-            self.memory_run = self.memory.capture(binding)
+            self.memory_run = (self.history_adapter.capture(binding) if self.memory_history
+                               else self.memory.capture(binding))
             wrapper=_EditMemoryProvider if self.edit_publisher is not None else _MemoryProvider
             self.provider = wrapper(self.provider, self.memory_run)
         if self.needs_lease is not None and command['creation_intent'] == 'consider_trip':
