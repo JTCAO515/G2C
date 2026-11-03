@@ -10,6 +10,8 @@ struct AccountCleanupRecord: Codable {
     let account: UUID
     var deviceV3Scope: AccountCleanupScope?
     var deviceV3FromQuery: Bool?
+    var deviceV4Scope: AccountCleanupScope?
+    var deviceV4FromQuery: Bool?
     var registration: Data?
     var registered: Data?
     var preparation: Data?
@@ -26,7 +28,7 @@ struct AccountCleanupRecord: Codable {
     func registrationFields() throws -> (deviceID: String, stateRef: String) {
         guard let registration else { throw CleanupFailure.unavailable }
         let fields = try accountCleanupObject(accountCleanupDocument(registration), fields: ["version", "action_id", "device_id", "state_ref"])
-        let wire = version == "AccountCleanup.Native@2" ? "CLEANUP-DEVICE@3" : "CLEANUP-DEVICE@1"
+        let wire = version == "AccountCleanup.Native@3" ? "CLEANUP-DEVICE@4" : version == "AccountCleanup.Native@2" ? "CLEANUP-DEVICE@3" : "CLEANUP-DEVICE@1"
         guard try accountCleanupString(fields["version"]) == wire else { throw CleanupFailure.invalidResponse }
         _ = try accountCleanupID(fields["action_id"])
         return (try accountCleanupID(fields["device_id"]), try accountCleanupDigest(fields["state_ref"]))
@@ -34,10 +36,12 @@ struct AccountCleanupRecord: Codable {
     func device() throws -> AccountCleanupDeviceBinding {
         let fields = try registrationFields()
         guard let registered else { throw CleanupFailure.unavailable }
-        if version == "AccountCleanup.Native@2" {
-            guard let deviceV3Scope, let deviceV3FromQuery, let registration else { throw CleanupFailure.invalidResponse }
-            return try AccountCleanupDeviceBinding(v3: DeviceCleanupEnrollment(originalUTF8: registration, replyUTF8: registered,
-                fromQuery: deviceV3FromQuery, scope: deviceV3Scope))
+        if version == "AccountCleanup.Native@2" || version == "AccountCleanup.Native@3" {
+            let scope = version == "AccountCleanup.Native@2" ? deviceV3Scope : deviceV4Scope
+            let fromQuery = version == "AccountCleanup.Native@2" ? deviceV3FromQuery : deviceV4FromQuery
+            guard let scope, let fromQuery, let registration else { throw CleanupFailure.invalidResponse }
+            return try AccountCleanupDeviceBinding(enrollment: DeviceCleanupEnrollment(originalUTF8: registration, replyUTF8: registered,
+                fromQuery: fromQuery, scope: scope))
         }
         return try AccountCleanupDeviceBinding(accountCleanupDocument(registered), deviceID: fields.deviceID, stateRef: fields.stateRef)
     }
@@ -65,7 +69,7 @@ struct AccountCleanupRecord: Codable {
         return try AccountCleanupProgress(accountCleanupDocument(progress), originalOperationID: original().operationID)
     }
     func validate(scope: AccountCleanupScope) throws {
-        guard ["AccountCleanup.Native@1", "AccountCleanup.Native@2"].contains(version), environment == scope.environment, account == scope.account,
+        guard ["AccountCleanup.Native@1", "AccountCleanup.Native@2", "AccountCleanup.Native@3"].contains(version), environment == scope.environment, account == scope.account,
               registration != nil || (registered == nil && preparation == nil && prepared == nil && confirmation == nil && confirmationResponse == nil && progress == nil),
               registered != nil || (preparation == nil && prepared == nil && confirmation == nil && confirmationResponse == nil && progress == nil),
               preparation != nil || (prepared == nil && confirmation == nil && confirmationResponse == nil && progress == nil),
@@ -74,10 +78,13 @@ struct AccountCleanupRecord: Codable {
               confirmationResponse == nil || confirmationDispatched,
               !preparedFromQuery || prepared != nil else { throw CleanupFailure.invalidResponse }
         if version == "AccountCleanup.Native@1" {
-            guard deviceV3Scope == nil, deviceV3FromQuery == nil else { throw CleanupFailure.invalidResponse }
-        } else {
+            guard deviceV3Scope == nil, deviceV3FromQuery == nil, deviceV4Scope == nil, deviceV4FromQuery == nil else { throw CleanupFailure.invalidResponse }
+        } else if version == "AccountCleanup.Native@2" {
             guard let deviceV3Scope, deviceV3Scope.environment == environment, deviceV3Scope.account == account,
-                  deviceV3FromQuery != nil, registration != nil, registered != nil else { throw CleanupFailure.invalidResponse }
+                  deviceV3FromQuery != nil, deviceV4Scope == nil, deviceV4FromQuery == nil, registration != nil, registered != nil else { throw CleanupFailure.invalidResponse }
+        } else {
+            guard let deviceV4Scope, deviceV4Scope.environment == environment, deviceV4Scope.account == account,
+                  deviceV4FromQuery != nil, deviceV3Scope == nil, deviceV3FromQuery == nil, registration != nil, registered != nil else { throw CleanupFailure.invalidResponse }
         }
         guard [registration, preparation, confirmation].compactMap({ $0 }).allSatisfy({ !$0.isEmpty && $0.count <= 16384 }) else { throw CleanupFailure.invalidResponse }
         if registration != nil { _ = try registrationFields() }
@@ -116,7 +123,7 @@ struct AccountCleanupRecord: Codable {
         var parser = StrictCleanupJSON(bytes: Array(bytes))
         let object = try accountCleanupObject(parser.document())
         try accountCleanupKeys(object, fields: ["version", "environment", "account", "preparedFromQuery", "confirmationDispatched"],
-            optional: ["deviceV3Scope", "deviceV3FromQuery", "registration", "registered", "preparation", "prepared", "confirmation", "confirmationResponse", "progress"])
+            optional: ["deviceV3Scope", "deviceV3FromQuery", "deviceV4Scope", "deviceV4FromQuery", "registration", "registered", "preparation", "prepared", "confirmation", "confirmationResponse", "progress"])
         let record: AccountCleanupRecord
         do { record = try JSONDecoder().decode(AccountCleanupRecord.self, from: bytes) } catch { throw CleanupFailure.invalidResponse }
         try record.validate(scope: scope)

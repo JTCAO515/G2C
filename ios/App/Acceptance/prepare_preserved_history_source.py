@@ -8,7 +8,7 @@ import os
 import uuid
 
 
-def prepare_preserved_history(connection, auth, context, subjects, tokens, directory, registry_path):
+def prepare_preserved_history(connection, auth, context, subjects, tokens, directory, registry_path, *, include_apps=False):
     from fastapi.testclient import TestClient
     import dev_auth, message_trip_profile
     from run_worker import run_once
@@ -92,23 +92,19 @@ def prepare_preserved_history(connection, auth, context, subjects, tokens, direc
 
     expiry = (datetime.now(timezone.utc)+timedelta(hours=1)).isoformat()
     profile = dict(subjects=['self'],slots={'pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    if include_apps:
+        profile['slots']['budget']=dict(kind='preference',collection_allowed=True,semantic_resolved=True)
     typed = TypedConfiguration.from_bytes(packed(dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
         expires_at=expiry,profiles={s:profile for s in subjects.values()}),travel_contexts={s:[] for s in subjects.values()})))
     item = str(uuid.uuid4())
-    with TestClient(create_local_typed_app(conninfo_path=connection,auth_dir=auth,configuration=typed)) as client:
+    typed_app = create_local_typed_app(conninfo_path=connection,auth_dir=auth,configuration=typed)
+    with TestClient(typed_app) as client:
         saved = expect(client.post('/v2/memories',content=packed(dict(version='MEMORY-manual.2',operation_id=str(uuid.uuid4()),
             item_id=item,subject='self',slot='pace',kind='preference',text='我明确保存轻松节奏偏好',extent='long_term',context=None,occurred_at='时间不详')),headers=binary))['receipt']
     full = json.loads(registry_path.read_bytes())
-    def select(node,parent=''):
-        name=parent+node['id'];children=node.get('objects',[])
-        nested=[x for x in children if isinstance(x,dict)]
-        if nested:
-            assert len(nested)==len(children)
-            selected=[v for child in nested if (v:=select(child,name+'/')) is not None]
-            return dict(node,objects=selected) if selected else None
-        return node if name in ORDER or name.startswith('cleanup-control/') else None
-    projected=directory/'memory-registry.json';projected.write_bytes(packed(dict(version='actual-memory-human-history-projection',
-        stores=[v for node in full['stores'] if (v:=select(node)) is not None])))
+    from prepare_provided_cleanup_sources import project_registry
+    projected=directory/'memory-registry.json'
+    projected.write_bytes(packed(project_registry(full, ORDER, 'actual-memory-human-history-projection')))
     frozen=freeze_controls(projected.read_bytes(),ORDER,versions=('CLEANUP@1.0','CLEANUP@1.1'))
     from check_account_cleanup_component import FULL_INVENTORY
     actual=freeze_controls(registry_path.read_bytes(),FULL_INVENTORY,versions=('CLEANUP@1.0','CLEANUP@1.1'))
@@ -137,6 +133,9 @@ def prepare_preserved_history(connection, auth, context, subjects, tokens, direc
         assert client.get('/v5/message-history',params={'conversation_id':conversation,'limit':20},headers={'Authorization':'Bearer '+tokens['B']}).status_code!=200
     with TestClient(structured) as client:
         assert expect(client.get('/v5/trip-structured',params={'trip_id':trip['trip_id']},headers=headers))['trip']==retained_trip
-    return human, dict(conversation_id=conversation,message_id=message,text=text,answer=after['snapshot']['text'],
+    proof = dict(conversation_id=conversation,message_id=message,text=text,answer=after['snapshot']['text'],
         original_sha256=hashlib.sha256(original).hexdigest(),trip_id=trip['trip_id'],trip_version=retained_trip['version'],
         source_state='erased',provider_calls=model.calls+formal_model.calls,operation_id=erased['operation_id'])
+    if include_apps:
+        return human, proof, dict(erasure=erasure, typed=typed_app, structured=structured, policy=profile, cleanup_options=options)
+    return human, proof

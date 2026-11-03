@@ -1,4 +1,14 @@
 import Testing
+
+// Frozen V3 fixture; newer protocol enum cases must not expand its old wire data.
+let legacyDeviceTargetNames = [
+    "device-cache/encrypted-message-file", "device-cache/sdk-session-keychain", "device-cache/message-key-keychain",
+    "device-cache/trip-pending-file", "device-cache/offline-trip", "device-cache/feedback-pending", "device-cache/feedback-key-keychain",
+    "device-cache/memory-manual-pending", "device-cache/memory-lifecycle-pending", "device-cache/memory-typed-pending",
+    "device-cache/memory-key-keychain", "device-cache/needs-pending", "device-cache/needs-key-keychain",
+    "device-cache/memory-history-pending", "device-cache/trip-scoped-pending", "device-cache/needs-planning-pending",
+    "device-cache/trip-key-keychain", "device-cache/offline-key-keychain", "device-cache/offline-write-residue"
+]
 import Foundation
 import CJSession
 @testable import CJCleanupClient
@@ -24,7 +34,7 @@ private func enrollmentFixture(query: Bool = false) throws -> DeviceCleanupEnrol
 private func invocationFixture(enrollment: DeviceCleanupEnrollment, change: ((inout [String: Any]) -> Void)? = nil) throws -> Data {
     var call: [String: Any] = ["version":"CLEANUP-DEVICE@3", "operation_id":"original-operation", "invocation_id":"original-invocation",
         "binding_id":enrollment.bindingID, "scope_digest":enrollment.scopeDigest, "state_ref":enrollment.stateRef,
-        "reason":"session_invalid", "targets":DeviceCleanupTarget.allCases.map(\.rawValue), "business_access":"not_granted"]
+        "reason":"session_invalid", "targets":legacyDeviceTargetNames, "business_access":"not_granted"]
     change?(&call)
     let digest = deviceCleanupSHA(try deviceJSON(call))
     return try deviceJSON(["call":call, "request_digest":digest, "state":"pending", "receipt_digest":NSNull(), "receipt_token":"SYNTHETIC.RECEIPT.CAPABILITY"])
@@ -67,8 +77,8 @@ func crossScopeOrChangedTargetDoesNotAuthorizeNativeDispatch(change: String) thr
         case "version": call["version"] = "CLEANUP-DEVICE@2"
         case "grant": call["business_access"] = "granted"
         case "target": call["targets"] = ["device-cache/unknown-directory"]
-        case "duplicate": call["targets"] = DeviceCleanupTarget.allCases.map(\.rawValue) + [DeviceCleanupTarget.offlineTrip.rawValue]
-        default: call["targets"] = Array(DeviceCleanupTarget.allCases.dropLast()).map(\.rawValue)
+        case "duplicate": call["targets"] = legacyDeviceTargetNames + [DeviceCleanupTarget.offlineTrip.rawValue]
+        default: call["targets"] = Array(legacyDeviceTargetNames.dropLast())
         }
     }
     #expect(throws: CleanupFailure.invalidResponse) {

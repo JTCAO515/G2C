@@ -16,11 +16,13 @@ import HTTPTypes
 }
 public struct DeviceCleanupAccountAuthorization: Sendable {
     public let operationID: String
+    let version: CleanupDeviceVersion
     let scope: AccountCleanupScope
     let bindingID: String
     let stateRef: String
-    init(operationID: String, scope: AccountCleanupScope, bindingID: String, stateRef: String) {
+    init(operationID: String, scope: AccountCleanupScope, bindingID: String, stateRef: String, version: CleanupDeviceVersion = .v3) {
         self.operationID = operationID; self.scope = scope; self.bindingID = bindingID; self.stateRef = stateRef
+        self.version = version
     }
 }
 public enum DeviceCleanupClientState: Sendable {
@@ -60,18 +62,20 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
     private var active = true
     private var busy = false
     public var capturedScope: AccountCleanupScope { journal.record.scope }
+    public var version: CleanupDeviceVersion { journal.record.wire }
 
     public init(development endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime, securePersistence: any SessionPersistence,
         session: SessionLifecycle, sessionOperation: SessionOperation, credentials: @escaping @MainActor () async throws -> String?,
-        requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
+        requestTimeout: TimeInterval, resourceTimeout: TimeInterval, version: CleanupDeviceVersion = .v3) throws {
         #if DEBUG && targetEnvironment(simulator)
         try Self.configuration(endpoint, requestTimeout, resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime
-        journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
+        journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope, newVersion: version)
         ordinary = Ordinary(session: session, operation: sessionOperation, credentials: credentials)
+        let wire = journal.record.wire
         transportFactory = { kind, validate in
-            if kind == .completion { return try NoRedirectTransport.developmentDeviceCompletion(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
-            return try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate)
+            if kind == .completion { return try NoRedirectTransport.developmentDeviceCompletion(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate, version: wire) }
+            return try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate, version: wire)
         }
         try checkLifetime(ordinary: true)
         #else
@@ -85,9 +89,10 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         self.endpoint = endpoint; self.lifetime = lifetime; ordinary = nil
         journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
         _ = try journal.record.enrollment()
+        let wire = journal.record.wire
         transportFactory = { kind, validate in
-            if kind == .completion { return try NoRedirectTransport.developmentDeviceCompletion(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
-            return try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate)
+            if kind == .completion { return try NoRedirectTransport.developmentDeviceCompletion(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate, version: wire) }
+            return try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate, version: wire)
         }
         try checkLifetime(ordinary: false)
         #else
@@ -96,9 +101,9 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
     }
     init(endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime, securePersistence: any SessionPersistence,
         session: SessionLifecycle? = nil, sessionOperation: SessionOperation? = nil, credentials: (@MainActor () async throws -> String?)? = nil,
-        interceptedTransport: any ClientTransport) throws {
+        interceptedTransport: any ClientTransport, version: CleanupDeviceVersion = .v3) throws {
         self.endpoint = endpoint; self.lifetime = lifetime
-        journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
+        journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope, newVersion: version)
         if let session, let sessionOperation, let credentials {
             ordinary = Ordinary(session: session, operation: sessionOperation, credentials: credentials)
         } else {
@@ -158,20 +163,20 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         guard journal.record.registration == nil else { throw CleanupFailure.unavailable }
         _ = try accountCleanupDigest(.string(stateRef))
         var next = journal.record
-        next.registration = try encode(["version":"CLEANUP-DEVICE@3", "action_id":UUID().uuidString, "device_id":UUID().uuidString, "state_ref":stateRef])
+        next.registration = try encode(["version":journal.record.wire.rawValue, "action_id":UUID().uuidString, "device_id":UUID().uuidString, "state_ref":stateRef])
         try save(next, ordinary: true)
-        return try work(.registration, "/v3/cleanup-devices", "registerCleanupDeviceV3", next.registration)
+        return try work(.registration, "/" + journal.record.wire.route + "/cleanup-devices", "registerCleanupDevice" + journal.record.wire.operationSuffix, next.registration)
     }
     public func prepareRegistrationQuery() throws -> DeviceCleanupWork {
         guard !busy else { throw CleanupFailure.stale }; try check(journal.bytes, ordinary: true)
         guard let raw = journal.record.registration else { throw CleanupFailure.unavailable }
         let fields = try accountCleanupObject(accountCleanupDocument(raw))
-        return try work(.registrationQuery, query("/v3/cleanup-device-registrations", action: accountCleanupID(fields["action_id"]), hash: deviceCleanupSHA(raw)), "queryCleanupDeviceRegistrationV3")
+        return try work(.registrationQuery, query("/" + journal.record.wire.route + "/cleanup-device-registrations", action: accountCleanupID(fields["action_id"]), hash: deviceCleanupSHA(raw)), "queryCleanupDeviceRegistration" + journal.record.wire.operationSuffix)
     }
     public func prepareIdentityVerification() throws -> DeviceCleanupWork {
         guard !busy else { throw CleanupFailure.stale }; try check(journal.bytes, ordinary: true)
         _ = try journal.record.enrollment()
-        return try work(.identity, "/v1/message-receipts?message_id=cleanup-check-" + UUID().uuidString, "verifyDeviceCleanupIdentityV3")
+        return try work(.identity, "/v1/message-receipts?message_id=cleanup-check-" + UUID().uuidString, "verifyDeviceCleanupIdentity" + journal.record.wire.operationSuffix)
     }
     public var hasVerifiedIdentityRefusal: Bool {
         get throws {
@@ -189,37 +194,37 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         guard !busy else { throw CleanupFailure.stale }; busy = true; defer { busy = false }
         try check(journal.bytes, ordinary: false)
         let enrollment = try journal.record.enrollment()
-        guard authorization.scope == journal.record.scope, authorization.bindingID == enrollment.bindingID,
+        guard authorization.scope == journal.record.scope, authorization.version == enrollment.version, authorization.bindingID == enrollment.bindingID,
               authorization.stateRef == enrollment.stateRef else { throw CleanupFailure.stale }
         return try stageCall(expectedAccount: authorization.operationID)
     }
     private func stageCall(expectedAccount: String?) throws -> DeviceCleanupWork {
         guard journal.record.action == nil else { throw CleanupFailure.unavailable }
         var record = journal.record; record.expectedAccountOperationID = expectedAccount
-        record.action = try encode(["version":"CLEANUP-DEVICE@3", "action_id":UUID().uuidString,
+        record.action = try encode(["version":journal.record.wire.rawValue, "action_id":UUID().uuidString,
             "binding_id":record.enrollment().bindingID, "reason":"session_invalid"])
         try save(record)
-        return try work(.call, "/v3/cleanup-device-calls", "createCleanupDeviceCallV3", record.action)
+        return try work(.call, "/" + journal.record.wire.route + "/cleanup-device-calls", "createCleanupDeviceCall" + journal.record.wire.operationSuffix, record.action)
     }
     public func prepareOriginalCallQuery() throws -> DeviceCleanupWork {
         guard !busy else { throw CleanupFailure.stale }; try check(journal.bytes, ordinary: false)
         let action = try journal.record.originalAction()
-        return try work(.actionQuery, query("/v3/cleanup-device-call-actions", action: action.id, hash: action.hash), "queryCleanupDeviceCallActionV3")
+        return try work(.actionQuery, query("/" + journal.record.wire.route + "/cleanup-device-call-actions", action: action.id, hash: action.hash), "queryCleanupDeviceCallAction" + journal.record.wire.operationSuffix)
     }
     public func prepareOriginalInvocationQuery() throws -> DeviceCleanupWork {
         guard !busy else { throw CleanupFailure.stale }; try check(journal.bytes, ordinary: false)
         let invocation = try journal.record.invocation()
         guard let encoded = invocation.invocationID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/%?#"))) else { throw CleanupFailure.invalidResponse }
-        return try work(.invocationQuery, "/v3/cleanup-device-calls/" + encoded, "queryCleanupDeviceInvocationV3")
+        return try work(.invocationQuery, "/" + journal.record.wire.route + "/cleanup-device-calls/" + encoded, "queryCleanupDeviceInvocation" + journal.record.wire.operationSuffix)
     }
     public func prepareCompletionQuery() throws -> DeviceCleanupWork {
         guard !busy else { throw CleanupFailure.stale }; try check(journal.bytes, ordinary: false)
         let invocation = try journal.record.invocation()
         guard let encoded = invocation.invocationID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/%?#"))) else { throw CleanupFailure.invalidResponse }
-        var parts = URLComponents(); parts.percentEncodedPath = "/v1/cleanup-device-completions/" + encoded
+        var parts = URLComponents(); parts.percentEncodedPath = "/" + journal.record.wire.completionRoute + "/cleanup-device-completions/" + encoded
         parts.queryItems = [.init(name: "request_digest", value: invocation.requestDigest)]
         guard let path = parts.string else { throw CleanupFailure.invalidResponse }
-        return try work(.completion, path, "readCleanupDeviceCompletionV1")
+        return try work(.completion, path, journal.record.wire.completionOperation)
     }
     /// Intent is durable before the executor receives a call. An existing intent
     /// always enters reconcileOriginal, even when its previous result was unknown.
@@ -263,10 +268,10 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         let invocation = try journal.record.invocation()
         guard let outcome = try receiptOutcome() else { throw CleanupFailure.unavailable }
         var next = journal.record
-        let raw = try encode(["version":"CLEANUP-DEVICE@3", "action_id":UUID().uuidString, "operation_id":invocation.operationID,
+        let raw = try encode(["version":journal.record.wire.rawValue, "action_id":UUID().uuidString, "operation_id":invocation.operationID,
             "invocation_id":invocation.invocationID, "binding_id":invocation.bindingID, "request_digest":invocation.requestDigest, "outcome":outcome.rawValue])
         next.receipts.append(.init(originalUTF8: raw, acknowledged: false)); try save(next)
-        return try work(.receipt, "/v3/cleanup-device-receipts", "reportCleanupDeviceReceiptV3", raw)
+        return try work(.receipt, "/" + journal.record.wire.route + "/cleanup-device-receipts", "reportCleanupDeviceReceipt" + journal.record.wire.operationSuffix, raw)
     }
     public func perform(_ work: DeviceCleanupWork) async throws -> DeviceCleanupReadResult {
         let needsOrdinary = [.registration, .registrationQuery, .identity].contains(work.kind)
@@ -322,7 +327,7 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
                 try accountCleanupKeys(root, fields: ["version", "request_id", "action_id", "input_sha256", "registration"])
                 guard let original = next.registration else { throw CleanupFailure.stale }
                 let fields = try accountCleanupObject(accountCleanupDocument(original))
-                guard try accountCleanupString(root["version"]) == "CLEANUP-DEVICE@3",
+                guard try accountCleanupString(root["version"]) == journal.record.wire.rawValue,
                       try accountCleanupID(root["action_id"]) == accountCleanupID(fields["action_id"]),
                       try accountCleanupDigest(root["input_sha256"]) == deviceCleanupSHA(original) else { throw CleanupFailure.invalidResponse }
                 if case .null = root["registration"] { return .notObserved }
@@ -332,7 +337,7 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         case .call, .actionQuery:
             try accountCleanupKeys(root, fields: ["version", "request_id", "action_id", "input_sha256", "invocation"])
             let original = try next.originalAction()
-            guard try accountCleanupString(root["version"]) == "CLEANUP-DEVICE@3",
+            guard try accountCleanupString(root["version"]) == journal.record.wire.rawValue,
                   try accountCleanupID(root["action_id"]) == original.id,
                   try accountCleanupDigest(root["input_sha256"]) == original.hash else { throw CleanupFailure.invalidResponse }
             if case .null = root["invocation"] {

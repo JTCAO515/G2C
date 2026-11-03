@@ -1,6 +1,7 @@
 import Foundation
 import CJSession
 import CJStrictJSON
+import CJMessageHTTP
 
 struct DeviceCleanupReceiptAttempt: Codable {
     let originalUTF8: Data
@@ -22,8 +23,9 @@ struct DeviceCleanupRecord: Codable {
     var nativeIntentID: UUID?
     var nativeOutcome: DeviceCleanupNativeOutcome?
     var receipts: [DeviceCleanupReceiptAttempt]
-    init(scope: AccountCleanupScope) {
-        version = "DeviceCleanup.Native@1"; self.scope = scope
+    var wire: CleanupDeviceVersion { version == "DeviceCleanup.Native@1" ? .v3 : .v4 }
+    init(scope: AccountCleanupScope, wire: CleanupDeviceVersion = .v3) {
+        version = wire.nativeRecordVersion; self.scope = scope
         enrollmentFromQuery = false; invocationFromActionQuery = false; receipts = []
     }
     func enrollment() throws -> DeviceCleanupEnrollment {
@@ -33,7 +35,7 @@ struct DeviceCleanupRecord: Codable {
     func originalAction() throws -> (id: String, hash: String, reason: String) {
         guard let action, !action.isEmpty, action.count <= 16384 else { throw CleanupFailure.unavailable }
         let fields = try accountCleanupObject(accountCleanupDocument(action), fields: ["version", "action_id", "binding_id", "reason"])
-        guard try accountCleanupString(fields["version"]) == "CLEANUP-DEVICE@3",
+        guard try accountCleanupString(fields["version"]) == wire.rawValue,
               try accountCleanupID(fields["binding_id"]) == enrollment().bindingID else { throw CleanupFailure.invalidResponse }
         let reason = try accountCleanupString(fields["reason"])
         guard ["session_invalid", "offline_expired"].contains(reason) else { throw CleanupFailure.invalidResponse }
@@ -45,7 +47,7 @@ struct DeviceCleanupRecord: Codable {
         guard let invocationReply else { throw CleanupFailure.unavailable }
         let root = try accountCleanupObject(accountCleanupDocument(invocationReply), fields: ["version", "request_id", "action_id", "input_sha256", "invocation"])
         try deviceCleanupTrace(root)
-        guard try accountCleanupString(root["version"]) == "CLEANUP-DEVICE@3",
+        guard try accountCleanupString(root["version"]) == wire.rawValue,
               try accountCleanupID(root["action_id"]) == action.id,
               try accountCleanupDigest(root["input_sha256"]) == action.hash,
               let payload = root["invocation"] else { throw CleanupFailure.invalidResponse }
@@ -62,7 +64,7 @@ struct DeviceCleanupRecord: Codable {
         return current
     }
     func validate(expectedScope: AccountCleanupScope) throws {
-        guard version == "DeviceCleanup.Native@1", scope.environment == expectedScope.environment, scope.account == expectedScope.account,
+        guard ["DeviceCleanup.Native@1", "DeviceCleanup.Native@2"].contains(version), scope.environment == expectedScope.environment, scope.account == expectedScope.account,
               registration != nil || (enrollmentReply == nil && action == nil && invocationReply == nil && directInvocation == nil && nativeIntentID == nil && nativeOutcome == nil && receipts.isEmpty),
               enrollmentReply != nil || (action == nil && invocationReply == nil && directInvocation == nil && nativeIntentID == nil && nativeOutcome == nil && receipts.isEmpty),
               action != nil || (invocationReply == nil && directInvocation == nil && nativeIntentID == nil && nativeOutcome == nil && receipts.isEmpty),
@@ -75,7 +77,7 @@ struct DeviceCleanupRecord: Codable {
         if let registration {
             guard !registration.isEmpty, registration.count <= 16384 else { throw CleanupFailure.invalidResponse }
             let fields = try accountCleanupObject(accountCleanupDocument(registration), fields: ["version", "action_id", "device_id", "state_ref"])
-            guard try accountCleanupString(fields["version"]) == "CLEANUP-DEVICE@3" else { throw CleanupFailure.invalidResponse }
+            guard try accountCleanupString(fields["version"]) == wire.rawValue else { throw CleanupFailure.invalidResponse }
             _ = try accountCleanupID(fields["action_id"]); _ = try accountCleanupID(fields["device_id"]); _ = try accountCleanupDigest(fields["state_ref"])
         }
         if enrollmentReply != nil { _ = try enrollment() }
@@ -91,7 +93,7 @@ struct DeviceCleanupRecord: Codable {
             for receipt in receipts {
                 guard !receipt.originalUTF8.isEmpty, receipt.originalUTF8.count <= 16384 else { throw CleanupFailure.invalidResponse }
                 let fields = try accountCleanupObject(accountCleanupDocument(receipt.originalUTF8), fields: ["version", "action_id", "operation_id", "invocation_id", "binding_id", "request_digest", "outcome"])
-                guard try accountCleanupString(fields["version"]) == "CLEANUP-DEVICE@3",
+                guard try accountCleanupString(fields["version"]) == wire.rawValue,
                       try accountCleanupID(fields["operation_id"]) == invocation.operationID,
                       try accountCleanupID(fields["invocation_id"]) == invocation.invocationID,
                       try accountCleanupID(fields["binding_id"]) == invocation.bindingID,
@@ -111,7 +113,7 @@ struct DeviceCleanupRecord: Codable {
     private(set) var bytes: Data?
     private var usable = true
     private var writing = false
-    init(persistence: any SessionPersistence, scope: AccountCleanupScope) throws {
+    init(persistence: any SessionPersistence, scope: AccountCleanupScope, newVersion: CleanupDeviceVersion = .v3) throws {
         self.persistence = persistence; self.scope = scope
         do { bytes = try persistence.load()?.withBytes { $0 } } catch { throw CleanupFailure.unavailable }
         if let bytes {
@@ -121,7 +123,7 @@ struct DeviceCleanupRecord: Codable {
                 optional: ["registration", "enrollmentReply", "refusalStatus", "refusalResponse", "action", "invocationReply", "directInvocation", "expectedAccountOperationID", "nativeIntentID", "nativeOutcome"])
             do { record = try JSONDecoder().decode(DeviceCleanupRecord.self, from: bytes) } catch { throw CleanupFailure.invalidResponse }
             try record.validate(expectedScope: scope)
-        } else { record = DeviceCleanupRecord(scope: scope) }
+        } else { record = DeviceCleanupRecord(scope: scope, wire: newVersion) }
     }
     func requireOriginal(_ expected: Data?) throws {
         guard usable, !writing, bytes == expected else { throw CleanupFailure.stale }

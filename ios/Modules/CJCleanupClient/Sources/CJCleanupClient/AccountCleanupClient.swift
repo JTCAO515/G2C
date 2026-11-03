@@ -194,8 +194,14 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         guard !inFlight else { throw CleanupFailure.stale }; inFlight = true; defer { inFlight = false }
         try check(journal.bytes, ordinary: true)
         guard enrollment.scope == lifetime.scope, journal.record.registration == nil else { throw CleanupFailure.unavailable }
-        var record = journal.record; record.version = "AccountCleanup.Native@2"
-        record.deviceV3Scope = enrollment.scope; record.deviceV3FromQuery = enrollment.replyFromQuery
+        var record = journal.record
+        if enrollment.version == .v3 {
+            record.version = "AccountCleanup.Native@2"
+            record.deviceV3Scope = enrollment.scope; record.deviceV3FromQuery = enrollment.replyFromQuery
+        } else {
+            record.version = "AccountCleanup.Native@3"
+            record.deviceV4Scope = enrollment.scope; record.deviceV4FromQuery = enrollment.replyFromQuery
+        }
         record.registration = enrollment.originalUTF8; record.registered = enrollment.replyUTF8
         try save(record, ordinary: true)
     }
@@ -203,12 +209,12 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
     /// expected server account operation to a V3 device call. No caller ID is accepted.
     public func originalDeviceAuthorization() throws -> DeviceCleanupAccountAuthorization {
         try check(journal.bytes, ordinary: false)
-        guard let scope = journal.record.deviceV3Scope, let progress = try journal.record.currentProgress(),
+        guard let scope = journal.record.deviceV4Scope ?? journal.record.deviceV3Scope, let progress = try journal.record.currentProgress(),
               progress.businessRevoked else { throw CleanupFailure.unavailable }
         let original = try journal.record.original(), device = try journal.record.device()
         guard progress.operationID == original.operationID else { throw CleanupFailure.invalidResponse }
         return DeviceCleanupAccountAuthorization(operationID: original.operationID, scope: scope,
-            bindingID: device.bindingID, stateRef: device.stateRef)
+            bindingID: device.bindingID, stateRef: device.stateRef, version: journal.record.version == "AccountCleanup.Native@3" ? .v4 : .v3)
     }
     public func prepareAccountDeletion() throws -> AccountCleanupWork {
         guard !inFlight else { throw CleanupFailure.stale }; inFlight = true; defer { inFlight = false }

@@ -9,6 +9,23 @@ import json
 import uuid
 
 
+def project_registry(document, inventory, version):
+    """Keep exact actual leaf definitions and the separate real control catalog."""
+    selected_targets = frozenset(inventory)
+
+    def select(node, parent=''):
+        target = parent + node['id']
+        children = node.get('objects', [])
+        nested = [child for child in children if isinstance(child, dict)]
+        if nested:
+            assert len(nested) == len(children), 'mixed registry children'
+            selected = [value for child in nested if (value := select(child, target + '/')) is not None]
+            return dict(node, objects=selected) if selected else None
+        return node if target in selected_targets or target.startswith('cleanup-control/') else None
+
+    return dict(version=version, stores=[value for node in document['stores'] if (value := select(node)) is not None])
+
+
 def seed_c_sources(connection, auth, context, subject, token, other_token):
     from fastapi.testclient import TestClient
     from cj_memory.typed_api import create_local_typed_app

@@ -30,7 +30,7 @@ public struct DeviceCleanupCompletion: Sendable, CustomStringConvertible, Custom
             "invocation_id", "request_digest", "reason", "device_state", "receipt_digest", "content_status", "registry_digest",
             "control_record_protocol", "complete_scope", "business_access"])
         try deviceCleanupTrace(fields)
-        guard try accountCleanupString(fields["version"]) == "CLEANUP-DEVICE-COMPLETION@1",
+        guard try accountCleanupString(fields["version"]) == invocation.version.completionWire,
               try accountCleanupID(fields["operation_id"]) == invocation.operationID,
               try accountCleanupID(fields["binding_id"]) == invocation.bindingID,
               try accountCleanupID(fields["invocation_id"]) == invocation.invocationID,

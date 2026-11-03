@@ -119,6 +119,9 @@ struct AccountCleanupDeviceBinding: CustomStringConvertible, CustomDebugStringCo
     let scopeDigest: String
     let deviceToken: String
     init(v3 enrollment: DeviceCleanupEnrollment) {
+        self.init(enrollment: enrollment)
+    }
+    init(enrollment: DeviceCleanupEnrollment) {
         bindingID = enrollment.bindingID; deviceID = enrollment.deviceID; stateRef = enrollment.stateRef
         scopeDigest = enrollment.scopeDigest; deviceToken = enrollment.deviceCredential
     }
