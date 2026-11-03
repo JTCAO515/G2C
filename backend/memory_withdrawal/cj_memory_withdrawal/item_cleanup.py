@@ -31,10 +31,13 @@ class _ItemHook:
                 cursor.execute("SELECT set_config('cj.cleanup_scope',%s,true),set_config('cj.cleanup_purpose','memory',true)",(self.domain_scope,))
                 table='cj_trip_scope' if self.trip else 'cj_memory_scope'
                 cursor.execute(f'SELECT scope FROM {table} WHERE scope=%s FOR UPDATE',(self.domain_scope,))
-                if cursor.fetchone() is None:raise Denied('canonical item cleanup lock unavailable')
+                if cursor.fetchone() is None:self.require_empty_scope(cursor)
                 self.erase(cursor,request,association)
                 return record_result(cursor,request,'confirmed')
         except CommitUnknown:return receipt_for(request,'unknown')
+
+    def require_empty_scope(self,cursor):
+        raise Denied('canonical item cleanup lock unavailable')
 
     def reconcile(self,request):
         if (request.protocol!='CLEANUP@1.1' or request.selection.kind!='memory' or request.target!=self.target
@@ -100,6 +103,15 @@ class AuthorityItemHook(_ItemHook):
 
 class TripDerivedItemHook(_ItemHook):
     target='business/trip-authoritative';trip=True
+    def require_empty_scope(self,cursor):
+        # Manual Memory can precede any Trip or chat. No Trip scope is a valid
+        # empty domain, never permission to ignore existing authoritative data.
+        cursor.execute('''SELECT 1 FROM cj_trip_record WHERE scope=%s
+            UNION ALL SELECT 1 FROM cj_trip_proposal WHERE scope=%s
+            UNION ALL SELECT 1 FROM cj_trip_scoped_result WHERE scope=%s LIMIT 1''',
+            (self.domain_scope,self.domain_scope,self.domain_scope))
+        if cursor.fetchone() is not None:raise Denied('Trip data retained without canonical scope lock')
+
     def erase(self,cursor,request,association):
         scope=self.domain_scope
         # M30 has no item FK. This is explicitly the owned derived scope, not

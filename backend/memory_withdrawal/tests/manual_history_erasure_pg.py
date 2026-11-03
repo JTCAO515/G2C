@@ -29,7 +29,7 @@ from cj_run.background_store import JobRequest
 from cj_run.step_usage import ledger_scope_for
 from memory_test_inventory import write_inventory
 
-def exercise(root,path,*,phase='unprepared',long_id=False):
+def exercise(root,path,*,phase='unprepared',long_id=False,empty_history=False):
     who='manual-before-history';owner=scope_for(ISSUER,who)
     auth=root/'auth';dev_auth.init(auth,[who]);now=int(time.time())
     quota=root/'quota.json';quota.write_bytes(encode(dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(
@@ -56,10 +56,11 @@ def exercise(root,path,*,phase='unprepared',long_id=False):
             trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0)),headers=headers))
         return head,result
     with TestClient(app) as client:
-        head,original=send(client,'old-chat','No spicy food')
-        ok(client.post('/v3/memory-history-actions',content=encode(dict(version='MEMORY-HISTORY@1',action_id='enable-old',operation='enable',
-            conversation_id='old-chat',expected_generation=head['generation'],expected_epoch=0,expected_source_version=0)),headers=headers))
-        assert [r.status for r in run_worker.run_once(host.database,FakeProvider(),auth,memory_configuration=runtime)]==['completed']
+        if not empty_history:
+            head,original=send(client,'old-chat','No spicy food')
+            ok(client.post('/v3/memory-history-actions',content=encode(dict(version='MEMORY-HISTORY@1',action_id='enable-old',operation='enable',
+                conversation_id='old-chat',expected_generation=head['generation'],expected_epoch=0,expected_source_version=0)),headers=headers))
+            assert [r.status for r in run_worker.run_once(host.database,FakeProvider(),auth,memory_configuration=runtime)]==['completed']
     jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=MemoryCollectionAdapterV2(c),max_payload_bytes=262144)
     prepared=[];records=[]
     def submit(t,jid,attempt,query,data):
@@ -82,6 +83,11 @@ def exercise(root,path,*,phase='unprepared',long_id=False):
     with TestClient(create_local_typed_app(conninfo_path=path,auth_dir=auth,configuration=runtime.collection)) as manager:
         ok(manager.post('/v2/memories',content=encode(dict(version='MEMORY-manual.2',operation_id='explicit-save',item_id='explicit-item',subject='self',
             slot='diet.spicy',kind='preference',text='No spicy food',extent='long_term',context=None,occurred_at='date unknown')),headers=headers))
+    if empty_history:
+        from cj_agent.draft import trip_scope_for
+        with psycopg.connect(**json.loads(path.read_text())) as audit:
+            assert audit.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(owner,)).fetchone()==(0,)
+            assert audit.execute('SELECT count(*) FROM cj_trip_scope WHERE scope=%s',(trip_scope_for(owner),)).fetchone()==(0,)
     registry=root/'registry.json';write_inventory(registry,'manual-old-source-reextract')
     before_delete_prepared=len(prepared)
     account=ledger_scope_for(owner,run.current.meter)
@@ -134,6 +140,7 @@ if __name__=='__main__':
     import argparse
     parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=('unprepared','pending','prepared','unknown'),default='unprepared')
     parser.add_argument('--long-id',action='store_true')
+    parser.add_argument('--empty-history',action='store_true')
     options=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='manual-history-erasure-') as folder:
-        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']),phase=options.phase,long_id=options.long_id)
+        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']),phase=options.phase,long_id=options.long_id,empty_history=options.empty_history)
