@@ -14,6 +14,8 @@ import Foundation
         let original_text: String
         let edited_text: String
         let occurred_at: String
+        let travel_id: String?
+        let travel_version: Int?
     }
     struct Projection: Decodable {
         struct Row: Decodable { let candidate_id: String; let text: String; let status: String }
@@ -61,7 +63,7 @@ import Foundation
         XCTFail("The exact candidate control is not visible")
     }
     func tap(_ id: String) {
-        let query = app.buttons.matching(identifier: id), button = query.element
+        let query = app.buttons.matching(NSPredicate(format: "identifier == %@", id)), button = query.element
         reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."))
         XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
@@ -115,9 +117,9 @@ import Foundation
         tap("assistant.memoryCandidates.review")
         text("memoryCandidate.conversation", contains: fixture.conversation)
     }
-    func verify(_ language: String, operation: String = "confirm", reopen: Bool = false, account: Bool = false) async throws {
+    func verify(_ language: String, operation: String = "confirm", reopen: Bool = false, account: Bool = false, current: Bool = false) async throws {
         continueAfterFailure = false
-        let name = (account ? "account-" : reopen ? "lost-ack-" : operation + "-") + language
+        let name = (account ? "account-" : reopen ? "lost-ack-" : current ? "current-" : operation + "-") + language
         let f = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", ["case": name]))
         _ = try await call("/size", ["value": "standard"])
         app = XCUIApplication(bundleIdentifier: f.bundle); app.launchArguments = ["-cj.ui.language.v1", language]
@@ -129,10 +131,11 @@ import Foundation
         let projection = try JSONDecoder().decode(Projection.self, from: await call("/observed-projection"))
         XCTAssertEqual(projection.conversation_id, f.conversation); XCTAssertEqual(projection.candidates.count, 1)
         let candidate = try XCTUnwrap(projection.candidates.first)
+        let candidateSelector = "memoryCandidate.review." + Data(candidate.candidate_id.utf8).base64EncodedString()
         XCTAssertEqual(candidate.text, f.original_text); XCTAssertEqual(candidate.status, "candidate")
         let before = try await proof(); XCTAssertEqual(before.action_count, 0); XCTAssertEqual(before.item?.status, "candidate")
         reviewPanel(f)
-        tap("memoryCandidate.review." + Data(candidate.candidate_id.utf8).base64EncodedString())
+        tap(candidateSelector)
         if operation == "confirm" {
             reveal(app.buttons["memoryCandidate.editor.confirm"])
             XCTAssertFalse(app.buttons["memoryCandidate.editor.confirm"].isEnabled, "An inference requires an explicit concrete kind")
@@ -148,6 +151,12 @@ import Foundation
         }
         _ = try await call("/size", ["value": "max"])
         text("memoryCandidate.editor.scope", contains: language == "en" ? "other history" : "其他历史")
+        if let travelID = f.travel_id, let version = f.travel_version {
+            reveal(app.buttons["memoryCandidate.editor.confirm"])
+            XCTAssertFalse(app.buttons["memoryCandidate.editor.confirm"].isEnabled, "A candidate's old travel projection is not a fresh read")
+            tap("memoryCandidate.editor.readTravel")
+            text("memoryCandidate.editor.travel", contains: travelID + " · " + String(version))
+        }
         let actionButton = operation == "confirm" ? "memoryCandidate.editor.confirm" : "memoryCandidate.editor.reject"
         try audit("candidate-editor-" + language + "-max", target: app.buttons[actionButton])
         tap(actionButton)
@@ -194,4 +203,5 @@ import Foundation
     func testRejectCandidateEnglish() async throws { try await verify("en", operation: "reject") }
     func testUnknownCandidateReopensChinese() async throws { try await verify("zh-Hans", reopen: true) }
     func testAccountClearsCandidateFamilyEnglish() async throws { try await verify("en", account: true) }
+    func testFreshCurrentCandidateEnglish() async throws { try await verify("en", current: true) }
 }

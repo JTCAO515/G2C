@@ -14,7 +14,12 @@ struct MemoryCandidateContainerView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let model = host.presentation {
-                MemoryCandidateView(model: model, language: language == .english ? .english : .chinese)
+                let context = host.captureConversationRead()
+                MemoryCandidateView(model: model, language: language == .english ? .english : .chinese,
+                    makeReviewTravel: {
+                        guard let context else { throw MemoryFailure.staleBinding }
+                        return try host.makeReviewTravelSelection(context: context)
+                    })
             } else {
                 ScrollView {
                     RunReadableText(text: language.text("Suggestions are unavailable until this account and its selected conversation are connected. No review was submitted.", "当前账号与已选会话接入后才能查看建议，未提交核对操作。"))

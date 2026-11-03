@@ -27,7 +27,7 @@ HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.memory-candidate.acceptance'
 CASES={'testConfirmCandidateEnglish':'confirm-en','testConfirmCandidateChinese':'confirm-zh-Hans',
        'testRejectCandidateEnglish':'reject-en','testUnknownCandidateReopensChinese':'lost-ack-zh-Hans',
-       'testAccountClearsCandidateFamilyEnglish':'account-en'}
+       'testAccountClearsCandidateFamilyEnglish':'account-en','testFreshCurrentCandidateEnglish':'current-en'}
 
 
 def main():
@@ -98,12 +98,32 @@ def main():
                 cleanup=replace(load_configuration(setup),registry_path=projected)
                 hosts={};proofs={}
                 for case in cases.values():
-                    collection,host,jobs,background,model,originals=build_source_host(connection,auth,context,[subjects[case]['A']],
-                        lambda subject,case=case:tokens[case]['A' if subject==subjects[case]['A'] else 'B'])
-                    proof=prepare_source(collection,host,jobs,background,model,originals,auth,tokens[case]['A'],tokens[case]['B'])
-                    typed=create_local_typed_app(conninfo_path=connection,auth_dir=auth,configuration=TypedConfiguration.from_bytes(packed(configuration_document(list(subjects[case].values())))))
                     ordinary=create_local_app(conninfo_path=connection,auth_dir=auth,run_context=context,travel_context=True,
                         cleanup_configuration=cleanup,history_configuration=load_history_configuration(auth),confirmation_signer=load_confirmation_signer(auth))
+                    travel=None
+                    if case in ('confirm-zh-Hans','lost-ack-zh-Hans','current-en'):
+                        for subject in subjects[case].values():
+                            assert dev_auth.activate_travel(connection,subject,context,'MESSAGE-TRAVEL-CONSUMER@1')=='activated'
+                        with TestClient(ordinary) as client:
+                            created=client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id=str(uuid.uuid4()),operation='create',travel_context=None)),
+                                headers={'Authorization':'Bearer '+tokens[case]['A'],'Content-Type':'application/octet-stream'})
+                            assert created.status_code==200;travel=created.json()['receipt']['travel_context']
+                    source_tokens={subject:tokens[case][key] for key,subject in subjects[case].items()}
+                    collection,host,jobs,background,model,originals=build_source_host(connection,auth,context,[subjects[case]['A']],
+                        source_tokens.__getitem__,travel=travel)
+                    proof=prepare_source(collection,host,jobs,background,model,originals,auth,tokens[case]['A'],tokens[case]['B'],travel=travel)
+                    document=configuration_document(list(subjects[case].values()))
+                    if travel:
+                        document['collection']['profiles'][subjects[case]['A']]=dict(document['collection']['profiles'][subjects[case]['A']],extents=['long_term','current'])
+                        document['travel_contexts'][subjects[case]['A']]=[travel['id']]
+                        with TestClient(ordinary) as client:
+                            advanced=client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id=str(uuid.uuid4()),operation='advance',travel_context=dict(id=travel['id'],expected_version=travel['version']))),
+                                headers={'Authorization':'Bearer '+tokens[case]['A'],'Content-Type':'application/octet-stream'})
+                            assert advanced.status_code==200
+                            actual_travel=advanced.json()['receipt']['travel_context']
+                            assert actual_travel['id']==travel['id'] and actual_travel['version']==travel['version']+1
+                            proof.update(travel_id=travel['id'],original_travel_version=travel['version'],current_travel_version=actual_travel['version'])
+                    typed=create_local_typed_app(conninfo_path=connection,auth_dir=auth,configuration=TypedConfiguration.from_bytes(packed(document)))
                     other=str(uuid.uuid4());headers={'Authorization':'Bearer '+tokens[case]['B'],'Content-Type':'application/octet-stream'}
                     with TestClient(typed) as client:
                         response=client.post('/v2/memories',content=packed(dict(version='MEMORY-manual.2',operation_id=str(uuid.uuid4()),item_id=other,subject='self',slot='budget',kind='preference',text='另一用户明确保存的预算偏好',extent='long_term',context=None,occurred_at='时间不详')),headers=headers)
@@ -119,7 +139,8 @@ def main():
                         ledger=decode_ledger(conn.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0])
                         assert len(ledger.attempts)==2 and all(a.state=='settled' and a.receipt.actual==1 for a in ledger.attempts.values())
                     proof['meter']=dict(attempts=2,settled=2,actual_units=2,budget=2,runtime_role='cj_m1_runtime')
-                    hosts[case]=dict(collection=collection,ordinary=ordinary,typed=typed);proofs[case]=proof
+                    hosts[case]=dict(collection=collection,ordinary=ordinary,typed=typed,
+                        profile=document['collection']['profiles'][subjects[case]['A']],travel_ids=document['travel_contexts'][subjects[case]['A']]);proofs[case]=proof
                     observed[case]=dict(actions=[],projections=[],api=[])
                 report.update(source_status='PASS',sources=proofs);save()
                 if args.prepare_only:report.update(status='UNRUN',native='UNRUN');return
@@ -144,6 +165,10 @@ def main():
                             command=json.loads(body);result=json.loads(raw)['result'];original=proofs[case]
                             assert command['candidate_id']==original['candidate_id'] and {k:command[k] for k in ('job_id','attempt_id')}==original['producer']
                             assert result['action_id']==command['action_id'] and result['input_sha256']==hashlib.sha256(body).hexdigest()
+                            if command['operation']=='confirm':
+                                if 'travel_id' in original:
+                                    assert command['extent']=='current' and command['context']==dict(kind='travel',id=original['travel_id'],expected_version=original['current_travel_version'])
+                                else:assert command['extent']=='long_term' and command['context'] is None
                             observed[case]['actions'].append(dict(command=command,result=result,input_sha256=result['input_sha256']))
                     if case.startswith('lost-ack-') and status==200 and scope['method']=='POST' and path=='/v3/memory-candidate-actions':
                         # The real C transaction committed above; lose only its ACK.
@@ -180,13 +205,14 @@ def main():
                         path=urlsplit(self.path);query={k:v[0] for k,v in parse_qs(path.query).items()}
                         if path.path=='/fixture':
                             case=query['case'];assert case in hosts;active['case']=case
-                            profile=configuration_document([subjects[case]['A']])['collection']['profiles'][subjects[case]['A']]
+                            profile=hosts[case]['profile']
                             launch=dict(G2C_DEV_ACCOUNT_MODE='1',G2C_DEV_API_BASE_URL=endpoint,G2C_DEV_ACCOUNTS=json.dumps(tokens[case]),
-                                G2C_DEV_OFFLINE_TRIP='last-sync-v1',G2C_DEV_CLEANUP_PROFILE='device-v4',G2C_DEV_TRAVEL_PROFILE=json.dumps(dict(version='app-travel.1',travel_ids=[])),
+                                G2C_DEV_OFFLINE_TRIP='last-sync-v1',G2C_DEV_CLEANUP_PROFILE='device-v4',G2C_DEV_TRAVEL_PROFILE=json.dumps(dict(version='app-travel.1',travel_ids=hosts[case]['travel_ids'])),
                                 G2C_DEV_TYPED_MEMORY_PROFILE=json.dumps(dict(version='app-memory.2',**{k:profile[k] for k in ('subjects','slots','extents')})),
                                 G2C_DEV_TYPED_MEMORY_URL=endpoint,G2C_DEV_MEMORY_CANDIDATE_URL=endpoint)
                             value=dict(bundle=BUNDLE,launch=launch,subjects=subjects[case],conversation=proofs[case]['conversation'],
-                                original_text='我可能更喜欢轻松的行程节奏',edited_text='我确认偏好轻松节奏 / cafe\u0301，保留原中文',occurred_at='时间不详')
+                                original_text='我可能更喜欢轻松的行程节奏',edited_text='我确认偏好轻松节奏 / cafe\u0301，保留原中文',occurred_at='时间不详',
+                                travel_id=proofs[case].get('travel_id'),travel_version=proofs[case].get('current_travel_version'))
                         elif path.path=='/size':
                             size={'standard':'large','max':'accessibility-extra-extra-extra-large'}[query['value']]
                             subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',size],env=env,check=True);value={}

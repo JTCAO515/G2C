@@ -75,6 +75,49 @@ private actor TravelReadWire: ClientTransport {
 
 @MainActor private final class TravelSelectionBox { var model: TravelSelectionModel? }
 extension TravelContextReadTests {
+    @Test func isolatedReviewReadsFreshTravelWithoutChangingAssistantChoice() async throws {
+        let wire = TravelReadWire(id:id),(_,lease,client) = try setup(wire)
+        let assistant = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true})
+        try assistant.selectNone();let original = try assistant.capture()
+        let review = try assistant.isolatedSelection(isCurrent:{true})
+        #expect(throws:RecoveryError.queryOnly) { try review.capture() }
+        await review.selectTravel(id)
+        let captured = try review.capture()
+        #expect(captured.context?.value.id == id && captured.context?.value.version == 2)
+        try assistant.validate(original)
+        #expect(try assistant.capture().context == nil)
+        try assistant.selectNone() // A later Assistant choice does not rebind the review.
+        try review.validate(captured)
+        review.invalidate()
+        #expect(throws:(any Error).self) { try review.validate(captured) }
+        #expect(try assistant.capture().context == nil)
+        #expect(await wire.count == 1)
+    }
+    @Test func closedReviewSourceCannotDispatchAndRetiredSDKCannotClone() async throws {
+        let wire = TravelReadWire(id:id),(recovery,lease,client) = try setup(wire)
+        let assistant = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true})
+        var current = true
+        let review = try assistant.isolatedSelection(isCurrent:{current})
+        current = false
+        await review.selectTravel(id)
+        #expect(await wire.count == 0)
+        #expect(throws:(any Error).self) { try review.capture() }
+        recovery.invalidate()
+        #expect(throws:(any Error).self) { try assistant.isolatedSelection(isCurrent:{true}) }
+    }
+    @Test func lateReviewTravelCannotPublishAfterItsConversationRetires() async throws {
+        let source = TravelReviewSource()
+        let wire = TravelReadWire(id:id,after:{await MainActor.run { source.current = false }})
+        let (_,lease,client) = try setup(wire)
+        let assistant = try TravelSelectionModel(ids:[id],client:client,lease:lease,isCurrent:{true})
+        try assistant.selectNone();let original = try assistant.capture()
+        let review = try assistant.isolatedSelection(isCurrent:{source.current})
+        await review.selectTravel(id)
+        #expect(await wire.count == 1)
+        #expect(throws:(any Error).self) { try review.capture() }
+        try assistant.validate(original)
+        #expect(try assistant.capture().context == nil)
+    }
     @Test func noConfiguredTravelsStillRequiresExplicitNoneAndNeverDispatches() async throws {
         let wire = TravelReadWire(id:id),(_,lease,client) = try setup(wire)
         let model = try TravelSelectionModel(ids:[],client:client,lease:lease,isCurrent:{true})
@@ -131,3 +174,4 @@ extension TravelContextReadTests {
         #expect(try model.capture().context == nil)
     }
 }
+@MainActor private final class TravelReviewSource { var current = true }

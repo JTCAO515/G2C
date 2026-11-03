@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import CJMemoryClient
 import CJSession
+import CJMessageHTTP
 
 public struct MemoryCandidateConversationReadContext: Sendable {
     fileprivate let core: UUID
@@ -73,6 +74,14 @@ public struct MemoryCandidateConversationReadContext: Sendable {
         let selected = captured.binding.messages.selectedConversation
         guard owns(captured), captured.model.conversationID.map({ Data($0.utf8) }) == selected.map({ Data($0.utf8) }) else { return nil }
         return captured.model
+    }
+    public func makeReviewTravelSelection(context: MemoryCandidateConversationReadContext) throws -> TravelSelectionModel? {
+        guard isCurrent(context), let captured = validCore() else { throw MemoryFailure.staleBinding }
+        let reader = try captured.binding.messages.travelSelection?.isolatedSelection(isCurrent: { [weak self] in
+            self?.isCurrent(context) == true
+        })
+        guard isCurrent(context), owns(captured) else { reader?.invalidate(); throw MemoryFailure.staleBinding }
+        return reader
     }
     @discardableResult public func bind(_ value: MemoryCandidateContainerBinding) -> Bool {
         guard core == nil, shell.memoryCandidateContainerHost === self, value.messages.belongs(to: shell), shell.generation == value.generation,
