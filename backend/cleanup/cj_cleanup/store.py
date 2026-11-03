@@ -8,7 +8,8 @@ from .core import Conflict, Denied, Invalid, encode, hash_value, identifier, dig
 from .hooks import HookRequest, HookReceipt, make_receipt
 from . import hooks, hooks_v1_1
 from cj_strict_json import reject_duplicates
-from .registry import freeze
+from .registry import freeze,freeze_controls
+from .control_records import VERSION as CONTROL
 from .postgres import CommitUnknown, Unavailable
 
 
@@ -57,7 +58,10 @@ def _load_operation(cur,subject_digest,operation_id,*,lock_mode=None):
     hash_value(confirmation)
     if purpose not in ('account','memory','diagnostics') or type(blocked) is not bool or type(inventory) is not list or type(versions) is not list or type(targets) is not list:
         raise Unavailable('cleanup state unavailable')
-    manifest=freeze(bytes(raw),tuple(inventory),versions=tuple(versions))
+    if CONTROL in versions:
+        if versions.count(CONTROL)!=1:raise Unavailable('cleanup control profile unavailable')
+        manifest=freeze_controls(bytes(raw),tuple(inventory),versions=tuple(v for v in versions if v!=CONTROL))
+    else:manifest=freeze(bytes(raw),tuple(inventory),versions=tuple(versions))
     targets=tuple(identifier(t) for t in targets)
     if not targets or len(set(targets))!=len(targets) or set(targets)-set(manifest.inventory):raise Unavailable('cleanup targets unavailable')
     if plan_raw is None:plan=None
